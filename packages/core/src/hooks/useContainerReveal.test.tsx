@@ -3,61 +3,58 @@
 /**
  * @file useContainerReveal.test.tsx
  * @input Uses vitest, @testing-library/react, useContainerReveal
- * @output Unit tests for the marker-pool free-list, per-instance scoping, the
- *   inert (disabled) path, and the content-option → style-block mapping.
- * @position Testing; validates useContainerReveal.ts and its pool.
+ * @output Unit tests for the enabled/disabled contract, the dynamic isEnabled
+ *   prop, the container options (hoverDelay, forceState), the per-element
+ *   option → style-block mapping, and the promise that a large flat list
+ *   mounts without dev warnings.
+ * @position Testing; validates useContainerReveal.ts.
+ *
+ * Nesting isolation is a cascade behavior jsdom does not implement, so it is
+ * verified in a real browser (Storybook's NestedIsolation story) rather than
+ * asserted here. The same goes for what the dwell and the forced states
+ * actually paint: these tests assert the wiring, the browser proves the pixels
+ * (HoverIntentDelay, ForcedVisibility).
  *
  * SYNC: When useContainerReveal.ts changes, update these tests.
  */
 
-import {describe, it, expect} from 'vitest';
-import {renderHook, render, act} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {renderHook, render} from '@testing-library/react';
 import {useContainerReveal} from './useContainerReveal';
-import {POOL_SIZE} from './containerReveal.pool.stylex';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('useContainerReveal', () => {
   it('returns spreadable getter props for container and content', () => {
     const {result} = renderHook(() => useContainerReveal());
     const container = result.current.getContainerProps();
     const content = result.current.getContentRevealProps();
-    expect(container).toHaveProperty('className');
-    expect(content).toHaveProperty('className');
     expect(typeof container.className).toBe('string');
     expect(typeof content.className).toBe('string');
   });
 
-  it('is inert when disabled: no marker class, empty content props', () => {
-    const {result} = renderHook(() =>
-      useContainerReveal({isEnabled: false}),
-    );
+  it('is inert when disabled: no container class, empty content props', () => {
+    const {result} = renderHook(() => useContainerReveal({isEnabled: false}));
     expect(result.current.getContainerProps()).toEqual({});
     expect(result.current.getContentRevealProps()).toEqual({});
   });
 
-  it('gives two concurrently mounted containers DISTINCT marker classes', () => {
-    // The core leak-safety property: nested/concurrent containers must never
-    // share a marker, or an ancestor container's :hover would reveal a
-    // descendant container's content.
-    const a = renderHook(() => useContainerReveal());
-    const b = renderHook(() => useContainerReveal());
-    const classA = a.result.current.getContainerProps().className;
-    const classB = b.result.current.getContainerProps().className;
-    expect(classA).toBeTruthy();
-    expect(classB).toBeTruthy();
-    expect(classA).not.toBe(classB);
-    a.unmount();
-    b.unmount();
-  });
+  it('follows isEnabled after mount, in both directions', () => {
+    const {result, rerender} = renderHook(
+      ({isEnabled}) => useContainerReveal({isEnabled}),
+      {initialProps: {isEnabled: true}},
+    );
+    expect(result.current.getContentRevealProps().className).toBeTruthy();
 
-  it('recycles a slot after unmount (free-list release)', () => {
-    const first = renderHook(() => useContainerReveal());
-    const firstClass = first.result.current.getContainerProps().className;
-    first.unmount();
-    // A fresh mount should be able to reclaim the just-released slot.
-    const second = renderHook(() => useContainerReveal());
-    const secondClass = second.result.current.getContainerProps().className;
-    expect(secondClass).toBe(firstClass);
-    second.unmount();
+    rerender({isEnabled: false});
+    expect(result.current.getContainerProps()).toEqual({});
+    expect(result.current.getContentRevealProps()).toEqual({});
+
+    rerender({isEnabled: true});
+    expect(result.current.getContainerProps().className).toBeTruthy();
+    expect(result.current.getContentRevealProps().className).toBeTruthy();
   });
 
   it('reveal and conceal map to different style blocks', () => {
@@ -80,37 +77,87 @@ describe('useContainerReveal', () => {
     expect(clipped).not.toBe(preserved);
   });
 
-  it('assigns distinct markers across a full pool of concurrent containers', () => {
-    function Probe({onClass}: {onClass: (c: string) => void}) {
-      const {getContainerProps} = useContainerReveal();
-      onClass(getContainerProps().className ?? '');
-      return null;
+  it('forceState pins each end of the container to its own style block', () => {
+    const {result} = renderHook(() => useContainerReveal());
+    const auto = result.current.getContainerProps().className;
+    const inactive = result.current.getContainerProps({
+      forceState: 'inactive',
+    }).className;
+    const active = result.current.getContainerProps({
+      forceState: 'active',
+    }).className;
+    expect(new Set([auto, inactive, active]).size).toBe(3);
+  });
+
+  it('forceVisibility pins one element, independent of its reveal mode', () => {
+    const {result} = renderHook(() => useContainerReveal());
+    const auto = result.current.getContentRevealProps().className;
+    const shown = result.current.getContentRevealProps({
+      forceVisibility: 'shown',
+    }).className;
+    const hidden = result.current.getContentRevealProps({
+      forceVisibility: 'hidden',
+    }).className;
+    expect(new Set([auto, shown, hidden]).size).toBe(3);
+
+    // The layout-preserved variant has no position to flip, so hidden maps to
+    // its own opacity-only block.
+    expect(
+      result.current.getContentRevealProps({
+        forceVisibility: 'hidden',
+        isLayoutPreserved: true,
+      }).className,
+    ).not.toBe(hidden);
+  });
+
+  it('hoverDelay publishes the dwell as an inline custom property', () => {
+    const {result} = renderHook(() => useContainerReveal());
+    const {style} = result.current.getContainerProps({hoverDelay: 120});
+    expect(Object.values(style ?? {})).toContain('120ms');
+    expect(result.current.getContainerProps({hoverDelay: 0}).style).toEqual(
+      result.current.getContainerProps().style,
+    );
+  });
+
+  it('hoverDelay and forceState compose on one container', () => {
+    const {result} = renderHook(() => useContainerReveal());
+    const props = result.current.getContainerProps({
+      hoverDelay: 120,
+      forceState: 'inactive',
+    });
+    expect(Object.values(props.style ?? {})).toContain('120ms');
+    expect(props.className).not.toBe(
+      result.current.getContainerProps({hoverDelay: 120}).className,
+    );
+  });
+
+  it('ignores container options while disabled', () => {
+    const {result} = renderHook(() => useContainerReveal({isEnabled: false}));
+    expect(
+      result.current.getContainerProps({
+        hoverDelay: 120,
+        forceState: 'inactive',
+      }),
+    ).toEqual({});
+  });
+
+  it('mounts a large flat list without a dev warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    function Row() {
+      const {getContainerProps, getContentRevealProps} = useContainerReveal();
+      return (
+        <div {...getContainerProps()}>
+          <span {...getContentRevealProps()}>actions</span>
+        </div>
+      );
     }
-    const classes: string[] = [];
-    const {unmount} = render(
+    render(
       <>
-        {Array.from({length: POOL_SIZE}, (_, i) => (
-          <Probe key={i} onClass={(c) => classes.push(c)} />
+        {Array.from({length: 500}, (_, i) => (
+          <Row key={i} />
         ))}
       </>,
     );
-    const unique = new Set(classes.filter(Boolean));
-    expect(unique.size).toBe(POOL_SIZE);
-    unmount();
-  });
-
-  it('survives repeated mount/unmount without leaking the pool', () => {
-    // Mount and unmount a full pool several times; each cycle must still hand
-    // out POOL_SIZE distinct markers, proving slots are released.
-    for (let cycle = 0; cycle < 3; cycle++) {
-      const hooks = Array.from({length: POOL_SIZE}, () =>
-        renderHook(() => useContainerReveal()),
-      );
-      const classes = hooks.map(
-        (h) => h.result.current.getContainerProps().className,
-      );
-      expect(new Set(classes).size).toBe(POOL_SIZE);
-      act(() => hooks.forEach((h) => h.unmount()));
-    }
+    expect(warn).not.toHaveBeenCalled();
   });
 });

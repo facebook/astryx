@@ -14,7 +14,7 @@ export const doc = {
   displayName: 'EnumDoc',
   namespace: 'authoring',
   description:
-    'The doc-type for a closed vocabulary — a fixed set of literal values such as ' +
+    'The doc-type for a closed vocabulary: a fixed set of literal values such as ' +
     'error codes or response-type discriminants. Colocated as a `.doc.mjs` next to ' +
     'the source of truth it documents.',
   appliesTo: '<enum>.doc.mjs',
@@ -59,7 +59,7 @@ export const doc = {
     {
       name: 'members',
       type: 'EnumMemberDoc[]',
-      description: 'The enumerated members — one entry per literal value.',
+      description: 'The enumerated members: one entry per literal value.',
       required: true,
       fields: [
         {

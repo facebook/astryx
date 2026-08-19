@@ -22,6 +22,7 @@ import {
   plainDateFromISO,
   plainDateToday,
   plainDateFormat,
+  plainDateDiffDays,
   DATE_FORMAT_SHORT,
   DATE_FORMAT_SHORT_WITH_YEAR,
 } from '../utils/plainDate';
@@ -36,6 +37,7 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -45,7 +47,13 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type DateRange} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type DateRange,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
@@ -53,7 +61,10 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
 export type {DateRange} from '../Calendar';
@@ -110,11 +121,6 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
   iconButtonDisabled: {
     cursor: 'not-allowed',
@@ -152,14 +158,15 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     textAlign: 'start',
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
   },
   presetButtonActive: {
     backgroundColor: colorVars['--color-accent-muted'],
     color: colorVars['--color-accent'],
+  },
+  presetButtonDisabled: {
+    color: colorVars['--color-text-disabled'],
+    cursor: 'not-allowed',
+    backgroundColor: 'transparent',
   },
 });
 
@@ -199,6 +206,34 @@ function isRangeEqual(a: DateRange | null, b: DateRange | null): boolean {
     return false;
   }
   return a.start === b.start && a.end === b.end;
+}
+
+// A preset that would land outside the span bounds is disabled rather than
+// allowed to override them: the cap is authoritative, so an out-of-window
+// preset stays visible (discoverable) but non-committable, mirroring how the
+// calendar disables out-of-window days. Spans count both endpoints.
+function isRangeWithinSpan(
+  range: DateRange,
+  maxRangeSpan: number | undefined,
+  minRangeSpan: number | undefined,
+): boolean {
+  if (maxRangeSpan == null && minRangeSpan == null) {
+    return true;
+  }
+  const span =
+    Math.abs(
+      plainDateDiffDays(
+        plainDateFromISO(range.start),
+        plainDateFromISO(range.end),
+      ),
+    ) + 1;
+  if (maxRangeSpan != null && span > maxRangeSpan) {
+    return false;
+  }
+  if (minRangeSpan != null && span < minRangeSpan) {
+    return false;
+  }
+  return true;
 }
 
 export interface DateRangeInputProps extends Omit<
@@ -304,6 +339,30 @@ export interface DateRangeInputProps extends Omit<
   dateConstraints?: ReadonlyArray<(date: Date) => boolean>;
 
   /**
+   * Maximum number of days the selected range may span, counting both
+   * endpoints — `maxRangeSpan={7}` allows a 7-day window (start + 6 days).
+   * Once a start date is picked, days beyond this distance from it are
+   * disabled, so the user can't stretch the range past the cap. Use for
+   * rolling windows like "at most a week from the chosen day"; for fixed
+   * calendar bounds use `min`/`max`.
+   *
+   * This constrains selection only — it never rewrites a `value` that is
+   * already wider than the cap. Surface such a value with `status` if you
+   * need to flag it. A `preset` whose range violates the cap is disabled
+   * (shown but not committable) rather than allowed to override it.
+   */
+  maxRangeSpan?: number;
+
+  /**
+   * Minimum number of days the selected range must span, counting both
+   * endpoints — `minRangeSpan={2}` forbids a single-day range. Once a start
+   * date is picked, days closer than this to it are disabled — except the
+   * start itself, which stays selectable as the active anchor. Defaults to 1
+   * (a same-day start and end is allowed).
+   */
+  minRangeSpan?: number;
+
+  /**
    * Preset date ranges shown as quick-select options beside the calendar.
    */
   presets?: ReadonlyArray<DateRangePreset>;
@@ -355,6 +414,14 @@ export interface DateRangeInputProps extends Omit<
    * @default 2
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 }
 
 /**
@@ -388,6 +455,8 @@ export function DateRangeInput({
   min,
   max,
   dateConstraints,
+  maxRangeSpan,
+  minRangeSpan,
   presets,
   hasClear = true,
   placeholder: placeholderFromProps,
@@ -396,6 +465,7 @@ export function DateRangeInput({
   statusVariant = 'attached',
   labelTooltip,
   numberOfMonths = 2,
+  weekStartsOn,
   width,
   xstyle,
   className,
@@ -404,6 +474,7 @@ export function DateRangeInput({
   ...rest
 }: DateRangeInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateRangeInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -548,6 +619,7 @@ export function DateRangeInput({
           themeProps('date-range-input', {
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,
@@ -574,6 +646,7 @@ export function DateRangeInput({
           }
           tabIndex={-1}
           {...stylex.props(
+            focusOutlineStyles.focusVisible,
             styles.iconButton,
             isEffectivelyDisabled && styles.iconButtonDisabled,
           )}>
@@ -598,7 +671,7 @@ export function DateRangeInput({
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
           aria-label={triggerAriaLabel}
           aria-describedby={ariaDescribedBy}
-          aria-required={isRequired === true ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           aria-expanded={popover.isOpen}
@@ -612,18 +685,11 @@ export function DateRangeInput({
           {displayValue || placeholder}
         </button>
         {hasClear && value !== null && !isEffectivelyDisabled && (
-          <button
-            type="button"
+          <InputClearButton
+            label={t('@astryx.dateInput.clear', {label})}
             onClick={handleClear}
-            aria-label={t('@astryx.dateInput.clear', {label})}
-            {...stylex.props(styles.iconButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              {...themeProps('date-range-input-clear-icon')}
-            />
-          </button>
+            iconClassName={stableClassName('date-range-input-clear-icon')}
+          />
         )}
         {isBusy && <Spinner size="sm" />}
         {statusIcon}
@@ -638,6 +704,11 @@ export function DateRangeInput({
               {presets.map(preset => {
                 const presetRange = preset.getRange();
                 const isActive = isRangeEqual(value, presetRange);
+                const isPresetDisabled = !isRangeWithinSpan(
+                  presetRange,
+                  maxRangeSpan,
+                  minRangeSpan,
+                );
                 return (
                   <button
                     key={preset.label}
@@ -648,10 +719,13 @@ export function DateRangeInput({
                     // marked with aria-current (not aria-selected, a listbox
                     // concept that contradicted the Tab interaction) (forms-5).
                     aria-current={isActive ? 'true' : undefined}
+                    disabled={isPresetDisabled}
                     onClick={() => handlePresetClick(preset)}
                     {...stylex.props(
+                      focusOutlineStyles.focusVisible,
                       styles.presetButton,
                       isActive && styles.presetButtonActive,
+                      isPresetDisabled && styles.presetButtonDisabled,
                     )}>
                     {preset.label}
                   </button>
@@ -666,7 +740,10 @@ export function DateRangeInput({
             min={min}
             max={max}
             dateConstraints={dateConstraints}
+            maxRangeSpan={maxRangeSpan}
+            minRangeSpan={minRangeSpan}
             numberOfMonths={numberOfMonths}
+            weekStartsOn={weekStartsOn}
           />
         </div>,
         {placement: 'below', alignment: 'start'},

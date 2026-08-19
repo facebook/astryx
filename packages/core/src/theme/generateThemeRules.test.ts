@@ -23,6 +23,23 @@ const defaultInput = {
   },
 };
 
+describe('focus outline tokens', () => {
+  it('emits a focus ring override into the theme scope', () => {
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        '--focus-outline-color': '#FF00FF',
+        '--focus-outline-width': '4px',
+      },
+    });
+
+    const {component} = generateThemeCSS(theme);
+
+    expect(component).toContain('--focus-outline-color: #FF00FF;');
+    expect(component).toContain('--focus-outline-width: 4px;');
+  });
+});
+
 describe('generateThemeRules', () => {
   const theme = defineTheme(defaultInput);
   const rules = generateThemeRules(theme);
@@ -474,6 +491,47 @@ describe('derived var expansion', () => {
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 16px');
     expect(rule).toContain('--_card-radius: 16px');
+  });
+
+  it('replaces paddingInline with the var for textarea (no raw property)', () => {
+    const theme = defineTheme({
+      name: 'test-derived-textarea',
+      components: {
+        textarea: {
+          base: {paddingInline: 'var(--eps-input-padding-x)'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-textarea'));
+    expect(rule).toBeDefined();
+    // Value flows to the inner <textarea> via the var…
+    expect(rule).toContain(
+      '--_textarea-inline-padding: var(--eps-input-padding-x)',
+    );
+    // …and must NOT land on the flush wrapper, which would re-inset the
+    // full-bleed textarea and push the native resize grip off the corner.
+    expect(rule).not.toContain('padding-inline: var(--eps-input-padding-x)');
+  });
+
+  it('replaces progressbar-mark width/height with vars (no raw properties)', () => {
+    const theme = defineTheme({
+      name: 'test-derived-progressbar-mark',
+      components: {
+        'progressbar-mark': {
+          base: {width: '2px', height: '12px'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-progressbar-mark'));
+    expect(rule).toBeDefined();
+    expect(rule).toContain('--_progressbar-mark-width: 2px');
+    expect(rule).toContain('--_progressbar-mark-height: 12px');
+    // Raw dimensions would be a same-element fight with the mark's StyleX,
+    // which an unlayered consumer build wins — the vars have no competitor.
+    expect(rule).not.toMatch(/[{;]\s*width: 2px/);
+    expect(rule).not.toMatch(/[{;]\s*height: 12px/);
   });
 });
 

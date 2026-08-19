@@ -150,13 +150,13 @@ export const doc = {
       type: 'list',
       style: 'unordered',
       items: [
-        "PageTemplateDoc (type: 'page') — a full page template; `name` doubles as its display value.",
-        "BlockTemplateDoc (type: 'block') — an example of a component; requires `exampleFor` and `aspectRatio`.",
+        "PageTemplateDoc (type: 'page'): a full page template; `name` doubles as its display value.",
+        "BlockTemplateDoc (type: 'block'): an example of a component; requires `exampleFor` and `aspectRatio`.",
       ],
     },
     {
       type: 'prose',
-      text: "`category` uses the shared TemplateCategory taxonomy: 'Group - Variant' strings (e.g. 'Table - Bulk Actions'). Not every value maps to an existing template — unused values are reserved so authors get autocomplete for the full taxonomy.",
+      text: "`category` uses the shared TemplateCategory taxonomy: 'Group - Variant' strings (e.g. 'Table - Bulk Actions'). Not every value maps to an existing template; unused values are reserved so authors get autocomplete for the full taxonomy.",
     },
   ],
 };

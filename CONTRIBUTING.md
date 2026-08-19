@@ -123,7 +123,7 @@ pnpm dev
 
 Storybook will open at http://localhost:6006 with:
 
-- **Theme switcher** - Toggle between Default and Shadcn themes
+- **Theme switcher** - Toggle between the base tokens and the Neutral, Stone, and Y2K themes
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
@@ -165,13 +165,14 @@ playground scope) before booting Next.
 astryx/
 ├── apps/
 │   ├── storybook/      # Component playground (localhost:6006)
+│   ├── docsite/        # Doc site (localhost:3000)
 │   └── sandbox/        # Development testing
 │
 ├── packages/
 │   ├── core/           # Core components (Button, Input, etc.)
 │   ├── cli/            # CLI tooling (astryx)
 │   ├── lab/            # Experimental components (not yet stable)
-│   └── themes/         # Theme presets (default, neutral, daily, and more)
+│   └── themes/         # Theme presets (neutral, stone, y2k, and more)
 │
 └── internal/           # Internal tooling (not published)
     └── test-utils/     # Shared test helpers
@@ -181,15 +182,15 @@ astryx/
 
 ### Common Commands
 
-| Command           | Description                       |
-| ----------------- | --------------------------------- |
-| `pnpm install`    | Install all dependencies          |
-| `pnpm dev`        | Start all dev servers             |
-| `pnpm build`      | Build all packages                |
-| `pnpm test`       | Run all tests                     |
-| `pnpm test:watch` | Run tests in watch mode           |
-| `pnpm storybook`  | Start Storybook at localhost:6006 |
-| `pnpm lint`       | Lint all packages                 |
+| Command           | Description                                  |
+| ----------------- | -------------------------------------------- |
+| `pnpm install`    | Install all dependencies                     |
+| `pnpm dev`        | Start Storybook (alias for `pnpm storybook`) |
+| `pnpm build`      | Build all packages                           |
+| `pnpm test`       | Run all tests                                |
+| `pnpm test:watch` | Run tests in watch mode                      |
+| `pnpm storybook`  | Start Storybook at localhost:6006            |
+| `pnpm lint`       | Lint all packages                            |
 
 ## Adding a New Component
 
@@ -207,17 +208,25 @@ mkdir -p packages/core/src/MyComponent
 packages/core/src/MyComponent/
 ├── MyComponent.tsx        # Component implementation
 ├── MyComponent.test.tsx   # Unit tests (colocated)
-├── MyComponent.stories.tsx # Storybook stories
+├── MyComponent.doc.mjs    # Component doc (props, features, examples)
 └── index.ts               # Public exports
+```
+
+Stories are **not** colocated — they live in the Storybook app:
+
+```
+apps/storybook/stories/MyComponent.stories.tsx
 ```
 
 ### 3. Component Template
 
 ````tsx
 // MyComponent.tsx
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import type {HTMLAttributes, ReactNode, Ref} from 'react';
 
 export interface MyComponentProps extends HTMLAttributes<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: Ref<HTMLDivElement>;
   /** Description for AI-assisted development */
   children: ReactNode;
 }
@@ -230,15 +239,13 @@ export interface MyComponentProps extends HTMLAttributes<HTMLDivElement> {
  * <MyComponent>Hello</MyComponent>
  * ```
  */
-export const MyComponent = forwardRef<HTMLDivElement, MyComponentProps>(
-  ({children, ...props}, ref) => {
-    return (
-      <div ref={ref} {...props}>
-        {children}
-      </div>
-    );
-  },
-);
+export function MyComponent({children, ref, ...props}: MyComponentProps) {
+  return (
+    <div ref={ref} {...props}>
+      {children}
+    </div>
+  );
+}
 
 MyComponent.displayName = 'MyComponent';
 ````
@@ -261,13 +268,19 @@ describe('MyComponent', () => {
 
 ### 5. Story Template
 
+Stories live in the Storybook app, not next to the component —
+`apps/storybook/.storybook/main.ts` discovers them with
+`'../stories/**/*.stories.@(js|jsx|mjs|ts|tsx)'`, so a story anywhere under
+`packages/` is never picked up. Import the component through its published
+entry point, and title it under `Core/` (or `Lab/` for `@astryxdesign/lab`).
+
 ```tsx
-// MyComponent.stories.tsx
+// apps/storybook/stories/MyComponent.stories.tsx
 import type {Meta, StoryObj} from '@storybook/react';
-import {MyComponent} from './MyComponent';
+import {MyComponent} from '@astryxdesign/core/MyComponent';
 
 const meta = {
-  title: 'Components/MyComponent',
+  title: 'Core/MyComponent',
   component: MyComponent,
   tags: ['autodocs'],
 } satisfies Meta<typeof MyComponent>;
@@ -299,9 +312,10 @@ export * from './MyComponent';
 Every new component — and any change to an interactive one — must clear the
 **[Accessibility Checklist](https://github.com/facebook/astryx/wiki/Accessibility-Checklist)**
 (wiki) before review. The checklist lives on the wiki so accessibility
-experts can refine it without a code PR; reviewers block on it (see the
-blocking criteria in `.github/copilot-instructions.md`), and it is a hard
-requirement for a lab → core promotion (see `packages/lab/README.md`).
+experts can refine it without a code PR; reviewers block on it (it is `A1`–`A16`
+on the [Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)),
+and it is a hard requirement for a lab → core promotion (see
+`packages/lab/README.md`).
 
 Two repo-side rules worth restating here:
 
@@ -311,11 +325,12 @@ Two repo-side rules worth restating here:
   WAI-ARIA APG patterns and are tested once; a bespoke reimplementation of
   one is a review reject.
 - CI is the enforcement layer, not a replacement for the checklist: the
-  `pr-a11y` workflow runs an axe audit on every PR, a weekly workflow scans
-  the full component surface, and the `useAnnounce` lint rule rejects
-  hand-wired `aria-live` regions. axe only catches static, DOM-level issues —
-  keyboard behavior, focus management, and announcement timing are exactly
-  what the checklist and the component's unit tests cover.
+  `pr-a11y` job in `ci.yml` runs an axe audit on every PR that touches
+  components, a weekly workflow scans the full component surface, and the
+  `useAnnounce` lint rule rejects hand-wired `aria-live` regions. axe only
+  catches static, DOM-level issues — keyboard behavior, focus management, and
+  announcement timing are exactly what the checklist and the component's unit
+  tests cover.
 
 ## Working on the `astryx` CLI
 
@@ -353,7 +368,7 @@ Most of the conventions above are mechanical, so they're checked rather than rev
 | each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                                                                | `pnpm check:cli-structure`       |
 | every `CommandDoc`/`EnumDoc` matches the live CLI                                                                                                 | the drift harness                |
 
-You never hand-write the `.d.mts` declarations. `scripts/sync-api-types.mjs` emits them for both `api/` and `authoring/` from the `.mjs` JSDoc — gitignored, regenerated at `prepack`, and stamped `@generated`. Edit the JSDoc and run `pnpm -F @astryxdesign/cli sync:api-types`.
+You never hand-write the `.d.mts` declarations. `packages/cli/scripts/sync-api-types.mjs` emits them for both `api/` and `authoring/` from the `.mjs` JSDoc — gitignored, regenerated at `prepack`, and stamped `@generated`. Edit the JSDoc and run `pnpm -F @astryxdesign/cli sync:api-types`.
 
 That matters because a hand-written declaration _shadows_ the JSDoc in its `.mjs`, and both ways it can lie shipped once: a missing declaration made a strict consumer resolve the parser as `any` (surfacing only at pack time as TS7016, since local typechecks run with `checkJs` and never exercise the packed surface), and a stale `parseDoc` union silently dropped three doc kinds from the published type while still compiling. Generation removes both. The one declaration still written by hand is `authoring/index.d.ts`, the curated public barrel.
 
@@ -403,8 +418,9 @@ pnpm -F @astryxdesign/core test
 # With coverage
 pnpm test:coverage
 
-# Screenshot tests
-pnpm test:screenshots
+# Accessibility and RTL audits over the built Storybook (see below)
+pnpm a11y:audit
+pnpm rtl:audit
 ```
 
 ### Test Structure
@@ -452,6 +468,28 @@ When the audit reports baseline entries as "resolved", delete them from
 > third of the success criteria). A green `pr-a11y` job does not mean a
 > component is accessible — keyboard flows, focus order, screen-reader
 > semantics, and contrast in context still need manual checks.
+
+### RTL audits
+
+PRs that touch components also run an RTL audit (`pr-rtl`), scoped to the
+changed components like `pr-a11y`. It is soft-gated — findings show in the job
+summary but don't block. Repro locally with `pnpm rtl:audit -- --filter Avatar`
+(the `--` matters: `pnpm -F` is itself `--filter`). See
+`apps/storybook/rtl-audit/README.md`.
+
+### Modal close visibility guard
+
+The same `pr-a11y` job runs one more Chromium probe
+(`.github/scripts/modal-close-visibility.js`, or `pnpm guard:modal-close`
+against a built Storybook). It opens each modal `<dialog>` surface in the
+list at the top of that script, closes it, and fails if the dialog's computed
+`display` was `none` at the moment `close()` ran.
+
+A dialog hidden while still `:modal` swallows every click on the page, and a
+browser is not obliged to release that when `close()` finally runs — Safari
+26.1 did not (#4290). The ordering comes from a CSS transition, so jsdom
+cannot see it and the unit suites pass either way. Add a target here when a
+component closes a `<dialog>` on a delay.
 
 ## Versioning & Releases
 
@@ -520,11 +558,68 @@ Labels signal what's open for contribution:
 For **pull requests**, use GitHub's native **Draft** state to signal "not ready to review/merge
 yet" — open the PR as a draft and mark it ready for review when it's done.
 
+## What's expected of a change
+
+The bar — what a change has to carry, and what blocks — lives on the
+**[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)**.
+It is stated there once, so it cannot drift between this file, the reviewer
+instructions, and the wiki. Read it before you open a PR: it is the same page
+the reviewer applies to your change, and every check carries an id
+(`A8`, `T1`, `P2`…) so a finding always points back to the rule behind it.
+
+What you will find there:
+
+- **[The bright lines that block](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#the-checks)** —
+  hardcoded colors (`T1`, `T3`) · removing a themeable surface (`T2`) · raw CSS
+  where StyleX suffices (`T8`) or raw HTML where a primitive exists (`T29`) · a
+  broken accessible path (`A8`) and the accessibility bright lines (`A1`, `A3`,
+  `A14`) · hardcoded user-facing strings (`I1`, `I2`, `A16`) · public
+  API-convention violations (`P1`–`P10`) · dropped passthroughs and breaking
+  changes (`P2`, `P11`, `P12`) · a public-repo leak (`L15`) · a missing
+  changeset (`X20`). Severity is set by **what breaks if it ships**, not by how
+  likely the trigger is — the rubric states each rule, its exceptions, and how
+  it is judged.
+- **[The bar for your kind of change](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)** —
+  a bug fix owes evidence it was broken before and is fixed now; a new feature
+  runs the automatable checks plus whatever the diff touches; a new component in
+  `core` gets a full audit; a new component in `lab` is deliberately lax, with
+  the audit as the **promotion gate** rather than an entry fee.
+- **[Which checks your diff earns](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)** —
+  a trigger table from what you touched to the checks that fire, so a two-line
+  fix is not reviewed like a new component.
+- **[Recorded component grades](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#recording-an-audit)** —
+  audited components have a score and an open-blocker count in the wiki's
+  `component-scores.json` ledger, which is useful context on what shape a
+  component is in before you change it. Most components are unaudited, which
+  means "no evidence", not "fine". **No PR is gated on a score**, and you are
+  never asked to fix problems you inherited by touching a file.
+
+### Before you push
+
+These are this repo's mechanical gates. A reviewer stops at a red one rather
+than spending judgment on a PR that doesn't build.
+
+```bash
+pnpm lint:strict   # CI severity, not the local warn tier — a warn-tier-green PR is not lint-clean
+pnpm test          # the full suite, locally; CI is not your test runner
+pnpm build
+```
+
+`pnpm lint:strict` runs `pnpm check:repo` first, which covers `check:sync`,
+`check:package-boundaries`, `check:changesets`, `check:demo-media`,
+`check:executable-bits`, `check:cli-structure`, `check:use-client`, and
+`check:i18n-catalog` — so a green `lint:strict` also clears the changeset and
+`'use client'` gates.
+
+Also attach **before/after screenshots for any visual change**, and update the
+Storybook story for anything you added or altered.
+
 ## Pull Request Guidelines
 
 1. Create a feature branch from `main`
 2. Make your changes with tests
-3. Run `pnpm test` and `pnpm lint`
+3. Clear [Before you push](#before-you-push): `pnpm lint:strict`, `pnpm test`,
+   `pnpm build`
 4. Add a changeset if needed: `pnpm changeset:new`
 5. Open a PR with a clear description
 6. **Leave "Allow edits by maintainers" enabled** (it's checked by default when
@@ -541,9 +636,21 @@ yet" — open the PR as a draft and mark it ready for review when it's done.
 
 ## Code Style
 
+The design-system rules — StyleX usage, semantic tokens, theming, API
+conventions, accessibility — are on the wiki and indexed from the
+[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric).
+What this repo enforces mechanically:
+
 - TypeScript strict mode
-- Functional components with `forwardRef`
-- JSDoc comments for AI-assisted development
+- Functional components that declare `ref` as a prop (React 19 — no
+  `forwardRef`; `@eslint-react/no-forward-ref` rejects it, and
+  `@astryx/require-ref-prop` requires `ref?: React.Ref<T>` on a publicly
+  exported props interface)
+- `'use client';` as the first statement of any file importing a React client
+  API — only comments and blank lines may precede it (`pnpm check:use-client`,
+  part of `pnpm check:repo`)
+- JSDoc comments for AI-assisted development, with `@example` fences left
+  untagged (plain ` ``` `) or Storybook autodocs won't render them
 - Export types alongside components
 
 ## Troubleshooting

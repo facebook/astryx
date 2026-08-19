@@ -236,6 +236,102 @@ describe('Calendar', () => {
     expect(sunday).toBeDisabled();
   });
 
+  it('caps the end date to maxRangeSpan once a start is picked', async () => {
+    const user = userEvent.setup();
+
+    render(<Calendar mode="range" focusDate="2026-01-01" maxRangeSpan={7} />);
+
+    // Before a start is picked every day is selectable.
+    expect(getDayButton(20)).not.toBeDisabled();
+
+    // Pick Jan 10 as the start. A 7-day window spans Jan 4–16 (start ± 6).
+    await user.click(getDayButton(10));
+
+    expect(getDayButton(16)).not.toBeDisabled(); // 6 days after — the edge
+    expect(getDayButton(17)).toBeDisabled(); // 7 days after — beyond the cap
+    expect(getDayButton(4)).not.toBeDisabled(); // 6 days before — symmetric
+    expect(getDayButton(3)).toBeDisabled(); // 7 days before — beyond the cap
+  });
+
+  it('enforces minRangeSpan once a start is picked', async () => {
+    const user = userEvent.setup();
+
+    render(<Calendar mode="range" focusDate="2026-01-01" minRangeSpan={3} />);
+
+    // Pick Jan 10. A 3-day minimum forbids ends closer than 2 days away.
+    await user.click(getDayButton(10));
+
+    // The picked start itself stays enabled — it is the active selection
+    // anchor, not an unreachable end.
+    expect(getDayButton(10)).not.toBeDisabled();
+    expect(getDayButton(11)).toBeDisabled(); // 1 day apart — too short
+    expect(getDayButton(12)).not.toBeDisabled(); // 3-day span — allowed
+    expect(getDayButton(8)).not.toBeDisabled(); // 3-day span the other way
+    expect(getDayButton(9)).toBeDisabled(); // 2-day span — too short
+  });
+
+  it('clears the in-progress start when the anchor is clicked again', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <Calendar
+        mode="range"
+        focusDate="2026-01-01"
+        onChange={handleChange}
+        minRangeSpan={3}
+      />,
+    );
+
+    // Pick Jan 10 as the start, then click it again.
+    await user.click(getDayButton(10));
+    await user.click(getDayButton(10));
+
+    // No zero-length range is committed…
+    expect(handleChange).not.toHaveBeenCalled();
+
+    // …and the start is cleared: the days that minRangeSpan disabled around
+    // the old anchor are selectable again, so a new start can be placed there.
+    expect(getDayButton(11)).not.toBeDisabled();
+    expect(getDayButton(9)).not.toBeDisabled();
+  });
+
+  it('does not apply range-span constraints in single mode', async () => {
+    const user = userEvent.setup();
+
+    render(<Calendar focusDate="2026-01-01" maxRangeSpan={7} />);
+
+    // A picked single date must not disable far-away days.
+    await user.click(getDayButton(10));
+    expect(getDayButton(25)).not.toBeDisabled();
+  });
+
+  it('keeps a controlled value that is wider than maxRangeSpan (selection-only)', () => {
+    // The span constraint governs which days are pickable, not validation of
+    // an already-set value — so a 15-day value under a 7-day cap stays
+    // rendered and is never silently rewritten.
+    render(
+      <Calendar
+        mode="range"
+        value={{start: '2026-01-05', end: '2026-01-20'}}
+        focusDate="2026-01-01"
+        maxRangeSpan={7}
+      />,
+    );
+
+    // No selection is in progress (both endpoints are set), so no anchor →
+    // every day is pickable and both endpoints render selected.
+    expect(getDayButton(20)).not.toBeDisabled();
+    expect(getDayButton(5).closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(getDayButton(20).closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
   // ─── Multi-Month ─────────────────────────────────────────────
 
   it('renders two months when numberOfMonths={2}', () => {

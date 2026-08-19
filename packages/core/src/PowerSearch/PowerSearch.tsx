@@ -54,6 +54,7 @@ import {formatFilterValue} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
+import {truncateCharacters} from '../utils/characters';
 import {useTranslator} from '../i18n';
 import type {
   PowerSearchConfig,
@@ -104,7 +105,6 @@ const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
     minWidth: 400,
-    marginTop: spacingVars['--spacing-1'],
   },
 });
 
@@ -118,7 +118,9 @@ const resultCountStyles = stylex.create({
 });
 
 function truncateString(value: string, limit: number): string {
-  return value.length > limit + 3 ? value.slice(0, limit) + '...' : value;
+  // Same semantics as before — strings within limit + 3 pass through, longer
+  // ones cut to limit + '...' — but counted in characters, not code units.
+  return truncateCharacters(value, limit + 3, '...');
 }
 
 function getEnumLabel(values: ReadonlyArray<EnumItem>, value: string): string {
@@ -1053,6 +1055,7 @@ export function PowerSearch({
       {popover.render(popoverContent, {
         placement: 'below',
         alignment: 'start',
+        offset: spacingVars['--spacing-1'],
         xstyle: [popoverLayerStyles.layer, layerAnimations.below],
       })}
     </>

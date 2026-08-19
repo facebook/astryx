@@ -44,6 +44,7 @@ import {useContainerReveal} from '../hooks/useContainerReveal';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
@@ -159,14 +160,6 @@ const styles = stylex.create({
   },
   interactive: {
     cursor: 'pointer',
-    outline: {
-      default: null,
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
   },
   // Hover/pressed overlay — the exact same treatment as ClickableCard and
   // SelectableCard. A transparent `::after` tints on hover/press instead of
@@ -214,6 +207,7 @@ const styles = stylex.create({
   },
   removeButtonOverrides: {
     '--_button-radius': `calc(${radiusVars['--radius-element']} - ${spacingVars['--spacing-1']})`,
+    position: 'relative',
     height: 20,
     minWidth: 20,
     // Fixed colors instead of luminance-adapting theme: a translucent scrim
@@ -221,6 +215,15 @@ const styles = stylex.create({
     // without sampling pixel brightness.
     backgroundColor: colorVars['--color-overlay'],
     color: colorVars['--color-on-dark'],
+    '--_thumbnail-hit-inset': {
+      default: '0px',
+      '@media (pointer: coarse)': '-2px',
+    },
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 'var(--_thumbnail-hit-inset)',
+    },
   },
   disabled: {
     opacity: 0.5,
@@ -402,7 +405,7 @@ export function Thumbnail({
       {...props}>
       <div
         {...mergeProps(
-          stylex.props(
+          focusOutlineProps.focusWithin(
             styles.imageContainer,
             isInteractive && styles.interactive,
             isInteractive && styles.overlay,

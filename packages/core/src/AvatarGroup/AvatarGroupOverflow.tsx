@@ -26,6 +26,7 @@ import {mergeProps} from '../utils';
 import {useAvatarGroup} from './AvatarGroupContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 const BORDER_WIDTH = 2;
@@ -93,14 +94,6 @@ const styles = stylex.create({
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']}), linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
     },
     // Focus ring via focus-visible
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: null,
-      ':focus-visible': '2px',
-    },
   },
   overlap: {
     marginInlineStart: 'var(--_avatar-group-overlap)',
@@ -153,6 +146,7 @@ export function AvatarGroupOverflow({
 }: AvatarGroupOverflowProps): ReactNode {
   const t = useTranslator();
   const group = useAvatarGroup();
+  const size = group?.size ?? 'md';
   const numericSize = group?.numericSize ?? 36;
   const overlap = group?.overlap ?? 0;
 
@@ -169,8 +163,8 @@ export function AvatarGroupOverflow({
         aria-label={label}
         data-avatar-item=""
         {...mergeProps(
-          themeProps('avatar-group-overflow'),
-          stylex.props(
+          themeProps('avatar-group-overflow', {size}),
+          focusOutlineProps.focusVisible(
             styles.base,
             styles.button,
             styles.overlap,
@@ -193,7 +187,7 @@ export function AvatarGroupOverflow({
       {...rest}
       aria-label={label}
       {...mergeProps(
-        themeProps('avatar-group-overflow'),
+        themeProps('avatar-group-overflow', {size}),
         stylex.props(
           styles.base,
           styles.overlap,

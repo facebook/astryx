@@ -60,7 +60,7 @@ export const docs = {
       name: 'marks',
       type: 'ReadonlyArray<{value: number; label: string}>',
       description:
-        'Fixed target marks drawn on the track at values in the same 0..max scale as value (e.g. a goal line). They stay visible whether progress is below or past them, and take their color from what they sit on: a mark inside the filled area uses the fill variant\'s on-color (on-accent, on-warning, on-error, …), a mark still out on the bare track uses the primary text color (the secondary one on a disabled bar, which dims everything it draws). Each mark requires a label — it is the mark\'s accessible name and the text revealed via a tooltip on hover/focus. Ignored when indeterminate.',
+        'Fixed target marks drawn on the track at values in the same 0..max scale as value (e.g. a goal line). They stay visible whether progress is below or past them, and take their color from what they sit on: a mark inside the filled area uses the fill variant\'s on-color (on-accent, on-warning, on-error, and so on), a mark still out on the bare track uses the primary text color (the secondary one on a disabled bar, which dims everything it draws). Each mark requires a label: it is the mark\'s accessible name and the text revealed via a tooltip on hover/focus. Ignored when indeterminate.',
     },
     {
       name: 'isDisabled',
@@ -84,6 +84,14 @@ export const docs = {
         className: 'astryx-progressbar-mark',
         visualProps: ['variant', 'placement'],
       },
+    ],
+    vars: [
+      {name: '--_progressbar-mark-width', description: 'Target mark tick width', default: '2px', private: true},
+      {name: '--_progressbar-mark-height', description: 'Target mark tick height', default: '8px', private: true},
+    ],
+    derived: [
+      {property: 'width', vars: ['--_progressbar-mark-width'], replaces: true},
+      {property: 'height', vars: ['--_progressbar-mark-height'], replaces: true},
     ],
   },
   usage: {
@@ -181,6 +189,14 @@ export const docsZh = {
         className: 'astryx-progressbar-mark',
         visualProps: ['variant', 'placement'],
       },
+    ],
+    vars: [
+      {name: '--_progressbar-mark-width', description: '目标标记刻度宽度', default: '2px', private: true},
+      {name: '--_progressbar-mark-height', description: '目标标记刻度高度', default: '8px', private: true},
+    ],
+    derived: [
+      {property: 'width', vars: ['--_progressbar-mark-width'], replaces: true},
+      {property: 'height', vars: ['--_progressbar-mark-height'], replaces: true},
     ],
   },
   usage: {

@@ -13,12 +13,10 @@
 import type {OperatorValue, FilterValue, EnumItem} from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {TranslatorFn} from '../i18n';
+import {truncateCharacters} from '../utils/characters';
 
 function truncate(str: string, maxLength: number): string {
-  if (str.length <= maxLength) {
-    return str;
-  }
-  return str.slice(0, maxLength - 1) + '\u2026';
+  return truncateCharacters(str, maxLength);
 }
 
 function formatEnumLabel(

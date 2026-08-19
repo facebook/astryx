@@ -323,8 +323,11 @@ export const neutralTheme = defineTheme({
 
     // =========================================================================
     // Radius — slightly larger than default (kept as-is)
+    // --radius-none and --radius-full are always fixed and must never be
+    // scaled by a theme (see defineTheme's radius config docs) — 0 and
+    // 9999px respectively, matching @astryxdesign/core's own defaults.
     // =========================================================================
-    '--radius-none': '0.25rem',
+    '--radius-none': '0px',
     '--radius-inner': '0.375rem',
     '--radius-element': '0.625rem',
     '--radius-container': '0.75rem',
@@ -525,15 +528,17 @@ export const neutralTheme = defineTheme({
     //          to a deep tinted bg + light text rather than locking the
     //          light-mode pastel.
     //
-    // The inner-header *-muted token is forced transparent so the outer
-    // tinted background shows through cleanly.
+    // The inner-header *-muted token carries the tinted background for every
+    // status, info included. A theme override that sets a plain CSS property
+    // instead lands in @layer astryx-theme, which StyleX's @layer priority4
+    // outranks, so `backgroundColor` here would silently do nothing and the
+    // info banner would paint no background at all.
     //
     // Status overrides reference --color-text-{hue} so text/icon colors
     // stay in sync with the palette anchors automatically.
     banner: {
       'status:info': {
-        backgroundColor: 'var(--color-background-blue)',
-        '--color-accent-muted': 'transparent',
+        '--color-accent-muted': 'var(--color-background-blue)',
         '--color-text-primary': 'var(--color-text-blue)',
         '--color-text-secondary': 'var(--color-text-blue)',
         '--color-accent': 'var(--color-text-blue)',

@@ -24,10 +24,16 @@ export const docs = {
       {
         className: 'astryx-selector',
         visualProps: ['variant', 'size', 'status'],
+        states: ['disabled'],
       },
       {className: 'astryx-selector-option'},
-      {className: 'astryx-selector-clear-icon'},
+      {className: 'astryx-selector-search'},
+      {className: 'astryx-selector-section-heading'},
+      {className: 'astryx-selector-empty-state'},
+      {className: 'astryx-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
       {className: 'astryx-selector-indicator-icon', states: ['state']},
+      {className: 'astryx-selector-check'},
+      {className: 'astryx-selector-popup'},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
@@ -154,6 +160,13 @@ export const docs = {
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
     },
     {
+      name: 'indicatorPosition',
+      type: "'start' | 'end'",
+      description:
+        'Which edge of the option row carries the selected mark. start reserves a mark column ahead of every label so they stay aligned, the way a native menu does; end is the house convention shared with Typeahead and CommandPalette.',
+      default: "'end'",
+    },
+    {
       name: 'width',
       type: 'SizeValue',
       description:
@@ -169,7 +182,7 @@ export const docs = {
   components: [{name: 'SelectorOption'}],
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,
@@ -271,7 +284,7 @@ export const docs = {
 export const docsZh = {
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,
@@ -363,7 +376,7 @@ export const docsZh = {
 export const docsDense = {
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,

@@ -44,6 +44,44 @@ export const docs = {
       ],
     },
 
+    // ── Loading Custom Fonts ────────────────────────────────────────────────
+    {
+      title: 'Loading Custom Fonts',
+  category: 'foundations',
+      content: [
+        {
+          type: 'prose',
+          text: 'Astryx never loads font files. defineTheme and the built CSS only set font-family — naming a webfont (Fraunces, JetBrains Mono, …) makes every browser look for it, and quietly fall back when the app has not loaded it. `astryx theme build` warns when a theme names families that are neither CSS generics nor common system fonts and prints the snippet to add; loading the font is always the app\'s job.',
+        },
+        {
+          type: 'code',
+          lang: 'html',
+          label: 'Google Fonts — add to your document <head>',
+          code: `<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=JetBrains+Mono&display=swap"
+/>`,
+        },
+        {
+          type: 'code',
+          lang: 'css',
+          label: 'Self-hosted — one @font-face per family and weight',
+          code: `@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces.woff2') format('woff2');
+  font-weight: 400 700; /* variable-font range, or one weight per file */
+  font-display: swap; /* fallback text stays visible while the font loads */
+}`,
+        },
+        {
+          type: 'prose',
+          text: "Always pair a webfont with a real fallback stack — metric-similar system fonts plus a generic — so text stays readable before the font loads and wherever it never does: defineTheme({typography: {heading: {family: 'Fraunces', fallbacks: 'Georgia, serif'}}}).",
+        },
+      ],
+    },
+
     // ── Font Sizes ──────────────────────────────────────────────────────────
     {
       title: 'Font Sizes',
@@ -122,7 +160,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Display text often needs heading semantics for accessibility. Use the type prop on Heading to apply display styling while preserving the correct HTML element: <Heading level={1} type="display-1"> gives you display-1 styling with an <h1> tag, so screen readers see the correct document outline.',
+          text: 'Display text often needs heading semantics for accessibility. Use the type prop on Heading to apply display styling while preserving the correct HTML element: `<Heading level={1} type="display-1">` gives you display-1 styling with an `<h1>` tag, so screen readers see the correct document outline.',
         },
       ],
     },
@@ -205,7 +243,7 @@ const denseTheme = defineTheme({
           items: [
             'Use Heading for document headings and Text for everything else; they apply the full type scale automatically.',
             'Adjust typography holistically: change base and ratio in defineTheme to shift the entire ramp (e.g. { base: 16, ratio: 1.25 } for editorial, { base: 12, ratio: 1.125 } for dense UI).',
-            'Use display types with as="h1" (or h2/h3) when display text is a page heading; this preserves accessibility while giving you display-level sizing. Or better, use <Heading level={1} type="display-1"> which handles both semantics and styling.',
+            'Use display types with as="h1" (or h2/h3) when display text is a page heading; this preserves accessibility while giving you display-level sizing. Or better, use `<Heading level={1} type="display-1">` which handles both semantics and styling.',
             'Let line-height snap to the 4px grid via the type scale; expandTypeScale computes leading automatically from base and ratio.',
             'Use the supporting type for secondary information: timestamps, helper text, metadata, captions.',
             'Use accessibilityLevel on Heading when the visual hierarchy doesn\u0027t match the document outline (e.g. sidebar or card headings).',

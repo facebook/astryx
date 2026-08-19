@@ -4,7 +4,7 @@
 
 /**
  * @file Banner.tsx
- * @input Uses React useState, Button, Icon (with registry string names), StyleX
+ * @input Uses React useState/useRef/useId, Button, Icon (with registry string names), StyleX
  * @output Exports Banner component, BannerProps, BannerStatus, BannerContainer types
  * @position Core implementation; consumed by index.ts, tested by Banner.test.tsx
  *
@@ -12,9 +12,16 @@
  * - Root container: layout-only wrapper (flex column), no visual styling, no theme target
  * - Header area (themeProps 'banner'): colored status background with icon, title, description, actions, dismiss
  * - Content area (themeProps 'banner-content'): collapsible card background for additional content (children)
+ * - Status icon (themeProps 'banner-icon'): the target rides on the default
+ *   <Icon> itself — the element that paints — so 'status:X' overrides reach
+ *   the glyph (#4166); for a custom `icon` node it stays on the layout wrapper
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - When children are provided, a collapse/expand toggle button appears in the end area
+ *
+ * A status added through `BannerStatusMap` augmentation has no entry in the
+ * status lookups, so it renders with no status fill, no default glyph and the
+ * polite `role="status"` rather than losing its ARIA role entirely.
  *
  * Title and description render as <div> (not <p>): they accept arbitrary
  * ReactNode content, and <p> cannot legally contain block-level children
@@ -31,12 +38,12 @@
  * - /packages/cli/assets/templates/blocks/components/Banner/ (showcase blocks)
  */
 
-import {useId, useState, type ReactNode} from 'react';
+import {useId, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {Button} from '../Button';
 import {Icon} from '../Icon';
-import type {IconName} from '../Icon';
+import type {IconName, IconColor} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -48,7 +55,7 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {composeEventHandlers, isRenderable, mergeProps} from '../utils';
 import type {Elevation} from '../utils/types';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
@@ -109,6 +116,9 @@ export interface BannerProps extends BaseProps<HTMLDivElement> {
    * Action button rendered in the header area (end-aligned).
    * Typically an Button with a secondary or ghost variant.
    *
+   * When the header is too narrow to hold the actions and a readable text
+   * column, the whole end area wraps to its own row below the text.
+   *
    * @example
    * ```
    * endContent={<Button label="Retry" variant="ghost" onClick={handleRetry} />}
@@ -144,37 +154,38 @@ export interface BannerProps extends BaseProps<HTMLDivElement> {
 }
 
 // =============================================================================
-// Status → Icon mapping
+// Status lookups
 // =============================================================================
 
-const defaultIconNames: Record<BannerStatus, IconName> = {
+// `BannerStatus` is `keyof BannerStatusMap`, and index.ts documents augmenting
+// that interface to add a status. Every lookup below is therefore partial: an
+// augmented status the library has never heard of falls through to the base
+// treatment (no status fill, no glyph, the polite role) instead of resolving to
+// `undefined` and dropping the ARIA role along with it.
+
+const defaultIconNames: Partial<Record<BannerStatus, IconName>> = {
   info: 'info',
   warning: 'warning',
   error: 'error',
   success: 'success',
 };
 
-// =============================================================================
-// Status → ARIA role mapping
-// =============================================================================
-
-const statusRole: Record<BannerStatus, 'alert' | 'status'> = {
+const statusRole: Partial<Record<BannerStatus, 'alert' | 'status'>> = {
   info: 'status',
   warning: 'alert',
   error: 'alert',
   success: 'status',
 };
 
-// =============================================================================
-// Status → Icon color mapping
-// =============================================================================
+/** An unknown status is not urgent by definition, so it announces politely. */
+const FALLBACK_ROLE = 'status';
 
-const statusIconColor = {
+const statusIconColor: Partial<Record<BannerStatus, IconColor>> = {
   info: 'accent',
   warning: 'warning',
   error: 'error',
   success: 'success',
-} as const;
+};
 
 // =============================================================================
 // Styles
@@ -190,24 +201,28 @@ const styles = stylex.create({
   // When elevated, a card-container banner rounds its root so the shadow
   // follows the same silhouette as the header/content border-radius.
   rootElevatedCard: {
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: `var(--_banner-radius, ${radiusVars['--radius-container']})`,
   },
   // Header area — colored status background with icon, title, description, actions
   // This is the primary theme target ('banner')
   header: {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: spacingVars['--spacing-2'],
+    flexWrap: 'wrap',
+    columnGap: spacingVars['--spacing-2'],
+    // The end area carries a -4px block margin (see endArea), so the wrapped
+    // row reads as one step of spacing rather than two.
+    rowGap: spacingVars['--spacing-3'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
   },
   // Border-radius for card container: all corners when standalone, top-only when content is visible
   headerCardStandalone: {
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: `var(--_banner-radius, ${radiusVars['--radius-container']})`,
   },
   headerCardWithContent: {
-    borderStartStartRadius: radiusVars['--radius-container'],
-    borderStartEndRadius: radiusVars['--radius-container'],
+    borderStartStartRadius: `var(--_banner-radius, ${radiusVars['--radius-container']})`,
+    borderStartEndRadius: `var(--_banner-radius, ${radiusVars['--radius-container']})`,
     borderEndStartRadius: 0,
     borderEndEndRadius: 0,
   },
@@ -223,6 +238,15 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
+  // The wrap threshold, applied only when there is `endContent` to wrap. Flex
+  // breaks a line when the items no longer fit at their base size, so this
+  // basis is what moves the end area to its own row instead of letting it hold
+  // the header and squeeze the title down to one word per line. In rem so it
+  // tracks the user's font size. The dismiss and expand controls alone are
+  // narrow enough never to need it.
+  headerContentWithEndContent: {
+    flexBasis: '8rem',
+  },
   title: {
     margin: 0,
     fontFamily: 'inherit',
@@ -230,6 +254,10 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
+    // A single unbroken token (a URL, an ID, a German compound) otherwise sets
+    // the flex item's min-content width and pushes the page into horizontal
+    // scrolling at 320px, which is a WCAG 1.4.10 reflow failure.
+    overflowWrap: 'anywhere',
   },
   description: {
     margin: 0,
@@ -238,6 +266,7 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-normal'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
+    overflowWrap: 'anywhere',
   },
   iconWrapper: {
     display: 'flex',
@@ -247,8 +276,13 @@ const styles = stylex.create({
   endArea: {
     display: 'flex',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
+    // Bounded so a group of actions wider than the row wraps within itself
+    // rather than pushing the banner past the viewport (WCAG 1.4.10).
+    maxWidth: '100%',
     marginInlineStart: 'auto',
     marginBlock: `calc(-1 * (${spacingVars['--spacing-3']} - ${spacingVars['--spacing-2']}))`,
   },
@@ -259,20 +293,21 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     borderInlineStartWidth: borderVars['--border-width'],
     borderInlineEndWidth: borderVars['--border-width'],
-    borderBottomWidth: borderVars['--border-width'],
+    borderBlockEndWidth: borderVars['--border-width'],
     borderInlineStartStyle: 'solid',
     borderInlineEndStyle: 'solid',
-    borderBottomStyle: 'solid',
+    borderBlockEndStyle: 'solid',
     borderInlineStartColor: colorVars['--color-border'],
     borderInlineEndColor: colorVars['--color-border'],
-    borderBottomColor: colorVars['--color-border'],
+    borderBlockEndColor: colorVars['--color-border'],
   },
   contentAreaCard: {
-    borderEndStartRadius: radiusVars['--radius-container'],
-    borderEndEndRadius: radiusVars['--radius-container'],
+    borderEndStartRadius: `var(--_banner-radius, ${radiusVars['--radius-container']})`,
+    borderEndEndRadius: `var(--_banner-radius, ${radiusVars['--radius-container']})`,
   },
+  // Applied to the chevron <Icon> itself (via `xstyle`) rather than a wrapper,
+  // so the element that rotates is the element a theme targets.
   chevron: {
-    display: 'inline-flex',
     transitionProperty: 'transform',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -299,6 +334,17 @@ const statusStyles = stylex.create({
     backgroundColor: colorVars['--color-success-muted'],
   },
 });
+
+/**
+ * Narrows an augmented `BannerStatus` to one the style map actually carries,
+ * so an unknown status renders with no status fill rather than crashing the
+ * lookup. StyleX style maps cannot be declared `Partial`, hence the guard.
+ */
+function hasStatusStyle(
+  status: BannerStatus,
+): status is BannerStatus & keyof typeof statusStyles {
+  return Object.prototype.hasOwnProperty.call(statusStyles, status);
+}
 
 // Resting elevation for the banner. Applied to the root so the shadow wraps
 // the whole banner (header + optional content). 'none' is the default and
@@ -377,28 +423,63 @@ export function Banner({
   className,
   style,
   ref,
+  onFocusCapture,
+  onPointerDownCapture,
   ...rest
 }: BannerProps) {
   const t = useTranslator();
   const [isDismissed, setIsDismissed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
+  // The element focus came from before it entered the banner. Dismissing
+  // unmounts the whole banner, dismiss button included, so without a handoff
+  // the browser drops focus to <body> and a keyboard user loses their place.
+  // ToastViewport makes the same handoff when a focused toast is dismissed.
+  const focusOriginRef = useRef<HTMLElement | null>(null);
   // Links the expand/collapse toggle to the content region it shows/hides so
   // assistive tech can move from the button to its controlled content
   // (disclosure pattern). The region is conditionally rendered, so aria-controls
   // below is set only while it's mounted to avoid a dangling reference.
   const contentId = useId();
   const defaultIconName = defaultIconNames[status];
-  const role = statusRole[status];
+  const role = statusRole[status] ?? FALLBACK_ROLE;
   const iconColor = statusIconColor[status];
-  const hasChildren = children != null;
+  const hasChildren = isRenderable(children);
 
   if (isDismissed) {
     return null;
   }
 
+  // `focusin` reports the element focus came *from* as relatedTarget; on
+  // pointerdown focus has not moved yet, so document.activeElement is it.
+  const rememberFocusOrigin = (candidate: EventTarget | null, root: Node) => {
+    if (
+      candidate instanceof HTMLElement &&
+      candidate !== document.body &&
+      !root.contains(candidate)
+    ) {
+      focusOriginRef.current = candidate;
+    }
+  };
+
+  const handleFocusCapture = (event: React.FocusEvent<HTMLDivElement>) => {
+    rememberFocusOrigin(event.relatedTarget, event.currentTarget);
+  };
+
+  const handlePointerDownCapture = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    rememberFocusOrigin(document.activeElement, event.currentTarget);
+  };
+
   const handleDismiss = () => {
+    const origin = focusOriginRef.current;
     setIsDismissed(true);
     onDismiss?.();
+    // Move focus before React removes the subtree, so the browser never has a
+    // frame where the focused node is gone.
+    if (origin?.isConnected) {
+      origin.focus();
+    }
   };
 
   const handleToggleExpand = () => {
@@ -406,11 +487,11 @@ export function Banner({
   };
 
   // Show the end area if there are actions, dismiss, or a collapsible toggle
-  const showEndArea = endContent != null || isDismissable || hasChildren;
+  const showEndArea = isRenderable(endContent) || isDismissable || hasChildren;
   // Center items vertically when there's only a title (no description)
   // and the banner has action buttons
-  const hasActions = endContent != null || isDismissable;
-  const isSingleLine = description == null && hasActions;
+  const hasActions = isRenderable(endContent) || isDismissable;
+  const isSingleLine = !isRenderable(description) && hasActions;
 
   const showContent = hasChildren && isExpanded;
   const isCard = container === 'card';
@@ -419,6 +500,11 @@ export function Banner({
     <div
       ref={ref}
       role={role}
+      onFocusCapture={composeEventHandlers(onFocusCapture, handleFocusCapture)}
+      onPointerDownCapture={composeEventHandlers(
+        onPointerDownCapture,
+        handlePointerDownCapture,
+      )}
       {...mergeProps(
         stylex.props(
           styles.root,
@@ -437,28 +523,48 @@ export function Banner({
           stylex.props(
             styles.header,
             isSingleLine && styles.headerCentered,
-            statusStyles[status],
+            hasStatusStyle(status) && statusStyles[status],
             isCard &&
               (showContent
                 ? styles.headerCardWithContent
                 : styles.headerCardStandalone),
           ),
         )}>
+        {/* The 'banner-icon' target rides on the element that paints: the
+            default <Icon> below, or this wrapper when a custom `icon` node
+            is passed (core never injects props into consumer elements, so
+            overrides reach it via inheritance). The wrapper itself stays
+            layout-only. */}
         <div
-          {...mergeProps(
-            themeProps('banner-icon', {status}),
-            stylex.props(styles.iconWrapper),
-          )}
+          {...(isRenderable(icon)
+            ? mergeProps(
+                themeProps('banner-icon', {status}),
+                stylex.props(styles.iconWrapper),
+              )
+            : stylex.props(styles.iconWrapper))}
           aria-hidden="true">
-          {icon != null ? (
+          {isRenderable(icon) ? (
             icon
-          ) : (
-            <Icon icon={defaultIconName} size="md" color={iconColor} />
-          )}
+          ) : defaultIconName != null ? (
+            // Applied to the status <Icon> itself rather than the wrapper, so
+            // the element that paints the glyph is the element a theme
+            // targets — a 'banner-icon' 'status:X' color override beats the
+            // Icon's own variant from @layer astryx-theme (#4166).
+            <Icon
+              icon={defaultIconName}
+              size="md"
+              color={iconColor}
+              {...themeProps('banner-icon', {status})}
+            />
+          ) : null}
         </div>
-        <div {...stylex.props(styles.headerContent)}>
+        <div
+          {...stylex.props(
+            styles.headerContent,
+            isRenderable(endContent) && styles.headerContentWithEndContent,
+          )}>
           <div {...stylex.props(styles.title)}>{title}</div>
-          {description != null && (
+          {isRenderable(description) && (
             <div {...stylex.props(styles.description)}>{description}</div>
           )}
         </div>
@@ -484,13 +590,15 @@ export function Banner({
                     : t('@astryx.banner.expand')
                 }
                 icon={
-                  <span
-                    {...stylex.props(
+                  <Icon
+                    icon="chevronDown"
+                    size="sm"
+                    color="inherit"
+                    xstyle={[
                       styles.chevron,
                       isExpanded && styles.chevronExpanded,
-                    )}>
-                    <Icon icon="chevronDown" size="sm" color="inherit" />
-                  </span>
+                    ]}
+                  />
                 }
                 onClick={handleToggleExpand}
                 aria-expanded={isExpanded}

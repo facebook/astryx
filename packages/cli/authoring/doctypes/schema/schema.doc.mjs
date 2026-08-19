@@ -190,7 +190,7 @@ export const doc = {
       type: 'list',
       style: 'dont',
       items: [
-        'Set `required: false` for optional fields — omit `required` entirely instead.',
+        'Set `required: false` for optional fields; omit `required` entirely instead.',
       ],
     },
   ],

@@ -16,6 +16,24 @@ import {formatTooltipLines} from './tooltipEntries';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 
+async function openTimestampHoverCard(): Promise<HTMLElement> {
+  const timestamp = document.querySelector('time');
+  if (timestamp == null) {
+    throw new Error('Expected Timestamp to render a <time> element');
+  }
+  const trigger = timestamp.parentElement;
+  if (trigger == null) {
+    throw new Error('Expected Timestamp to render a hover-card trigger');
+  }
+
+  fireEvent.mouseEnter(trigger);
+  await waitFor(() => {
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  return screen.getByRole('dialog', {hidden: true});
+}
+
 describe('Timestamp', () => {
   // The hover card is loaded lazily (React.lazy + Suspense), so its chunk
   // resolves asynchronously the first time a card renders. Warm the module
@@ -408,6 +426,50 @@ describe('Timestamp', () => {
     expect(el.getAttribute('aria-label')).toBeNull();
   });
 
+  // Timezone abbreviations like "PST" or "GMT+2" are unexpanded abbreviations
+  // to a screen-reader user (WCAG 3.1.4) — the AT-facing aria-label must spell
+  // the timezone out in full, while visible text keeps the compact short form.
+  it('uses the long timezone name in the aria-label (WCAG 3.1.4)', () => {
+    const oneHourAgo = new Date(Date.now() - 3600 * 1000);
+    render(
+      <Timestamp
+        value={oneHourAgo.getTime() / 1000}
+        format="relative"
+        hasTooltip={false}
+        data-testid="ts"
+      />,
+    );
+
+    const longTz =
+      new Intl.DateTimeFormat(undefined, {timeZoneName: 'long'})
+        .formatToParts(oneHourAgo)
+        .find(p => p.type === 'timeZoneName')?.value ?? '';
+    expect(longTz).not.toBe('');
+    expect(screen.getByTestId('ts').getAttribute('aria-label')).toContain(
+      longTz,
+    );
+  });
+
+  it('keeps the short timezone form in visible text when isTimezoneShown', () => {
+    const date = new Date('2026-03-25T10:00:00Z');
+    render(
+      <Timestamp
+        value="2026-03-25T10:00:00Z"
+        format="time"
+        isTimezoneShown
+        data-testid="ts"
+      />,
+    );
+
+    const tzPart = (form: 'short' | 'long') =>
+      new Intl.DateTimeFormat(undefined, {timeZoneName: form})
+        .formatToParts(date)
+        .find(p => p.type === 'timeZoneName')?.value ?? '';
+    const text = screen.getByTestId('ts').textContent ?? '';
+    expect(text).toContain(tzPart('short'));
+    expect(text).not.toContain(tzPart('long'));
+  });
+
   // --- Input handling ---
 
   it('accepts Unix timestamp in seconds', () => {
@@ -602,22 +664,32 @@ describe('Timestamp', () => {
       );
       const el = screen.getByTestId('ts');
 
-      // The card layer mounts inline and carries the full absolute time (the
-      // same string as the aria-label) as its single default copyable row.
+      // The card carries the full absolute time in its visible form (short
+      // timezone abbreviation) as its single default copyable row. The
+      // aria-label spells the timezone out in full (WCAG 3.1.4), so the two
+      // strings intentionally differ — compare the card against an
+      // independently formatted short-form string after opening it.
       // Compare with normalized whitespace: Intl output can contain narrow
       // no-break spaces that jest-dom's matcher normalization would break on.
-      const card = await screen.findByRole('dialog', {hidden: true});
       const normalize = (s: string) => s.replace(/\s+/g, ' ');
-      expect(normalize(card.textContent ?? '')).toContain(
-        normalize(el.getAttribute('aria-label') ?? '\0'),
-      );
-
+      const datetime = new Date(el.getAttribute('datetime') ?? '');
+      const expected = new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short',
+      }).format(datetime);
       // Tab onto the timestamp — the only tab stop in the document.
       await user.tab();
       expect(el).toHaveFocus();
       await waitFor(() => {
         expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
       });
+      const card = screen.getByRole('dialog', {hidden: true});
+      expect(normalize(card.textContent ?? '')).toContain(normalize(expected));
     });
 
     it('does not add a tab stop when the hover card is disabled', () => {
@@ -701,24 +773,37 @@ describe('Timestamp', () => {
           .queryAllByRole('tooltip', {hidden: true})
           .filter(el => !/^(Copy|Copied)$/.test(el.textContent?.trim() ?? '')),
       ).toHaveLength(0);
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       // The default card is the named details card, exactly as the configured
       // one is.
       expect(card).toHaveAttribute('aria-label', 'Timestamp details');
-      // Exactly one row, carrying the full absolute time (the same string as
-      // the aria-label) with its own copy button.
+      // Exactly one row, carrying the full absolute time in its visible form
+      // (short timezone abbreviation) with its own copy button. The
+      // aria-label spells the timezone out in full (WCAG 3.1.4), so the two
+      // strings intentionally differ — compare the row against an
+      // independently formatted short-form string.
       expect(card.querySelectorAll('dd')).toHaveLength(1);
       expect(card.querySelectorAll('button')).toHaveLength(1);
 
       const normalize = (s: string) => s.replace(/\s+/g, ' ');
-      expect(normalize(card.textContent ?? '')).toContain(
-        normalize(screen.getByTestId('ts').getAttribute('aria-label') ?? '\0'),
+      const datetime = new Date(
+        screen.getByTestId('ts').getAttribute('datetime') ?? '',
       );
+      const expected = new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short',
+      }).format(datetime);
+      expect(normalize(card.textContent ?? '')).toContain(normalize(expected));
     });
 
     it("copies the default absolute row's value", async () => {
       render(<Timestamp value={Date.now() / 1000 - 3600} format="relative" />);
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       const rowValue = card.querySelector('dd')?.textContent ?? '';
       expect(rowValue).toBeTruthy();
       fireEvent.click(card.querySelector('button')!);
@@ -734,10 +819,11 @@ describe('Timestamp', () => {
 
     it("shows a 'Copy' tooltip on the copy button, flipping to 'Copied' after a copy", async () => {
       render(<Timestamp value={Date.now() / 1000 - 3600} format="relative" />);
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       const button = card.querySelector('button')!;
       // The visible tooltip content defaults to the short imperative 'Copy'
       // (the full "Copy <value>" string stays the button's aria-label).
+      fireEvent.mouseEnter(button);
       await waitFor(() =>
         expect(
           screen.getByText('Copy', {
@@ -804,7 +890,7 @@ describe('Timestamp', () => {
           .queryAllByRole('tooltip', {hidden: true})
           .filter(el => !/^(Copy|Copied)$/.test(el.textContent?.trim() ?? '')),
       ).toHaveLength(0);
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       expect(card).toHaveAttribute('aria-label', 'Timestamp details');
     });
 
@@ -820,7 +906,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       expect(card.querySelectorAll('dd')).toHaveLength(3);
       // Entries are read-only unless they opt in, so no copy buttons and no
       // trailing action column are rendered.
@@ -847,7 +933,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       // Three rows, but only the opted-in row carries a copy button.
       expect(card.querySelectorAll('dd')).toHaveLength(3);
       expect(card.querySelectorAll('button')).toHaveLength(1);
@@ -868,7 +954,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       const values = Array.from(card.querySelectorAll('dd')).map(
         el => el.textContent,
       );
@@ -892,7 +978,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       const [rowValue] = Array.from(card.querySelectorAll('dd')).map(
         el => el.textContent ?? '',
       );
@@ -923,7 +1009,7 @@ describe('Timestamp', () => {
           />
         </InternationalizationProvider>,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       fireEvent.click(card.querySelector('button')!);
       await waitFor(() => {
         expect(
@@ -943,7 +1029,7 @@ describe('Timestamp', () => {
       );
       // Without entries an absolute format has no hover surface at all;
       // configuring entries must not be silently ignored.
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       expect(card.textContent).toContain('UTC');
       // ...and the anchor becomes keyboard-reachable, as it is for relative.
       expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
@@ -1052,7 +1138,7 @@ describe('Timestamp', () => {
         />,
       );
       // autoThreshold={0} forces the absolute branch regardless of the clock.
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       expect(card.textContent).toContain('2026-02-19 17:00:00');
       expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
     });
@@ -1067,7 +1153,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       expect(card.textContent).toContain('2026-02-19 17:00:00');
     });
 
@@ -1083,7 +1169,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       // An unlabeled entry still emits its label cell, so the grid stays
       // aligned and the <dl> stays valid markup.
       expect(card.querySelectorAll('dt')).toHaveLength(3);
@@ -1121,7 +1207,7 @@ describe('Timestamp', () => {
             ]}
           />,
         );
-        const card = await screen.findByRole('dialog', {hidden: true});
+        const card = await openTimestampHoverCard();
         const values = Array.from(card.querySelectorAll('dd')).map(
           el => el.textContent,
         );
@@ -1171,10 +1257,14 @@ describe('Timestamp', () => {
       },
     );
 
-    it('renders the full style identically as the aria-label and as a line', () => {
+    it('renders the full style as the aria-label and as a line, differing only in zone-name spelling', () => {
       // 'full' is the one member with no visible-text counterpart — it backs
       // the accessible name of a relative timestamp and the tooltip's default
-      // line. Those two must not drift apart either.
+      // line. The two must not drift apart on anything but the zone name: the
+      // aria-label spells the zone out in full for assistive tech (WCAG 3.1.4),
+      // the visible line keeps the abbreviation. Comparing them after swapping
+      // the abbreviation for the spelled-out form keeps this a direct
+      // surface-to-surface check, so re-forking either path still fails here.
       render(
         <Timestamp
           value={VALUE}
@@ -1183,9 +1273,14 @@ describe('Timestamp', () => {
           data-testid="ts"
         />,
       );
-      const [line] = formatTooltipLines(new Date(VALUE), [{format: 'full'}]);
-      expect(line.value).toBe(
-        screen.getByTestId('ts').getAttribute('aria-label'),
+      const date = new Date(VALUE);
+      const tzPart = (form: 'short' | 'long') =>
+        new Intl.DateTimeFormat(undefined, {timeZoneName: form})
+          .formatToParts(date)
+          .find(p => p.type === 'timeZoneName')?.value ?? '';
+      const [line] = formatTooltipLines(date, [{format: 'full'}]);
+      expect(screen.getByTestId('ts').getAttribute('aria-label')).toBe(
+        line.value.replace(tzPart('short'), tzPart('long')),
       );
     });
   });

@@ -36,6 +36,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import {
   SideNavCollapseContext,
   type SideNavCollapseState,
+  type SideNavCollapsibleConfig,
   type SideNavImperativeCollapseHandle,
 } from './SideNavCollapseContext';
 import {SideNavCollapseButton} from './SideNavCollapseButton';
@@ -45,6 +46,7 @@ import {useResizable} from '../Resizable/useResizable';
 import type {ResizableConfig} from '../Resizable/useResizable';
 import {ResizeHandle} from '../Resizable/ResizeHandle';
 import {themeProps} from '../utils/themeProps';
+import {SizeProvider} from '../SizeContext/SizeContext';
 import {useTranslator} from '../i18n';
 
 // =============================================================================
@@ -143,6 +145,7 @@ const styles = stylex.create({
   },
   stickyBottomCollapsed: {
     paddingBlockStart: 0,
+    alignItems: 'center',
   },
   // Drawer footer — pushed to bottom of the scrollable content area
   drawerFooter: {
@@ -184,6 +187,13 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * Cascaded to the icon rows through `SizeContext` so the built-in collapse
+ * button and the consumer's `footerIcons` come out one height. An explicit
+ * `size` on a child still wins.
+ */
+const FOOTER_ICON_SIZE = 'sm';
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -196,6 +206,9 @@ export interface SideNavProps extends BaseProps<HTMLElement> {
    * Imperative collapse handle for SideNavCollapseButton instances rendered
    * outside this SideNav. This intentionally stays separate from `ref`, which
    * continues to expose the root HTMLElement.
+   *
+   * @deprecated Hand the same controlled `collapsible` config to SideNav and
+   * to the outside button instead.
    */
   handleRef?: React.Ref<SideNavImperativeCollapseHandle>;
 
@@ -269,21 +282,14 @@ export interface SideNavProps extends BaseProps<HTMLElement> {
    * - `true` — enables collapse with default toggle button and uncontrolled state
    * - Object — enables collapse with advanced configuration:
    *   - `defaultIsCollapsed` — start collapsed (uncontrolled)
-   *   - `isCollapsed` + `onCollapsedChange` — controlled mode
+   *   - `isCollapsed` + `onCollapsedChange` — controlled mode. Pass the same
+   *     object to a `SideNavCollapseButton` rendered outside this SideNav
    *   - `hasButton` — render built-in collapse button (default: true)
    *   - `buttonLabel` — accessibility label for the collapse button
    *
    * @default false
    */
-  collapsible?:
-    | boolean
-    | {
-        defaultIsCollapsed?: boolean;
-        isCollapsed?: boolean;
-        onCollapsedChange?: (isCollapsed: boolean) => void;
-        hasButton?: boolean;
-        buttonLabel?: string;
-      };
+  collapsible?: boolean | SideNavCollapsibleConfig;
 }
 
 // =============================================================================
@@ -374,6 +380,8 @@ export function SideNav({
   const toggle = useCallback(() => {
     const next = !collapsed;
 
+    // Deprecated `handleRef` path only: an out-of-tree button reads this
+    // snapshot while rendering, which can happen before SideNav re-renders.
     collapseStateRef.current = {
       ...collapseStateRef.current,
       isCollapsed: next,
@@ -428,7 +436,9 @@ export function SideNav({
           style,
         )}>
         {header}
-        <div {...stylex.props(styles.topbarIcons)}>{footerIcons}</div>
+        <div {...stylex.props(styles.topbarIcons)}>
+          <SizeProvider value={FOOTER_ICON_SIZE}>{footerIcons}</SizeProvider>
+        </div>
       </div>
     );
   }
@@ -440,7 +450,13 @@ export function SideNav({
 
   if (renderMode === 'drawer') {
     return (
-      <MobileNav header={header} data-testid={testId}>
+      <MobileNav
+        header={header}
+        data-testid={testId}
+        xstyle={xstyle}
+        className={className}
+        style={style}
+        {...props}>
         {topContent}
         {children}
         {hasDrawerFooter && (
@@ -448,7 +464,9 @@ export function SideNav({
             {footer}
             {footerIcons && (
               <div {...stylex.props(styles.drawerFooterIcons)}>
-                {footerIcons}
+                <SizeProvider value={FOOTER_ICON_SIZE}>
+                  {footerIcons}
+                </SizeProvider>
               </div>
             )}
           </div>
@@ -471,7 +489,9 @@ export function SideNav({
             {footer}
             {footerIcons && (
               <div {...stylex.props(styles.drawerFooterIcons)}>
-                {footerIcons}
+                <SizeProvider value={FOOTER_ICON_SIZE}>
+                  {footerIcons}
+                </SizeProvider>
               </div>
             )}
           </div>
@@ -543,8 +563,10 @@ export function SideNav({
               styles.footerRow,
               collapsed && styles.footerRowCollapsed,
             )}>
-            {showCollapseButton && <SideNavCollapseButton />}
-            {footerIcons}
+            <SizeProvider value={FOOTER_ICON_SIZE}>
+              {showCollapseButton && <SideNavCollapseButton />}
+              {footerIcons}
+            </SizeProvider>
           </div>
         </div>
       )}

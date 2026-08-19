@@ -4,8 +4,8 @@
 
 /**
  * @file ComplexSelector.tsx
- * @input Uses React, StyleX, Field, usePopover
- * @output Exports ComplexSelector component for custom selector surfaces
+ * @input Uses React, StyleX, Field, Icon slots, Layer positioning, and usePopover
+ * @output Exports a rich-selector shell with exact token-sized input and ghost triggers, plus an imperative open/close handle
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -13,12 +13,15 @@
  * - /packages/core/src/ComplexSelector/ComplexSelector.test.tsx
  * - /packages/core/src/ComplexSelector/index.ts
  * - /apps/storybook/stories/ComplexSelector.stories.tsx
+ * - /packages/cli/assets/templates/blocks/components/ComplexSelector/ (showcase blocks)
  */
 
 import React, {
   useCallback,
   useId,
+  useImperativeHandle,
   useOptimistic,
+  useRef,
   useTransition,
   type ReactNode,
 } from 'react';
@@ -26,22 +29,27 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
-import {Icon} from '../Icon';
+import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTranslator} from '../i18n';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {usePopover} from '../Popover/usePopover';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {
   colorVars,
   durationVars,
   easeVars,
+  fontWeightVars,
   radiusVars,
   sizeVars,
   spacingVars,
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
+import {composeEventHandlers} from '../utils/composeEventHandlers';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -97,25 +105,61 @@ const styles = stylex.create({
   placeholder: {
     color: colorVars['--color-text-secondary'],
   },
+  triggerGhost: {
+    width: 'auto',
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    backgroundImage: {
+      default: null,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+      },
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+    },
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within)': {
+        '@media (hover: hover)': 'none',
+      },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
+      ':active': 'scale(0.98)',
+    },
+  },
+  triggerGhostDisabled: {
+    backgroundImage: 'none',
+    transform: {
+      default: 'none',
+      ':active': 'none',
+    },
+  },
+  // Only what Icon does not already provide: `sm` gives the 16px box and
+  // `color="secondary"` the color, but the glyph still must not shrink inside
+  // the flex trigger.
   triggerIcon: {
     flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 16,
-    height: 16,
+  },
+  // Rotation lives on the chevron glyph itself (passed through `xstyle`), not
+  // on the layout wrapper above, so the icon's
+  // `complex-selector-indicator-icon` theme target and the open/closed
+  // transform sit on one element — a theme can restyle the mark and its
+  // rotation through a single selector. The wrapper keeps only layout.
+  triggerIconRotation: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     transformOrigin: 'center',
-    color: colorVars['--color-icon-secondary'],
   },
   triggerIconOpen: {
     transform: 'rotate(180deg)',
   },
   popover: {
     minWidth: 'anchor-size(width)',
-    marginBlockStart: spacingVars['--spacing-1'],
   },
   content: {
     boxSizing: 'border-box',
@@ -124,24 +168,20 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-3'],
   },
   sm: {
-    minHeight: sizeVars['--size-element-sm'],
+    height: sizeVars['--size-element-sm'],
   },
   md: {
-    minHeight: sizeVars['--size-element-md'],
+    height: sizeVars['--size-element-md'],
   },
   lg: {
-    minHeight: sizeVars['--size-element-lg'],
+    height: sizeVars['--size-element-lg'],
   },
   disabled: {
     cursor: 'not-allowed',
   },
-  focusRing: {
-    ':focus-within': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: '2px',
-    },
-  },
 });
+
+export type ComplexSelectorVariant = 'input' | 'ghost';
 
 export type ComplexSelectorSize = 'sm' | 'md' | 'lg';
 
@@ -154,6 +194,25 @@ export interface ComplexSelectorRenderState {
   triggerId: string;
   /** ID of the popup content container. */
   contentId: string;
+}
+
+/**
+ * Imperative control surface for ComplexSelector, accessed via the `handleRef`
+ * prop. Methods drive the same popover machinery as the built-in trigger, so
+ * they respect focus restoration, light dismiss, and Escape. Prefer these
+ * callbacks over mirroring open state in the parent — the selector owns its
+ * visibility, and imperative calls avoid the focus-management pitfalls of
+ * syncing an external `isOpen` prop.
+ */
+export interface ComplexSelectorHandle {
+  /** Open the selector surface. No-op when disabled or already open. */
+  open(): void;
+  /** Close the selector surface. Restores focus to the trigger. */
+  close(): void;
+  /** Toggle the selector surface open or closed. */
+  toggle(): void;
+  /** Whether the selector surface is currently open. Reads live state. */
+  isOpen(): boolean;
 }
 
 export interface ComplexSelectorStatus {
@@ -204,10 +263,22 @@ export interface ComplexSelectorProps<Value> extends Omit<
   labelTooltip?: string;
   /** Trigger and field size. */
   size?: ComplexSelectorSize;
+  /** Visual trigger style. Ghost matches toolbar buttons. */
+  variant?: ComplexSelectorVariant;
+  /** Icon displayed at the start of the trigger. */
+  startIcon?: ReactNode | IconType;
   /** Width of the field. */
   width?: SizeValue;
   /** Popup placement. */
-  placement?: 'above' | 'below' | 'start' | 'end';
+  placement?: LayerPlacement;
+  /** Popup alignment along the placement axis. */
+  alignment?: LayerAlignment;
+  /**
+   * Imperative handle for programmatic open/close control. Exposes open,
+   * close, toggle, and the isOpen query. Use this instead of mirroring open
+   * state in the parent — the selector owns its visibility.
+   */
+  handleRef?: React.Ref<ComplexSelectorHandle>;
   /** StyleX styles for the popup content container. */
   contentXstyle?: StyleXStyles;
   /** Test ID for the trigger container. */
@@ -259,17 +330,27 @@ export function ComplexSelector<Value>({
   statusVariant = 'attached',
   labelTooltip,
   size = 'md',
+  variant = 'input',
+  startIcon,
   width,
   placement = 'below',
+  alignment = 'start',
+  handleRef,
   contentXstyle,
   xstyle,
   className,
   style,
   'data-testid': testId,
+  onClick: onClickProp,
   ...props
 }: ComplexSelectorProps<Value>) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
+  const effectiveStatusVariant =
+    variant === 'ghost' && statusVariant === 'attached'
+      ? 'detached'
+      : statusVariant;
 
   const triggerId = useId();
   const labelId = useId();
@@ -284,18 +365,66 @@ export function ComplexSelector<Value>({
       .filter((id): id is string => id != null)
       .join(' ') || undefined;
 
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const lastHideTimeRef = useRef(0);
+
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
+
+  const handlePopoverHide = useCallback(() => {
+    lastHideTimeRef.current = Date.now();
+    triggerRef.current?.focus();
+  }, []);
 
   const popover = usePopover({
     dialogLabel: label,
     hasCloseButton: false,
     hasAutoFocus: true,
-    onHide: () => {
-      document.getElementById(triggerId)?.focus();
-    },
+    surfaceTarget: 'complex-selector-popup',
+    onHide: handlePopoverHide,
   });
+
+  const isOpen = popover.isOpen;
+
+  const handleTriggerClick = useCallback(() => {
+    if (isDisabled || Date.now() - lastHideTimeRef.current < 50) {
+      return;
+    }
+    if (popover.isOpen) {
+      popover.hide();
+    } else {
+      popover.show();
+    }
+  }, [isDisabled, popover]);
+
+  const close = useCallback(() => {
+    popover.hide();
+  }, [popover]);
+
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      open: () => {
+        if (!isDisabled) {
+          popover.show();
+        }
+      },
+      close: () => popover.hide(),
+      toggle: () => {
+        if (isDisabled) {
+          return;
+        }
+        if (popover.isOpen) {
+          popover.hide();
+        } else {
+          popover.show();
+        }
+      },
+      isOpen: () => popover.isOpen,
+    }),
+    [isDisabled, popover],
+  );
 
   const commitValue = useCallback(
     (nextValue: Value) => {
@@ -312,10 +441,15 @@ export function ComplexSelector<Value>({
 
   const triggerContent = triggerLabel ?? placeholder;
 
+  const startIconSlot = renderIconSlot(startIcon, {
+    size: 'sm',
+    color: 'secondary',
+  });
+
   const content = (
     <div id={contentId} {...stylex.props(styles.content, contentXstyle)}>
-      {children(optimisticValue, commitValue, popover.hide, {
-        isOpen: popover.isOpen,
+      {children(optimisticValue, commitValue, close, {
+        isOpen,
         isBusy,
         triggerId,
         contentId,
@@ -329,13 +463,10 @@ export function ComplexSelector<Value>({
         ref={popover.triggerRef}
         data-testid={testId}
         {...props}
-        onClick={() => {
-          if (!isDisabled) {
-            popover.toggle();
-          }
-        }}
+        onClick={composeEventHandlers(onClickProp, handleTriggerClick)}
         {...mergeProps(
           themeProps('complex-selector', {
+            variant,
             size,
             status: status?.type ?? null,
           }),
@@ -343,8 +474,14 @@ export function ComplexSelector<Value>({
             inputWrapperStyles.base,
             styles.triggerContainer,
             styles[size],
-            styles.focusRing,
+            // The ring belongs to the wrapper (the focusable `<button>` sits
+            // inside it), but it must still be a KEYBOARD ring: `:focus-within`
+            // matched a mouse click on the trigger and drew the outline for
+            // pointer users too. `focusWithin` here is `:has(:focus-visible)`.
+            focusOutlineStyles.focusWithin,
+            variant === 'ghost' && styles.triggerGhost,
             isDisabled && inputWrapperStyles.disabled,
+            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             isDisabled && styles.disabled,
             triggerLabel == null && styles.placeholder,
             xstyle,
@@ -352,20 +489,22 @@ export function ComplexSelector<Value>({
           className,
           style,
         )}>
+        {isRenderable(startIconSlot) && startIconSlot}
         <button
+          ref={triggerRef}
           id={triggerId}
           type="button"
           aria-haspopup="dialog"
-          aria-expanded={popover.isOpen}
+          aria-expanded={isOpen}
           aria-controls={contentId}
           aria-describedby={ariaDescribedBy}
           aria-labelledby={labelId}
-          aria-required={isRequired ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           disabled={isDisabled}
           onKeyDown={event => {
-            if (event.key === 'ArrowDown' && !popover.isOpen && !isDisabled) {
+            if (event.key === 'ArrowDown' && !isOpen && !isDisabled) {
               event.preventDefault();
               popover.show();
             }
@@ -374,25 +513,29 @@ export function ComplexSelector<Value>({
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
         {isBusy && <Spinner size="sm" />}
-        <span
-          {...stylex.props(
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="secondary"
+          // No wrapper: Icon's own span already provides the 16px box (`sm`)
+          // and the secondary icon color the wrapper used to set, so the glyph
+          // IS the trigger's icon element — one node carrying the box, the
+          // color, the rotation, and the theme target.
+          xstyle={[
             styles.triggerIcon,
-            popover.isOpen && styles.triggerIconOpen,
-          )}>
-          <Icon
-            icon="chevronDown"
-            size="sm"
-            color="inherit"
-            {...themeProps('complex-selector-indicator-icon', {
-              state: popover.isOpen ? 'expanded' : 'collapsed',
-            })}
-          />
-        </span>
+            styles.triggerIconRotation,
+            isOpen && styles.triggerIconOpen,
+          ]}
+          {...themeProps('complex-selector-indicator-icon', {
+            state: isOpen ? 'expanded' : 'collapsed',
+          })}
+        />
       </div>
 
       {popover.render(content, {
         placement,
-        alignment: 'start',
+        alignment,
+        offset: spacingVars['--spacing-1'],
         xstyle: [styles.popover, layerAnimations[placement]],
       })}
     </>
@@ -418,7 +561,7 @@ export function ComplexSelector<Value>({
             }
           : undefined
       }
-      statusVariant={statusVariant}
+      statusVariant={effectiveStatusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {selectorContent}

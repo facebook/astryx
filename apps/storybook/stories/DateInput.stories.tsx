@@ -58,6 +58,27 @@ const meta: Meta<typeof DateInput> = {
       options: [1, 2],
       description: 'Number of months to display in calendar',
     },
+    weekStartsOn: {
+      control: 'select',
+      options: [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        'sun',
+        'mon',
+        'tue',
+        'wed',
+        'thu',
+        'fri',
+        'sat',
+      ],
+      description:
+        'First day of week in the calendar popover (0 = Sunday, or a three-letter day name)',
+    },
     format: {
       control: 'select',
       options: ['date_long', 'date', 'date_weekday', 'system_date'],
@@ -90,6 +111,19 @@ export const WithValue: Story = {
   },
   args: {
     label: 'Event date',
+  },
+};
+
+export const MondayFirstWeek: Story = {
+  name: 'Week starts on Monday',
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>(undefined);
+    return <DateInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Date',
+    placeholder: 'Select a date',
+    weekStartsOn: 'mon',
   },
 };
 

@@ -142,6 +142,12 @@ export const docs = {
     targets: [
       {className: 'astryx-code', visualProps: ['color']},
       {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-codeblock-header', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-codeblock-title', visualProps: ['size', 'language']},
+      {className: 'astryx-codeblock-copy-button'},
+    ],
+    vars: [
+      {name: '--_codeblock-gutter-width', description: 'Width of the line-number gutter, computed from the digit count of the last line so the code column starts at a stable offset.', default: '2ch', private: true},
     ],
   },
   usage: {

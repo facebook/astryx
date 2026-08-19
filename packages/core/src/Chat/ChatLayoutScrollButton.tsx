@@ -30,6 +30,7 @@ import {Icon} from '../Icon';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
+import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 // =============================================================================
@@ -128,7 +129,12 @@ export function ChatLayoutScrollButton({
   return (
     <div
       ref={ref}
-      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}
+      {...mergeProps(
+        themeProps('chat-layout-scroll-button'),
+        stylex.props(styles.wrapper, xstyle),
+        className,
+        style,
+      )}
       {...rest}>
       <div
         {...stylex.props(
@@ -144,6 +150,7 @@ export function ChatLayoutScrollButton({
           icon={<Icon icon="chevronDown" size="md" />}
           variant="ghost"
           size="md"
+          isIconOnly={!label}
           onClick={onClick}
           xstyle={[styles.button, label ? styles.buttonWithLabel : null]}>
           {label ?? undefined}

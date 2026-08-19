@@ -34,6 +34,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import type {IconName} from '../Icon';
 import {
   Field,
+  InputClearButton,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
@@ -41,8 +42,9 @@ import {
 } from '../Field';
 import {Divider} from '../Divider';
 import {Spinner} from '../Spinner';
-import {TextInput} from '../TextInput';
+import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {CheckboxInput} from '../CheckboxInput';
+import type {IndicatorPosition} from '../Indicator';
 import {Badge} from '../Badge';
 import {
   colorVars,
@@ -69,12 +71,15 @@ import {
   getSelectableOptions,
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
-import {getInputARIA, mergeProps} from '../utils';
+import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -158,24 +163,26 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     fontWeight: fontWeightVars['--font-weight-medium'],
   },
+  // Only what Icon does not already provide: `size="sm"` gives the 16px box
+  // and `color` the token, but the glyph still must not shrink inside the flex
+  // trigger.
   triggerIcon: {
     flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 16,
-    height: 16,
+  },
+  // Rotation lives on the chevron glyph itself (passed through `xstyle`), not
+  // on the layout wrapper above, so the icon's `multi-selector-indicator-icon`
+  // theme target and the open/closed transform sit on one element — a theme can
+  // restyle the mark and its rotation through a single selector. The wrapper
+  // keeps only layout. The status branch renders a different icon, so it never
+  // picks these up and needs no transition opt-out.
+  triggerIconRotation: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     transformOrigin: 'center',
-    color: colorVars['--color-icon-secondary'],
   },
   triggerIconOpen: {
     transform: 'rotate(180deg)',
-  },
-  triggerIconStatus: {
-    transition: 'none',
   },
   triggerGhost: {
     width: 'auto',
@@ -196,14 +203,6 @@ const styles = stylex.create({
       ':focus-within': 'none',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '3px',
-    },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',
     transform: {
@@ -220,23 +219,6 @@ const styles = stylex.create({
   },
 
   // Clear button
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
-  },
   statusButton: {
     display: 'flex',
     alignItems: 'center',
@@ -249,11 +231,6 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
 
   // Dropdown container
@@ -267,17 +244,6 @@ const styles = stylex.create({
   // Popover container (for anchor positioning)
   popover: {
     minWidth: 'anchor-size(width)',
-    marginBlockStart: spacingVars['--spacing-1'],
-  },
-
-  // Search field. The inner TextInput owns the border, focus ring, magnifier
-  // (startIcon), and clear button (hasClear); this wrapper only supplies the
-  // dropdown's inline/block padding around it.
-  searchWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-1'],
   },
 
   // Select-all wrapper
@@ -288,9 +254,19 @@ const styles = stylex.create({
     cursor: 'pointer',
   },
 
-  // Section divider with label
-  sectionDivider: {
-    marginBlock: spacingVars['--spacing-1'],
+  // Section heading. Plain secondary text, no rules — the same treatment
+  // DropdownMenu and CommandPaletteGroup already use for a group heading in a
+  // panel list. A labeled Divider (line–text–line) reads as a separator, and
+  // next to the search row's own divider it stacked two rules a few pixels
+  // apart.
+  sectionHeading: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
   },
 
   // Divider
@@ -307,6 +283,14 @@ const styles = stylex.create({
     width: '100%',
     borderRadius: radiusVars['--radius-element'],
     cursor: 'pointer',
+    // Row typography lives here, not on the label span, so a theme override on
+    // the row target reaches both the fallback label and renderOption output
+    // (a declaration on the span would win over the inherited row value).
+    // Matches Selector, whose option row owns its typography the same way.
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-label-size'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
     outline: 'none',
@@ -316,6 +300,7 @@ const styles = stylex.create({
   },
   itemDisabled: {
     opacity: 0.5,
+    color: colorVars['--color-text-disabled'],
     cursor: 'not-allowed',
   },
 
@@ -325,20 +310,23 @@ const styles = stylex.create({
     display: 'flex',
     flexShrink: 0,
   },
+  // Pushed to the row's far edge rather than sitting against the label, which
+  // is what an end-positioned control means here. The row is not
+  // `space-between` (a truncating label plus a trailing control is what wants
+  // the auto margin), and `renderOption` content is not wrapped in a growing
+  // span, so the margin has to live on the checkbox itself.
+  checkboxDecorativeEnd: {
+    marginInlineStart: 'auto',
+  },
 
-  // Label text for items (rendered outside checkbox for correct click behavior)
+  // Label text for items (rendered outside checkbox for correct click
+  // behavior). Typography is inherited from the row; this only handles
+  // truncation.
   itemLabel: {
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-label-size'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-primary'],
     minWidth: 0,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-  },
-  itemLabelDisabled: {
-    color: colorVars['--color-text-disabled'],
   },
 
   // Empty state
@@ -618,6 +606,13 @@ export interface MultiSelectorProps<
   renderOption?: (option: MultiSelectorOptionData) => ReactNode;
 
   /**
+   * Which edge of the option row carries the checkbox.
+   *
+   * @default 'start'
+   */
+  indicatorPosition?: IndicatorPosition;
+
+  /**
    * Whether the dropdown starts open on mount.
    * Useful for showcases and previews.
    * @default false
@@ -702,6 +697,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   triggerDisplay = 'count',
   maxBadges = 3,
   renderOption,
+  indicatorPosition = 'start',
   isDefaultOpen = false,
   'data-testid': testId,
   htmlName,
@@ -711,6 +707,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   style,
 }: MultiSelectorProps<T>) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.multiSelector.selectPlaceholder');
   const selectAllLabel =
@@ -734,7 +731,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
-  // A typed query shows TextInput's built-in clear (✕) button, which becomes
+  // A typed query shows the search row's clear (✕) button, which becomes
   // the next tab stop after the search input.
   const hasQuery = searchQuery.length > 0;
 
@@ -797,14 +794,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const selectableSet = new Set(selectableItems.map(item => item.value));
       const selectedCount = nextValue.filter(v => selectableSet.has(v)).length;
       if (selectedCount === 0) {
-        announce('Selection cleared');
+        announce(t('@astryx.multiSelector.selectionCleared'));
       } else if (total > 0 && selectedCount === total) {
-        announce('All selected');
+        announce(t('@astryx.multiSelector.allSelected'));
       } else {
-        announce(`${selectedCount} of ${total} selected`);
+        announce(
+          t('@astryx.multiSelector.selectionCount', {
+            count: selectedCount,
+            total,
+          }),
+        );
       }
     },
-    [announce, selectableItems],
+    [announce, selectableItems, t],
   );
 
   // Filter items by search query
@@ -879,6 +881,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // The popup's own role="listbox" is the exposed semantics; the trigger
     // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
     role: 'none',
+    // The theme target belongs on the SURFACE that paints the popup, which
+    // `usePopover` owns — not on the scrolling list inside it.
+    surfaceTarget: 'multi-selector-popup',
   });
 
   // Open dropdown on mount when isDefaultOpen is true
@@ -905,11 +910,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
-          ? 'No results found'
-          : `${count} result${count === 1 ? '' : 's'}`,
+          ? t('@astryx.multiSelector.emptySearchResults')
+          : t('@astryx.multiSelector.resultCount', {count}),
       );
     },
-    [announce, selectableItems],
+    [announce, selectableItems, t],
   );
 
   // Handle toggle
@@ -1141,11 +1146,38 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return null;
     }
     return (
-      <div
-        {...stylex.props(styles.searchWrapper)}
-        onKeyDown={e => {
-          // The clear (✕) button lives inside the TextInput, after the input in
-          // DOM order. When it is focused and the user tabs forward there is
+      <PanelSearchInput
+        ref={searchRef}
+        id={searchId}
+        // The search row is the panel's header: a magnifier, a borderless
+        // input, and the shared clear (✕) button. It deliberately does NOT
+        // render a bordered TextInput — the popup is already a bordered
+        // surface, and a field inside it drew a second box within that box.
+        label={t('@astryx.multiSelector.searchOptions')}
+        // Same accessible name the TextInput's built-in clear produced
+        // ("Clear Search options"), so the affordance keeps its name while its
+        // chrome changes.
+        clearLabel={t('@astryx.textInput.clearLabel', {
+          label: t('@astryx.multiSelector.searchOptions'),
+        })}
+        {...themeProps('multi-selector-search')}
+        // When hasSearch is set, focus moves into this input on open, so it —
+        // not the trigger — must be the combobox reporting the highlighted
+        // option via aria-activedescendant (comboboxes-4).
+        role="combobox"
+        aria-expanded={popover.isOpen}
+        aria-controls={listboxId}
+        aria-autocomplete="list"
+        aria-activedescendant={
+          popover.isOpen && highlightedIndex >= 0
+            ? getItemId(highlightedIndex)
+            : undefined
+        }
+        value={searchQuery}
+        onValueChange={handleSearchChange}
+        onContainerKeyDown={e => {
+          // The clear (✕) button lives inside the row, after the input in DOM
+          // order. When it is focused and the user tabs forward there is
           // nothing else in the popup, so dismiss it (Shift+Tab returns to the
           // input natively). Key events originating on the input are handled on
           // the input below; ignore them here so we don't double-dismiss.
@@ -1155,64 +1187,41 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           if (e.key === 'Tab' && !e.shiftKey) {
             onKeyDown(e);
           }
-        }}>
-        <TextInput
-          ref={searchRef}
-          id={searchId}
-          // The search field IS a TextInput: the leading magnifier is its
-          // `startIcon` and the trailing clear (✕) is its built-in `hasClear`
-          // (which resets the value and refocuses the input). We add no bespoke
-          // affordance chrome — the field just looks and behaves like every
-          // other Astryx input.
-          label={t('@astryx.multiSelector.searchOptions')}
-          isLabelHidden
-          startIcon="search"
-          hasClear
-          size="sm"
-          // Fill the dropdown's width (minus the wrapper's inline padding) so
-          // the field is flush end-to-end rather than sized to its content.
-          width="100%"
-          // When hasSearch is set, focus moves into this input on open, so it —
-          // not the trigger — must be the combobox reporting the highlighted
-          // option via aria-activedescendant (comboboxes-4). role + aria-* pass
-          // through to the underlying <input> via BaseProps.
-          role="combobox"
-          aria-expanded={popover.isOpen}
-          aria-controls={listboxId}
-          aria-autocomplete="list"
-          aria-activedescendant={
-            popover.isOpen && highlightedIndex >= 0
-              ? getItemId(highlightedIndex)
-              : undefined
+        }}
+        onKeyDown={e => {
+          // An in-progress IME composition uses these same keys (Enter to
+          // commit the candidate, Escape/Arrows to navigate the candidate
+          // window); the composing keydown fires before compositionend, so
+          // without this guard a Korean/Japanese/Chinese user committing a
+          // syllable with Enter would instead toggle the highlighted option.
+          // See utils/ime.ts.
+          if (isImeKeyEvent(e.nativeEvent)) {
+            return;
           }
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onKeyDown={e => {
-            // Arrow keys navigate options; Enter toggles; Escape closes.
-            // Space and Home/End are left to the input (type a space / move
-            // the caret) per the APG editable combobox; PageUp/PageDown are
-            // the sanctioned substitute for jumping to the first/last option.
-            if (
-              e.key === 'ArrowDown' ||
-              e.key === 'ArrowUp' ||
-              e.key === 'PageUp' ||
-              e.key === 'PageDown' ||
-              e.key === 'Enter' ||
-              e.key === 'Escape'
-            ) {
-              onKeyDown(e);
-              return;
-            }
-            // Tab: when a query is showing the clear (✕) button, forward-tab
-            // moves focus to it (keeping the popup open) so the affordance is
-            // keyboard-reachable. Every other Tab dismisses the popup as usual.
-            if (e.key === 'Tab' && (e.shiftKey || !hasQuery)) {
-              onKeyDown(e);
-            }
-          }}
-          placeholder={searchPlaceholder}
-        />
-      </div>
+          // Arrow keys navigate options; Enter toggles; Escape closes.
+          // Space and Home/End are left to the input (type a space / move
+          // the caret) per the APG editable combobox; PageUp/PageDown are
+          // the sanctioned substitute for jumping to the first/last option.
+          if (
+            e.key === 'ArrowDown' ||
+            e.key === 'ArrowUp' ||
+            e.key === 'PageUp' ||
+            e.key === 'PageDown' ||
+            e.key === 'Enter' ||
+            e.key === 'Escape'
+          ) {
+            onKeyDown(e);
+            return;
+          }
+          // Tab: when a query is showing the clear (✕) button, forward-tab
+          // moves focus to it (keeping the popup open) so the affordance is
+          // keyboard-reachable. Every other Tab dismisses the popup as usual.
+          if (e.key === 'Tab' && (e.shiftKey || !hasQuery)) {
+            onKeyDown(e);
+          }
+        }}
+        placeholder={searchPlaceholder}
+      />
     );
   }, [
     hasSearch,
@@ -1244,6 +1253,24 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const isPartiallySelected =
         isSelectAll && selectAllState === 'indeterminate';
 
+      const checkbox = (
+        <div
+          inert
+          {...stylex.props(
+            styles.checkboxDecorative,
+            indicatorPosition === 'end' && styles.checkboxDecorativeEnd,
+          )}>
+          <CheckboxInput
+            label=""
+            isLabelHidden
+            value={checkboxValue}
+            onChange={() => {}}
+            isDisabled={item.disabled}
+            size={size === 'lg' ? 'md' : size}
+          />
+        </div>
+      );
+
       return (
         <div
           key={item.value}
@@ -1264,39 +1291,40 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             }
           }}
           onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
-          {...stylex.props(
-            styles.item,
-            isSelectAll ? selectAllSizeStyles[size] : itemSizeStyles[size],
-            isSelectAll && styles.selectAllWrapper,
-            isHighlighted && styles.itemHighlighted,
-            item.disabled && styles.itemDisabled,
+          {...mergeProps(
+            // One target for every dropdown row, carrying the row's size and
+            // runtime state so a theme can express "selected option at large"
+            // or restyle just the Select All row (`.select-all`) without
+            // reaching for structural selectors.
+            themeProps('multi-selector-option', {
+              size,
+              'select-all': isSelectAll ? 'select-all' : null,
+              selected: isSelected ? 'selected' : null,
+              disabled: item.disabled ? 'disabled' : null,
+            }),
+            stylex.props(
+              styles.item,
+              isSelectAll ? selectAllSizeStyles[size] : itemSizeStyles[size],
+              isSelectAll && styles.selectAllWrapper,
+              isHighlighted && styles.itemHighlighted,
+              item.disabled && styles.itemDisabled,
+            ),
           )}>
-          <div inert {...stylex.props(styles.checkboxDecorative)}>
-            <CheckboxInput
-              label=""
-              isLabelHidden
-              value={checkboxValue}
-              onChange={() => {}}
-              isDisabled={item.disabled}
-              size={size === 'lg' ? 'md' : size}
-            />
-          </div>
+          {indicatorPosition === 'start' && checkbox}
           {renderOption && !isSelectAll ? (
             renderOption(item)
           ) : (
-            <span
-              {...stylex.props(
-                styles.itemLabel,
-                item.disabled && styles.itemLabelDisabled,
-              )}>
+            <span {...stylex.props(styles.itemLabel)}>
               {item.label ?? item.value}
             </span>
           )}
+          {indicatorPosition === 'end' && checkbox}
         </div>
       );
     },
     [
       renderOption,
+      indicatorPosition,
       highlightedIndex,
       optimisticValue,
       allEnabledSelected,
@@ -1322,12 +1350,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       ? sortedItems.length - 1
       : sortedItems.length;
 
-    // Show select-all only when there are real items to select
+    // Show select-all only when there are real items to select. It reads as
+    // the first row of the list, not a section of its own — no divider under
+    // it (the checkbox column already lines it up with the options below).
     if (hasSelectAll && realItemCount > 0) {
       elements.push(renderItem(sortedItems[0], 0));
-      elements.push(
-        <Divider key="select-all-divider" xstyle={styles.divider} />,
-      );
       cursor = 1;
     } else if (hasSelectAll) {
       // Skip the select-all sentinel when there are no real items
@@ -1343,7 +1370,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         <div
           key="empty"
           role="presentation"
-          {...stylex.props(styles.emptyState)}>
+          {...mergeProps(
+            themeProps('multi-selector-empty-state'),
+            stylex.props(styles.emptyState),
+          )}>
           No results found
         </div>,
       );
@@ -1393,17 +1423,23 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           sectionItems.push(renderItem(sortedItems[cursor], cursor));
           cursor++;
         }
-        if (option.title) {
-          elements.push(
-            <Divider
-              key={`section-divider-${i}`}
-              label={option.title}
-              xstyle={styles.sectionDivider}
-            />,
-          );
-        }
+        // The heading lives INSIDE the group and is aria-hidden: the group
+        // already carries the title as its accessible name, so exposing the
+        // text again would announce it twice. This also keeps role="listbox"'s
+        // children to option/group only — the old labeled Divider sat in the
+        // listbox as a stray role="separator".
         elements.push(
           <div key={`section-${i}`} role="group" aria-label={option.title}>
+            {option.title && (
+              <div
+                aria-hidden="true"
+                {...mergeProps(
+                  themeProps('multi-selector-section-heading'),
+                  stylex.props(styles.sectionHeading),
+                )}>
+                {option.title}
+              </div>
+            )}
             {sectionItems}
           </div>,
         );
@@ -1445,12 +1481,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             variant,
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
+            variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
@@ -1490,7 +1528,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           }
           aria-describedby={ariaDescribedBy}
           aria-labelledby={ariaLabelledBy}
-          aria-required={isRequired ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           // With a disabledMessage the trigger keeps focusability via
@@ -1519,84 +1557,109 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           ))}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value.length > 0 && !isDisabled && (
-          <button
-            type="button"
+          <InputClearButton
+            label={t('@astryx.multiSelector.clearAll', {label})}
             onClick={handleClear}
-            aria-label={t('@astryx.multiSelector.clearAll', {label})}
-            {...stylex.props(styles.clearButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              // Stable theme target on the clear glyph itself, so a theme can
-              // restyle just this icon (color, size, hover) via `defineTheme`.
-              // Same-element rules in @layer astryx-theme win over the icon's
-              // own base color/size, which a button-level target could not
-              // reach.
-              {...themeProps('multi-selector-clear-icon')}
-            />
-          </button>
+            iconClassName={stableClassName('multi-selector-clear-icon')}
+          />
         )}
-        <span
-          {...stylex.props(
-            styles.triggerIcon,
-            !showStatusIcon && popover.isOpen && styles.triggerIconOpen,
-            showStatusIcon && styles.triggerIconStatus,
-          )}>
-          {showStatusIcon ? (
-            showStatusTooltip ? (
-              <button
-                ref={statusTooltip.ref}
-                type="button"
-                aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
-                aria-describedby={statusTooltip.describedBy}
-                onClick={e => e.stopPropagation()}
-                {...stylex.props(styles.statusButton)}>
-                <Icon
-                  icon={STATUS_ICON_MAP[status.type]}
-                  size="sm"
-                  color={STATUS_ICON_COLOR_MAP[status.type]}
-                />
-              </button>
-            ) : (
+        {/*
+          No wrapper span: Icon's own span already provides the 16px box (`sm`)
+          and the icon color, so the status glyph and the chevron are each
+          directly targetable instead of sharing one untargetable parent — and
+          the two affordances stop sharing a node.
+        */}
+        {showStatusIcon ? (
+          showStatusTooltip ? (
+            <button
+              ref={statusTooltip.ref}
+              type="button"
+              aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
+              aria-describedby={statusTooltip.describedBy}
+              onClick={e => e.stopPropagation()}
+              {...stylex.props(
+                focusOutlineStyles.focusVisible,
+                styles.statusButton,
+              )}>
               <Icon
                 icon={STATUS_ICON_MAP[status.type]}
                 size="sm"
                 color={STATUS_ICON_COLOR_MAP[status.type]}
+                xstyle={styles.triggerIcon}
               />
-            )
+            </button>
           ) : (
             <Icon
-              icon="chevronDown"
+              icon={STATUS_ICON_MAP[status.type]}
               size="sm"
-              color="inherit"
-              // Stable theme target on the chevron glyph itself, so a theme can
-              // restyle just this icon (color, size, hover) — and its
-              // open/closed state — via `defineTheme`. Same-element rules in
-              // @layer astryx-theme win over the icon's own base color/size,
-              // which a button-level target could not reach.
-              {...themeProps('multi-selector-indicator-icon', {
-                state: popover.isOpen ? 'expanded' : 'collapsed',
-              })}
+              color={STATUS_ICON_COLOR_MAP[status.type]}
+              xstyle={styles.triggerIcon}
             />
-          )}
-        </span>
+          )
+        ) : (
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="secondary"
+            // The rotation rides on the glyph, alongside the box and color
+            // the wrapper used to provide, so one element carries the mark,
+            // its open/closed transform, and the theme target.
+            xstyle={[
+              styles.triggerIcon,
+              styles.triggerIconRotation,
+              popover.isOpen && styles.triggerIconOpen,
+            ]}
+            // Stable theme target on the chevron glyph itself, so a theme can
+            // restyle just this icon (color, size, hover) — and its
+            // open/closed state — via `defineTheme`. Same-element rules in
+            // @layer astryx-theme win over the icon's own base color/size,
+            // which a button-level target could not reach.
+            {...themeProps('multi-selector-indicator-icon', {
+              state: popover.isOpen ? 'expanded' : 'collapsed',
+            })}
+          />
+        )}
       </div>
 
       {popover.render(
-        <div {...stylex.props(styles.dropdown)}>
-          {renderSearch()}
-          <div
-            id={listboxId}
-            role="listbox"
-            aria-multiselectable="true"
-            aria-labelledby={triggerId}>
-            {renderOptions()}
+        hasSearch ? (
+          // With a search row the panel splits: the header stays put while the
+          // options scroll under it, so the field does not slide out of reach
+          // in a long list. Without one the panel is a single scroll container,
+          // exactly as before.
+          <div>
+            {renderSearch()}
+            {/*
+              Separates the header from the options and spans the panel: the
+              search row and the option list each hold their own inline
+              padding, the line does not, so it reads as the panel's own edge.
+            */}
+            <Divider />
+            <div {...stylex.props(styles.dropdown)}>
+              <div
+                id={listboxId}
+                role="listbox"
+                aria-multiselectable="true"
+                aria-labelledby={triggerId}>
+                {renderOptions()}
+              </div>
+            </div>
           </div>
-        </div>,
+        ) : (
+          <div {...stylex.props(styles.dropdown)}>
+            <div
+              id={listboxId}
+              role="listbox"
+              aria-multiselectable="true"
+              aria-labelledby={triggerId}>
+              {renderOptions()}
+            </div>
+          </div>
+        ),
         {
           placement: 'below',
           alignment: 'start',
+          offset: spacingVars['--spacing-1'],
           xstyle: styles.popover,
         },
       )}

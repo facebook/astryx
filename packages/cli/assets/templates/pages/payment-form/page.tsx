@@ -111,13 +111,13 @@ const US_STATES = [
 // docsite; the CLI swaps these for an inline placeholder on scaffold).
 const ITEM_IMAGES: Record<string, {src: string}> = {
   '1': {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-product-1.png',
+    src: '/template-assets/light-product-1.png',
   },
   '2': {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-product-4.png',
+    src: '/template-assets/light-product-4.png',
   },
   '3': {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-product-5.png',
+    src: '/template-assets/light-product-5.png',
   },
 };
 

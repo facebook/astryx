@@ -60,7 +60,7 @@ export const doc = {
     {
       type: 'prose',
       text:
-        "Identity — the integration's name and version — comes from the " +
+        "Identity, the integration's name and version, comes from the " +
         "package's package.json, not from this manifest. The manifest only " +
         'declares where the CLI finds each kind of artifact.',
     },

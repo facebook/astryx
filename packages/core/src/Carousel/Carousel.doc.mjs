@@ -66,8 +66,10 @@ export const docsZh = {
       'Carousel 在项目超出可用宽度时将一行项目水平滚动。适用于卡片网格、图片画廊、产品列表，或任何希望无需占据整页即可浏览的项目集合。',
     bestPractices: [
       {guidance: true, description: '当每个项目应精确对齐到起始边缘时启用滚动吸附，例如画廊或产品列表。'},
+      {guidance: true, description: '在小型可循环的集合（如照片画廊）上使用 hasLoop，此时从最后一项绕回第一项的滚动更自然。'},
       {guidance: true, description: '始终提供描述轮播内容的 aria-label，例如"精选产品"或"团队成员"。'},
       {guidance: true, description: '使用一致的间距和项目宽度，让轮播看起来是有意为之，而不是内容意外溢出。'},
+      {guidance: true, description: '信任内置导航：触控板用户可水平滑动，鼠标用户可按住 Shift 滚动滚轮来浏览项目。'},
       {guidance: false, description: '将每位用户都必须看到的内容放入轮播。并非所有人都会水平滚动，关键内容应放在首屏。'},
       {guidance: false, description: '自动轮播项目。让用户按自己的节奏滚动。'},
       {guidance: false, description: '嵌套轮播。轮播中嵌套轮播会造成困惑并破坏键盘导航。'},
@@ -94,6 +96,7 @@ export const docsDense = {
       'Carousel scrolls items horizontally when they overflow. Use for card grids, galleries, product lists.',
     bestPractices: [
       {guidance: true, description: 'Enable scroll-snap when each item should land precisely at the start edge: gallery, product list.'},
+      {guidance: true, description: 'Reach for hasLoop on small cyclable sets (photo gallery) where wrapping past the last item back to the first feels natural.'},
       {guidance: true, description: 'Always provide an aria-label describing what the carousel contains: "Featured products", "Team members".'},
       {guidance: true, description: 'Use consistent gap + item width so the carousel looks intentional, not like content overflowing by accident.'},
       {guidance: true, description: 'Trust built-in navigation: trackpad users swipe horizontally, mouse users hold Shift + wheel to move through items.'},

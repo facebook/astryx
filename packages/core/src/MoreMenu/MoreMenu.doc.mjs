@@ -47,6 +47,20 @@ export const docs = {
       description: 'Whether the menu trigger is disabled.',
       default: 'false',
     },    {
+      name: 'placement',
+      type: "'above' | 'below' | 'start' | 'end'",
+      description:
+        "Position of the menu relative to the trigger. Logical: start/end resolve against the menu's own inherited direction (RTL mirrors).",
+      default: "'below'",
+    },
+    {
+      name: 'alignment',
+      type: "'start' | 'center' | 'end'",
+      description:
+        "Alignment along the placement axis. Use 'end' to align the menu with the trigger's trailing edge, which is usually what an overflow menu wants.",
+      default: "'start'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -120,6 +134,20 @@ export const docsZh = {
       description: '菜单触发器是否禁用。',
       default: 'false',
     },    {
+      name: 'placement',
+      type: "'above' | 'below' | 'start' | 'end'",
+      description:
+        '菜单相对于触发按钮的位置。逻辑方向：start/end 依据菜单自身继承的书写方向解析（RTL 自动镜像）。',
+      default: "'below'",
+    },
+    {
+      name: 'alignment',
+      type: "'start' | 'center' | 'end'",
+      description:
+        "沿放置轴的对齐方式。使用 'end' 让菜单与触发器的尾部边缘对齐，这通常是溢出菜单所需的效果。",
+      default: "'start'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -162,6 +190,9 @@ export const docsDense = {
     size: 'Trigger button size.',
     icon: 'Override default three-dot icon. Accepts any ReactNode.',
     isDisabled: 'Whether menu trigger disabled.',
+    placement: 'Menu position relative to trigger. Logical (RTL mirrors).',
+    alignment:
+      "Alignment along the placement axis. 'end' aligns with the trigger's trailing edge.",
     xstyle:
       'StyleX styles for layout customization (margins, positioning, sizing). Must be stylex.create() value.',
   },

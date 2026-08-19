@@ -18,12 +18,14 @@ buildSync({
   platform: 'node',
   format: 'esm',
   outfile: 'dist/vite.mjs',
+  // SYNC: keep aligned with the external list in src/vite.test.ts
   external: [
     'vite',
     '@stylexjs/babel-plugin',
     '@stylexjs/unplugin',
     'path',
     'url',
+    'node:fs',
     'node:path',
     'node:url',
   ],
