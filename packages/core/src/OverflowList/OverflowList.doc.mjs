@@ -52,7 +52,7 @@ export const docs = {
       name: 'onOverflowChange',
       type: '(overflowItems: OverflowItem[]) => void',
       description:
-        'Called whenever the collapsed set changes, including with an empty array when nothing overflows. Use it to feed a menu the surrounding UI already renders instead of letting the list mount an indicator of its own.',
+        'Called whenever the collapsed set changes: with the collapsed items once something collapses, and with an empty array once the row widens back out. Silent while nothing overflows, including on mount. Use it to feed a menu the surrounding UI already renders instead of letting the list mount an indicator of its own.',
     },
     {
       name: 'gap',
@@ -140,7 +140,7 @@ export const docsZh = {
       name: 'onOverflowChange',
       type: '(overflowItems: OverflowItem[]) => void',
       description:
-        '折叠项集合变化时调用，包括没有溢出时传入空数组。用于将折叠项交给周围界面已有的菜单，避免列表再挂载一个自己的指示器。',
+        '折叠项集合变化时调用：发生折叠时传入折叠项，行重新变宽、全部放得下时传入空数组。没有溢出时（包括挂载时）不会调用。用于将折叠项交给周围界面已有的菜单，避免列表再挂载一个自己的指示器。',
     },
     {
       name: 'gap',
@@ -219,7 +219,7 @@ export const docsDense = {
   propDescriptions: {
     children: 'items to render, each child should be a single element',
     overflowRenderer: 'renders overflow indicator, receives hidden items w/ index',
-    onOverflowChange: 'fires w/ collapsed items whenever that set changes (empty when none); feed a menu you already render',
+    onOverflowChange: 'fires w/ collapsed items whenever that set changes (empty once the row fits again); silent while nothing overflows, incl. on mount; feed a menu you already render',
     gap: 'item gap as spacing step',
     minVisibleItems: 'min items always shown even when overflowing',
     maxVisibleItems: 'max items ever shown (cap); extra items collapse to indicator; min wins if smaller',
