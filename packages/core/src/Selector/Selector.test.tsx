@@ -3306,6 +3306,60 @@ describe('Selector option descriptions and trigger value', () => {
     expect(valueBox()).toEqual(clamped);
   });
 
+  it('does not let a control sized above its group grow the row', () => {
+    // The group's height is the row, so inside one the trigger drops the floor
+    // its own `size` would otherwise assert: <InputGroup size="md"> with a
+    // <Selector size="lg"> stays the group's 32px. The size still reaches the
+    // theme (the trigger keeps its `size` marker class); what it no longer
+    // does is set a height. Standalone, the two sizes still differ.
+    const triggerSizing = () =>
+      new Set(
+        (screen.getByRole('combobox').parentElement?.className ?? '')
+          .split(' ')
+          .filter(Boolean),
+      );
+    // What changes between the two sizes. StyleX keeps a debug class per style
+    // object even where every declaration in it lost, and the theme keeps its
+    // own `size` marker; the atomic classes are what carry the geometry.
+    const geometryDiff = (a: Set<string>, b: Set<string>) => {
+      const atomic = (classes: Set<string>) =>
+        [...classes].filter(c => !c.includes('__') && c !== 'md' && c !== 'lg');
+      return [...atomic(a), ...atomic(b)].filter(c => !(a.has(c) && b.has(c)));
+    };
+    const selector = (size: 'md' | 'lg') => (
+      <Selector
+        label="Visibility"
+        size={size}
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+      />
+    );
+
+    const standaloneMd = render(selector('md'));
+    const standaloneMdSizing = triggerSizing();
+    standaloneMd.unmount();
+
+    const standaloneLg = render(selector('lg'));
+    expect(geometryDiff(standaloneMdSizing, triggerSizing())).not.toEqual([]);
+    standaloneLg.unmount();
+
+    const groupedMd = render(
+      <InputGroup label="Space settings" size="md">
+        {selector('md')}
+      </InputGroup>,
+    );
+    const groupedMdSizing = triggerSizing();
+    groupedMd.unmount();
+
+    render(
+      <InputGroup label="Space settings" size="md">
+        {selector('lg')}
+      </InputGroup>,
+    );
+    expect(geometryDiff(groupedMdSizing, triggerSizing())).toEqual([]);
+  });
+
   it('does not call renderValue for the placeholder', () => {
     const renderValue = vi.fn(() => <span>custom</span>);
     render(

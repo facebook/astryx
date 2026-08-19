@@ -148,6 +148,16 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     textAlign: 'start',
   },
+  // Inside an InputGroup the group's own height is the row, and the trigger
+  // takes it: `height: 100%` from `groupStyles.inGroup` can only govern if the
+  // trigger stops asserting a floor of its own — otherwise a control sized
+  // above its group (`<InputGroup size="md"><Selector size="lg">`) grows the
+  // row it was supposed to sit in. The padding goes with it: the row is
+  // already the size token, and the value box is centred in it.
+  triggerInGroup: {
+    minHeight: 0,
+    paddingBlock: 0,
+  },
   // Wrapper for `renderValue` output. Takes the free width and clips
   // horizontally so a long value ellipsizes rather than widening the trigger;
   // vertically the content sizes the control, which the size styles below
@@ -1431,6 +1441,7 @@ export function Selector<T extends SelectorOptionType>(
               !isDisabled &&
               inputStatusHoverShadowStyles[status.type],
             variant !== 'ghost' && inputGroup && groupStyles.inGroup,
+            inputGroup && styles.triggerInGroup,
             xstyle,
           ),
           className,
