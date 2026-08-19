@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Stepper, Step} from '@astryxdesign/lab/Stepper';
+import {Stepper, Step} from '@astryxdesign/core/Stepper';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
@@ -11,7 +11,7 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {Badge} from '@astryxdesign/core/Badge';
 
 const meta: Meta<typeof Stepper> = {
-  title: 'Lab/Stepper',
+  title: 'Core/Stepper',
   component: Stepper,
   tags: ['autodocs'],
   argTypes: {

@@ -9,14 +9,14 @@
  * @position Individual step item; used inside Stepper
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/Stepper/Stepper.doc.mjs
- * - /packages/lab/src/Stepper/Stepper.test.tsx
- * - /packages/lab/src/Stepper/index.ts
+ * - /packages/core/src/Stepper/Stepper.doc.mjs
+ * - /packages/core/src/Stepper/Stepper.test.tsx
+ * - /packages/core/src/Stepper/index.ts
  * - /apps/storybook/stories/Stepper.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {
@@ -27,14 +27,18 @@ import {
   typeScaleVars,
   durationVars,
   easeVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {focusOutlineStyles, mergeProps} from '@astryxdesign/core/utils';
-import type {BaseProps} from '@astryxdesign/core';
-import {Icon} from '@astryxdesign/core/Icon';
-import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
-import {useTranslator} from '@astryxdesign/core/i18n';
+} from '../theme/tokens.stylex';
+import {
+  focusOutlineStyles,
+  mergeProps,
+  isRenderable,
+  themeProps,
+} from '../utils';
+import type {BaseProps} from '../BaseProps';
+import {Icon} from '../Icon';
+import {VisuallyHidden} from '../VisuallyHidden';
+import {useTranslator} from '../i18n';
 import {useStepperContext} from './StepperContext';
-import {themeProps} from '@astryxdesign/core/utils';
 import {stepMarker} from './stepper.stylex';
 import type {StepStatus} from './StepStatus';
 
@@ -288,11 +292,12 @@ const styles = stylex.create({
     height: NUMBER_SIZE,
     borderRadius: radiusVars['--radius-full'],
     // Smallest semantic type token — keeps the compact numeric badge legible
-    // (>=12px) and themeable rather than a raw literal.
+    // (>=12px) and themeable rather than a raw literal. The digit is centered
+    // by the grid (placeItems), so no explicit line-height is needed — this
+    // matches how Avatar/AvatarGroup center a single glyph in a circle.
     fontSize: typeScaleVars['--text-supporting-size'],
     paddingBlockEnd: '1px',
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: 1,
     flexShrink: 0,
     textAlign: 'center',
   },
@@ -384,9 +389,10 @@ const styles = stylex.create({
   description: {
     fontSize: typeScaleVars['--text-supporting-size'],
     // The supporting-leading token (1.667 → 20px at 12px) reads too loose for
-    // a caption sitting under its label; a fixed 16px line box (1.33) is
-    // tighter without collapsing the text the way capsize trim did.
-    lineHeight: '16px',
+    // a caption sitting under its label; a fixed 16px line box (the --spacing-4
+    // step) is tighter without collapsing the text the way capsize trim did,
+    // and stays on the spacing scale rather than a raw literal.
+    lineHeight: spacingVars['--spacing-4'],
     color: colorVars['--color-text-secondary'],
   },
 
@@ -894,8 +900,9 @@ export function Step({
   // into the button's accessible name for clickable ones (an aria-label on
   // the button would otherwise override the hidden text). Two separate keys
   // rather than string concatenation so translations control the joiner.
-  const statusTextNode =
-    statusText != null ? <VisuallyHidden>{statusText}</VisuallyHidden> : null;
+  const statusTextNode = isRenderable(statusText) ? (
+    <VisuallyHidden>{statusText}</VisuallyHidden>
+  ) : null;
   const stepAriaLabel =
     statusText != null
       ? t('@astryx.step.goToStepWithStatus', {
@@ -946,33 +953,31 @@ export function Step({
     </div>
   );
 
-  const descriptionNode =
-    description != null ? (
-      <div
-        {...stylex.props(
-          hasIndicator
-            ? isNumber
-              ? styles.descriptionRowWithNumber
-              : styles.descriptionRowWithIndicator
-            : styles.descriptionRow,
-        )}>
-        <span {...stylex.props(styles.description)}>{description}</span>
-      </div>
-    ) : null;
+  const descriptionNode = isRenderable(description) ? (
+    <div
+      {...stylex.props(
+        hasIndicator
+          ? isNumber
+            ? styles.descriptionRowWithNumber
+            : styles.descriptionRowWithIndicator
+          : styles.descriptionRow,
+      )}>
+      <span {...stylex.props(styles.description)}>{description}</span>
+    </div>
+  ) : null;
 
-  const contentNode =
-    children != null ? (
-      <div
-        {...stylex.props(
-          styles.stepContent,
-          hasIndicator &&
-            (isNumber
-              ? styles.stepContentWithNumber
-              : styles.stepContentWithIndicator),
-        )}>
-        {children}
-      </div>
-    ) : null;
+  const contentNode = isRenderable(children) ? (
+    <div
+      {...stylex.props(
+        styles.stepContent,
+        hasIndicator &&
+          (isNumber
+            ? styles.stepContentWithNumber
+            : styles.stepContentWithIndicator),
+      )}>
+      {children}
+    </div>
+  ) : null;
 
   // Theme data attributes reflect progress + optional semantic status.
   const stepThemeProps = themeProps('step', {
@@ -1029,18 +1034,16 @@ export function Step({
       </div>
     );
 
-    const otDescriptionNode =
-      description != null ? (
-        <span {...stylex.props(styles.description)}>{description}</span>
-      ) : null;
+    const otDescriptionNode = isRenderable(description) ? (
+      <span {...stylex.props(styles.description)}>{description}</span>
+    ) : null;
 
-    const otContentNode =
-      children != null ? (
-        <div
-          {...stylex.props(isVertical ? styles.otContentV : styles.otContentH)}>
-          {children}
-        </div>
-      ) : null;
+    const otContentNode = isRenderable(children) ? (
+      <div
+        {...stylex.props(isVertical ? styles.otContentV : styles.otContentH)}>
+        {children}
+      </div>
+    ) : null;
 
     if (isVertical) {
       const inner = (

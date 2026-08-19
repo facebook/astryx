@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Stepper, Step} from '@astryxdesign/lab';
+import {Stepper, Step} from '@astryxdesign/core/Stepper';
 import {Text} from '@astryxdesign/core/Text';
 import {Icon} from '@astryxdesign/core/Icon';
 

@@ -9,8 +9,8 @@
  * @position Context for Stepper <-> Step communication
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/Stepper/Stepper.doc.mjs
- * - /packages/lab/src/Stepper/index.ts
+ * - /packages/core/src/Stepper/Stepper.doc.mjs
+ * - /packages/core/src/Stepper/index.ts
  */
 
 import {createContext, use} from 'react';

@@ -489,6 +489,11 @@
       "types": "./dist/StatusDot/index.d.ts",
       "default": "./dist/StatusDot/index.js"
     },
+    "./Stepper": {
+      "source": "./src/Stepper/index.ts",
+      "types": "./dist/Stepper/index.d.ts",
+      "default": "./dist/Stepper/index.js"
+    },
     "./Switch": {
       "source": "./src/Switch/index.ts",
       "types": "./dist/Switch/index.d.ts",

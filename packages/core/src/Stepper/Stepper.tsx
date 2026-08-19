@@ -9,9 +9,9 @@
  * @position Core container component; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
- * - /packages/lab/src/Stepper/Stepper.test.tsx (tests for new/changed behavior)
- * - /packages/lab/src/Stepper/index.ts (exports if types change)
+ * - /packages/core/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
+ * - /packages/core/src/Stepper/Stepper.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Stepper/index.ts (exports if types change)
  * - /apps/storybook/stories/Stepper.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
@@ -19,10 +19,11 @@
 import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
-import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps} from '@astryxdesign/core/utils';
-import type {BaseProps} from '@astryxdesign/core';
-import {themeProps} from '@astryxdesign/core/utils';
+import {spacingVars} from '../theme/tokens.stylex';
+import {mergeProps} from '../utils';
+import type {BaseProps} from '../BaseProps';
+import {themeProps} from '../utils';
+import {useTranslator} from '../i18n';
 import {
   StepperContext,
   type StepperOrientation,
@@ -52,8 +53,8 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    */
   onStepClick?: (index: number) => void;
   /**
-   * Accessible label describing the set of steps.
-   * @default 'Progress'
+   * Accessible label describing the set of steps. Defaults to a translated
+   * "Progress" when unset.
    */
   label?: string;
   /**
@@ -150,7 +151,7 @@ export function Stepper({
   children,
   orientation = 'horizontal',
   onStepClick,
-  label = 'Progress',
+  label: labelFromProps,
   density = 'balanced',
   indicatorPosition = 'separated',
   hasCollapsibleLabels = false,
@@ -160,6 +161,8 @@ export function Stepper({
   ref,
   ...rest
 }: StepperProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.stepper.label');
   const ctxValue = useMemo<StepperContextValue>(
     () => ({
       activeStep,
