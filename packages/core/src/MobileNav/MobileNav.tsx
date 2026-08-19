@@ -49,9 +49,8 @@ import {Icon} from '../Icon';
 import {Heading} from '../Heading/Heading';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {
-  reserveScrollbarGutter,
-  releaseScrollbarGutter,
-  type ScrollbarGutterSnapshot,
+  holdScrollbarGutter,
+  type ScrollbarGutterHold,
 } from '../hooks/scrollbarGutter';
 import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -402,12 +401,12 @@ export function MobileNav({
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const gutterRef = useRef<ScrollbarGutterSnapshot | null>(null);
+  const gutterRef = useRef<ScrollbarGutterHold | null>(null);
 
-  // Gives back the width reserved for the (now hidden) document scrollbar.
+  // Gives back the gutter held open in place of the hidden scrollbar.
   const releaseGutter = useCallback(() => {
     if (gutterRef.current) {
-      releaseScrollbarGutter(document.documentElement, gutterRef.current);
+      gutterRef.current.release();
       gutterRef.current = null;
     }
   }, []);
@@ -453,16 +452,18 @@ export function MobileNav({
     }
 
     if (isOpen) {
+      // Taken first: every mutation below is one that can hide the scrollbar,
+      // and the gutter has to be measured while it is still there.
+      gutterRef.current ??= holdScrollbarGutter(document.documentElement);
+
       if (!dialog.open) {
         dialog.showModal();
       }
       // Prevent background scrolling and iOS pull-to-refresh.
       // overflow: clip avoids creating a scroll container (unlike hidden),
       // so there's no scroll bounce and no need to save/restore scroll position.
-      // Reserve the classic scrollbar's width first (measured while it's still
-      // there) so clipping it away doesn't reflow the page sideways.
-      gutterRef.current ??= reserveScrollbarGutter(document.documentElement);
       document.documentElement.style.overflow = 'clip';
+      gutterRef.current.settle();
     } else if (dialog.open) {
       document.documentElement.style.overflow = '';
       releaseGutter();

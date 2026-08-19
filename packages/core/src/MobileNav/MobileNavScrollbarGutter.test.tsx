@@ -8,8 +8,8 @@
  *
  * MobileNav clips the document to lock background scroll, which hides a
  * classic scrollbar and widens the layout viewport by its width — the page
- * behind the drawer jumps sideways. The clip has to be paired with a
- * reservation of that width.
+ * behind the drawer jumps sideways. The clip has to be paired with holding
+ * that gutter open.
  *
  * SYNC: When MobileNav.tsx changes, update tests to match new behavior
  */
@@ -45,8 +45,7 @@ function stubViewport(innerWidth: number, clientWidth: number) {
   });
 }
 
-const gutterVar = () =>
-  document.documentElement.style.getPropertyValue('--astryx-scrollbar-gutter');
+const rootGutter = () => document.documentElement.style.scrollbarGutter;
 
 describe('MobileNav scrollbar gutter', () => {
   afterEach(() => {
@@ -56,7 +55,7 @@ describe('MobileNav scrollbar gutter', () => {
     delete document.documentElement.clientWidth;
   });
 
-  it('reserves the hidden scrollbar width while the drawer is open', () => {
+  it('holds the gutter open while the drawer is open', () => {
     stubViewport(1024, 1009);
 
     const view = render(
@@ -66,17 +65,15 @@ describe('MobileNav scrollbar gutter', () => {
     );
 
     expect(document.documentElement.style.overflow).toBe('clip');
-    expect(document.documentElement.style.paddingRight).toBe('15px');
-    expect(gutterVar()).toBe('15px');
+    expect(rootGutter()).toBe('stable');
 
     view.unmount();
 
     expect(document.documentElement.style.overflow).toBe('');
-    expect(document.documentElement.style.paddingRight).toBe('');
-    expect(gutterVar()).toBe('');
+    expect(rootGutter()).toBe('');
   });
 
-  it('gives the reserved width back when the drawer closes', () => {
+  it('gives the gutter back when the drawer closes', () => {
     stubViewport(1024, 1009);
 
     const view = render(
@@ -85,7 +82,7 @@ describe('MobileNav scrollbar gutter', () => {
       </MobileNav>,
     );
 
-    expect(document.documentElement.style.paddingRight).toBe('15px');
+    expect(rootGutter()).toBe('stable');
 
     view.rerender(
       <MobileNav isOpen={false} onOpenChange={() => {}}>
@@ -93,11 +90,10 @@ describe('MobileNav scrollbar gutter', () => {
       </MobileNav>,
     );
 
-    expect(document.documentElement.style.paddingRight).toBe('');
-    expect(gutterVar()).toBe('');
+    expect(rootGutter()).toBe('');
   });
 
-  it('reserves nothing when the scrollbar is an overlay one', () => {
+  it('holds nothing when the scrollbar is an overlay one', () => {
     stubViewport(1024, 1024);
 
     render(
@@ -107,7 +103,7 @@ describe('MobileNav scrollbar gutter', () => {
     );
 
     expect(document.documentElement.style.overflow).toBe('clip');
+    expect(rootGutter()).toBe('');
     expect(document.documentElement.style.paddingRight).toBe('');
-    expect(gutterVar()).toBe('');
   });
 });

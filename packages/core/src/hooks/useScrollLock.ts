@@ -17,11 +17,7 @@
  */
 
 import {useEffect} from 'react';
-import {
-  reserveScrollbarGutter,
-  releaseScrollbarGutter,
-  type ScrollbarGutterSnapshot,
-} from './scrollbarGutter';
+import {holdScrollbarGutter, type ScrollbarGutterHold} from './scrollbarGutter';
 
 interface ScrollLockSnapshot {
   scrollX: number;
@@ -31,7 +27,7 @@ interface ScrollLockSnapshot {
   top: string;
   left: string;
   right: string;
-  gutter: ScrollbarGutterSnapshot;
+  gutter: ScrollbarGutterHold;
 }
 
 let lockCount = 0;
@@ -45,9 +41,9 @@ let originalBodyState: ScrollLockSnapshot | null = null;
  * does not prevent body scroll behind modals. Restores scroll position
  * on unlock.
  *
- * Pinning hides the document scrollbar, so the width a classic scrollbar
- * occupied is reserved as body padding for the duration of the lock — without
- * it the page reflows sideways by ~15px the moment an overlay opens.
+ * Pinning also hides the document's scrollbar, so the gutter that scrollbar
+ * occupied is held open for the duration of the lock — without it the page
+ * reflows sideways by ~15px the moment an overlay opens.
  *
  * @example
  * ```
@@ -66,8 +62,8 @@ export function useScrollLock(isLocked: boolean): void {
       const scrollX = window.scrollX;
       const scrollY = window.scrollY;
 
-      // Measured before the pinning styles below hide the scrollbar.
-      const gutter = reserveScrollbarGutter(body);
+      // Taken before the pinning styles below hide the scrollbar.
+      const gutter = holdScrollbarGutter(body);
 
       originalBodyState = {
         scrollX,
@@ -85,6 +81,8 @@ export function useScrollLock(isLocked: boolean): void {
       body.style.top = `-${scrollY}px`;
       body.style.left = '0';
       body.style.right = '0';
+
+      gutter.settle();
     }
 
     lockCount += 1;
@@ -104,7 +102,7 @@ export function useScrollLock(isLocked: boolean): void {
       body.style.top = state.top;
       body.style.left = state.left;
       body.style.right = state.right;
-      releaseScrollbarGutter(body, state.gutter);
+      state.gutter.release();
       window.scrollTo(state.scrollX, state.scrollY);
     };
   }, [isLocked]);

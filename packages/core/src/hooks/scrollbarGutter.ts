@@ -2,10 +2,8 @@
 
 /**
  * @file scrollbarGutter.ts
- * @input An element to compensate, plus viewport metrics (window.innerWidth vs
- *   document.documentElement.clientWidth)
- * @output Exports SCROLLBAR_GUTTER_VAR, measureScrollbarGutter,
- *   reserveScrollbarGutter, releaseScrollbarGutter
+ * @input The element a scroll lock pins, plus live layout measurements
+ * @output Exports holdScrollbarGutter and the ScrollbarGutterHold it returns
  * @position Internal hook utility; used by useScrollLock and MobileNav so that
  *   locking background scroll does not resize the layout viewport.
  *
@@ -13,100 +11,111 @@
  * classic (space-taking) one — Windows/Linux desktop, and macOS set to
  * "Always" show scroll bars — hiding it widens the layout viewport by the
  * scrollbar's width and the whole page jumps sideways behind the overlay.
- * These helpers reserve that width back as padding on whichever element the
- * lock pins, so the content box keeps its pre-lock size.
  *
- * Overlay scrollbars (mobile, default macOS) measure 0 and are left alone.
+ * The fix is `scrollbar-gutter: stable`, which holds the gutter open once the
+ * scrollbar goes away. Being a real layout change it holds `position: fixed`
+ * chrome (sticky headers, toast viewports) as well as in-flow content, which
+ * padding fundamentally cannot: fixed elements resolve against the viewport,
+ * not against the padded element.
+ *
+ * Padding is kept only as a fallback for engines without `scrollbar-gutter`
+ * (Safari shipped it in 18.2), and it is applied by measuring whether the
+ * element actually moved rather than by assuming it did.
  */
 
-/**
- * Custom property holding the reserved gutter width while a scroll lock is
- * active (`0px` is not set — the property is simply absent when unlocked).
- *
- * Padding on the pinned element only compensates content in the document
- * flow. `position: fixed` chrome (sticky headers, toast viewports) is laid out
- * against the viewport itself and has to compensate explicitly:
- *
- * ```
- * paddingRight: 'var(--astryx-scrollbar-gutter, 0px)'
- * ```
- */
-export const SCROLLBAR_GUTTER_VAR = '--astryx-scrollbar-gutter';
+const NOOP: ScrollbarGutterHold = {
+  settle() {},
+  release() {},
+};
 
-export interface ScrollbarGutterSnapshot {
-  /** The element's inline `padding-right` before the lock. */
-  paddingRight: string;
-  /** Whether this lock is the one that reserved the gutter. */
-  reserved: boolean;
+export interface ScrollbarGutterHold {
+  /**
+   * Call once the lock's own styles are applied: measures whether the element
+   * grew anyway and, only then, pads the difference away.
+   */
+  settle(): void;
+  /** Call on unlock: restores everything this hold changed. */
+  release(): void;
 }
 
 /**
- * Width of the document's classic scrollbar, in pixels; `0` when the scrollbar
- * is an overlay one (or when there is no scrollbar at all).
+ * Keeps `element`'s content box the width it is right now, across a scroll
+ * lock that is about to hide the document's scrollbar.
  *
- * Must be read *before* the scroll lock's styles are applied — afterwards the
- * scrollbar is already gone and the difference measures 0.
+ * Call it *before* applying the lock's styles, then {@link
+ * ScrollbarGutterHold.settle} immediately after, and {@link
+ * ScrollbarGutterHold.release} on unlock:
+ *
+ * ```
+ * const hold = holdScrollbarGutter(document.body);
+ * body.style.position = 'fixed';
+ * hold.settle();
+ * ```
+ *
+ * Overlay scrollbars (mobile, default macOS) take no layout space, so there is
+ * nothing to hold and nothing is touched.
  */
-export function measureScrollbarGutter(): number {
+export function holdScrollbarGutter(element: HTMLElement): ScrollbarGutterHold {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return 0;
+    return NOOP;
   }
 
-  const viewportWidth = document.documentElement.clientWidth;
+  const root = document.documentElement;
+  const viewportWidth = root.clientWidth;
 
   // 0 means "no layout to measure" (jsdom, and any non-visual environment),
   // not "the scrollbar is as wide as the window".
   if (viewportWidth === 0) {
-    return 0;
+    return NOOP;
   }
 
-  return Math.max(0, window.innerWidth - viewportWidth);
-}
+  const previousGutter = root.style.scrollbarGutter;
+  const previousPadding = element.style.paddingRight;
+  const widthBefore = element.getBoundingClientRect().width;
 
-/**
- * Reserves the scrollbar's width as extra `padding-right` on `element`, so
- * hiding the scrollbar doesn't widen the content box.
- *
- * Physical `padding-right`, not logical `padding-inline-end`: where the
- * document's scrollbar sits is a UA decision, not a writing-mode one. Chromium
- * keeps the root scrollbar at the physical right edge even in RTL documents,
- * where compensating the inline-end edge measurably moved RTL content by the
- * gutter width instead of holding it still.
- *
- * Returns a snapshot to hand back to {@link releaseScrollbarGutter}.
- */
-export function reserveScrollbarGutter(
-  element: HTMLElement,
-): ScrollbarGutterSnapshot {
-  const paddingRight = element.style.paddingRight;
-  const gutter = measureScrollbarGutter();
+  let heldGutter = false;
+  let padded = false;
+  let settled = false;
 
-  if (gutter === 0) {
-    return {paddingRight, reserved: false};
+  // Only when a space-taking scrollbar is actually there. Holding the gutter
+  // open on a page that never had one would carve out 15px that was never
+  // reserved — the same shift, in the other direction.
+  if (window.innerWidth > viewportWidth) {
+    root.style.scrollbarGutter = 'stable';
+    heldGutter = true;
   }
 
-  const existing =
-    Number.parseFloat(window.getComputedStyle(element).paddingRight || '0') ||
-    0;
+  return {
+    settle() {
+      if (settled) {
+        return;
+      }
+      settled = true;
 
-  element.style.paddingRight = `${existing + gutter}px`;
-  document.documentElement.style.setProperty(
-    SCROLLBAR_GUTTER_VAR,
-    `${gutter}px`,
-  );
+      // What the lock actually did to this element, rather than what we
+      // assumed it would do. 0 on any engine where the gutter held — and on a
+      // page that already sets `scrollbar-gutter: stable` itself, where the
+      // scrollbar was never taking the space back.
+      const grew = element.getBoundingClientRect().width - widthBefore;
+      if (grew <= 0) {
+        return;
+      }
 
-  return {paddingRight, reserved: true};
-}
+      const existing =
+        Number.parseFloat(window.getComputedStyle(element).paddingRight) || 0;
+      element.style.paddingRight = `${existing + grew}px`;
+      padded = true;
+    },
 
-/** Undoes {@link reserveScrollbarGutter}, restoring the inline padding. */
-export function releaseScrollbarGutter(
-  element: HTMLElement,
-  snapshot: ScrollbarGutterSnapshot,
-): void {
-  if (!snapshot.reserved) {
-    return;
-  }
-
-  element.style.paddingRight = snapshot.paddingRight;
-  document.documentElement.style.removeProperty(SCROLLBAR_GUTTER_VAR);
+    release() {
+      if (padded) {
+        element.style.paddingRight = previousPadding;
+        padded = false;
+      }
+      if (heldGutter) {
+        root.style.scrollbarGutter = previousGutter;
+        heldGutter = false;
+      }
+    },
+  };
 }

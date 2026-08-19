@@ -11,8 +11,9 @@ takes layout space — Windows/Linux desktop, and macOS set to always show scrol
 bars — hiding it widened the layout viewport by its width (~15px), so the whole
 page reflowed sideways behind the overlay and back again on close.
 
-Both scroll locks now measure that width before they hide the scrollbar and
-reserve it as padding for the duration of the lock. Overlay scrollbars measure
-0 and are untouched. The reserved width is published as
-`--astryx-scrollbar-gutter` so `position: fixed` chrome, which body padding
-can't hold, can compensate too.
+Both scroll locks now hold that gutter open with `scrollbar-gutter: stable` for
+the duration of the lock, which keeps `position: fixed` chrome (sticky headers,
+toast viewports) still as well as in-flow content. Pages with no space-taking
+scrollbar, and pages that already set `scrollbar-gutter` themselves, are left
+alone. Engines without `scrollbar-gutter` support fall back to padding the
+measured difference.

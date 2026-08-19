@@ -2,33 +2,30 @@
 
 /**
  * @file scrollbarGutter.test.ts
- * @input Uses vitest and a stubbed viewport (window.innerWidth vs
- *   documentElement.clientWidth)
- * @output Unit tests for measure/reserve/releaseScrollbarGutter
+ * @input Uses vitest and a stubbed viewport + element box (jsdom does no layout)
+ * @output Unit tests for holdScrollbarGutter
  * @position Testing; validates scrollbarGutter.ts implementation
  *
  * SYNC: When scrollbarGutter.ts changes, update tests to match new behavior
  */
 
 import {afterEach, describe, expect, it} from 'vitest';
-import {
-  SCROLLBAR_GUTTER_VAR,
-  measureScrollbarGutter,
-  releaseScrollbarGutter,
-  reserveScrollbarGutter,
-} from './scrollbarGutter';
+import {holdScrollbarGutter} from './scrollbarGutter';
 
 /**
- * jsdom does no layout, so `documentElement.clientWidth` is 0 there. Stub the
- * pair the measurement reads: a 15px classic scrollbar is `innerWidth` 1024
- * against a 1009px layout viewport.
+ * jsdom does no layout, so both halves of the measurement are stubbed: the
+ * viewport (`innerWidth` vs `documentElement.clientWidth`) and the element's
+ * own box, which `widths` reads from and a test flips to simulate the lock
+ * widening it.
  */
-function stubViewport({
+function stub({
   innerWidth,
   clientWidth,
+  widths,
 }: {
   innerWidth: number;
   clientWidth: number;
+  widths?: () => number;
 }) {
   Object.defineProperty(window, 'innerWidth', {
     value: innerWidth,
@@ -39,99 +36,132 @@ function stubViewport({
     value: clientWidth,
     configurable: true,
   });
+  if (widths) {
+    document.body.getBoundingClientRect = () => ({width: widths()}) as DOMRect;
+  }
 }
 
-describe('scrollbarGutter', () => {
+const rootGutter = () => document.documentElement.style.scrollbarGutter;
+
+describe('holdScrollbarGutter', () => {
   afterEach(() => {
     document.body.style.cssText = '';
     document.documentElement.style.cssText = '';
     // @ts-expect-error -- drop the stubs so jsdom's own values come back
     delete document.documentElement.clientWidth;
+    // @ts-expect-error -- restore the prototype's implementation
+    delete document.body.getBoundingClientRect;
   });
 
-  describe('measureScrollbarGutter', () => {
-    it('measures a classic scrollbar as the gap between the window and the layout viewport', () => {
-      stubViewport({innerWidth: 1024, clientWidth: 1009});
-      expect(measureScrollbarGutter()).toBe(15);
-    });
+  it('holds the gutter open when a space-taking scrollbar is about to be hidden', () => {
+    // A 1024px window over a 1009px layout viewport = a 15px classic scrollbar.
+    stub({innerWidth: 1024, clientWidth: 1009});
 
-    it('measures 0 for overlay scrollbars, which take no layout space', () => {
-      stubViewport({innerWidth: 1024, clientWidth: 1024});
-      expect(measureScrollbarGutter()).toBe(0);
-    });
+    const hold = holdScrollbarGutter(document.body);
 
-    it('measures 0 when there is no layout to measure', () => {
-      stubViewport({innerWidth: 1024, clientWidth: 0});
-      expect(measureScrollbarGutter()).toBe(0);
-    });
+    expect(rootGutter()).toBe('stable');
+
+    hold.settle();
+    hold.release();
+
+    expect(rootGutter()).toBe('');
   });
 
-  describe('reserveScrollbarGutter', () => {
-    it('reserves the scrollbar width as padding and publishes it as a custom property', () => {
-      stubViewport({innerWidth: 1024, clientWidth: 1009});
+  it('leaves an overlay scrollbar alone — there is no gutter to hold', () => {
+    stub({innerWidth: 1024, clientWidth: 1024});
 
-      const snapshot = reserveScrollbarGutter(document.body);
+    const hold = holdScrollbarGutter(document.body);
+    hold.settle();
 
-      expect(document.body.style.paddingRight).toBe('15px');
-      expect(
-        document.documentElement.style.getPropertyValue(SCROLLBAR_GUTTER_VAR),
-      ).toBe('15px');
+    expect(rootGutter()).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
 
-      releaseScrollbarGutter(document.body, snapshot);
+    hold.release();
+  });
 
-      expect(document.body.style.paddingRight).toBe('');
-      expect(
-        document.documentElement.style.getPropertyValue(SCROLLBAR_GUTTER_VAR),
-      ).toBe('');
-    });
+  it('does not pad when holding the gutter kept the element still', () => {
+    stub({innerWidth: 1024, clientWidth: 1009, widths: () => 1009});
 
-    it("adds to the page's own padding instead of replacing it", () => {
-      stubViewport({innerWidth: 1024, clientWidth: 1009});
-      document.body.style.paddingRight = '24px';
+    const hold = holdScrollbarGutter(document.body);
+    hold.settle();
 
-      const snapshot = reserveScrollbarGutter(document.body);
+    expect(rootGutter()).toBe('stable');
+    expect(document.body.style.paddingRight).toBe('');
 
-      expect(document.body.style.paddingRight).toBe('39px');
+    hold.release();
+  });
 
-      releaseScrollbarGutter(document.body, snapshot);
+  it('falls back to padding when the element grew anyway', () => {
+    // What an engine without scrollbar-gutter support does: the gutter request
+    // is ignored, the scrollbar goes away, and the element widens by 15px.
+    let width = 1009;
+    stub({innerWidth: 1024, clientWidth: 1009, widths: () => width});
 
-      expect(document.body.style.paddingRight).toBe('24px');
-    });
+    const hold = holdScrollbarGutter(document.body);
+    width = 1024;
+    hold.settle();
 
-    it('leaves the element alone when the scrollbar takes no space', () => {
-      stubViewport({innerWidth: 1024, clientWidth: 1024});
+    expect(document.body.style.paddingRight).toBe('15px');
 
-      const snapshot = reserveScrollbarGutter(document.body);
+    hold.release();
 
-      expect(document.body.style.paddingRight).toBe('');
-      expect(
-        document.documentElement.style.getPropertyValue(SCROLLBAR_GUTTER_VAR),
-      ).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
+  });
 
-      releaseScrollbarGutter(document.body, snapshot);
+  it("adds to the page's own padding instead of replacing it", () => {
+    let width = 1009;
+    stub({innerWidth: 1024, clientWidth: 1009, widths: () => width});
+    document.body.style.paddingRight = '24px';
 
-      expect(document.body.style.paddingRight).toBe('');
-    });
+    const hold = holdScrollbarGutter(document.body);
+    width = 1024;
+    hold.settle();
 
-    it('keeps the outer reservation intact when a nested lock releases', () => {
-      stubViewport({innerWidth: 1024, clientWidth: 1009});
+    expect(document.body.style.paddingRight).toBe('39px');
 
-      const outer = reserveScrollbarGutter(document.body);
-      // The scrollbar is already hidden by the time an overlay opens on top of
-      // another one, so the inner lock measures nothing to reserve.
-      stubViewport({innerWidth: 1024, clientWidth: 1024});
-      const inner = reserveScrollbarGutter(document.body);
+    hold.release();
 
-      releaseScrollbarGutter(document.body, inner);
+    expect(document.body.style.paddingRight).toBe('24px');
+  });
 
-      expect(document.body.style.paddingRight).toBe('15px');
-      expect(
-        document.documentElement.style.getPropertyValue(SCROLLBAR_GUTTER_VAR),
-      ).toBe('15px');
+  it('restores the page\u2019s own scrollbar-gutter rather than clearing it', () => {
+    stub({innerWidth: 1024, clientWidth: 1009});
+    document.documentElement.style.scrollbarGutter = 'stable both-edges';
 
-      releaseScrollbarGutter(document.body, outer);
+    const hold = holdScrollbarGutter(document.body);
 
-      expect(document.body.style.paddingRight).toBe('');
-    });
+    expect(rootGutter()).toBe('stable');
+
+    hold.settle();
+    hold.release();
+
+    expect(rootGutter()).toBe('stable both-edges');
+  });
+
+  it('settles once, however many times it is called', () => {
+    let width = 1009;
+    stub({innerWidth: 1024, clientWidth: 1009, widths: () => width});
+
+    const hold = holdScrollbarGutter(document.body);
+    width = 1024;
+    hold.settle();
+    hold.settle();
+    hold.settle();
+
+    expect(document.body.style.paddingRight).toBe('15px');
+
+    hold.release();
+  });
+
+  it('does nothing where there is no layout to measure', () => {
+    stub({innerWidth: 1024, clientWidth: 0});
+
+    const hold = holdScrollbarGutter(document.body);
+    hold.settle();
+
+    expect(rootGutter()).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
+
+    hold.release();
   });
 });
