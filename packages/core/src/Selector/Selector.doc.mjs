@@ -30,7 +30,10 @@ export const docs = {
       {className: 'astryx-selector-search'},
       {className: 'astryx-selector-section-heading'},
       {className: 'astryx-selector-empty-state'},
-      {className: 'astryx-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {
+        className: 'astryx-selector-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
       {className: 'astryx-selector-indicator-icon', states: ['state']},
       {className: 'astryx-selector-check'},
       {className: 'astryx-selector-popup'},
@@ -48,7 +51,7 @@ export const docs = {
       name: 'options',
       type: 'SelectorOption[]',
       description:
-        'Array of items: strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
+        'Array of items: strings, objects with value/label/description/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
       required: true,
     },
     {
@@ -158,6 +161,12 @@ export const docs = {
       type: '(option: SelectorOptionData) => ReactNode',
       description:
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
+    },
+    {
+      name: 'renderValue',
+      type: '(option: SelectorOptionData) => ReactNode',
+      description:
+        "Custom render function for the selected option inside the closed trigger. The default trigger shows the option's icon and label on one line at the size token; renderValue relaxes that fixed height to a minimum so taller content (a two-line SelectorOption, say) grows the control instead of being clipped.",
     },
     {
       name: 'indicatorPosition',

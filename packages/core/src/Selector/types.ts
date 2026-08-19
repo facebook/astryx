@@ -43,7 +43,4 @@ export type SelectorSection = {
  * Can be a plain string, option data object, divider, or section.
  */
 export type SelectorOptionType =
-  | string
-  | SelectorOptionData
-  | SelectorDivider
-  | SelectorSection;
+  string | SelectorOptionData | SelectorDivider | SelectorSection;

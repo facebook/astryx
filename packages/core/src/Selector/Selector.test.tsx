@@ -2993,3 +2993,168 @@ describe('Selector popup theme target', () => {
     },
   );
 });
+
+describe('Selector option descriptions and trigger value', () => {
+  const LOCK = <span data-testid="lock-glyph" />;
+  const GLOBE = <span data-testid="globe-glyph" />;
+  const VISIBILITY = [
+    {
+      value: 'private',
+      label: 'Private',
+      icon: LOCK,
+      description: 'Only members can access this space.',
+    },
+    {
+      value: 'public',
+      label: 'Public',
+      icon: GLOBE,
+      description: 'Anyone at the company can join.',
+    },
+  ];
+
+  it('renders an option description in the dropdown row', () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+
+    const [row] = screen.getAllByRole('option', {hidden: true});
+    expect(row).toHaveTextContent('Private');
+    expect(row).toHaveTextContent('Only members can access this space.');
+  });
+
+  it('keeps the description out of the closed trigger by default', () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveTextContent('Private');
+    expect(trigger).not.toHaveTextContent(
+      'Only members can access this space.',
+    );
+  });
+
+  it("renders the selected option's icon in the closed trigger", () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    expect(within(trigger).getByTestId('lock-glyph')).toBeInTheDocument();
+    expect(
+      within(trigger).queryByTestId('globe-glyph'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders no option icon while showing the placeholder', () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value={undefined}
+        onChange={() => {}}
+        placeholder="Choose..."
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveTextContent('Choose...');
+    expect(within(trigger).queryByTestId('lock-glyph')).not.toBeInTheDocument();
+  });
+
+  it('lets startIcon win over the selected option icon', () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        startIcon={<span data-testid="pinned-icon" />}
+      />,
+    );
+
+    // One leading glyph in the trigger, not two.
+    expect(screen.getByTestId('pinned-icon')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('combobox')).queryByTestId('lock-glyph'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders the selected option through renderValue', () => {
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        renderValue={option => (
+          <SelectorOption
+            icon={option.icon}
+            label={option.label ?? option.value}
+            description={option.description}
+          />
+        )}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveTextContent('Private');
+    expect(trigger).toHaveTextContent('Only members can access this space.');
+    expect(within(trigger).getByTestId('lock-glyph')).toBeInTheDocument();
+  });
+
+  it('does not call renderValue for the placeholder', () => {
+    const renderValue = vi.fn(() => <span>custom</span>);
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value={undefined}
+        onChange={() => {}}
+        placeholder="Choose..."
+        renderValue={renderValue}
+      />,
+    );
+
+    expect(renderValue).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox')).toHaveTextContent('Choose...');
+  });
+
+  it('matches type-ahead on the label, not the description', () => {
+    // "Anyone" starts the public description; typing "a" must not select it.
+    function Harness() {
+      const [value, setValue] = useState<string | undefined>(undefined);
+      return (
+        <Selector
+          label="Visibility"
+          options={VISIBILITY}
+          value={value}
+          onChange={setValue}
+        />
+      );
+    }
+    render(<Harness />);
+
+    const trigger = screen.getByRole('combobox');
+    trigger.focus();
+    type('pu', trigger);
+    expect(trigger).toHaveTextContent('Public');
+    expect(trigger).not.toHaveTextContent('Anyone at the company can join.');
+  });
+});
