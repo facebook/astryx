@@ -334,9 +334,31 @@ function main() {
     const contradicted = report.candidates.flatMap(c =>
       c.contradictions.map(x => `${c.id}/${x.key}`),
     );
-    if (contradicted.length > 0) {
+    // Also detect positive staleness: a derived check now passes but the
+    // manifest still claims not_started/in_progress — the manifest is behind.
+    const stale = report.candidates.flatMap(c => {
+      const candidate = CANDIDATES.find(cand => cand.id === c.id);
+      if (!candidate) return [];
+      return c.checks
+        .filter(
+          ch =>
+            ch.provenance === 'derived' &&
+            ch.state === PASSING_STATE,
+        )
+        .filter(ch => {
+          const declared = candidate.declared?.[ch.key];
+          return (
+            declared != null &&
+            declared.state != null &&
+            declared.state !== PASSING_STATE
+          );
+        })
+        .map(ch => `${c.id}/${ch.key}`);
+    });
+    const issues = [...contradicted, ...stale];
+    if (issues.length > 0) {
       console.error(
-        `\nManifest is stale — the source tree contradicts these passing claims:\n  ${contradicted.join('\n  ')}`,
+        `\nManifest is stale — these checks disagree with the source tree:\n  ${issues.join('\n  ')}`,
       );
       process.exit(1);
     }
