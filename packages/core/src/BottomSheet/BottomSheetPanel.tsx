@@ -43,6 +43,7 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
+import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {
   isValidSnapPoint,
   resolveSnapPoints,
@@ -111,10 +112,6 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 640,
     backgroundColor: colorVars['--color-background-surface'],
-    '--container-padding-inline-start': '0px',
-    '--container-padding-inline-end': '0px',
-    '--container-padding-block-start': '0px',
-    '--container-padding-block-end': '0px',
     borderStartStartRadius: radiusVars['--radius-container'],
     borderStartEndRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-high'],
@@ -584,6 +581,7 @@ export function BottomSheetPanel({
         themeProps('bottom-sheet'),
         stylex.props(
           styles.sheet,
+          overlayPaddingReset.reset,
           height === 'hug' ? styles.hugHeight : styles.budget,
           isClosing && styles.sheetClosing,
           isFading && styles.sheetFading,

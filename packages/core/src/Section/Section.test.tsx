@@ -167,15 +167,27 @@ describe('Section', () => {
     expect(screen.getByTestId('custom-section')).toBeInTheDocument();
   });
 
-  it('propagates explicit padding to nested sections via --astryx-section-padding', () => {
+  it('propagates explicit padding to nested sections via --_section-padding-propagated', () => {
     const {container} = render(
       <Section padding={6}>
         <Section data-testid="inner">Inner</Section>
       </Section>,
     );
-    // Outer section's inner div should set --astryx-section-padding
-    const outerInner = container.firstElementChild!.firstElementChild!;
-    expect(outerInner.className).toBeDefined();
+    // The outer section's inner div announces its padding on the PRIVATE
+    // propagation var, not the public `--astryx-section-padding` theme token —
+    // the split is what lets an overlay drop an inherited value at its
+    // boundary while keeping the theme's (see overlayPaddingReset).
+    const outerInner = container.firstElementChild!
+      .firstElementChild! as HTMLElement;
+    expect(
+      getComputedStyle(outerInner).getPropertyValue(
+        '--_section-padding-propagated',
+      ),
+      // jsdom does not resolve the token reference to its 24px value.
+    ).toBe('var(--spacing-6)');
+    expect(
+      getComputedStyle(outerInner).getPropertyValue('--astryx-section-padding'),
+    ).toBe('');
     // Inner section should render without error
     expect(screen.getByTestId('inner')).toBeInTheDocument();
     expect(screen.getByText('Inner')).toBeInTheDocument();

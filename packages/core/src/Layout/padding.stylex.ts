@@ -440,21 +440,87 @@ export const paddingBlockEndStyles = stylex.create({
 });
 
 /**
- * Propagation styles for --astryx-section-padding.
+ * Propagation styles for `--_section-padding-propagated`.
  * When a parent section sets explicit padding, this propagates the value
  * through the CSS custom property cascade so nested sections that use
  * useThemeDefault inherit the parent's padding instead of the theme default.
+ *
+ * This is deliberately NOT the public `--astryx-section-padding` token. The
+ * two carry different authority: the public token is the THEME's section
+ * padding, set once at the theme root, while this one is one ancestor
+ * Section's padding, propagated down the tree. An overlay has to drop the
+ * inherited value at its boundary (see {@link overlayPaddingReset}) without
+ * dropping the theme's — impossible while both live under one name.
+ * `container.stylex.ts` reads this ahead of the public token, so a propagated
+ * value still wins over the theme for nested sections, as before.
  */
 export const sectionPaddingPropagationStyles = stylex.create({
-  0: {'--astryx-section-padding': spacingVars['--spacing-0']},
-  0.5: {'--astryx-section-padding': spacingVars['--spacing-0-5']},
-  1: {'--astryx-section-padding': spacingVars['--spacing-1']},
-  1.5: {'--astryx-section-padding': spacingVars['--spacing-1-5']},
-  2: {'--astryx-section-padding': spacingVars['--spacing-2']},
-  3: {'--astryx-section-padding': spacingVars['--spacing-3']},
-  4: {'--astryx-section-padding': spacingVars['--spacing-4']},
-  5: {'--astryx-section-padding': spacingVars['--spacing-5']},
-  6: {'--astryx-section-padding': spacingVars['--spacing-6']},
-  8: {'--astryx-section-padding': spacingVars['--spacing-8']},
-  10: {'--astryx-section-padding': spacingVars['--spacing-10']},
+  0: {'--_section-padding-propagated': spacingVars['--spacing-0']},
+  0.5: {'--_section-padding-propagated': spacingVars['--spacing-0-5']},
+  1: {'--_section-padding-propagated': spacingVars['--spacing-1']},
+  1.5: {'--_section-padding-propagated': spacingVars['--spacing-1-5']},
+  2: {'--_section-padding-propagated': spacingVars['--spacing-2']},
+  3: {'--_section-padding-propagated': spacingVars['--spacing-3']},
+  4: {'--_section-padding-propagated': spacingVars['--spacing-4']},
+  5: {'--_section-padding-propagated': spacingVars['--spacing-5']},
+  6: {'--_section-padding-propagated': spacingVars['--spacing-6']},
+  8: {'--_section-padding-propagated': spacingVars['--spacing-8']},
+  10: {'--_section-padding-propagated': spacingVars['--spacing-10']},
+});
+
+/**
+ * Padding-variable reset for overlay roots (Dialog, BottomSheet, Drawer,
+ * MobileNav, Lightbox, and every layer surface).
+ *
+ * ## Why an overlay needs this
+ *
+ * The container padding system talks to descendants through inherited custom
+ * properties: a padded container announces its padding, and children read the
+ * value either to apply it or to cancel it with a negative margin
+ * (`Section`, `Divider`, `Layout`, `Table`).
+ *
+ * Inheritance follows the DOM, but an overlay leaves its parent's visual box —
+ * a fixed/top-layer `<dialog>` is a DOM descendant of the padded page while
+ * being nowhere near it on screen. It inherits values describing padding that
+ * is not there, and its content compensates against phantom space: a `Section`
+ * inside a 640px sheet rendered 672px wide and hung off both edges (#5208).
+ *
+ * Two families leak, and they need opposite treatments:
+ *
+ * - `--container-padding-*` -> `0px`. Descendants SUBTRACT these (bleed
+ *   margins). The overlay root has no padding of its own to escape, so the
+ *   honest answer is zero. Nested containers that do set padding (a Dialog's
+ *   content wrapper) re-announce their own values below this point, so
+ *   legitimate edge-to-edge bleed inside the overlay is unaffected.
+ * - `--layout-padding-*` and `--_section-padding-propagated` -> `initial`.
+ *   Descendants ADD these, so zeroing them would strip padding rather than
+ *   restore it. `initial` makes each guaranteed-invalid, so readers fall
+ *   through their own `var(…, fallback)` chain and land on the theme default —
+ *   which is what an overlay at the top of the tree should show.
+ *
+ * `initial` is also why propagation moved off `--astryx-section-padding`: that
+ * name is public theme surface, set at the theme root, and making it invalid
+ * here would blank the theme's own section padding inside every overlay.
+ *
+ * Apply on the overlay's outermost styled element.
+ *
+ * @example
+ * ```
+ * <dialog {...stylex.props(styles.dialog, overlayPaddingReset.reset)} />
+ * ```
+ */
+export const overlayPaddingReset = stylex.create({
+  reset: {
+    // Subtracted by descendants — the overlay root has no padding to escape.
+    '--container-padding-inline-start': '0px',
+    '--container-padding-inline-end': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
+    // Added by descendants — fall through to each reader's own default.
+    '--layout-padding-outer-x': 'initial',
+    '--layout-padding-outer-y': 'initial',
+    '--layout-padding-inner-x': 'initial',
+    '--layout-padding-inner-y': 'initial',
+    '--_section-padding-propagated': 'initial',
+  },
 });

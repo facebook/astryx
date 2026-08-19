@@ -58,6 +58,7 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {useScrollLock, useDevWarning} from '@astryxdesign/core/hooks';
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
+import {overlayPaddingReset} from '@astryxdesign/core/Layout';
 
 // =============================================================================
 // LIFO stacking registry (internal)
@@ -123,10 +124,6 @@ const styles = stylex.create({
     overflow: 'hidden',
     overscrollBehavior: 'contain',
     outline: 'none',
-    '--container-padding-inline-start': '0px',
-    '--container-padding-inline-end': '0px',
-    '--container-padding-block-start': '0px',
-    '--container-padding-block-end': '0px',
     // Closed state. `display` participates in the transition with
     // allow-discrete so it flips to none only after the slide-out finishes
     // (@starting-style covers the none -> flex entry). max-width animates
@@ -670,6 +667,7 @@ export function Drawer({
         themeProps('drawer', {side}),
         stylex.props(
           styles.dialog,
+          overlayPaddingReset.reset,
           sideStyle,
           isSheet
             ? dynamicStyles.blockSize(sizeValue)

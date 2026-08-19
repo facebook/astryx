@@ -29,6 +29,7 @@ import {createPortal} from 'react-dom';
 import {addAnchorName, removeAnchorName} from './anchorName';
 import {resolveLayerPortalTarget} from './layerHost';
 import {typeScaleVars, typographyVars} from '../theme/tokens.stylex';
+import {overlayPaddingReset} from '../Layout/padding.stylex';
 
 const styles = stylex.create({
   // Base reset for all layers
@@ -771,7 +772,12 @@ export function useLayer(
             : styles.offsetInline(toCssLength(offset))
           : null;
 
-      const stylexResult = stylex.props(styles.base, offsetStyle, xstyle);
+      const stylexResult = stylex.props(
+        styles.base,
+        overlayPaddingReset.reset,
+        offsetStyle,
+        xstyle,
+      );
       const combinedClassName = extraClassName
         ? `${extraClassName} ${stylexResult.className ?? ''}`
         : stylexResult.className;
@@ -835,7 +841,12 @@ export function useLayer(
         left: x,
       };
 
-      const stylexResult = stylex.props(styles.base, styles.fixed, xstyle);
+      const stylexResult = stylex.props(
+        styles.base,
+        overlayPaddingReset.reset,
+        styles.fixed,
+        xstyle,
+      );
       const combinedClassName = extraClassName
         ? `${extraClassName} ${stylexResult.className ?? ''}`
         : stylexResult.className;

@@ -85,6 +85,9 @@ const STRUCTURAL_VARS = new Set([
   '--table-row-overlay',
   '--separator-display',
   '--astryx-section-padding',
+  // Private counterpart of the public token above: one ancestor Section's
+  // padding, propagated down the tree. Structural, never authored by a theme.
+  '--_section-padding-propagated',
 ]);
 
 /**

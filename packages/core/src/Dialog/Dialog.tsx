@@ -44,6 +44,7 @@ import {
   containerPaddingBlockStartVarStyles,
   containerPaddingBlockEndVarStyles,
   spacingStepToToken,
+  overlayPaddingReset,
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
 import {mergeProps, mergeRefs} from '../utils';
@@ -129,10 +130,6 @@ const styles = stylex.create({
     border: 'none',
     backgroundColor: colorVars['--color-background-surface'],
     '--_dialog-radius': radiusVars['--radius-container'],
-    '--container-padding-inline-start': '0px',
-    '--container-padding-inline-end': '0px',
-    '--container-padding-block-start': '0px',
-    '--container-padding-block-end': '0px',
     borderRadius: 'var(--_dialog-radius)',
     boxShadow: shadowVars['--shadow-high'],
     display: 'none',
@@ -188,10 +185,6 @@ const styles = stylex.create({
     border: 'none',
     backgroundColor: colorVars['--color-background-surface'],
     '--_dialog-radius': radiusVars['--radius-container'],
-    '--container-padding-inline-start': '0px',
-    '--container-padding-inline-end': '0px',
-    '--container-padding-block-start': '0px',
-    '--container-padding-block-end': '0px',
     borderRadius: 'var(--_dialog-radius)',
     boxShadow: shadowVars['--shadow-high'],
     display: 'flex',
@@ -618,6 +611,7 @@ export function Dialog({
           themeProps('dialog', {variant}),
           stylex.props(
             styles.inlineWrapper,
+            overlayPaddingReset.reset,
             !isFullscreen && dynamicStyles.sizing(width, maxHeight),
             isFullscreen && styles.fullscreen,
             xstyle,
@@ -644,6 +638,7 @@ export function Dialog({
         themeProps('dialog', {variant}),
         focusOutlineProps.focusVisible(
           styles.dialog,
+          overlayPaddingReset.reset,
           isOpen && styles.open,
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),

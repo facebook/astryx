@@ -53,6 +53,7 @@ import {
   type ScrollbarGutterHold,
 } from '../hooks/scrollbarGutter';
 import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
+import {overlayPaddingReset} from '../Layout/padding.stylex';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -144,10 +145,6 @@ const styles = stylex.create({
     flexDirection: 'column',
     backgroundColor: colorVars['--color-background-surface'],
     boxSizing: 'border-box',
-    '--container-padding-inline-start': '0px',
-    '--container-padding-inline-end': '0px',
-    '--container-padding-block-start': '0px',
-    '--container-padding-block-end': '0px',
     overflow: 'hidden',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-medium'],
@@ -570,6 +567,7 @@ export function MobileNav({
         themeProps('mobile-nav', {side: resolvedSide}),
         stylex.props(
           styles.dialog,
+          overlayPaddingReset.reset,
           isOpen && styles.open,
           styles.backdrop,
           isOpen && styles.backdropOpen,
