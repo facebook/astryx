@@ -1,0 +1,115 @@
+{
+  "name": "adoption-battery",
+  "description": "Feature requests against the existing app in fixture-app/. Prompts describe the user experience and name no component, no styling system, and no tool. `expectedAdoption` is EVALUATION-ONLY and must never appear in a task prompt (Checker Protocol §3).",
+  "tiers": {
+    "T1": "A finished design-system component maps to the job 1:1",
+    "T2": "Nothing maps 1:1 — the job is composition from primitives",
+    "T3": "A hand-rolled version of something similar already exists in the tree (crossed with the precedent factor)",
+    "T4": "An existing widget is unusable from the keyboard — where adoption should pay for itself",
+    "T5": "Must match the app's canonical semantics and its neighbours visually"
+  },
+  "prompts": [
+    {
+      "id": "t1-1",
+      "tier": "T1",
+      "category": "affordance",
+      "prompt": "The toolbar has icon-only buttons and people can't tell what they do. Hovering or focusing one should say what it does.",
+      "expectedAdoption": {
+        "kind": "component",
+        "notes": "A tooltip component exists in both the app's own primitives and the design system; either is a defensible hit, hand-rolling is not."
+      }
+    },
+    {
+      "id": "t1-2",
+      "tier": "T1",
+      "category": "flow",
+      "prompt": "Re-running a failed deploy is one click and people are doing it by accident. Ask them to confirm first, and make the destructive option obvious.",
+      "expectedAdoption": {
+        "kind": "component",
+        "notes": "Modal/confirmation exists in both; scored on which it reached for and whether focus handling came with it."
+      }
+    },
+    {
+      "id": "t2-1",
+      "tier": "T2",
+      "category": "composition",
+      "prompt": "Let people select several runs at once. While anything is selected, show a compact bar over the table with the number selected and the actions that apply to all of them. It must not push the table around.",
+      "expectedAdoption": {
+        "kind": "primitives",
+        "notes": "No finished component. The differentiator tier: surface + layout primitives + the app's own controls, vs a div with fixed positioning."
+      }
+    },
+    {
+      "id": "t2-2",
+      "tier": "T2",
+      "category": "composition",
+      "prompt": "Clicking a run should open its full detail beside the table without navigating away, and a keyboard user must be able to get out of it.",
+      "expectedAdoption": {
+        "kind": "primitives",
+        "notes": "Overlay surface + dismissal/focus behaviour. Watch for hand-rolled focus traps and Escape handling."
+      }
+    },
+    {
+      "id": "t3-1",
+      "tier": "T3",
+      "category": "entity-preview",
+      "precedentSensitive": true,
+      "prompt": "Hovering a ticket reference in the table should preview the ticket — its title, who it's assigned to, and what state it's in.",
+      "expectedAdoption": {
+        "kind": "component-or-primitives",
+        "notes": "The precedent file does exactly this for builds, hover-only and with no keyboard path. Under `keep`, does the agent copy it? Under `strip`, does it reach for the system?"
+      }
+    },
+    {
+      "id": "t3-2",
+      "tier": "T3",
+      "category": "entity-preview",
+      "precedentSensitive": true,
+      "prompt": "Show who triggered each run, and let people see who that is — their team and whether they're around — without leaving the page.",
+      "expectedAdoption": {
+        "kind": "component-or-primitives",
+        "notes": "Same shape as the precedent but a different entity; also needs a new data path, so watch for inline fetching."
+      }
+    },
+    {
+      "id": "t4-1",
+      "tier": "T4",
+      "category": "keyboard",
+      "prompt": "The environment switcher can't be used without a mouse. Tab reaches the button, but once the list is open there's no way to move through it, choose, or close it from the keyboard.",
+      "expectedAdoption": {
+        "kind": "component-or-primitives",
+        "notes": "The clearest adoption win available in the fixture. Scored on the a11y delta vs the file it replaced, and on whether roving focus came from a primitive or was hand-written."
+      }
+    },
+    {
+      "id": "t4-2",
+      "tier": "T4",
+      "category": "keyboard",
+      "prompt": "Keyboard users can't tell which toolbar control they're on — nothing changes visibly as focus moves.",
+      "expectedAdoption": {
+        "kind": "component-or-tokens",
+        "notes": "Either adopt controls that ship a focus indicator or add one from tokens. A raw outline colour is a token-discipline miss."
+      }
+    },
+    {
+      "id": "t5-1",
+      "tier": "T5",
+      "category": "parity",
+      "prompt": "Add a way to filter the table by run status, next to the environment switcher. It should look like it has always been part of that toolbar.",
+      "expectedAdoption": {
+        "kind": "component",
+        "notes": "Parity is the point: same height, radius and border treatment as its neighbour. Escape hatches needed to get there are the finding."
+      }
+    },
+    {
+      "id": "t5-2",
+      "tier": "T5",
+      "category": "semantics",
+      "prompt": "Above the table, show how many runs are in each state right now, using the same colours the table already uses for those states.",
+      "expectedAdoption": {
+        "kind": "component",
+        "notes": "Semantic fidelity: the app's canonical status→tone mapping must survive. A variant chosen by name rather than by the mapping is the failure this catches."
+      }
+    }
+  ]
+}

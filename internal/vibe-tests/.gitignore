@@ -1,6 +1,9 @@
 # Astryx agent docs (generated)
 .astryx-docs/
 AGENTS.md
+# Exception: the adoption fixture's own AGENTS.md is authored, and is the
+# artifact two conditions patch — it must be versioned.
+!adoption-test/fixture-app/AGENTS.md
 
 # Baseline comparison docs (generated)
 .baseline-docs/
