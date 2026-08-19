@@ -496,7 +496,7 @@ describe('TransferList', () => {
   });
 
   describe('pointer reordering', () => {
-    it('mounts the drag preview in the nearest top-layer container', () => {
+    it('promotes the drag preview to the top layer from inside a popover host', () => {
       const {container} = render(
         <div data-testid="popover-host" popover="auto">
           <ControlledTransferList initialValue={['name', 'owner', 'status']} />
@@ -521,7 +521,13 @@ describe('TransferList', () => {
       const preview = document.querySelector<HTMLElement>(
         '[data-transfer-list-drag-preview]',
       );
-      expect(preview?.parentElement).toBe(screen.getByTestId('popover-host'));
+      // The ghost reaches the top layer through its host's popover attribute
+      // rather than by being relocated into an ancestor. That keeps it painted
+      // above this popover host while it still inherits the host's theme
+      // variables, which a portal to document.body would have dropped.
+      const layer = preview?.parentElement ?? null;
+      expect(layer).toHaveAttribute('popover');
+      expect(screen.getByTestId('popover-host')).toContainElement(layer);
     });
 
     it('keeps rows stationary, locks X, follows pointer Y, and commits once', () => {
@@ -560,9 +566,10 @@ describe('TransferList', () => {
       expect(getComputedStyle(preview!).opacity).toBe('0.5');
       expect(preview).toHaveAttribute('aria-hidden', 'true');
       expect(preview).toHaveTextContent('Owner');
-      expect(preview!.style.getPropertyValue('--x-transform')).toBe(
-        'translate3d(0px, 40px, 0)',
-      );
+      // Placement lives on the layer as fixed insets. The coordinates come
+      // from getBoundingClientRect, so reading them as viewport insets is what
+      // keeps the ghost under the pointer once the page has been scrolled.
+      expect(preview!.parentElement).toHaveStyle({top: '40px', left: '0px'});
       expect(
         container.querySelector('[data-transfer-list-drop-target]'),
       ).not.toBeInTheDocument();
@@ -573,9 +580,7 @@ describe('TransferList', () => {
         clientY: 5,
       });
 
-      expect(preview!.style.getPropertyValue('--x-transform')).toBe(
-        'translate3d(0px, -5px, 0)',
-      );
+      expect(preview!.parentElement).toHaveStyle({top: '-5px', left: '0px'});
       expect([
         ...container.querySelectorAll<HTMLElement>('[data-transfer-list-row]'),
       ]).toEqual(rows);
@@ -596,9 +601,7 @@ describe('TransferList', () => {
         clientY: 115,
       });
 
-      expect(preview!.style.getPropertyValue('--x-transform')).toBe(
-        'translate3d(0px, 105px, 0)',
-      );
+      expect(preview!.parentElement).toHaveStyle({top: '105px', left: '0px'});
       expect(rows[0]).not.toHaveAttribute('data-transfer-list-drop-target');
       expect(rows[2]).toHaveAttribute(
         'data-transfer-list-drop-target',
@@ -655,11 +658,12 @@ describe('TransferList', () => {
       expect(
         document.querySelector('[data-transfer-list-drag-preview]'),
       ).toBeInTheDocument();
+      // A horizontal-only gesture must not move the ghost off the row it came
+      // from: the drag is locked to the Y axis.
       expect(
-        document
-          .querySelector<HTMLElement>('[data-transfer-list-drag-preview]')
-          ?.style.getPropertyValue('--x-transform'),
-      ).toBe('translate3d(0px, 0px, 0)');
+        document.querySelector<HTMLElement>('[data-transfer-list-drag-preview]')
+          ?.parentElement,
+      ).toHaveStyle({top: '0px', left: '0px'});
       expect(
         container.querySelector('[data-transfer-list-drop-target]'),
       ).not.toBeInTheDocument();
