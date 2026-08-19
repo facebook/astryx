@@ -64,6 +64,11 @@ export type {BottomSheetSnapPoint};
 const OVERSCROLL_PADDING = 48;
 const MOBILE_KEYBOARD_BOTTOM_CLEARANCE = 48;
 const TRANSITION_BACKSTOP_BUFFER_MS = 50;
+// The floating handle bar's height. The bar is out of flow, so this is not
+// layout space the content pays for -- the pill (4px, centered) lands 10-14px
+// from the sheet's top edge, inside the space a content wrapper's own top
+// padding already provides.
+const HANDLE_BAR_HEIGHT = spacingVars['--spacing-6'];
 
 // Measure the same viewport the height budgets are written against. Those are
 // `dvh`, which the virtual keyboard does not shrink, so reading
@@ -97,6 +102,9 @@ const styles = stylex.create({
   sheet: {
     pointerEvents: 'auto',
     boxSizing: 'border-box',
+    // Containing block for the floating handle bar, which is lifted out of
+    // flow so the scrolling body reaches the sheet's top edge.
+    position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     minHeight: 0,
@@ -133,11 +141,23 @@ const styles = stylex.create({
     pointerEvents: 'none',
   },
   handleBar: {
-    flexShrink: 0,
+    // Floats over the body rather than taking a row in the flex column. The
+    // content starts at the sheet's top edge and rides up under the pill --
+    // both moving it closer to the top and letting scrolled content pass
+    // beneath instead of stopping at a hard edge.
+    position: 'absolute',
+    insetBlockStart: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
+    zIndex: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    height: spacingVars['--spacing-12'],
+    height: HANDLE_BAR_HEIGHT,
+    // Keeps the pill legible over whatever sits or scrolls under it: opaque
+    // surface behind the pill itself, fading out across the lower half so the
+    // content emerging below has no visible cut line.
+    backgroundImage: `linear-gradient(to bottom, ${colorVars['--color-background-surface']} 60%, transparent)`,
     touchAction: 'none',
     cursor: 'grab',
   },
@@ -154,6 +174,10 @@ const styles = stylex.create({
     overflowY: 'auto',
     overscrollBehavior: 'none',
     touchAction: 'pan-y',
+    // No reserve for the handle bar: it floats, so the content starts at the
+    // sheet's top edge and rides up under the pill. The pill is 4px centered
+    // in a 24px band, so it occupies only 10-14px from the edge -- inside the
+    // space a content wrapper's own top padding already provides.
     paddingBlockEnd: 0,
   },
   tallKeyboardBody: {
