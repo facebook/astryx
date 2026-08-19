@@ -27,7 +27,7 @@ import {InternationalizationContext} from './InternationalizationContext';
 
 /**
  * Returns an `Intl.Collator` for the active provider locale, memoized across
- * renders where the locale and options are unchanged.
+ * renders where the locale and options object are unchanged.
  *
  * @example
  * ```
@@ -37,35 +37,8 @@ import {InternationalizationContext} from './InternationalizationContext';
  */
 export function useCollator(options?: Intl.CollatorOptions): Intl.Collator {
   const ctx = use(InternationalizationContext);
-  const {
-    localeMatcher,
-    usage,
-    sensitivity,
-    ignorePunctuation,
-    numeric,
-    caseFirst,
-    collation,
-  } = options ?? {};
   return useMemo(
-    () =>
-      new Intl.Collator(ctx.locale, {
-        localeMatcher,
-        usage,
-        sensitivity,
-        ignorePunctuation,
-        numeric,
-        caseFirst,
-        collation,
-      }),
-    [
-      ctx.locale,
-      localeMatcher,
-      usage,
-      sensitivity,
-      ignorePunctuation,
-      numeric,
-      caseFirst,
-      collation,
-    ],
+    () => new Intl.Collator(ctx.locale, options),
+    [ctx.locale, options],
   );
 }

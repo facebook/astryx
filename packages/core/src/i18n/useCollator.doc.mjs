@@ -4,7 +4,7 @@
 export const docs = {
   name: 'useCollator',
   displayName: 'useCollator',
-  group: 'Utilities',
+  category: 'utilities',
   keywords: [
     'i18n',
     'internationalization',

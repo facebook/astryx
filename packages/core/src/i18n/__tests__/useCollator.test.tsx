@@ -60,13 +60,33 @@ describe('useCollator', () => {
     ).toEqual(['item10', 'item2']);
   });
 
-  test('memoizes the collator across re-renders with the same locale and options', () => {
-    const {result, rerender} = renderHook(() => useCollator({numeric: true}), {
-      wrapper: wrapperFor('en'),
-    });
+  test('memoizes the collator when locale and options identity are unchanged', () => {
+    const options = {numeric: true} satisfies Intl.CollatorOptions;
+    const {result, rerender} = renderHook(
+      ({collatorOptions}) => useCollator(collatorOptions),
+      {
+        initialProps: {collatorOptions: options},
+        wrapper: wrapperFor('en'),
+      },
+    );
     const first = result.current;
-    rerender();
+    rerender({collatorOptions: options});
     expect(result.current).toBe(first);
+  });
+
+  test('rebuilds the collator when options identity changes', () => {
+    const {result, rerender} = renderHook(
+      ({collatorOptions}) => useCollator(collatorOptions),
+      {
+        initialProps: {
+          collatorOptions: {numeric: true} satisfies Intl.CollatorOptions,
+        },
+        wrapper: wrapperFor('en'),
+      },
+    );
+    const first = result.current;
+    rerender({collatorOptions: {numeric: true}});
+    expect(result.current).not.toBe(first);
   });
 
   test('re-renders with a new collator when the provider locale changes', () => {
