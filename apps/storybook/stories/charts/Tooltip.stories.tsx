@@ -37,7 +37,7 @@ export const Default: StoryObj = {
         axes={
           <>
             <ChartAxis position="bottom" />
-            <ChartAxis position="left" tickFormat={currency(locale)} />
+            <ChartAxis position="left" tickFormat={currency('$', locale)} />
           </>
         }
         height={320}

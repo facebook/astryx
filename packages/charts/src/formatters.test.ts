@@ -31,7 +31,7 @@ describe('chart formatters', () => {
   });
 
   it('formats currency and percentages with the requested locale', () => {
-    expect(currency('de-DE', '€')(1234.5)).toBe(
+    expect(currency('€', 'de-DE')(1234.5)).toBe(
       `€${new Intl.NumberFormat('de-DE', {
         notation: 'compact',
         maximumFractionDigits: 1,
@@ -43,6 +43,11 @@ describe('chart formatters', () => {
         maximumFractionDigits: 1,
       }).format(0.125),
     );
+  });
+
+  it('preserves the legacy symbol-only currency call', () => {
+    expect(() => currency('€')(1234.5)).not.toThrow();
+    expect(currency('€')(1234.5)).toMatch(/^€/);
   });
 
   it('formats dates with the requested locale', () => {

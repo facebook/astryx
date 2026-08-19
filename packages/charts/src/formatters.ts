@@ -14,9 +14,11 @@
 
 import type {Locale} from '@astryxdesign/core/i18n';
 
-/** Lazily cache one formatter per locale. */
-function byLocale<T>(create: (locale: Locale) => T): (locale: Locale) => T {
-  const cache = new Map<Locale, T>();
+/** Lazily cache one formatter per locale, including the legacy host default. */
+function byLocale<T>(
+  create: (locale: Locale | undefined) => T,
+): (locale: Locale | undefined) => T {
+  const cache = new Map<Locale | undefined, T>();
   return locale => {
     let value = cache.get(locale);
     if (value === undefined) {
@@ -73,14 +75,14 @@ export function compactNumber(value: unknown, locale: Locale): string {
  *
  * @example
  * ```
- * <ChartAxis tickFormat={currency(locale)} />       // $1.5K
- * <ChartAxis tickFormat={currency(locale, '€')} />  // €1.5K
- * <ChartAxis tickFormat={currency(locale, '¥')} />  // ¥1.5K
+ * <ChartAxis tickFormat={currency('$', locale)} />  // $1.5K
+ * <ChartAxis tickFormat={currency('€', locale)} />  // €1.5K
+ * <ChartAxis tickFormat={currency('¥', locale)} />  // ¥1.5K
  * ```
  */
 export function currency(
-  locale: Locale,
   symbol = '$',
+  locale?: Locale,
 ): (value: unknown) => string {
   return (value: unknown) => {
     const n = Number(value);
