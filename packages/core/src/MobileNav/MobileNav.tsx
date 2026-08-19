@@ -70,7 +70,16 @@ const styles = stylex.create({
     width: '100vw',
     height: '100dvh',
     backgroundColor: 'transparent',
-    overflow: 'hidden',
+    // `clip`, not `hidden`. Both clip the off-screen drawer, but `hidden` makes
+    // the dialog a SCROLL CONTAINER, and a scroll container in the top layer
+    // whose subtree holds another scroller (the drawer's content area) does not
+    // paint a @starting-style entry transition for its descendants in Chromium:
+    // the transition ticks in the CSSOM while every painted frame shows the
+    // end value, so the drawer appears fully open. `clip` clips without
+    // creating a scroll container and the slide-in paints normally. The dialog
+    // never scrolls anyway — its child is absolutely positioned — so nothing
+    // depended on it being a scroll container.
+    overflow: 'clip',
     overscrollBehavior: 'contain',
     // Prevent touch gestures (pull-to-refresh, background scroll) passing through
     touchAction: 'none',
@@ -112,7 +121,14 @@ const styles = stylex.create({
   },
   backdropOpen: {
     '::backdrop': {
-      opacity: 1,
+      // The ::backdrop only exists once showModal() has put the dialog in the
+      // top layer, so its first rendered frame already has the open opacity.
+      // Without a starting style there is no earlier value to transition from
+      // and the scrim snaps in — @starting-style supplies that value.
+      opacity: {
+        default: 1,
+        '@starting-style': 0,
+      },
     },
   },
   drawer: {
@@ -143,7 +159,17 @@ const styles = stylex.create({
     },
   },
   drawerStartOpen: {
-    transform: 'translateX(0)',
+    // The whole dialog is `display: none` while closed, so the drawer is not
+    // rendered and the open transform is the only value it has ever had — a
+    // transition needs a previous value to run from. @starting-style gives the
+    // first rendered frame the off-screen transform, so the slide-in plays.
+    transform: {
+      default: 'translateX(0)',
+      '@starting-style': {
+        default: 'translateX(-100%)',
+        ':is([dir="rtl"] *)': 'translateX(100%)',
+      },
+    },
   },
   drawerEnd: {
     insetInlineEnd: 0,
@@ -156,7 +182,14 @@ const styles = stylex.create({
     },
   },
   drawerEndOpen: {
-    transform: 'translateX(0)',
+    // See drawerStartOpen — same starting style, mirrored edge.
+    transform: {
+      default: 'translateX(0)',
+      '@starting-style': {
+        default: 'translateX(100%)',
+        ':is([dir="rtl"] *)': 'translateX(-100%)',
+      },
+    },
   },
   header: {
     display: 'flex',
