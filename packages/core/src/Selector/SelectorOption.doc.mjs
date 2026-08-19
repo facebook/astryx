@@ -28,6 +28,13 @@ export const docs = {
       description: 'Secondary description text displayed below the label.',
     },
     {
+      name: 'layout',
+      type: "'stacked' | 'inline'",
+      description:
+        "How the label and description sit together. 'stacked' puts the description on its own line; 'inline' keeps both on one line so the row fits a fixed-height host. A Selector trigger inside an InputGroup forces 'inline', because the group pins the row height.",
+      default: "'stacked'",
+    },
+    {
       name: 'endContent',
       type: 'ReactNode',
       description:

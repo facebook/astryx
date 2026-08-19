@@ -72,6 +72,7 @@ import {
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {SelectorOption} from './SelectorOption';
+import {SelectorRowLayoutContext} from './SelectorRowLayoutContext';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
@@ -1333,10 +1334,19 @@ export function Selector<T extends SelectorOptionType>(
   // `size` token promises; `renderValue` is the opt-in for anything taller.
   // `startIcon` wins over the option's own icon so a caller who pins a field
   // icon does not get two.
+  //
+  // Inside an InputGroup the height is NOT relaxed: a group row is fixed-height
+  // by construction (groupStyles.inGroup sets height:100%), so a taller trigger
+  // does not grow the row — it spills through its own border. The group keeps
+  // the size token and the value renders on one line.
+  const canGrow = renderValue != null && !inputGroup;
   const valueContent =
     selectedItem && renderValue ? (
       <span {...stylex.props(styles.triggerValue)}>
-        {renderValue(selectedItem)}
+        <SelectorRowLayoutContext.Provider
+          value={canGrow ? 'stacked' : 'inline'}>
+          {renderValue(selectedItem)}
+        </SelectorRowLayoutContext.Provider>
       </span>
     ) : (
       <>
@@ -1372,7 +1382,7 @@ export function Selector<T extends SelectorOptionType>(
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
-            renderValue ? minSizeStyles[size] : sizeStyles[size],
+            canGrow ? minSizeStyles[size] : sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
             variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,

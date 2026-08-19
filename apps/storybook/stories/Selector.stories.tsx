@@ -3,6 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
+import {InputGroup} from '@astryxdesign/core/InputGroup';
 import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {RadioIndicator} from '@astryxdesign/core/Indicator';
@@ -428,6 +429,7 @@ export const OptionDescriptions: Story = {
     ];
     const [condensed, setCondensed] = useState<string | undefined>('private');
     const [full, setFull] = useState<string | undefined>('private');
+    const [grouped, setGrouped] = useState<string | undefined>('private');
     return (
       <div style={{display: 'grid', gap: 24}}>
         <Selector
@@ -451,6 +453,23 @@ export const OptionDescriptions: Story = {
             />
           )}
         />
+        <InputGroup label="Visibility">
+          <Selector
+            label="Visibility (in a group)"
+            isLabelHidden
+            options={visibility}
+            value={grouped}
+            onChange={setGrouped}
+            renderValue={option => (
+              <SelectorOption
+                icon={option.icon}
+                label={option.label ?? option.value}
+                description={option.description}
+              />
+            )}
+          />
+          <Button label="Save" />
+        </InputGroup>
       </div>
     );
   },

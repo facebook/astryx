@@ -21,6 +21,7 @@ import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
+import type {SelectorOptionData} from './types';
 import {Icon} from '../Icon';
 import {RadioIndicator} from '../Indicator';
 import {InputGroup, InputGroupText} from '../InputGroup';
@@ -3117,6 +3118,48 @@ describe('Selector option descriptions and trigger value', () => {
     expect(trigger).toHaveTextContent('Private');
     expect(trigger).toHaveTextContent('Only members can access this space.');
     expect(within(trigger).getByTestId('lock-glyph')).toBeInTheDocument();
+  });
+
+  it('forces the value onto one line inside an InputGroup', () => {
+    // The group pins the row height, so a stacked two-line value would spill
+    // through the trigger's own border instead of growing the row.
+    const renderValue = (option: SelectorOptionData) => (
+      <SelectorOption
+        icon={option.icon}
+        label={option.label ?? option.value}
+        description={option.description}
+      />
+    );
+
+    const standalone = render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        renderValue={renderValue}
+      />,
+    );
+    const standaloneRow = within(screen.getByRole('combobox')).getByText(
+      'Private',
+    ).parentElement?.className;
+    standalone.unmount();
+
+    render(
+      <InputGroup label="Space settings">
+        <Selector
+          label="Visibility"
+          options={VISIBILITY}
+          value="private"
+          onChange={() => {}}
+          renderValue={renderValue}
+        />
+      </InputGroup>,
+    );
+    const groupedRow = within(screen.getByRole('combobox')).getByText('Private')
+      .parentElement?.className;
+
+    expect(groupedRow).not.toBe(standaloneRow);
   });
 
   it('does not call renderValue for the placeholder', () => {
