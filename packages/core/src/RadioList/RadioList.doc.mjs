@@ -11,7 +11,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-radio-list', visualProps: ['orientation', 'size']},
-      {className: 'astryx-radio-list-item'},
+      {className: 'astryx-radio-list-item', visualProps: ['size'], states: ['selected', 'disabled']},
       {className: 'astryx-radio-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
       {className: 'astryx-radio-indicator-dot', visualProps: ['size']},
       {className: 'astryx-radio', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'radio-indicator'},
