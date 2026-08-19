@@ -16,7 +16,7 @@
  * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
-import type {ReactNode} from 'react';
+import {useEffect, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {
@@ -74,12 +74,7 @@ export interface StepProps extends BaseProps<HTMLLIElement> {
    * steppers to show form fields or detailed content for each step.
    */
   children?: ReactNode;
-  /**
-   * Custom icon rendered inside the indicator. Accepts any ReactNode (for
-   * example an `<Icon />`). Equivalent to passing the node directly to
-   * `indicator`; takes precedence over the built-in number/check.
-   */
-  icon?: ReactNode;
+
   /**
    * Semantic status for the step, mapped to the global Astryx semantic tokens
    * (`accent`, `success`, `warning`, `error`). In the default `auto` indicator
@@ -671,7 +666,6 @@ export function Step({
   label,
   description,
   children,
-  icon,
   status,
   isDisabled = false,
   isOptional = false,
@@ -694,7 +688,11 @@ export function Step({
     density: ctxDensity,
     indicatorPosition,
     hasCollapsibleLabels,
+    registerStep,
   } = ctx;
+
+  // Register this step index with the parent Stepper for duplicate detection.
+  useEffect(() => registerStep(step), [registerStep, step]);
 
   const density = densityProp ?? ctxDensity;
 
@@ -742,7 +740,7 @@ export function Step({
   // custom ReactNode (or `icon` prop): render as-is
   let indicatorNode: ReactNode = null;
 
-  const customIcon = isCustomIndicator ? indicatorProp : (icon ?? null);
+  const customIcon = isCustomIndicator ? indicatorProp : null;
 
   // Semantic `status` drives a distinct indicator glyph (default 'auto' mode,
   // no custom icon), all sourced from the themed Icon registry so a step reads

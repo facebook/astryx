@@ -41,6 +41,12 @@ export interface StepperContextValue {
    * track can shrink. The current step keeps its label.
    */
   hasCollapsibleLabels: boolean;
+  /**
+   * Dev-mode index registration. Each Step calls this on mount with its `step`
+   * index. The Stepper tracks the set and warns if two Steps share the same
+   * index. Returns a cleanup function to call on unmount.
+   */
+  registerStep: (index: number) => () => void;
 }
 
 export const StepperContext = createContext<StepperContextValue | null>(null);

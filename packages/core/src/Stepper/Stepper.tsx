@@ -16,7 +16,7 @@
  * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
-import {useMemo, type ReactNode} from 'react';
+import {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {spacingVars} from '../theme/tokens.stylex';
@@ -163,6 +163,31 @@ export function Stepper({
 }: StepperProps) {
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.stepper.label');
+
+  // Dev-mode duplicate step index detection. Steps register on mount and
+  // deregister on unmount; a Map tracks count per index so we can warn when
+  // two Steps share the same `step` value (which breaks aria-current).
+  const stepCountsRef = useRef<Map<number, number>>(new Map());
+  const registerStep = useCallback((index: number) => {
+    const counts = stepCountsRef.current;
+    const prev = counts.get(index) ?? 0;
+    counts.set(index, prev + 1);
+    if (process.env.NODE_ENV !== 'production' && prev + 1 > 1) {
+      console.warn(
+        `[Stepper] Duplicate step index ${index}: two <Step> elements share the same \`step\` value. ` +
+          `This breaks \`aria-current="step"\` and causes both to show as active simultaneously.`,
+      );
+    }
+    return () => {
+      const cur = counts.get(index) ?? 1;
+      if (cur <= 1) {
+        counts.delete(index);
+      } else {
+        counts.set(index, cur - 1);
+      }
+    };
+  }, []);
+
   const ctxValue = useMemo<StepperContextValue>(
     () => ({
       activeStep,
@@ -172,6 +197,7 @@ export function Stepper({
       density,
       indicatorPosition,
       hasCollapsibleLabels,
+      registerStep,
     }),
     [
       activeStep,
@@ -180,6 +206,7 @@ export function Stepper({
       density,
       indicatorPosition,
       hasCollapsibleLabels,
+      registerStep,
     ],
   );
 

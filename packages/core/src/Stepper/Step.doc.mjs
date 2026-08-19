@@ -38,13 +38,6 @@ export const docs = {
         'Content rendered below the label and description. Useful in vertical steppers for form fields or detailed step content.',
     },
     {
-      name: 'icon',
-      type: 'ReactNode',
-      description:
-        'Custom icon rendered inside the indicator. Accepts any node (e.g. an Icon). Takes precedence over the built-in number/check.',
-      slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
-    },
-    {
       name: 'status',
       type: "'accent' | 'success' | 'warning' | 'error'",
       description:
@@ -54,7 +47,8 @@ export const docs = {
       name: 'indicator',
       type: "'auto' | 'number' | 'none' | ReactNode",
       description:
-        "What to show as the step indicator. 'auto' shows a number until completed then a check, 'number' always shows a numbered badge, 'none' hides it, or pass any ReactNode for a custom indicator.",
+        "What to show as the step indicator. 'auto' shows a number until completed then a check, 'number' always shows a numbered badge, 'none' hides it, or pass any ReactNode (e.g. an Icon) for a fully custom indicator.",
+      slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
       default: "'auto'",
     },
     {

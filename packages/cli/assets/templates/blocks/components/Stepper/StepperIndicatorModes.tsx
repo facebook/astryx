@@ -44,22 +44,22 @@ export default function StepperIndicatorModes() {
           <Step
             step={0}
             label="Account"
-            icon={<Icon icon="info" size="sm" />}
+            indicator={<Icon icon="info" size="sm" />}
           />
           <Step
             step={1}
             label="Profile"
-            icon={<Icon icon="search" size="sm" />}
+            indicator={<Icon icon="search" size="sm" />}
           />
           <Step
             step={2}
             label="Settings"
-            icon={<Icon icon="wrench" size="sm" />}
+            indicator={<Icon icon="wrench" size="sm" />}
           />
           <Step
             step={3}
             label="Review"
-            icon={<Icon icon="check" size="sm" />}
+            indicator={<Icon icon="check" size="sm" />}
           />
         </Stepper>
       </div>

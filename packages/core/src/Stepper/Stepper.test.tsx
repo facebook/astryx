@@ -326,13 +326,13 @@ describe('Stepper', () => {
     expect(screen.getByText('★')).toBeInTheDocument();
   });
 
-  it('accepts a generic icon via the icon prop', () => {
+  it('accepts a ReactNode as indicator', () => {
     render(
       <Stepper activeStep={1}>
         <Step
           step={1}
           label="Payment"
-          icon={<span data-testid="pay-icon">$</span>}
+          indicator={<span data-testid="pay-icon">$</span>}
         />
       </Stepper>,
     );
