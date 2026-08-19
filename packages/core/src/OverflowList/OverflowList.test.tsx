@@ -532,7 +532,7 @@ describe('OverflowList', () => {
   });
 
   describe('onOverflowChange', () => {
-    it('reports an empty set when nothing overflows', () => {
+    it('stays silent when nothing overflows', () => {
       const onOverflowChange = vi.fn();
       render(
         <OverflowList
@@ -548,8 +548,30 @@ describe('OverflowList', () => {
           </button>
         </OverflowList>,
       );
+      expect(onOverflowChange).not.toHaveBeenCalled();
+    });
+
+    it('fires once on mount while overflowing, with the measured set', () => {
+      const onOverflowChange = vi.fn();
+      render(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
+        </OverflowList>,
+      );
       expect(onOverflowChange).toHaveBeenCalledTimes(1);
-      expect(onOverflowChange).toHaveBeenLastCalledWith([]);
+      expect(indicesOf(onOverflowChange)).toEqual([1, 2]);
     });
 
     it('reports the collapsed items by original index', () => {
@@ -625,7 +647,7 @@ describe('OverflowList', () => {
       const {rerender} = render(
         <OverflowList
           gap={0}
-          data-w="1000"
+          data-w="60"
           data-testid="ov"
           onOverflowChange={o => {
             spy(o);
@@ -633,10 +655,11 @@ describe('OverflowList', () => {
           {items}
         </OverflowList>,
       );
+      expect(spy).toHaveBeenCalledTimes(1);
       rerender(
         <OverflowList
           gap={0}
-          data-w="1000"
+          data-w="60"
           data-testid="ov"
           onOverflowChange={o => {
             spy(o);

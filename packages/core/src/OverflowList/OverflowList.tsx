@@ -191,7 +191,7 @@ export interface OverflowListProps extends BaseProps<HTMLDivElement> {
 
   /**
    * Called with the items that are currently collapsed, whenever that set
-   * changes — including with an empty array when nothing overflows.
+   * changes.
    *
    * Use it when the collapsed items belong in a menu the surrounding UI
    * already renders (a row that already has its own "…" button), so the list
@@ -199,9 +199,20 @@ export interface OverflowListProps extends BaseProps<HTMLDivElement> {
    * that case: it is only rendered while items overflow, and its measurement
    * copy always receives every item.
    *
-   * Fires after measurement, so on mount you may receive an empty set
-   * immediately before the first measured set. Items are identified by
-   * `index`; look up your own data with it rather than storing `child`.
+   * The contract:
+   * - It fires once measurement has collapsed something, and again with an
+   *   empty array once the row widens back out and everything fits.
+   * - It is **silent while nothing overflows** — including on mount, so a list
+   *   that fits from the start never calls it. There is no report of the
+   *   pre-measurement state, which would always be an empty set whether or not
+   *   the row actually overflows. Hold the collapsed set in state initialised
+   *   to `[]` and it is correct at every moment; if you remount the list while
+   *   keeping that state, reset it yourself.
+   * - Reports are keyed on the collapsed range, so an unrelated re-render, or
+   *   a fresh inline callback each render, does not re-fire it.
+   *
+   * Items are identified by `index`; look up your own data with it rather than
+   * storing `child`.
    *
    * @example
    * ```
@@ -296,8 +307,11 @@ export function OverflowList({
   // Reported from a layout effect, not during render, so a menu the consumer
   // owns updates in the same frame the items collapse. Keyed on the collapsed
   // range so unrelated re-renders (or a new inline callback) don't re-fire.
+  // Seeded with the first render's key because that render is pre-measurement:
+  // `visibleCount` still optimistically equals `itemCount`, so reporting it
+  // would announce "nothing collapsed" before anything has been measured.
   const overflowKey = `${collapseFrom}:${itemCount}:${visibleCount}`;
-  const reportedKeyRef = useRef<string | null>(null);
+  const reportedKeyRef = useRef(overflowKey);
   const overflowItemsRef = useRef(overflowItems);
   overflowItemsRef.current = overflowItems;
 
