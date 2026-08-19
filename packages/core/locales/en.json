@@ -439,6 +439,10 @@
     "defaultMessage": "Remove {itemName} {position, number}",
     "description": "Accessible label and tooltip on the button that deletes one record from a lab ListInput. `{itemName}` is the consumer's singular noun for one record; `{position}` is its 1-based row number (e.g. \"Remove guest 2\")."
   },
+  "@astryx.listInput.removeUnavailable": {
+    "defaultMessage": "Remove is unavailable while the list is disabled",
+    "description": "Tooltip shown on the Remove button when the ListInput is disabled or loading, explaining why the action cannot be performed."
+  },
   "@astryx.listInput.reorderItem": {
     "defaultMessage": "Reorder {itemName} {position, number}",
     "description": "Accessible label on the drag-handle button that reorders one record in a lab ListInput. `{itemName}` is the consumer's singular noun for one record; `{position}` is its 1-based row number (e.g. \"Reorder guest 2\")."
