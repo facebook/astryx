@@ -562,3 +562,63 @@ describe('maxOperatorMenuItems', () => {
     });
   });
 });
+
+describe('field menu sizing', () => {
+  const FIELD_COUNT = 25;
+  const manyFields: PowerSearchConfig = {
+    name: 'ManyFields',
+    fields: Array.from({length: FIELD_COUNT}, (_, i) => ({
+      key: `field_${i}`,
+      label: `Zebra ${String(i).padStart(2, '0')}`,
+      defaultOperator: 'is',
+      operators: [{key: 'is', label: 'is', value: {type: 'string'} as const}],
+    })),
+  };
+
+  async function openMenu(props?: {maxMenuItems?: number}) {
+    const user = userEvent.setup();
+    render(
+      <PowerSearch
+        config={manyFields}
+        filters={[]}
+        onChange={() => {}}
+        {...props}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+    });
+    return user;
+  }
+
+  const optionCount = () =>
+    screen.getAllByRole('option', {hidden: true}).length;
+
+  it('shows every field while browsing', async () => {
+    await openMenu();
+    expect(optionCount()).toBe(FIELD_COUNT);
+  });
+
+  it('caps ranked results while typing', async () => {
+    const user = await openMenu();
+    // "zebra" matches every field label.
+    await user.type(screen.getByRole('combobox'), 'zebra');
+    await waitFor(() => {
+      expect(optionCount()).toBe(10);
+    });
+  });
+
+  it('caps ranked results at maxMenuItems while typing', async () => {
+    const user = await openMenu({maxMenuItems: 3});
+    await user.type(screen.getByRole('combobox'), 'zebra');
+    await waitFor(() => {
+      expect(optionCount()).toBe(3);
+    });
+  });
+
+  it('never truncates browsing, whatever maxMenuItems says', async () => {
+    await openMenu({maxMenuItems: 3});
+    expect(optionCount()).toBe(FIELD_COUNT);
+  });
+});

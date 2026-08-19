@@ -111,6 +111,13 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'maxMenuItems',
+      type: 'number',
+      description:
+        'Max fields suggested while typing. Browsing the field list (empty query) always shows every field.',
+      default: '10',
+    },
+    {
       name: 'popoverSaveButtonLabel',
       type: 'string',
       description: 'Label for the save button in the edit popover.',
@@ -309,6 +316,12 @@ export const docsZh = {
       default: '10',
     },
     {
+      name: 'maxMenuItems',
+      type: 'number',
+      description: '输入时建议的最大字段数。浏览字段列表（空查询）时始终显示所有字段。',
+      default: '10',
+    },
+    {
       name: 'popoverSaveButtonLabel',
       type: 'string',
       description: '编辑弹出窗口中保存按钮的标签。',
@@ -390,6 +403,7 @@ export const docsDense = {
     maxTokenLength: 'Max char length for filter value display in tokens.',
     maxOperatorMenuItems:
       'Max suggestions in string/entity value typeaheads; excludes main field search + enum menus.',
+    maxMenuItems: 'Max fields suggested while typing; browsing shows all.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',
     handleRef: 'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',

@@ -79,6 +79,14 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 // Icon mapping for typeahead entries
 // =============================================================================
 
+// Ranked suggestions shown for a non-empty query. The field list itself is
+// never capped -- see the maxMenuItems prop.
+const DEFAULT_MAX_MENU_ITEMS = 10;
+
+// The source caps typed results itself, so the dropdown must not cap again --
+// its own default of 10 would truncate the field list while browsing.
+const VIEW_MENU_ITEMS_UNCAPPED = Number.POSITIVE_INFINITY;
+
 const OPERATOR_VALUE_TYPE_TO_ICON: Record<string, IconName> = {
   string: 'search',
   string_list: 'search',
@@ -408,6 +416,11 @@ export interface PowerSearchProps extends Omit<
   maxTokenLength?: number;
   /** Max suggestions in string and entity value typeaheads. @default 10 */
   maxOperatorMenuItems?: number;
+  /**
+   * Max fields suggested while typing. Browsing the field list (empty query)
+   * always shows every field. @default 10
+   */
+  maxMenuItems?: number;
   /** Label for the save button in edit popover. @default 'Apply' */
   popoverSaveButtonLabel?: string;
   /** Timezone ID for date formatting. */
@@ -549,6 +562,7 @@ export function PowerSearch({
   statusVariant = 'attached',
   maxTokenLength = 40,
   maxOperatorMenuItems,
+  maxMenuItems = DEFAULT_MAX_MENU_ITEMS,
   popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
   timezoneID,
   tokenOverflowBehavior,
@@ -565,7 +579,7 @@ export function PowerSearch({
 }: PowerSearchProps) {
   const size = useSize(sizeProp, 'md');
   const config = useInternalConfig(configProp);
-  const searchSource = usePowerSearchSource(config);
+  const searchSource = usePowerSearchSource(config, maxMenuItems);
   const t = useTranslator();
   const locale = useLocale();
   const label = labelFromProps ?? t('@astryx.powersearch.label');
@@ -1051,6 +1065,7 @@ export function PowerSearch({
           onChange={handleTokenizerChange}
           renderToken={renderToken}
           renderItem={renderItem}
+          maxMenuItems={VIEW_MENU_ITEMS_UNCAPPED}
           placeholder={filters.length === 0 ? placeholder : ''}
           hasAutoFocus={hasAutoFocus}
           hasClear={hasClear && !isReadOnly}

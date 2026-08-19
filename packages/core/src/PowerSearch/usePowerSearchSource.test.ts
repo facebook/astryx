@@ -21,10 +21,15 @@ import type {
 // Helpers
 // =============================================================================
 
-function createSource(config: PowerSearchConfig) {
+function createSource(
+  config: PowerSearchConfig,
+  // Uncapped by default so these tests exercise matching and ranking rather
+  // than the typed-result cap, which has its own test below.
+  maxTypedResults: number = Number.POSITIVE_INFINITY,
+) {
   const {result} = renderHook(() => {
     const internal = useInternalConfig(config);
-    return usePowerSearchSource(internal);
+    return usePowerSearchSource(internal, maxTypedResults);
   });
   return result.current;
 }
@@ -537,5 +542,27 @@ describe('usePowerSearchSource', () => {
       const aux = valueItem!.auxiliaryData as PowerSearchAuxData;
       expect(aux.filterValue).toEqual({type: 'enum_list', value: ['bug']});
     });
+  });
+});
+
+describe('typed-result cap', () => {
+  const manyFields: PowerSearchConfig = {
+    name: 'many',
+    fields: Array.from({length: 25}, (_, i) => ({
+      key: `field_${i}`,
+      label: `Zebra ${String(i).padStart(2, '0')}`,
+      operators: [{key: 'is', label: 'is', value: {type: 'string'} as const}],
+    })),
+  };
+
+  it('caps results for a typed query', () => {
+    const source = createSource(manyFields, 10);
+    expect(source.search('zebra')).toHaveLength(10);
+  });
+
+  it('never caps the field list for an empty query', () => {
+    const source = createSource(manyFields, 10);
+    expect(syncBootstrap(source)).toHaveLength(25);
+    expect(source.search('')).toHaveLength(25);
   });
 });
