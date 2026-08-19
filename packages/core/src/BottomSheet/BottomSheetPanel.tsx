@@ -137,7 +137,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    height: spacingVars['--spacing-12'],
+    height: spacingVars['--spacing-6'],
     touchAction: 'none',
     cursor: 'grab',
   },
