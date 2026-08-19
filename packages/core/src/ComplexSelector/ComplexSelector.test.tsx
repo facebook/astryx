@@ -353,6 +353,10 @@ describe('ComplexSelector', () => {
       .closest('[popover]');
     expect(popover).not.toBeNull();
 
+    // The touch race #2186 defends against, in its real order: the tap's
+    // pointerdown light-dismisses the popup, then that same tap's click
+    // reaches the trigger. It must not reopen what the tap just closed.
+    fireEvent.pointerDown(trigger);
     const closeEvent = new Event('toggle');
     Object.defineProperty(closeEvent, 'newState', {value: 'closed'});
     fireEvent(popover as HTMLElement, closeEvent);
@@ -364,6 +368,94 @@ describe('ComplexSelector', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(
       showCallCount,
     );
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+// The guard above is scoped to the pointer sequence that produced the dismiss.
+// Every other way of closing the popup leaves the trigger live, so the very
+// next click reopens it with no delay.
+describe('ComplexSelector reopen after dismiss', () => {
+  function renderSelector() {
+    render(
+      <ComplexSelector label="View options" value={[]}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    return screen.getByRole('button', {name: 'View options'});
+  }
+
+  function dismissFromBrowser() {
+    const popover = screen
+      .getByRole('dialog', {hidden: true})
+      .closest('[popover]') as HTMLElement;
+    const closeEvent = new Event('toggle');
+    Object.defineProperty(closeEvent, 'newState', {value: 'closed'});
+    fireEvent(popover, closeEvent);
+  }
+
+  it('reopens on the first trigger click after Escape', async () => {
+    const user = userEvent.setup();
+    const trigger = renderSelector();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('reopens on the first trigger click after a trigger-click dismiss', async () => {
+    const user = userEvent.setup();
+    const trigger = renderSelector();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('reopens on the first trigger click after an outside click', async () => {
+    const user = userEvent.setup();
+    const trigger = renderSelector();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // An outside click dismisses through the browser, with no pointer press on
+    // the trigger.
+    dismissFromBrowser();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('reopens on the first trigger click after a programmatic close', async () => {
+    const user = userEvent.setup();
+    const handleRef = React.createRef<ComplexSelectorHandle>();
+    render(
+      <ComplexSelector label="View options" value={[]} handleRef={handleRef}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('button', {name: 'View options'});
+
+    await user.click(trigger);
+    act(() => {
+      handleRef.current?.close();
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });
 
