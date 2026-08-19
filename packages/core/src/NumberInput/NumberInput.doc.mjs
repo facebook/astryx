@@ -219,33 +219,18 @@ export const docs = {
         states: ['disabled', 'readonly'],
       },
     ],
-    vars: [
-      {
-        name: '--_number-input-padding-block',
-        description:
-          "Block padding of the input wrapper. The number-stepper column cancels it with a negative margin so it spans the field's full height; carrying it as a var keeps the steppers flush when a theme changes the padding.",
-        default: 'var(--spacing-1)',
-        private: true,
-      },
-      {
-        name: '--_number-input-padding-inline',
-        description:
-          'Inline padding of the input wrapper. Carried as a var so a themed padding tracks consistently; the stepper column still runs flush to the inline-end edge (its side keeps a zero end padding).',
-        default: 'var(--spacing-2)',
-        private: true,
-      },
-    ],
     derived: [
-      {
-        property: 'paddingBlock',
-        vars: ['--_number-input-padding-block'],
-        replaces: true,
-      },
-      {
-        property: 'paddingInline',
-        vars: ['--_number-input-padding-inline'],
-        replaces: true,
-      },
+      // `padding` in any spelling — the shorthand, `paddingBlock`, or a lone
+      // `paddingBlockStart` — is parsed by the shared container expansion and
+      // emitted as normalized per-side `--astryx-number-input-padding-*`
+      // tokens. The wrapper and the number-stepper column both read those, so
+      // the column stays flush with the field edges under a themed padding.
+      {property: 'padding', expand: 'container'},
+      // Scoped to this component's own subtree: the stepper column's outer
+      // corners follow the field radius, so a themed `number-input`
+      // borderRadius has to reach the var the column reads, not just the
+      // wrapper's own `border-radius`.
+      {property: 'borderRadius', vars: ['--_field-radius']},
     ],
   },
   usage: {
@@ -503,33 +488,16 @@ export const docsZh = {
         states: ['disabled', 'readonly'],
       },
     ],
-    vars: [
-      {
-        name: '--_number-input-padding-block',
-        description:
-          '输入框容器的块级内边距。数字步进器列通过负外边距抵消它，从而占满字段的完整高度；以变量承载它可在主题更改内边距时保持步进器齐平。',
-        default: 'var(--spacing-1)',
-        private: true,
-      },
-      {
-        name: '--_number-input-padding-inline',
-        description:
-          '输入框容器的行内内边距。以变量承载以便主题化内边距时保持一致；步进器列仍紧贴行内末端边缘（其末端内边距保持为零）。',
-        default: 'var(--spacing-2)',
-        private: true,
-      },
-    ],
     derived: [
-      {
-        property: 'paddingBlock',
-        vars: ['--_number-input-padding-block'],
-        replaces: true,
-      },
-      {
-        property: 'paddingInline',
-        vars: ['--_number-input-padding-inline'],
-        replaces: true,
-      },
+      // 任何写法的 `padding`（简写、`paddingBlock`，或单独的
+      // `paddingBlockStart`）都由共享的 container 展开解析，并输出为规范化的
+      // 每侧 `--astryx-number-input-padding-*` 令牌。容器与数字步进器列都读取
+      // 这些令牌，因此在主题化内边距下步进器仍与字段边缘齐平。
+      {property: 'padding', expand: 'container'},
+      // 作用域限于该组件自身的子树：步进器列的外角跟随字段圆角，因此主题化的
+      // `number-input` borderRadius 必须传到步进器读取的变量，而不只是容器
+      // 自身的 `border-radius`。
+      {property: 'borderRadius', vars: ['--_field-radius']},
     ],
   },
   usage: {

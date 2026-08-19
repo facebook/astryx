@@ -164,9 +164,6 @@ function discoverComponents(): ComponentInfo[] {
         allVars.add(v);
       }
     }
-    if (allVars.size === 0) {
-      continue;
-    }
 
     // Only check component directories (those with a doc file named after the
     // directory). Match against the on-disk listing rather than existsSync so
@@ -186,6 +183,16 @@ function discoverComponents(): ComponentInfo[] {
       docDerived = mod.docs?.theming?.derived || [];
     } catch {
       /* skip */
+    }
+
+    // A directory earns a check by declaring a var OR by documenting a
+    // derived[] entry. Bailing on the var count alone (as this did) hid every
+    // component that is themeable purely through an expansion strategy —
+    // `{property: 'padding', expand: 'container'}` names no var, so such a
+    // component declares nothing and its registry↔doc consistency check
+    // silently never ran.
+    if (allVars.size === 0 && docDerived.length === 0) {
+      continue;
     }
 
     results.push({

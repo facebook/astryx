@@ -54,18 +54,41 @@ import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 
+// Public padding tokens for the `number-input` theme target. A theme writes an
+// ordinary `padding` (in ANY spelling — the shorthand, `paddingBlock`, or a
+// single `paddingBlockStart`) and the pipeline's `container` expansion parses
+// it and emits these normalized per-side tokens; the wrapper and the stepper
+// column both read them, so the column tracks whatever the theme sets instead
+// of assuming the default. Routing through the shared expansion rather than a
+// hand-rolled property→var mapping is what makes every spelling work: a
+// mapping only fires for the exact property name it names.
+//
+// Read order per level: `var(--astryx-…, <next level>)`, terminating at the
+// shared field defaults (NOT the container default --spacing-4, which is a
+// layout metric and would resize every themed field). Built as chained const
+// strings — no function calls — so StyleX can statically analyze them; same
+// shape as the card/section/dialog chains in Layout/container.stylex.ts.
+const FIELD_PAD_BLOCK = spacingVars['--spacing-1'];
+const FIELD_PAD_INLINE = spacingVars['--spacing-2'];
+const padBlockAll = `var(--astryx-number-input-padding, ${FIELD_PAD_BLOCK})`;
+const padInlineAll = `var(--astryx-number-input-padding, ${FIELD_PAD_INLINE})`;
+const padInline = `var(--astryx-number-input-padding-inline, ${padInlineAll})`;
+const padInlineStart = `var(--astryx-number-input-padding-inline-start, ${padInline})`;
+const padInlineEnd = `var(--astryx-number-input-padding-inline-end, ${padInline})`;
+const padBlockStart = `var(--astryx-number-input-padding-block-start, ${padBlockAll})`;
+const padBlockEnd = `var(--astryx-number-input-padding-block-end, ${padBlockAll})`;
+
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
-    // Expose the wrapper's own padding as private vars (defaults match the
-    // shared field base) so the stepper column can cancel it exactly. A theme
-    // that changes `number-input` padding flows into these vars via the
-    // derived-var registry, and the steppers track it instead of assuming the
-    // default — the same pattern TextArea uses for its overlaid affordances.
-    '--_number-input-padding-block': spacingVars['--spacing-1'],
-    '--_number-input-padding-inline': spacingVars['--spacing-2'],
-    paddingBlock: 'var(--_number-input-padding-block)',
-    paddingInline: 'var(--_number-input-padding-inline)',
+    // Applied per side rather than through the shared field base's
+    // `paddingBlock`/`paddingInline` shorthands, because the stepper column
+    // has to cancel the block padding edge by edge — an asymmetric
+    // `paddingBlock: 4px 12px` needs two different negative margins.
+    paddingBlockStart: padBlockStart,
+    paddingBlockEnd: padBlockEnd,
+    paddingInlineStart: padInlineStart,
+    paddingInlineEnd: padInlineEnd,
   },
   wrapperWithNumberSteppers: {
     paddingInlineEnd: 0,
@@ -109,7 +132,12 @@ const styles = stylex.create({
     flexDirection: 'column',
     flexShrink: 0,
     width: spacingVars['--spacing-4'],
-    marginBlock: 'calc(-1 * var(--_number-input-padding-block))',
+    // Cancel the wrapper's block padding edge by edge so the column spans the
+    // field's full height. Reading the same tokens the wrapper applies is what
+    // keeps it flush under a themed padding — including an asymmetric one,
+    // where a single `marginBlock` would be wrong at one end.
+    marginBlockStart: `calc(-1 * ${padBlockStart})`,
+    marginBlockEnd: `calc(-1 * ${padBlockEnd})`,
     borderInlineStartWidth: borderVars['--border-width'],
     borderInlineStartStyle: 'solid',
     borderInlineStartColor: colorVars['--color-border-emphasized'],
