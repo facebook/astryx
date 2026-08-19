@@ -18,12 +18,13 @@
  * - /packages/cli/assets/templates/blocks/components/OverflowList/ (showcase blocks)
  */
 
-import {type ReactNode, type ReactElement, Children} from 'react';
+import {type ReactNode, type ReactElement, Children, useRef} from 'react';
 import type {BaseProps} from '../BaseProps';
 import type {SpacingStep} from '../utils/types';
 import * as stylex from '@stylexjs/stylex';
 import {mergeProps, mergeRefs} from '../utils';
 import {useOverflow} from '../hooks/useOverflow';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {spacingVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
 
@@ -186,6 +187,34 @@ export interface OverflowListProps extends BaseProps<HTMLDivElement> {
    * ```
    */
   overflowRenderer?: (overflowItems: OverflowItem[]) => ReactNode;
+
+  /**
+   * Called with the items that are currently collapsed, whenever that set
+   * changes — including with an empty array when nothing overflows.
+   *
+   * Use it when the collapsed items belong in a menu the surrounding UI
+   * already renders (a row that already has its own "…" button), so the list
+   * does not grow a second anchor beside it. `overflowRenderer` cannot serve
+   * that case: it is only rendered while items overflow, and its measurement
+   * copy always receives every item.
+   *
+   * Fires after measurement, so on mount you may receive an empty set
+   * immediately before the first measured set. Items are identified by
+   * `index`; look up your own data with it rather than storing `child`.
+   *
+   * @example
+   * ```
+   * const [hidden, setHidden] = useState<OverflowItem[]>([]);
+   * <>
+   *   <OverflowList onOverflowChange={setHidden}>{items}</OverflowList>
+   *   <DropdownMenu
+   *     button={{label: 'More', variant: 'ghost'}}
+   *     items={[...alwaysThere, ...hidden.map(({index}) => actions[index])]}
+   *   />
+   * </>
+   * ```
+   */
+  onOverflowChange?: (overflowItems: OverflowItem[]) => void;
 }
 
 /**
@@ -218,6 +247,7 @@ export function OverflowList({
   collapseFrom = 'end',
   behavior = 'observeSelf',
   overflowRenderer,
+  onOverflowChange,
   xstyle,
   className,
   style,
@@ -261,6 +291,22 @@ export function OverflowList({
   // Render a placeholder for measurement — uses all items as overflow
   // so the indicator renders at its maximum possible width.
   const measureIndicator = overflowRenderer?.(allItems);
+
+  // Reported from a layout effect, not during render, so a menu the consumer
+  // owns updates in the same frame the items collapse. Keyed on the collapsed
+  // range so unrelated re-renders (or a new inline callback) don't re-fire.
+  const overflowKey = `${collapseFrom}:${itemCount}:${visibleCount}`;
+  const reportedKeyRef = useRef<string | null>(null);
+  const overflowItemsRef = useRef(overflowItems);
+  overflowItemsRef.current = overflowItems;
+
+  useIsomorphicLayoutEffect(() => {
+    if (!onOverflowChange || reportedKeyRef.current === overflowKey) {
+      return;
+    }
+    reportedKeyRef.current = overflowKey;
+    onOverflowChange(overflowItemsRef.current);
+  }, [overflowKey, onOverflowChange]);
 
   return (
     <>
