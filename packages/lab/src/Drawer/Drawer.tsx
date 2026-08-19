@@ -123,6 +123,10 @@ const styles = stylex.create({
     overflow: 'hidden',
     overscrollBehavior: 'contain',
     outline: 'none',
+    '--container-padding-inline-start': '0px',
+    '--container-padding-inline-end': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
     // Closed state. `display` participates in the transition with
     // allow-discrete so it flips to none only after the slide-out finishes
     // (@starting-style covers the none -> flex entry). max-width animates
