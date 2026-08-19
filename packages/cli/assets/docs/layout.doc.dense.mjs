@@ -4,7 +4,7 @@
 
 export const docsDense = {
   description:
-    'outside-in app layout in 4 phases: frame -> structure -> space -> ship. each phase ends in a do/dont table.',
+    'outside-in app layout: scaffold -> structure -> spacing -> breakpoints.',
   sections: [
     {
       section: 'Overview',
@@ -17,89 +17,69 @@ export const docsDense = {
         {
           type: 'list',
           items: [
-            'frame: pick shell, budget regions in px, choose nav',
+            'scaffold: pick shell, budget regions, choose nav',
             'structure: rank content per region, pick the weakest container that groups it',
-            'space: hold one content line per region, then tune gaps + density',
-            'ship: declare the responsive contract, run the checklist',
+            'spacing: hold one content line per region, then tune gaps + density',
+            'breakpoints: decide what each region does as width changes',
           ],
         },
         {
           type: 'prose',
-          text: 'every sub-section: rule -> how (props) -> one example -> the test. skip to your phase.',
+          text: 'decides layout, not component APIs. npx astryx build "<idea>" = closest template for your app type. npx astryx component <Name> = props.',
         },
       ],
     },
     {
-      section: 'Frame',
-      title: 'Frame',
+      section: 'Scaffold',
+      title: 'Scaffold',
       content: [
-        // Pick the shell
+        // Shell
         null,
         {
           type: 'prose',
-          text: 'pick the shell + budget its regions in px before any content exists.',
+          text: 'pick the shell + budget its regions before any content exists. structural widths are the one place raw px belongs; everything inside uses the scale.',
         },
         {
           type: 'list',
           items: [
             'pick frame: AppShell (nav apps) | Layout + LayoutPanel in a start/end slot (multi-pane tools) | plain column (docs/forms)',
-            'budget each region px: SideNav 240-280, rail 64-72, inspector 340-420, facet rail 220-260',
-            'raw px = structural widths only; interior spacing = tokens',
-            'set container policy (rows or card grid) + responsive contract before content',
+            'give every fixed region a width budget, so none negotiates for space at render time',
+            'read content to set fill vs capped: tables/charts/boards fill; prose/forms/lists cap via Layout contentWidth',
+            'set container policy (rows or card grid) before writing content',
           ],
         },
         null,
         {
           type: 'prose',
-          text: 'verify: every region has a px budget + a container policy written down before any content.',
+          text: 'verify: every region has a width budget + fill-or-capped + a container policy written down before any content.',
         },
-        // Match the archetype
+        // Navigation
         null,
         {
           type: 'prose',
-          text: 'match frame + container policy to app type. container choice tracks archetype, not preference.',
+          text: 'nav left open? default SideNav: it absorbs destinations you have not planned yet. app type + destination count are guiding indicators, not determining rules.',
         },
         {
           type: 'list',
           items: [
-            'tracker/work tool (issues, tickets, CRM): AppShell + SideNav, inspector LayoutPanel on select. rows only, zero cards',
-            'console/observability (metrics, logs, deploys): AppShell + SideNav, or TopNav + TabList. card grid for widgets, Table elsewhere',
-            'messaging/feed: column frame of rail, nav, stream, panel. rows + bubbles, no cards in stream',
-            'media library/gallery: AppShell + TopNav over grid content. card grid via ClickableCard, dense meta rows in detail',
-            'settings/forms: AppShell + SideNav, or settings template. Sections + FormLayout; Card only for dangerous/billing',
-          ],
-        },
-        null,
-        {
-          type: 'prose',
-          text: 'verify: start from the matching template (npx astryx template --list, read --skeleton), inherit its nav pairing.',
-        },
-        // Choose navigation
-        null,
-        {
-          type: 'prose',
-          text: 'nav left open? decide from countable signals: destination count, grouping, hierarchy depth.',
-        },
-        {
-          type: 'list',
-          items: [
-            'SideNav (default): >~5 destinations, need grouping, customizable, items carry secondary actions, or must collapse',
-            'TopNav: <=5 destinations, context must stay visible, or control/filter-heavy page w/ shallow nav',
+            'SideNav (default): need grouping, customizable, items carry secondary actions, or must collapse. trackers, consoles, settings usually start here',
+            'TopNav: shallow nav you expect to stay shallow, context must stay visible, or control/filter-heavy page; + TabList for a 2nd level. media libraries often sit over grid content',
             'both: a genuine suite. TopNav = ecosystem concerns (context switcher, global search), SideNav = product nav',
+            'neither: messaging/feeds use a column frame of rail, nav, stream, panel',
           ],
         },
         null,
         {
           type: 'prose',
-          text: 'verify: SideNav unless <=5 destinations and no grouping; two bars only above a real ecosystem layer.',
+          text: 'verify: you can state the reason in one sentence, and it still holds if the nav doubles. npx astryx build "<idea>" names the closest template, --skeleton shows the pairing wired up.',
         },
-        // Do & Don't
+        // Best practices
         null,
         {
           type: 'list',
           items: [
-            'decide frame + per-region px budgets before content',
-            'choose nav from signals or inherit template pairing',
+            'decide frame + region width budgets + fill-or-capped before content',
+            'state the reason for the nav choice, or inherit template pairing',
             'raw px for structural widths; interior = tokens',
           ],
         },
@@ -107,6 +87,7 @@ export const docsDense = {
           type: 'list',
           items: [
             'build content-first, Card-wrapping each section',
+            'stretch prose/forms/lists across a wide region instead of capping with contentWidth',
             'SideNav when the nav is really filters/controls, or must hold wide elements like breadcrumbs',
             'TopNav when top-slot ownership is unclear, or hierarchy is deep or still growing',
             'both bars when the ecosystem layer is thin',
@@ -119,81 +100,108 @@ export const docsDense = {
       section: 'Structure',
       title: 'Structure',
       content: [
-        // Set hierarchy
+        // Type hierarchy
         null,
         {
           type: 'prose',
-          text: 'one lead per region. separate lead/support/tertiary via type+color; drop weight before size.',
+          text: 'one lead per region, then rank with weight+color, not size. two text colors only: primary + secondary, nothing dimmer. body copy needs no props.',
         },
         {
           type: 'list',
           items: [
-            'lead: Heading, or Text weight="semibold" color="primary"',
-            'support: Text color="secondary"',
-            'tertiary/meta: Text type="supporting"/color="disabled"; StatusDot/Token over prose',
+            'body (default): plain Text, no type/color/size prop',
+            'lead: Heading at the level matching page depth, or body Text at a heavier weight',
+            'support: step to secondary color, not to a smaller size',
+            'meta: the supporting type, or StatusDot/Token instead of prose',
           ],
         },
         null,
         {
           type: 'prose',
-          text: 'squint test: read lead, then support, then groups, in order. everything at once = raise contrast (weight/color), not borders.',
+          text: 'squint test: read lead, then support, then groups, in order. everything at once = raise contrast (weight/color), not borders and not smaller text.',
         },
-        // Choose a container
+        // Containers
         null,
         {
           type: 'prose',
-          text: 'weakest container that reads as a group, escalate only when it fails. list runs weakest to strongest.',
+          text: 'weakest container that reads as a group, escalate only when it fails. weakest to strongest:',
         },
         {
           type: 'list',
           items: [
             'spacing/gap: related items inside one group. the default rhythm',
             'Divider: peers in a dense list/toolbar, or fencing a header from a scrollable body',
-            'Section: default page-structure unit, related content under a heading. no border, hierarchy from spacing',
-            'Card: self-contained widget (KPI tile, chart, gallery entry) or hard boundary. never a list-item wrapper',
+            'Section: default page-structure unit, related content under a heading. no border',
+            'Card: self-contained widget (KPI tile, chart, gallery entry) or hard boundary',
           ],
         },
         null,
         {
           type: 'prose',
-          text: 'test: records -> rows (Table columnar, List single-line, edge-to-edge, 32-40px); self-contained widget or hard boundary -> Card; everything else -> Section.',
+          text: 'test: records -> rows (Table columnar, List single-line); self-contained widget or hard boundary -> Card; everything else -> Section.',
         },
-        // Panels and inspectors
+        // Headers and footers
         null,
         {
           type: 'prose',
-          text: 'master-detail: select a row -> fixed-width inspector, no navigation away.',
+          text: 'a region can pin a header/footer while its body scrolls. both are Layout slots, and padding set once on Layout reaches all three, so header/body/footer share one content line.',
         },
         {
           type: 'list',
           items: [
-            'LayoutPanel in the end slot of Layout, width budget 340-420px',
+            'LayoutHeader in the header slot: region title + its primary action',
+            'Toolbar instead of LayoutHeader when the header carries interactive controls',
+            'LayoutFooter in the footer slot: actions that commit the work + must stay reachable',
+            'defaultHasDividers on Layout fences both at once, rather than hasDivider per slot',
+          ],
+        },
+        null,
+        {
+          type: 'prose',
+          text: 'verify: scroll the body. header + footer stay put, dividers run full-bleed, all three still share one left content line.',
+        },
+        // Side panels
+        null,
+        {
+          type: 'prose',
+          text: 'master-detail: select a row -> fixed-width side panel, no navigation away.',
+        },
+        {
+          type: 'list',
+          items: [
+            'LayoutPanel in the start or end slot of Layout, holding a fixed width budget',
             'hasDivider fences it from content; isScrollable so long detail scrolls on its own',
-            'user-adjustable width: drive w/ useResizable(), place a ResizeHandle next to the panel',
+            'user-adjustable width: useResizable() + ResizeHandle on the panel inner edge. after the panel in a start slot, before it in an end slot w/ isReversed',
+            'the handle then owns the divider, so the panel sets hasDivider={false}',
             'EmptyState when nothing is selected, so the region never collapses',
           ],
         },
         null,
         {
           type: 'prose',
-          text: 'verify: at narrow widths the inspector yields width instead of squeezing content (see Ship).',
+          text: 'verify: at narrow widths the panel yields width instead of squeezing content (see Breakpoints), and only one element between the regions draws a border.',
         },
-        // Do & Don't
+        // Best practices
         null,
         {
           type: 'list',
           items: [
             'one lead per region; rank via weight+color; one primary action',
+            'leave body copy at its defaults; demote via weight+color, not size',
             'default Section; weakest container that reads as a group',
             'collections = rows (Table/List), edge-to-edge with dividers',
-            'inspector on select; it yields width at narrow sizes',
+            'side panel on select; it yields width at narrow sizes',
           ],
         },
         {
           type: 'list',
           items: [
+            'grey + shrink body copy, so a whole region reads as metadata',
+            'the disabled color for content; it fails contrast, it is for disabled controls',
             'card soup: each record in its own Card',
             'cards-in-cards, or full-width Cards as page structure',
+            'a header/footer rebuilt inside the body, where it scrolls away with the rows',
+            'flexbox soup instead of Grid/Layout/Section/FormLayout',
             'two competing primary actions in one region',
             'Badge as decoration; use StatusDot/Token for status',
           ],
@@ -201,10 +209,10 @@ export const docsDense = {
       ],
     },
     {
-      section: 'Space',
-      title: 'Space',
+      section: 'Spacing',
+      title: 'Spacing',
       content: [
-        // Align to one line
+        // Alignment
         null,
         {
           type: 'prose',
@@ -213,9 +221,9 @@ export const docsDense = {
         {
           type: 'list',
           items: [
-            'Text/Heading: 0 inset -> container takes full padding (Section padding={4} = 16px line)',
-            'List/Tab/Menu/nav items: ~8px built in -> Section padding={0}, component owns inset',
-            'Table cells: 12-16px built in -> Section padding={0}, cell owns inset',
+            'Text/Heading carry no inset -> container takes the full padding',
+            'List/Tab/Menu/nav items carry a small inset -> container gives up padding, component owns the line',
+            'Table cells carry a larger inset -> container gives up padding, cell owns the line',
           ],
         },
         null,
@@ -223,7 +231,7 @@ export const docsDense = {
           type: 'prose',
           text: 'verify: draw one vertical line down the left. every label touches it; only hover/selected backgrounds cross it.',
         },
-        // Set the rhythm
+        // Rhythm
         null,
         {
           type: 'prose',
@@ -232,17 +240,17 @@ export const docsDense = {
         {
           type: 'list',
           items: [
-            'tight binds: gap={1}-{2} inside an item or field',
-            'generous separates: gap={4}-{6} between sections',
-            'in-between 4px steps tune cadence: gap={3}=12px, gap={5}=20px. do not round all to {2}/{4}',
+            'tight gaps bind: the smallest steps, inside an item or field',
+            'generous gaps separate: several steps up, between sections',
+            'reach for the in-between steps to tune cadence, not the same two values everywhere',
           ],
         },
         null,
         {
           type: 'prose',
-          text: 'verify: borders removed, you can still name the groups from spacing alone. cannot = intervals too uniform.',
+          text: 'verify: borders removed, you can still name the groups from spacing alone. cannot = intervals too uniform. form fields excepted: FormLayout owns their spacing.',
         },
-        // Match density and size
+        // Density and size
         null,
         {
           type: 'prose',
@@ -251,25 +259,25 @@ export const docsDense = {
         {
           type: 'list',
           items: [
-            'density="compact": high-volume, fast scan (logs, monitors, large datasets)',
-            'density="balanced": most Table/List surfaces',
-            'density="spacious": low-frequency or high-stakes rows (settings, short selection list)',
+            'compact: high-volume, fast scan (logs, monitors, large datasets)',
+            'balanced: most Table/List surfaces',
+            'spacious: low-frequency or high-stakes rows (settings, short selection list)',
           ],
         },
         null,
         {
           type: 'prose',
-          text: 'verify: one size per row (sm/md/lg), paired with density: compact -> sm, spacious -> md/lg.',
+          text: 'verify: one size per row, paired with the density of the region it sits in.',
         },
-        // Do & Don't
+        // Best practices
         null,
         {
           type: 'list',
           items: [
             'container owns padding; children zero margins',
             'one content line: text on line, hover bleeds to edge',
+            'one padding token across region header/body/footer',
             'contrast tight vs generous gaps',
-            'use in-between 4px steps',
             'one control size per row; density by use frequency',
           ],
         },
@@ -279,27 +287,28 @@ export const docsDense = {
             'double padding (component past its heading); keep one inset owner',
             'raw px for interior spacing; tokens only',
             'one repeated gap everywhere',
-            'mixed sm/md/lg controls in one row',
+            'mixed control sizes in one row',
           ],
         },
       ],
     },
     {
-      section: 'Ship',
-      title: 'Ship',
+      section: 'Breakpoints',
+      title: 'Breakpoints',
       content: [
         // Responsive contract
         null,
         {
           type: 'prose',
-          text: 'declare breakpoints as a contract at the frame root; pair each line with the prop/hook that enforces it.',
+          text: 'lock what each region does as width changes; pair each contract line with the prop/hook that enforces it.',
         },
         {
           type: 'list',
           items: [
-            '>768: SideNav holds its budget, content flexes, inspector holds 380',
-            '<=768: nav collapses to MobileNav via AppShell mobileNav breakpoint ("md"=768, "lg"=1024)',
-            '<=1024: inspector stops competing for width. swap for Dialog/BottomSheet via useMediaQuery',
+            'divide: how many regions survive at each width',
+            'reveal: which regions earn their width only when there is room, opening on demand below that',
+            'resize: content flexes, fixed regions hold their budgets, text capped by contentWidth so line length holds',
+            'swap: nav -> MobileNav at the AppShell mobileNav breakpoint; side panel -> Dialog/BottomSheet via useMediaQuery',
           ],
         },
         null,
@@ -307,26 +316,22 @@ export const docsDense = {
           type: 'prose',
           text: 'verify: every contract line names a mechanism, so the comment cannot drift from the behavior.',
         },
-        // Before you ship
+        // Best practices
         null,
         {
           type: 'list',
           items: [
-            '<=1 bordered level; Section before Card',
-            'collections = rows; Cards = widgets/hard boundaries',
-            'interior = tokens; one padding token across header/body/footer',
-            'every label on one left content line',
-            'nav matches template pairing or the signals',
-            'each responsive-contract line names a mechanism',
+            'write the contract down for every region before calling the layout done',
+            'decide per region: revealed, resized, or swapped at each width',
+            'drop a region rather than let it fight for width it lacks',
           ],
         },
         {
           type: 'list',
           items: [
-            'card soup, or card grid because app type was unclear',
-            'double padding, or magic-number px interior spacing',
-            'flexbox soup instead of Grid/Layout/FormLayout',
-            'breakpoint comment with no prop/hook wiring it',
+            '3 regions at a width where none has usable space',
+            'shrink every region uniformly instead of swapping/dropping one',
+            'a CSS breakpoint the contract comment never mentions',
           ],
         },
       ],
