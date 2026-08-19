@@ -77,4 +77,22 @@ export const docs = {
         'Controls vertical padding of the step. Falls back to the stepper-level density when unset.',
     },
   ],
+  // A Step reads its progress from the parent Stepper's context and throws
+  // without one, so the preview needs a real Stepper around it. Without this
+  // block Step inherits Stepper's playground, which renders it bare and hands
+  // it the parent's `activeStep`. The wrapper is vertical because that is the
+  // orientation where one step shows its whole anatomy — indicator, label, and
+  // description stacked — and `step` matches the wrapper's `activeStep` so the
+  // preview opens on the current step rather than an inert upcoming one.
+  playground: {
+    wrapper: {
+      component: 'Stepper',
+      props: {activeStep: 1, orientation: 'vertical'},
+    },
+    defaults: {
+      step: 1,
+      label: 'Billing address',
+      description: 'Used for invoices and tax',
+    },
+  },
 };

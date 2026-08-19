@@ -4,9 +4,24 @@
 
 /**
  * @file Step.tsx
- * @input Uses React, stylex, theme tokens, StepperContext
+ * @input Uses React, stylex, theme tokens (including the motion duration token
+ *   the connector fill animates on), StepperContext
  * @output Exports Step component and StepProps
  * @position Individual step item; used inside Stepper
+ *
+ * Every connector this file draws — the separated progress bars and the
+ * on-track segments alike — paints its accent fill as a scaled ::before rather
+ * than by swapping a background color, so a step the flow advances into grows
+ * its line along the track. See the CONNECTOR FILL block in the styles below
+ * for the axis/RTL/reduced-motion rules that go with it.
+ *
+ * Exactly one change animates: advancing a single step. Going back, jumping
+ * forward by more than one, and mounting mid-flow all land at once. The rule
+ * and the reasoning behind it sit above the styles; the arithmetic that keeps
+ * the one animated span reading as a single front — an on-track span is drawn
+ * by two steps, three where a content slot splits it — is in the component.
+ * Nothing about it is public API: Stepper hands each Step the step it came
+ * from through context, and the rest is derived.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stepper/Stepper.doc.mjs
@@ -189,6 +204,72 @@ const INDICATOR_SIZE = spacingVars['--spacing-4'];
 // description or a content slot up with the label above it.
 const INDICATOR_GUTTER = spacingVars['--spacing-6'];
 
+// --- Connector fill motion ---
+//
+// One change animates: advancing exactly one step. Going back, jumping
+// forward by more than one, and mounting mid-flow all apply at once.
+//
+// Animating the others was tried and read worse than not animating them. A
+// retreat is the clearest case: run forward, the transition ends with a bar
+// that is nearly full, and nearly full is indistinguishable from full, so the
+// eye calls it arrived well before it settles. Run backward, the same curve
+// ends with a shrinking stub of accent still on the track, and a remnant that
+// is still there reads unmistakably as not finished. Identical arithmetic in
+// both directions — measurably so — and the backward one still feels slow,
+// because the tail is what is visible rather than what is hidden. No easing
+// fixes that; only not animating it does. A multi-step jump fails differently:
+// it is a navigation rather than a progression, and sweeping a front across
+// four segments makes the user sit through a journey they asked to skip.
+//
+// What is left is the one gesture where the movement carries the meaning: the
+// flow went forward one step, and the line grows to show it. That span takes
+// the medium band — a fill crossing a whole segment is a spatial change, not a
+// micro-interaction, so per `astryx docs motion` it sits above the fast band
+// reserved for high-frequency states like hover.
+const FILL_SPAN_TIME = durationVars['--duration-medium'];
+
+// Share of one node-to-node span owned by the segment *arriving* at the far
+// node; the segment leaving the near node takes the rest. On-track spans are
+// drawn by two steps (see the ON-TRACK section), and the time has to be split
+// the way the length is or the two halves sweep at visibly different speeds.
+//
+// Horizontal: both halves are `flex: 1` inside equal-width steps, so an even
+// split is the proportional one.
+//
+// Vertical: the halves are nothing like equal, and no constant can be right
+// for all of them. The arriving half is otSegLeadV, a cap fixed at one density
+// space; the leaving half is otSegFlexV, grown to whatever is left of the step
+// row, so its length turns on label and description lengths this file cannot
+// see. Measured in the browser the cap is 40% of a plain balanced span (8 of
+// 20px) but 21% once the step carries a description (8 of 38px). 0.3 is the
+// value that minimises the worse of those two: it leaves the cap ~1.6x off the
+// rail's speed either way, where tuning to one case puts the other past 2x.
+// Matching each case exactly would mean measuring the rendered rail, a layout
+// read this system avoids.
+const OT_ARRIVAL_SHARE_H = 0.5;
+const OT_ARRIVAL_SHARE_V = 0.3;
+// A vertical step carrying a content slot draws a third segment down the side
+// of it (otContentSegV) which continues the leaving half past the row, so the
+// leaving half's time splits again. A slot runs several times the rail left
+// above it — 34px of rail to 108px of slot in the spacious content story — and
+// this is the middle of that range. Matching it exactly would mean measuring
+// the rendered slot; the ordering is what keeps the front contiguous, and this
+// keeps its speed in the right neighbourhood.
+const OT_RAIL_SHARE_OF_LEAVING = 0.25;
+
+/** Scale a CSS `<time>` by a unitless factor, collapsing the trivial cases. */
+function fillTimeSlice(time: string, factor: number): string {
+  if (factor <= 0) {
+    return '0s';
+  }
+  if (factor === 1) {
+    return time;
+  }
+  // Rounded because the factors are sums of shares, and float noise would
+  // otherwise reach the emitted custom property as `calc(... * 0.7000000001)`.
+  return `calc(${time} * ${Number(factor.toFixed(4))})`;
+}
+
 const styles = stylex.create({
   // ===================== VERTICAL LAYOUT =====================
   verticalRoot: {
@@ -199,18 +280,13 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
   },
 
-  // 4px progress bar segment
+  // 4px progress bar segment. Its filled/unfilled paint comes from the shared
+  // connector styles below, not from here.
   verticalBar: {
     width: BAR_WIDTH,
     borderRadius: radiusVars['--radius-full'],
     flexShrink: 0,
     alignSelf: 'stretch',
-  },
-  barCompleted: {
-    backgroundColor: colorVars['--color-accent'],
-  },
-  barIncomplete: {
-    backgroundColor: colorVars['--color-border'],
   },
 
   // Step body — the selectable area
@@ -235,17 +311,7 @@ const styles = stylex.create({
     // labelled "Integrations" claims a wider slice of the track than one
     // labelled "Team". Zeroing the floor lets the even distribution actually
     // apply, which is what keeps every progress segment the same width.
-    //
-    // The exception is a collapsed stepper: once only the current step still
-    // shows a label, an equal share would squeeze that one label to nothing,
-    // defeating the point of collapsing. Handing the floor back lets it take
-    // the width it needs out of the room the collapsed steps gave up. The
-    // query names the container Stepper only establishes for this mode, so it
-    // never matches on a stepper that is not collapsing.
-    minWidth: {
-      default: 0,
-      '@container astryx-stepper (max-width: 480px)': 'auto',
-    },
+    minWidth: 0,
     // density padding applied via density styles below
   },
 
@@ -258,6 +324,127 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     flexShrink: 0,
     marginBlockEnd: spacingVars['--spacing-0-5'],
+  },
+
+  // ===================== CONNECTOR FILL =====================
+  // Shared by every connector the four layout combinations draw: the separated
+  // bars (verticalBar, horizontalBar) and the on-track segments (otSegBaseV,
+  // otSegH, otContentSegV).
+  //
+  // The segment element is the *unfilled* track and never changes color; the
+  // accent fill is a ::before scaled along the track axis. Advancing a step
+  // grows it out of the segment's leading edge, so the line reads as progress
+  // travelling rather than a bar changing state. The obvious alternative,
+  // transitioning `background-color` between accent and border on the segment
+  // itself, lights the whole segment at once: a flash, with no direction in
+  // it. Going the other way the scale still returns to zero, but instantly —
+  // only a single step forward is given a duration to cross (see the motion
+  // block above).
+  //
+  // A pseudo-element rather than a real child element, because the connector is
+  // emitted from seven places and several of them size themselves in ways a
+  // child would have to re-derive (otSegFlexV grows, otSegLeadV is fixed,
+  // otContentSegV is absolutely positioned). ::before inherits the box for
+  // free, so one style covers all of them.
+  //
+  // Mount is deliberately not animated, and falls out of how transitions work:
+  // interpolation needs a previous computed value and a freshly rendered
+  // element has none. A stepper that opens on step 3 paints the segments behind
+  // it filled, instantly, instead of playing its whole history back.
+  connectorTrack: {
+    position: 'relative',
+    backgroundColor: colorVars['--color-border'],
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      // Follows whatever the segment itself rounds to: the full pill of a
+      // separated bar, the square ends the on-track segments need in order to
+      // stack into one continuous line.
+      borderRadius: 'inherit',
+      backgroundColor: colorVars['--color-accent'],
+      transitionProperty: 'transform',
+      // Resting duration, for a segment moving on its own. connectorTiming
+      // below replaces it on every connector — each one is handed either its
+      // slice of the animated span or a zero — so this is the fallback that
+      // applies if a connector is ever rendered without it.
+      transitionDuration: {
+        default: FILL_SPAN_TIME,
+        '@media (prefers-reduced-motion: reduce)': '0s',
+      },
+      // Linear, deliberately, and not the `--ease-standard` the rest of the
+      // system transitions on. A node-to-node span is not always one element:
+      // in the on-track layouts the segment leaving one node and the segment
+      // arriving at the next draw it between them, and a vertical step with a
+      // content slot splits it three ways. A curve applied per segment
+      // restarts its deceleration at every seam, so the front lurches, stalls
+      // at the joint, and the joint becomes the most visible thing in the
+      // animation — the fill stops reading as one line growing and starts
+      // reading as two pieces taking turns. Linear is the only timing that
+      // stitches into a single constant-speed front. The separated bars run
+      // linear too: a lone segment gives up very little by it, and the two
+      // layouts should not animate with different character.
+      transitionTimingFunction: 'linear',
+    },
+  },
+  // This segment's slice of the animated span, or a pair of zeros for a
+  // segment that is not part of it (see the motion block above the styles).
+  // Dynamic because which segments animate, and over what part of the span,
+  // depends on where the active step just moved from — known only at render.
+  // StyleX routes the values through a custom property, so these are still
+  // generated rules and not inline styles.
+  //
+  // Restates the reduced-motion escape connectorTrack declares rather than
+  // relying on it: a StyleX style that redefines a property replaces the
+  // earlier definition wholesale, conditions included. Without it a
+  // reduced-motion user would get an on-track span as two instant snaps spaced
+  // apart by the delay — motion smuggled back in as timing. Zeroing the delay
+  // alongside the duration lands the whole span at once instead.
+  connectorTiming: (duration: string, delay: string) => ({
+    '::before': {
+      transitionDuration: {
+        default: duration,
+        '@media (prefers-reduced-motion: reduce)': '0s',
+      },
+      transitionDelay: {
+        default: delay,
+        '@media (prefers-reduced-motion: reduce)': '0s',
+      },
+    },
+  }),
+  // Vertical track: progress runs down the block axis under both LTR and RTL
+  // (direction only mirrors the inline axis), so the growth anchors at the
+  // physical top either way.
+  connectorFillV: {
+    '::before': {transformOrigin: 'center top', transform: 'scaleY(1)'},
+  },
+  connectorEmptyV: {
+    '::before': {transformOrigin: 'center top', transform: 'scaleY(0)'},
+  },
+  // Horizontal track: progress runs along the reading direction, so the growth
+  // anchors at the inline-start edge — physically left in LTR, right in RTL.
+  // `transform-origin` accepts no logical keywords, so the flip is spelled out
+  // with the same `:is([dir="rtl"] *)` hook Switch's thumb travel and the
+  // shared rtlStyles.mirror use. Stated on both states rather than hoisted onto
+  // connectorTrack, which is axis-agnostic and shared with the vertical
+  // segments.
+  connectorFillH: {
+    '::before': {
+      transformOrigin: {
+        default: 'left center',
+        ':is([dir="rtl"] *)': 'right center',
+      },
+      transform: 'scaleX(1)',
+    },
+  },
+  connectorEmptyH: {
+    '::before': {
+      transformOrigin: {
+        default: 'left center',
+        ':is([dir="rtl"] *)': 'right center',
+      },
+      transform: 'scaleX(0)',
+    },
   },
 
   // ===================== SHARED =====================
@@ -381,17 +568,6 @@ const styles = stylex.create({
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
   },
-  // Collapse a non-current step's label when the stepper container is narrow
-  // (opt-in via Stepper hasCollapsibleLabels). Hidden from layout AND from
-  // the accessibility tree's visible text — the step stays reachable via
-  // aria-current and each control's accessible name, which are unaffected.
-  // The current step never gets this style, so its label always shows.
-  labelCollapsible: {
-    display: {
-      default: 'block',
-      '@container astryx-stepper (max-width: 480px)': 'none',
-    },
-  },
 
   // Optional tag
   optionalDot: {
@@ -411,6 +587,14 @@ const styles = stylex.create({
     paddingInlineStart: INDICATOR_GUTTER,
   },
   description: {
+    // Block, not inline. An inline span is laid out in a line box belonging to
+    // its parent, and that box is floored by the parent's strut — the invisible
+    // box every block container reserves from its own font and line-height. The
+    // row inherits the page's 16px/24px, so an inline description sat in a 24px
+    // line box no matter how tight its own leading was, padding the gap under
+    // the label. Blockifying moves the strut onto this span, where the metrics
+    // below apply and the box hugs the text at 16px.
+    display: 'block',
     fontSize: typeScaleVars['--text-supporting-size'],
     // The supporting-leading token (1.667 → 20px at 12px) reads too loose for
     // a caption sitting under its label; a fixed 16px line box (the --spacing-4
@@ -424,23 +608,33 @@ const styles = stylex.create({
   stepContent: {
     paddingBlockStart: spacingVars['--spacing-2'],
   },
-  stepContentWithIndicator: {
-    paddingInlineStart: INDICATOR_GUTTER,
-  },
+  // The label row sits inside the density-padded hover target, but the content
+  // slot is that target's *sibling* — a <button> cannot contain the buttons and
+  // inputs a content slot usually holds, so the slot has to live outside it.
+  // Left alone the slot therefore starts at the step edge while the label above
+  // starts one density pad in. Reproducing that pad here is what keeps the two
+  // flush; the gutter on top of it is what lines the content up with the label
+  // rather than with the indicator.
+  contentIndent: (inlinePad: string, gutter: string) => ({
+    paddingInlineStart: `calc(${inlinePad} + ${gutter})`,
+    paddingInlineEnd: inlinePad,
+  }),
 
-  // Density
+  // Density. Block padding only — the inline half comes from densityInline,
+  // which is passed in so the content slot outside this wrapper can apply the
+  // same value.
   densityCompact: {
     paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
   },
   densityBalanced: {
     paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-2'],
   },
   densitySpacious: {
     paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-3'],
   },
+  densityInline: (value: string) => ({
+    paddingInline: value,
+  }),
 
   // Button reset for clickable steps
   buttonReset: {
@@ -590,14 +784,6 @@ const styles = stylex.create({
     },
   },
 
-  // Connector fill colors (progress-derived; status recolors when set).
-  lineFilled: {
-    backgroundColor: colorVars['--color-accent'],
-  },
-  lineUnfilled: {
-    backgroundColor: colorVars['--color-border'],
-  },
-
   otBodyV: {
     display: 'flex',
     flexDirection: 'column',
@@ -632,13 +818,31 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
   },
 
-  otContentV: {
-    paddingInlineStart: INDICATOR_GUTTER,
+  // Inline offset comes from contentIndent, and only in the vertical layout —
+  // a horizontal on-track step pads its hover target on the block axis alone,
+  // so its content slot already starts flush with the column above it.
+  otContent: {
     paddingBlockStart: spacingVars['--spacing-2'],
   },
-  otContentH: {
-    paddingBlockStart: spacingVars['--spacing-2'],
+  // A vertical on-track step draws its connector inside the row holding the
+  // indicator and label, and the content slot sits below that row rather than
+  // in it (the row is a <button> when the step is clickable, which cannot
+  // contain the controls a content slot usually holds). So the line stops at
+  // the label and the track breaks open wherever a step carries content.
+  // otContentSegV continues it: a segment spanning the slot's full height, on
+  // the same rail the row's segments run down, which closes the gap between
+  // this step's indicator and the next one's.
+  otContentWrapV: {
+    position: 'relative',
   },
+  otContentSegV: (inlinePad: string) => ({
+    position: 'absolute',
+    insetBlock: 0,
+    // Center on the rail: the row pads itself by inlinePad, then centers a
+    // BAR_WIDTH line inside an INDICATOR_SIZE-wide column.
+    insetInlineStart: `calc(${inlinePad} + (${INDICATOR_SIZE} - ${BAR_WIDTH}) / 2)`,
+    width: BAR_WIDTH,
+  }),
 
   // Density-driven spacing. The connector runs along the "track axis"
   // (vertical = block, horizontal = inline), so density is only ever applied
@@ -713,11 +917,11 @@ export function Step({
   const ctx = useStepperContext();
   const {
     activeStep,
+    previousActiveStep,
     orientation,
     onStepClick,
     density: ctxDensity,
     indicatorPosition,
-    hasCollapsibleLabels,
     registerStep,
   } = ctx;
 
@@ -725,6 +929,15 @@ export function Step({
   useEffect(() => registerStep(step), [registerStep, step]);
 
   const density = densityProp ?? ctxDensity;
+  // Inline padding of a separated step's hover target. Density varies the block
+  // padding freely, but the inline value has to be readable from out here: the
+  // content slot renders outside that target and re-applies it to stay aligned
+  // (see contentIndent), so keeping it in one place is what stops the two
+  // drifting apart.
+  const separatedDensityInline =
+    density === 'spacious'
+      ? spacingVars['--spacing-3']
+      : spacingVars['--spacing-2'];
 
   // Resolve indicator prop — may be a preset string or a custom ReactNode.
   const isCustomIndicator =
@@ -744,11 +957,6 @@ export function Step({
 
   const isVertical = orientation === 'vertical';
   const isActive = progress === 'in-progress';
-  // Non-current step labels collapse only when the stepper opted in, the layout
-  // is horizontal (width-constrained), and this step is not the current one —
-  // the current step always keeps its label. The actual hide is a container
-  // query on the label element (styles.labelCollapsible).
-  const collapseLabel = hasCollapsibleLabels && !isVertical && !isActive;
   // Any non-disabled step is navigable when an onStepClick handler is provided,
   // including not-started steps (free navigation across the flow).
   const isClickable = !isDisabled && onStepClick != null;
@@ -762,6 +970,38 @@ export function Step({
   // Bar fill is purely progress-based. `status` never recolors the bar — it
   // only recolors the indicator (icon / number badge) below.
   const isBarFilled = progress === 'completed' || progress === 'in-progress';
+
+  // --- This step's slice of the animated span ---
+  // Both layouts are measured in the same unit, the node-to-node span: on-track
+  // span k runs from node k to node k+1, and a separated step's lone bar is the
+  // span arriving at it (bar s fills on exactly the condition span s-1 does).
+  // So one rule serves both, and neither needs to know the step count.
+  //
+  // Only a single forward step animates, and the span it crosses is the one
+  // leaving the step the flow came from. Every other segment — the untouched
+  // ones, and every segment of a jump or a retreat — is handed a zero
+  // duration, so it lands at once and carries no stale delay into a later
+  // change.
+  const isSingleAdvance = activeStep === previousActiveStep + 1;
+  const animatedSpan = previousActiveStep;
+
+  /**
+   * Timing for the segment covering `[offset, offset + share)` of span
+   * `spanIndex`, both expressed as fractions of that span.
+   */
+  const fillTiming = (spanIndex: number, offset: number, share: number) => {
+    if (!isSingleAdvance || spanIndex !== animatedSpan) {
+      return styles.connectorTiming('0s', '0s');
+    }
+    return styles.connectorTiming(
+      fillTimeSlice(FILL_SPAN_TIME, share),
+      fillTimeSlice(FILL_SPAN_TIME, offset),
+    );
+  };
+
+  // A separated step draws the whole span arriving at it, so it fills for the
+  // span's entire slice with nothing to sequence against.
+  const barTiming = fillTiming(step - 1, 0, 1);
 
   // --- Build indicator node ---
   // 'auto': number for not-started, check/dot icon once reached
@@ -954,14 +1194,7 @@ export function Step({
   const iconLabelNode = (
     <div {...stylex.props(styles.iconLabelRow)}>
       {indicatorNode}
-      <span
-        {...stylex.props(
-          styles.label,
-          labelColorStyle,
-          collapseLabel && styles.labelCollapsible,
-        )}>
-        {label}
-      </span>
+      <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
       {statusTextNode}
       {isOptional && (
         <>
@@ -990,7 +1223,10 @@ export function Step({
     <div
       {...stylex.props(
         styles.stepContent,
-        hasIndicator && styles.stepContentWithIndicator,
+        styles.contentIndent(
+          separatedDensityInline,
+          hasIndicator ? INDICATOR_GUTTER : '0px',
+        ),
       )}>
       {children}
     </div>
@@ -1010,13 +1246,44 @@ export function Step({
     // `status` never recolors the connector — only the indicator.
     const beforeFilled = step <= activeStep;
     const afterFilled = step < activeStep;
-    const beforeSegStyle = beforeFilled
-      ? styles.lineFilled
-      : styles.lineUnfilled;
-    const afterSegStyle = afterFilled ? styles.lineFilled : styles.lineUnfilled;
+    // Both segments animate their fill along the track (see connectorTrack), so
+    // the pair is picked by orientation: the vertical column scales down its
+    // block axis, the horizontal row along the reading direction.
+    const segFilledStyle = isVertical
+      ? styles.connectorFillV
+      : styles.connectorFillH;
+    const segEmptyStyle = isVertical
+      ? styles.connectorEmptyV
+      : styles.connectorEmptyH;
+    const beforeSegStyle = beforeFilled ? segFilledStyle : segEmptyStyle;
+    const afterSegStyle = afterFilled ? segFilledStyle : segEmptyStyle;
     // First/last connector visibility is decided structurally from the step's
     // own <li> position (see otSegHiddenIfFirst/Last), not by counting children
     // in the parent — so grouping steps in a fragment can't break it.
+
+    // A node-to-node span is drawn by two steps: this one's trailing segments
+    // leave its own node, the next one's leading cap arrives at the next node.
+    // Both flip on the same condition, so left to themselves they fill together
+    // and one gap between two nodes reads as two dashes converging on the space
+    // between them. Handing each its own slice of the span's time, in track
+    // order — the leaving half first, then the arriving one — is what closes
+    // that into a single line growing.
+    const arrivalShare = isVertical ? OT_ARRIVAL_SHARE_V : OT_ARRIVAL_SHARE_H;
+    const leavingShare = 1 - arrivalShare;
+    // A content slot's segment continues the leaving half below the row, so the
+    // two divide the leaving time between them; with no slot the rail segment
+    // takes all of it. Each step can work this out for its own trailing side
+    // alone: the arriving cap always takes the span's last `arrivalShare`, so
+    // the step drawing it never has to know whether the step before it carries
+    // a slot.
+    const hasContentSeg = isVertical && isRenderable(children);
+    const railShare =
+      leavingShare * (hasContentSeg ? OT_RAIL_SHARE_OF_LEAVING : 1);
+    const contentShare = leavingShare - railShare;
+
+    const beforeTiming = fillTiming(step - 1, leavingShare, arrivalShare);
+    const railTiming = fillTiming(step, 0, railShare);
+    const contentTiming = fillTiming(step, railShare, contentShare);
 
     const densitySpace =
       density === 'compact'
@@ -1030,14 +1297,7 @@ export function Step({
         {...stylex.props(
           isVertical ? styles.otLabelRowStart : styles.otLabelRowCenter,
         )}>
-        <span
-          {...stylex.props(
-            styles.label,
-            labelColorStyle,
-            collapseLabel && styles.labelCollapsible,
-          )}>
-          {label}
-        </span>
+        <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
         {statusTextNode}
         {isOptional && (
           <>
@@ -1055,12 +1315,37 @@ export function Step({
       <span {...stylex.props(styles.description)}>{description}</span>
     ) : null;
 
-    const otContentNode = isRenderable(children) ? (
-      <div
-        {...stylex.props(isVertical ? styles.otContentV : styles.otContentH)}>
-        {children}
+    const otContentNode = !isRenderable(children) ? null : isVertical ? (
+      <div {...stylex.props(styles.otContentWrapV)}>
+        <div
+          aria-hidden="true"
+          {...mergeProps(
+            themeProps('step-connector'),
+            stylex.props(
+              // connectorTrack first: it declares `position: relative` to
+              // anchor its fill layer, but this segment is absolutely placed
+              // on the rail beside the content slot and must keep that. An
+              // absolute box is a containing block too, so the fill still
+              // pins to it.
+              styles.connectorTrack,
+              styles.otContentSegV(densitySpace),
+              afterSegStyle,
+              contentTiming,
+              styles.otSegHiddenIfLast,
+            ),
+          )}
+        />
+        <div
+          {...stylex.props(
+            styles.otContent,
+            styles.contentIndent(densitySpace, INDICATOR_GUTTER),
+          )}>
+          {children}
+        </div>
       </div>
-    ) : null;
+    ) : (
+      <div {...stylex.props(styles.otContent)}>{children}</div>
+    );
 
     if (isVertical) {
       const inner = (
@@ -1077,7 +1362,9 @@ export function Step({
                 stylex.props(
                   styles.otSegBaseV,
                   styles.otSegLeadV(densitySpace),
+                  styles.connectorTrack,
                   beforeSegStyle,
+                  beforeTiming,
                   styles.otSegHiddenIfFirst,
                 ),
               )}
@@ -1090,7 +1377,9 @@ export function Step({
                 stylex.props(
                   styles.otSegBaseV,
                   styles.otSegFlexV,
+                  styles.connectorTrack,
                   afterSegStyle,
+                  railTiming,
                   styles.otSegHiddenIfLast,
                 ),
               )}
@@ -1152,7 +1441,9 @@ export function Step({
               themeProps('step-connector'),
               stylex.props(
                 styles.otSegH,
+                styles.connectorTrack,
                 beforeSegStyle,
+                beforeTiming,
                 styles.otSegHiddenIfFirst,
               ),
             )}
@@ -1164,7 +1455,9 @@ export function Step({
               themeProps('step-connector'),
               stylex.props(
                 styles.otSegH,
+                styles.connectorTrack,
                 afterSegStyle,
+                railTiming,
                 styles.otSegHiddenIfLast,
               ),
             )}
@@ -1240,7 +1533,9 @@ export function Step({
             themeProps('step-bar'),
             stylex.props(
               styles.verticalBar,
-              isBarFilled ? styles.barCompleted : styles.barIncomplete,
+              styles.connectorTrack,
+              isBarFilled ? styles.connectorFillV : styles.connectorEmptyV,
+              barTiming,
             ),
           )}
           aria-hidden="true"
@@ -1258,6 +1553,7 @@ export function Step({
                 density === 'compact' && styles.densityCompact,
                 density === 'balanced' && styles.densityBalanced,
                 density === 'spacious' && styles.densitySpacious,
+                styles.densityInline(separatedDensityInline),
               )}>
               {iconLabelNode}
               {descriptionNode}
@@ -1268,6 +1564,7 @@ export function Step({
                 density === 'compact' && styles.densityCompact,
                 density === 'balanced' && styles.densityBalanced,
                 density === 'spacious' && styles.densitySpacious,
+                styles.densityInline(separatedDensityInline),
               )}>
               {iconLabelNode}
               {descriptionNode}
@@ -1298,7 +1595,9 @@ export function Step({
           themeProps('step-bar'),
           stylex.props(
             styles.horizontalBar,
-            isBarFilled ? styles.barCompleted : styles.barIncomplete,
+            styles.connectorTrack,
+            isBarFilled ? styles.connectorFillH : styles.connectorEmptyH,
+            barTiming,
           ),
         )}
         aria-hidden="true"
@@ -1314,6 +1613,7 @@ export function Step({
             density === 'compact' && styles.densityCompact,
             density === 'balanced' && styles.densityBalanced,
             density === 'spacious' && styles.densitySpacious,
+            styles.densityInline(separatedDensityInline),
           )}>
           {iconLabelNode}
           {descriptionNode}
@@ -1324,6 +1624,7 @@ export function Step({
             density === 'compact' && styles.densityCompact,
             density === 'balanced' && styles.densityBalanced,
             density === 'spacious' && styles.densitySpacious,
+            styles.densityInline(separatedDensityInline),
           )}>
           {iconLabelNode}
           {descriptionNode}

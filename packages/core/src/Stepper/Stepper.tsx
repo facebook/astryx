@@ -8,6 +8,11 @@
  * @output Exports Stepper component and StepperProps
  * @position Core container component; consumed by index.ts
  *
+ * Besides the props it is given, this component tracks the `activeStep` it
+ * last rendered with and publishes it on the context. Steps need the distance
+ * and direction of a change to choreograph their connector fill; see the
+ * CONNECTOR FILL block in Step.tsx.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Stepper/Stepper.test.tsx (tests for new/changed behavior)
@@ -16,7 +21,7 @@
  * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
-import {useCallback, useMemo, useRef, type ReactNode} from 'react';
+import {useCallback, useMemo, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {spacingVars} from '../theme/tokens.stylex';
@@ -71,16 +76,6 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * @default 'separated'
    */
   indicatorPosition?: StepperIndicatorPosition;
-  /**
-   * Horizontal only. When the stepper gets too narrow to fit every label,
-   * collapse the labels of non-current steps so the track can shrink — only
-   * the current step keeps its visible label (the rest stay reachable via
-   * `aria-current` and the accessible names). Uses a container query, so it
-   * responds to the stepper's own width, not the viewport. No effect in the
-   * vertical orientation, where width is not the constraint.
-   * @default false
-   */
-  hasCollapsibleLabels?: boolean;
 }
 
 const styles = stylex.create({
@@ -110,13 +105,6 @@ const styles = stylex.create({
   verticalOnTrack: {
     flexDirection: 'column',
     gap: 0,
-  },
-  // Establishes the stepper as an inline-size container so each step's label
-  // can collapse via a container query when the stepper (not the viewport) is
-  // too narrow. Named so the child @container rules target this element only.
-  labelCollapseContainer: {
-    containerType: 'inline-size',
-    containerName: 'astryx-stepper',
   },
 });
 
@@ -154,7 +142,6 @@ export function Stepper({
   label: labelFromProps,
   density = 'balanced',
   indicatorPosition = 'separated',
-  hasCollapsibleLabels = false,
   xstyle,
   className,
   style,
@@ -188,24 +175,52 @@ export function Stepper({
     };
   }, []);
 
+  // The step we came *from*. Steps need it to stagger their connector fill:
+  // the distance and direction of the change decide which segment moves first
+  // and how long the whole sweep may take (see Step.tsx's CONNECTOR FILL).
+  //
+  // Derived during render from state rather than written in an effect. An
+  // effect runs after paint, so the browser would already have committed the
+  // new fill states with last render's delays — the first frame of the sweep
+  // would be wrong, and on a jump of one that is the entire animation. React
+  // discards and re-runs a render that sets its own state before committing,
+  // so this costs a re-render but never a wrong frame.
+  //
+  // Seeding both halves from the current `activeStep` is what suppresses the
+  // cascade on mount: a stepper that opens on step 3 has no previous step to
+  // have travelled from, so its completed segments paint filled at once. That
+  // also makes the first render pure and identical on the server, so there is
+  // nothing for hydration to disagree about. Storing the pair in one state
+  // object keeps the update idempotent under StrictMode's double render — both
+  // invocations read the same `seen` and queue the same successor.
+  const [seen, setSeen] = useState(() => ({
+    current: activeStep,
+    previous: activeStep,
+  }));
+  if (seen.current !== activeStep) {
+    setSeen({current: activeStep, previous: seen.current});
+  }
+  const previousActiveStep =
+    seen.current === activeStep ? seen.previous : seen.current;
+
   const ctxValue = useMemo<StepperContextValue>(
     () => ({
       activeStep,
+      previousActiveStep,
       orientation,
       isNonLinear: onStepClick != null,
       onStepClick: onStepClick ?? null,
       density,
       indicatorPosition,
-      hasCollapsibleLabels,
       registerStep,
     }),
     [
       activeStep,
+      previousActiveStep,
       orientation,
       onStepClick,
       density,
       indicatorPosition,
-      hasCollapsibleLabels,
       registerStep,
     ],
   );
@@ -220,10 +235,6 @@ export function Stepper({
         ? styles.verticalOnTrack
         : styles.vertical;
 
-  // Label collapse is a width constraint, so it only applies to the horizontal
-  // orientation; vertical steppers are never width-limited this way.
-  const isLabelCollapse = hasCollapsibleLabels && orientation === 'horizontal';
-
   return (
     <StepperContext value={ctxValue}>
       <ol
@@ -232,12 +243,7 @@ export function Stepper({
         {...rest}
         {...mergeProps(
           themeProps('stepper', {orientation, indicatorPosition}),
-          stylex.props(
-            styles.root,
-            orientationStyle,
-            isLabelCollapse && styles.labelCollapseContainer,
-            xstyle,
-          ),
+          stylex.props(styles.root, orientationStyle, xstyle),
           className,
           style,
         )}>

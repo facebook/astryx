@@ -57,7 +57,7 @@ export const docs = {
         name: 'Progress bar',
         required: true,
         description:
-          'A 4px segmented bar per step. Filled for completed and active steps.',
+          'A 4px segmented bar per step. Filled for completed and active steps. Advancing one step grows the fill along the track it just covered, so the movement reads as progress rather than a bar changing color. Every other change applies at once: going back, jumping forward by more than one step, mounting mid-flow, and any change at all under prefers-reduced-motion. Where a span is drawn by more than one segment — the on-track layouts split it between two steps, three when a content slot sits between them — the segments run in track order at one constant speed, so the fill reads as a single line growing rather than pieces lighting in turn.',
       },
       {
         name: 'Indicator',
@@ -142,13 +142,6 @@ export const docs = {
           default: "'separated'",
         },
         {
-          name: 'hasCollapsibleLabels',
-          type: 'boolean',
-          description:
-            'Horizontal only. When the stepper is too narrow to fit every label, collapse the labels of non-current steps (via a container query) so the track can shrink; the current step keeps its label. Steps stay reachable via aria-current and their accessible names.',
-          default: 'false',
-        },
-        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -163,9 +156,19 @@ export const docs = {
       name: 'Step',
     },
   ],
+  // A Stepper draws nothing on its own — every bar, indicator, and label comes
+  // from its Steps — so without seeded children the preview opens on an empty
+  // stage and the orientation/density/indicator knobs have nothing to act on.
+  // Three steps is the smallest set that shows all three progress states at
+  // once: completed, current, and upcoming.
   playground: {
     defaults: {
       activeStep: 1,
+      children: [
+        {__element: 'Step', props: {step: 0, label: 'Cart'}},
+        {__element: 'Step', props: {step: 1, label: 'Shipping'}},
+        {__element: 'Step', props: {step: 2, label: 'Payment'}},
+      ],
     },
   },
 };

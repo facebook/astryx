@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {StrictMode} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -510,6 +511,34 @@ describe('Stepper', () => {
     ).not.toBeInTheDocument();
   });
 
+  // A vertical on-track step's content slot renders outside the row that draws
+  // the connector, so without its own segment the track breaks open around any
+  // step carrying content. jsdom can't measure the line, so assert the wiring:
+  // the slot carries a segment, and it hides on the last step like the row's
+  // trailing one does.
+  it('continues the on-track connector past a step content slot', () => {
+    render(
+      <Stepper
+        activeStep={1}
+        orientation="vertical"
+        indicatorPosition="on-track">
+        <Step step={0} label="Account" data-testid="ot-plain" />
+        <Step step={1} label="Payment" data-testid="ot-content">
+          <button type="button">Pay now</button>
+        </Step>
+      </Stepper>,
+    );
+    expect(
+      screen
+        .getByTestId('ot-content')
+        .querySelector('[class*="otContentSegV"][class*="otSegHiddenIfLast"]'),
+    ).toBeInTheDocument();
+    // A step without content has no slot, so no extra segment.
+    expect(
+      screen.getByTestId('ot-plain').querySelector('[class*="otContentSegV"]'),
+    ).not.toBeInTheDocument();
+  });
+
   describe('keyboard interaction', () => {
     it('activates a step with Enter', async () => {
       const user = userEvent.setup();
@@ -652,48 +681,344 @@ describe('Stepper', () => {
     });
   });
 
-  describe('hasCollapsibleLabels', () => {
-    // The collapse is a container query, so jsdom can't evaluate the media
-    // condition — assert the opt-in wiring instead: the collapsible class is
-    // applied to non-current horizontal step labels and withheld from the
-    // current step and from every step when the prop is off / vertical.
-    const labelEl = (testid: string) =>
+  // The connector fill animates a ::before scaled along the track axis, which
+  // jsdom neither renders nor times — so assert the wiring the animation hangs
+  // off: every connector carries the shared track style (the element that owns
+  // the fill layer and its transition), and the fill/empty pair it gets is the
+  // one for its axis, since the wrong axis would scale the line's thickness
+  // away instead of its length.
+  describe('connector fill', () => {
+    const barEl = (testId: string) =>
       screen
-        .getByTestId(testid)
-        .querySelector('span[class*="label"]') as HTMLElement;
+        .getByTestId(testId)
+        .querySelector('[class*="connectorTrack"]') as HTMLElement;
 
-    it('marks non-current horizontal step labels collapsible, but not the current one', () => {
+    it('scales the separated bar along the inline axis when horizontal', () => {
       render(
-        <Stepper activeStep={1} orientation="horizontal" hasCollapsibleLabels>
+        <Stepper activeStep={1} orientation="horizontal">
           <Step step={0} label="A" data-testid="a" />
           <Step step={1} label="B" data-testid="b" />
           <Step step={2} label="C" data-testid="c" />
         </Stepper>,
       );
-      expect(labelEl('a').className).toContain('labelCollapsible');
-      expect(labelEl('c').className).toContain('labelCollapsible');
-      // The current step keeps its label unconditionally.
-      expect(labelEl('b').className).not.toContain('labelCollapsible');
+      // Reached steps are filled, upcoming ones empty — both on the H pair.
+      expect(barEl('a').className).toContain('connectorFillH');
+      expect(barEl('b').className).toContain('connectorFillH');
+      expect(barEl('c').className).toContain('connectorEmptyH');
+      expect(barEl('c').className).not.toContain('connectorEmptyV');
     });
 
-    it('does not collapse labels when the prop is off', () => {
+    it('scales the separated bar along the block axis when vertical', () => {
       render(
-        <Stepper activeStep={1} orientation="horizontal">
+        <Stepper activeStep={1} orientation="vertical">
           <Step step={0} label="A" data-testid="a" />
           <Step step={1} label="B" data-testid="b" />
+          <Step step={2} label="C" data-testid="c" />
         </Stepper>,
       );
-      expect(labelEl('a').className).not.toContain('labelCollapsible');
+      expect(barEl('a').className).toContain('connectorFillV');
+      expect(barEl('c').className).toContain('connectorEmptyV');
+      expect(barEl('c').className).not.toContain('connectorEmptyH');
     });
 
-    it('does not collapse labels in the vertical orientation', () => {
+    it('gives every on-track segment the track style and its axis pair', () => {
       render(
-        <Stepper activeStep={1} orientation="vertical" hasCollapsibleLabels>
+        <Stepper activeStep={1} indicatorPosition="on-track">
           <Step step={0} label="A" data-testid="a" />
           <Step step={1} label="B" data-testid="b" />
+          <Step step={2} label="C" data-testid="c" />
         </Stepper>,
       );
-      expect(labelEl('a').className).not.toContain('labelCollapsible');
+      // A step draws the segments flanking its own indicator, so each carries
+      // the track style; none may fall back to the vertical axis pair here.
+      for (const id of ['a', 'b', 'c']) {
+        const segs = Array.from(
+          screen.getByTestId(id).querySelectorAll('[class*="connectorTrack"]'),
+        );
+        expect(segs).toHaveLength(2);
+        for (const seg of segs) {
+          expect(seg.className).toMatch(/connector(Fill|Empty)H/);
+          expect(seg.className).not.toMatch(/connector(Fill|Empty)V/);
+        }
+      }
+      // Progress splits at the current step: the segment arriving at it is
+      // filled, the one leaving it is not.
+      const current = Array.from(
+        screen.getByTestId('b').querySelectorAll('[class*="connectorTrack"]'),
+      );
+      expect(current[0].className).toContain('connectorFillH');
+      expect(current[1].className).toContain('connectorEmptyH');
+    });
+  });
+
+  // One change animates the connector: advancing a single step. jsdom runs no
+  // transitions, so what is asserted here is the schedule one would run on.
+  // Every segment's slice is expressed in one unit — the node-to-node span —
+  // so a slice reads as `{start, length}` in spans, a segment that lands at
+  // once reads as a pair of zeros, and a span stitched from several segments
+  // is contiguous when its slices abut in track order.
+  describe('connector fill motion', () => {
+    const separated = (activeStep: number) => (
+      <Stepper activeStep={activeStep} orientation="horizontal">
+        <Step step={0} label="A" data-testid="a" />
+        <Step step={1} label="B" data-testid="b" />
+        <Step step={2} label="C" data-testid="c" />
+        <Step step={3} label="D" data-testid="d" />
+        <Step step={4} label="E" data-testid="e" />
+      </Stepper>
+    );
+
+    // StyleX routes dynamic values through hashed custom properties, whose
+    // names are not readable by hand. Recover the mapping from the one change
+    // that animates — the only one where the two carry different values. The
+    // probe mounts alongside whatever the calling test rendered, so it needs a
+    // test id of its own to be found.
+    const timingVarNames = (() => {
+      let cached: {duration: string; delay: string} | null = null;
+      return () => {
+        if (cached) {
+          return cached;
+        }
+        const steps = (
+          <>
+            <Step step={0} label="A" />
+            <Step step={1} label="B" data-testid="timing-probe" />
+          </>
+        );
+        const probe = render(<Stepper activeStep={0}>{steps}</Stepper>);
+        probe.rerender(<Stepper activeStep={1}>{steps}</Stepper>);
+        const el = probe
+          .getByTestId('timing-probe')
+          .querySelector('[class*="connectorTiming"]') as HTMLElement;
+        const found: Record<string, string> = {};
+        for (const name of Array.from(el.style)) {
+          const value = el.style.getPropertyValue(name).trim();
+          if (value === 'var(--duration-medium)') {
+            found.duration = name;
+          } else if (value === '0s') {
+            found.delay = name;
+          }
+        }
+        probe.unmount();
+        cached = found as {duration: string; delay: string};
+        return cached;
+      };
+    })();
+
+    /**
+     * A slice as a multiple of one span: `0s` is none of a span, a bare span
+     * expression is all of one, and `calc(<span> * n)` is n of them.
+     */
+    const spans = (value: string): number => {
+      if (value === '0s') {
+        return 0;
+      }
+      const scaled = value.match(/\* ([\d.]+)\)$/);
+      return scaled ? Number(scaled[1]) : 1;
+    };
+
+    /** Every connector in track order, as `{start, length}` in spans. */
+    const schedule = (el: HTMLElement) =>
+      Array.from(
+        el.querySelectorAll<HTMLElement>('[class*="connectorTiming"]'),
+      ).map(seg => {
+        const names = timingVarNames();
+        return {
+          start: spans(seg.style.getPropertyValue(names.delay).trim()),
+          length: spans(seg.style.getPropertyValue(names.duration).trim()),
+        };
+      });
+
+    /** Nothing in this subtree moves over time. */
+    const isInstant = (el: HTMLElement) =>
+      schedule(el).every(slice => slice.start === 0 && slice.length === 0);
+
+    /** The span expression itself, which carries the fill's duration. */
+    const spanExpression = (el: HTMLElement) => {
+      const raw = (
+        el.querySelector('[class*="connectorTiming"]') as HTMLElement
+      ).style
+        .getPropertyValue(timingVarNames().duration)
+        .trim();
+      return raw.replace(/^calc\((.*) \* [\d.]+\)$/, '$1');
+    };
+
+    /**
+     * The timing functions the fills in this subtree run on. Unlike the
+     * duration and the delay this is a static style, so it lives in the
+     * injected stylesheet under one of each segment's atomic classes rather
+     * than in an inline custom property.
+     */
+    const fillEasings = (el: HTMLElement) => {
+      const found = new Set<string>();
+      for (const seg of Array.from(
+        el.querySelectorAll<HTMLElement>('[class*="connectorTrack"]'),
+      )) {
+        const classes = new Set(seg.className.split(/\s+/));
+        for (const sheet of Array.from(document.styleSheets)) {
+          for (const rule of Array.from(sheet.cssRules)) {
+            if (!('selectorText' in rule)) {
+              continue;
+            }
+            const {selectorText, style} = rule as CSSStyleRule;
+            const owner = selectorText.match(/^\.([\w-]+)/);
+            if (
+              owner == null ||
+              !classes.has(owner[1]) ||
+              !selectorText.endsWith('::before')
+            ) {
+              continue;
+            }
+            const value = style
+              .getPropertyValue('transition-timing-function')
+              .trim();
+            if (value !== '') {
+              found.add(value);
+            }
+          }
+        }
+      }
+      return [...found];
+    };
+
+    it('animates the one span a single forward step crosses', () => {
+      const {rerender, getByTestId} = render(separated(0));
+      rerender(separated(1));
+      // The bar arriving at the new step fills across the whole span.
+      expect(schedule(getByTestId('b'))).toEqual([{start: 0, length: 1}]);
+      // Every other bar is untouched, so it is handed no timing that a later
+      // change could inherit as a stale delay.
+      for (const id of ['a', 'c', 'd', 'e']) {
+        expect(isInstant(getByTestId(id))).toBe(true);
+      }
+    });
+
+    it('fills that span over the medium duration', () => {
+      // A fill crossing a whole segment is a spatial change, not a
+      // micro-interaction, so it sits above the fast band.
+      const {rerender, getByTestId} = render(separated(0));
+      rerender(separated(1));
+      expect(spanExpression(getByTestId('b'))).toBe('var(--duration-medium)');
+    });
+
+    it('fills linearly so a stitched span reads as one front', () => {
+      // An on-track span is drawn by two segments, three where a content slot
+      // splits it. A curve applied per segment restarts its deceleration at
+      // every seam, and the seam becomes the most visible part of the result.
+      const {container} = render(separated(0));
+      expect(fillEasings(container.firstElementChild as HTMLElement)).toEqual([
+        'linear',
+      ]);
+    });
+
+    it('lands a forward jump of more than one step at once', () => {
+      // A jump is a navigation rather than a progression: sweeping a front
+      // across the crossed segments makes the user sit out a journey they
+      // asked to skip.
+      const {rerender, getByTestId} = render(separated(0));
+      rerender(separated(3));
+      for (const id of ['a', 'b', 'c', 'd', 'e']) {
+        expect(isInstant(getByTestId(id))).toBe(true);
+      }
+    });
+
+    it('lands a backward change at once, one step or several', () => {
+      // Retracting is the same arithmetic as filling, but it ends on a
+      // shrinking stub of accent rather than a nearly-full bar, and a remnant
+      // still on the track reads as unfinished however briefly it is there.
+      for (const to of [2, 0]) {
+        const view = render(separated(3));
+        view.rerender(separated(to));
+        for (const id of ['a', 'b', 'c', 'd', 'e']) {
+          expect(isInstant(view.getByTestId(id))).toBe(true);
+        }
+        view.unmount();
+      }
+    });
+
+    it('leaves every segment instant on mount', () => {
+      // A stepper opening mid-flow has no previous step to have travelled
+      // from, so its completed segments must paint filled at once rather than
+      // replaying the history that would have produced them.
+      const {getByTestId} = render(separated(3));
+      for (const id of ['a', 'b', 'c', 'd', 'e']) {
+        expect(isInstant(getByTestId(id))).toBe(true);
+      }
+    });
+
+    const onTrack = (activeStep: number) => (
+      <Stepper
+        activeStep={activeStep}
+        orientation="horizontal"
+        indicatorPosition="on-track">
+        <Step step={0} label="A" data-testid="a" />
+        <Step step={1} label="B" data-testid="b" />
+        <Step step={2} label="C" data-testid="c" />
+      </Stepper>
+    );
+
+    it('runs the leaving half of an on-track span before the arriving half', () => {
+      const {rerender, getByTestId} = render(onTrack(0));
+      rerender(onTrack(1));
+      // The span is drawn by two steps. Left alone both halves flip together
+      // and the gap between two nodes reads as two dashes converging on the
+      // space between them; split, the one leaving the near node runs first
+      // and the pair reads as one stretch of track filling.
+      const [aCap, aRail] = schedule(getByTestId('a'));
+      const [bCap, bRail] = schedule(getByTestId('b'));
+      expect(aRail).toEqual({start: 0, length: 0.5});
+      expect(bCap).toEqual({start: 0.5, length: 0.5});
+      // The segments either side of the span are not part of it.
+      expect(aCap).toEqual({start: 0, length: 0});
+      expect(bRail).toEqual({start: 0, length: 0});
+      expect(isInstant(getByTestId('c'))).toBe(true);
+    });
+
+    const verticalWithContent = (activeStep: number) => (
+      <Stepper
+        activeStep={activeStep}
+        orientation="vertical"
+        indicatorPosition="on-track">
+        <Step step={0} label="A" data-testid="a" />
+        <Step step={1} label="B" data-testid="b">
+          <button type="button">Do it</button>
+        </Step>
+        <Step step={2} label="C" data-testid="c" />
+      </Stepper>
+    );
+
+    it('threads a content slot segment into its span between rail and cap', () => {
+      const {rerender, getByTestId} = render(verticalWithContent(1));
+      rerender(verticalWithContent(2));
+      // A vertical step with content draws a third segment down the side of
+      // the slot, so the span leaving it is stitched from three pieces and all
+      // three have to fall in track order. The rail and cap are unequal
+      // lengths, so the slices are unequal too.
+      const [bCap, bRail, bContent] = schedule(getByTestId('b'));
+      const [cCap] = schedule(getByTestId('c'));
+      expect(bRail).toEqual({start: 0, length: 0.175});
+      expect(bContent).toEqual({start: 0.175, length: 0.525});
+      expect(cCap).toEqual({start: 0.7, length: 0.3});
+      // The span arriving at this step belongs to the previous change.
+      expect(bCap).toEqual({start: 0, length: 0});
+      expect(isInstant(getByTestId('a'))).toBe(true);
+    });
+
+    it('tracks the previous step correctly under StrictMode double rendering', () => {
+      // The previous step is derived during render from state, so StrictMode
+      // invoking the render twice must queue the same successor both times
+      // rather than losing a step or advancing two — which would turn a single
+      // forward step into a two-step jump and stop it animating.
+      const {rerender, getByTestId} = render(
+        <StrictMode>{separated(0)}</StrictMode>,
+      );
+      rerender(<StrictMode>{separated(1)}</StrictMode>);
+      expect(schedule(getByTestId('b'))).toEqual([{start: 0, length: 1}]);
+      // A second step measures from step 1, not from the original mount, so
+      // the next span animates and the one behind it stops.
+      rerender(<StrictMode>{separated(2)}</StrictMode>);
+      expect(schedule(getByTestId('c'))).toEqual([{start: 0, length: 1}]);
+      expect(isInstant(getByTestId('b'))).toBe(true);
     });
   });
 });
