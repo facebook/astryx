@@ -118,6 +118,7 @@ describe('astryxStylex optimizeDeps package discovery', () => {
           'vite',
           '@stylexjs/babel-plugin',
           '@stylexjs/unplugin',
+          'postcss',
           'path',
           'url',
           'node:fs',

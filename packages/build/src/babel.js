@@ -23,10 +23,13 @@ module.exports = function astryxBabelPlugin(api, options) {
 
   const {
     libraryPatterns = LIBRARY_PATTERNS,
+    extraLibraryPatterns = [],
     libraryPrefix = 'astryx',
     classNamePrefix = 'x',
     ...stylexOptions
   } = options;
+
+  const patterns = [...libraryPatterns, ...extraLibraryPatterns];
 
   // Build the two sets of options — only classNamePrefix differs
   const libraryOpts = {...stylexOptions, classNamePrefix: libraryPrefix};
@@ -37,7 +40,7 @@ module.exports = function astryxBabelPlugin(api, options) {
   const productPlugin = stylexPlugin(api, productOpts);
 
   function getPluginAndOpts(filename) {
-    const isLibrary = libraryPatterns.some(p => filename.includes(p));
+    const isLibrary = patterns.some(p => filename.includes(p));
     return isLibrary
       ? {plugin: libraryPlugin, opts: libraryOpts}
       : {plugin: productPlugin, opts: productOpts};
