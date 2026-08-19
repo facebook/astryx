@@ -66,6 +66,12 @@ const styles = stylex.create({
     placeItems: 'center',
     overflow: 'hidden',
     verticalAlign: 'middle',
+    // Box tracks the themeable geometry vars so the frame stays in sync with
+    // the canvas (which reads the same vars back — see the draw effect). A
+    // theme can redefine each named size's diameter/rail width via the
+    // size-variant target; the box follows purely through CSS.
+    width: 'calc(var(--_spinner-diameter) + var(--_spinner-rail-width) * 2)',
+    height: 'calc(var(--_spinner-diameter) + var(--_spinner-rail-width) * 2)',
   },
   canvas: {
     backfaceVisibility: 'hidden',
@@ -81,6 +87,30 @@ const styles = stylex.create({
     animationIterationCount: 'infinite',
     animationName: rotation,
     animationTimingFunction: 'linear',
+  },
+});
+
+// Per-size defaults for the themeable geometry vars. These set what each named
+// `size` resolves to; a theme can override them on the size-variant target
+// (e.g. spinner: { 'size:xl': { '--_spinner-diameter': '40px' } }). The canvas
+// reads these vars back at draw time (falling back to SIZES) and the wrapping
+// box tracks them via calc(), so an override reaches both the box and the ring.
+const sizeStyles = stylex.create({
+  sm: {
+    '--_spinner-diameter': `${SIZES.sm.diameter}px`,
+    '--_spinner-rail-width': `${SIZES.sm.border}px`,
+  },
+  md: {
+    '--_spinner-diameter': `${SIZES.md.diameter}px`,
+    '--_spinner-rail-width': `${SIZES.md.border}px`,
+  },
+  lg: {
+    '--_spinner-diameter': `${SIZES.lg.diameter}px`,
+    '--_spinner-rail-width': `${SIZES.lg.border}px`,
+  },
+  xl: {
+    '--_spinner-diameter': `${SIZES.xl.diameter}px`,
+    '--_spinner-rail-width': `${SIZES.xl.border}px`,
   },
 });
 
@@ -178,7 +208,19 @@ export function Spinner({
       return;
     }
 
-    const {border, diameter} = SIZES[size];
+    // Geometry is themeable: a theme can redefine what each named size resolves
+    // to via --_spinner-diameter / --_spinner-rail-width on the size-variant
+    // target. Read the resolved vars back off the canvas (custom properties
+    // inherit from the root span that carries them) and fall back to the SIZES
+    // constants so the drawn output is byte-identical when no theme overrides
+    // them. This mirrors the shade === 'inherit' getComputedStyle read below.
+    const canvasStyle = getComputedStyle(canvas);
+    const diameter =
+      parseFloat(canvasStyle.getPropertyValue('--_spinner-diameter')) ||
+      SIZES[size].diameter;
+    const border =
+      parseFloat(canvasStyle.getPropertyValue('--_spinner-rail-width')) ||
+      SIZES[size].border;
     const pixelRatio = window.devicePixelRatio || 1;
 
     // Resolve colors from theme tokens (useTheme handles light/dark resolution).
@@ -187,8 +229,7 @@ export function Spinner({
     // - onMedia → on-dark color, with a translucent track for photos/video
     // - inherit → the inherited currentColor, so the ring matches the parent's
     //   resolved foreground (e.g. a button's variant text color)
-    const inheritedColor =
-      shade === 'inherit' ? getComputedStyle(canvas).color : null;
+    const inheritedColor = shade === 'inherit' ? canvasStyle.color : null;
     const activeColor =
       shade === 'inherit'
         ? (inheritedColor as string)
@@ -253,8 +294,6 @@ export function Spinner({
     context.stroke();
   }, [shade, size, themeTokens]);
 
-  const {border, diameter} = SIZES[size];
-  const frameSize = diameter + border * 2;
   const hasLabel = label != null;
   const labelId = useId();
 
@@ -279,9 +318,19 @@ export function Spinner({
       {...(hasLabel ? {} : restProps)}
       {...mergeProps(
         hasLabel ? '' : themeProps('spinner', {size, shade}),
-        stylex.props(styles.spinner, !hasLabel && xstyle),
+        stylex.props(
+          styles.spinner,
+          // Default geometry vars must ride the same element that carries the
+          // spinner theme target so a theme override wins over them and the
+          // canvas (which reads them back) sees the resolved value. When a
+          // label is present the target moves to the wrapping div, so the
+          // defaults go there instead and the span inherits them (setting them
+          // here too would shadow the div's themed value).
+          !hasLabel && sizeStyles[size],
+          !hasLabel && xstyle,
+        ),
         hasLabel ? undefined : className,
-        {...(hasLabel ? {} : style), width: frameSize, height: frameSize},
+        hasLabel ? {} : style,
       )}>
       <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
     </span>
@@ -298,7 +347,7 @@ export function Spinner({
       {...restProps}
       {...mergeProps(
         themeProps('spinner', {size, shade}),
-        stylex.props(styles.wrapper, xstyle),
+        stylex.props(styles.wrapper, sizeStyles[size], xstyle),
         className,
         style,
       )}>

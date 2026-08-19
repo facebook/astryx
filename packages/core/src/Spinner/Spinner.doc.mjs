@@ -43,6 +43,10 @@ export const docs = {
     targets: [
       {className: 'astryx-spinner', visualProps: ['size', 'shade']},
     ],
+    vars: [
+      {name: '--_spinner-diameter', description: "Diameter of the ring for the current size variant. Override per size to retheme what each named size resolves to, e.g. spinner: { 'size:xl': { '--_spinner-diameter': '40px' } }.", default: '10px (sm), 14px (md), 18px (lg), 28px (xl)', private: true},
+      {name: '--_spinner-rail-width', description: 'Stroke width of the ring/track (the rail) for the current size variant. Override per size alongside the diameter.', default: '2px (sm), 3px (md), 3px (lg), 4px (xl)', private: true},
+    ],
   },
   usage: {
     description:
@@ -94,6 +98,10 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-spinner', visualProps: ['size', 'shade']},
+    ],
+    vars: [
+      {name: '--_spinner-diameter', description: "当前尺寸变体的环直径。按尺寸覆盖以重新定义每个命名尺寸的解析值，例如 spinner: { 'size:xl': { '--_spinner-diameter': '40px' } }。", default: '10px (sm), 14px (md), 18px (lg), 28px (xl)', private: true},
+      {name: '--_spinner-rail-width', description: '当前尺寸变体的环/轨道（rail）描边宽度。与直径一起按尺寸覆盖。', default: '2px (sm), 3px (md), 3px (lg), 4px (xl)', private: true},
     ],
   },
   usage: {
