@@ -13,9 +13,15 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
+ * - /packages/core/src/hooks/scrollbarGutter.ts
  */
 
 import {useEffect} from 'react';
+import {
+  reserveScrollbarGutter,
+  releaseScrollbarGutter,
+  type ScrollbarGutterSnapshot,
+} from './scrollbarGutter';
 
 interface ScrollLockSnapshot {
   scrollX: number;
@@ -25,6 +31,7 @@ interface ScrollLockSnapshot {
   top: string;
   left: string;
   right: string;
+  gutter: ScrollbarGutterSnapshot;
 }
 
 let lockCount = 0;
@@ -37,6 +44,10 @@ let originalBodyState: ScrollLockSnapshot | null = null;
  * which is necessary for iOS Safari where `overscroll-behavior: contain`
  * does not prevent body scroll behind modals. Restores scroll position
  * on unlock.
+ *
+ * Pinning hides the document scrollbar, so the width a classic scrollbar
+ * occupied is reserved as body padding for the duration of the lock — without
+ * it the page reflows sideways by ~15px the moment an overlay opens.
  *
  * @example
  * ```
@@ -55,6 +66,9 @@ export function useScrollLock(isLocked: boolean): void {
       const scrollX = window.scrollX;
       const scrollY = window.scrollY;
 
+      // Measured before the pinning styles below hide the scrollbar.
+      const gutter = reserveScrollbarGutter(body);
+
       originalBodyState = {
         scrollX,
         scrollY,
@@ -63,6 +77,7 @@ export function useScrollLock(isLocked: boolean): void {
         top: body.style.top,
         left: body.style.left,
         right: body.style.right,
+        gutter,
       };
 
       body.style.overflow = 'hidden';
@@ -89,6 +104,7 @@ export function useScrollLock(isLocked: boolean): void {
       body.style.top = state.top;
       body.style.left = state.left;
       body.style.right = state.right;
+      releaseScrollbarGutter(body, state.gutter);
       window.scrollTo(state.scrollX, state.scrollY);
     };
   }, [isLocked]);

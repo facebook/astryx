@@ -17,6 +17,9 @@ describe('useScrollLock', () => {
   afterEach(() => {
     cleanup();
     document.body.style.cssText = '';
+    document.documentElement.style.cssText = '';
+    // @ts-expect-error -- drop the viewport stub so jsdom's own value comes back
+    delete document.documentElement.clientWidth;
     vi.restoreAllMocks();
   });
 
@@ -68,5 +71,58 @@ describe('useScrollLock', () => {
     expect(document.body.style.top).toBe('');
     expect(document.body.style.left).toBe('');
     expect(document.body.style.right).toBe('');
+  });
+
+  it('holds the page still by reserving the width of the scrollbar it hides', () => {
+    // A 1024px window over a 1009px layout viewport = a 15px classic
+    // scrollbar. Pinning the body hides it, which would widen the page by
+    // those 15px and reflow everything sideways.
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1024,
+      configurable: true,
+      writable: true,
+    });
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 1009,
+      configurable: true,
+    });
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    const lock = renderHook(() => useScrollLock(true));
+
+    expect(document.body.style.paddingRight).toBe('15px');
+    expect(
+      document.documentElement.style.getPropertyValue(
+        '--astryx-scrollbar-gutter',
+      ),
+    ).toBe('15px');
+
+    lock.unmount();
+
+    expect(document.body.style.paddingRight).toBe('');
+    expect(
+      document.documentElement.style.getPropertyValue(
+        '--astryx-scrollbar-gutter',
+      ),
+    ).toBe('');
+  });
+
+  it('leaves padding alone when the scrollbar is an overlay one', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1024,
+      configurable: true,
+      writable: true,
+    });
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 1024,
+      configurable: true,
+    });
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    const lock = renderHook(() => useScrollLock(true));
+
+    expect(document.body.style.paddingRight).toBe('');
+
+    lock.unmount();
   });
 });
