@@ -141,6 +141,13 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     textAlign: 'start',
   },
+  // Wrapper for `renderValue` output. Deliberately without the single-line
+  // clamp above: custom trigger content is allowed to be two lines.
+  triggerValue: {
+    flexGrow: 1,
+    minWidth: 0,
+    textAlign: 'start',
+  },
   // Only what Icon does not already provide: `size="sm"` gives the 16px box
   // and `color` the token, but the glyph still must not shrink inside the flex
   // trigger.
@@ -339,6 +346,20 @@ const sizeStyles = stylex.create({
   },
 });
 
+// Used in place of sizeStyles when `renderValue` is set: custom trigger content
+// can be taller than one line, and a fixed height would clip it.
+const minSizeStyles = stylex.create({
+  sm: {
+    minHeight: sizeVars['--size-element-sm'],
+  },
+  md: {
+    minHeight: sizeVars['--size-element-md'],
+  },
+  lg: {
+    minHeight: sizeVars['--size-element-lg'],
+  },
+});
+
 /**
  * Size-specific overrides for dropdown list items.
  * Matches the pattern used by DropdownMenuItem so that
@@ -516,7 +537,8 @@ interface SelectorPropsBase<
   labelTooltip?: string;
 
   /**
-   * Icon displayed at the start of the selector trigger.
+   * Icon displayed at the start of the selector trigger. Takes precedence over
+   * the selected option's own `icon`, which the trigger otherwise renders.
    */
   startIcon?: ReactNode | IconType;
 
@@ -525,6 +547,28 @@ interface SelectorPropsBase<
    * Only called for selectable options (not dividers/sections).
    */
   renderOption?: (option: SelectorOptionData) => ReactNode;
+
+  /**
+   * Custom render function for the selected option inside the closed trigger.
+   * Only called when something is selected; the placeholder is unaffected.
+   *
+   * The default trigger stays one line tall at the `size` token. Passing
+   * `renderValue` relaxes that height to a minimum, so taller content (a
+   * two-line `SelectorOption`, say) grows the control instead of being
+   * clipped — the caller owns the resulting height.
+   *
+   * @example
+   * ```
+   * renderValue={option => (
+   *   <SelectorOption
+   *     icon={option.icon}
+   *     label={option.label}
+   *     description={option.description}
+   *   />
+   * )}
+   * ```
+   */
+  renderValue?: (option: SelectorOptionData) => ReactNode;
 
   /**
    * Which edge of the option row carries the selected mark. `start` reserves a
@@ -613,7 +657,11 @@ export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> =
  */
 function DefaultOption({option}: {option: SelectorOptionData}) {
   return (
-    <SelectorOption icon={option.icon} label={option.label ?? option.value} />
+    <SelectorOption
+      icon={option.icon}
+      label={option.label ?? option.value}
+      description={option.description}
+    />
   );
 }
 
@@ -686,6 +734,7 @@ export function Selector<T extends SelectorOptionType>(
     startIcon,
     htmlName,
     renderOption,
+    renderValue,
     indicatorPosition = 'end',
     hasSearch = false,
     searchPlaceholder: searchPlaceholderFromProps,
@@ -1279,6 +1328,27 @@ export function Selector<T extends SelectorOptionType>(
   const showStatusTooltip =
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
+  // What the closed trigger shows for the current selection. The default is
+  // deliberately one line — icon + label — so the control keeps the height its
+  // `size` token promises; `renderValue` is the opt-in for anything taller.
+  // `startIcon` wins over the option's own icon so a caller who pins a field
+  // icon does not get two.
+  const valueContent =
+    selectedItem && renderValue ? (
+      <span {...stylex.props(styles.triggerValue)}>
+        {renderValue(selectedItem)}
+      </span>
+    ) : (
+      <>
+        {!startIcon &&
+          selectedItem?.icon != null &&
+          renderIconSlot(selectedItem.icon, {size: 'sm', color: 'secondary'})}
+        <span {...stylex.props(styles.triggerLabel)}>
+          {selectedItem?.label ?? placeholder}
+        </span>
+      </>
+    );
+
   const selectorContent = (
     <>
       <div
@@ -1302,7 +1372,7 @@ export function Selector<T extends SelectorOptionType>(
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
-            sizeStyles[size],
+            renderValue ? minSizeStyles[size] : sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
             variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
@@ -1356,9 +1426,7 @@ export function Selector<T extends SelectorOptionType>(
           onKeyDown={handleTriggerKeyDown}
           tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
           {...stylex.props(styles.trigger)}>
-          <span {...stylex.props(styles.triggerLabel)}>
-            {selectedItem?.label ?? placeholder}
-          </span>
+          {valueContent}
         </button>
         {htmlName != null && (
           <input
