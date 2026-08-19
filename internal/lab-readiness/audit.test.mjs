@@ -44,6 +44,11 @@ function scaffold(overrides = {}) {
       'CHANGED=$(git diff --name-only origin/main...HEAD -- packages/core/src/ packages/lab/src/ | grep -v x)\n',
     'apps/storybook/rtl-audit/rtl-audit.mjs':
       "const AUDITED_STORY_PREFIXES = ['core-', 'lab-'];\n",
+    'packages/lab/package.json': JSON.stringify({
+      name: '@astryxdesign/lab',
+      dependencies: {'d3-scale': '^4.0.2'},
+      peerDependencies: {react: '>=19.0.0'},
+    }),
     'packages/lab/src/index.ts': "export {Widget} from './Widget';\n",
     'packages/lab/src/Widget/index.ts':
       "export {Widget} from './Widget';\nexport type {WidgetProps} from './Widget';\n",
@@ -127,13 +132,41 @@ describe('automated derivation', () => {
     expect(derived.stateCoverage.note).toMatch(/isDisabled.*no test/);
   });
 
-  it('flags a raw SVG as bypassing the Icon primitive', () => {
+  it('accepts a locally defined SVG glyph', () => {
+    // Core defines glyphs this way in Avatar, Thumbnail, and Indicator, so a
+    // raw <svg> is idiomatic rather than a finding.
     scaffold({
       'packages/lab/src/Widget/Widget.tsx':
-        "import {Text} from '@astryxdesign/core/Text';\nexport function Widget() { return <svg />; }\n",
+        "import {Text} from '@astryxdesign/core/Text';\n" +
+        'function Glyph() { return <svg><circle /></svg>; }\n' +
+        'export function Widget() { return <Text><Glyph /></Text>; }\n',
     });
     const derived = deriveChecks(root, candidate);
-    expect(derived.systemIntegration.note).toMatch(/raw SVG/);
+    expect(derived.systemIntegration.state).toBe('passed');
+    expect(derived.reuseNaming.state).toBe('passed');
+  });
+
+  it('flags an icon import from an undeclared package', () => {
+    scaffold({
+      'packages/lab/src/Widget/Widget.tsx':
+        "import {Text} from '@astryxdesign/core/Text';\n" +
+        "import {GripVertical} from 'lucide-react';\n" +
+        'export function Widget() { return <Text><GripVertical /></Text>; }\n',
+    });
+    const derived = deriveChecks(root, candidate);
+    expect(derived.systemIntegration.state).not.toBe('passed');
+    expect(derived.systemIntegration.note).toMatch(/lucide-react/);
+    expect(derived.reuseNaming.note).toMatch(/lucide-react/);
+  });
+
+  it('does not flag a package the lab manifest declares', () => {
+    scaffold({
+      'packages/lab/src/Widget/Widget.tsx':
+        "import {Text} from '@astryxdesign/core/Text';\n" +
+        "import {scaleLinear} from 'd3-scale';\n" +
+        'export function Widget() { return <Text>{String(scaleLinear)}</Text>; }\n',
+    });
+    expect(deriveChecks(root, candidate).systemIntegration.state).toBe('passed');
   });
 
   it('accepts inline type modifiers in the barrel', () => {

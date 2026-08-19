@@ -117,6 +117,48 @@ function verdict(failures) {
   return failures.length === 0 ? 'passed' : 'in_progress';
 }
 
+/** Bare package specifiers imported by a source file. */
+function importedPackages(source) {
+  const specifiers = [...source.matchAll(/from\s+['"]([^'"]+)['"]/g)].map(
+    m => m[1],
+  );
+  return [
+    ...new Set(
+      specifiers
+        .filter(s => !s.startsWith('.') && !s.startsWith('node:'))
+        // Scoped packages keep two segments, everything else keeps one.
+        .map(s => (s.startsWith('@') ? s.split('/').slice(0, 2).join('/') : s.split('/')[0])),
+    ),
+  ];
+}
+
+/**
+ * Packages a lab component imports that the lab package does not declare.
+ *
+ * A component that reaches for an undeclared package still builds in the
+ * monorepo — the dependency is hoisted — but breaks for anyone installing
+ * `@astryxdesign/lab` on its own. `react` and the workspace's own packages are
+ * always available, so they are never reported.
+ */
+function undeclaredDependencies(repoRoot, source) {
+  let manifest;
+  try {
+    manifest = JSON.parse(read(repoRoot, 'packages/lab/package.json') ?? '');
+  } catch {
+    return [];
+  }
+  const declared = new Set([
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.peerDependencies ?? {}),
+    ...Object.keys(manifest.devDependencies ?? {}),
+    'react',
+    'react-dom',
+  ]);
+  return importedPackages(source).filter(
+    name => !declared.has(name) && !name.startsWith('@astryxdesign/'),
+  );
+}
+
 /**
  * Derive every provable check for one candidate.
  *
@@ -193,10 +235,16 @@ export function deriveChecks(repoRoot, candidate) {
           ev('Ad hoc aria-live node.', p.source, ariaLiveLine),
         );
       }
-      const inlineSvgLine = lineOf(source, /<svg\b/);
-      if (inlineSvgLine) {
-        failures.push('renders raw SVG instead of the Icon primitive');
-        evidence.push(ev('Inline SVG element.', p.source, inlineSvgLine));
+      const undeclared = undeclaredDependencies(repoRoot, source);
+      if (undeclared.length > 0) {
+        failures.push(`imports undeclared package(s): ${undeclared.join(', ')}`);
+        evidence.push(
+          ev(
+            `Not listed in the lab package's dependencies or peerDependencies, so a consumer installing @astryxdesign/lab would not get ${undeclared.join(', ')}.`,
+            p.source,
+            lineOf(source, new RegExp(`from '${undeclared[0]}`)),
+          ),
+        );
       }
     }
     add(
@@ -296,8 +344,12 @@ export function deriveChecks(repoRoot, candidate) {
     if (badNames.length > 0) {
       failures.push(`non-conventional export names: ${badNames.join(', ')}`);
     }
-    if (source && /<svg\b/.test(source)) {
-      failures.push('raw SVG bypasses the Icon primitive');
+    // A locally-defined SVG glyph is idiomatic here — core does the same in
+    // Avatar, Thumbnail, and Indicator — so a raw <svg> is not itself a
+    // finding. What matters is that the glyph does not arrive from an
+    // undeclared package, which systemIntegration already asserts.
+    if (source && /from ['"]lucide-react['"]/.test(source)) {
+      failures.push('imports icons from lucide-react rather than defining them locally');
     }
     add(
       'reuseNaming',
