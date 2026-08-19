@@ -558,6 +558,11 @@ interface SelectorPropsBase<
    * two-line `SelectorOption`, say) grows the control instead of being
    * clipped — the caller owns the resulting height.
    *
+   * Inside an `InputGroup` the height does NOT relax: the group pins the row,
+   * so the trigger keeps its size token and renders the value on one line. A
+   * `SelectorOption` picks that up automatically; hand-composed content is the
+   * caller's to fit, and taller content will overflow the group's border.
+   *
    * @example
    * ```
    * renderValue={option => (
@@ -1342,12 +1347,11 @@ export function Selector<T extends SelectorOptionType>(
   const canGrow = renderValue != null && !inputGroup;
   const valueContent =
     selectedItem && renderValue ? (
-      <span {...stylex.props(styles.triggerValue)}>
-        <SelectorRowLayoutContext.Provider
-          value={canGrow ? 'stacked' : 'inline'}>
+      <SelectorRowLayoutContext value={canGrow ? 'stacked' : 'inline'}>
+        <span {...stylex.props(styles.triggerValue)}>
           {renderValue(selectedItem)}
-        </SelectorRowLayoutContext.Provider>
-      </span>
+        </span>
+      </SelectorRowLayoutContext>
     ) : (
       <>
         {!startIcon &&

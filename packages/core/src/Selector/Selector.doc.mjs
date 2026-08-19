@@ -166,7 +166,7 @@ export const docs = {
       name: 'renderValue',
       type: '(option: SelectorOptionData) => ReactNode',
       description:
-        "Custom render function for the selected option inside the closed trigger. The default trigger shows the option's icon and label on one line at the size token; renderValue relaxes that fixed height to a minimum so taller content (a two-line SelectorOption, say) grows the control instead of being clipped.",
+        "Custom render function for the selected option inside the closed trigger. The default trigger shows the option's icon and label on one line at the size token; renderValue relaxes that fixed height to a minimum so taller content (a two-line SelectorOption, say) grows the control instead of being clipped. Inside an InputGroup the height does not relax — the group pins the row, so the value renders on one line; a SelectorOption follows automatically, hand-composed content is the caller's to fit.",
     },
     {
       name: 'indicatorPosition',

@@ -4,9 +4,9 @@
 
 /**
  * @file SelectorRowLayoutContext.ts
- * @output Context telling a SelectorOption it is rendering somewhere that
- *   cannot grow, so it must keep the description on the label's line.
- * @position Internal to the Selector module.
+ * @input React createContext/use
+ * @output Exports the row-layout context and useSelectorRowLayout hook
+ * @position Internal to the Selector module; read by SelectorOption
  *
  * The trigger inside an InputGroup is height-pinned by the group
  * (groupStyles.inGroup sets height:100%), so a two-line value does not grow
@@ -15,13 +15,18 @@
  * constraint and SelectorOption honours it.
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
-export const SelectorRowLayoutContext = createContext<'stacked' | 'inline'>(
-  'stacked',
-);
-SelectorRowLayoutContext.displayName = "SelectorRowLayoutContext";
+export type SelectorRowLayout = 'stacked' | 'inline';
 
-export function useSelectorRowLayout(): 'stacked' | 'inline' {
-  return useContext(SelectorRowLayoutContext);
+export const SelectorRowLayoutContext =
+  createContext<SelectorRowLayout>('stacked');
+SelectorRowLayoutContext.displayName = 'SelectorRowLayoutContext';
+
+/**
+ * The row layout a host imposes on the options it renders. `stacked` outside
+ * any height-pinned host.
+ */
+export function useSelectorRowLayout(): SelectorRowLayout {
+  return use(SelectorRowLayoutContext);
 }

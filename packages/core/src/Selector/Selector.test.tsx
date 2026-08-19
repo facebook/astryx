@@ -21,6 +21,7 @@ import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
+import {Item} from '../Item';
 import type {SelectorOptionData} from './types';
 import {Icon} from '../Icon';
 import {RadioIndicator} from '../Indicator';
@@ -3122,7 +3123,10 @@ describe('Selector option descriptions and trigger value', () => {
 
   it('forces the value onto one line inside an InputGroup', () => {
     // The group pins the row height, so a stacked two-line value would spill
-    // through the trigger's own border instead of growing the row.
+    // through the trigger's own border instead of growing the row. Both
+    // layouts share one DOM shape and differ only in styling, so the check is
+    // against Item's own inline class, resolved from a reference render
+    // rather than hardcoded.
     const renderValue = (option: SelectorOptionData) => (
       <SelectorOption
         icon={option.icon}
@@ -3130,6 +3134,21 @@ describe('Selector option descriptions and trigger value', () => {
         description={option.description}
       />
     );
+    const classesOf = (label: HTMLElement) =>
+      new Set((label.parentElement?.className ?? '').split(' '));
+
+    const stackedRef = render(<Item label="Private" description="Why" />);
+    const stackedClasses = classesOf(screen.getByText('Private'));
+    stackedRef.unmount();
+
+    const inlineRef = render(
+      <Item label="Private" description="Why" layout="inline" />,
+    );
+    const inlineOnly = [...classesOf(screen.getByText('Private'))].filter(
+      c => c !== '' && !stackedClasses.has(c),
+    );
+    inlineRef.unmount();
+    expect(inlineOnly.length).toBeGreaterThan(0);
 
     const standalone = render(
       <Selector
@@ -3140,9 +3159,10 @@ describe('Selector option descriptions and trigger value', () => {
         renderValue={renderValue}
       />,
     );
-    const standaloneRow = within(screen.getByRole('combobox')).getByText(
-      'Private',
-    ).parentElement?.className;
+    const standaloneClasses = classesOf(
+      within(screen.getByRole('combobox')).getByText('Private'),
+    );
+    expect(inlineOnly.some(c => standaloneClasses.has(c))).toBe(false);
     standalone.unmount();
 
     render(
@@ -3156,10 +3176,10 @@ describe('Selector option descriptions and trigger value', () => {
         />
       </InputGroup>,
     );
-    const groupedRow = within(screen.getByRole('combobox')).getByText('Private')
-      .parentElement?.className;
-
-    expect(groupedRow).not.toBe(standaloneRow);
+    const groupedClasses = classesOf(
+      within(screen.getByRole('combobox')).getByText('Private'),
+    );
+    expect(inlineOnly.every(c => groupedClasses.has(c))).toBe(true);
   });
 
   it('does not call renderValue for the placeholder', () => {
