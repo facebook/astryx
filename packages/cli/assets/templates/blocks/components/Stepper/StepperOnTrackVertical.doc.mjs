@@ -7,8 +7,8 @@ export const doc = {
   name: 'Stepper — On-Track Vertical',
   displayName: 'Stepper — On-Track Vertical',
   description:
-    'The on-track layout in vertical orientation: indicators sit inline on a continuous connector rail, with each label and description beside its node.',
+    'The on-track layout in vertical orientation: indicators sit inline on a continuous connector rail, with each label and description beside its node. Compare with the separated layout, where the indicator sits alongside its own bar segment instead of on a shared rail.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Stepper'],
+  componentsUsed: ['Stepper', 'Step'],
 };

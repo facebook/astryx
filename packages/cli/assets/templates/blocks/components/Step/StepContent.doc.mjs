@@ -7,8 +7,8 @@ export const doc = {
   name: 'Step — Content Slot',
   displayName: 'Step — Content Slot',
   description:
-    'Children passed to a Step render below its label, indented to line up with it, and stay outside the clickable label area so buttons inside remain their own targets. Rendering the slot only for the active step is what turns a vertical stepper into an expanding flow.',
+    'Children passed to a Step render below its description, indented to line up with the label rather than the indicator, and stay outside the clickable label area so buttons inside remain their own targets. In a full flow you gate the slot on the step being active — that is what turns a vertical stepper into an expanding one.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Stepper', 'Step', 'Text', 'Button'],
+  componentsUsed: ['Stepper', 'Step', 'TextInput', 'Button'],
 };

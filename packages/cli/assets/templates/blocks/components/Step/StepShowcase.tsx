@@ -2,46 +2,23 @@
 
 'use client';
 
-import {useState} from 'react';
 import {Stepper, Step} from '@astryxdesign/core/Stepper';
 import {Text} from '@astryxdesign/core/Text';
 
 export default function StepShowcase() {
-  const [active, setActive] = useState(2);
+  // One Step, and every part it renders: the indicator, the label with its
+  // optional marker and trailing slot, and the description beneath. A Step is
+  // always wrapped in a Stepper — that is where it reads its progress from —
+  // so a single Step in a single Stepper is the smallest complete example.
   return (
-    <div style={{width: '100%', maxWidth: 420}}>
-      <Stepper
-        activeStep={active}
-        orientation="vertical"
-        onStepClick={setActive}>
-        <Step
-          step={0}
-          label="Contract signed"
-          description="Countersigned by both parties"
-          endContent={<Text type="supporting">Mar 4</Text>}
-        />
+    <div style={{width: 380}}>
+      <Stepper activeStep={1} orientation="vertical">
         <Step
           step={1}
-          label="Deposit received"
-          description="$4,200 cleared"
-          endContent={<Text type="supporting">Mar 6</Text>}
-        />
-        <Step
-          step={2}
-          label="Onboarding call"
-          description="Walk through the workspace setup"
-          endContent={<Text type="supporting">Today</Text>}
-        />
-        <Step
-          step={3}
-          label="Data migration"
-          description="Import records from the old system"
+          label="Connect a repository"
+          description="Astryx reads your build settings from the default branch"
+          endContent={<Text type="supporting">2 min</Text>}
           isOptional
-        />
-        <Step
-          step={4}
-          label="Go live"
-          description="Switch production traffic"
         />
       </Stepper>
     </div>

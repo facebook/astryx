@@ -12,6 +12,18 @@ export default function StepperIndicatorModes() {
   return (
     <div style={{display: 'flex', gap: 48, flexWrap: 'wrap'}}>
       <div style={{maxWidth: 220}}>
+        <Text type="label">None</Text>
+        <Stepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <Step step={0} label="Account" indicator="none" />
+          <Step step={1} label="Profile" indicator="none" />
+          <Step step={2} label="Settings" indicator="none" />
+          <Step step={3} label="Review" indicator="none" />
+        </Stepper>
+      </div>
+      <div style={{maxWidth: 220}}>
         <Text type="label">Auto</Text>
         <Stepper
           activeStep={active}

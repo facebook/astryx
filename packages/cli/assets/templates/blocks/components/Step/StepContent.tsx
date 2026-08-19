@@ -2,49 +2,29 @@
 
 'use client';
 
-import {useState} from 'react';
 import {Stepper, Step} from '@astryxdesign/core/Stepper';
-import {Text} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {Button} from '@astryxdesign/core/Button';
 
 export default function StepContent() {
-  const [active, setActive] = useState(1);
+  // Anything passed as children renders below the description, indented to line
+  // up with the label rather than the indicator. In a full flow you would gate
+  // this on the step being active; here it is a single Step so the slot is
+  // always shown.
   return (
-    <div style={{width: '100%', maxWidth: 440}}>
-      <Stepper
-        activeStep={active}
-        orientation="vertical"
-        onStepClick={setActive}>
-        <Step step={0} label="Build" description="Compiled in 42s">
-          {active === 0 && (
-            <Text type="supporting">
-              1,204 modules bundled. No warnings reported.
-            </Text>
-          )}
-        </Step>
-        <Step step={1} label="Review" description="Two approvals required">
-          {active === 1 && (
-            <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-              <Text type="supporting">
-                Approved by Dana Whitfield. Waiting on one more reviewer before
-                this can ship.
-              </Text>
-              <div>
-                <Button
-                  label="Request review"
-                  variant="secondary"
-                  onClick={() => setActive(2)}
-                />
-              </div>
+    <div style={{width: 400}}>
+      <Stepper activeStep={1} orientation="vertical">
+        <Step
+          step={1}
+          label="Billing address"
+          description="Used for invoices and tax calculation">
+          <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+            <TextInput label="Street" placeholder="1 Hacker Way" value="" />
+            <TextInput label="City" placeholder="Menlo Park" value="" />
+            <div>
+              <Button label="Save address" variant="primary" />
             </div>
-          )}
-        </Step>
-        <Step step={2} label="Deploy" description="Rolls out to production">
-          {active === 2 && (
-            <Text type="supporting">
-              Deploys behind a feature flag, then ramps to 100% over an hour.
-            </Text>
-          )}
+          </div>
         </Step>
       </Stepper>
     </div>

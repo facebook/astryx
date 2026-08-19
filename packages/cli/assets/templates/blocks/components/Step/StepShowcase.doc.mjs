@@ -7,9 +7,9 @@ export const doc = {
   name: 'Step',
   displayName: 'Step',
   description:
-    'Step is the unit a Stepper is built from: an indicator, a label, and optionally a description, an isOptional marker, and trailing endContent. A step never sets its own completed/current state — it declares its index and reads the rest off the parent Stepper.',
+    'A single Step, with every part it can render: the indicator, the label with its optional marker and trailing endContent, and the description beneath. A Step never sets its own completed/current state — it declares its index and derives the rest from the parent Stepper, so one Step in one Stepper is a complete example.',
   isReady: true,
   isShowcase: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Stepper', 'Step', 'Text'],
 };
