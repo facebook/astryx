@@ -473,6 +473,10 @@ const meta: Meta<typeof PowerSearch> = {
       description:
         'Value results shown after selecting a field, such as people in the Owner picker.',
     },
+    menuWidth: {
+      control: 'number',
+      description: 'Main field/search menu width in pixels.',
+    },
     popoverSaveButtonLabel: {control: 'text'},
     size: {
       control: 'radio',
@@ -590,6 +594,7 @@ export const IssueTracker: Story = {
     hasAutoFocus: true,
     maxSearchResults: 2,
     maxOperatorMenuItems: 2,
+    menuWidth: 700,
   },
   parameters: {
     docs: {
@@ -601,7 +606,7 @@ export const IssueTracker: Story = {
   },
   decorators: [
     Story => (
-      <div style={{width: 700, minHeight: 420}}>
+      <div style={{width: 500, minHeight: 420}}>
         <Story />
       </div>
     ),

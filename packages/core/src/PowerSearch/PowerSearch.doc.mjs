@@ -126,6 +126,12 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description:
+        'Width in pixels for the main field/search menu. Does not affect field value editors.',
+    },
+    {
       name: 'popoverSaveButtonLabel',
       type: 'string',
       description: 'Label for the save button in the edit popover.',
@@ -345,6 +351,11 @@ export const docsZh = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: '主字段/搜索菜单的像素宽度。不影响字段值编辑器。',
+    },
+    {
       name: 'popoverSaveButtonLabel',
       type: 'string',
       description: '编辑弹出窗口中保存按钮的标签。',
@@ -464,6 +475,7 @@ export const docsDense = {
       'Max suggestions in string/entity value typeaheads; excludes main field search + enum menus.',
     maxSearchResults:
       'Max ranked results for a non-empty query; excludes value editors.',
+    menuWidth: 'Main field/search menu width in pixels.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',
     handleRef:

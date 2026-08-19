@@ -576,7 +576,7 @@ describe('field menu sizing', () => {
   };
 
   async function openMenu(
-    props?: {maxSearchResults?: number},
+    props?: {maxSearchResults?: number; menuWidth?: number},
     config: PowerSearchConfig = manyFields,
   ) {
     const user = userEvent.setup();
@@ -638,6 +638,16 @@ describe('field menu sizing', () => {
   it('does not apply maxSearchResults while browsing', async () => {
     await openMenu({maxSearchResults: 3});
     expect(optionCount()).toBe(FIELD_COUNT);
+  });
+
+  it('applies menuWidth to the main field menu', async () => {
+    await openMenu({menuWidth: 480});
+    const listbox = screen.getByRole('listbox', {hidden: true});
+    const popover = listbox.closest('[popover]');
+    expect(popover).not.toBeNull();
+    expect((popover as HTMLElement).style.getPropertyValue('--x-width')).toBe(
+      '480px',
+    );
   });
 });
 

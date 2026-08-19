@@ -94,6 +94,9 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    */
   maxMenuItems?: number;
 
+  /** Fixed dropdown width in pixels. Never shrinks below the anchor width. */
+  menuWidth?: number;
+
   /**
    * Text shown when no results found.
    * @default 'No results found'
@@ -227,6 +230,9 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
+  popoverCustomWidth: (width: number) => ({
+    width: `${width}px`,
+  }),
   groupHeading: {
     paddingInline: spacingVars['--spacing-2'],
     paddingBlockStart: spacingVars['--spacing-2'],
@@ -326,6 +332,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   placeholder: placeholderFromProps,
   hasEntriesOnFocus = false,
   maxMenuItems = 10,
+  menuWidth,
   emptySearchResultsText: emptySearchResultsTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
@@ -914,7 +921,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           placement: 'below',
           alignment: 'start',
           offset: spacingVars['--spacing-1'],
-          xstyle: styles.popover,
+          xstyle: [
+            styles.popover,
+            menuWidth != null && styles.popoverCustomWidth(menuWidth),
+          ],
         },
       )}
     </>
