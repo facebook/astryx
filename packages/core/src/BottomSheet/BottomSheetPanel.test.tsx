@@ -237,4 +237,45 @@ describe('BottomSheetPanel', () => {
     expect(panelRef).toHaveBeenLastCalledWith(null);
     expect(panelRef).toHaveBeenCalledTimes(2);
   });
+
+  it('floats the handle bar over content that starts at the sheet top edge', () => {
+    renderPanel({kind: 'open', entering: false});
+
+    const bar = getPanel().querySelector<HTMLElement>(
+      'div[aria-hidden="true"]',
+    );
+    if (bar == null) {
+      throw new Error('handle bar not found');
+    }
+    const body = bar.nextElementSibling as HTMLElement;
+
+    // Out of flow: the bar costs the content no layout space. That is the
+    // point of it -- the content sits closer to the sheet's top edge, and
+    // scrolled content passes beneath the pill rather than stopping at a
+    // hard edge.
+    expect(getComputedStyle(bar).position).toBe('absolute');
+
+    // So the body must not reserve room for it. A top padding here would
+    // push the content back down and undo the change.
+    expect(getComputedStyle(body).paddingTop).toBe('');
+  });
+
+  // The pill is only legible over the content riding up beneath it because
+  // the bar carries a backdrop; without it, text runs straight through the
+  // pill. jsdom's StyleX runtime does not inject the rule, so assert on the
+  // style definition itself (same approach as AspectRatio's reset.css tests).
+  it('backs the floating handle bar with a surface gradient', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, './BottomSheetPanel.tsx'),
+      'utf-8',
+    );
+
+    const handleBar = source.match(/handleBar: \{([\s\S]*?)\n {2}\},/);
+    expect(handleBar).not.toBeNull();
+    expect(handleBar![1]).toContain("position: 'absolute'");
+    expect(handleBar![1]).toContain('linear-gradient(to bottom');
+    expect(handleBar![1]).toContain("colorVars['--color-background-surface']");
+  });
 });
