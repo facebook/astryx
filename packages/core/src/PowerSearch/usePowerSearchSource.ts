@@ -14,6 +14,7 @@
 
 import {useMemo} from 'react';
 import type {SearchSource} from '../Typeahead/types';
+import {groupItems} from '../utils';
 import {useTranslator} from '../i18n';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import type {InternalConfig} from './useInternalConfig';
@@ -288,9 +289,12 @@ function buildFieldItems(config: InternalConfig): PowerSearchItem[] {
       auxiliaryData: {
         fieldKey: field.key,
         operatorKey: defaultOp?.key,
+        group: field.group,
       },
     });
   }
 
-  return items;
+  return groupItems(items, {ungroupedFirst: true}).flatMap(
+    group => group.items,
+  );
 }
