@@ -348,15 +348,6 @@ export function TopNavHeading({
     isEnabled: !!menu,
     showDelay: 0,
   });
-
-  const {triggerProps, contentProps, menuRef} =
-    useMenuHover<HTMLDivElement>({
-      show: popover.show,
-      hide: popover.hide,
-      isOpen: popover.isOpen,
-      isEnabled: !!menu,
-      showDelay: 0,
-    });
   const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
   // setTriggerEl belongs on the chevron button, not this root: it is the

@@ -342,7 +342,6 @@ export function TopNavMenu({
     role: 'none',
   });
 
-  const {triggerProps, contentProps, menuRef} =
   const {triggerProps, contentProps, menuRef, setTriggerEl, close} =
     useMenuHover<HTMLDivElement>({
       show: popover.show,
@@ -359,6 +358,7 @@ export function TopNavMenu({
   const setTriggerRef = mergeRefs<HTMLButtonElement>(
     triggerButtonRef,
     popover.triggerRef,
+    setTriggerEl,
     ref,
   );
 

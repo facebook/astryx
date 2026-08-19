@@ -103,7 +103,6 @@ export interface UseMenuHoverReturn<T extends HTMLElement = HTMLElement> {
     onKeyDown: (e: React.KeyboardEvent) => void;
   };
   menuRef: React.RefObject<T | null>;
-  focusFirst: () => void;
   /** Focus the first enabled item. Returns false when there was none. */
   focusFirst: () => boolean;
   /**
@@ -346,7 +345,12 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     clearTimeouts();
   }, [clearTimeouts]);
 
+  const setTriggerRef = useCallback((el: HTMLElement | null) => {
+    triggerElRef.current = el;
+  }, []);
+
   const noop = useCallback(() => {}, []);
+  const noopRef = useCallback((_el: HTMLElement | null) => {}, []);
   const noopKeyDown = useCallback((_e: React.KeyboardEvent) => {}, []);
 
   if (!isEnabled) {

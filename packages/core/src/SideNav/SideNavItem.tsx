@@ -462,18 +462,21 @@ export function SideNavItem({
   // over `[role="menuitem"]`, and this flyout is a focus-trapped dialog of
   // links — wiring them would swallow arrow keys rather than navigate with
   // them. Keyboard stays with `usePopover`'s trap, as in DropdownMenuSubMenu.
-  const {triggerProps: hoverTriggerProps, contentProps: hoverContentProps} =
-    useMenuHover({
-      show: popover.show,
-      hide: popover.hide,
-      isOpen: popover.isOpen,
-      isEnabled: isCollapsed && hasChildren,
-      // Standard popover toggling: the flyout opens beside the rail, not over
-      // the icon, so the click after a hover-open is a deliberate dismissal
-      // rather than the #3121 confirmation the nav menus need.
-      clickGuardMs: 0,
-      ownsFocus: false,
-    });
+  const {
+    triggerProps: hoverTriggerProps,
+    contentProps: hoverContentProps,
+    setTriggerEl,
+  } = useMenuHover({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: isCollapsed && hasChildren,
+    // Standard popover toggling: the flyout opens beside the rail, not over
+    // the icon, so the click after a hover-open is a deliberate dismissal
+    // rather than the #3121 confirmation the nav menus need.
+    clickGuardMs: 0,
+    ownsFocus: false,
+  });
 
   // In collapsed mode: hide items without icons
   if (isCollapsed && !icon) {
@@ -518,7 +521,7 @@ export function SideNavItem({
       return (
         <div {...stylex.props(styles.root, xstyle)}>
           <button
-            ref={mergeRefs(ref, popover.triggerRef)}
+            ref={mergeRefs(ref, popover.triggerRef, setTriggerEl)}
             type="button"
             {...rest}
             {...hoverTriggerProps}
