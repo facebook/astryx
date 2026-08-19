@@ -166,7 +166,7 @@ export const docs = {
       name: 'renderValue',
       type: '(option: SelectorOptionData) => ReactNode',
       description:
-        "Custom render function for the selected option inside the closed trigger. The trigger is sized by padding, so it is the size token for a one-line value (28/32/36) and exactly one text line taller for a two-line one (48/52/56) — always on the 4px rhythm, always aligned with the buttons and inputs beside it. Inside an InputGroup, which pins the row height, a SelectorOption folds onto one line and ellipsizes.",
+        'Custom render function for the selected option inside the closed trigger. The trigger is sized by padding, so it is the size token for a one-line value (28/32/36) and exactly one text line taller for a two-line one (48/52/56) — always on the 4px rhythm, always aligned with the buttons and inputs beside it. Inside an InputGroup the group owns the row height: a SelectorOption folds onto one line and ellipsizes, and any taller node is cut off at the row.',
     },
     {
       name: 'indicatorPosition',

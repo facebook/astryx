@@ -8,11 +8,11 @@
  * @output Exports the row-layout context and useSelectorRowLayout hook
  * @position Internal to the Selector module; read by SelectorOption
  *
- * The trigger inside an InputGroup is height-pinned by the group
- * (groupStyles.inGroup sets height:100%), so a two-line value does not grow
- * the row — it spills through its own border. Rather than let the caller's
- * `renderValue` produce something that cannot fit, the trigger declares the
- * constraint and SelectorOption honours it.
+ * The trigger inside an InputGroup is height-pinned by the group, so its value
+ * box is clamped to one line and anything taller is cut off at the fold. This
+ * context is how the rows the system draws itself avoid being cut: they reflow
+ * label and description onto that one line instead. The geometry does not
+ * depend on it — a node that ignores this context still cannot grow the row.
  */
 
 import {createContext, use} from 'react';

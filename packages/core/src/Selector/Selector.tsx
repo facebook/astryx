@@ -158,6 +158,23 @@ const styles = stylex.create({
     overflow: 'hidden',
     textAlign: 'start',
   },
+  // Inside an InputGroup the row height is the group's, so the trigger clamps
+  // its own value box to that row rather than asking the value to fit it: any
+  // node is cut off at the row's edge instead of bleeding through the border
+  // over whatever sits above and below the group. The rows the system draws
+  // itself never reach the cut — the row-layout context folds them onto one
+  // line first (SelectorRowLayoutContext).
+  //
+  // The clamp is a percentage, not the size token, because a group can be a
+  // different size than the control inside it; the row is whatever the group
+  // made it. That needs a definite height to resolve against, which is what
+  // stretching the button provides.
+  triggerButtonInGroup: {
+    alignSelf: 'stretch',
+  },
+  triggerValueInGroup: {
+    maxHeight: '100%',
+  },
   // Only what Icon does not already provide: `size="sm"` gives the 16px box
   // and `color` the token, but the glyph still must not shrink inside the flex
   // trigger.
@@ -567,8 +584,10 @@ interface SelectorPropsBase<
    * Passing this does not change the trigger's height — what it draws does. A
    * one-line value measures exactly the `size` token, so the control still
    * lines up with the Buttons and inputs beside it; each further line of
-   * content adds one text line. Inside an `InputGroup` the group pins the row,
-   * so the value is folded onto one line and ellipsizes.
+   * content adds one text line. Inside an `InputGroup` the group owns the row
+   * height: the trigger clamps its value box to that row, so a `SelectorOption`
+   * folds onto one line and ellipsizes, and anything taller than the row is cut
+   * off at it rather than bleeding over the rows above and below.
    *
    * @example
    * ```
@@ -1341,11 +1360,13 @@ export function Selector<T extends SelectorOptionType>(
   const showStatusTooltip =
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
-  // A two-line value is refused inside an InputGroup: the group pins the row
-  // height (groupStyles.inGroup sets height:100%), so the taller trigger would
-  // not grow the row — it would spill through its own border. Everywhere else
-  // the caller's own SelectorOption decides, and the padding sizes the trigger
-  // to whatever it draws.
+  // Two lines cannot fit inside an InputGroup: the group pins the row height,
+  // and the trigger clamps its value box to one line so nothing bleeds through
+  // its border (styles.triggerValueInGroup). The clamp holds for any node; the
+  // context is what lets the rows the system draws itself reflow into that one
+  // line — label and description side by side — instead of being cut off at
+  // it. Outside a group the caller's own row decides, and the trigger's
+  // padding sizes it to whatever that draws.
   const rowLayout = inputGroup ? 'inline' : 'stacked';
 
   // What the closed trigger shows for the current selection: the option's icon
@@ -1354,7 +1375,11 @@ export function Selector<T extends SelectorOptionType>(
   const valueContent =
     selectedItem && renderValue ? (
       <SelectorRowLayoutContext value={rowLayout}>
-        <span {...stylex.props(styles.triggerValue)}>
+        <span
+          {...stylex.props(
+            styles.triggerValue,
+            inputGroup && styles.triggerValueInGroup,
+          )}>
           {renderValue(selectedItem)}
         </span>
       </SelectorRowLayoutContext>
@@ -1445,7 +1470,10 @@ export function Selector<T extends SelectorOptionType>(
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
           onKeyDown={handleTriggerKeyDown}
           tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-          {...stylex.props(styles.trigger)}>
+          {...stylex.props(
+            styles.trigger,
+            inputGroup && styles.triggerButtonInGroup,
+          )}>
           {valueContent}
         </button>
         {htmlName != null && (

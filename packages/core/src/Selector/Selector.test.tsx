@@ -19,6 +19,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
+import type {ReactNode} from 'react';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
 import {Item} from '../Item';
@@ -3179,8 +3180,9 @@ describe('Selector option descriptions and trigger value', () => {
   it("follows the caller's SelectorOption layout, but folds inline in a group", () => {
     // The trigger has no layout prop: the SelectorOption the caller renders
     // decides, and the trigger's padding sizes it to whatever that draws. The
-    // one exception is an InputGroup, which pins the row height, so a stacked
-    // value would spill through the trigger's own border.
+    // one exception is an InputGroup, which pins the row height — the value
+    // box is clamped to it, so a stacked row would lose its second line at the
+    // cut. Folding inline keeps the description visible instead.
     const renderValue = (option: SelectorOptionData) => (
       <SelectorOption
         icon={option.icon}
@@ -3230,6 +3232,78 @@ describe('Selector option descriptions and trigger value', () => {
       </InputGroup>,
     );
     expect(inlineOnly.every(c => triggerClasses().has(c))).toBe(true);
+  });
+
+  it('clamps the trigger value box in a group, whatever renderValue draws', () => {
+    // The hole this guards: the one-line fold a group imposes used to reach
+    // only SelectorOption, which reads the row-layout context. Any other node
+    // ignored it and bled through the trigger's border, over the rows above
+    // and below the group. The clamp is on the trigger's own value box, so it
+    // cannot depend on what the value is.
+    const valueBox = () => {
+      const box = screen.getByRole('combobox').firstElementChild;
+      return new Set((box?.className ?? '').split(' ').filter(Boolean));
+    };
+    const grouped = (
+      renderValue: (option: SelectorOptionData) => ReactNode,
+    ) => (
+      <InputGroup label="Space settings">
+        <Selector
+          label="Visibility"
+          options={VISIBILITY}
+          value="private"
+          onChange={() => {}}
+          renderValue={renderValue}
+        />
+      </InputGroup>
+    );
+
+    const standalone = render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        renderValue={option => <span>{option.label}</span>}
+      />,
+    );
+    const unclamped = valueBox();
+    standalone.unmount();
+
+    const withOption = render(
+      grouped(option => (
+        <SelectorOption
+          icon={option.icon}
+          label={option.label ?? option.value}
+          description={option.description}
+        />
+      )),
+    );
+    const clamped = valueBox();
+    expect(clamped).not.toEqual(unclamped);
+    withOption.unmount();
+
+    // A row the Selector knows nothing about, and a bare element: same box.
+    const withItem = render(
+      grouped(option => (
+        <Item
+          label={option.label ?? option.value}
+          description={option.description}
+        />
+      )),
+    );
+    expect(valueBox()).toEqual(clamped);
+    withItem.unmount();
+
+    render(
+      grouped(option => (
+        <div>
+          <div>{option.label}</div>
+          <div>{option.description}</div>
+        </div>
+      )),
+    );
+    expect(valueBox()).toEqual(clamped);
   });
 
   it('does not call renderValue for the placeholder', () => {
