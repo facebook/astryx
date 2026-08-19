@@ -145,6 +145,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
 
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Whether the menu was opened/interacted via hover (enables mouseleave-to-close)
   const triggerElRef = useRef<HTMLElement | null>(null);
   /** Menu was hover-opened, so mouseleave may close it. */
   const hoverModeRef = useRef(false);
