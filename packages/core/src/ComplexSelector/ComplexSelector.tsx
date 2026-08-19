@@ -343,6 +343,7 @@ export function ComplexSelector<Value>({
   'data-testid': testId,
   onClick: onClickProp,
   onPointerDown: onPointerDownProp,
+  onPointerUp: onPointerUpProp,
   ...props
 }: ComplexSelectorProps<Value>) {
   const t = useTranslator();
@@ -370,12 +371,16 @@ export function ComplexSelector<Value>({
   // Synchronous mirror of the popup's open state: the guard below has to read
   // it between a light dismiss and the click it races, before React commits.
   const isOpenRef = useRef(false);
-  // Whether the pointer interaction now in flight pressed down while the popup
-  // was open. On touch browsers that pointerdown light-dismisses the popup
-  // before the trigger's click arrives (#2186), and that click must not reopen
-  // what the same tap just closed. Escape, an outside click, a row pick and a
-  // programmatic close are not that sequence, so they leave the next trigger
-  // click free to reopen immediately.
+  // The press now in flight went down while the popup was open. On touch
+  // browsers that pointerdown light-dismisses the popup before the trigger's
+  // click arrives (#2186), and that click must not reopen what the same tap
+  // just closed. Escape, an outside click, a row pick and a programmatic close
+  // are not that sequence, so they leave the next trigger click free to reopen
+  // immediately.
+  const pressBeganWhileOpenRef = useRef(false);
+  // Armed only once the press has ENDED on the trigger, which is what makes
+  // the next click its click: a press that releases elsewhere produces none,
+  // and would otherwise leave the flag set for an unrelated click to inherit.
   const didPressWhileOpenRef = useRef(false);
 
   const [isPending, startTransition] = useTransition();
@@ -403,7 +408,13 @@ export function ComplexSelector<Value>({
   const isOpen = popover.isOpen;
 
   const handleTriggerPointerDown = useCallback(() => {
-    didPressWhileOpenRef.current = isOpenRef.current;
+    pressBeganWhileOpenRef.current = isOpenRef.current;
+    didPressWhileOpenRef.current = false;
+  }, []);
+
+  const handleTriggerPointerUp = useCallback(() => {
+    didPressWhileOpenRef.current = pressBeganWhileOpenRef.current;
+    pressBeganWhileOpenRef.current = false;
   }, []);
 
   const handleTriggerClick = useCallback(() => {
@@ -490,6 +501,10 @@ export function ComplexSelector<Value>({
           onPointerDownProp,
           handleTriggerPointerDown,
         )}
+        onPointerUp={composeEventHandlers(
+          onPointerUpProp,
+          handleTriggerPointerUp,
+        )}
         {...mergeProps(
           themeProps('complex-selector', {
             variant,
@@ -533,6 +548,7 @@ export function ComplexSelector<Value>({
             // A key press is a fresh interaction, so it must not inherit the
             // flag from a pointer press that never produced a click.
             didPressWhileOpenRef.current = false;
+            pressBeganWhileOpenRef.current = false;
             if (event.key === 'ArrowDown' && !isOpen && !isDisabled) {
               event.preventDefault();
               popover.show();

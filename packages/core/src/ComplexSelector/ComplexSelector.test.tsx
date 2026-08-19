@@ -354,13 +354,15 @@ describe('ComplexSelector', () => {
     expect(popover).not.toBeNull();
 
     // The touch race #2186 defends against, in its real order: the tap's
-    // pointerdown light-dismisses the popup, then that same tap's click
-    // reaches the trigger. It must not reopen what the tap just closed.
+    // pointerdown light-dismisses the popup, then the tap finishes on the
+    // trigger and its click reaches it. It must not reopen what the tap just
+    // closed.
     fireEvent.pointerDown(trigger);
     const closeEvent = new Event('toggle');
     Object.defineProperty(closeEvent, 'newState', {value: 'closed'});
     fireEvent(popover as HTMLElement, closeEvent);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.pointerUp(trigger);
 
     const showCallCount = vi.mocked(HTMLElement.prototype.showPopover).mock
       .calls.length;
@@ -455,6 +457,26 @@ describe('ComplexSelector reopen after dismiss', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('reopens after a press that dismissed the popup and then released away from the trigger', async () => {
+    const user = userEvent.setup();
+    const trigger = renderSelector();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The press goes down on the trigger and light-dismisses, then the pointer
+    // leaves and releases elsewhere, so no click ever lands on the trigger.
+    fireEvent.pointerDown(trigger);
+    dismissFromBrowser();
+    fireEvent.pointerUp(document.body);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    // A click with no pointer press of its own — assistive-tech activation or
+    // automation.
+    fireEvent.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });
