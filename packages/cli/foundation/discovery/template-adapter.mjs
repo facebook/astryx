@@ -679,6 +679,22 @@ export function extractComponents(pagePath) {
   while ((m = tagRegex.exec(src)) !== null) {
     matches.push(m[2]);
   }
+
+  const importRegex = /import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+['"]@astryxdesign\/core/g;
+  const importedNames = new Set();
+  let importMatch;
+  while ((importMatch = importRegex.exec(src)) !== null) {
+    const imports = importMatch[1].split(',');
+    for (const imp of imports) {
+      let name = imp.trim();
+      name = name.split(/\s+as\s+/).pop().trim();
+      name = name.replace(/^type\s+/, '');
+      if (name) {
+        importedNames.add(name);
+      }
+    }
+  }
+
   return [
     ...new Set(
       matches
@@ -690,7 +706,8 @@ export function extractComponents(pagePath) {
             '',
           ),
         )
-        .filter(Boolean),
+        .filter(Boolean)
+        .filter(n => importedNames.has(n)),
     ),
   ].sort();
 }
