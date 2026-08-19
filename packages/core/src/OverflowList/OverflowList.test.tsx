@@ -88,6 +88,12 @@ const indicator =
     </span>
   );
 
+/** The indices the most recent onOverflowChange call reported. */
+function indicesOf(spy: {mock: {calls: unknown[][]}}): number[] {
+  const last = spy.mock.calls[spy.mock.calls.length - 1];
+  return (last[0] as {index: number}[]).map(i => i.index);
+}
+
 describe('OverflowList', () => {
   describe('when all items fit', () => {
     it('renders every item and no overflow indicator', () => {
@@ -522,6 +528,191 @@ describe('OverflowList', () => {
       const vis = visibleContainer();
       expect(within(vis).getByText('A')).toBeInTheDocument();
       expect(within(vis).queryByText('B')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('onOverflowChange', () => {
+    it('reports an empty set when nothing overflows', () => {
+      const onOverflowChange = vi.fn();
+      render(
+        <OverflowList
+          gap={0}
+          data-w="1000"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+        </OverflowList>,
+      );
+      expect(onOverflowChange).toHaveBeenCalledTimes(1);
+      expect(onOverflowChange).toHaveBeenLastCalledWith([]);
+    });
+
+    it('reports the collapsed items by original index', () => {
+      const onOverflowChange = vi.fn();
+      render(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
+        </OverflowList>,
+      );
+      expect(indicesOf(onOverflowChange)).toEqual([1, 2]);
+    });
+
+    it('reports an empty set again once the container fits everything', () => {
+      const onOverflowChange = vi.fn();
+      const items = [
+        <button type="button" data-w="40" key="a">
+          A
+        </button>,
+        <button type="button" data-w="40" key="b">
+          B
+        </button>,
+        <button type="button" data-w="40" key="c">
+          C
+        </button>,
+      ];
+      const {rerender} = render(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {items}
+        </OverflowList>,
+      );
+      expect(indicesOf(onOverflowChange)).toEqual([1, 2]);
+
+      rerender(
+        <OverflowList
+          gap={0}
+          data-w="1000"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {items}
+        </OverflowList>,
+      );
+      expect(indicesOf(onOverflowChange)).toEqual([]);
+    });
+
+    it('does not re-fire when the collapsed set is unchanged', () => {
+      const spy = vi.fn();
+      const items = [
+        <button type="button" data-w="40" key="a">
+          A
+        </button>,
+        <button type="button" data-w="40" key="b">
+          B
+        </button>,
+      ];
+      // A fresh inline callback each render — the guard is the collapsed set,
+      // not the callback's identity.
+      const {rerender} = render(
+        <OverflowList
+          gap={0}
+          data-w="1000"
+          data-testid="ov"
+          onOverflowChange={o => spy(o)}>
+          {items}
+        </OverflowList>,
+      );
+      rerender(
+        <OverflowList
+          gap={0}
+          data-w="1000"
+          data-testid="ov"
+          onOverflowChange={o => spy(o)}>
+          {items}
+        </OverflowList>,
+      );
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports the leading items with collapseFrom="start"', () => {
+      const onOverflowChange = vi.fn();
+      render(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          collapseFrom="start"
+          onOverflowChange={onOverflowChange}>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
+        </OverflowList>,
+      );
+      expect(indicesOf(onOverflowChange)).toEqual([0, 1]);
+    });
+
+    it('adds no indicator of its own, so an outside anchor stands alone', () => {
+      const onOverflowChange = vi.fn();
+      render(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
+        </OverflowList>,
+      );
+      expect(indicesOf(onOverflowChange)).toEqual([1, 2]);
+      expect(visibleContainer().textContent).toBe('A');
+      // Nothing beyond the items themselves is measured either.
+      expect(measureContainer().children).toHaveLength(3);
+    });
+
+    it('reports alongside an overflowRenderer without disturbing it', () => {
+      const onOverflowChange = vi.fn();
+      render(
+        <OverflowList
+          gap={0}
+          data-w="100"
+          data-testid="ov"
+          overflowRenderer={indicator('more:')}
+          onOverflowChange={onOverflowChange}>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
+        </OverflowList>,
+      );
+      expect(indicesOf(onOverflowChange)).toEqual([1, 2]);
+      expect(visibleContainer().textContent).toBe('Amore:1,2');
     });
   });
 });
