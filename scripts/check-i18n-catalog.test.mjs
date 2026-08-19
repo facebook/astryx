@@ -14,6 +14,7 @@ import {
   extractKeyRefs,
   validateSourceCatalog,
   compareLocale,
+  auditPluralCategories,
 } from './check-i18n-catalog.mjs';
 
 const keys = source => extractKeyRefs(source, 'Test.tsx').refs.map(r => r.key);
@@ -189,5 +190,95 @@ describe('compareLocale', () => {
       missing: ['@astryx.a.two'],
       extra: ['@astryx.a.stale'],
     });
+  });
+});
+
+describe('auditPluralCategories', () => {
+  const catalog = message => ({
+    '@astryx.a.count': {defaultMessage: message, description: 'ctx'},
+  });
+  const audit = (message, tag) => auditPluralCategories(catalog(message), tag);
+
+  it('accepts a plural whose branches the locale selects', () => {
+    const {parseErrors, deadBranches} = audit(
+      '{c, plural, one {item} other {items}}',
+      'en',
+    );
+    expect({parseErrors, deadBranches}).toEqual({
+      parseErrors: [],
+      deadBranches: [],
+    });
+  });
+
+  it("accepts a category en lacks but the locale has — he's `two`", () => {
+    expect(
+      audit('{c, plural, one {א} two {ב} other {ג}}', 'he-IL').deadBranches,
+    ).toEqual([]);
+  });
+
+  it('reports a category the locale never selects', () => {
+    // Hebrew dropped `many` from CLDR, so this branch can never render.
+    const {deadBranches} = audit(
+      '{c, plural, one {א} two {ב} many {ד} other {ג}}',
+      'he-IL',
+    );
+    expect(deadBranches).toHaveLength(1);
+    expect(deadBranches[0]).toContain('"many" is not a cardinal category');
+  });
+
+  it('scores selectordinal against the ordinal categories, not the cardinal ones', () => {
+    // `two` is a cardinal category of en and an ordinal one; `many` is neither.
+    expect(
+      audit('{c, selectordinal, two {2nd} other {th}}', 'en').deadBranches,
+    ).toEqual([]);
+    expect(
+      audit('{c, selectordinal, many {th} other {th}}', 'en').deadBranches,
+    ).toHaveLength(1);
+  });
+
+  it('does not mistake a select option for a plural category', () => {
+    expect(
+      audit('{who, select, many {a crowd} other {someone}}', 'he-IL')
+        .deadBranches,
+    ).toEqual([]);
+  });
+
+  it('exempts an exact `=N` match, which is not a category', () => {
+    expect(
+      audit('{c, plural, =0 {none} one {one} other {some}}', 'en').deadBranches,
+    ).toEqual([]);
+  });
+
+  it('descends into a nested plural', () => {
+    const {deadBranches} = audit(
+      '{a, plural, one {{b, plural, many {x} other {y}}} other {z}}',
+      'en',
+    );
+    expect(deadBranches).toHaveLength(1);
+    expect(deadBranches[0]).toContain('"many"');
+  });
+
+  it('reports a message that is not valid ICU', () => {
+    const {parseErrors} = audit('{c, plural, one {a} other {b}', 'en');
+    expect(parseErrors).toHaveLength(1);
+    expect(parseErrors[0]).toContain('@astryx.a.count');
+  });
+
+  it('reports a plural with no `other` — the parser rejects it', () => {
+    expect(audit('{c, plural, one {a} two {b}}', 'he-IL').parseErrors).toEqual([
+      '@astryx.a.count: MISSING_OTHER_CLAUSE',
+    ]);
+  });
+
+  it('skips a locale this Node has no plural data for, rather than scoring it against en', () => {
+    const result = audit('{c, plural, one {a} other {b}}', 'xx-YY');
+    expect(result.unsupportedLocale).toBe(true);
+    expect(result.deadBranches).toEqual([]);
+  });
+
+  it('leaves entry-shape problems to validateSourceCatalog', () => {
+    expect(
+      auditPluralCategories({'@astryx.a.count': {description: 'ctx'}}, 'en'),
+    ).toEqual({parseErrors: [], deadBranches: [], unsupportedLocale: false});
   });
 });
