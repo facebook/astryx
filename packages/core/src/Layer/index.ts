@@ -21,6 +21,7 @@ export {useLayer} from './useLayer';
 export type {
   LayerAlignment,
   LayerPlacement,
+  LayerClampAxis,
   ContextRenderProps,
   FixedRenderProps,
   ContextLayerOptions,
