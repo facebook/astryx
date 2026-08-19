@@ -142,11 +142,13 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     textAlign: 'start',
   },
-  // Wrapper for `renderValue` output. Deliberately without the single-line
-  // clamp above: custom trigger content is allowed to be two lines.
+  // Wrapper for `renderValue` output. Clips rather than grows: the trigger
+  // holds its size token, so content taller than the row is contained instead
+  // of spilling through the border.
   triggerValue: {
     flexGrow: 1,
     minWidth: 0,
+    overflow: 'hidden',
     textAlign: 'start',
   },
   // Only what Icon does not already provide: `size="sm"` gives the 16px box
@@ -347,17 +349,19 @@ const sizeStyles = stylex.create({
   },
 });
 
-// Used in place of sizeStyles when `renderValue` is set: custom trigger content
-// can be taller than one line, and a fixed height would clip it.
-const minSizeStyles = stylex.create({
+// `valueLayout="stacked"`: one element token plus one more line of text. Both
+// operands are multiples of 4, so the taller trigger stays on the 4px rhythm
+// (48/52/56) and is a FIXED height like the one-line trigger — a control whose
+// height depends on its content cannot be lined up with anything.
+const stackedSizeStyles = stylex.create({
   sm: {
-    minHeight: sizeVars['--size-element-sm'],
+    height: `calc(${sizeVars['--size-element-sm']} + ${spacingVars['--spacing-5']})`,
   },
   md: {
-    minHeight: sizeVars['--size-element-md'],
+    height: `calc(${sizeVars['--size-element-md']} + ${spacingVars['--spacing-5']})`,
   },
   lg: {
-    minHeight: sizeVars['--size-element-lg'],
+    height: `calc(${sizeVars['--size-element-lg']} + ${spacingVars['--spacing-5']})`,
   },
 });
 
@@ -550,18 +554,28 @@ interface SelectorPropsBase<
   renderOption?: (option: SelectorOptionData) => ReactNode;
 
   /**
+   * Whether the closed trigger draws the selection on one line or two.
+   * `inline` keeps the trigger at its `size` token, level with the buttons and
+   * inputs beside it. `stacked` gives the description its own line and takes
+   * one element token plus one line of text — 48/52/56 — still a fixed height
+   * on the 4px rhythm, for a vertically stacked form where the extra line
+   * reads better. An `InputGroup` pins the row, so `stacked` is ignored there.
+   *
+   * Only affects a `SelectorOption`, which knows both layouts; hand-composed
+   * `renderValue` content is the caller's to fit either way.
+   *
+   * @default 'inline'
+   */
+  valueLayout?: 'inline' | 'stacked';
+
+  /**
    * Custom render function for the selected option inside the closed trigger.
    * Only called when something is selected; the placeholder is unaffected.
    *
-   * The default trigger stays one line tall at the `size` token. Passing
-   * `renderValue` relaxes that height to a minimum, so taller content (a
-   * two-line `SelectorOption`, say) grows the control instead of being
-   * clipped — the caller owns the resulting height.
-   *
-   * Inside an `InputGroup` the height does NOT relax: the group pins the row,
-   * so the trigger keeps its size token and renders the value on one line. A
-   * `SelectorOption` picks that up automatically; hand-composed content is the
-   * caller's to fit, and taller content will overflow the group's border.
+   * The trigger keeps the fixed height its `size` token promises, so it still
+   * lines up with the Buttons and inputs beside it. Content that does not fit
+   * is clipped, not grown: a `SelectorOption` renders its inline row here and
+   * ellipsizes, and hand-composed content is the caller's to keep to one line.
    *
    * @example
    * ```
@@ -741,6 +755,7 @@ export function Selector<T extends SelectorOptionType>(
     htmlName,
     renderOption,
     renderValue,
+    valueLayout = 'inline',
     indicatorPosition = 'end',
     hasSearch = false,
     searchPlaceholder: searchPlaceholderFromProps,
@@ -1334,20 +1349,23 @@ export function Selector<T extends SelectorOptionType>(
   const showStatusTooltip =
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
-  // What the closed trigger shows for the current selection. The default is
-  // deliberately one line — icon + label — so the control keeps the height its
-  // `size` token promises; `renderValue` is the opt-in for anything taller.
-  // `startIcon` wins over the option's own icon so a caller who pins a field
-  // icon does not get two.
+  // A stacked value is refused inside an InputGroup: the group pins the row
+  // height (groupStyles.inGroup sets height:100%), so the taller trigger would
+  // not grow the row — it would spill through its own border.
+  const rowLayout =
+    valueLayout === 'stacked' && !inputGroup ? 'stacked' : 'inline';
+
+  // What the closed trigger shows for the current selection: the option's icon
+  // and label. `startIcon` wins over the option's own icon so a caller who
+  // pins a field icon does not get two.
   //
-  // Inside an InputGroup the height is NOT relaxed: a group row is fixed-height
-  // by construction (groupStyles.inGroup sets height:100%), so a taller trigger
-  // does not grow the row — it spills through its own border. The group keeps
-  // the size token and the value renders on one line.
-  const canGrow = renderValue != null && !inputGroup;
+  // Either layout is a FIXED height off the size token, so the trigger lines
+  // up with the Buttons and inputs beside it and the `size` prop keeps
+  // working. Content that does not fit ellipsizes, the way it does in any
+  // other fixed-height control.
   const valueContent =
     selectedItem && renderValue ? (
-      <SelectorRowLayoutContext value={canGrow ? 'stacked' : 'inline'}>
+      <SelectorRowLayoutContext value={rowLayout}>
         <span {...stylex.props(styles.triggerValue)}>
           {renderValue(selectedItem)}
         </span>
@@ -1386,7 +1404,9 @@ export function Selector<T extends SelectorOptionType>(
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
-            canGrow ? minSizeStyles[size] : sizeStyles[size],
+            rowLayout === 'stacked'
+              ? stackedSizeStyles[size]
+              : sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
             variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,

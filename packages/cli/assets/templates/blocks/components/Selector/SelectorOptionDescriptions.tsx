@@ -42,10 +42,11 @@ export default function SelectorOptionDescriptions() {
       <Selector
         style={{width: 320}}
         label="Visibility"
-        description="renderValue: the selection reads in full, and the control grows."
+        description="valueLayout stacked: the description gets its own line, at a fixed 4px-grid height."
         options={VISIBILITY}
         value={full}
         onChange={setFull}
+        valueLayout="stacked"
         renderValue={option => (
           <SelectorOption
             icon={option.icon}

@@ -3121,12 +3121,10 @@ describe('Selector option descriptions and trigger value', () => {
     expect(within(trigger).getByTestId('lock-glyph')).toBeInTheDocument();
   });
 
-  it('forces the value onto one line inside an InputGroup', () => {
-    // The group pins the row height, so a stacked two-line value would spill
-    // through the trigger's own border instead of growing the row. Both
-    // layouts share one DOM shape and differ only in styling, so the check is
-    // against Item's own inline class, resolved from a reference render
-    // rather than hardcoded.
+  it('draws the trigger value inline by default, and stacked on request', () => {
+    // Both layouts are fixed heights off the size token, so the choice is the
+    // caller's and never inferred from renderValue being passed. Asserted
+    // through Item's inline class, resolved from a reference render.
     const renderValue = (option: SelectorOptionData) => (
       <SelectorOption
         icon={option.icon}
@@ -3136,6 +3134,8 @@ describe('Selector option descriptions and trigger value', () => {
     );
     const classesOf = (label: HTMLElement) =>
       new Set((label.parentElement?.className ?? '').split(' '));
+    const triggerClasses = () =>
+      classesOf(within(screen.getByRole('combobox')).getByText('Private'));
 
     const stackedRef = render(<Item label="Private" description="Why" />);
     const stackedClasses = classesOf(screen.getByText('Private'));
@@ -3150,7 +3150,7 @@ describe('Selector option descriptions and trigger value', () => {
     inlineRef.unmount();
     expect(inlineOnly.length).toBeGreaterThan(0);
 
-    const standalone = render(
+    const byDefault = render(
       <Selector
         label="Visibility"
         options={VISIBILITY}
@@ -3159,12 +3159,24 @@ describe('Selector option descriptions and trigger value', () => {
         renderValue={renderValue}
       />,
     );
-    const standaloneClasses = classesOf(
-      within(screen.getByRole('combobox')).getByText('Private'),
-    );
-    expect(inlineOnly.some(c => standaloneClasses.has(c))).toBe(false);
-    standalone.unmount();
+    expect(inlineOnly.every(c => triggerClasses().has(c))).toBe(true);
+    byDefault.unmount();
 
+    const onRequest = render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        valueLayout="stacked"
+        renderValue={renderValue}
+      />,
+    );
+    expect(inlineOnly.some(c => triggerClasses().has(c))).toBe(false);
+    onRequest.unmount();
+
+    // The group pins the row height, so a stacked value would spill through
+    // the trigger's own border. The request is refused, not honoured.
     render(
       <InputGroup label="Space settings">
         <Selector
@@ -3172,14 +3184,12 @@ describe('Selector option descriptions and trigger value', () => {
           options={VISIBILITY}
           value="private"
           onChange={() => {}}
+          valueLayout="stacked"
           renderValue={renderValue}
         />
       </InputGroup>,
     );
-    const groupedClasses = classesOf(
-      within(screen.getByRole('combobox')).getByText('Private'),
-    );
-    expect(inlineOnly.every(c => groupedClasses.has(c))).toBe(true);
+    expect(inlineOnly.every(c => triggerClasses().has(c))).toBe(true);
   });
 
   it('does not call renderValue for the placeholder', () => {

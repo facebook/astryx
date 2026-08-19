@@ -31,7 +31,7 @@ export const docs = {
       name: 'layout',
       type: "'stacked' | 'inline'",
       description:
-        "How the label and description sit together. 'stacked' puts the description on its own line; 'inline' keeps both on one line so the row fits a fixed-height host. A Selector trigger inside an InputGroup forces 'inline', because the group pins the row height.",
+        "How the label and description sit together. 'stacked' puts the description on its own line; 'inline' keeps both on one line so the row fits a fixed-height host. Inside a Selector trigger the layout comes from the trigger's own valueLayout, which an InputGroup pins to 'inline'.",
       default: "'stacked'",
     },
     {
