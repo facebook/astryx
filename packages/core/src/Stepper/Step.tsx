@@ -235,7 +235,17 @@ const styles = stylex.create({
     // labelled "Integrations" claims a wider slice of the track than one
     // labelled "Team". Zeroing the floor lets the even distribution actually
     // apply, which is what keeps every progress segment the same width.
-    minWidth: 0,
+    //
+    // The exception is a collapsed stepper: once only the current step still
+    // shows a label, an equal share would squeeze that one label to nothing,
+    // defeating the point of collapsing. Handing the floor back lets it take
+    // the width it needs out of the room the collapsed steps gave up. The
+    // query names the container Stepper only establishes for this mode, so it
+    // never matches on a stepper that is not collapsing.
+    minWidth: {
+      default: 0,
+      '@container astryx-stepper (max-width: 480px)': 'auto',
+    },
     // density padding applied via density styles below
   },
 
