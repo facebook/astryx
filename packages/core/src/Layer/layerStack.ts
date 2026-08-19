@@ -74,7 +74,10 @@ import {isImeKeyEvent} from '../utils/ime';
 export type LayerEscapeBehavior = 'close' | 'block';
 
 export interface LayerStackEntry {
-  /** Identity for removal; also the equality check for top-most. */
+  /**
+   * Identity for removal; also the equality check for top-most, and the key
+   * `seq` is assigned against so a layer keeps its place across re-registration.
+   */
   token: object;
   /**
    * Nesting depth from the React tree (see LayerDepthContext), NOT the DOM.
@@ -84,7 +87,11 @@ export interface LayerStackEntry {
    * effects before parent effects.
    */
   depth: number;
-  /** Monotonic registration order; breaks ties between unrelated layers. */
+  /**
+   * Monotonic open order; breaks ties between unrelated layers. Keyed to
+   * `token`, not to the registration, because a layer re-registers whenever its
+   * behavior or depth changes and must not overtake the layers above it.
+   */
   seq: number;
   behavior: LayerEscapeBehavior;
   /**
@@ -108,8 +115,24 @@ export interface LayerStackEntry {
 }
 
 const entries: LayerStackEntry[] = [];
+// Open order per layer identity. A layer re-registers whenever its depth or
+// behavior changes — a Dialog whose `purpose` flips while open, a focus trap
+// that moves — and StrictMode remounts every effect once more on top of that.
+// Counting registrations instead would hand the layer a fresh, higher seq each
+// time and promote it above the layers opened over it.
+let seqByToken = new WeakMap<object, number>();
 let nextSeq = 0;
 let isListening = false;
+
+function seqFor(token: object): number {
+  const existing = seqByToken.get(token);
+  if (existing !== undefined) {
+    return existing;
+  }
+  const seq = nextSeq++;
+  seqByToken.set(token, seq);
+  return seq;
+}
 
 /**
  * Order two entries: positive when `a` is above `b`, negative when below.
@@ -246,7 +269,7 @@ function stopListening(): void {
  * function; callers own calling it.
  */
 export function registerLayer(entry: Omit<LayerStackEntry, 'seq'>): () => void {
-  const full: LayerStackEntry = {...entry, seq: nextSeq++};
+  const full: LayerStackEntry = {...entry, seq: seqFor(entry.token)};
   entries.push(full);
   startListening();
 
@@ -264,6 +287,7 @@ export function registerLayer(entry: Omit<LayerStackEntry, 'seq'>): () => void {
 /** Test-only: drop all entries and detach the listener. */
 export function resetLayerStackForTests(): void {
   entries.length = 0;
+  seqByToken = new WeakMap();
   nextSeq = 0;
   stopListening();
 }
