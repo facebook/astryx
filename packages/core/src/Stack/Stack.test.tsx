@@ -394,4 +394,80 @@ describe('Stack', () => {
     );
     expect(uniform).toEqual(classSet(screen.getByTestId('stack')));
   });
+
+  it('applies a class when paddingInlineStart is set on its own', () => {
+    const {rerender} = render(
+      <Stack data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const baseline = screen.getByTestId('stack').className;
+    rerender(
+      <Stack paddingInlineStart={2} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(screen.getByTestId('stack').className).not.toBe(baseline);
+  });
+
+  it('lets paddingInlineStart/paddingInlineEnd override only their own edge', () => {
+    const {rerender} = render(
+      <Stack padding={4} paddingInlineStart={2} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const perEdge = classSet(screen.getByTestId('stack'));
+    rerender(
+      <Stack
+        paddingInlineStart={2}
+        paddingInlineEnd={4}
+        paddingBlock={4}
+        data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(perEdge).toEqual(classSet(screen.getByTestId('stack')));
+  });
+
+  it('gives paddingInlineEnd precedence over paddingInline', () => {
+    const {rerender} = render(
+      <Stack paddingInline={6} paddingInlineEnd={0} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const overridden = classSet(screen.getByTestId('stack'));
+    rerender(
+      <Stack paddingInlineStart={6} paddingInlineEnd={0} data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(overridden).toEqual(classSet(screen.getByTestId('stack')));
+  });
+
+  it('resolves all four edges independently', () => {
+    // One prop per edge, each a different step: the four-edge spelling and the
+    // shorthand-plus-overrides spelling must agree.
+    const {rerender} = render(
+      <Stack
+        paddingInlineStart={1}
+        paddingInlineEnd={2}
+        paddingBlockStart={3}
+        paddingBlockEnd={4}
+        data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    const explicit = classSet(screen.getByTestId('stack'));
+    rerender(
+      <Stack
+        padding={4}
+        paddingInlineStart={1}
+        paddingInlineEnd={2}
+        paddingBlockStart={3}
+        data-testid="stack">
+        <div>Content</div>
+      </Stack>,
+    );
+    expect(explicit).toEqual(classSet(screen.getByTestId('stack')));
+  });
 });

@@ -144,6 +144,18 @@ const meta: Meta<typeof Stack> = {
       description:
         'Inline (horizontal) padding; overrides padding on that axis',
     },
+    paddingInlineStart: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Inline-start (left in LTR) padding; overrides paddingInline/padding on that edge',
+    },
+    paddingInlineEnd: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Inline-end (right in LTR) padding; overrides paddingInline/padding on that edge',
+    },
     paddingBlock: {
       control: 'select',
       options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
@@ -714,11 +726,12 @@ export const PaddingPerAxis: Story = {
   ),
 };
 
-export const PaddingPerBlockEdge: Story = {
+export const PaddingPerEdge: Story = {
   args: {
     gap: 2,
     padding: 6,
     paddingBlockStart: 1,
+    paddingInlineEnd: 2,
   },
   render: args => (
     <Stack {...args} xstyle={styles.container}>

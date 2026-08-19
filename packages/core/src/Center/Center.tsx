@@ -18,7 +18,8 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {
-  paddingInlineStyles,
+  paddingInlineStartStyles,
+  paddingInlineEndStyles,
   paddingBlockStartStyles,
   paddingBlockEndStyles,
 } from '../Layout/padding.stylex';
@@ -108,6 +109,20 @@ export interface CenterProps extends BaseProps<HTMLDivElement> {
   paddingInline?: SpacingStep;
 
   /**
+   * Inline-start padding, using the spacing scale. Logical: the left edge in
+   * LTR, the right edge in RTL.
+   * Overrides `paddingInline` and `padding` on that edge only.
+   */
+  paddingInlineStart?: SpacingStep;
+
+  /**
+   * Inline-end padding, using the spacing scale. Logical: the right edge in
+   * LTR, the left edge in RTL.
+   * Overrides `paddingInline` and `padding` on that edge only.
+   */
+  paddingInlineEnd?: SpacingStep;
+
+  /**
    * Block (vertical) padding, using the spacing scale.
    * Overrides `padding` on the block axis when both are set.
    */
@@ -158,6 +173,8 @@ export function Center({
   minHeight,
   padding,
   paddingInline,
+  paddingInlineStart,
+  paddingInlineEnd,
   paddingBlock,
   paddingBlockStart,
   paddingBlockEnd,
@@ -169,10 +186,11 @@ export function Center({
   ref,
   ...props
 }: CenterProps) {
-  // Resolve padding to per-edge values: `padding` sets every edge;
-  // `paddingInline` / `paddingBlock` take precedence on their own axis, and
-  // `paddingBlockStart` / `paddingBlockEnd` take precedence on their own edge.
-  const resolvedPaddingInline = paddingInline ?? padding;
+  // Resolve padding to per-edge values. Most specific wins, per edge:
+  // edge prop -> axis prop -> `padding`.
+  const resolvedPaddingInlineStart =
+    paddingInlineStart ?? paddingInline ?? padding;
+  const resolvedPaddingInlineEnd = paddingInlineEnd ?? paddingInline ?? padding;
   const resolvedPaddingBlockStart =
     paddingBlockStart ?? paddingBlock ?? padding;
   const resolvedPaddingBlockEnd = paddingBlockEnd ?? paddingBlock ?? padding;
@@ -189,8 +207,10 @@ export function Center({
         maxWidth ?? null,
         minHeight ?? null,
       ),
-      resolvedPaddingInline != null &&
-        paddingInlineStyles[resolvedPaddingInline],
+      resolvedPaddingInlineStart != null &&
+        paddingInlineStartStyles[resolvedPaddingInlineStart],
+      resolvedPaddingInlineEnd != null &&
+        paddingInlineEndStyles[resolvedPaddingInlineEnd],
       resolvedPaddingBlockStart != null &&
         paddingBlockStartStyles[resolvedPaddingBlockStart],
       resolvedPaddingBlockEnd != null &&

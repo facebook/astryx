@@ -47,6 +47,18 @@ export const docs = {
             'Inline (horizontal) padding. Overrides padding on the inline axis when both are set.',
         },
         {
+          name: 'paddingInlineStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-start padding, using the spacing scale (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
+          name: 'paddingInlineEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-end padding, using the spacing scale (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
           name: 'paddingBlock',
           type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
@@ -163,6 +175,18 @@ export const docs = {
             'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
         },
         {
+          name: 'paddingInlineStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-start padding, using the spacing scale (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
+          name: 'paddingInlineEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-end padding, using the spacing scale (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
           name: 'paddingBlock',
           type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
@@ -276,6 +300,18 @@ export const docs = {
           type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
+        },
+        {
+          name: 'paddingInlineStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-start padding, using the spacing scale (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
+          name: 'paddingInlineEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-end padding, using the spacing scale (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
         },
         {
           name: 'paddingBlock',

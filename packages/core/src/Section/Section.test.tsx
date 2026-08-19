@@ -266,4 +266,99 @@ describe('Section', () => {
     // The inline-axis classes are shared by both renders.
     expect(uniform.size - removed.length).toBeGreaterThan(0);
   });
+
+  it('applies a class when paddingInlineStart is set on its own', () => {
+    const {container, rerender} = render(<Section>Content</Section>);
+    const baseline = (
+      container.firstElementChild!.firstElementChild as HTMLElement
+    ).className;
+    rerender(<Section paddingInlineStart={2}>Content</Section>);
+    expect(
+      (container.firstElementChild!.firstElementChild as HTMLElement).className,
+    ).not.toBe(baseline);
+  });
+
+  it('treats paddingInline as the two inline edge props set to the same step', () => {
+    const {container, rerender} = render(
+      <Section paddingInline={2}>Content</Section>,
+    );
+    const axis = classSet(
+      container.firstElementChild!.firstElementChild as HTMLElement,
+    );
+    rerender(
+      <Section paddingInlineStart={2} paddingInlineEnd={2}>
+        Content
+      </Section>,
+    );
+    expect(axis).toEqual(
+      classSet(container.firstElementChild!.firstElementChild as HTMLElement),
+    );
+  });
+
+  it('gives paddingInlineEnd precedence over paddingInline', () => {
+    const {container, rerender} = render(
+      <Section paddingInline={2} paddingInlineEnd={8}>
+        Content
+      </Section>,
+    );
+    const overridden = classSet(
+      container.firstElementChild!.firstElementChild as HTMLElement,
+    );
+    rerender(
+      <Section paddingInlineStart={2} paddingInlineEnd={8}>
+        Content
+      </Section>,
+    );
+    expect(overridden).toEqual(
+      classSet(container.firstElementChild!.firstElementChild as HTMLElement),
+    );
+  });
+
+  it('keeps block padding when only an inline edge is overridden', () => {
+    const {container, rerender} = render(
+      <Section padding={6}>Content</Section>,
+    );
+    const uniform = classSet(
+      container.firstElementChild!.firstElementChild as HTMLElement,
+    );
+    rerender(
+      <Section padding={6} paddingInlineStart={0}>
+        Content
+      </Section>,
+    );
+    const overridden = classSet(
+      container.firstElementChild!.firstElementChild as HTMLElement,
+    );
+    const removed = [...uniform].filter(c => !overridden.has(c));
+    const added = [...overridden].filter(c => !uniform.has(c));
+    expect(removed.length).toBeGreaterThan(0);
+    expect(added.length).toBeGreaterThan(0);
+    // The block-axis classes survive the inline-edge override.
+    expect(uniform.size - removed.length).toBeGreaterThan(0);
+  });
+
+  it('moves the inline container vars with a per-edge override', () => {
+    // Section drives --container-padding-inline-start/end for bleed children.
+    // A per-edge override must move only the matching var, so a nested Section
+    // or a bleeding Divider compensates against the real padding.
+    const {container, rerender} = render(
+      <Section padding={6} paddingInlineStart={2}>
+        Content
+      </Section>,
+    );
+    const startOverride = classSet(
+      container.firstElementChild!.firstElementChild as HTMLElement,
+    );
+    rerender(
+      <Section padding={6} paddingInlineEnd={2}>
+        Content
+      </Section>,
+    );
+    const endOverride = classSet(
+      container.firstElementChild!.firstElementChild as HTMLElement,
+    );
+    // Overriding opposite edges by the same step must not produce identical
+    // output — each edge carries its own padding class and its own var class.
+    expect(startOverride).not.toEqual(endOverride);
+  });
 });

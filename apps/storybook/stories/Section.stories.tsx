@@ -267,7 +267,7 @@ export const NestedPaddingInheritance: Story = {
   ),
 };
 
-export const AsymmetricBlockPadding: Story = {
+export const AsymmetricPadding: Story = {
   render: () => (
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
@@ -312,6 +312,34 @@ export const AsymmetricBlockPadding: Story = {
           <p {...stylex.props(styles.text)}>
             paddingBlockEnd wins over paddingBlock on its own edge: 24px top,
             4px bottom, inline padding from the theme default.
+          </p>
+        </Section>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          padding=6 + paddingInlineStart=2 (tight leading edge)
+        </h4>
+        <Section variant="muted" width={350} padding={6} paddingInlineStart={2}>
+          <p {...stylex.props(styles.text)}>
+            Only the inline-start edge moves to 8px — the left edge in LTR, the
+            right edge in RTL. The other three stay at 24px.
+          </p>
+        </Section>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          one prop per edge (1 / 2 / 3 / 4)
+        </h4>
+        <Section
+          variant="muted"
+          width={350}
+          paddingInlineStart={1}
+          paddingInlineEnd={2}
+          paddingBlockStart={3}
+          paddingBlockEnd={4}>
+          <p {...stylex.props(styles.text)}>
+            All four edges resolved independently: 4px leading, 8px trailing,
+            12px top, 16px bottom.
           </p>
         </Section>
       </div>

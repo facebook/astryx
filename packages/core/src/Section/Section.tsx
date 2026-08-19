@@ -21,10 +21,15 @@ import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
   paddingStyles,
+  paddingInlineStyles,
+  paddingInlineStartStyles,
+  paddingInlineEndStyles,
   paddingBlockStyles,
   paddingBlockStartStyles,
   paddingBlockEndStyles,
   containerPaddingInlineVarStyles,
+  containerPaddingInlineStartVarStyles,
+  containerPaddingInlineEndVarStyles,
   containerPaddingBlockStartVarStyles,
   containerPaddingBlockEndVarStyles,
   sectionPaddingPropagationStyles,
@@ -178,6 +183,27 @@ export interface SectionProps extends BaseProps<HTMLElement> {
    */
   padding?: SpacingStep;
   /**
+   * Inline (horizontal) padding override. When set, overrides only the inline
+   * axis padding while preserving block padding from `padding` or the
+   * container theme default.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   */
+  paddingInline?: SpacingStep;
+  /**
+   * Inline-start padding override. Logical: the left edge in LTR, the right
+   * edge in RTL. Takes precedence over `paddingInline` and `padding` on that
+   * edge only; every other edge is left alone.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   */
+  paddingInlineStart?: SpacingStep;
+  /**
+   * Inline-end padding override. Logical: the right edge in LTR, the left
+   * edge in RTL. Takes precedence over `paddingInline` and `padding` on that
+   * edge only; every other edge is left alone.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   */
+  paddingInlineEnd?: SpacingStep;
+  /**
    * Block (vertical) padding override. When set, overrides only the block
    * axis padding while preserving inline padding from `padding` or the
    * container theme default.
@@ -227,6 +253,9 @@ export function Section({
   children,
   dividers,
   padding,
+  paddingInline,
+  paddingInlineStart,
+  paddingInlineEnd,
   paddingBlock,
   paddingBlockStart,
   paddingBlockEnd,
@@ -293,6 +322,9 @@ export function Section({
               containerPaddingBlockEndVarStyles[effectivePadding],
             !useThemeDefault &&
               sectionPaddingPropagationStyles[effectivePadding],
+            paddingInline != null && paddingInlineStyles[paddingInline],
+            paddingInline != null &&
+              containerPaddingInlineVarStyles[paddingInline],
             paddingBlock != null && paddingBlockStyles[paddingBlock],
             paddingBlock != null &&
               containerPaddingBlockStartVarStyles[paddingBlock],
@@ -309,6 +341,14 @@ export function Section({
             paddingBlockEnd != null && paddingBlockEndStyles[paddingBlockEnd],
             paddingBlockEnd != null &&
               containerPaddingBlockEndVarStyles[paddingBlockEnd],
+            paddingInlineStart != null &&
+              paddingInlineStartStyles[paddingInlineStart],
+            paddingInlineStart != null &&
+              containerPaddingInlineStartVarStyles[paddingInlineStart],
+            paddingInlineEnd != null &&
+              paddingInlineEndStyles[paddingInlineEnd],
+            paddingInlineEnd != null &&
+              containerPaddingInlineEndVarStyles[paddingInlineEnd],
             variantStyles[variant],
             dividers?.includes('top') && dividerStyles.top,
             dividers?.includes('bottom') && dividerStyles.bottom,

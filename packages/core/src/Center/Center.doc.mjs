@@ -49,6 +49,18 @@ export const docs = {
         'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
     },
     {
+      name: 'paddingInlineStart',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        'Inline-start padding, using the spacing scale (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+    },
+    {
+      name: 'paddingInlineEnd',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        'Inline-end padding, using the spacing scale (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
+    },
+    {
       name: 'paddingBlock',
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
@@ -137,6 +149,16 @@ export const docsZh = {
       description: '行内（水平）内边距，使用间距刻度。两者同时设置时在行内轴上覆盖 padding。',
     },
     {
+      name: 'paddingInlineStart',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '行内起始内边距，使用间距刻度（LTR 中为左侧，RTL 中为右侧）。仅在该边上覆盖 paddingInline 和 padding。',
+    },
+    {
+      name: 'paddingInlineEnd',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '行内结束内边距，使用间距刻度（LTR 中为右侧，RTL 中为左侧）。仅在该边上覆盖 paddingInline 和 padding。',
+    },
+    {
       name: 'paddingBlock',
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: '块（垂直）内边距，使用间距刻度。两者同时设置时在块轴上覆盖 padding。',
@@ -193,6 +215,8 @@ export const docsDense = {
     padding:
       'inner padding on all sides (spacing step: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10)',
     paddingInline: 'inline (horizontal) padding; overrides padding on that axis',
+    paddingInlineStart: 'inline-start padding (left in LTR); overrides paddingInline/padding on that edge',
+    paddingInlineEnd: 'inline-end padding (right in LTR); overrides paddingInline/padding on that edge',
     paddingBlock: 'block (vertical) padding; overrides padding on that axis',
     paddingBlockStart: 'block-start (top) padding; overrides paddingBlock/padding on that edge',
     paddingBlockEnd: 'block-end (bottom) padding; overrides paddingBlock/padding on that edge',
