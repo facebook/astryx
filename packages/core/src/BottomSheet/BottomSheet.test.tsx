@@ -2262,4 +2262,21 @@ describe('BottomSheet', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
+
+  describe('container padding isolation', () => {
+    it('resets container padding custom properties to 0px on the sheet panel element', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const computed = window.getComputedStyle(sheet);
+      expect(computed.getPropertyValue('--container-padding-inline-start')).toBe('0px');
+      expect(computed.getPropertyValue('--container-padding-inline-end')).toBe('0px');
+      expect(computed.getPropertyValue('--container-padding-block-start')).toBe('0px');
+      expect(computed.getPropertyValue('--container-padding-block-end')).toBe('0px');
+    });
+  });
 });
+

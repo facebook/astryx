@@ -40,6 +40,10 @@ const styles = stylex.create({
   // Consumers that need a raw positioned layer should use useLayer instead.
   surface: {
     backgroundColor: colorVars['--color-background-popover'],
+    '--container-padding-inline-start': '0px',
+    '--container-padding-inline-end': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
     borderRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-low'],
   },
