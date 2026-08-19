@@ -290,6 +290,24 @@ describe('List', () => {
     expect(children?.[1]?.tagName).toBe('LI');
   });
 
+  it('drops the divider on the last item so the list does not end on a rule', () => {
+    const {container} = render(
+      <List hasDividers>
+        <ListItem label="Item 1" />
+        <ListItem label="Item 2" />
+        <ListItem label="Item 3" />
+      </List>,
+    );
+    const items = [...container.querySelectorAll('li')];
+    // Regression guard: this was previously expressed as a `borderBlockEnd`
+    // shorthand nested under `:last-child`, which StyleX drops silently — it
+    // compiled to no CSS at all and every list ended on a stray border.
+    for (const item of items.slice(0, -1)) {
+      expect(getComputedStyle(item).borderBottomWidth).not.toBe('0px');
+    }
+    expect(getComputedStyle(items.at(-1)!).borderBottomWidth).toBe('0px');
+  });
+
   it('does not render dividers when hasDividers is false', () => {
     const {container} = render(
       <List>
