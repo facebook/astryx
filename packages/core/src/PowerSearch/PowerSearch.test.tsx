@@ -505,7 +505,7 @@ describe('field menu sizing', () => {
     })),
   };
 
-  async function openMenu(props?: {maxMenuItems?: number}) {
+  async function openMenu(props?: {maxSearchResults?: number}) {
     const user = userEvent.setup();
     render(
       <PowerSearch
@@ -539,16 +539,16 @@ describe('field menu sizing', () => {
     });
   });
 
-  it('caps ranked results at maxMenuItems while typing', async () => {
-    const user = await openMenu({maxMenuItems: 3});
+  it('caps ranked results at maxSearchResults while typing', async () => {
+    const user = await openMenu({maxSearchResults: 3});
     await user.type(screen.getByRole('combobox'), 'zebra');
     await waitFor(() => {
       expect(optionCount()).toBe(3);
     });
   });
 
-  it('never truncates browsing, whatever maxMenuItems says', async () => {
-    await openMenu({maxMenuItems: 3});
+  it('never truncates browsing, whatever maxSearchResults says', async () => {
+    await openMenu({maxSearchResults: 3});
     expect(optionCount()).toBe(FIELD_COUNT);
   });
 });
