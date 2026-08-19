@@ -132,6 +132,55 @@ describe('automated derivation', () => {
     expect(derived.stateCoverage.note).toMatch(/isDisabled.*no test/);
   });
 
+  it('asks for an edge-case story only for states the props expose', () => {
+    scaffold({
+      'packages/lab/src/Widget/Widget.tsx':
+        "import {Text} from '@astryxdesign/core/Text';\n" +
+        'export interface WidgetProps { isDisabled?: boolean; isLoading?: boolean }\n' +
+        'export function Widget() { return <Text />; }\n',
+      'apps/storybook/stories/Widget.stories.tsx':
+        "const meta = {title: 'Lab/Widget'};\n" +
+        'export const Default: Story = {};\n' +
+        'export const ThemeMatrix: Story = {};\n',
+    });
+    const derived = deriveChecks(root, candidate);
+    expect(derived.edgeCases.state).not.toBe('passed');
+    expect(derived.edgeCases.note).toMatch(/disabled/);
+    expect(derived.edgeCases.note).toMatch(/loading/);
+    // Nothing in the props implies an empty state, so it must not be demanded.
+    expect(derived.edgeCases.note).not.toMatch(/empty/);
+  });
+
+  it('owes no edge-case story when the component exposes no such state', () => {
+    // The rubric describes the API; it must never pressure someone into adding
+    // an isLoading prop that nothing needs just to turn a check green.
+    scaffold({
+      'apps/storybook/stories/Widget.stories.tsx':
+        "const meta = {title: 'Lab/Widget'};\n" +
+        'export const Default: Story = {};\n' +
+        'export const Disabled: Story = {};\n' +
+        'export const ThemeMatrix: Story = {};\n',
+    });
+    const derived = deriveChecks(root, candidate);
+    expect(derived.edgeCases.state).toBe('passed');
+    expect(derived.edgeCases.note).toMatch(/none is owed a story/);
+  });
+
+  it('asks for an empty story when the component renders an EmptyState', () => {
+    scaffold({
+      'packages/lab/src/Widget/Widget.tsx':
+        "import {EmptyState} from '@astryxdesign/core/EmptyState';\n" +
+        'export function Widget() { return <EmptyState />; }\n',
+      'apps/storybook/stories/Widget.stories.tsx':
+        "const meta = {title: 'Lab/Widget'};\n" +
+        'export const Default: Story = {};\n' +
+        'export const ThemeMatrix: Story = {};\n',
+    });
+    const derived = deriveChecks(root, candidate);
+    expect(derived.edgeCases.state).not.toBe('passed');
+    expect(derived.edgeCases.note).toMatch(/empty/);
+  });
+
   it('accepts a locally defined SVG glyph', () => {
     // Core defines glyphs this way in Avatar, Thumbnail, and Indicator, so a
     // raw <svg> is idiomatic rather than a finding.

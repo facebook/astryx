@@ -503,17 +503,39 @@ export function deriveChecks(repoRoot, candidate) {
   }
 
   {
+    // Which edge cases are worth a story depends on the component, not on a
+    // fixed list. Demanding a "loading" story from a component with no loading
+    // state invites someone to invent the prop to clear the check, which is
+    // backwards: the rubric should describe the API, never drive it. So the
+    // expectation is read off the prop surface.
     const names = storyExports(stories).join(' ');
-    const missing = ['empty', 'loading', 'disabled'].filter(
+    const expected = [];
+    if (/\bisDisabled\??:/.test(source)) {
+      expected.push('disabled');
+    }
+    if (/\bisLoading\??:/.test(source)) {
+      expected.push('loading');
+    }
+    // An empty state is a rendering decision rather than a prop, so look for
+    // either the copy props that configure one or the primitive that draws it.
+    if (/\bEmptyState\b/.test(source) || /\w*[eE]mptyText\??:/.test(source)) {
+      expected.push('empty');
+    }
+    const missing = expected.filter(
       kind => !new RegExp(kind, 'i').test(names),
     );
     add(
       'edgeCases',
       verdict(missing),
-      missing.length === 0
-        ? 'Empty, loading, and disabled cases each have a dedicated story.'
-        : `No dedicated story for: ${missing.join(', ')}.`,
-      [ev(`Story names: ${names || 'none'}.`, p.stories)],
+      expected.length === 0
+        ? 'No empty, loading, or disabled state is exposed, so none is owed a story.'
+        : missing.length === 0
+          ? `Each state this component exposes (${expected.join(', ')}) has a dedicated story.`
+          : `No dedicated story for: ${missing.join(', ')}.`,
+      [
+        ev(`Story names: ${names || 'none'}.`, p.stories),
+        ev(`Edge cases the prop surface implies: ${expected.join(', ') || 'none'}.`, p.source),
+      ],
     );
   }
 
