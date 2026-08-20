@@ -91,11 +91,10 @@ const DISABLED_SELECTOR = ':disabled, [aria-disabled="true"]';
 /**
  * Which stories belong to the requested components.
  *
- * `--components` absent means every story (the weekly contract). Present but
- * empty means the caller derived an empty set — audit nothing and pass,
- * rather than fanning out to a full sweep the PR never asked for. Same
- * contract as accessibility-audit.js, so the two CI steps can share one
- * component list.
+ * `--components` absent means every story (the full-sweep contract). Present
+ * but empty means the caller derived an empty set — audit nothing and pass,
+ * rather than fanning out to a full sweep the caller never asked for. Same
+ * contract as accessibility-audit.js, so both can share one component list.
  */
 function selectStories(entries, components) {
   const wanted = (components || []).map(c => c.toLowerCase());

@@ -491,6 +491,17 @@ browser is not obliged to release that when `close()` finally runs — Safari
 cannot see it and the unit suites pass either way. Add a target here when a
 component closes a `<dialog>` on a delay.
 
+### Disabled hover guard
+
+A disabled element must never paint a hover state: `:hover` keeps matching a
+disabled control in every engine, so a hover treatment written for the enabled
+element is still painted under the pointer. Guard every self-`:hover` with
+`:hover:where(:not(:disabled,[aria-disabled="true"]))` — `:where()` adds no
+specificity, so the rule weighs the same as before. The `@astryx/no-hover-on-disabled`
+lint rule (autofixable) enforces it at author time; `pnpm guard:disabled-hover
+--storybook-dir apps/storybook/dist` sweeps a built Storybook in Chromium and
+fails on any disabled element whose paint changes under a forced `:hover`.
+
 ## Versioning & Releases
 
 We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.

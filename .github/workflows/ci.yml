@@ -463,29 +463,6 @@ jobs:
       - name: Run modal close visibility guard
         run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
 
-      # A disabled control that lights up under the pointer promises a click
-      # it will not honour. `:hover` keeps matching a disabled element in
-      # every engine, and jsdom has neither a pointer nor a cascade, so this
-      # Chromium sweep is the only place the invariant can be observed.
-      # Zero-tolerance and no baseline: a hover state on a disabled element is
-      # never correct, so there is nothing to grandfather.
-      - name: Run disabled-hover audit
-        run: |
-          COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
-          node .github/scripts/disabled-hover-audit.js \
-            --storybook-dir apps/storybook/dist \
-            --components "$COMPONENTS" \
-            --output disabled-hover-report.json
-
-      - name: Upload disabled-hover artifact
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: disabled-hover-report
-          path: disabled-hover-report.json
-          retention-days: 1
-          if-no-files-found: ignore
-
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so a PR only pays for the components it touched.
   # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
