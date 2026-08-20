@@ -10,8 +10,8 @@ export const docs = {
   props: [
     {
       name: 'size',
-      type: "'sm' | 'md' | 'lg'",
-      description: 'Spinner size (10px, 14px, 18px).',
+      type: "'sm' | 'md' | 'lg' | 'xl'",
+      description: 'Spinner size — ring diameter (10px, 14px, 18px, 28px).',
       default: "'md'",
     },
     {
@@ -44,8 +44,10 @@ export const docs = {
       {className: 'astryx-spinner', visualProps: ['size', 'shade']},
     ],
     vars: [
-      {name: '--_spinner-diameter', description: "Diameter of the ring for the current size variant. Override per size to retheme what each named size resolves to, e.g. spinner: { 'size:xl': { '--_spinner-diameter': '40px' } }.", default: '10px (sm), 14px (md), 18px (lg), 28px (xl)', private: true},
-      {name: '--_spinner-rail-width', description: 'Stroke width of the ring/track (the rail) for the current size variant. Override per size alongside the diameter.', default: '2px (sm), 3px (md), 3px (lg), 4px (xl)', private: true},
+      {name: '--spinner-diameter', description: "Diameter of the drawn ring. Set it on a size-variant target to retheme what each named size resolves to, e.g. spinner: { 'size:xl': { '--spinner-diameter': '2.5rem' } }. The rendered box is this plus the rail width on each side, and follows automatically. Any length works — rem, em and calc() are resolved before the ring is drawn.", default: '10px (sm), 14px (md), 18px (lg), 28px (xl)'},
+      {name: '--spinner-rail-width', description: 'Stroke width of the ring and its track (the rail). Set it per size alongside the diameter. 0 is honoured — it draws a hairline-free ring rather than falling back to the default.', default: '2px (sm), 3px (md), 3px (lg), 4px (xl)'},
+      {name: '--spinner-color', description: "Color of the moving arc. Defaults to the shade's token, so set it on a shade-variant target to retheme one shade — spinner: { 'shade:subtle': { '--spinner-color': 'var(--color-text-tertiary)' } } — or on the base target to retheme all four. Accepts any color notation, including var(), color-mix() and currentColor.", default: 'var(--color-accent) (default), var(--color-text-secondary) (subtle), var(--color-on-dark) (onMedia), currentColor (inherit)'},
+      {name: '--spinner-track-color', description: 'Color of the track the arc travels on. Set it to `transparent` for an arc with no track. The onMedia and inherit shades draw the track at reduced alpha (30%) so it reads against an arbitrary backdrop; that fade applies to a themed color too.', default: 'var(--color-track) (default, subtle), var(--color-on-dark) (onMedia), currentColor (inherit)'},
     ],
   },
   usage: {
@@ -67,8 +69,8 @@ export const docsZh = {
   props: [
     {
       name: 'size',
-      type: "'sm' | 'md' | 'lg'",
-      description: '旋转器尺寸（10px、14px、18px）。',
+      type: "'sm' | 'md' | 'lg' | 'xl'",
+      description: '旋转器尺寸——环直径（10px、14px、18px、28px）。',
       default: "'md'",
     },
     {
@@ -100,8 +102,10 @@ export const docsZh = {
       {className: 'astryx-spinner', visualProps: ['size', 'shade']},
     ],
     vars: [
-      {name: '--_spinner-diameter', description: "当前尺寸变体的环直径。按尺寸覆盖以重新定义每个命名尺寸的解析值，例如 spinner: { 'size:xl': { '--_spinner-diameter': '40px' } }。", default: '10px (sm), 14px (md), 18px (lg), 28px (xl)', private: true},
-      {name: '--_spinner-rail-width', description: '当前尺寸变体的环/轨道（rail）描边宽度。与直径一起按尺寸覆盖。', default: '2px (sm), 3px (md), 3px (lg), 4px (xl)', private: true},
+      {name: '--spinner-diameter', description: "绘制环的直径。在尺寸变体目标上设置，以重新定义每个命名尺寸的解析值，例如 spinner: { 'size:xl': { '--spinner-diameter': '2.5rem' } }。渲染盒子的尺寸为该值加上两侧的 rail 宽度，并自动跟随。支持任意长度单位——rem、em 与 calc() 会在绘制前解析。", default: '10px (sm), 14px (md), 18px (lg), 28px (xl)'},
+      {name: '--spinner-rail-width', description: '环及其轨道（rail）的描边宽度。与直径一起按尺寸设置。0 会被采纳——绘制无轨道的环，而不会回退到默认值。', default: '2px (sm), 3px (md), 3px (lg), 4px (xl)'},
+      {name: '--spinner-color', description: "运动圆弧的颜色。默认取所在 shade 的令牌，因此可在 shade 变体目标上设置以重新定义单个 shade——spinner: { 'shade:subtle': { '--spinner-color': 'var(--color-text-tertiary)' } }——或在 base 目标上设置以覆盖全部四种。接受任意颜色写法，包括 var()、color-mix() 与 currentColor。", default: 'var(--color-accent)（default）、var(--color-text-secondary)（subtle）、var(--color-on-dark)（onMedia）、currentColor（inherit）'},
+      {name: '--spinner-track-color', description: '圆弧所在轨道的颜色。设为 `transparent` 可得到无轨道的圆弧。onMedia 与 inherit 两种 shade 会以降低的透明度（30%）绘制轨道，以便在任意背景上可辨；该淡化同样作用于主题化的颜色。', default: 'var(--color-track)（default、subtle）、var(--color-on-dark)（onMedia）、currentColor（inherit）'},
     ],
   },
   usage: {
@@ -129,7 +133,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    size: 'Spinner size (10px, 14px, 18px).',
+    size: 'Spinner size — ring diameter (10px, 14px, 18px, 28px).',
     shade: 'Color shade for light or dark backgrounds.',
     label: 'Visible content below spinner. String auto-sets aria-label.',
     'aria-label': 'A11y name for screen readers. Defaults to label or "Loading".',

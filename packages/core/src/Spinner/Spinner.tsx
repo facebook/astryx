@@ -18,7 +18,7 @@
 
 import {useEffect, useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {durationVars, spacingVars} from '../theme/tokens.stylex';
+import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
 import {useTheme} from '../theme/useTheme';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
@@ -40,6 +40,58 @@ const SIZES = {
   lg: {diameter: 18, border: 3},
   xl: {diameter: 28, border: 4},
 };
+
+/**
+ * Alpha the track is drawn at, per shade. `77 / 255` is the `4D` the onMedia
+ * track used to append to the token's hex — the same composite, but applied to
+ * a resolved color so it no longer depends on the token being hex notation.
+ */
+const TRACK_ALPHA: Record<SpinnerShade, number> = {
+  default: 1,
+  subtle: 1,
+  onMedia: 77 / 255,
+  inherit: 0.3,
+};
+
+/** Public geometry vars, registered so a themed value reaches the canvas. */
+const GEOMETRY_VARS = ['--spinner-diameter', '--spinner-rail-width'];
+
+let didRegisterVars = false;
+
+/**
+ * Register the geometry vars as `<length>`.
+ *
+ * Without this their computed value is the *specified* string, so a theme
+ * writing `2.5rem` or `calc(2rem + 8px)` reaches the canvas as that text and
+ * `parseFloat` silently truncates it to `2.5` / `NaN`. Registered, the
+ * computed value is an absolute px length the canvas can use directly.
+ */
+function registerSpinnerVars(): void {
+  if (didRegisterVars) {
+    return;
+  }
+  didRegisterVars = true;
+  if (
+    typeof CSS === 'undefined' ||
+    typeof CSS.registerProperty !== 'function'
+  ) {
+    return;
+  }
+  for (const name of GEOMETRY_VARS) {
+    try {
+      CSS.registerProperty({
+        name,
+        syntax: '<length>',
+        inherits: true,
+        initialValue: '0px',
+      });
+    } catch {
+      // Already registered — a second copy of the package on the page, or a
+      // fast-refresh re-evaluation. registerProperty throws rather than
+      // replacing, and the existing registration is this same one.
+    }
+  }
+}
 
 // =============================================================================
 // Animation
@@ -66,12 +118,10 @@ const styles = stylex.create({
     placeItems: 'center',
     overflow: 'hidden',
     verticalAlign: 'middle',
-    // Box tracks the themeable geometry vars so the frame stays in sync with
-    // the canvas (which reads the same vars back — see the draw effect). A
-    // theme can redefine each named size's diameter/rail width via the
-    // size-variant target; the box follows purely through CSS.
-    width: 'calc(var(--_spinner-diameter) + var(--_spinner-rail-width) * 2)',
-    height: 'calc(var(--_spinner-diameter) + var(--_spinner-rail-width) * 2)',
+    // The box and the drawn ring read the same vars, so a themed size moves
+    // both together.
+    width: 'calc(var(--spinner-diameter) + var(--spinner-rail-width) * 2)',
+    height: 'calc(var(--spinner-diameter) + var(--spinner-rail-width) * 2)',
   },
   canvas: {
     backfaceVisibility: 'hidden',
@@ -90,28 +140,57 @@ const styles = stylex.create({
   },
 });
 
-// Per-size defaults for the themeable geometry vars. These set what each named
-// `size` resolves to; a theme can override them on the size-variant target
-// (e.g. spinner: { 'size:xl': { '--_spinner-diameter': '40px' } }). The canvas
-// reads these vars back at draw time (falling back to SIZES) and the wrapping
-// box tracks them via calc(), so an override reaches both the box and the ring.
+// What each named `size` resolves to. A theme redefines a size by setting the
+// public vars on the size-variant target, e.g.
+// spinner: { 'size:xl': { '--spinner-diameter': '40px' } }.
 const sizeStyles = stylex.create({
   sm: {
-    '--_spinner-diameter': `${SIZES.sm.diameter}px`,
-    '--_spinner-rail-width': `${SIZES.sm.border}px`,
+    '--spinner-diameter': `${SIZES.sm.diameter}px`,
+    '--spinner-rail-width': `${SIZES.sm.border}px`,
   },
   md: {
-    '--_spinner-diameter': `${SIZES.md.diameter}px`,
-    '--_spinner-rail-width': `${SIZES.md.border}px`,
+    '--spinner-diameter': `${SIZES.md.diameter}px`,
+    '--spinner-rail-width': `${SIZES.md.border}px`,
   },
   lg: {
-    '--_spinner-diameter': `${SIZES.lg.diameter}px`,
-    '--_spinner-rail-width': `${SIZES.lg.border}px`,
+    '--spinner-diameter': `${SIZES.lg.diameter}px`,
+    '--spinner-rail-width': `${SIZES.lg.border}px`,
   },
   xl: {
-    '--_spinner-diameter': `${SIZES.xl.diameter}px`,
-    '--_spinner-rail-width': `${SIZES.xl.border}px`,
+    '--spinner-diameter': `${SIZES.xl.diameter}px`,
+    '--spinner-rail-width': `${SIZES.xl.border}px`,
   },
+});
+
+// The two ring colors, each carried on a real `color` property rather than
+// read from the custom property directly. That indirection is what resolves
+// every notation a theme can write — `var()`, `color-mix()`, and the
+// `currentColor` the inherit shade is built on — into a value the canvas can
+// stroke with; a custom property read back raw would hand `canvas` the
+// unresolved text. It is the same read-back the inherit shade already used,
+// generalized to all four shades.
+//
+// The track rides the spinner box and the arc rides the canvas inside it, so
+// the two travel on separate elements and neither needs a second channel. For
+// the inherit shade both fall back to `currentColor`, which is the box's
+// inherited color in either case — the arc's `currentColor` resolves against
+// the box, whose own color is that same inherited value.
+const trackShadeStyles = stylex.create({
+  default: {color: `var(--spinner-track-color, ${colorVars['--color-track']})`},
+  subtle: {color: `var(--spinner-track-color, ${colorVars['--color-track']})`},
+  onMedia: {
+    color: `var(--spinner-track-color, ${colorVars['--color-on-dark']})`,
+  },
+  inherit: {color: 'var(--spinner-track-color, currentColor)'},
+});
+
+const arcShadeStyles = stylex.create({
+  default: {color: `var(--spinner-color, ${colorVars['--color-accent']})`},
+  subtle: {
+    color: `var(--spinner-color, ${colorVars['--color-text-secondary']})`,
+  },
+  onMedia: {color: `var(--spinner-color, ${colorVars['--color-on-dark']})`},
+  inherit: {color: 'var(--spinner-color, currentColor)'},
 });
 
 // =============================================================================
@@ -126,11 +205,13 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLSpanElement>;
   /**
-   * Spinner size.
+   * Spinner size. The diameter is the ring itself; the rendered box adds the
+   * rail width on each side (xl draws a 28px ring in a 36px box). A theme can
+   * redefine what each named size resolves to — see `--spinner-diameter`.
    * - 'sm': 10px diameter
    * - 'md': 14px diameter
    * - 'lg': 18px diameter
-   * - 'xl': 36px diameter
+   * - 'xl': 28px diameter
    * @default 'md'
    */
   size?: SpinnerSize;
@@ -171,7 +252,7 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
 // =============================================================================
 
 /**
- * An animated loading indicator. Available in three sizes and two color shades.
+ * An animated loading indicator. Available in four sizes and four color shades.
  *
  * @example
  * ```
@@ -195,6 +276,8 @@ export function Spinner({
   ...restProps
 }: SpinnerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Colors are resolved from the cascade at draw time, so the tokens are read
+  // only as a redraw signal: their identity changes when the theme does.
   const {tokens: themeTokens} = useTheme();
 
   useEffect(() => {
@@ -208,90 +291,105 @@ export function Spinner({
       return;
     }
 
-    // Geometry is themeable: a theme can redefine what each named size resolves
-    // to via --_spinner-diameter / --_spinner-rail-width on the size-variant
-    // target. Read the resolved vars back off the canvas (custom properties
-    // inherit from the root span that carries them) and fall back to the SIZES
-    // constants so the drawn output is byte-identical when no theme overrides
-    // them. This mirrors the shade === 'inherit' getComputedStyle read below.
-    const canvasStyle = getComputedStyle(canvas);
-    const diameter =
-      parseFloat(canvasStyle.getPropertyValue('--_spinner-diameter')) ||
-      SIZES[size].diameter;
-    const border =
-      parseFloat(canvasStyle.getPropertyValue('--_spinner-rail-width')) ||
-      SIZES[size].border;
-    const pixelRatio = window.devicePixelRatio || 1;
+    // The box the canvas sits in. It carries the track color and is sized from
+    // the geometry vars, so it is both the second color channel and the thing
+    // whose resize means "the geometry changed".
+    const box = canvas.parentElement;
 
-    // Resolve colors from theme tokens (useTheme handles light/dark resolution).
-    // - default → accent ring on a track tuned to body luminance
-    // - subtle  → secondary text color, less prominent
-    // - onMedia → on-dark color, with a translucent track for photos/video
-    // - inherit → the inherited currentColor, so the ring matches the parent's
-    //   resolved foreground (e.g. a button's variant text color)
-    const inheritedColor = shade === 'inherit' ? canvasStyle.color : null;
-    const activeColor =
-      shade === 'inherit'
-        ? (inheritedColor as string)
-        : shade === 'onMedia'
-          ? themeTokens['--color-on-dark']
-          : shade === 'subtle'
-            ? themeTokens['--color-text-secondary']
-            : themeTokens['--color-accent'];
-    // Track derives from --color-on-dark for onMedia (with a 30% alpha so the
-    // ring reads against arbitrary backgrounds) and from --color-track for the
-    // body-luminance shades. For inherit, the track is the same currentColor
-    // drawn at reduced alpha via globalAlpha (see below). All branches are
-    // fully theme-driven.
-    const backgroundColor =
-      shade === 'inherit'
-        ? (inheritedColor as string)
-        : shade === 'onMedia'
-          ? `${themeTokens['--color-on-dark']}4D`
-          : themeTokens['--color-track'];
+    registerSpinnerVars();
 
-    const cssSize = diameter + border * 2;
+    let lastDrawn = '';
 
-    // Round to an even number of device pixels so the center stays on a whole
-    // pixel (avoids rotation jitter); keep CSS size pinned to cssSize (#2732).
-    const rawFrameSize = Math.round(cssSize * pixelRatio);
-    const frameSize = rawFrameSize + (rawFrameSize % 2);
+    const draw = () => {
+      const canvasStyle = getComputedStyle(canvas);
 
-    const scale = frameSize / cssSize;
-    const radius = (diameter / 2) * scale;
-    const lineWidth = border * scale;
+      // Registered as <length>, so these are resolved px.
+      const themedDiameter = parseFloat(
+        canvasStyle.getPropertyValue('--spinner-diameter'),
+      );
+      const themedRail = parseFloat(
+        canvasStyle.getPropertyValue('--spinner-rail-width'),
+      );
+      // A zero diameter is never a choice — it means the var never resolved
+      // (no stylesheet yet, or a themed value the registration rejected), so
+      // fall back to the built-in geometry. A zero rail IS a choice: a theme
+      // asking for no visible track gets one, which is why this tests for a
+      // finite number rather than truthiness.
+      const diameter =
+        Number.isFinite(themedDiameter) && themedDiameter > 0
+          ? themedDiameter
+          : SIZES[size].diameter;
+      const border = Number.isFinite(themedRail)
+        ? themedRail
+        : SIZES[size].border;
+      const pixelRatio = window.devicePixelRatio || 1;
 
-    canvas.height = canvas.width = frameSize;
-    canvas.style.width = canvas.style.height = cssSize + 'px';
+      // Both colors arrive resolved (see trackShadeStyles / arcShadeStyles):
+      // the arc from the canvas, the track from the box it sits in.
+      const activeColor = canvasStyle.color;
+      const backgroundColor =
+        box == null ? activeColor : getComputedStyle(box).color;
 
-    context.lineCap = 'round';
-    context.lineWidth = lineWidth;
+      const key = `${diameter}|${border}|${pixelRatio}|${activeColor}|${backgroundColor}`;
+      if (key === lastDrawn) {
+        return;
+      }
+      lastDrawn = key;
 
-    const center = frameSize / 2;
+      const cssSize = diameter + border * 2;
 
-    // Background circle (full ring, faded). For the inherit shade the track is
-    // the same currentColor as the arc, so fade it via globalAlpha (the
-    // computed color is an opaque rgb() string with no alpha channel to tweak).
-    context.beginPath();
-    context.arc(center, center, radius, 0, 2 * Math.PI);
-    context.strokeStyle = backgroundColor;
-    if (shade === 'inherit') {
-      context.globalAlpha = 0.3;
+      // Round to an even number of device pixels so the center stays on a whole
+      // pixel (avoids rotation jitter); keep CSS size pinned to cssSize (#2732).
+      const rawFrameSize = Math.round(cssSize * pixelRatio);
+      const frameSize = rawFrameSize + (rawFrameSize % 2);
+
+      const scale = frameSize / cssSize;
+      const radius = (diameter / 2) * scale;
+      const lineWidth = border * scale;
+
+      canvas.height = canvas.width = frameSize;
+      canvas.style.width = canvas.style.height = cssSize + 'px';
+
+      context.lineCap = 'round';
+      context.lineWidth = lineWidth;
+
+      const center = frameSize / 2;
+
+      // Background circle (full ring). onMedia and inherit fade it so the arc
+      // reads against an arbitrary backdrop; see TRACK_ALPHA.
+      context.beginPath();
+      context.arc(center, center, radius, 0, 2 * Math.PI);
+      context.strokeStyle = backgroundColor;
+      context.globalAlpha = TRACK_ALPHA[shade];
+      context.stroke();
+      context.globalAlpha = 1;
+
+      // Active arc (partial ring, colored)
+      context.beginPath();
+      context.arc(
+        center,
+        center,
+        radius,
+        START_POINT * Math.PI,
+        ((START_POINT + SPREAD) % 2) * Math.PI,
+      );
+      context.strokeStyle = activeColor;
+      context.stroke();
+    };
+
+    draw();
+
+    // The box is sized from the same vars the ring is drawn from, so its
+    // resize is the signal that a themed diameter or rail width changed —
+    // including changes no dependency can see, like a media query swapping the
+    // var or a root font-size change moving a rem. Redrawing only when the
+    // computed inputs actually differ keeps this to one draw on mount.
+    if (box == null || typeof ResizeObserver === 'undefined') {
+      return;
     }
-    context.stroke();
-    context.globalAlpha = 1;
-
-    // Active arc (partial ring, colored)
-    context.beginPath();
-    context.arc(
-      center,
-      center,
-      radius,
-      START_POINT * Math.PI,
-      ((START_POINT + SPREAD) % 2) * Math.PI,
-    );
-    context.strokeStyle = activeColor;
-    context.stroke();
+    const observer = new ResizeObserver(draw);
+    observer.observe(box);
+    return () => observer.disconnect();
   }, [shade, size, themeTokens]);
 
   const hasLabel = label != null;
@@ -320,19 +418,21 @@ export function Spinner({
         hasLabel ? '' : themeProps('spinner', {size, shade}),
         stylex.props(
           styles.spinner,
-          // Default geometry vars must ride the same element that carries the
-          // spinner theme target so a theme override wins over them and the
-          // canvas (which reads them back) sees the resolved value. When a
-          // label is present the target moves to the wrapping div, so the
-          // defaults go there instead and the span inherits them (setting them
-          // here too would shadow the div's themed value).
+          trackShadeStyles[shade],
+          // The geometry defaults ride whichever element carries the theme
+          // target, so a themed value overrides them instead of being shadowed
+          // by them. With a label that target is the wrapping div and the span
+          // inherits from it.
           !hasLabel && sizeStyles[size],
           !hasLabel && xstyle,
         ),
         hasLabel ? undefined : className,
         hasLabel ? {} : style,
       )}>
-      <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
+      <canvas
+        ref={canvasRef}
+        {...stylex.props(styles.canvas, arcShadeStyles[shade])}
+      />
     </span>
   );
 

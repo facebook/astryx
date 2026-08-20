@@ -278,13 +278,15 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   // other.
   '--_card-elevation',
   '--_card-ring',
-  // The spinner is canvas-drawn: diameter and rail (ring stroke) width are
-  // geometry the canvas reads back via getComputedStyle, not standard CSS
-  // properties on the target. A theme retheming what a named `size` resolves
-  // to sets these directly under a size-variant key, so no derived[] mapping
-  // fits.
-  '--_spinner-diameter',
-  '--_spinner-rail-width',
+  // The spinner's ring is painted on a canvas, so none of its four vars is a
+  // CSS property of the element: `width` and `borderWidth` would name a box
+  // the element does not have, and a `color` mapping would take the label's
+  // text color with it. They are public vars a theme sets directly under a
+  // size- or shade-variant key.
+  '--spinner-diameter',
+  '--spinner-rail-width',
+  '--spinner-color',
+  '--spinner-track-color',
 ]);
 
 // ---------------------------------------------------------------------------
