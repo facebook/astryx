@@ -10,7 +10,13 @@
  */
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, act, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  renderHook,
+  act,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -145,6 +151,43 @@ function RelocatingOpenContextHostingHarness({
     </>
   );
 }
+
+describe('useLayer identity', () => {
+  it('keeps the context ref and API object stable across rerenders', () => {
+    const {result, rerender} = renderHook(() => useLayer({mode: 'context'}));
+    const first = result.current;
+
+    rerender();
+
+    expect(result.current.ref).toBe(first.ref);
+    expect(result.current).toBe(first);
+  });
+
+  it('keeps the context ref stable when callbacks change', () => {
+    const firstOnShow = vi.fn();
+    const secondOnShow = vi.fn();
+    const {result, rerender} = renderHook(
+      ({onShow}: {onShow: () => void}) => useLayer({mode: 'context', onShow}),
+      {initialProps: {onShow: firstOnShow}},
+    );
+    const first = result.current;
+    const firstRef = result.current.ref;
+
+    rerender({onShow: secondOnShow});
+
+    expect(result.current).not.toBe(first);
+    expect(result.current.ref).toBe(firstRef);
+  });
+
+  it('keeps the fixed API object stable across rerenders', () => {
+    const {result, rerender} = renderHook(() => useLayer({mode: 'fixed'}));
+    const first = result.current;
+
+    rerender();
+
+    expect(result.current).toBe(first);
+  });
+});
 
 describe('getPositionTryFallbacks (issue #3671)', () => {
   const FLIPS = 'flip-block, flip-inline, flip-block flip-inline';

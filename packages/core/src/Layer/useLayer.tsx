@@ -676,23 +676,23 @@ function useLayerImplementation(
     clearContextMount();
   }, [onHide, clearContextMount]);
 
-  // Ref for trigger element (context mode only)
-  const ref: RefCallback<HTMLElement> | undefined =
-    mode === 'context'
-      ? (el: HTMLElement | null) => {
-          // Remove only THIS layer's anchor name from the previous element so
-          // other layers sharing the same trigger keep their anchors.
-          if (triggerRef.current && triggerRef.current !== el) {
-            removeAnchorName(triggerRef.current, anchorId);
-          }
+  // Stable ref for the trigger element (context mode only).
+  const contextRef = useCallback(
+    (el: HTMLElement | null) => {
+      // Remove only THIS layer's anchor name from the previous element so
+      // other layers sharing the same trigger keep their anchors.
+      if (triggerRef.current && triggerRef.current !== el) {
+        removeAnchorName(triggerRef.current, anchorId);
+      }
 
-          if (el) {
-            addAnchorName(el, anchorId);
-          }
+      if (el) {
+        addAnchorName(el, anchorId);
+      }
 
-          triggerRef.current = el;
-        }
-      : undefined;
+      triggerRef.current = el;
+    },
+    [anchorId],
+  );
 
   // Arm only when the dismissing gesture's click is still ahead of us. Some
   // engines deliver click first; in that order there is nothing left to absorb.
@@ -997,9 +997,9 @@ function useLayerImplementation(
     [popoverRefCallback, id, lightDismiss],
   );
 
-  if (mode === 'context') {
-    return {
-      ref: ref as RefCallback<HTMLElement>,
+  const contextResult = useMemo<InternalContextLayerReturn>(
+    () => ({
+      ref: contextRef,
       anchorId,
       show,
       hide,
@@ -1007,18 +1007,32 @@ function useLayerImplementation(
       wasJustDismissed,
       id,
       render: renderContext,
-    };
-  }
+    }),
+    [
+      contextRef,
+      anchorId,
+      show,
+      hide,
+      isOpen,
+      wasJustDismissed,
+      id,
+      renderContext,
+    ],
+  );
+  const fixedResult = useMemo<InternalFixedLayerReturn>(
+    () => ({
+      ref: undefined,
+      show,
+      hide,
+      isOpen,
+      wasJustDismissed,
+      id,
+      render: renderFixed,
+    }),
+    [show, hide, isOpen, wasJustDismissed, id, renderFixed],
+  );
 
-  return {
-    ref: undefined,
-    show,
-    hide,
-    isOpen,
-    wasJustDismissed,
-    id,
-    render: renderFixed,
-  };
+  return mode === 'context' ? contextResult : fixedResult;
 }
 
 export function useLayer(options: ContextLayerOptions): ContextLayerReturn;
@@ -1026,8 +1040,11 @@ export function useLayer(options: FixedLayerOptions): FixedLayerReturn;
 export function useLayer(
   options: ContextLayerOptions | FixedLayerOptions,
 ): ContextLayerReturn | FixedLayerReturn {
-  const {wasJustDismissed: _, ...layer} = useLayerImplementation(options);
-  return layer;
+  const internalLayer = useLayerImplementation(options);
+  return useMemo(() => {
+    const {wasJustDismissed: _, ...layer} = internalLayer;
+    return layer;
+  }, [internalLayer]);
 }
 
 /** @internal Shared with usePopover; not exported from the package barrel. */
