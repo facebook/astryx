@@ -730,10 +730,29 @@ describe('DateInputNext — nested scrollers keep their own touch gesture', () =
     };
   }
 
-  const touch = (el: Element, type: string) =>
-    el.dispatchEvent(
-      new Event(type, {bubbles: true, cancelable: type !== 'touchend'}),
-    );
+  /**
+   * A touch event realistic enough for a real listener to read.
+   *
+   * jsdom has no constructible `TouchEvent`, and a bare `Event` carries no
+   * `changedTouches` — which crashes any handler that reads one, including
+   * BottomSheet's (`event.changedTouches[0]`). That crash is an artifact of
+   * the fake event, not a bug: a browser's touchstart always has the list.
+   * The stand-in below carries it, so an event that DOES reach the sheet
+   * exercises the sheet rather than blowing up inside it.
+   */
+  const touch = (el: Element, type: string) => {
+    const event = new Event(type, {
+      bubbles: true,
+      cancelable: type !== 'touchend',
+    });
+    const point = {identifier: 1, clientX: 100, clientY: 200, target: el};
+    Object.defineProperties(event, {
+      changedTouches: {value: [point]},
+      touches: {value: type === 'touchend' ? [] : [point]},
+      targetTouches: {value: type === 'touchend' ? [] : [point]},
+    });
+    return el.dispatchEvent(event);
+  };
 
   it('stops a touch on the calendar from reaching the sheet', () => {
     renderAndOpen();
