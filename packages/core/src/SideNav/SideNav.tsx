@@ -42,7 +42,7 @@ import {
 import {SideNavCollapseButton} from './SideNavCollapseButton';
 import {useSideNavRenderMode} from './SideNavRenderContext';
 import {MobileNav} from '../MobileNav/MobileNav';
-import {useResizable} from '../Resizable/useResizable';
+import {useResizable, loadPersistedState} from '../Resizable/useResizable';
 import type {ResizableConfig} from '../Resizable/useResizable';
 import {ResizeHandle} from '../Resizable/ResizeHandle';
 import {themeProps} from '../utils/themeProps';
@@ -268,7 +268,7 @@ export interface SideNavProps extends BaseProps<HTMLElement> {
    *   - `defaultWidth` — initial width in pixels (default: 260)
    *   - `minWidth` — minimum width in pixels (default: 180)
    *   - `maxWidth` — maximum width in pixels (default: 480)
-   *   - `autoSaveId` — localStorage key for persisting width
+   *   - `autoSaveId` — localStorage key for persisting width and collapse state
    *   - `onWidthChange` — called when the width changes
    *
    * @default false
@@ -345,8 +345,20 @@ export function SideNav({
 
   // Collapse state (controlled + uncontrolled)
   const isControlled = controlledCollapsed !== undefined;
-  const [uncontrolledCollapsed, setUncontrolledCollapsed] =
-    useState(defaultIsCollapsed);
+  const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(() => {
+    // A persisted entry restores the collapse state from the previous
+    // session and wins over `defaultIsCollapsed`. Without this seed the
+    // resize hook would restore collapsed (width 0) while SideNav renders
+    // expanded — an invisible nav (#4790). Legacy width-only entries carry
+    // no collapse flag (isCollapsed: null) and leave the default alone.
+    if (isCollapsible && resizableConfig.autoSaveId) {
+      const persisted = loadPersistedState(resizableConfig.autoSaveId);
+      if (persisted?.isCollapsed != null) {
+        return persisted.isCollapsed;
+      }
+    }
+    return defaultIsCollapsed;
+  });
   const collapsed = isControlled ? controlledCollapsed : uncontrolledCollapsed;
   const navRef = useRef<HTMLElement>(null);
   const collapseStateRef = useRef<SideNavCollapseState>({
@@ -366,6 +378,10 @@ export function SideNav({
   );
 
   // Resize hook — callbacks keep SideNav in sync without effects.
+  // `initialIsCollapsed` seeds the hook with SideNav's own collapse state
+  // (controlled value or the restored/default uncontrolled value) so the
+  // two can never disagree at mount — a divergence here is what rendered
+  // the zero-width expanded nav in #4790.
   const resizableHook = useResizable({
     defaultSize: resizableConfig.defaultWidth ?? 260,
     minSizePx: resizableConfig.minWidth ?? 180,
@@ -373,11 +389,19 @@ export function SideNav({
     collapsible: isCollapsible,
     collapsedSize: COLLAPSE_THRESHOLD,
     autoSaveId: resizableConfig.autoSaveId,
+    initialIsCollapsed: isCollapsible ? collapsed : undefined,
     onSizeChange: resizableConfig.onWidthChange,
     onCollapseChange: isCollapsible ? setCollapsedState : undefined,
   });
 
   const toggle = useCallback(() => {
+    // With collapse disabled the resize hook ignores collapse(), so going
+    // further would leave collapseStateRef reporting a state the nav never
+    // entered — and nothing re-renders to correct it.
+    if (isResizable && !isCollapsible) {
+      return;
+    }
+
     const next = !collapsed;
 
     // Deprecated `handleRef` path only: an out-of-tree button reads this
@@ -387,15 +411,24 @@ export function SideNav({
       isCollapsed: next,
     };
 
-    setCollapsedState(next);
     if (isResizable) {
-      if (next) {
+      // The hook's onCollapseChange already drives setCollapsedState, so
+      // notifying here as well would fire onCollapsedChange twice per click.
+      // When the hook already matches the requested state — a controlled
+      // parent that refused a drag-collapse or an earlier toggle, say —
+      // collapse()/expand() notify nothing, so notify directly to keep the
+      // click meaningful.
+      if (next === resizableHook.isCollapsed) {
+        setCollapsedState(next);
+      } else if (next) {
         resizableHook.collapse();
       } else {
         resizableHook.expand();
       }
+    } else {
+      setCollapsedState(next);
     }
-  }, [collapsed, setCollapsedState, isResizable, resizableHook]);
+  }, [collapsed, setCollapsedState, isResizable, isCollapsible, resizableHook]);
 
   const showResizeHandle = isResizable && !collapsed;
 
