@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {useEffect, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -330,6 +331,61 @@ export const MixedContainers: Story = {
               </div>
             </LayoutContent>
           }
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Maximum derived from available width. Narrow the viewport until the ceiling
+ * drops below the panel and the panel follows it down; widen it again and the
+ * panel keeps the size it was left at rather than springing back.
+ */
+export const DerivedMax: Story = {
+  render: () => {
+    const shellRef = useRef<HTMLDivElement>(null);
+    const [available, setAvailable] = useState(0);
+
+    useEffect(() => {
+      const el = shellRef.current;
+      if (!el) {
+        return;
+      }
+      const observer = new ResizeObserver(entries => {
+        setAvailable(entries[0].contentRect.width);
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, []);
+
+    const sidebar = useResizable({
+      defaultSize: 320,
+      minSizePx: 120,
+      maxSizePx: available > 0 ? Math.round(available / 2) : Infinity,
+    });
+
+    return (
+      <div {...stylex.props(s.shell)} ref={shellRef}>
+        <Layout
+          height="fill"
+          start={
+            <>
+              <LayoutPanel
+                width={sidebar.size}
+                hasDivider={false}
+                xstyle={s.muted}
+                data-testid="derived-max-panel">
+                {Math.round(sidebar.size)}px
+              </LayoutPanel>
+              <ResizeHandle
+                direction="horizontal"
+                hasDivider
+                resizable={sidebar.props}
+              />
+            </>
+          }
+          content={<LayoutContent>Content</LayoutContent>}
         />
       </div>
     );

@@ -15,13 +15,13 @@ export const docs = {
     {
       name: 'minSizePx',
       type: 'number',
-      description: 'Minimum size in pixels.',
+      description: 'Minimum size in pixels. Raising it above the current size grows the region to match.',
       default: '50',
     },
     {
       name: 'maxSizePx',
       type: 'number',
-      description: 'Maximum size in pixels.',
+      description: 'Maximum size in pixels. Lowering it below the current size shrinks the region to match; raising it again leaves the size where it is.',
       default: 'Infinity',
     },
     {
@@ -78,6 +78,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use with Layout or AppShell sidebar for resizable navigation panels.'},
       {guidance: true, description: 'Set autoSaveId to persist user-chosen sizes across page reloads.'},
+      {guidance: true, description: 'Derive maxSizePx from available space when the region shares width with other content — the region follows the ceiling down as it moves.'},
       {guidance: false, description: 'Set minSizePx too small; content becomes unreadable. Prefer collapsible for panels that can hide entirely.'},
     ],
   },
@@ -92,8 +93,8 @@ export const docsDense = {
   description: 'Adds drag-to-resize behavior to layout regions. Supports single-/multi-region configs w/ snap points, collapsible panels, localStorage persistence, cascade resize ordering.',
   paramDescriptions: {
     defaultSize: 'initial size in px / percentage string (e.g. "20%").',
-    minSizePx: 'min size in px.',
-    maxSizePx: 'max size in px.',
+    minSizePx: 'min size in px. Raising it above current size grows region to match.',
+    maxSizePx: 'max size in px. Lowering it below current size shrinks region to match; raising it again leaves size where it is.',
     collapsible: 'whether dragging below collapsed threshold collapses region to zero.',
     snaps: 'px values to snap to during drag.',
     autoSaveId: 'key for localStorage persistence of size across sessions.',
@@ -111,6 +112,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use w/ Layout / AppShell sidebar for resizable navigation panels.'},
       {guidance: true, description: 'Set autoSaveId to persist user-chosen sizes across page reloads.'},
+      {guidance: true, description: 'Derive maxSizePx from available space when region shares width w/ other content — region follows ceiling down as it moves.'},
       {guidance: false, description: 'Set minSizePx too small; content becomes unreadable. Prefer collapsible for panels that can hide entirely.'},
     ],
   },
