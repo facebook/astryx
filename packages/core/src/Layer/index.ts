@@ -29,6 +29,15 @@ export type {
   FixedLayerReturn,
 } from './useLayer';
 
+// Layer dismissal stack — one Escape owner for every overlay family
+export {useLayerDismissal} from './useLayerDismissal';
+export type {
+  LayerEscapeBehavior,
+  UseLayerDismissalOptions,
+  UseLayerDismissalReturn,
+} from './useLayerDismissal';
+export {LayerDepthProvider, useLayerDepth} from './LayerDepthContext';
+
 // Layer provider
 export {LayerProvider} from './LayerProvider';
 export type {LayerProviderProps} from './LayerProvider';

@@ -27,8 +27,8 @@ import {
   type LayerPlacement,
 } from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {themeProps} from '../utils/themeProps';
-import {isImeKeyEvent} from '../utils/ime';
 import {
   colorVars,
   radiusVars,
@@ -441,33 +441,47 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     }
   }, [isOpen, clearTimeouts, layer]);
 
-  // Dismiss on Escape (WCAG 1.4.13 — dismissible). Uncontrolled tooltips only;
-  // a controlled tooltip's visibility is owned by the consumer. The listener is
-  // mounted for the lifetime of an uncontrolled tooltip rather than gated on
-  // `layer.isOpen` (React state, which can lag a frame behind the DOM) —
-  // `layer.hide()` self-guards and no-ops when the layer is already closed.
-  // Guarded against IME composition-cancel.
-  useEffect(() => {
-    if (isOpen !== undefined) {
-      return;
-    }
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') {
-        return;
+  // Dismiss on Escape (WCAG 1.4.13 — dismissible) through the shared layer
+  // stack. A visible tip is the top-most layer, so it takes the press and
+  // consumes it: Escape hides the tip and leaves the dialog underneath open.
+  // The user presses Escape again to close that. Consuming (rather than also
+  // dismissing what is beneath) keeps one rule with no per-component
+  // exceptions, and the failure mode is one extra keystroke instead of a
+  // dialog closing under someone who only wanted the tip gone.
+  //
+  // A controlled tooltip opts out of the stack entirely: its visibility is the
+  // consumer's state, and the system closing it behind their back would fight
+  // the value they are holding.
+  useLayerDismissal({
+    // Registered for the hook's lifetime rather than gated on `layer.isOpen`:
+    // that state can lag a frame behind the DOM, so a press arriving right after
+    // the layer appears would find nothing registered. Because this layer
+    // CONSUMES the press, a stale registration would be worse than a missed one
+    // — it would silently eat Escapes meant for the dialog underneath — so
+    // presence is answered from the DOM at press time instead of from state.
+    isActive: true,
+    isPresent: () => {
+      const el =
+        typeof document === 'undefined'
+          ? null
+          : document.getElementById(layer.id);
+      if (el == null) {
+        return false;
       }
-      if (isImeKeyEvent(e)) {
-        // Ignore Escape that is committing/cancelling an IME composition;
-        // see utils/ime.ts for why.
-        return;
+      try {
+        return el.matches(':popover-open');
+      } catch {
+        // Browsers without the Popover API (and some test environments) cannot
+        // answer the selector; fall back to the hook's own state.
+        return layer.isOpen;
       }
+    },
+    isEnabled: isOpen === undefined,
+    onDismiss: () => {
       clearTimeouts();
       layer.hide();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, layer, clearTimeouts]);
+    },
+  });
 
   // Render function that wraps layer.render with tooltip styling
   const renderTooltip = useCallback(

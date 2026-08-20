@@ -27,6 +27,7 @@ import {
   type LayerPlacement,
 } from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {
   colorVars,
   shadowVars,
@@ -339,18 +340,44 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     [layer.id, scheduleHide],
   );
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Stop propagation so parent components don't react to the same Escape
-        e.stopPropagation();
-        // Hide immediately without refocusing (we're already on trigger)
-        clearTimeouts();
-        layer.hide();
+  // Escape dismissal (WCAG 1.4.13) goes through the shared layer stack: a
+  // visible card is the top-most layer, so it takes the press and consumes it.
+  //
+  // This replaces a keydown listener on the TRIGGER that called
+  // stopPropagation() on any Escape while the trigger merely had focus — open
+  // card or not — so focusing a HoverCard trigger inside a Dialog silently ate
+  // the press that should have closed the Dialog. Presence is now answered from
+  // the DOM, so a closed card never claims a press.
+  useLayerDismissal({
+    // Registered for the hook's lifetime rather than gated on `layer.isOpen`:
+    // that state can lag a frame behind the DOM, so a press arriving right after
+    // the layer appears would find nothing registered. Because this layer
+    // CONSUMES the press, a stale registration would be worse than a missed one
+    // — it would silently eat Escapes meant for the dialog underneath — so
+    // presence is answered from the DOM at press time instead of from state.
+    isActive: true,
+    isPresent: () => {
+      const el =
+        typeof document === 'undefined'
+          ? null
+          : document.getElementById(layer.id);
+      if (el == null) {
+        return false;
+      }
+      try {
+        return el.matches(':popover-open');
+      } catch {
+        // Browsers without the Popover API (and some test environments) cannot
+        // answer the selector; fall back to the hook's own state.
+        return layer.isOpen;
       }
     },
-    [clearTimeouts, layer],
-  );
+    onDismiss: () => {
+      isEscapeDismissingRef.current = true;
+      clearTimeouts();
+      layer.hide();
+    },
+  });
 
   // Interaction ref that handles event listeners only
   const interactionRef: RefCallback<HTMLElement> = useCallback(
@@ -364,7 +391,6 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
           'focusout',
           handleFocusOut as EventListener,
         );
-        triggerRef.current.removeEventListener('keydown', handleKeyDown);
       }
 
       if (el) {
@@ -381,9 +407,6 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
           el.addEventListener('focusin', handleFocusIn);
           el.addEventListener('focusout', handleFocusOut as EventListener);
         }
-
-        // Attach keydown for Escape handling
-        el.addEventListener('keydown', handleKeyDown);
       }
 
       triggerRef.current = el;
@@ -394,7 +417,6 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       handleMouseLeave,
       handleFocusIn,
       handleFocusOut,
-      handleKeyDown,
     ],
   );
 

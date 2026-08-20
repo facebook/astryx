@@ -19,80 +19,19 @@
 import {useCallback, useEffect, useRef} from 'react';
 
 import {FOCUSABLE_SELECTOR} from './focusableSelector';
-import {isImeKeyEvent} from '../utils/ime';
+import {hasOpenLayer} from '../Layer/layerStack';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 
 /**
- * Module-level stack of active focus-trap Escape handlers.
+ * Whether any layer is currently registered on the shared dismissal stack.
  *
- * Every active `useFocusTrap` used to attach its own document-level `keydown`
- * listener with no coordination, so a single Escape press closed *every* open
- * layer at once (e.g. a popover nested inside a Dialog closed both). Tracking
- * traps in a shared stack lets only the top-most trap respond to Escape.
- *
- * "Top-most" is resolved by DOM containment first, push order second. Push
- * order alone is not reliable: React runs child effects before parent
- * effects, so when an outer and an inner (DOM-nested) trap mount in the SAME
- * commit, the inner trap pushes first and the outer trap would wrongly win a
- * pure last-pushed comparison.
- */
-interface EscapeStackEntry {
-  handler: () => void;
-  getContainer: () => HTMLElement | null;
-}
-
-const escapeStack: EscapeStackEntry[] = [];
-
-function pushEscapeHandler(entry: EscapeStackEntry): void {
-  escapeStack.push(entry);
-}
-
-function removeEscapeHandler(handler: () => void): void {
-  for (let i = escapeStack.length - 1; i >= 0; i--) {
-    if (escapeStack[i].handler === handler) {
-      escapeStack.splice(i, 1);
-      return;
-    }
-  }
-}
-
-/**
- * Resolve the top-most trap: walk the stack in push order, keeping the
- * deepest container by DOM containment. When a later entry's container
- * contains the current candidate's container, the candidate is nested inside
- * it and stays on top; otherwise the later push wins (containment for nested
- * traps, push order as the tiebreaker for unrelated ones).
- */
-function isTopEscapeHandler(handler: () => void): boolean {
-  if (escapeStack.length === 0) {
-    return false;
-  }
-  let top = escapeStack[0];
-  for (let i = 1; i < escapeStack.length; i++) {
-    const entry = escapeStack[i];
-    const topContainer = top.getContainer();
-    const entryContainer = entry.getContainer();
-    if (
-      topContainer != null &&
-      entryContainer != null &&
-      entryContainer !== topContainer &&
-      entryContainer.contains(topContainer)
-    ) {
-      // The current top is nested inside this entry — it stays on top.
-      continue;
-    }
-    top = entry;
-  }
-  return top.handler === handler;
-}
-
-/**
- * Whether any focus-trap Escape handler is currently active (i.e. a popover
- * layer is open). Other overlay primitives that manage their own Escape (e.g.
- * Dialog) can consult this to defer to a popover layered on top of them,
- * giving topmost-only dismissal until a full layer stack exists.
+ * @deprecated The focus trap no longer owns Escape coordination — every overlay
+ *   family shares one stack (`useLayerDismissal`), which routes each press to
+ *   the top-most layer. A layer that needs to know whether it is on top should
+ *   ask its own `isTopmost()` rather than whether anything at all is open.
  */
 export function hasActiveFocusTrapEscape(): boolean {
-  return escapeStack.length > 0;
+  return hasOpenLayer();
 }
 
 /**
@@ -243,6 +182,24 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
   // Track if focus change was triggered by keyboard (Tab key)
   const isKeyboardNavigationRef = useRef(false);
 
+  // Join the shared layer dismissal stack. The trap no longer listens for
+  // Escape itself: the stack owns one listener and routes each press to the
+  // top-most layer, so a popover inside a Dialog, a submenu inside a menu, and
+  // a modal inside a modal all peel off one at a time. A trap with no
+  // `onEscape` is not dismissible and stays off the stack, so a press flows
+  // past it to whatever is underneath.
+  useLayerDismissal({
+    isActive,
+    isEnabled: onEscape != null,
+    onDismiss: () => {
+      onEscape?.();
+    },
+    // The trap renders nothing, so it cannot push a depth provider around its
+    // content; hand the stack the container instead so two DOM-nested traps
+    // still resolve in the right order.
+    getContainer: () => containerRef.current,
+  });
+
   /**
    * Focus the first focusable element.
    */
@@ -361,42 +318,9 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
       return;
     }
 
-    // Register this trap on the shared Escape stack so only the top-most
-    // active trap responds to Escape. A stable identity per active period is
-    // enough — we push on activate and remove on cleanup. The container is
-    // read lazily: the ref may not be attached yet at effect time, and the
-    // stack resolves top-most by DOM containment at keydown time.
-    const escapeHandler = () => {
-      onEscape?.();
-    };
-    if (onEscape) {
-      pushEscapeHandler({
-        handler: escapeHandler,
-        getContainer: () => containerRef.current,
-      });
-    }
-
     const handleKeyDown = (event: KeyboardEvent) => {
       const container = containerRef.current;
       if (!container) {
-        return;
-      }
-
-      if (event.key === 'Escape' && onEscape) {
-        // Ignore Escape that is cancelling an IME composition, already handled
-        // by a nested handler, or not targeting the top-most trap.
-        if (
-          event.defaultPrevented ||
-          isImeKeyEvent(event) ||
-          !isTopEscapeHandler(escapeHandler)
-        ) {
-          return;
-        }
-        // Mark handled and stop propagation so an outer layer (e.g. a Dialog
-        // hosting this popover) does not also dismiss on the same press.
-        event.preventDefault();
-        event.stopPropagation();
-        onEscape();
         return;
       }
 
@@ -441,9 +365,6 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      if (onEscape) {
-        removeEscapeHandler(escapeHandler);
-      }
     };
   }, [isActive, onEscape]);
 
