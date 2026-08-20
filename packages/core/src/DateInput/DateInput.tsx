@@ -155,7 +155,7 @@ export type {
   InputStatus as DateInputStatus,
   InputStatusType as DateInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs, isFocusDetached} from '../utils';
+import {mergeProps, isFocusDetached} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -163,6 +163,7 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface DateInputProps extends Omit<
   BaseProps,
   'onChange' | 'defaultValue'
@@ -720,7 +721,7 @@ export function DateInput({
         />
       </button>
       <input
-        ref={mergeRefs(ref, inputRef)}
+        ref={useMergedRefs(ref, inputRef)}
         id={id}
         type="text"
         role="combobox"

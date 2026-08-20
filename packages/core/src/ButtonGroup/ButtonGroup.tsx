@@ -28,12 +28,13 @@ import {radiusVars, shadowVars} from '../theme/tokens.stylex';
 import type {Elevation} from '../utils/types';
 import {SizeProvider, useSize} from '../SizeContext/SizeContext';
 import {useListFocus} from '../hooks/useListFocus';
-import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {ButtonGroupContext} from './ButtonGroupContext';
 import type {ButtonGroupOrientation} from './ButtonGroupContext';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Props
 // =============================================================================
@@ -184,7 +185,7 @@ export function ButtonGroup({
     <ButtonGroupContext value={contextValue}>
       <SizeProvider value={size}>
         <div
-          ref={mergeRefs(ref, listRef)}
+          ref={useMergedRefs(ref, listRef)}
           {...props}
           {...mergeProps(
             themeProps('button-group', {size, orientation}),

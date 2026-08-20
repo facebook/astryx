@@ -26,11 +26,12 @@ import type {
   SegmentedControlSize,
   SegmentedControlLayout,
 } from './SegmentedControlContext';
-import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface SegmentedControlProps extends Omit<
   BaseProps<HTMLDivElement>,
   'onChange'
@@ -258,7 +259,7 @@ export function SegmentedControl({
   return (
     <SegmentedControlContext value={contextValue}>
       <div
-        ref={mergeRefs(ref, listRef, disabledMessageTooltip.ref)}
+        ref={useMergedRefs(ref, listRef, disabledMessageTooltip.ref)}
         {...rest}
         role="radiogroup"
         aria-label={label}

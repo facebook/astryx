@@ -50,7 +50,7 @@ import {AppShellMobileContext} from './AppShellMobileContext';
 import type {AppShellMobileContextValue} from './AppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs, isRenderable} from '../utils';
+import {mergeProps, isRenderable} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
@@ -58,6 +58,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {AppShellVariantMap} from './index';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
   ? ({
@@ -792,7 +793,7 @@ export function AppShell({
     <AppShellMobileContext value={mobileContextValue}>
       <div
         {...rest}
-        ref={mergeRefs(ref, shellRef)}
+        ref={useMergedRefs(ref, shellRef)}
         data-testid={dataTestId}
         {...mergeProps(
           themeProps('app-shell', {variant}),

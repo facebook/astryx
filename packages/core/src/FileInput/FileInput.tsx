@@ -54,13 +54,14 @@ export type {
   InputStatus as FileInputStatus,
   InputStatusType as FileInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {TranslatorFn} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
     return `${bytes} B`;
@@ -821,7 +822,7 @@ export function FileInput({
         </VisuallyHidden>
         <input
           {...rest}
-          ref={mergeRefs(ref, inputRef)}
+          ref={useMergedRefs(ref, inputRef)}
           id={id}
           type="file"
           accept={accept}

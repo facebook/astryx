@@ -40,13 +40,14 @@ import {Tooltip} from '../Tooltip/Tooltip';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
-import {mergeProps, mergeRefs, rtlStyles} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Types
 // =============================================================================
@@ -955,7 +956,7 @@ export function Slider({ref, ...props}: SliderProps) {
             />
           ))}
         <div
-          ref={mergeRefs(ref, trackRef, disabledMessageTooltip.ref)}
+          ref={useMergedRefs(ref, trackRef, disabledMessageTooltip.ref)}
           {...(isRange
             ? {role: 'group', 'aria-labelledby': labelID}
             : undefined)}
