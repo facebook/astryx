@@ -13,7 +13,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {semverGt} from '../../../foundation/env/semver.mjs';
+import {isValidSemver, semverGt} from '../../../foundation/env/semver.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 
 /**
@@ -26,7 +26,7 @@ import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 export function getLatestVersion() {
   // 1. Check env var (fastest — set by previous CLI run)
   const envVersion = process.env.ASTRYX_LATEST_VERSION;
-  if (envVersion && /^\d+\.\d+\.\d+/.test(envVersion)) {
+  if (isValidSemver(envVersion)) {
     return envVersion;
   }
 
