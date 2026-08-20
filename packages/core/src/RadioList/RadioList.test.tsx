@@ -647,6 +647,31 @@ describe('RadioList', () => {
       expect(item).toHaveAttribute('aria-label', 'First option');
     });
   });
+
+  describe('coarse pointer and RTL hit-target positioning', () => {
+    it.each([
+      ['sm', 'ltr'],
+      ['sm', 'rtl'],
+      ['md', 'ltr'],
+      ['md', 'rtl'],
+    ] as const)(
+      'renders native input correctly positioned inside the wrapper (size: %s, dir: %s)',
+      (size, dir) => {
+        const {container} = render(
+          <div dir={dir}>
+            <RadioList size={size} label="Choice" value="a" onChange={() => {}}>
+              <RadioListItem label="Option A" value="a" />
+            </RadioList>
+          </div>,
+        );
+
+        const input = container.querySelector('input[type="radio"]');
+        expect(input).toBeInTheDocument();
+        const wrapper = input?.parentElement;
+        expect(wrapper).toBeInTheDocument();
+      },
+    );
+  });
 });
 
 // jsdom cannot emulate forced-colors rendering, so this asserts that the

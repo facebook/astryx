@@ -46,30 +46,28 @@ const styles = stylex.create({
   },
   input: {
     position: 'absolute',
+    top: 0,
+    insetInlineStart: 0,
     margin: 0,
     padding: 0,
     opacity: 0,
     cursor: 'pointer',
     zIndex: 1,
-    minInlineSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
+  },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      top: '50%',
+      insetInlineStart: '50%',
+      transform: 'translate(-50%, -50%)',
+      minInlineSize: 24,
+      minBlockSize: 24,
     },
-    minBlockSize: {
-      default: null,
-      '@media (pointer: coarse)': '24px',
-    },
-    insetBlockStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    insetInlineStart: {
-      default: null,
-      '@media (pointer: coarse)': '50%',
-    },
-    transform: {
-      default: null,
-      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+  },
+  inputCoarseRtl: {
+    ':is([dir="rtl"] *)': {
+      '@media (pointer: coarse)': {
+        transform: 'translate(50%, -50%)',
+      },
     },
   },
   inputDisabled: {
@@ -211,6 +209,8 @@ export function RadioListItem({
         aria-describedby={description ? descriptionID : undefined}
         {...stylex.props(
           styles.input,
+          styles.inputCoarse,
+          styles.inputCoarseRtl,
           wrapperSizeStyles[size],
           isDisabled && styles.inputDisabled,
         )}
