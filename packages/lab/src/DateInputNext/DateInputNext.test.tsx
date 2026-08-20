@@ -703,6 +703,102 @@ describe('DateInputNext — month/year wheels', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Gesture ownership — the nested scrollers vs. the sheet's swipe-to-dismiss
+// ---------------------------------------------------------------------------
+
+describe('DateInputNext — nested scrollers keep their own touch gesture', () => {
+  /**
+   * Stand-in for `BottomSheet`'s swipe-to-dismiss listener: a NATIVE listener
+   * on an ancestor, in the bubble phase, which is exactly how the sheet
+   * attaches its own (`addEventListener('touchstart', …, {passive: true})` on
+   * its scrolling body). If an event reaches this, the sheet would have read
+   * it as a drag.
+   */
+  function watchAncestor(): {seen: string[]; stop: () => void} {
+    const seen: string[] = [];
+    const listener = (event: Event) => seen.push(event.type);
+    for (const type of ['touchstart', 'touchmove', 'touchend']) {
+      document.body.addEventListener(type, listener);
+    }
+    return {
+      seen,
+      stop: () => {
+        for (const type of ['touchstart', 'touchmove', 'touchend']) {
+          document.body.removeEventListener(type, listener);
+        }
+      },
+    };
+  }
+
+  const touch = (el: Element, type: string) =>
+    el.dispatchEvent(
+      new Event(type, {bubbles: true, cancelable: type !== 'touchend'}),
+    );
+
+  it('stops a touch on the calendar from reaching the sheet', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    touch(scroller, 'touchstart');
+    touch(scroller, 'touchmove');
+    // Without this, the sheet reads the body's scrollTop — which is 0 forever
+    // in a sheet sized to hug its content — and promotes the drag to a
+    // dismiss. Measured doing exactly that before the fix.
+    expect(ancestor.seen).not.toContain('touchstart');
+    expect(ancestor.seen).not.toContain('touchmove');
+    ancestor.stop();
+  });
+
+  it('stops a touch on a wheel from reaching the sheet', () => {
+    renderAndOpen();
+    fireEvent.click(
+      document.querySelector<HTMLElement>(
+        `.${stableClassName('date-input-next-title')}`,
+      )!,
+    );
+    const wheel = screen.getByRole('listbox', {name: 'Month'});
+    const ancestor = watchAncestor();
+    touch(wheel, 'touchstart');
+    touch(wheel, 'touchmove');
+    expect(ancestor.seen).not.toContain('touchstart');
+    expect(ancestor.seen).not.toContain('touchmove');
+    ancestor.stop();
+  });
+
+  it('lets touchend through, so the sheet can reset its own bookkeeping', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    touch(scroller, 'touchend');
+    expect(ancestor.seen).toContain('touchend');
+    ancestor.stop();
+  });
+
+  it('leaves the rest of the picker to the sheet', () => {
+    renderAndOpen();
+    // The header is not a scroller: a drag there is the sheet's to interpret,
+    // and it is one of the two places a dismiss can still start from.
+    const title = document.querySelector<HTMLElement>(
+      `.${stableClassName('date-input-next-title')}`,
+    )!;
+    const ancestor = watchAncestor();
+    touch(title, 'touchstart');
+    touch(title, 'touchmove');
+    expect(ancestor.seen).toEqual(['touchstart', 'touchmove']);
+    ancestor.stop();
+  });
+
+  it('does not swallow taps — stopPropagation must not reach click', () => {
+    const onChange = vi.fn();
+    renderAndOpen(<Controlled initial="2026-03-21" onChange={onChange} />);
+    fireEvent.click(
+      within(pane('March 2026')).getByRole('button', {name: /March 25, 2026/}),
+    );
+    expect(onChange).toHaveBeenCalledWith('2026-03-25');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Pure month arithmetic
 // ---------------------------------------------------------------------------
 

@@ -61,6 +61,7 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
 } from '@astryxdesign/core/utils';
 import {dateInputNextVars, dateInputNextGeometry} from './tokens.stylex';
+import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {
   fromMonthIndex,
   monthIndexOf,
@@ -359,6 +360,11 @@ export function MonthScroller({
   });
 
   useImperativeHandle(handleRef, () => ({scrollToMonth}), [scrollToMonth]);
+
+  // Keep the finger. Inside a BottomSheet a downward drag here would otherwise
+  // be read as swipe-to-dismiss — measured dismissing the sheet outright
+  // before this existed. See useOwnScrollGesture.
+  useOwnScrollGesture(scrollerRef);
 
   // rAF-throttled: a touch scroll fires far more scroll events than frames,
   // and all this does is move a label and widen a window.

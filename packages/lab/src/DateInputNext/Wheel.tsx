@@ -44,6 +44,7 @@ import {
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {focusOutlineStyles} from '@astryxdesign/core/utils';
 import {dateInputNextVars, dateInputNextGeometry} from './tokens.stylex';
+import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {useScrollSettle} from './useScrollSettle';
 
 const ITEM_BLOCK_SIZE = dateInputNextVars['--date-input-next-wheel-item-size'];
@@ -313,6 +314,11 @@ export function Wheel({
       }
     };
   }, [isActive, options.length, itemBlockSize]);
+
+  // Keep the finger. Inside a BottomSheet the sheet would otherwise read a
+  // downward drag here as swipe-to-dismiss; see useOwnScrollGesture. Gated on
+  // isActive because the hidden panel keeps its layout box.
+  useOwnScrollGesture(scrollerRef, isActive);
 
   // Commit on rest. A disabled row is bounced back to the committed one rather
   // than silently keeping a value the wheel is not showing.
