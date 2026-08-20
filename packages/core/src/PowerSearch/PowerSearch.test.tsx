@@ -505,11 +505,14 @@ describe('field menu sizing', () => {
     })),
   };
 
-  async function openMenu(props?: {maxSearchResults?: number}) {
+  async function openMenu(
+    props?: {maxSearchResults?: number},
+    config: PowerSearchConfig = manyFields,
+  ) {
     const user = userEvent.setup();
     render(
       <PowerSearch
-        config={manyFields}
+        config={config}
         filters={[]}
         onChange={() => {}}
         {...props}
@@ -525,9 +528,24 @@ describe('field menu sizing', () => {
   const optionCount = () =>
     screen.getAllByRole('option', {hidden: true}).length;
 
-  it('shows every field while browsing', async () => {
+  it('shows every field in a normal field list while browsing', async () => {
     await openMenu();
     expect(optionCount()).toBe(FIELD_COUNT);
+  });
+
+  it('caps an extreme field list at the 1,000-row browsing ceiling', async () => {
+    const extremeConfig: PowerSearchConfig = {
+      name: 'ExtremeFields',
+      fields: Array.from({length: 1001}, (_, i) => ({
+        key: `extreme_${i}`,
+        label: `Extreme ${i}`,
+        defaultOperator: 'is',
+        operators: [{key: 'is', label: 'is', value: {type: 'string'} as const}],
+      })),
+    };
+
+    await openMenu(undefined, extremeConfig);
+    expect(optionCount()).toBe(1000);
   });
 
   it('caps ranked results while typing', async () => {
@@ -547,7 +565,7 @@ describe('field menu sizing', () => {
     });
   });
 
-  it('never truncates browsing, whatever maxSearchResults says', async () => {
+  it('does not apply maxSearchResults while browsing', async () => {
     await openMenu({maxSearchResults: 3});
     expect(optionCount()).toBe(FIELD_COUNT);
   });

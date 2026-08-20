@@ -21,8 +21,8 @@ import type {PowerSearchItem, PowerSearchOperator, FilterValue} from './types';
 
 /**
  * @param maxTypedResults Cap applied to ranked results for a non-empty query.
- *   Browsing (empty query) is never capped: the field list is the config, and
- *   truncating it hides fields the user has no way to discover.
+ *   The source never truncates empty-query browsing; PowerSearch's view applies
+ *   a separate 1,000-row safety ceiling.
  */
 export function usePowerSearchSource(
   config: InternalConfig,

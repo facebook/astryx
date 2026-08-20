@@ -115,7 +115,7 @@ export const docs = {
       name: 'maxSearchResults',
       type: 'number',
       description:
-        'Max ranked results for a non-empty query. Does not affect a field value editor. Browsing with an empty query shows every field.',
+        'Max ranked results for a non-empty query. Does not affect a field value editor. Browsing with an empty query shows up to 1,000 fields.',
       default: '10',
     },
     {
@@ -301,7 +301,7 @@ export const docsZh = {
       name: 'maxSearchResults',
       type: 'number',
       description:
-        '非空查询的最大排名结果数。不影响字段值编辑器。使用空查询浏览时显示所有字段。',
+        '非空查询的最大排名结果数。不影响字段值编辑器。使用空查询浏览时最多显示 1,000 个字段。',
       default: '10',
     },
     {
