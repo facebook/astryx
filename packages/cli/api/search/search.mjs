@@ -36,10 +36,12 @@ import {pathToFileURL} from 'node:url';
 import {findCoreDir, CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
+  discoverIntegrationComponents,
   findComponentReadme,
   resolveImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {discoverHooks, findHookDoc} from '../../foundation/discovery/hook-discovery.mjs';
+import {loadIntegrationsSafely} from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {AstryxError} from '../error.mjs';
@@ -353,12 +355,12 @@ async function loadModuleDoc(docPath, exportName = 'docs') {
 }
 
 /**
- * Build component candidates: name + keywords + usage/description from the
- * component's .doc.mjs.
+ * Build component candidates from core's own tree: name + keywords +
+ * usage/description from the component's .doc.mjs.
  * @param {string} coreDir
  * @returns {Promise<Candidate[]>}
  */
-async function gatherComponents(coreDir) {
+async function gatherCoreComponents(coreDir) {
   const grouped = discoverComponents(coreDir);
   const names = Object.values(grouped).flat();
   /** @type {Candidate[]} */
@@ -384,6 +386,50 @@ async function gatherComponents(coreDir) {
     });
   }
   return candidates;
+}
+
+/**
+ * Build component candidates contributed by the project's configured
+ * integrations (astryx.config's `integrations`): name + keywords +
+ * usage/description from each component's .doc.mjs, same as core. Without
+ * this, an integration component is invisible to `search`/`build` even
+ * though `component --list`/`component <Name>` already resolve it — the two
+ * discovery paths silently disagreed.
+ * @param {string} cwd
+ * @returns {Promise<Candidate[]>}
+ */
+async function gatherIntegrationComponents(cwd) {
+  const loadedIntegrations = await loadIntegrationsSafely(cwd);
+  /** @type {Candidate[]} */
+  const candidates = [];
+  for (const integration of loadedIntegrations) {
+    for (const rec of discoverIntegrationComponents(integration)) {
+      const doc = await loadModuleDoc(rec.docPath);
+      candidates.push({
+        domain: 'component',
+        name: rec.name,
+        keywords: doc && Array.isArray(doc.keywords) ? doc.keywords : [],
+        description: doc ? doc.usage?.description || doc.description || '' : '',
+        _import: rec.package,
+      });
+    }
+  }
+  return candidates;
+}
+
+/**
+ * Build component candidates: core's own tree plus every configured
+ * integration's components.
+ * @param {string} coreDir
+ * @param {string} cwd
+ * @returns {Promise<Candidate[]>}
+ */
+async function gatherComponents(coreDir, cwd) {
+  const [core, integrations] = await Promise.all([
+    gatherCoreComponents(coreDir),
+    gatherIntegrationComponents(cwd),
+  ]);
+  return [...core, ...integrations];
 }
 
 /**
@@ -600,7 +646,7 @@ export async function search(query, options = {}) {
   /** @param {string} d */
   const wants = d => !type || type === d;
   const [components, hooks, docTopics, templates] = await Promise.all([
-    wants('component') ? gatherComponents(coreDir) : [],
+    wants('component') ? gatherComponents(coreDir, cwd) : [],
     wants('hook') ? gatherHooks(coreDir) : [],
     wants('doc') ? gatherDocs() : [],
     wants('template') ? gatherTemplates(cwd) : [],
