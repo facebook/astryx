@@ -104,6 +104,13 @@ export const docs = {
       default: '40',
     },
     {
+      name: 'maxOperatorMenuItems',
+      type: 'number',
+      description:
+        'Maximum suggestions shown in string and entity value typeaheads. Does not affect the main field search menu or enum value menus.',
+      default: '10',
+    },
+    {
       name: 'popoverSaveButtonLabel',
       type: 'string',
       description: 'Label for the save button in the edit popover.',
@@ -269,6 +276,13 @@ export const docsZh = {
       default: '40',
     },
     {
+      name: 'maxOperatorMenuItems',
+      type: 'number',
+      description:
+        '字符串和实体值预输入菜单中显示的最大建议数。不影响主字段搜索菜单或枚举值菜单。',
+      default: '10',
+    },
+    {
       name: 'popoverSaveButtonLabel',
       type: 'string',
       description: '编辑弹出窗口中保存按钮的标签。',
@@ -348,6 +362,8 @@ export const docsDense = {
     startIcon: 'Icon at input start, before filter tokens. Forwarded to internal Tokenizer.',
     statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     maxTokenLength: 'Max char length for filter value display in tokens.',
+    maxOperatorMenuItems:
+      'Max suggestions in string/entity value typeaheads; excludes main field search + enum menus.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',
     handleRef: 'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',
