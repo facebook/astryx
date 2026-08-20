@@ -92,9 +92,6 @@ cd astryx
 # Install dependencies
 pnpm install
 
-# Build core package first (required for Storybook)
-pnpm -F @astryxdesign/core build
-
 # Start Storybook for component development
 cd apps/storybook
 pnpm dev
@@ -102,19 +99,9 @@ pnpm dev
 
 ### Running Storybook
 
-Storybook loads pre-built packages from `dist/` folders, so you need to build packages before running Storybook.
-
-**First time setup:**
-
-```bash
-# Build all packages
-pnpm build
-
-# Or build just core
-pnpm -F @astryxdesign/core build
-```
-
-**Start Storybook:**
+Storybook resolves every workspace package to its `src/` directory and compiles
+it itself, so a fresh clone needs no build step first — `pnpm install` then
+`pnpm dev` is enough.
 
 ```bash
 cd apps/storybook
@@ -127,16 +114,8 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@astryxdesign/core`:**
-
-```bash
-# Rebuild core package
-pnpm -F @astryxdesign/core build
-
-# Restart Storybook to see changes
-cd apps/storybook
-pnpm dev
-```
+**If you make changes to `@astryxdesign/core`:** nothing extra. The dev server
+serves the edited source, so the story updates on save — no rebuild, no restart.
 
 ### Running the Doc Site
 
