@@ -122,6 +122,14 @@ const styles = stylex.create({
     // both together.
     width: 'calc(var(--spinner-diameter) + var(--spinner-rail-width) * 2)',
     height: 'calc(var(--spinner-diameter) + var(--spinner-rail-width) * 2)',
+    // Hosts that paint a spinner inside a fixed-size control are flex
+    // containers (a Switch thumb is 14px at the smallest size), and a flex
+    // item's default `flex-shrink: 1` lets the parent compress this box while
+    // the canvas keeps drawing at the size the vars asked for — the ring then
+    // paints outside its own clipped box. Refusing to shrink keeps the two
+    // measurements the same thing, so a size that does not fit is visibly
+    // wrong at the host rather than silently mismatched.
+    flexShrink: 0,
   },
   canvas: {
     backfaceVisibility: 'hidden',

@@ -169,6 +169,18 @@ describe('Spinner', () => {
       );
     });
 
+    it('refuses to be shrunk by a flex host', () => {
+      // Several hosts paint a spinner inside a fixed-size control and are flex
+      // containers — a Switch thumb is 14px at the smallest size, exactly the
+      // default box. Under the default `flex-shrink: 1` the parent compresses
+      // the box while the canvas keeps drawing at the size the vars asked for,
+      // so a themed diameter paints the ring outside its own clipped box
+      // (measured in Chromium: a 24px themed diameter drew a 32px ring in a
+      // 14px box). Refusing to shrink keeps the two the same measurement.
+      const {container} = render(<Spinner />);
+      expect(getComputedStyle(parts(container).box).flexShrink).toBe('0');
+    });
+
     it.each([
       ['default', 'var(--color-accent)', 'var(--color-track)'],
       ['subtle', 'var(--color-text-secondary)', 'var(--color-track)'],
