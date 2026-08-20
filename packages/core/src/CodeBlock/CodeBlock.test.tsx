@@ -396,3 +396,207 @@ describe('CodeBlock', () => {
     });
   });
 });
+
+const LINES = 'line one\nline two\nline three\nline four';
+const MINUS = '−'; // U+2212 minus sign, the remove marker glyph.
+
+function getLine(container: HTMLElement, line: number): HTMLElement {
+  const el = container.querySelector<HTMLElement>(`[data-line="${line}"]`);
+  if (el == null) {
+    throw new Error(`line ${line} not rendered`);
+  }
+  return el;
+}
+
+describe('CodeBlock highlightLines', () => {
+  it('renders plain number arrays with the neutral accent (backward compat)', () => {
+    const {container} = render(
+      <CodeBlock code={LINES} highlightLines={[2, 3]} />,
+    );
+    expect(getLine(container, 1).dataset.lineType).toBeUndefined();
+    expect(getLine(container, 2).dataset.lineType).toBe('highlight');
+    expect(getLine(container, 3).dataset.lineType).toBe('highlight');
+    // A neutral highlight is not a diff, so no marker gutter is drawn.
+    expect(container.querySelector('[data-diff-marker]')).toBeNull();
+  });
+
+  it('renders mixed numbers and {line, type} entries with per-type accents', () => {
+    const {container} = render(
+      <CodeBlock
+        code={LINES}
+        highlightLines={[
+          1,
+          {line: 2, type: 'add'},
+          {line: 3, type: 'remove'},
+          {line: 4, type: 'highlight'},
+        ]}
+      />,
+    );
+    expect(getLine(container, 1).dataset.lineType).toBe('highlight');
+    expect(getLine(container, 2).dataset.lineType).toBe('add');
+    expect(getLine(container, 3).dataset.lineType).toBe('remove');
+    expect(getLine(container, 4).dataset.lineType).toBe('highlight');
+
+    // Each accent type gets distinct styling; a plain number matches an
+    // explicit 'highlight'.
+    expect(getLine(container, 2).className).not.toBe(
+      getLine(container, 3).className,
+    );
+    expect(getLine(container, 1).className).toBe(
+      getLine(container, 4).className,
+    );
+  });
+
+  it('defaults {line} without a type to the neutral accent', () => {
+    const {container} = render(
+      <CodeBlock code={LINES} highlightLines={[1, {line: 2}]} />,
+    );
+    expect(getLine(container, 2).dataset.lineType).toBe('highlight');
+    expect(getLine(container, 2).className).toBe(
+      getLine(container, 1).className,
+    );
+  });
+
+  it('ignores out-of-range lines', () => {
+    const {container} = render(
+      <CodeBlock
+        code={LINES}
+        highlightLines={[
+          {line: 99, type: 'add'},
+          {line: 0, type: 'remove'},
+          -5,
+        ]}
+      />,
+    );
+    expect(container.querySelector('[data-line="99"]')).toBeNull();
+    expect(container.querySelector('[data-line-type]')).toBeNull();
+  });
+});
+
+describe('CodeBlock diff markers', () => {
+  it('draws +/- gutter markers on add/remove lines (non-colour affordance)', () => {
+    const {container} = render(
+      <CodeBlock
+        code={LINES}
+        highlightLines={[
+          {line: 2, type: 'add'},
+          {line: 3, type: 'remove'},
+        ]}
+      />,
+    );
+    expect(getLine(container, 2).dataset.diffMarker).toBe('+');
+    expect(getLine(container, 3).dataset.diffMarker).toBe(MINUS);
+    // Every line carries a marker cell (blank for context) so the gutter aligns.
+    expect(getLine(container, 1).dataset.diffMarker).toBe('');
+    expect(getLine(container, 4).dataset.diffMarker).toBe('');
+  });
+
+  it('does not draw markers for a neutral-only highlight', () => {
+    const {container} = render(
+      <CodeBlock
+        code={LINES}
+        highlightLines={[{line: 2, type: 'highlight'}, 3]}
+      />,
+    );
+    expect(container.querySelector('[data-diff-marker]')).toBeNull();
+  });
+
+  it('does not switch on the marker gutter for an out-of-range typed entry', () => {
+    // LINES has 4 lines; line 99 doesn't exist, so its add accent must not enable the gutter.
+    const {container} = render(
+      <CodeBlock code={LINES} highlightLines={[{line: 99, type: 'add'}]} />,
+    );
+    expect(container.querySelector('[data-diff-marker]')).toBeNull();
+  });
+});
+
+describe('CodeBlock language="diff"', () => {
+  const DIFF = [
+    '@@ -1,3 +1,3 @@',
+    ' {',
+    '-  "timeout": 10,',
+    '+  "timeout": 30,',
+    ' }',
+  ].join('\n');
+
+  it('derives add/remove accents and markers from a unified diff', () => {
+    const {container} = render(<CodeBlock code={DIFF} language="diff" />);
+    expect(getLine(container, 3).dataset.lineType).toBe('remove');
+    expect(getLine(container, 3).dataset.diffMarker).toBe(MINUS);
+    expect(getLine(container, 4).dataset.lineType).toBe('add');
+    expect(getLine(container, 4).dataset.diffMarker).toBe('+');
+    // Hunk/file headers are metadata: no accent, no marker glyph.
+    expect(getLine(container, 1).dataset.lineType).toBeUndefined();
+    expect(getLine(container, 1).dataset.diffMarker).toBe('');
+  });
+
+  it('strips the leading +/- from the displayed code', () => {
+    const {container} = render(<CodeBlock code={DIFF} language="diff" />);
+    expect(getLine(container, 3).textContent).toBe('  "timeout": 10,');
+    expect(getLine(container, 4).textContent).toBe('  "timeout": 30,');
+    expect(getLine(container, 3).textContent?.startsWith('-')).toBe(false);
+  });
+
+  it('copies the post-image — context + added, no removed lines or metadata', () => {
+    render(<CodeBlock code={DIFF} language="diff" />);
+    fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+    // The removed `"timeout": 10` line is NOT in the resulting file; only context + added lines are.
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      '{\n  "timeout": 30,\n}',
+    );
+  });
+
+  it('re-arms header detection across a multi-file patch', () => {
+    // The 2nd file's diff/---/+++ headers must be metadata, not treated as in-hunk content.
+    const diff = [
+      'diff --git a/f1 b/f1',
+      '--- a/f1',
+      '+++ b/f1',
+      '@@ -1 +1 @@',
+      '-a',
+      '+b',
+      'diff --git a/f2 b/f2',
+      '--- a/f2',
+      '+++ b/f2',
+      '@@ -1 +1 @@',
+      '-c',
+      '+d',
+    ].join('\n');
+    const {container} = render(<CodeBlock code={diff} language="diff" />);
+    // 2nd file's header lines are metadata (the multi-file fix), not add/remove content.
+    expect(getLine(container, 7).dataset.lineType).toBeUndefined(); // diff --git a/f2
+    expect(getLine(container, 8).dataset.lineType).toBeUndefined(); // --- a/f2
+    expect(getLine(container, 9).dataset.lineType).toBeUndefined(); // +++ b/f2
+    expect(getLine(container, 11).dataset.lineType).toBe('remove');
+    expect(getLine(container, 12).dataset.lineType).toBe('add');
+    fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('b\nd'); // post-image of both files
+  });
+
+  it('treats ---/+++ inside a hunk as content, not file headers', () => {
+    // A removed line whose content is `--` (wire `---`) and an added `++` (wire `+++`).
+    const diff = ['@@ -1 +1 @@', '---', '+++'].join('\n');
+    const {container} = render(<CodeBlock code={diff} language="diff" />);
+    expect(getLine(container, 2).dataset.lineType).toBe('remove');
+    expect(getLine(container, 2).textContent).toBe('--');
+    expect(getLine(container, 3).dataset.lineType).toBe('add');
+    expect(getLine(container, 3).textContent).toBe('++');
+  });
+
+  it('tolerates CRLF and excludes the no-newline sentinel from copy', () => {
+    const diff = [
+      '@@ -1 +1 @@\r',
+      ' ctx\r',
+      '-old\r',
+      '+new\r',
+      '\\ No newline at end of file',
+    ].join('\n');
+    const {container} = render(<CodeBlock code={diff} language="diff" />);
+    expect(getLine(container, 3).textContent).toBe('old'); // no dangling \r
+    expect(getLine(container, 4).dataset.lineType).toBe('add');
+    expect(getLine(container, 5).dataset.lineType).toBeUndefined(); // sentinel is metadata
+    fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+    // Post-image = context + added, CRLF normalized, sentinel dropped.
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ctx\nnew');
+  });
+});

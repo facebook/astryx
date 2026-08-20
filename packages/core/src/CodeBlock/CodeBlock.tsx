@@ -4,8 +4,9 @@
 /**
  * @file CodeBlock.tsx
  * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API, SyntaxTheme provider
- * @output Exports CodeBlock component and CodeBlockProps
- * @position Core implementation; read-only syntax-highlighted code display
+ * @output Exports CodeBlock, CodeBlockProps, CodeBlockHighlightLine, CodeBlockLineAccent
+ * @position Core implementation; read-only syntax-highlighted code display with
+ *   per-line accents (neutral highlight plus add/remove diff washes + markers)
  */
 
 import {
@@ -294,6 +295,91 @@ const styles = stylex.create({
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
   },
+  // Diff washes. Success/error-toned so an added line reads green and a removed
+  // line red; the wash is paired with a +/- marker (below) so the distinction
+  // never rests on colour alone (WCAG 2.1 SC 1.4.1).
+  lineAdded: {
+    backgroundColor: colorVars['--color-success-muted'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    paddingInline: spacingVars['--spacing-4'],
+  },
+  lineRemoved: {
+    backgroundColor: colorVars['--color-error-muted'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    paddingInline: spacingVars['--spacing-4'],
+  },
+  // Diff metadata (hunk `@@` and file headers under `language="diff"`): dimmed,
+  // not selectable, no marker — it is punctuation, not code.
+  lineMeta: {
+    color: 'var(--color-syntax-comment)',
+    userSelect: 'none',
+  },
+  // Diff marker gutter. The +/- (or a blank cell, for alignment) is drawn as an
+  // `::after` pseudo-element placed in a leading grid column — never a real
+  // child node, so range mode's bare-text-node offset mapping is untouched (the
+  // same reason the line number uses `::before`). The sign is the non-colour
+  // affordance the wash pairs with, mirroring AvatarStatusDot's shape.
+  lineMarkered: {
+    display: 'grid',
+    gridTemplateColumns: 'max-content 1fr',
+    columnGap: spacingVars['--spacing-3'],
+    '::after': {
+      // Blank by default (keeps the gutter aligned for context/metadata lines). The +/- glyphs come
+      // from lineMarkerAdd/lineMarkerRemove. Deliberately a literal, NOT content: attr(data-diff-marker):
+      // some bundler CSS minifiers (Next 16) silently drop attr() content in ::after, killing the marker.
+      content: '""',
+      gridColumn: '1',
+      gridRow: '1',
+      alignSelf: 'start',
+      textAlign: 'center',
+      minWidth: '1ch',
+      color: 'var(--color-syntax-punctuation)',
+      userSelect: 'none',
+      fontFamily: typographyVars['--font-family-code'],
+    },
+  },
+  // Both gutters: marker (`::after`) in column 1, line number (`::before`) in
+  // column 2, code in column 3. columnGap is 0 so each gutter controls its own
+  // trailing space via marginInlineEnd (a single grid gap can't give the marker
+  // a tight gap and the number the wider one the plain number gutter uses).
+  lineNumberedMarkered: {
+    display: 'grid',
+    gridTemplateColumns: 'max-content var(--_codeblock-gutter-width) 1fr',
+    '::after': {
+      // Blank by default (keeps the gutter aligned for context/metadata lines). The +/- glyphs come
+      // from lineMarkerAdd/lineMarkerRemove. Deliberately a literal, NOT content: attr(data-diff-marker):
+      // some bundler CSS minifiers (Next 16) silently drop attr() content in ::after, killing the marker.
+      content: '""',
+      gridColumn: '1',
+      gridRow: '1',
+      alignSelf: 'start',
+      textAlign: 'center',
+      minWidth: '1ch',
+      marginInlineEnd: spacingVars['--spacing-2'],
+      color: 'var(--color-syntax-punctuation)',
+      userSelect: 'none',
+      fontFamily: typographyVars['--font-family-code'],
+    },
+    '::before': {
+      content: 'attr(data-line)',
+      gridColumn: '2',
+      alignSelf: 'start',
+      textAlign: 'end',
+      marginInlineEnd: `calc(${spacingVars['--spacing-3']} + ${borderVars['--border-width']} + ${spacingVars['--spacing-4']})`,
+      color: 'var(--color-syntax-punctuation)',
+      userSelect: 'none',
+      fontFamily: typographyVars['--font-family-code'],
+    },
+  },
+  // The +/- glyphs, as literal `::after` content (see the note on lineMarkered) — layered over
+  // lineMarkered/lineNumberedMarkered's blank marker cell, so they inherit its grid placement.
+  lineMarkerAdd: {
+    '::after': {content: '"+"'},
+  },
+  lineMarkerRemove: {
+    // U+2212 MINUS SIGN — optically balances the plus better than a hyphen.
+    '::after': {content: '"\\2212"'},
+  },
   sizeSm: {
     fontSize: typeScaleVars['--text-supporting-size'],
   },
@@ -321,34 +407,69 @@ const styles = stylex.create({
 const LINE_CHUNK_SIZE = 20;
 const LINE_CHUNK_THRESHOLD = 100;
 
+// The glyph shown in the marker gutter for each diff accent. A minus sign
+// (U+2212), not a hyphen, so it optically balances the plus. Purely presentational
+// (an `::after` pseudo), so it is never part of the copied text.
+const DIFF_MARKERS: Record<'add' | 'remove', string> = {
+  add: '+',
+  remove: '−',
+};
+
+const accentLineStyles = {
+  highlight: styles.lineHighlighted,
+  add: styles.lineAdded,
+  remove: styles.lineRemoved,
+} as const;
+
 /**
  * Memoized chunk component — cheaper than memoizing every individual line.
  */
 const CodeChunk = React.memo(function CodeChunk({
   lines,
   startIndex,
-  highlightSet,
+  highlightMap,
   renderLineContent,
   lineNumbers,
+  markerMode,
+  metaLines,
 }: {
   lines: string[];
   startIndex: number;
-  highlightSet: Set<number> | null;
+  highlightMap: ReadonlyMap<number, CodeBlockLineAccent> | null;
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode;
   lineNumbers: boolean;
+  markerMode: boolean;
+  metaLines: ReadonlySet<number> | null;
 }) {
   return (
     <>
       {lines.map((line, j) => {
         const i = startIndex + j;
+        const n = i + 1;
+        const accent = highlightMap?.get(n) ?? null;
+        const isMeta = metaLines?.has(n) ?? false;
+        // In marker mode every line carries a marker cell (blank for context /
+        // metadata) so the gutter stays aligned down the block.
+        const marker =
+          accent === 'add' || accent === 'remove' ? DIFF_MARKERS[accent] : '';
         return (
           <div
             key={i}
-            data-line={i + 1}
+            data-line={n}
+            data-line-type={accent ?? undefined}
+            data-diff-marker={markerMode ? marker : undefined}
             {...stylex.props(
               styles.line,
-              lineNumbers && styles.lineNumbered,
-              (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
+              markerMode
+                ? lineNumbers
+                  ? styles.lineNumberedMarkered
+                  : styles.lineMarkered
+                : lineNumbers && styles.lineNumbered,
+              // Per-type glyph, layered after the blank marker cell so its ::after content wins.
+              markerMode && accent === 'add' && styles.lineMarkerAdd,
+              markerMode && accent === 'remove' && styles.lineMarkerRemove,
+              accent != null && accentLineStyles[accent],
+              isMeta && styles.lineMeta,
             )}>
             {renderLineContent(line, i)}
           </div>
@@ -360,9 +481,11 @@ const CodeChunk = React.memo(function CodeChunk({
 
 function renderLines(
   lines: string[],
-  highlightSet: Set<number> | null,
+  highlightMap: ReadonlyMap<number, CodeBlockLineAccent> | null,
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode,
   lineNumbers: boolean,
+  markerMode: boolean,
+  metaLines: ReadonlySet<number> | null,
   chunkSize: number = LINE_CHUNK_SIZE,
 ): React.ReactNode {
   chunkSize = Math.max(1, Math.floor(chunkSize));
@@ -372,9 +495,11 @@ function renderLines(
       <CodeChunk
         lines={lines}
         startIndex={0}
-        highlightSet={highlightSet}
+        highlightMap={highlightMap}
         renderLineContent={renderLineContent}
         lineNumbers={lineNumbers}
+        markerMode={markerMode}
+        metaLines={metaLines}
       />
     );
   }
@@ -394,14 +519,129 @@ function renderLines(
         <CodeChunk
           lines={chunkLines}
           startIndex={start}
-          highlightSet={highlightSet}
+          highlightMap={highlightMap}
           renderLineContent={renderLineContent}
           lineNumbers={lineNumbers}
+          markerMode={markerMode}
+          metaLines={metaLines}
         />
       </div>,
     );
   }
   return chunks;
+}
+
+// ---------------------------------------------------------------------------
+// Diff parsing
+// ---------------------------------------------------------------------------
+
+/**
+ * Accent applied to a single line via `highlightLines`.
+ * - `'highlight'`: neutral attention accent (same as a plain number entry).
+ * - `'add'`: success-toned diff wash (+ marker) for added lines.
+ * - `'remove'`: error-toned diff wash (− marker) for removed lines.
+ */
+export type CodeBlockLineAccent = 'add' | 'remove' | 'highlight';
+
+/**
+ * A `highlightLines` entry: a 1-indexed line number (neutral accent) or an
+ * object selecting a specific accent for that line.
+ */
+export type CodeBlockHighlightLine =
+  number | {line: number; type?: CodeBlockLineAccent};
+
+interface ParsedDiff {
+  // Display text for each line, with the leading +/-/space diff punctuation removed.
+  lines: string[];
+  // 1-indexed line → accent. Context lines are absent.
+  accents: Map<number, CodeBlockLineAccent>;
+  // 1-indexed lines that are diff metadata (`@@` hunk / file headers): dimmed,
+  // no marker, and excluded from the copied text.
+  meta: Set<number>;
+  // The code with all diff punctuation removed — what the copy button yields.
+  copyText: string;
+}
+
+// A `@@ … @@` (or combined-diff `@@@`) hunk header; also marks that we are now inside a hunk body.
+function isHunkHeader(line: string): boolean {
+  return line === '@@' || line.startsWith('@@ ') || line.startsWith('@@@');
+}
+// `---`/`+++` file headers occur only BEFORE a hunk. Inside a hunk they are content (a removed `--` /
+// added `++` line), so they must NOT be matched there — the caller gates this on `sawHunk`. (`diff `/
+// `index ` are handled separately: they can never be content, and they re-arm header detection.)
+function isFileHeader(line: string): boolean {
+  return (
+    line === '---' ||
+    line.startsWith('--- ') ||
+    line === '+++' ||
+    line.startsWith('+++ ')
+  );
+}
+
+/**
+ * Parse a unified diff so `language="diff"` renders +/- washes and markers without the caller pre-tagging
+ * lines. Hunk (`@@`) and pre-hunk file headers become dimmed, non-copyable metadata; `+`/`-`/context
+ * lines become add/remove/context with their leading marker stripped from the display text. Copy yields
+ * the POST-IMAGE — the resulting file (context + added), never removed lines or metadata. Tolerates CRLF
+ * and the git `\ No newline at end of file` sentinel; `---`/`+++` inside a hunk are treated as content.
+ */
+function parseUnifiedDiff(code: string): ParsedDiff {
+  const raw = code.split('\n');
+  if (raw.length > 1 && raw[raw.length - 1] === '') {
+    raw.pop();
+  }
+  const lines: string[] = [];
+  const accents = new Map<number, CodeBlockLineAccent>();
+  const meta = new Set<number>();
+  const copyParts: string[] = [];
+  let sawHunk = false;
+  raw.forEach((rawLine, i) => {
+    // Tolerate CRLF diffs: a trailing \r is transport, not content.
+    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
+    const n = i + 1;
+    if (isHunkHeader(line)) {
+      meta.add(n);
+      lines.push(line);
+      sawHunk = true;
+      return;
+    }
+    // Git's "\ No newline at end of file" is metadata wherever it appears.
+    if (line.startsWith('\\ ')) {
+      meta.add(n);
+      lines.push(line);
+      return;
+    }
+    // `diff --git` / `index ` begin a NEW file section (multi-file patch): always metadata, and they
+    // re-arm header detection so the next file's `---`/`+++` are recognized as headers again.
+    if (line.startsWith('diff ') || line.startsWith('index ')) {
+      meta.add(n);
+      lines.push(line);
+      sawHunk = false;
+      return;
+    }
+    // File headers count only OUTSIDE a hunk body; inside a hunk `---`/`+++` are removed/added content.
+    if (!sawHunk && isFileHeader(line)) {
+      meta.add(n);
+      lines.push(line);
+      return;
+    }
+    const first = line[0];
+    if (first === '+') {
+      accents.set(n, 'add');
+      const text = line.slice(1);
+      lines.push(text);
+      copyParts.push(text); // added → part of the post-image
+    } else if (first === '-') {
+      accents.set(n, 'remove');
+      lines.push(line.slice(1)); // removed → shown, but NOT in the post-image
+    } else {
+      // Context line: a single leading space is diff punctuation; strip it.
+      const text = first === ' ' ? line.slice(1) : line;
+      lines.push(text);
+      copyParts.push(text); // context → part of the post-image
+    }
+  });
+  return {lines, accents, meta, copyText: copyParts.join('\n')};
 }
 
 // ---------------------------------------------------------------------------
@@ -411,11 +651,34 @@ function renderLines(
 export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   ref?: React.Ref<HTMLPreElement>;
   code: string;
+  /**
+   * Syntax language for highlighting. The special value `"diff"` treats `code`
+   * as a unified diff: `+`/`-` lines render as add/remove washes with `+`/`−`
+   * markers, `@@`/file headers dim as metadata, and Copy yields the code with
+   * all diff punctuation stripped.
+   */
   language?: string;
   title?: string;
   hasLanguageLabel?: boolean;
   hasLineNumbers?: boolean;
-  highlightLines?: number[];
+  /**
+   * 1-indexed lines to accent. Plain numbers (and `type: 'highlight'`) use the
+   * neutral attention accent; `'add'` / `'remove'` render theme-aware
+   * success/error diff washes paired with a `+` / `−` gutter marker (so the
+   * distinction is not colour-only — WCAG 2.1 SC 1.4.1). Entries outside the
+   * code's line range are ignored. Ignored when `language="diff"`, which derives
+   * the accents from the diff itself.
+   *
+   * @example
+   * ```
+   * <CodeBlock
+   *   code={updatedConfig}
+   *   language="json"
+   *   highlightLines={[{line: 4, type: 'remove'}, {line: 5, type: 'add'}, 12]}
+   * />
+   * ```
+   */
+  highlightLines?: CodeBlockHighlightLine[];
   hasCopyButton?: boolean;
   onCopy?: () => void;
   isWrapped?: boolean;
@@ -589,19 +852,23 @@ function buildSpanLine(
 function SpanCodeContent({
   lines,
   tokenLines,
-  highlightSet,
+  highlightMap,
   isWrapped,
   sizeStyle,
   hasLineNumbers,
   maxDigits,
+  markerMode,
+  metaLines,
 }: {
   lines: string[];
   tokenLines: TokenLine[];
-  highlightSet: Set<number> | null;
+  highlightMap: ReadonlyMap<number, CodeBlockLineAccent> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
   hasLineNumbers: boolean;
   maxDigits: number;
+  markerMode: boolean;
+  metaLines: ReadonlySet<number> | null;
 }) {
   useInsertionEffect(() => {
     ensureHighlightStyles();
@@ -630,7 +897,14 @@ function SpanCodeContent({
         hasLineNumbers && styles.codeNumbered,
         hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
+      {renderLines(
+        lines,
+        highlightMap,
+        renderLineContent,
+        hasLineNumbers,
+        markerMode,
+        metaLines,
+      )}
     </code>
   );
 }
@@ -642,19 +916,23 @@ function SpanCodeContent({
 function RangeCodeContent({
   lines,
   tokenLines,
-  highlightSet,
+  highlightMap,
   isWrapped,
   sizeStyle,
   hasLineNumbers,
   maxDigits,
+  markerMode,
+  metaLines,
 }: {
   lines: string[];
   tokenLines: TokenLine[];
-  highlightSet: Set<number> | null;
+  highlightMap: ReadonlyMap<number, CodeBlockLineAccent> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
   hasLineNumbers: boolean;
   maxDigits: number;
+  markerMode: boolean;
+  metaLines: ReadonlySet<number> | null;
 }) {
   const codeRef = useRef<HTMLElement>(null);
 
@@ -690,7 +968,14 @@ function RangeCodeContent({
         hasLineNumbers && styles.codeNumbered,
         hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
+      {renderLines(
+        lines,
+        highlightMap,
+        renderLineContent,
+        hasLineNumbers,
+        markerMode,
+        metaLines,
+      )}
     </code>
   );
 }
@@ -746,27 +1031,84 @@ export function CodeBlock({
     (highlightMode === 'auto' && !hasHighlightAPI()) ||
     (highlightMode === 'auto' && isSafari());
 
+  const isDiff = language === 'diff';
+
+  // Under `language="diff"` the raw code is a unified diff: derive the display
+  // lines (markers stripped), per-line add/remove accents, metadata lines, and
+  // the clean copy text from it. Otherwise `code` is rendered as-is.
+  const parsedDiff = useMemo(
+    () => (isDiff ? parseUnifiedDiff(code) : null),
+    [isDiff, code],
+  );
+
   const lines = useMemo(() => {
+    if (parsedDiff) {
+      return parsedDiff.lines;
+    }
     const l = code.split('\n');
     if (l.length > 1 && l[l.length - 1] === '') {
       l.pop();
     }
     return l;
-  }, [code]);
+  }, [parsedDiff, code]);
 
-  const tokenLines = useTokenLines(code, language, customTokenizer);
-
-  const highlightSet = useMemo(
-    () => (highlightLines ? new Set(highlightLines) : null),
-    [highlightLines],
+  // Diff display is plain text plus washes/markers — don't run the syntax
+  // tokenizer over raw diff punctuation (its offsets wouldn't line up with the
+  // marker-stripped display text).
+  const tokenLines = useTokenLines(
+    isDiff ? '' : code,
+    language,
+    customTokenizer,
   );
 
+  const highlightMap = useMemo(() => {
+    if (parsedDiff) {
+      return parsedDiff.accents.size > 0 ? parsedDiff.accents : null;
+    }
+    if (!highlightLines || highlightLines.length === 0) {
+      return null;
+    }
+    const map = new Map<number, CodeBlockLineAccent>();
+    for (const entry of highlightLines) {
+      if (typeof entry === 'number') {
+        map.set(entry, 'highlight');
+      } else {
+        map.set(entry.line, entry.type ?? 'highlight');
+      }
+    }
+    return map;
+  }, [parsedDiff, highlightLines]);
+
+  // The marker gutter turns on only when an IN-RANGE line is add/remove (from a diff or explicit
+  // `{type}` entries) — a neutral highlight alone, or an out-of-range typed entry, needs no marker.
+  const markerMode = useMemo(() => {
+    if (!highlightMap) {
+      return false;
+    }
+    for (const [line, accent] of highlightMap) {
+      if (
+        (accent === 'add' || accent === 'remove') &&
+        line >= 1 &&
+        line <= lines.length
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }, [highlightMap, lines.length]);
+
+  const metaLines =
+    parsedDiff && parsedDiff.meta.size > 0 ? parsedDiff.meta : null;
+
+  // Copy yields the code without any diff punctuation.
+  const copyText = parsedDiff ? parsedDiff.copyText : code;
+
   const handleCopy = useCallback(async () => {
-    const didCopy = await copy(code);
+    const didCopy = await copy(copyText);
     if (didCopy) {
       onCopy?.();
     }
-  }, [code, copy, onCopy]);
+  }, [copyText, copy, onCopy]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   // Digits in the largest line number — sizes the gutter column width.
@@ -889,21 +1231,25 @@ export function CodeBlock({
           <SpanCodeContent
             lines={lines}
             tokenLines={tokenLines}
-            highlightSet={highlightSet}
+            highlightMap={highlightMap}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
             hasLineNumbers={hasLineNumbers}
             maxDigits={maxLineDigits}
+            markerMode={markerMode}
+            metaLines={metaLines}
           />
         ) : (
           <RangeCodeContent
             lines={lines}
             tokenLines={tokenLines}
-            highlightSet={highlightSet}
+            highlightMap={highlightMap}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
             hasLineNumbers={hasLineNumbers}
             maxDigits={maxLineDigits}
+            markerMode={markerMode}
+            metaLines={metaLines}
           />
         )}
       </div>

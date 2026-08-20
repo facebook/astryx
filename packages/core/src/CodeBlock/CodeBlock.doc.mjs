@@ -20,7 +20,7 @@ export const docs = {
     {
       name: 'language',
       type: 'string',
-      description: 'Language for syntax highlighting. Use "plaintext" to disable.',
+      description: 'Language for syntax highlighting. Use "plaintext" to disable. The special value "diff" renders a unified diff: +/- lines become add/remove washes with +/- markers, @@/file headers dim as metadata, and Copy yields the post-image (the resulting code: context + added lines, no removed lines or metadata). Tolerates CRLF and the git no-newline sentinel.',
       default: "'plaintext'",
     },
     {
@@ -42,8 +42,8 @@ export const docs = {
     },
     {
       name: 'highlightLines',
-      type: 'number[]',
-      description: '1-indexed line numbers to highlight.',
+      type: "Array<number | {line: number; type?: 'add' | 'remove' | 'highlight'}>",
+      description: "1-indexed lines to accent. Plain numbers (and type: 'highlight') use the neutral attention accent; 'add' / 'remove' render theme-aware success/error diff washes paired with a +/- gutter marker (so the distinction is not colour-only). Entries outside the code's line range are ignored. Ignored when language=\"diff\", which derives accents from the diff.",
     },
     {
       name: 'hasCopyButton',
@@ -131,6 +131,34 @@ export const docs = {
   components: [
     {name: 'Code'},
   ],
+  examples: [
+    {
+      label: 'Diff highlighting',
+      code: `
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+
+<CodeBlock
+  code={'{\\n  "timeout": 10,\\n  "timeout": 30,\\n}'}
+  language="json"
+  highlightLines={[
+    {line: 2, type: 'remove'},
+    {line: 3, type: 'add'},
+  ]}
+/>;
+`,
+    },
+    {
+      label: 'Unified diff (language="diff")',
+      code: `
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+
+<CodeBlock
+  language="diff"
+  code={'@@ -1,3 +1,3 @@\\n {\\n-  "timeout": 10,\\n+  "timeout": 30,\\n }'}
+/>;
+`,
+    },
+  ],
   playground: {
     defaults: {
       code: "import {Button} from '@astryxdesign/core/Button';\n\nexport function App() {\n  return <Button label=\"Hello\" variant=\"primary\" />;\n}",
@@ -163,7 +191,7 @@ export const docs = {
       {name: 'Header Bar', required: false, description: 'Shows the title, language label, and copy button. Appears when any of these props are set.'},
       {name: 'Line Numbers', required: false, description: 'Numbered gutter along the left edge. Enable with hasLineNumbers.'},
       {name: 'Code Body', required: true, description: 'The syntax-highlighted code content.'},
-      {name: 'Highlighted Lines', required: false, description: 'Background accent on specific lines to draw attention.'},
+      {name: 'Highlighted Lines', required: false, description: 'Background accent on specific lines to draw attention. Supports a neutral accent plus add/remove diff washes with +/- markers for showing code changes.'},
       {name: 'Copy Button', required: false, description: 'Copies the code string to the clipboard. Shown by default.'},
     ],
   },
