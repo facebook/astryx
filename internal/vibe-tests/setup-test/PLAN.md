@@ -97,7 +97,12 @@ with the analyzer blind to the condition id (Checker Protocol §1).
 5. **Mode dependence** — probes that render differently under
    `prefers-color-scheme: light` and `dark` in the arm, but did not in the app
    before. This is "works on my machine", made into a number.
-6. **Variable capture** — root custom properties whose resolved value the install
+6. **Cascade inversion** — read off the EMITTED CSS, not the source: does a
+   system layer end up outranking the app's utility layer? The recipe's whole job
+   is to sit between the app's base and its utilities, and whether it does is
+   decided by where one statement sits. Source review cannot see this, because
+   the `@layer` statement does not survive the build.
+7. **Variable capture** — root custom properties whose resolved value the install
    changed, or emptied. The app's own vocabulary, taken over by name.
 
 Verdicts: `broken-build`, `noisy`, **`silent-damage`**, `cosmetic-drift`, `clean`.
@@ -105,7 +110,7 @@ Verdicts: `broken-build`, `noisy`, **`silent-damage`**, `cosmetic-drift`, `clean
 
 ## Mechanism-verification run
 
-Three recipes (`apply-recipe.mjs`), applied to the fixture by script, no agent:
+Four recipes (`apply-recipe.mjs`), applied to the fixture by script, no agent:
 
 - **`docs-verbatim`** — `packages/core/README.md` § _Next.js + Tailwind_ and
   `astryx docs styling-libraries` § _Tailwind_, transcribed. Both print the same
@@ -113,26 +118,32 @@ Three recipes (`apply-recipe.mjs`), applied to the fixture by script, no agent:
   `@import 'tailwindcss'` is replaced.
 - **`docs-no-bridge`** — the same, minus `tailwind-theme.css`. Not documented
   anywhere; included to separate the bridge's damage from the rest.
+- **`appended-at-end`** — the same imports and the same layer statement, added to
+  the END of the app's existing `globals.css` instead of the top. This is what
+  "add these imports to your globals.css" produces when the file already has
+  content.
 - **`layered-in-place`** — the candidate: keep the app's Tailwind entry, declare
-  the layer order, three system sheets, `mode="dark"` on the provider.
+  the layer order above it, three system sheets, `mode="dark"` on the provider.
 
 `--scheme light` (a light-mode machine, and every headless CI):
 
-| arm                | builds | console | app regressions                              | unreadable | mode-dependent | vars captured | verdict           |
-| ------------------ | ------ | ------- | -------------------------------------------- | ---------- | -------------- | ------------- | ----------------- |
-| `docs-verbatim`    | yes    | 0       | **30** (typo 22, color 4, geom 1, spacing 3) | **3**      | 3              | 5             | **silent-damage** |
-| `docs-no-bridge`   | yes    | 0       | 11 (typo 7, color 4)                         | **3**      | 3              | 2             | **silent-damage** |
-| `layered-in-place` | yes    | 0       | 11 (typo 7, color 4)                         | 0          | 0              | 2             | cosmetic-drift    |
+| arm                | builds | console | app regressions                               | unreadable | cascade      | mode-dependent | vars captured | verdict           |
+| ------------------ | ------ | ------- | --------------------------------------------- | ---------- | ------------ | -------------- | ------------- | ----------------- |
+| `docs-verbatim`    | yes    | 0       | **30** (typo 22, color 4, geom 1, spacing 3)  | **3**      | ok           | 3              | 5             | **silent-damage** |
+| `docs-no-bridge`   | yes    | 0       | 11 (typo 7, color 4)                          | **3**      | ok           | 3              | 2             | **silent-damage** |
+| `appended-at-end`  | yes    | 0       | **38** (typo 13, color 12, geom 6, spacing 7) | 0          | **INVERTED** | 0              | 2             | **silent-damage** |
+| `layered-in-place` | yes    | 0       | 11 (typo 7, color 4)                          | 0          | ok           | 0              | 2             | cosmetic-drift    |
 
-`--scheme dark` (a dark-mode laptop), same three sandboxes:
+`--scheme dark` (a dark-mode laptop), same four sandboxes:
 
-| arm                | unreadable | verdict        |
-| ------------------ | ---------- | -------------- |
-| `docs-verbatim`    | **0**      | cosmetic-drift |
-| `docs-no-bridge`   | **0**      | cosmetic-drift |
-| `layered-in-place` | 0          | cosmetic-drift |
+| arm                | unreadable | cascade      | verdict        |
+| ------------------ | ---------- | ------------ | -------------- |
+| `docs-verbatim`    | **0**      | ok           | cosmetic-drift |
+| `docs-no-bridge`   | **0**      | ok           | cosmetic-drift |
+| `appended-at-end`  | 0          | **INVERTED** | silent-damage  |
+| `layered-in-place` | 0          | ok           | cosmetic-drift |
 
-Three things fall out of that, and each is a separable cause:
+Four causes fall out, and each is separately fixable.
 
 **1. The recipe is written for an empty file.** Every documented Tailwind recipe
 replaces `globals.css` wholesale: Tailwind imported in three pieces so the system
@@ -164,13 +175,67 @@ black on a near black surface — contrast 15.79 → **1.10**. `<Theme>` takes a
 default is `system`, the same install is fine on a dark-mode laptop and
 unreadable in CI, which is why both schemes are measured.
 
-The candidate recipe removes the legibility failure and the mode dependence
-entirely and cuts the regressions from 30 to 11. What it cannot remove is the
+**4. The layer statement is POSITIONAL, and the wrong position is worse than no
+recipe at all.** `appended-at-end` gets the color mode right and the imports
+right, and is still the most damaging arm: 38 changed properties, borders and
+padding stripped off every control, the type scale blown out.
+
+The mechanism is a CSS rule with no diagnostic attached to it. `@layer a, b, c;`
+only orders names that are **not already registered**, and the app's own
+`@import 'tailwindcss'` registers `theme`, `base` and `utilities` first. A
+statement below that import can only append the remaining names _after_ them, so
+the emitted cascade is
+
+```
+properties > theme > base > utilities > reset > astryx-base > astryx-theme
+```
+
+instead of
+
+```
+properties > reset > theme > base > astryx-base > astryx-theme > utilities
+```
+
+— the exact inverse of what the recipe exists to arrange. The system's reset then
+outranks every utility the app is already using, and `border-width: 0` on
+`:where(*)` quietly removes every border in the app.
+
+This is why the measurement reads the **emitted** layer order rather than the
+source. The `@layer` statement does not survive the build: Tailwind's processing
+rewrites it and the bundle carries only `@layer components;`, so the effective
+order is the order the layer BLOCKS first appear in the output. Source review
+cannot see this, and neither can a class-string lint.
+
+The candidate recipe removes the legibility failure, the mode dependence and the
+inversion, and cuts the regressions from 30 to 11. What it cannot remove is the
 **residue**: 11 properties still move, all of them typography (the theme's font
 family) and inherited color. That is the number the ceiling arm exists to expose,
 and it is a product question, not a docs question — there is currently no way to
 adopt the system's components without adopting its type ramp for everything under
 the provider.
+
+### The residue has a name
+
+Every arm, the candidate included, captures the same two root variables:
+`--color-border` and `--color-accent` resolve to the system's
+`light-dark(...)` values instead of the app's. That is not a rounding error in
+the measurement — it is a known, separately-diagnosed collision, and it cost a
+real afternoon in a different app.
+
+The system's tokens are declared inside `@scope … to ([data-astryx-theme])`, so
+they look contained. They are not: **`@scope` bounds selector MATCHING, not
+INHERITANCE**, and the theme provider deliberately syncs
+`data-astryx-theme` onto `<html>` so portals and top-layer content can find it.
+The scope root is therefore the document element, and any app variable of the
+same name is shadowed for the whole tree. Tailwind's `bg-accent` reads
+`var(--color-accent)`, so an app that named its own accent the obvious thing
+silently starts painting the system's.
+
+The fix that worked is one line and belongs in the recipe: re-assert the app's
+own values ON the boundary element, `[data-astryx-theme]`, rather than in
+`:root` where the system's scoped block outranks them. It is not in any
+document, and the harness reports the collision without yet asserting the fix —
+that is a gap in this plan, not a finding about the app.
 
 ## Pre-registered decision rule
 
@@ -186,6 +251,49 @@ Set before any agent runs, so results cannot be read backwards.
   against the packages — not evidence that guidance needs more words.
 - If `s1-pointer` alone closes most of the gap, the finding is discovery and the
   fix belongs in `astryx init`, not in prose.
+
+## This is not a new discovery, which is the point
+
+Each of the four causes has already been hit and written down by someone, in a
+place the next person will not look. The value of the harness is that it turns
+those into a number a change can be measured against.
+
+- **Cause 4** was a production incident in agentcloud (D114534048). A stray
+  second `import '@astryxdesign/core/astryx.css'` in `layout.tsx` put
+  `astryx-base` at the top of the bundle and therefore at the BOTTOM of the
+  cascade; a Settings button rendered square because `--_button-radius` resolved
+  against a token that no longer applied. The write-up is the clearest statement
+  of the mechanism anywhere: _"That statement does not survive compilation …
+  the effective priority order is whatever order the layer blocks first appear
+  in the output, which is decided purely by import order."_ That diff's guard —
+  an e2e spec that reads the shipped CSS — is the same measurement this harness
+  makes, generalized: _"This class of bug is silent: nothing errors, styles just
+  quietly lose."_
+- **Cause 2** is refused by name in agentcloud's `globals.css`, in a comment
+  written the same week the bridge was being recommended everywhere else: it
+  _"maps the relationship the wrong way round … it is meant for Astryx-only
+  apps; here navi owns the utility layer."_
+- **Cause 3** has a sibling in the same app: `dark:` utilities followed the
+  reader's operating system rather than the theme they had picked, because
+  Tailwind v4 resolves `dark:` from `prefers-color-scheme` unless a
+  `@custom-variant dark` is registered. Same shape, same silence, opposite
+  direction.
+- **Cause 1** has an abandoned fix. `nest add xds`'s first version _removed_
+  Tailwind as a "superseded package"; its successor detects the app's styling
+  system and injects the layered block — but only into an app the installer is
+  setting up, and only inside its own markers.
+
+Two open upstream items bear on this test and should be tracked with it:
+
+- **facebook/astryx#5205** — the StyleX layer splitter only ran in the Vite dev
+  server, so a production build ships atoms in flat `@layer priorityN` blocks
+  that outrank `astryx-theme`. _"The layer order we advertise is real in dev and
+  fiction in production."_ Until it lands, any layer-order claim verified in a
+  dev server is unverified. This harness measures a production build for exactly
+  that reason.
+- **facebook/astryx#5165** — a theme cannot declare an app-specific semantic
+  token, which is the escape hatch an existing app needs when its vocabulary is
+  wider than the system's.
 
 ## Known limits
 

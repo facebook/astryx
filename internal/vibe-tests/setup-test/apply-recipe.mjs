@@ -110,6 +110,38 @@ function useOneComponent(app) {
   );
 }
 
+/**
+ * The naive edit: the three Astryx sheets and the layer statement APPENDED to
+ * the end of the app's existing globals.css. This is what "add these imports to
+ * your globals.css" produces when the file already has content, and it is the
+ * arm that explains a claim we had heard but had no mechanism for — that you
+ * "can't just put it in globals.css".
+ *
+ * You can. It has to go FIRST. A `@layer a, b, c;` statement only orders names
+ * that are not already registered, and the app's own `@import 'tailwindcss'`
+ * registers `theme`, `base` and `utilities` before the statement is reached — so
+ * a late statement can only append `reset`, `astryx-base` and `astryx-theme`
+ * AFTER Tailwind's utilities, inverting the cascade the recipe is trying to set
+ * up. Astryx's reset then outranks every utility the app is already using.
+ */
+function appendAtEnd(app) {
+  edit(app, CSS, css => {
+    if (!/@import ['"]tailwindcss['"];/.test(css)) {
+      throw new Error("fixture no longer starts from `@import 'tailwindcss';`");
+    }
+    return (
+      css +
+      '\n' +
+      [
+        '/* Astryx */',
+        '@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;',
+        ...ASTRYX_IMPORTS,
+        '',
+      ].join('\n')
+    );
+  });
+}
+
 export const RECIPES = {
   /** What our docs say today, applied literally. */
   'docs-verbatim': app => {
@@ -126,6 +158,16 @@ export const RECIPES = {
   'docs-no-bridge': app => {
     replaceTailwindEntry(app, documentedTailwindBlock({bridge: false}));
     addThemeProvider(app, {});
+    useOneComponent(app);
+  },
+
+  /**
+   * The naive edit — appended rather than prepended. Builds clean and is WORSE
+   * than the documented recipe, because the cascade ends up inverted.
+   */
+  'appended-at-end': app => {
+    appendAtEnd(app);
+    addThemeProvider(app, {mode: 'dark'});
     useOneComponent(app);
   },
 

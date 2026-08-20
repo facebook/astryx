@@ -14,6 +14,7 @@
 
 import {describe, expect, it} from 'vitest';
 import {
+  cascadeInverted,
   categoryOf,
   contrastFailures,
   countByCategory,
@@ -67,14 +68,25 @@ function scheme(overrides: Partial<SchemeReading> = {}): SchemeReading {
   };
 }
 
+const CORRECT_LAYERS = [
+  'reset',
+  'theme',
+  'base',
+  'astryx-base',
+  'astryx-theme',
+  'utilities',
+];
+
 function measurement(
   light: SchemeReading,
   dark: SchemeReading = light,
   label = 'arm',
+  layerOrder: string[] = CORRECT_LAYERS,
 ): Measurement {
   return {
     label,
     build: {ok: true, status: 0, ms: 1000, stdout: '', stderr: ''},
+    layerOrder,
     schemes: {light, dark},
   };
 }
@@ -229,7 +241,44 @@ describe('variableCapture', () => {
   });
 });
 
-// ── 5. score + verdict ───────────────────────────────────────────────
+// ── 5. cascade inversion ─────────────────────────────────────────────
+
+describe('cascadeInverted', () => {
+  const correct = [
+    'properties',
+    'reset',
+    'theme',
+    'base',
+    'astryx-base',
+    'astryx-theme',
+    'utilities',
+  ];
+  const inverted = [
+    'properties',
+    'theme',
+    'base',
+    'utilities',
+    'reset',
+    'astryx-base',
+    'astryx-theme',
+  ];
+
+  it('fires when a system layer outranks the app utilities', () => {
+    expect(cascadeInverted(inverted)).toBe(true);
+  });
+
+  it('stays silent on the order the recipe is trying to produce', () => {
+    expect(cascadeInverted(correct)).toBe(false);
+  });
+
+  it('does not guess when the emitted CSS declares no utility layer', () => {
+    expect(cascadeInverted(['reset', 'astryx-base'])).toBe(false);
+    expect(cascadeInverted([])).toBe(false);
+    expect(cascadeInverted(undefined)).toBe(false);
+  });
+});
+
+// ── 6. score + verdict ───────────────────────────────────────────────
 
 describe('scoreArm', () => {
   it('fails everything below the build when the app stopped compiling', () => {
@@ -274,6 +323,19 @@ describe('scoreArm', () => {
       measurement(scheme()),
     );
     expect(verdict(score)).toBe('clean');
+  });
+
+  it('calls an inverted cascade damage even when every probe still reads', () => {
+    const arm = measurement(scheme(), scheme(), 'arm', [
+      'theme',
+      'base',
+      'utilities',
+      'reset',
+      'astryx-base',
+    ]);
+    const score = scoreArm(measurement(scheme(), scheme(), 'baseline'), arm);
+    expect(score.cascadeInverted).toBe(true);
+    expect(verdict(score)).toBe('silent-damage');
   });
 
   it('reports a noisy page even when nothing regressed', () => {

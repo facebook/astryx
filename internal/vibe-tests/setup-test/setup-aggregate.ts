@@ -45,6 +45,7 @@ const header = [
   'console',
   'app regressions',
   'unreadable',
+  'cascade',
   'mode-dependent',
   'vars captured',
   'verdict',
@@ -58,6 +59,7 @@ const body = rows.map(({score}) => [
     .map(([c, n]) => `${c[0]}${n}`)
     .join(' ')})`,
   String(score.contrastFailures.length),
+  score.cascadeInverted ? 'INVERTED' : 'ok',
   String(score.modeDependent.length),
   String(score.variablesCaptured.length),
   verdict(score),
@@ -86,6 +88,9 @@ for (const {score} of rows) {
   console.log(`\n${score.label}:`);
   for (const f of score.contrastFailures) {
     console.log(`  unreadable  ${f.probe}: contrast ${f.before} -> ${f.after}`);
+  }
+  if (score.cascadeInverted) {
+    console.log(`  cascade     ${score.layerOrder.join(' > ')}`);
   }
   for (const v of score.variablesCaptured) {
     console.log(

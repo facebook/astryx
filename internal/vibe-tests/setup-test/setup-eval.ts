@@ -201,7 +201,39 @@ function stable(m: Measurement, probe: string): boolean {
   return JSON.stringify(light.style) === JSON.stringify(dark.style);
 }
 
-// ── 4. variable capture: names the app already owned ─────────────────
+// ── 4. cascade inversion: the layer statement in the wrong place ─────
+
+/**
+ * True when a system layer ends up ranking ABOVE the app's utility layer.
+ *
+ * The recipe's whole job is to put the system's sheets between the app's base
+ * and its utilities, so a utility class the app already uses still wins. Whether
+ * it does is decided by WHERE the `@layer` statement sits: the statement only
+ * orders names that are not yet registered, so below the app's own Tailwind
+ * import it can only append the system's layers after `utilities` — silently
+ * inverting the thing the recipe exists to arrange.
+ *
+ * Worth detecting separately from the regression count because the two do not
+ * agree on severity: an inverted cascade is one edit away from correct, and it
+ * damages more of the app than the recipe it was trying to follow.
+ */
+export function cascadeInverted(
+  layerOrder: string[] | undefined,
+  {systemPrefix = 'astryx', utilityLayer = 'utilities'} = {},
+): boolean {
+  if (!layerOrder?.length) {
+    return false;
+  }
+  const utilities = layerOrder.indexOf(utilityLayer);
+  if (utilities === -1) {
+    return false;
+  }
+  return layerOrder.some(
+    (layer, i) => i > utilities && layer.startsWith(systemPrefix),
+  );
+}
+
+// ── 5. variable capture: names the app already owned ─────────────────
 
 export type VariableFinding = {name: string; before: string; after: string};
 
@@ -227,7 +259,7 @@ export function variableCapture(
   return findings;
 }
 
-// ── 5. the score ─────────────────────────────────────────────────────
+// ── 6. the score ─────────────────────────────────────────────────────
 
 export type SetupScore = {
   label: string;
@@ -247,6 +279,9 @@ export type SetupScore = {
   modeDependent: string[];
   /** Root variables whose value the install changed or emptied. */
   variablesCaptured: VariableFinding[];
+  /** The system's layers outrank the app's utilities — the recipe, inverted. */
+  cascadeInverted: boolean;
+  layerOrder: string[];
 };
 
 export function scoreArm(
@@ -267,6 +302,8 @@ export function scoreArm(
       contrastFailures: [],
       modeDependent: [],
       variablesCaptured: [],
+      cascadeInverted: false,
+      layerOrder: [],
     };
   }
   const before = baseline.schemes[scheme];
@@ -287,6 +324,8 @@ export function scoreArm(
     contrastFailures: contrastFailures(before, after),
     modeDependent: modeDependence(baseline, arm),
     variablesCaptured: variableCapture(before, after),
+    cascadeInverted: cascadeInverted(arm.layerOrder),
+    layerOrder: arm.layerOrder ?? [],
   };
 }
 
@@ -301,7 +340,11 @@ export function verdict(score: SetupScore): Verdict {
   if (!score.builds) {
     return 'broken-build';
   }
-  if (score.contrastFailures.length > 0 || score.missingProbes.length > 0) {
+  if (
+    score.contrastFailures.length > 0 ||
+    score.missingProbes.length > 0 ||
+    score.cascadeInverted
+  ) {
     return score.clean ? 'silent-damage' : 'noisy';
   }
   if (!score.clean) {

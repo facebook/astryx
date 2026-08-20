@@ -77,6 +77,30 @@ function build() {
   };
 }
 
+// ── the emitted cascade ──────────────────────────────────────────────
+
+/**
+ * The order the browser will apply cascade layers in, read off the emitted CSS.
+ *
+ * This is measured rather than inferred because the ORDER IS POSITIONAL and the
+ * mistake is invisible: a `@layer a, b, c;` statement only orders names that are
+ * not already registered, so the same statement produces a different cascade
+ * depending on whether it sits above or below the app's own Tailwind import —
+ * and below it, the system's reset outranks every utility the app already uses.
+ */
+function emittedLayerOrder(distDir) {
+  const assets = path.join(distDir, 'assets');
+  if (!fs.existsSync(assets)) return [];
+  const order = [];
+  for (const file of fs.readdirSync(assets).filter(f => f.endsWith('.css'))) {
+    const css = fs.readFileSync(path.join(assets, file), 'utf8');
+    for (const m of css.matchAll(/@layer\s+([a-zA-Z0-9_-]+)\s*\{/g)) {
+      if (!order.includes(m[1])) order.push(m[1]);
+    }
+  }
+  return order;
+}
+
 // ── serve dist + the fixture API ─────────────────────────────────────
 
 const MIME = {
@@ -207,10 +231,12 @@ const measurement = {
   app: appDir,
   measuredAt: new Date().toISOString(),
   build: build(),
+  layerOrder: [],
   schemes: {},
 };
 
 if (measurement.build.ok) {
+  measurement.layerOrder = emittedLayerOrder(path.join(appDir, 'dist'));
   const {chromium} = await import('playwright');
   const fixtures = JSON.parse(
     fs.readFileSync(path.join(appDir, 'lib', 'fixtures.json'), 'utf8'),
