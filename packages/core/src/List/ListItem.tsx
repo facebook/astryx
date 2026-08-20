@@ -125,16 +125,12 @@ const styles = stylex.create({
     counterIncrement: 'astryx-list',
   },
   withDivider: {
-    // The last row drops its divider so the list does not end on a rule.
-    // This has to be a conditional *longhand*: StyleX silently drops a
-    // `borderBlockEnd: 'none'` shorthand nested under `:last-child`, which
-    // emitted no CSS at all and left every list ending on a stray border.
-    borderBlockEndWidth: {
-      default: borderVars['--border-width'],
-      ':last-child': 0,
-    },
+    borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
     borderBlockEndColor: colorVars['--color-border'],
+    ':last-child': {
+      borderBlockEnd: 'none',
+    },
   },
 });
 
