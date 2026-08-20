@@ -71,9 +71,18 @@ describe('banner-collapsible-content', () => {
     );
     // The old default hid these children, so the rewrite has to say so.
     expect(output).toContain('defaultIsOpen: false');
-    // And flag it, because always-visible is usually what this banner wants.
-    expect(output).toContain('TODO(astryx upgrade)');
   });
+
+  it.each([['{false}'], ['{null}'], ['{undefined}'], ["{''}"]])(
+    'leaves an empty slot (%s) alone',
+    async slot => {
+      // `isRenderable` rejects these, so the old Banner drew no chevron and
+      // hid nothing. Marking them collapsed would invent an affordance.
+      const source = `${IMPORT}const el = <Banner status="info" title="T">${slot}</Banner>;`;
+      const output = await apply(TRANSFORM, source);
+      expect(output).toBe(source);
+    },
+  );
 
   it('leaves a childless banner alone', async () => {
     const source = `${IMPORT}const el = <Banner status="info" title="T" />;`;

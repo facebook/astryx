@@ -245,7 +245,7 @@ export const AllFeatures: Story = {
       <Banner
         status="error"
         title="With content"
-        description="Children are visible by default."
+        description="Children are visible by default — no toggle."
         isDismissable>
         <div style={{fontSize: '13px'}}>
           This content sits on a card-colored background, visually distinct from
@@ -253,14 +253,26 @@ export const AllFeatures: Story = {
         </div>
       </Banner>
       <Banner
-        status="success"
-        title="Collapsible, starting collapsed"
+        status="error"
+        title="With collapsible content"
         description="Click the chevron to expand."
-        collapsible={{defaultIsOpen: false}}
+        isDismissable
+        collapsible={{
+          defaultIsOpen: false,
+        }}>
+        <div style={{fontSize: '13px'}}>
+          This content sits on a card-colored background, visually distinct from
+          the status header above.
+        </div>
+      </Banner>
+      <Banner
+        status="success"
+        title="Expanded by default"
+        description="This content area starts open."
+        collapsible
         isDismissable>
         <div style={{fontSize: '13px'}}>
-          Content is hidden until the toggle is pressed, because collapsible was
-          given {'{defaultIsOpen: false}'}.
+          Content is visible immediately because bare `collapsible` starts open.
         </div>
       </Banner>
       <Banner

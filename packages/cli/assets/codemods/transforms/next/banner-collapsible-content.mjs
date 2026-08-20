@@ -27,9 +27,10 @@
  *   (children, no prop)          → collapsible={{defaultIsOpen: false}}
  *
  * The last one is the behaviour-preserving rewrite for the implicit case. It
- * is also the one worth a second look — most of those banners probably want
- * their content simply visible now — so each site gets a TODO comment saying
- * so. `api.report` is a stub in this runner, so comments are the only channel.
+ * is also the one worth a second look: most of those banners probably want
+ * their content simply visible now. The transform does not editorialize in the
+ * output — the nudge belongs in the changelog and the transform title, not as
+ * a TODO comment in every migrated file.
  *
  * Only elements named `Banner` are touched, and only when the file imports
  * that name from `@astryxdesign/core`: `defaultIsExpanded` is also a
@@ -37,27 +38,23 @@
  */
 
 export const meta = {
-  title: "Migrate Banner's collapse axis onto the `collapsible` prop",
+  title:
+    "Migrate Banner's collapse axis onto `collapsible` (content is visible " +
+    'by default now — review the banners this marks as collapsed)',
   description:
     'Banner children are now visible by default instead of hidden behind a ' +
     'chevron, and `defaultIsExpanded` is replaced by ' +
     '`collapsible?: boolean | CollapsibleConfig`. Rewrites ' +
     '`defaultIsExpanded` to the equivalent `collapsible` config, and adds ' +
     '`collapsible={{defaultIsOpen: false}}` to banners that relied on the ' +
-    'implicit collapse, so behaviour is preserved. Those sites also get a ' +
-    'TODO comment, because always-visible content is usually what they want.',
+    'implicit collapse, so behaviour is preserved. Those are the ones worth ' +
+    'a second look: always-visible content is usually what they want.',
   pr: '#5255',
 };
 
 const OLD_PROP = 'defaultIsExpanded';
 const NEW_PROP = 'collapsible';
 const COMPONENT = 'Banner';
-
-const TODO_COMMENT =
-  ' TODO(astryx upgrade): Banner content is visible by default now. This' +
-  ' banner used to hide its children behind a chevron, so it was given' +
-  ' `collapsible={{defaultIsOpen: false}}` to keep that. If the detail is' +
-  ' short enough to just show, drop the prop. ';
 
 /**
  * Does this file use the core `Banner`?
@@ -93,8 +90,11 @@ function importsCoreBanner(j, root) {
 /**
  * Whether a JSX element renders anything as children.
  *
- * Mirrors the component's own `isRenderable` check closely enough for a
- * migration: whitespace-only JSX text is not content, everything else is.
+ * Mirrors the component's own `isRenderable`, which is what decided whether
+ * the old Banner drew a chevron: whitespace-only text, `{false}`, `{null}`,
+ * `{undefined}` and `{''}` are all empty slots, and a banner holding one of
+ * those was never collapsible in the first place — adding `collapsible` to it
+ * would invent an affordance rather than preserve one.
  *
  * @param {any} elementNode
  * @returns {boolean}
@@ -107,9 +107,31 @@ function hasJsxChildren(elementNode) {
     if (child.type === 'JSXText') {
       return child.value.trim() !== '';
     }
-    if (child.type === 'JSXExpressionContainer') {
-      return child.expression?.type !== 'JSXEmptyExpression';
+    if (child.type !== 'JSXExpressionContainer') {
+      return true;
     }
+    const expression = child.expression;
+    if (expression == null || expression.type === 'JSXEmptyExpression') {
+      return false;
+    }
+    if (
+      expression.type === 'BooleanLiteral' ||
+      expression.type === 'NullLiteral'
+    ) {
+      return false;
+    }
+    if (expression.type === 'Identifier' && expression.name === 'undefined') {
+      return false;
+    }
+    if (expression.type === 'StringLiteral' && expression.value === '') {
+      return false;
+    }
+    // Older parsers surface all of those as `Literal`.
+    if (expression.type === 'Literal') {
+      return expression.value !== null && expression.value !== '' &&
+        typeof expression.value !== 'boolean';
+    }
+    // Anything dynamic may render — assume it does.
     return true;
   });
 }
@@ -206,9 +228,7 @@ export default function transformer(file, api) {
       return;
     }
 
-    const attribute = collapsibleWithDefault(j.booleanLiteral(false));
-    attribute.comments = [j.commentBlock(TODO_COMMENT, true, false)];
-    attrs.push(attribute);
+    attrs.push(collapsibleWithDefault(j.booleanLiteral(false)));
     hasChanges = true;
   });
 
