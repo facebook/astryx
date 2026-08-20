@@ -4,13 +4,14 @@
 
 export const docs = {
   name: 'DateInputMobile',
-  displayName: 'Date Input (Mobile)',
+  displayName: 'Date Input (Responsive)',
   category: 'Data Input',
   keywords: [
     'date',
     'picker',
     'calendar',
     'mobile',
+    'responsive',
     'touch',
     'scroll',
     'snap',
@@ -18,124 +19,43 @@ export const docs = {
     'month',
     'year',
   ],
+  // The prop table is DateInput's, deliberately: `DateInputMobileProps` is an
+  // ALIAS of `DateInputProps`, not a copy, so a consumer swapping the import
+  // needs no second table and this file cannot drift out of step with one.
+  // Listed here are only the props whose BEHAVIOR differs on the touch
+  // surface — everything else does exactly what `astryx component DateInput`
+  // says it does.
   props: [
     {
-      name: 'label',
+      name: 'numberOfMonths',
+      type: '1 | 2',
+      description:
+        'Desktop only. The touch surface is a single continuously scrolling column, where a second month is just the month already one flick away — so the prop is accepted (the types are shared) and ignored there.',
+      default: '1',
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description:
+        'Honored on both surfaces, but floored on a coarse pointer: each size keeps its own height and none can render below a 44px tap target.',
+      default: "'md'",
+    },
+    {
+      name: 'placeholder',
       type: 'string',
-      description: 'Label for the field. Required for accessibility.',
-      required: true,
-    },
-    {
-      name: 'value',
-      type: 'ISODateString',
-      description: 'The selected date, as YYYY-MM-DD.',
-    },
-    {
-      name: 'onChange',
-      type: '(value: ISODateString | undefined) => void',
       description:
-        'Fired with the new date when a day is tapped, or undefined when the field is cleared.',
-    },
-    {
-      name: 'presentation',
-      type: "'sheet' | 'inline'",
-      description:
-        "How the picker is presented. 'sheet' is a tappable field that opens the picker in a BottomSheet; 'inline' is the picker on its own, framed, with no field and no sheet.",
-      default: "'sheet'",
-    },
-    {
-      name: 'min',
-      type: 'ISODateString',
-      description:
-        'Earliest selectable date. Also stops the scroller and disables earlier rows on the wheels.',
-    },
-    {
-      name: 'max',
-      type: 'ISODateString',
-      description:
-        'Latest selectable date. Also stops the scroller and disables later rows on the wheels.',
-    },
-    {
-      name: 'dateConstraints',
-      type: 'ReadonlyArray<(date: Date) => boolean>',
-      description:
-        'Extra constraints. A date is disabled if ANY function returns false. Receives a native Date, matching Calendar and DateInput.',
-    },
-    {
-      name: 'weekStartsOn',
-      type: '0 | 1 | 2 | 3 | 4 | 5 | 6',
-      description: 'First column of the week. 0 is Sunday.',
-      default: '0',
-    },
-    {
-      name: 'format',
-      type: "'date' | 'date_long' | 'date_weekday' | 'system_date'",
-      description:
-        "How the committed value reads in the closed field. Shares Timestamp's date vocabulary, so the same literal renders the same shape across components.",
-      default: "'date_long'",
-    },
-    {
-      name: 'hasClear',
-      type: 'boolean',
-      description: 'Show a clear button in the field once a date is set.',
-      default: 'false',
-    },
-    {
-      name: 'isDisabled',
-      type: 'boolean',
-      description: 'Disables the field; the picker cannot be opened.',
-      default: 'false',
-    },
-    {
-      name: 'isRequired',
-      type: 'boolean',
-      description: 'Marks the field required. Mutually exclusive with isOptional.',
-      default: 'false',
-    },
-    {
-      name: 'isOptional',
-      type: 'boolean',
-      description: 'Marks the field optional. Mutually exclusive with isRequired.',
-      default: 'false',
-    },
-    {
-      name: 'isLabelHidden',
-      type: 'boolean',
-      description:
-        'Visually hides the label; it stays available to screen readers.',
-      default: 'false',
-    },
-    {
-      name: 'description',
-      type: 'string',
-      description: 'Help text between the label and the field.',
-    },
-    {
-      name: 'status',
-      type: 'InputStatus',
-      description:
-        'Status type and message, rendered by Field exactly as on other inputs.',
-    },
-    {
-      name: 'labels',
-      type: 'Partial<DateInputMobileLabels>',
-      description:
-        "Overrides for the component's own strings: placeholder, today, done, chooseMonthYear, month, year, dialog, clear. Lab components carry no translation catalog, so these are props with English defaults until the component graduates to core.",
+        'Shown when no date is selected, on both surfaces. On touch the field cannot be typed into at all, so this is the only text it ever shows empty.',
+      default: "'Select a date'",
     },
   ],
   usage: {
     description:
-      'The touch counterpart to DateInput. DateInput is a text field with a calendar popover, a shape built around a keyboard; this one has no text entry at all. The surface IS the calendar: one month fills a fixed-height scrollport, months are chosen by scrolling through them, and the far jumps that scrolling is bad at live behind the header title as a month wheel and a year wheel. Use it on touch surfaces and in mobile web views; use DateInput on the desktop, where typing a date is faster than any picker.',
+      'A drop-in `DateInput` that picks its own surface. On anything but a narrow touch screen it renders core\'s `DateInput` unchanged. On a narrow touch screen it renders a picker built for a thumb: one month per screen, months chosen by scrolling continuously through them, and month and year wheels behind the header title for the far jumps scrolling is bad at. Its props are `DateInputProps` — the same type, not a copy — so adopting it is a changed import and nothing else.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Use presentation="sheet" in a form: the field reads like every other input and the picker only costs screen when it is wanted.',
-      },
-      {
-        guidance: true,
-        description:
-          'Use presentation="inline" when picking a date IS the screen — a booking step, a filter panel — so there is no sheet to open first.',
+          'Use it anywhere you would use DateInput in a product that has mobile users. There is no downside on the desktop: that path IS DateInput.',
       },
       {
         guidance: true,
@@ -143,14 +63,19 @@ export const docs = {
           'Set min and max when the range is genuinely bounded. Unbounded, the scroller reaches a century each way and the year wheel is a hundred rows.',
       },
       {
-        guidance: false,
+        guidance: true,
         description:
-          'Reach for this on the desktop. Scrolling months is slower than typing a date, and the 44px rows waste space a pointer does not need.',
+          'Reach for MobileDateField only when the choice is already made — a mobile-only app, or a story that has to show the touch surface on a desktop browser.',
       },
       {
         guidance: false,
         description:
-          'Put it in a container shorter than the picker. It is a fixed height by design — that is what makes the snapping exact — so it does not compress.',
+          'Branch on your own media query and render DateInput or MobileDateField yourself; that is this component, and it gets the "narrow AND touch" condition right.',
+      },
+      {
+        guidance: false,
+        description:
+          'Put the touch surface in a container shorter than the picker. It is a fixed height by design — that is what makes the snapping exact — so it does not compress.',
       },
       {
         guidance: false,
@@ -163,12 +88,17 @@ export const docs = {
     {
       name: 'Field',
       description:
-        'Label, description and status, shared with every other input (presentation="sheet" only).',
+        "Label, description and status — Field's, identical on both surfaces.",
     },
     {
-      name: 'Trigger',
+      name: 'Closed field',
       description:
-        'The closed field: calendar icon, the formatted date or the placeholder, and an optional clear button. Named for assistive technology from the label AND the value, so the chosen date is announced.',
+        'A real `<input>` on both surfaces, so `ref` is honestly an input ref and the label associates natively. On touch it is readOnly with inputMode="none", which is what keeps the virtual keyboard from covering the sheet it would fill in.',
+    },
+    {
+      name: 'Sheet',
+      description:
+        'A BottomSheet holding the picker, sized to hug it (touch surface only; the desktop surface uses DateInput\'s popover).',
     },
     {
       name: 'Header',
@@ -192,25 +122,28 @@ export const docs = {
     },
   ],
   implementationNotes: [
-    'One month per screen. Every pane is exactly the height of the scrollport and snaps to its start (scroll-snap-type: y mandatory + scroll-snap-align: start), which is what makes the picker a fixed height and leaves no resting position showing half of two months.',
-    'Every pane is a six-row grid, including months that only need four or five. A pane whose height depended on its contents would make snap offsets differ month to month.',
+    'The surface is chosen at runtime by `(max-width: 768px) and (pointer: coarse)` — narrow AND touch, because either alone is the wrong signal: touch alone catches a touchscreen laptop and narrow alone catches a half-width desktop window, and on both of those typing a date beats scrolling to it. 768px is AppShell\'s `md`.',
+    'A runtime switch and not CSS, because the two surfaces are structurally different (a popover anchored to a field versus a full-width sheet holding a scroller): rendering both and hiding one would double the DOM, double the tab stops, and mount two calendars. And the condition is not layout — it is which interaction is faster, which depends on the pointer, which CSS cannot hand to JS.',
+    'Both surfaces render the SAME closed field — a bordered input with a calendar icon and the formatted date — so the post-hydration swap moves nothing on screen; only what opens changes. That is why the switch needs no server-side hint prop.',
+    'One month per screen: every pane is exactly the height of the scrollport and snaps to its start (scroll-snap-type: y mandatory + scroll-snap-align: start), which is what makes the picker a fixed height and leaves no resting position showing half of two months.',
+    'Every pane is a six-row grid, including months that need four or five. A pane whose height depended on its contents would make snap offsets differ month to month. There is no adjacent-month spill either: in a continuous scroller the neighbour is one flick away, and rendering its days here would put the same date on screen twice.',
     'The list is a century in each direction but only about seven panes are ever mounted: a spacer holds the full scroll height and the visible panes are positioned into it absolutely. Nothing is stitched or recycled mid-scroll, so snap offsets stay constant and momentum is never interrupted — the failure mode of the usual "append months at the edge" approach.',
-    'A jump beyond the mounted window (Today, a wheel commit) mounts the target pane first and scrolls on the next layout pass. Scrolling straight there would land where no snap area exists, and mandatory snapping would drag it back to the nearest mounted pane — visibly the wrong month.',
+    'A jump beyond the mounted window (Today, a wheel commit) mounts the target pane first and scrolls on the next layout pass. Scrolling straight there lands where no snap area exists, and mandatory snapping drags it back to the nearest mounted pane — visibly the wrong month.',
     'The wheels stay mounted behind the calendar and vice versa (visibility, not display), so the scroller keeps its offset across the round trip and a wheel commit can steer it while it is hidden. The hidden panel is also inert.',
     'The wheel falloff is a CSS scroll-driven animation on a view() timeline, guarded by @supports — a browser without animation-timeline would otherwise play the same keyframes once on the document timeline. It rides an inner element, never the row: a snap area is the TRANSFORMED border box, so animating the row would move the positions the wheel is snapping to.',
     'Commit-on-rest uses scrollend where it exists and a quiet-period timer where it does not — mobile Safari below 26 has no scrollend, and that is the browser this component targets.',
     'Both scrollers state box-sizing: border-box themselves. clientHeight is the pane height, the snap offsets and the virtualization all at once, and the reset that would otherwise supply it is zero-specificity :where().',
-    'Keyboard: one tab stop per month pane, arrows move by day and week across month boundaries, Home/End move within the displayed week, and the wheels are listboxes with arrow/Home/End/PageUp/PageDown.',
+    'Keyboard: one tab stop per month pane, arrows move by day and week across month boundaries, Home/End move within the displayed week, and the wheels are listboxes with arrow/Home/End/PageUp/PageDown. The closed field opens with ArrowDown, Enter or Space, matching the APG combobox pattern DateInput follows.',
   ],
   theming: {
     description:
-      'Two CSS variables drive the whole geometry; everything else derives from them.',
+      'Two CSS variables drive the touch picker\'s whole geometry; everything else derives from them. The desktop surface is DateInput and themes exactly as DateInput does.',
     variables: [
       {
         name: '--date-input-mobile-day-size',
         default: '44px',
         description:
-          'Height of a day row and the minimum tap target of a day. The pane (and so the picker body, and the wheel body) is six of these.',
+          'Height of a day row, the minimum tap target of a day, and the floor under the closed field on a coarse pointer. The pane (and so the picker body, and the wheel body) is six of these.',
       },
       {
         name: '--date-input-mobile-wheel-item-size',
@@ -222,19 +155,9 @@ export const docs = {
   examples: [
     {
       name: 'Basic',
-      description: 'A field that opens the picker in a sheet.',
+      description:
+        'Identical to a DateInput call, because the props are DateInput\'s.',
       code: `<DateInputMobile label="Event date" value={date} onChange={setDate} />`,
-    },
-    {
-      name: 'Inline',
-      description: 'The picker on its own, with no field and no sheet.',
-      code: `<DateInputMobile
-  label="Event date"
-  isLabelHidden
-  presentation="inline"
-  value={date}
-  onChange={setDate}
-/>`,
     },
     {
       name: 'Bounded',
@@ -252,11 +175,17 @@ export const docs = {
       description: 'Custom constraints, and a Monday-first week.',
       code: `<DateInputMobile
   label="Appointment"
-  weekStartsOn={1}
+  weekStartsOn="mon"
   dateConstraints={[d => d.getDay() !== 0 && d.getDay() !== 6]}
   value={date}
   onChange={setDate}
 />`,
+    },
+    {
+      name: 'Touch surface, unconditionally',
+      description:
+        'For a mobile-only app, or a story that must show the picker on a desktop browser.',
+      code: `<MobileDateField label="Event date" value={date} onChange={setDate} />`,
     },
   ],
 };
@@ -264,120 +193,38 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'DateInputMobile',
-  displayName: '日期选择器（移动端）',
+  displayName: '日期选择器（响应式）',
   props: [
     {
-      name: 'label',
+      name: 'numberOfMonths',
+      type: '1 | 2',
+      description:
+        '仅桌面端生效。触屏界面是单列连续滚动，第二个月正是轻扫一下就能到达的那个月，因此该属性在触屏端被接受（类型共用）但忽略。',
+      default: '1',
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description:
+        '两种界面都生效，但在粗指针设备上有下限：各尺寸保留自身高度，且都不会小于 44px 的可点击区域。',
+      default: "'md'",
+    },
+    {
+      name: 'placeholder',
       type: 'string',
-      description: '字段标签。无障碍访问必填。',
-      required: true,
-    },
-    {
-      name: 'value',
-      type: 'ISODateString',
-      description: '选中的日期，格式为 YYYY-MM-DD。',
-    },
-    {
-      name: 'onChange',
-      type: '(value: ISODateString | undefined) => void',
-      description: '点选某一天时触发；清除时传入 undefined。',
-    },
-    {
-      name: 'presentation',
-      type: "'sheet' | 'inline'",
       description:
-        "呈现方式。'sheet' 为可点击字段，在底部弹层中打开选择器；'inline' 直接展示带边框的选择器，没有字段也没有弹层。",
-      default: "'sheet'",
-    },
-    {
-      name: 'min',
-      type: 'ISODateString',
-      description: '最早可选日期。同时限制滚动范围并禁用滚轮上更早的行。',
-    },
-    {
-      name: 'max',
-      type: 'ISODateString',
-      description: '最晚可选日期。同时限制滚动范围并禁用滚轮上更晚的行。',
-    },
-    {
-      name: 'dateConstraints',
-      type: 'ReadonlyArray<(date: Date) => boolean>',
-      description:
-        '附加约束。任一函数返回 false 即禁用该日期。参数为原生 Date，与 Calendar、DateInput 一致。',
-    },
-    {
-      name: 'weekStartsOn',
-      type: '0 | 1 | 2 | 3 | 4 | 5 | 6',
-      description: '一周的第一列。0 表示周日。',
-      default: '0',
-    },
-    {
-      name: 'format',
-      type: "'date' | 'date_long' | 'date_weekday' | 'system_date'",
-      description:
-        '已选日期在收起状态下的显示格式。与 Timestamp 共用同一套日期格式词汇。',
-      default: "'date_long'",
-    },
-    {
-      name: 'hasClear',
-      type: 'boolean',
-      description: '已选日期后在字段中显示清除按钮。',
-      default: 'false',
-    },
-    {
-      name: 'isDisabled',
-      type: 'boolean',
-      description: '禁用字段，无法打开选择器。',
-      default: 'false',
-    },
-    {
-      name: 'isRequired',
-      type: 'boolean',
-      description: '标记为必填。与 isOptional 互斥。',
-      default: 'false',
-    },
-    {
-      name: 'isOptional',
-      type: 'boolean',
-      description: '标记为选填。与 isRequired 互斥。',
-      default: 'false',
-    },
-    {
-      name: 'isLabelHidden',
-      type: 'boolean',
-      description: '视觉上隐藏标签，屏幕阅读器仍可读取。',
-      default: 'false',
-    },
-    {
-      name: 'description',
-      type: 'string',
-      description: '标签与字段之间的说明文字。',
-    },
-    {
-      name: 'status',
-      type: 'InputStatus',
-      description: '状态类型与提示信息，由 Field 按其他输入控件同样的方式呈现。',
-    },
-    {
-      name: 'labels',
-      type: 'Partial<DateInputMobileLabels>',
-      description:
-        '组件自身文案的覆盖项：placeholder、today、done、chooseMonthYear、month、year、dialog、clear。实验组件不携带翻译词条，因此以属性形式提供英文默认值。',
+        '未选择日期时显示，两种界面一致。触屏端字段完全不可输入，因此这是空状态下唯一显示的文本。',
+      default: "'Select a date'",
     },
   ],
   usage: {
     description:
-      'DateInput 的触屏版本。DateInput 是围绕键盘设计的文本框加日历浮层；本组件完全没有文本输入：界面本身就是日历，一屏一个月，靠滚动切换月份，而滚动不擅长的大跨度跳转则藏在标题按钮后的月份与年份滚轮里。触屏界面与移动端网页使用本组件；桌面端仍用 DateInput，直接输入日期更快。',
+      '可直接替换 DateInput 的组件，会自行选择界面形态。除窄屏触控设备外，一律渲染 core 的 DateInput；在窄屏触控设备上渲染为拇指操作而设计的选择器：一屏一个月，通过连续滚动切换月份，标题按钮后的月份与年份滚轮用于滚动不擅长的大跨度跳转。其属性就是 DateInputProps 本身（类型别名，而非副本），因此接入只需改一行 import。',
     bestPractices: [
       {
         guidance: true,
         description:
-          '表单中使用 presentation="sheet"：字段外观与其他输入一致，需要时才占用屏幕空间。',
-      },
-      {
-        guidance: true,
-        description:
-          '当选日期本身就是整屏任务（预订步骤、筛选面板）时使用 presentation="inline"，省去先打开弹层的一步。',
+          '在有移动端用户的产品中，凡是用 DateInput 的地方都可以用它。桌面端没有任何代价——那条分支本身就是 DateInput。',
       },
       {
         guidance: true,
@@ -385,14 +232,19 @@ export const docsZh = {
           '范围确实有界时设置 min 与 max。不设置时滚动范围为前后各一个世纪，年份滚轮会有上百行。',
       },
       {
-        guidance: false,
+        guidance: true,
         description:
-          '在桌面端使用。滚动选月份比输入日期慢，44px 的行高对指针设备也是浪费。',
+          '仅在已经确定形态时才使用 MobileDateField：纯移动端应用，或需要在桌面浏览器中展示触屏界面的 story。',
       },
       {
         guidance: false,
         description:
-          '放进比选择器更矮的容器。固定高度是刻意设计——精确吸附正依赖于此——因此不会压缩。',
+          '自行编写媒体查询在 DateInput 与 MobileDateField 之间分支；这正是本组件的职责，而且它把“窄屏且触控”这个条件判断对了。',
+      },
+      {
+        guidance: false,
+        description:
+          '把触屏界面放进比选择器更矮的容器。固定高度是刻意设计——精确吸附正依赖于此——因此不会压缩。',
       },
       {
         guidance: false,
@@ -405,35 +257,22 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsDense = {
   description:
-    'Touch date picker: continuous snap-paged months in a fixed-height surface, with month/year wheels behind the header title.',
+    'Drop-in DateInput that picks its surface: core DateInput everywhere, a touch picker (continuous snap-paged months + month/year wheels) on narrow AND coarse-pointer screens.',
   usage: {
     description:
-      'Touch counterpart to DateInput (which is a text field + popover, built for a keyboard). No text entry: the surface IS the calendar, one month per screen, months chosen by scrolling. Header title swaps the calendar for month + year wheels for far jumps. Mobile/touch only; DateInput on desktop.',
+      'Props ARE DateInputProps (type alias, not a copy) — adopting it is a changed import. Switch is `(max-width: 768px) and (pointer: coarse)`: touch alone catches a touchscreen laptop, narrow alone a half-width window, and on both typing beats scrolling. Both surfaces render the same closed field, so the post-hydration swap is invisible. MobileDateField exports the touch surface unconditionally.',
     bestPractices: [
-      { guidance: true, description: 'presentation="sheet" in forms; presentation="inline" when picking a date is the whole screen.' },
+      { guidance: true, description: 'Use anywhere you use DateInput; the desktop path IS DateInput.' },
       { guidance: true, description: 'Set min/max when the range is bounded — unbounded reaches a century each way.' },
-      { guidance: false, description: 'Use on desktop; typing a date beats scrolling months.' },
-      { guidance: false, description: 'Put it in a container shorter than the picker — fixed height is what makes snapping exact.' },
+      { guidance: true, description: 'MobileDateField only when the choice is already made (mobile-only app, desktop-browser story).' },
+      { guidance: false, description: 'Hand-roll the media query and branch yourself.' },
+      { guidance: false, description: 'Put the touch surface in a container shorter than the picker — fixed height is what makes snapping exact.' },
       { guidance: false, description: 'Add month chevrons around it; scrolling is the month control.' },
     ],
   },
   propDescriptions: {
-    label: 'Field label. Required.',
-    value: 'Selected date, YYYY-MM-DD.',
-    onChange: 'Fired with the new date, or undefined when cleared.',
-    presentation: "'sheet' (field + BottomSheet) or 'inline' (framed picker). Default 'sheet'.",
-    min: 'Earliest selectable date; also bounds scroller and wheels.',
-    max: 'Latest selectable date; also bounds scroller and wheels.',
-    dateConstraints: 'Array of (Date) => boolean; a date is disabled if any returns false.',
-    weekStartsOn: '0 | 1 | 2 | 3 | 4 | 5 | 6, first column of the week. Default 0 (Sunday).',
-    format: "Closed-field format: 'date' | 'date_long' | 'date_weekday' | 'system_date'. Default 'date_long'.",
-    hasClear: 'Clear button in the field once a date is set. Default false.',
-    isDisabled: 'Disables the field; picker cannot open. Default false.',
-    isRequired: 'Marks required. Default false.',
-    isOptional: 'Marks optional. Default false.',
-    isLabelHidden: 'Hides the label visually. Default false.',
-    description: 'Help text between label and field.',
-    status: 'InputStatus type + message, rendered by Field.',
-    labels: 'Partial<DateInputMobileLabels> overriding placeholder/today/done/chooseMonthYear/month/year/dialog/clear.',
+    numberOfMonths: 'Desktop only; the touch scroller is one continuous column. Accepted and ignored there.',
+    size: "'sm' | 'md' | 'lg', floored at a 44px tap target on a coarse pointer.",
+    placeholder: "Empty-state text on both surfaces. Default 'Select a date'.",
   },
 };

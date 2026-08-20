@@ -27,6 +27,7 @@
  * the scroll-driven decoration.
  *
  * SYNC: When modified, update:
+ * - /packages/lab/src/DateInputMobile/MobileDateField.tsx
  * - /packages/lab/src/DateInputMobile/DateInputMobile.doc.mjs
  * - /packages/lab/src/DateInputMobile/DateInputMobile.test.tsx
  */

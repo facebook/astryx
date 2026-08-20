@@ -3,9 +3,10 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {DateInputMobile} from '@astryxdesign/lab';
+import {DateInputMobile, MobileDateField} from '@astryxdesign/lab';
 import type {ISODateString} from '@astryxdesign/core/utils';
 import {Text} from '@astryxdesign/core/Text';
+import {Banner} from '@astryxdesign/core/Banner';
 
 const styles = stylex.create({
   /**
@@ -32,14 +33,23 @@ const meta: Meta<typeof DateInputMobile> = {
     docs: {
       description: {
         component:
-          'Touch counterpart to DateInput. Months scroll continuously in a ' +
-          'fixed-height, snap-paged surface; tapping the header title swaps ' +
-          'the calendar for month and year wheels.',
+          'A drop-in `DateInput` that picks its own surface. On anything but ' +
+          'a narrow touch screen it renders core’s `DateInput` unchanged; on ' +
+          'a narrow touch screen (`max-width: 768px` **and** `pointer: ' +
+          'coarse`) it renders a picker built for a thumb — continuously ' +
+          'scrolling, snap-paged months with month and year wheels behind ' +
+          'the header title.\n\n' +
+          'Its props are `DateInputProps`, the same type, so adopting it is ' +
+          'a changed import.\n\n' +
+          '**Reviewing on a desktop browser:** the first story below will ' +
+          'show you the *desktop* control, because that is the correct ' +
+          'answer for a mouse. Every other story renders `MobileDateField` ' +
+          'directly, which is the touch surface with the media query skipped.',
       },
     },
   },
   argTypes: {
-    presentation: {control: 'select', options: ['sheet', 'inline']},
+    size: {control: 'select', options: ['sm', 'md', 'lg']},
     weekStartsOn: {control: {type: 'number', min: 0, max: 6}},
     format: {
       control: 'select',
@@ -52,18 +62,36 @@ export default meta;
 type Story = StoryObj<typeof DateInputMobile>;
 
 // ============================================================
-// SHEET (default) — a field that opens the picker in a BottomSheet
+// RESPONSIVE — the component as you would actually use it
 // ============================================================
 
 export const Default: Story = {
-  name: 'Sheet',
+  name: 'Responsive (picks its own surface)',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'On this desktop browser you are seeing core’s `DateInput` — the ' +
+          'correct surface for a mouse. Open the same story on a phone, or ' +
+          'in a device-emulated tab that reports a coarse pointer, and the ' +
+          'field starts opening a sheet instead of a popover. Nothing else ' +
+          'changes: the closed field is the same control either way, which ' +
+          'is why the swap is invisible.',
+      },
+    },
+  },
   render: () => {
     const [date, setDate] = useState<ISODateString | undefined>();
     return (
       <div {...stylex.props(styles.phone)}>
+        <Banner
+          status="info"
+          title="Showing the desktop surface"
+          description="A coarse pointer under 768px gets the touch picker instead. The stories below force it, so it is reviewable here."
+        />
         <DateInputMobile
           label="Event date"
-          description="Tap to open the picker, then scroll through months."
+          description="Same props as DateInput, either way."
           value={date}
           onChange={setDate}
           hasClear
@@ -77,20 +105,31 @@ export const Default: Story = {
 };
 
 // ============================================================
-// INLINE — the picker surface on its own
+// TOUCH SURFACE — forced, so it is reviewable anywhere
 // ============================================================
 
-export const Inline: Story = {
-  name: 'Inline',
+export const TouchSurface: Story = {
+  name: 'Touch surface',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The mobile field with the media query skipped. Tap the field to ' +
+          'open the sheet, then scroll the months — every pane is exactly ' +
+          'one screen and snaps to the top, so the picker is a fixed height ' +
+          'and never rests between two months.',
+      },
+    },
+  },
   render: () => {
     const [date, setDate] = useState<ISODateString | undefined>('2026-03-21');
     return (
       <div {...stylex.props(styles.phone)}>
-        <DateInputMobile
+        <MobileDateField
           label="Event date"
-          presentation="inline"
           value={date}
           onChange={setDate}
+          hasClear
         />
         <Text size="supporting" color="secondary" xstyle={styles.readout}>
           {date ?? 'no date selected'}
@@ -100,19 +139,15 @@ export const Inline: Story = {
   },
 };
 
-// ============================================================
-// WHEELS — same surface, opened on the month/year wheels
-// ============================================================
-
-export const MonthYearWheels: Story = {
+export const Wheels: Story = {
   name: 'Month / year wheels',
   parameters: {
     docs: {
       description: {
         story:
-          'Tap "March 2026" in the header. The calendar is replaced in place ' +
-          'by two wheels — the surface never changes height — and each wheel ' +
-          'commits when it comes to rest.',
+          'Open the sheet, then tap "March 2026" in the header. The calendar ' +
+          'is replaced in place by two wheels — the surface never changes ' +
+          'height — and each wheel commits when it comes to rest.',
       },
     },
   },
@@ -120,13 +155,7 @@ export const MonthYearWheels: Story = {
     const [date, setDate] = useState<ISODateString | undefined>('2026-03-21');
     return (
       <div {...stylex.props(styles.phone)}>
-        <DateInputMobile
-          label="Event date"
-          isLabelHidden
-          presentation="inline"
-          value={date}
-          onChange={setDate}
-        />
+        <MobileDateField label="Event date" value={date} onChange={setDate} />
       </div>
     );
   },
@@ -152,10 +181,9 @@ export const Bounded: Story = {
     const [date, setDate] = useState<ISODateString | undefined>('2026-03-10');
     return (
       <div {...stylex.props(styles.phone)}>
-        <DateInputMobile
+        <MobileDateField
           label="Delivery date"
           description="Between Feb 1 and May 31, 2026."
-          presentation="inline"
           min="2026-02-01"
           max="2026-05-31"
           value={date}
@@ -176,11 +204,10 @@ export const WeekdaysOnly: Story = {
     const [date, setDate] = useState<ISODateString | undefined>();
     return (
       <div {...stylex.props(styles.phone)}>
-        <DateInputMobile
+        <MobileDateField
           label="Appointment"
           description="Weekends are not bookable."
-          presentation="inline"
-          weekStartsOn={1}
+          weekStartsOn="mon"
           dateConstraints={[date => date.getDay() !== 0 && date.getDay() !== 6]}
           value={date}
           onChange={setDate}
@@ -191,17 +218,28 @@ export const WeekdaysOnly: Story = {
 };
 
 // ============================================================
-// STATUS — the field carries Field's status treatment
+// FIELD PARITY — the props all behave as they do on DateInput
 // ============================================================
 
-export const WithStatus: Story = {
-  name: 'With status',
+export const FieldStates: Story = {
+  name: 'Field states',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Status, sizes, required, disabled-with-a-reason and the clear ' +
+          'button are `DateInput`’s, unchanged — the touch surface swaps the ' +
+          'picker, not the field contract. Sizes keep their own heights but ' +
+          'cannot render below a 44px tap target on a coarse pointer.',
+      },
+    },
+  },
   render: () => {
     const [date, setDate] = useState<ISODateString | undefined>();
     return (
       <div {...stylex.props(styles.phone)}>
-        <DateInputMobile
-          label="Event date"
+        <MobileDateField
+          label="Required, with an error"
           isRequired
           value={date}
           onChange={setDate}
@@ -210,6 +248,14 @@ export const WithStatus: Story = {
               ? {type: 'error', message: 'Pick a date to continue'}
               : undefined
           }
+        />
+        <MobileDateField label="Small" size="sm" onChange={() => {}} />
+        <MobileDateField label="Large" size="lg" onChange={() => {}} />
+        <MobileDateField
+          label="Disabled, with a reason"
+          isDisabled
+          disabledMessage="You need the Editor role to change this"
+          onChange={() => {}}
         />
       </div>
     );

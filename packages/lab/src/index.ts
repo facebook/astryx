@@ -246,12 +246,20 @@ export * from './CircularProgress';
 // ListInput — compact editor for short collections of simple records
 export * from './ListInput';
 
-// DateInputMobile — touch-first date picker: continuous snap-paged months,
-// with month/year wheels behind the header title
+// DateInputMobile — a drop-in DateInput that picks its own surface: core's
+// DateInput everywhere, a touch picker (continuous snap-paged months, with
+// month/year wheels behind the header title) on a narrow touch screen
 export {
   DateInputMobile,
+  // The touch surface on its own, for a mobile-only app or a desktop-browser
+  // story; DateInputMobile is the one that chooses.
+  MobileDateField,
+  MOBILE_PICKER_QUERY,
   type DateInputMobileProps,
-  type DateInputMobileLabels,
+  type DateInputMobileSize,
+  type DateInputMobileFormat,
+  type DateInputMobileStatus,
+  type DateInputMobileStatusType,
   dateInputMobileVars,
 } from './DateInputMobile';
 

@@ -93,6 +93,14 @@ export type {
   UseInputStatusIconReturn,
 } from './useInputStatusIcon';
 
+/**
+ * Exported for fields built outside core: a field that sets `aria-required`
+ * from its own `isRequired` alone reads as "not required" to a screen reader
+ * inside a `FormLayout` with `defaultOptionality="required"`, while looking
+ * required to everyone else. Every core input resolves it through here.
+ */
+export {useResolvedRequired} from './useResolvedRequired';
+
 export {useInteractiveRole} from './useInteractiveRole';
 export type {
   InteractiveRole,

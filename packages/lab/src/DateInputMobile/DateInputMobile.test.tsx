@@ -3,15 +3,14 @@
 /**
  * @file DateInputMobile.test.tsx
  * @input Uses vitest, @testing-library/react, DateInputMobile and its helpers
- * @output Behavior coverage for the mobile date picker
+ * @output Behavior coverage for the responsive date picker
  * @position Test file for /packages/lab/src/DateInputMobile/
  *
  * What jsdom can and cannot see here matters, and the split is deliberate:
  *
  * - The month math is pure, so it is tested directly and exhaustively.
- * - Rendering, selection, constraints, the wheels and the sheet are tested
- *   through the DOM, with `clientHeight` stubbed — jsdom has no layout, and
- *   the scroller mounts no panes until it knows how tall a pane is.
+ * - Which surface is chosen, and the field contract each one honors, are
+ *   tested through the DOM with `matchMedia` stubbed per test.
  * - Snapping, momentum and the scroll-driven falloff are CSS the browser
  *   resolves and jsdom does not implement at all. Those are asserted on the
  *   style DEFINITION instead (the last describe block), which at least fails
@@ -27,6 +26,7 @@ import {
   beforeAll,
   afterAll,
   beforeEach,
+  afterEach,
 } from 'vitest';
 import {render, screen, fireEvent, within} from '@testing-library/react';
 import {readFileSync} from 'node:fs';
@@ -34,7 +34,9 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {useState} from 'react';
 import type {ISODateString} from '@astryxdesign/core/utils';
-import {DateInputMobile} from './DateInputMobile';
+import {InputGroup} from '@astryxdesign/core/InputGroup';
+import {stableClassName} from '@astryxdesign/core/naming';
+import {DateInputMobile, MOBILE_PICKER_QUERY} from './DateInputMobile';
 import {
   toMonthIndex,
   monthIndexOf,
@@ -55,19 +57,41 @@ class MockResizeObserver {
   unobserve() {}
   disconnect() {}
 }
-vi.stubGlobal('ResizeObserver', MockResizeObserver);
 
 /** One pane at the default 44px day size: 6 rows. */
 const PANE = 264;
+
+/** Matches the repo-wide setup polyfill, so hover-gated behavior still works. */
+const HOVER_CAPABLE = /\(\s*hover\s*:\s*hover\s*\)/;
+
+/**
+ * Point the surface switch at a phone or at a desktop. Only
+ * {@link MOBILE_PICKER_QUERY} is forced; every other query keeps the answer
+ * the shared test setup gives it.
+ */
+function setViewport(kind: 'mobile' | 'desktop'): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches:
+      query === MOBILE_PICKER_QUERY
+        ? kind === 'mobile'
+        : HOVER_CAPABLE.test(query),
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
 
 /**
  * Run `fn` with the month scrollport reporting the height its CSS gives it.
  *
  * jsdom lays nothing out, so `clientHeight` is 0 and the scroller mounts no
- * panes at all. The override is installed only around the render that needs
- * it and torn down immediately: a getter left on `HTMLElement.prototype`
- * makes EVERY later DOM read take a slow path, and measured at ~2.4s per test
- * in this file.
+ * panes at all. The override is installed only around the work that needs it
+ * and torn down immediately: a getter left on `HTMLElement.prototype` makes
+ * EVERY later DOM read take a slow path, measured at ~2.4s per test here.
  */
 function withLayout<T>(fn: () => T): T {
   // jsdom defines clientHeight on Element.prototype; shadowing it on
@@ -85,9 +109,6 @@ function withLayout<T>(fn: () => T): T {
     delete (HTMLElement.prototype as {clientHeight?: unknown}).clientHeight;
   }
 }
-
-/** `render`, with the scroller able to measure itself. */
-const renderPicker: typeof render = ui => withLayout(() => render(ui));
 
 beforeAll(() => {
   Element.prototype.scrollTo = vi.fn();
@@ -111,11 +132,59 @@ afterAll(() => {
 
 beforeEach(() => {
   vi.setSystemTime(new Date(2026, 2, 15)); // 15 March 2026, local
+  // Re-stubbed per test, not once at module scope: the afterEach below clears
+  // every stub, and matchMedia has to be re-pointed for each test anyway.
+  vi.stubGlobal('ResizeObserver', MockResizeObserver);
+  setViewport('mobile');
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 /**
- * One month's grid. Neighbouring panes render the same dates (a month spills
- * into the next), so every day query has to say which month it means.
+ * Bounded by default. Unbounded, the scroller mounts seven month panes — 294
+ * day buttons — for every render, and under jsdom with StyleX's dev runtime
+ * that is seconds a test. Three months exercises the same paths; the tests
+ * that are actually about the range pass their own.
+ */
+const DEFAULT_RANGE = {min: '2026-02-01', max: '2026-04-30'} as const;
+
+function Controlled({
+  initial,
+  ...props
+}: {initial?: ISODateString} & Partial<
+  React.ComponentProps<typeof DateInputMobile>
+>) {
+  const [value, setValue] = useState<ISODateString | undefined>(initial);
+  return (
+    <DateInputMobile
+      label="Event date"
+      {...DEFAULT_RANGE}
+      value={value}
+      onChange={setValue}
+      {...props}
+    />
+  );
+}
+
+/** The closed field — a real input on both surfaces. */
+const field = (): HTMLInputElement =>
+  screen.getByRole('combobox') as HTMLInputElement;
+
+/** Render, then open the picker. Both mount panes, so both need the layout. */
+function renderAndOpen(
+  ui: React.ReactElement = <Controlled initial="2026-03-21" />,
+): void {
+  withLayout(() => {
+    render(ui);
+    fireEvent.click(field());
+  });
+}
+
+/**
+ * One month's grid. Panes for neighbouring months are mounted too, so every
+ * day query has to say which month it means.
  */
 function pane(label: string): HTMLElement {
   const grid = screen
@@ -138,32 +207,508 @@ function weekdayRow(): HTMLElement {
   return row as HTMLElement;
 }
 
-/**
- * Bounded by default. Unbounded, the scroller mounts seven month panes — 294
- * day buttons — for every render, and under jsdom with StyleX's dev runtime
- * that is seconds a test. Three months exercises the same paths; the tests
- * that are actually about the range pass their own.
- */
-const DEFAULT_RANGE = {min: '2026-02-01', max: '2026-04-30'} as const;
+// ---------------------------------------------------------------------------
+// Which surface, and why
+// ---------------------------------------------------------------------------
 
-function Controlled({
-  initial,
-  ...props
-}: {initial?: ISODateString} & Partial<
-  React.ComponentProps<typeof DateInputMobile>
->) {
-  const [value, setValue] = useState<ISODateString | undefined>(initial);
-  return (
-    <DateInputMobile
-      label="Event date"
-      presentation="inline"
-      {...DEFAULT_RANGE}
-      value={value}
-      onChange={setValue}
-      {...props}
-    />
-  );
-}
+describe('DateInputMobile — surface selection', () => {
+  it('asks for narrow AND touch, not either alone', () => {
+    // A touchscreen laptop (touch, wide) and a half-width desktop window
+    // (narrow, mouse) each match one half and must keep the desktop control,
+    // where typing a date beats scrolling to it.
+    expect(MOBILE_PICKER_QUERY).toBe(
+      '(max-width: 768px) and (pointer: coarse)',
+    );
+  });
+
+  it('renders the desktop DateInput when the query does not match', () => {
+    setViewport('desktop');
+    render(<Controlled initial="2026-03-21" />);
+    // The desktop control is a text field you can type into...
+    expect(field()).not.toHaveAttribute('readonly');
+    expect(field()).not.toHaveAttribute('inputmode');
+    // ...and it opens a popover, not a sheet.
+    expect(document.querySelector('dialog')).toBeNull();
+  });
+
+  it('accepts typed input on the desktop surface', () => {
+    setViewport('desktop');
+    const onChange = vi.fn();
+    render(
+      <DateInputMobile
+        label="Event date"
+        onChange={onChange}
+        min={undefined}
+      />,
+    );
+    fireEvent.change(field(), {target: {value: '2026-03-25'}});
+    expect(onChange).toHaveBeenCalledWith('2026-03-25');
+  });
+
+  it('renders the touch field when the query matches', () => {
+    render(<Controlled initial="2026-03-21" />);
+    const input = field();
+    // Still an input — same element, same role, so `ref` stays honest and the
+    // label associates natively — but the picker is the only way to change it.
+    expect(input.tagName).toBe('INPUT');
+    expect(input).toHaveAttribute('readonly');
+    // What actually keeps the virtual keyboard from covering the sheet.
+    expect(input).toHaveAttribute('inputmode', 'none');
+  });
+
+  it('forwards ref to the input on both surfaces', () => {
+    const desktopRef = {current: null as HTMLInputElement | null};
+    setViewport('desktop');
+    const {unmount} = render(
+      <Controlled initial="2026-03-21" ref={desktopRef} />,
+    );
+    expect(desktopRef.current).toBeInstanceOf(HTMLInputElement);
+    unmount();
+
+    const mobileRef = {current: null as HTMLInputElement | null};
+    setViewport('mobile');
+    render(<Controlled initial="2026-03-21" ref={mobileRef} />);
+    expect(mobileRef.current).toBeInstanceOf(HTMLInputElement);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The field contract, honored identically on the touch surface
+// ---------------------------------------------------------------------------
+
+describe('DateInputMobile — field parity', () => {
+  it('shows a placeholder until a date is chosen, then the formatted value', () => {
+    const {rerender} = render(
+      <DateInputMobile label="Ship date" onChange={() => {}} />,
+    );
+    expect(field()).toHaveValue('');
+    expect(field()).toHaveAttribute('placeholder', 'Select a date');
+    rerender(
+      <DateInputMobile
+        label="Ship date"
+        value="2026-03-21"
+        onChange={() => {}}
+      />,
+    );
+    expect(field()).toHaveValue('March 21, 2026');
+  });
+
+  it('honors a named format', () => {
+    render(
+      <DateInputMobile
+        label="Ship date"
+        value="2026-03-21"
+        format="system_date"
+        onChange={() => {}}
+      />,
+    );
+    expect(field()).toHaveValue('2026-03-21');
+  });
+
+  it('honors a function format', () => {
+    render(
+      <DateInputMobile
+        label="Ship date"
+        value="2026-03-21"
+        format={iso => `ISO:${iso}`}
+        onChange={() => {}}
+      />,
+    );
+    expect(field()).toHaveValue('ISO:2026-03-21');
+  });
+
+  it('honors a custom placeholder', () => {
+    render(
+      <DateInputMobile
+        label="Ship date"
+        placeholder="Pick a day"
+        onChange={() => {}}
+      />,
+    );
+    expect(field()).toHaveAttribute('placeholder', 'Pick a day');
+  });
+
+  it('clears from the field', () => {
+    const onChange = vi.fn();
+    render(
+      <DateInputMobile
+        label="Ship date"
+        value="2026-03-21"
+        hasClear
+        onChange={onChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: /Clear Ship date/}));
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+
+  it('does not open the picker until the field is tapped', () => {
+    withLayout(() => {
+      render(<DateInputMobile label="Ship date" onChange={() => {}} />);
+      expect(field()).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+      fireEvent.click(field());
+      expect(field()).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getAllByRole('grid').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('opens from the keyboard, APG combobox style', () => {
+    withLayout(() => {
+      render(<Controlled initial="2026-03-21" />);
+      fireEvent.keyDown(field(), {key: 'ArrowDown'});
+      expect(field()).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  it('is not openable while disabled', () => {
+    render(
+      <DateInputMobile label="Ship date" isDisabled onChange={() => {}} />,
+    );
+    expect(field()).toBeDisabled();
+    fireEvent.click(field());
+    expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+  });
+
+  it('stays focusable and explains itself when disabled with a reason', () => {
+    render(
+      <DateInputMobile
+        label="Ship date"
+        isDisabled
+        disabledMessage="You need the Editor role"
+        onChange={() => {}}
+      />,
+    );
+    // aria-disabled, not disabled: the reason has to be reachable by keyboard.
+    expect(field()).not.toBeDisabled();
+    expect(field()).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(field());
+    expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+  });
+
+  it('renders label, description and status through Field', () => {
+    render(
+      <DateInputMobile
+        label="Ship date"
+        description="When it leaves the warehouse"
+        status={{type: 'error', message: 'Pick a date'}}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText('Ship date')).toBeInTheDocument();
+    expect(
+      screen.getByText('When it leaves the warehouse'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Pick a date')).toBeInTheDocument();
+    expect(field()).toHaveAttribute('aria-invalid', 'true');
+    expect(field().getAttribute('aria-describedby')).toBeTruthy();
+  });
+
+  it('marks required for assistive technology', () => {
+    render(
+      <DateInputMobile label="Ship date" isRequired onChange={() => {}} />,
+    );
+    expect(field()).toHaveAttribute('aria-required', 'true');
+  });
+
+  it('associates the label natively, so the field is named without ARIA', () => {
+    render(<DateInputMobile label="Ship date" onChange={() => {}} />);
+    expect(screen.getByLabelText('Ship date')).toBe(field());
+  });
+
+  it('runs changeAction and shows a busy state', async () => {
+    let resolve: () => void = () => {};
+    const changeAction = vi.fn(
+      () =>
+        new Promise<void>(r => {
+          resolve = r;
+        }),
+    );
+    withLayout(() => {
+      render(
+        <DateInputMobile
+          label="Ship date"
+          value="2026-03-10"
+          min="2026-03-01"
+          max="2026-03-31"
+          onChange={() => {}}
+          changeAction={changeAction}
+        />,
+      );
+      fireEvent.click(field());
+      fireEvent.click(
+        within(pane('March 2026')).getByRole('button', {
+          name: /March 25, 2026/,
+        }),
+      );
+    });
+    expect(changeAction).toHaveBeenCalledWith('2026-03-25');
+    resolve();
+  });
+
+  it('drops the Field wrapper inside an InputGroup', () => {
+    render(
+      <InputGroup label="Range">
+        <DateInputMobile label="Start" onChange={() => {}} />
+      </InputGroup>,
+    );
+    // Named by the group label plus its own, the way core's inputs are.
+    expect(field().getAttribute('aria-labelledby')).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The picker surface
+// ---------------------------------------------------------------------------
+
+describe('DateInputMobile — calendar surface', () => {
+  it('opens on the selected month', () => {
+    renderAndOpen();
+    expect(pane('March 2026')).toBeInTheDocument();
+  });
+
+  it('opens on the current month when there is no value', () => {
+    renderAndOpen(<Controlled />);
+    expect(pane('March 2026')).toBeInTheDocument();
+  });
+
+  it('mounts a window of months around the visible one, not the whole century', () => {
+    // The one test that wants the full default reach.
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min={undefined} max={undefined} />,
+    );
+    const grids = screen.getAllByRole('grid');
+    expect(grids.length).toBeGreaterThan(1);
+    expect(grids.length).toBeLessThanOrEqual(7);
+    expect(grids.map(g => g.getAttribute('aria-label'))).toContain(
+      'March 2026',
+    );
+  });
+
+  it('renders every month as six rows, so panes cannot differ in height', () => {
+    renderAndOpen(<Controlled initial="2026-02-01" />);
+    // February 2026 needs only five rows; the pane still has six.
+    const february = within(pane('February 2026'));
+    expect(february.getAllByRole('row')).toHaveLength(6);
+    expect(february.getAllByRole('gridcell')).toHaveLength(42);
+  });
+
+  it('commits the tapped day and dismisses the sheet', () => {
+    const onChange = vi.fn();
+    renderAndOpen(<Controlled initial="2026-03-21" onChange={onChange} />);
+    fireEvent.click(
+      within(pane('March 2026')).getByRole('button', {name: /March 25, 2026/}),
+    );
+    expect(onChange).toHaveBeenCalledWith('2026-03-25');
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('marks the selection and today', () => {
+    renderAndOpen();
+    const march = within(pane('March 2026'));
+    expect(
+      march
+        .getByRole('button', {name: /March 21, 2026/})
+        .closest('[role="gridcell"]'),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(march.getByRole('button', {name: /March 15, 2026/})).toHaveAttribute(
+      'aria-current',
+      'date',
+    );
+  });
+
+  it('leaves exactly one day per month tab-reachable', () => {
+    renderAndOpen();
+    const tabbable = within(pane('March 2026'))
+      .getAllByRole('button')
+      .filter(b => b.getAttribute('tabindex') === '0');
+    expect(tabbable).toHaveLength(1);
+    // The selected day, when the month holds one.
+    expect(tabbable[0]).toHaveAttribute('data-date', '2026-03-21');
+  });
+
+  it('disables days outside min/max and refuses to commit them', () => {
+    const onChange = vi.fn();
+    renderAndOpen(
+      <Controlled
+        initial="2026-03-10"
+        min="2026-03-05"
+        max="2026-03-20"
+        onChange={onChange}
+      />,
+    );
+    const outOfRange = within(pane('March 2026')).getByRole('button', {
+      name: /March 25, 2026/,
+    });
+    expect(outOfRange).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(outOfRange);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('honors custom date constraints', () => {
+    renderAndOpen(
+      <Controlled
+        initial="2026-03-10"
+        dateConstraints={[date => date.getDay() !== 0]}
+      />,
+    );
+    // 2026-03-01 is a Sunday.
+    expect(
+      within(pane('March 2026')).getByRole('button', {name: /March 1, 2026/}),
+    ).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('renders no adjacent-month days, so a date is on screen in one place only', () => {
+    renderAndOpen();
+    const march = within(pane('March 2026'));
+    // The grid still has 42 cells; the ones outside March are simply empty.
+    expect(march.getAllByRole('gridcell')).toHaveLength(42);
+    expect(march.getAllByRole('button')).toHaveLength(31);
+    expect(march.queryByRole('button', {name: /April 1, 2026/})).toBeNull();
+    expect(march.queryByRole('button', {name: /February 28, 2026/})).toBeNull();
+  });
+
+  it('rotates the weekday header with weekStartsOn', () => {
+    renderAndOpen();
+    expect(weekdayRow().children[0]).toHaveTextContent('Su');
+  });
+
+  it('accepts weekStartsOn as a day name, like Calendar and DateInput', () => {
+    renderAndOpen(<Controlled initial="2026-03-21" weekStartsOn="mon" />);
+    expect(weekdayRow().children[0]).toHaveTextContent('Mo');
+  });
+
+  it('moves keyboard focus by date, across the month boundary', () => {
+    renderAndOpen(<Controlled initial="2026-03-31" />);
+    const last = within(pane('March 2026')).getByRole('button', {
+      name: /March 31, 2026/,
+    });
+    last.focus();
+    fireEvent.keyDown(last, {key: 'ArrowRight'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-01');
+  });
+
+  it('moves a week at a time with the vertical arrows', () => {
+    renderAndOpen(<Controlled initial="2026-03-10" />);
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 10, 2026/,
+    });
+    day.focus();
+    fireEvent.keyDown(day, {key: 'ArrowDown'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-17');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Month / year wheels
+// ---------------------------------------------------------------------------
+
+describe('DateInputMobile — month/year wheels', () => {
+  /**
+   * The header title. Queried by attribute rather than by role and accessible
+   * name: every role query in here walks a tree of ~150 elements and computes
+   * a name for each, which dominates the runtime of these tests.
+   */
+  const title = () =>
+    document.querySelector<HTMLElement>(
+      `.${stableClassName('date-input-mobile-title')}`,
+    )!;
+
+  const openWheels = () => fireEvent.click(title());
+
+  /** The swap panel holding the calendar, or the one holding the wheels. */
+  const panel = (which: 'calendar' | 'wheels') =>
+    document.querySelector(`[data-panel="${which}"]`)!;
+
+  const ONE_YEAR = {min: '2026-01-01', max: '2026-12-31'} as const;
+  const FIVE_YEARS = {min: '2024-01-01', max: '2028-12-31'} as const;
+
+  it('the header title opens them, and says so', () => {
+    renderAndOpen();
+    expect(title()).toHaveAttribute('aria-expanded', 'false');
+    expect(panel('wheels')).toHaveAttribute('inert');
+    expect(panel('calendar')).not.toHaveAttribute('inert');
+    openWheels();
+    expect(title()).toHaveAttribute('aria-expanded', 'true');
+    expect(panel('wheels')).not.toHaveAttribute('inert');
+    expect(panel('calendar')).toHaveAttribute('inert');
+    expect(screen.getByRole('listbox', {name: 'Month'})).toBeInTheDocument();
+    expect(screen.getByRole('listbox', {name: 'Year'})).toBeInTheDocument();
+  });
+
+  it('offers twelve months, with the current one selected', () => {
+    renderAndOpen();
+    openWheels();
+    const options = within(
+      screen.getByRole('listbox', {name: 'Month'}),
+    ).getAllByRole('option');
+    expect(options).toHaveLength(12);
+    expect(options[2]).toHaveTextContent('March');
+    expect(options[2]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('tapping a wheel row moves the calendar to that month', () => {
+    renderAndOpen(<Controlled initial="2026-03-21" {...ONE_YEAR} />);
+    openWheels();
+    fireEvent.click(
+      within(screen.getByRole('listbox', {name: 'Month'})).getByText(
+        'September',
+      ),
+    );
+    expect(title()).toHaveTextContent('September 2026');
+  });
+
+  it('the year wheel keeps the month', () => {
+    renderAndOpen(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+    openWheels();
+    fireEvent.click(
+      within(screen.getByRole('listbox', {name: 'Year'})).getByText('2025'),
+    );
+    expect(title()).toHaveTextContent('March 2025');
+  });
+
+  it('is a single tab stop driven by the arrow keys', () => {
+    renderAndOpen();
+    openWheels();
+    const months = screen.getByRole('listbox', {name: 'Month'});
+    expect(months).toHaveAttribute('tabindex', '0');
+    fireEvent.keyDown(months, {key: 'ArrowDown'});
+    expect(title()).toHaveTextContent('April 2026');
+    fireEvent.keyDown(months, {key: 'ArrowUp'});
+    expect(title()).toHaveTextContent('March 2026');
+  });
+
+  it('will not commit a row outside min/max', () => {
+    renderAndOpen(<Controlled initial="2026-03-10" />);
+    openWheels();
+    const december = within(screen.getByRole('listbox', {name: 'Month'}))
+      .getByText('December')
+      .closest('[role="option"]')!;
+    expect(december).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(december);
+    expect(title()).toHaveTextContent('March 2026');
+  });
+
+  it('bounds the year wheel to the reachable range', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-10" min="2025-01-01" max="2027-12-31" />,
+    );
+    openWheels();
+    expect(
+      within(screen.getByRole('listbox', {name: 'Year'}))
+        .getAllByRole('option')
+        .map(o => o.textContent),
+    ).toEqual(['2025', '2026', '2027']);
+  });
+
+  it('Done puts the calendar back', () => {
+    renderAndOpen();
+    openWheels();
+    fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+    expect(title()).toHaveAttribute('aria-expanded', 'false');
+    expect(panel('wheels')).toHaveAttribute('inert');
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Pure month arithmetic
@@ -237,354 +782,6 @@ describe('monthGeometry', () => {
 });
 
 // ---------------------------------------------------------------------------
-// The picker surface
-// ---------------------------------------------------------------------------
-
-describe('DateInputMobile — calendar surface', () => {
-  it('opens on the selected month', () => {
-    renderPicker(<Controlled initial="2026-03-21" />);
-    expect(
-      screen.getByRole('button', {name: /March 2026/}),
-    ).toBeInTheDocument();
-  });
-
-  it('opens on the current month when there is no value', () => {
-    renderPicker(<Controlled />);
-    expect(
-      screen.getByRole('button', {name: /March 2026/}),
-    ).toBeInTheDocument();
-  });
-
-  it('mounts a window of months around the visible one, not the whole century', () => {
-    // The one test that wants the full default reach.
-    renderPicker(
-      <Controlled initial="2026-03-21" min={undefined} max={undefined} />,
-    );
-    const grids = screen.getAllByRole('grid');
-    expect(grids.length).toBeGreaterThan(1);
-    expect(grids.length).toBeLessThanOrEqual(7);
-    expect(grids.map(g => g.getAttribute('aria-label'))).toContain(
-      'March 2026',
-    );
-  });
-
-  it('renders every month as six rows, so panes cannot differ in height', () => {
-    renderPicker(<Controlled initial="2026-02-01" />);
-    // February 2026 needs only five rows; the pane still has six.
-    const february = screen
-      .getAllByRole('grid')
-      .find(g => g.getAttribute('aria-label') === 'February 2026')!;
-    expect(within(february).getAllByRole('row')).toHaveLength(6);
-    expect(within(february).getAllByRole('gridcell')).toHaveLength(42);
-  });
-
-  it('commits the tapped day', () => {
-    const onChange = vi.fn();
-    renderPicker(<Controlled initial="2026-03-21" onChange={onChange} />);
-    fireEvent.click(
-      within(pane('March 2026')).getByRole('button', {name: /March 25, 2026/}),
-    );
-    expect(onChange).toHaveBeenCalledWith('2026-03-25');
-  });
-
-  it('marks the selection and today', () => {
-    renderPicker(<Controlled initial="2026-03-21" />);
-    const march = within(pane('March 2026'));
-    expect(
-      march
-        .getByRole('button', {name: /March 21, 2026/})
-        .closest('[role="gridcell"]'),
-    ).toHaveAttribute('aria-selected', 'true');
-    expect(march.getByRole('button', {name: /March 15, 2026/})).toHaveAttribute(
-      'aria-current',
-      'date',
-    );
-  });
-
-  it('leaves exactly one day per month tab-reachable', () => {
-    renderPicker(<Controlled initial="2026-03-21" />);
-    const march = pane('March 2026');
-    const tabbable = within(march)
-      .getAllByRole('button')
-      .filter(b => b.getAttribute('tabindex') === '0');
-    expect(tabbable).toHaveLength(1);
-    // The selected day, when the month holds one.
-    expect(tabbable[0]).toHaveAttribute('data-date', '2026-03-21');
-  });
-
-  it('disables days outside min/max and refuses to commit them', () => {
-    const onChange = vi.fn();
-    renderPicker(
-      <Controlled
-        initial="2026-03-10"
-        min="2026-03-05"
-        max="2026-03-20"
-        onChange={onChange}
-      />,
-    );
-    const outOfRange = within(pane('March 2026')).getByRole('button', {
-      name: /March 25, 2026/,
-    });
-    expect(outOfRange).toHaveAttribute('aria-disabled', 'true');
-    fireEvent.click(outOfRange);
-    expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it('honors custom date constraints', () => {
-    renderPicker(
-      <Controlled
-        initial="2026-03-10"
-        dateConstraints={[date => date.getDay() !== 0]}
-      />,
-    );
-    // 2026-03-01 is a Sunday.
-    expect(
-      within(pane('March 2026')).getByRole('button', {name: /March 1, 2026/}),
-    ).toHaveAttribute('aria-disabled', 'true');
-  });
-
-  it('renders no adjacent-month days, so a date is on screen in one place only', () => {
-    renderPicker(<Controlled initial="2026-03-21" />);
-    const march = within(pane('March 2026'));
-    // The grid still has 42 cells; the ones outside March are simply empty.
-    expect(march.getAllByRole('gridcell')).toHaveLength(42);
-    expect(march.getAllByRole('button')).toHaveLength(31);
-    expect(march.queryByRole('button', {name: /April 1, 2026/})).toBeNull();
-    expect(march.queryByRole('button', {name: /February 28, 2026/})).toBeNull();
-  });
-
-  it('rotates the weekday header with weekStartsOn', () => {
-    const {rerender} = renderPicker(<Controlled initial="2026-03-21" />);
-    expect(weekdayRow().children[0]).toHaveTextContent('Su');
-    rerender(<Controlled initial="2026-03-21" weekStartsOn={1} />);
-    expect(weekdayRow().children[0]).toHaveTextContent('Mo');
-  });
-
-  it('moves keyboard focus by date, across the month boundary', () => {
-    renderPicker(<Controlled initial="2026-03-31" />);
-    const last = within(pane('March 2026')).getByRole('button', {
-      name: /March 31, 2026/,
-    });
-    last.focus();
-    fireEvent.keyDown(last, {key: 'ArrowRight'});
-    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-01');
-  });
-
-  it('moves a week at a time with the vertical arrows', () => {
-    renderPicker(<Controlled initial="2026-03-10" />);
-    const day = within(pane('March 2026')).getByRole('button', {
-      name: /March 10, 2026/,
-    });
-    day.focus();
-    fireEvent.keyDown(day, {key: 'ArrowDown'});
-    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-17');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Month / year wheels
-// ---------------------------------------------------------------------------
-
-describe('DateInputMobile — month/year wheels', () => {
-  /** The swap panel holding the calendar, or the one holding the wheels. */
-  const panel = (which: 'calendar' | 'wheels') =>
-    document.querySelector(`[data-panel="${which}"]`)!;
-
-  /**
-   * The header title. Queried by attribute rather than by role and accessible
-   * name: every role query in here walks a tree of ~150 elements and computes
-   * a name for each, which dominates the runtime of these tests.
-   */
-  const title = () =>
-    document.querySelector<HTMLElement>('button[aria-expanded]')!;
-
-  const openWheels = () => fireEvent.click(title());
-
-  /**
-   * Unbounded, the picker reaches a century in each direction: a hundred year
-   * rows and a pane window of seven months, which is right in a browser and
-   * seconds per render under jsdom. Each test takes the smallest range that
-   * still exercises what it is about.
-   */
-  const MONTHS_ONLY = {min: '2026-02-01', max: '2026-04-30'} as const;
-  const ONE_YEAR = {min: '2026-01-01', max: '2026-12-31'} as const;
-  const FIVE_YEARS = {min: '2024-01-01', max: '2028-12-31'} as const;
-
-  it('the header title opens them, and says so', () => {
-    renderPicker(<Controlled initial="2026-03-21" {...MONTHS_ONLY} />);
-    expect(title()).toHaveAttribute('aria-expanded', 'false');
-    expect(panel('wheels')).toHaveAttribute('inert');
-    expect(panel('calendar')).not.toHaveAttribute('inert');
-    fireEvent.click(title());
-    expect(title()).toHaveAttribute('aria-expanded', 'true');
-    expect(panel('wheels')).not.toHaveAttribute('inert');
-    expect(panel('calendar')).toHaveAttribute('inert');
-    expect(screen.getByRole('listbox', {name: 'Month'})).toBeInTheDocument();
-    expect(screen.getByRole('listbox', {name: 'Year'})).toBeInTheDocument();
-  });
-
-  it('offers twelve months, with the current one selected', () => {
-    renderPicker(<Controlled initial="2026-03-21" {...MONTHS_ONLY} />);
-    openWheels();
-    const months = screen.getByRole('listbox', {name: 'Month'});
-    const options = within(months).getAllByRole('option');
-    expect(options).toHaveLength(12);
-    expect(options[2]).toHaveTextContent('March');
-    expect(options[2]).toHaveAttribute('aria-selected', 'true');
-  });
-
-  it('tapping a wheel row moves the calendar to that month', () => {
-    renderPicker(<Controlled initial="2026-03-21" {...ONE_YEAR} />);
-    openWheels();
-    const months = screen.getByRole('listbox', {name: 'Month'});
-    fireEvent.click(within(months).getByText('September'));
-    expect(title()).toHaveTextContent('September 2026');
-  });
-
-  it('the year wheel keeps the month', () => {
-    renderPicker(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
-    openWheels();
-    const years = screen.getByRole('listbox', {name: 'Year'});
-    fireEvent.click(within(years).getByText('2025'));
-    expect(title()).toHaveTextContent('March 2025');
-  });
-
-  it('is a single tab stop driven by the arrow keys', () => {
-    renderPicker(<Controlled initial="2026-03-21" {...MONTHS_ONLY} />);
-    openWheels();
-    const months = screen.getByRole('listbox', {name: 'Month'});
-    expect(months).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(months, {key: 'ArrowDown'});
-    expect(title()).toHaveTextContent('April 2026');
-    fireEvent.keyDown(months, {key: 'ArrowUp'});
-    expect(title()).toHaveTextContent('March 2026');
-  });
-
-  it('will not commit a row outside min/max', () => {
-    renderPicker(
-      <Controlled initial="2026-03-10" min="2026-02-01" max="2026-05-31" />,
-    );
-    openWheels();
-    const months = screen.getByRole('listbox', {name: 'Month'});
-    const december = within(months)
-      .getByText('December')
-      .closest('[role="option"]')!;
-    expect(december).toHaveAttribute('aria-disabled', 'true');
-    fireEvent.click(december);
-    expect(title()).toHaveTextContent('March 2026');
-  });
-
-  it('bounds the year wheel to the reachable range', () => {
-    renderPicker(
-      <Controlled initial="2026-03-10" min="2025-01-01" max="2027-12-31" />,
-    );
-    openWheels();
-    const years = screen.getByRole('listbox', {name: 'Year'});
-    expect(
-      within(years)
-        .getAllByRole('option')
-        .map(o => o.textContent),
-    ).toEqual(['2025', '2026', '2027']);
-  });
-
-  it('Done puts the calendar back', () => {
-    renderPicker(<Controlled initial="2026-03-21" {...MONTHS_ONLY} />);
-    openWheels();
-    fireEvent.click(screen.getByRole('button', {name: 'Done'}));
-    expect(title()).toHaveAttribute('aria-expanded', 'false');
-    expect(panel('wheels')).toHaveAttribute('inert');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Field and sheet
-// ---------------------------------------------------------------------------
-
-describe('DateInputMobile — field', () => {
-  it('shows a placeholder until a date is chosen, then the formatted value', () => {
-    const {rerender} = render(
-      <DateInputMobile label="Ship date" onChange={() => {}} />,
-    );
-    expect(
-      screen.getByRole('button', {name: /Select a date/}),
-    ).toBeInTheDocument();
-    rerender(
-      <DateInputMobile
-        label="Ship date"
-        value="2026-03-21"
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.getByText('March 21, 2026')).toBeInTheDocument();
-  });
-
-  it('honors the format prop', () => {
-    render(
-      <DateInputMobile
-        label="Ship date"
-        value="2026-03-21"
-        format="system_date"
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.getByText('2026-03-21')).toBeInTheDocument();
-  });
-
-  it('clears from the field', () => {
-    const onChange = vi.fn();
-    render(
-      <DateInputMobile
-        label="Ship date"
-        value="2026-03-21"
-        hasClear
-        onChange={onChange}
-      />,
-    );
-    fireEvent.click(screen.getByRole('button', {name: /Clear date/}));
-    expect(onChange).toHaveBeenCalledWith(undefined);
-  });
-
-  it('does not open the picker until the field is tapped', () => {
-    // The sheet mounts the picker on open, and its own entry work lands after
-    // the click, so the layout stub has to span the whole test rather than
-    // just the render.
-    withLayout(() => {
-      render(<DateInputMobile label="Ship date" onChange={() => {}} />);
-      const trigger = screen.getByRole('button', {name: /Select a date/});
-      expect(trigger).toHaveAttribute('aria-expanded', 'false');
-      expect(screen.queryByRole('grid')).not.toBeInTheDocument();
-      fireEvent.click(trigger);
-      expect(trigger).toHaveAttribute('aria-expanded', 'true');
-      expect(screen.getAllByRole('grid').length).toBeGreaterThan(0);
-    });
-  });
-
-  it('is not openable while disabled', () => {
-    render(
-      <DateInputMobile label="Ship date" isDisabled onChange={() => {}} />,
-    );
-    const trigger = screen.getByRole('button', {name: /Select a date/});
-    expect(trigger).toBeDisabled();
-    fireEvent.click(trigger);
-    expect(screen.queryByRole('grid')).not.toBeInTheDocument();
-  });
-
-  it('labels the field, and accepts overrides for its own strings', () => {
-    render(
-      <DateInputMobile
-        label="Fecha"
-        onChange={() => {}}
-        labels={{placeholder: 'Elige una fecha', today: 'Hoy'}}
-      />,
-    );
-    expect(screen.getByText('Fecha')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /Elige una fecha/}),
-    ).toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
 // Styles jsdom cannot resolve — assert the definition, not the effect
 // ---------------------------------------------------------------------------
 
@@ -640,5 +837,22 @@ describe('DateInputMobile — scroll CSS (definition-level)', () => {
     );
     expect(item).not.toContain('animationTimeline');
     expect(item).not.toContain("overflow: 'hidden'");
+  });
+
+  it('floors the touch target without discarding the size prop', () => {
+    const source = read('MobileDateField.tsx');
+    // Each size keeps its own height AND cannot render below a thumb's reach.
+    expect(
+      source.match(
+        /minBlockSize: \{default: null, '@media \(pointer: coarse\)': TOUCH_TARGET\}/g,
+      ),
+    ).toHaveLength(3);
+  });
+
+  it('keeps the virtual keyboard down on the touch field', () => {
+    const source = read('MobileDateField.tsx');
+    // readOnly alone still opens the keyboard on some Android browsers.
+    expect(source).toContain('readOnly');
+    expect(source).toContain('inputMode="none"');
   });
 });

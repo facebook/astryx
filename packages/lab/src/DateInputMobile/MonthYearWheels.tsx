@@ -6,7 +6,7 @@
  * @file MonthYearWheels.tsx
  * @input A month index, the reachable month bounds, a change callback
  * @output Exports MonthYearWheels — the month + year wheel pair
- * @position Internal component; consumed by DateInputMobile.tsx
+ * @position Internal component; consumed by MobileDateField.tsx
  *
  * The shortcut out of continuous scrolling. Scrolling is the right gesture for
  * "a month or two either way" and the wrong one for "December 2019", so the
@@ -16,6 +16,7 @@
  * changes the picker's height.
  *
  * SYNC: When modified, update:
+ * - /packages/lab/src/DateInputMobile/MobileDateField.tsx
  * - /packages/lab/src/DateInputMobile/DateInputMobile.doc.mjs
  * - /packages/lab/src/DateInputMobile/DateInputMobile.test.tsx
  */

@@ -17,3 +17,11 @@ export type {InputGroupTextProps} from './InputGroupText';
 
 export {useInputGroup} from './InputGroupContext';
 export type {InputGroupContextValue} from './InputGroupContext';
+
+/**
+ * Exported for group-compatible controls built outside core. A control inside
+ * an `InputGroup` has to drop its own outer radii and overlap its neighbour's
+ * border; without these exact styles it renders as a separate box sitting
+ * inside the group rather than as a segment of it.
+ */
+export {groupStyles} from './groupStyles';

@@ -6,7 +6,7 @@
  * @file MonthScroller.tsx
  * @input Month bounds, selected value, constraints, week start
  * @output Exports MonthScroller and MonthScrollerHandle
- * @position Internal component; consumed by DateInputMobile.tsx
+ * @position Internal component; consumed by MobileDateField.tsx
  *
  * The continuous surface: months stacked vertically in one scroller, each pane
  * exactly as tall as the scrollport and snapped to its start. Two consequences
@@ -24,6 +24,7 @@
  * which is the failure mode of the usual "append months at the edge" approach.
  *
  * SYNC: When modified, update:
+ * - /packages/lab/src/DateInputMobile/MobileDateField.tsx
  * - /packages/lab/src/DateInputMobile/DateInputMobile.doc.mjs
  * - /packages/lab/src/DateInputMobile/DateInputMobile.test.tsx
  */
