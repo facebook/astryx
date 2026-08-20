@@ -1514,7 +1514,7 @@ export function Selector<T extends SelectorOptionType>(
             disabled={isDisabled}
           />
         )}
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <Spinner size="sm" shade="inherit" />}
         {hasClear && value != null && !isDisabled && (
           <InputClearButton
             label={t('@astryx.selector.clearLabel', {label})}

@@ -459,7 +459,7 @@ export function TextInput({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" shade="inherit" />}
       {statusIcon}
     </div>
   );

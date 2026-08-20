@@ -625,7 +625,7 @@ export function TextArea({
         />
         {(isBusy || statusIcon) && (
           <span {...stylex.props(styles.endSlot)}>
-            {isBusy && <Spinner size="sm" />}
+            {isBusy && <Spinner size="sm" shade="inherit" />}
             {statusIcon}
           </span>
         )}

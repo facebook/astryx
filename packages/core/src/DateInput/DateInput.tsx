@@ -770,7 +770,7 @@ export function DateInput({
           iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" shade="inherit" />}
       {statusIcon}
       {popover.render(
         <Calendar
