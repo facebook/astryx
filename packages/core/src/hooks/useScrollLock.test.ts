@@ -142,4 +142,71 @@ describe('useScrollLock', () => {
 
     expect(document.documentElement.style.scrollbarGutter).toBe('');
   });
+
+  it('holds the scrollbar gutter while the body is pinned', () => {
+    // A 1024px window over a 1009px layout viewport = a 15px classic
+    // scrollbar. Pinning the body hides it, which would widen the page by
+    // those 15px and reflow everything sideways.
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1024,
+      configurable: true,
+      writable: true,
+    });
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 1009,
+      configurable: true,
+    });
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    const lock = renderHook(() => useScrollLock(true));
+
+    expect(document.documentElement.style.scrollbarGutter).toBe('stable');
+
+    lock.unmount();
+
+    expect(document.documentElement.style.scrollbarGutter).toBe('');
+  });
+
+  it('leaves the page alone when the scrollbar takes no space', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1024,
+      configurable: true,
+      writable: true,
+    });
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 1024,
+      configurable: true,
+    });
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    const lock = renderHook(() => useScrollLock(true));
+
+    expect(document.documentElement.style.scrollbarGutter).toBe('');
+
+    lock.unmount();
+  });
+
+  it('holds the gutter until the last overlay closes', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1024,
+      configurable: true,
+      writable: true,
+    });
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 1009,
+      configurable: true,
+    });
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    const first = renderHook(() => useScrollLock(true));
+    const second = renderHook(() => useScrollLock(true));
+
+    first.unmount();
+
+    expect(document.documentElement.style.scrollbarGutter).toBe('stable');
+
+    second.unmount();
+
+    expect(document.documentElement.style.scrollbarGutter).toBe('');
+  });
 });

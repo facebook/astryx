@@ -1,9 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file scrollbarGutter.ts
- * @input The element a scroll lock pins, plus live layout measurements
- * @output Exports holdScrollbarGutter and the ScrollbarGutterHold it returns
+ * @input Live viewport metrics (window.innerWidth vs documentElement.clientWidth)
+ * @output Exports holdScrollbarGutter
  * @position Internal hook utility; used by useScrollLock and MobileNav so that
  *   locking background scroll does not resize the layout viewport.
  *
@@ -12,110 +14,88 @@
  * "Always" show scroll bars — hiding it widens the layout viewport by the
  * scrollbar's width and the whole page jumps sideways behind the overlay.
  *
- * The fix is `scrollbar-gutter: stable`, which holds the gutter open once the
+ * The fix is `scrollbar-gutter: stable`, which holds that space once the
  * scrollbar goes away. Being a real layout change it holds `position: fixed`
  * chrome (sticky headers, toast viewports) as well as in-flow content, which
  * padding fundamentally cannot: fixed elements resolve against the viewport,
  * not against the padded element.
  *
- * Padding is kept only as a fallback for engines without `scrollbar-gutter`
- * (Safari shipped it in 18.2), and it is applied by measuring whether the
- * element actually moved rather than by assuming it did.
+ * Applied dynamically, for the duration of the lock only. A static rule in
+ * reset.css would also work, but it reserves the gutter for the whole life of
+ * every document — including pages too short to scroll, which never had the
+ * shift in the first place. On a short full-bleed page (a one-screen marketing
+ * page) that permanently narrows the layout by the scrollbar's width and pulls
+ * full-bleed art off the right edge.
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/hooks/index.ts
  */
 
-const NOOP: ScrollbarGutterHold = {
-  settle() {},
-  release() {},
-};
+/** Balanced by the disposer `holdScrollbarGutter` returns. */
+let holdCount = 0;
 
-export interface ScrollbarGutterHold {
-  /**
-   * Call once the lock's own styles are applied: measures whether the element
-   * grew anyway and, only then, pads the difference away.
-   */
-  settle(): void;
-  /** Call on unlock: restores everything this hold changed. */
-  release(): void;
-}
+/** The value to put back once the last hold is released. */
+let restoreTo: string | null = null;
+
+const NOOP = () => {};
 
 /**
- * Keeps `element`'s content box the width it is right now, across a scroll
- * lock that is about to hide the document's scrollbar.
+ * Holds the layout viewport at its current width across a scroll lock that is
+ * about to hide the document's scrollbar. Returns a disposer that gives the
+ * gutter back; calling it more than once is safe.
  *
- * Call it *before* applying the lock's styles, then {@link
- * ScrollbarGutterHold.settle} immediately after, and {@link
- * ScrollbarGutterHold.release} on unlock:
+ * Call it *before* applying the lock's own styles — the measurement has to see
+ * the scrollbar while it is still there:
  *
  * ```
- * const hold = holdScrollbarGutter(document.body);
+ * const release = holdScrollbarGutter();
  * body.style.position = 'fixed';
- * hold.settle();
+ * // …later
+ * release();
  * ```
  *
- * Overlay scrollbars (mobile, default macOS) take no layout space, so there is
- * nothing to hold and nothing is touched.
+ * Nested overlays share one hold: the gutter is taken by the first and given
+ * back by the last, in whatever order they close.
+ *
+ * Does nothing where there is no gutter to hold — overlay scrollbars (mobile,
+ * and macOS by default) take no layout space, and neither does a page too
+ * short to scroll.
  */
-export function holdScrollbarGutter(element: HTMLElement): ScrollbarGutterHold {
+export function holdScrollbarGutter(): () => void {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return NOOP;
   }
 
   const root = document.documentElement;
-  const viewportWidth = root.clientWidth;
 
-  // 0 means "no layout to measure" (jsdom, and any non-visual environment),
-  // not "the scrollbar is as wide as the window".
-  if (viewportWidth === 0) {
-    return NOOP;
-  }
+  if (holdCount === 0) {
+    const viewportWidth = root.clientWidth;
 
-  const previousGutter = root.style.scrollbarGutter;
-  const previousPadding = element.style.paddingRight;
-  const widthBefore = element.getBoundingClientRect().width;
+    // 0 means "no layout to measure" (jsdom, and any non-visual environment),
+    // not "the scrollbar is as wide as the window".
+    if (viewportWidth === 0 || window.innerWidth <= viewportWidth) {
+      return NOOP;
+    }
 
-  let heldGutter = false;
-  let padded = false;
-  let settled = false;
-
-  // Only when a space-taking scrollbar is actually there. Holding the gutter
-  // open on a page that never had one would carve out 15px that was never
-  // reserved — the same shift, in the other direction.
-  if (window.innerWidth > viewportWidth) {
+    restoreTo = root.style.scrollbarGutter;
     root.style.scrollbarGutter = 'stable';
-    heldGutter = true;
   }
 
-  return {
-    settle() {
-      if (settled) {
-        return;
-      }
-      settled = true;
+  holdCount += 1;
 
-      // What the lock actually did to this element, rather than what we
-      // assumed it would do. 0 on any engine where the gutter held — and on a
-      // page that already sets `scrollbar-gutter: stable` itself, where the
-      // scrollbar was never taking the space back.
-      const grew = element.getBoundingClientRect().width - widthBefore;
-      if (grew <= 0) {
-        return;
-      }
+  let released = false;
 
-      const existing =
-        Number.parseFloat(window.getComputedStyle(element).paddingRight) || 0;
-      element.style.paddingRight = `${existing + grew}px`;
-      padded = true;
-    },
+  return () => {
+    if (released) {
+      return;
+    }
+    released = true;
 
-    release() {
-      if (padded) {
-        element.style.paddingRight = previousPadding;
-        padded = false;
-      }
-      if (heldGutter) {
-        root.style.scrollbarGutter = previousGutter;
-        heldGutter = false;
-      }
-    },
+    holdCount -= 1;
+
+    if (holdCount === 0 && restoreTo !== null) {
+      root.style.scrollbarGutter = restoreTo;
+      restoreTo = null;
+    }
   };
 }

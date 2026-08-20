@@ -3,7 +3,7 @@
 /**
  * @file MobileNavScrollbarGutter.test.tsx
  * @input Uses vitest, @testing-library/react, MobileNav, a stubbed viewport
- * @output Unit tests for the scrollbar gutter MobileNav reserves while open
+ * @output Unit tests for the scrollbar gutter MobileNav holds while open
  * @position Testing; guards MobileNav.tsx against the open-drawer page shift
  *
  * MobileNav clips the document to lock background scroll, which hides a
@@ -45,7 +45,7 @@ function stubViewport(innerWidth: number, clientWidth: number) {
   });
 }
 
-const rootGutter = () => document.documentElement.style.scrollbarGutter;
+const gutter = () => document.documentElement.style.scrollbarGutter;
 
 describe('MobileNav scrollbar gutter', () => {
   afterEach(() => {
@@ -65,12 +65,12 @@ describe('MobileNav scrollbar gutter', () => {
     );
 
     expect(document.documentElement.style.overflow).toBe('clip');
-    expect(rootGutter()).toBe('stable');
+    expect(gutter()).toBe('stable');
 
     view.unmount();
 
     expect(document.documentElement.style.overflow).toBe('');
-    expect(rootGutter()).toBe('');
+    expect(gutter()).toBe('');
   });
 
   it('gives the gutter back when the drawer closes', () => {
@@ -82,7 +82,7 @@ describe('MobileNav scrollbar gutter', () => {
       </MobileNav>,
     );
 
-    expect(rootGutter()).toBe('stable');
+    expect(gutter()).toBe('stable');
 
     view.rerender(
       <MobileNav isOpen={false} onOpenChange={() => {}}>
@@ -90,10 +90,10 @@ describe('MobileNav scrollbar gutter', () => {
       </MobileNav>,
     );
 
-    expect(rootGutter()).toBe('');
+    expect(gutter()).toBe('');
   });
 
-  it('holds nothing when the scrollbar is an overlay one', () => {
+  it('holds nothing when the scrollbar takes no space', () => {
     stubViewport(1024, 1024);
 
     render(
@@ -103,7 +103,6 @@ describe('MobileNav scrollbar gutter', () => {
     );
 
     expect(document.documentElement.style.overflow).toBe('clip');
-    expect(rootGutter()).toBe('');
-    expect(document.documentElement.style.paddingRight).toBe('');
+    expect(gutter()).toBe('');
   });
 });
