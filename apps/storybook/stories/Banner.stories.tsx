@@ -31,10 +31,10 @@ const meta: Meta<typeof Banner> = {
       description:
         'Whether the banner can be dismissed (manages its own hidden state)',
     },
-    defaultIsExpanded: {
+    collapsible: {
       control: 'boolean',
       description:
-        'Whether the content area starts expanded (only relevant when children are provided)',
+        'Puts the content area behind an expand/collapse toggle. Omitted, children are always visible. Pass {defaultIsOpen: false} to start collapsed, or {isOpen, onOpenChange} for controlled.',
     },
   },
 };
@@ -125,8 +125,8 @@ export const SectionVariant: Story = {
   },
 };
 
-export const CollapsibleContent: Story = {
-  name: 'Collapsible Content (Collapsed)',
+export const AlwaysVisibleContent: Story = {
+  name: 'Content (Always Visible)',
   args: {
     status: 'info',
     title: 'Emphasized Text',
@@ -146,13 +146,13 @@ export const CollapsibleContent: Story = {
   },
 };
 
-export const CollapsibleContentExpanded: Story = {
-  name: 'Collapsible Content (Expanded)',
+export const CollapsibleContent: Story = {
+  name: 'Collapsible Content (Collapsed)',
   args: {
     status: 'info',
     title: 'Emphasized Text',
     description: 'Description text',
-    defaultIsExpanded: true,
+    collapsible: {defaultIsOpen: false},
     endContent: <Button label="Button" variant="secondary" size="sm" />,
     isDismissable: true,
     children: (
@@ -174,7 +174,6 @@ export const WithContentArea: Story = {
     status: 'error',
     title: 'Multiple errors found',
     description: 'The following issues need to be resolved:',
-    defaultIsExpanded: true,
     children: (
       <ul style={{margin: 0, paddingInlineStart: '20px', fontSize: '13px'}}>
         <li>Email address is invalid</li>
@@ -193,7 +192,7 @@ export const ContentAreaWithAction: Story = {
     description: 'Review the changes before they take effect.',
     endContent: <Button label="Review" variant="secondary" size="sm" />,
     isDismissable: true,
-    defaultIsExpanded: true,
+    collapsible: true,
     children: (
       <div style={{fontSize: '13px'}}>
         <p style={{margin: '0 0 8px'}}>Changed settings:</p>
@@ -245,8 +244,8 @@ export const AllFeatures: Story = {
       />
       <Banner
         status="error"
-        title="With collapsible content"
-        description="Click the chevron to expand."
+        title="With content"
+        description="Children are visible by default."
         isDismissable>
         <div style={{fontSize: '13px'}}>
           This content sits on a card-colored background, visually distinct from
@@ -255,12 +254,13 @@ export const AllFeatures: Story = {
       </Banner>
       <Banner
         status="success"
-        title="Expanded by default"
-        description="This content area starts open."
-        defaultIsExpanded
+        title="Collapsible, starting collapsed"
+        description="Click the chevron to expand."
+        collapsible={{defaultIsOpen: false}}
         isDismissable>
         <div style={{fontSize: '13px'}}>
-          Content is visible immediately because defaultIsExpanded is true.
+          Content is hidden until the toggle is pressed, because collapsible was
+          given {'{defaultIsOpen: false}'}.
         </div>
       </Banner>
       <Banner

@@ -184,38 +184,77 @@ describe('Banner', () => {
   });
 
   // =========================================================================
-  // Collapsible content area
+  // Content area — always visible unless `collapsible` is set
   // =========================================================================
 
-  it('hides children by default (collapsed)', () => {
+  it('shows children by default, with no toggle', () => {
     render(
-      <Banner status="info" title="Collapsible">
-        <div data-testid="child-content">Extra content</div>
-      </Banner>,
-    );
-    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
-  });
-
-  it('shows children when defaultIsExpanded is true', () => {
-    render(
-      <Banner status="info" title="Expanded" defaultIsExpanded>
+      <Banner status="info" title="Plain content">
         <div data-testid="child-content">Extra content</div>
       </Banner>,
     );
     expect(screen.getByTestId('child-content')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Expand'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Collapse'}),
+    ).not.toBeInTheDocument();
   });
 
-  it('shows expand button when children are provided', () => {
+  it('leaves non-collapsible content out of the disclosure wiring', () => {
     render(
-      <Banner status="info" title="With Toggle">
-        <div>Content</div>
+      <Banner status="info" title="Plain content" isDismissable>
+        <div data-testid="child-content">Extra content</div>
       </Banner>,
     );
+    // No toggle exists, so nothing should carry disclosure state, and the
+    // region needs no id for a button to point at.
+    const dismiss = screen.getByRole('button', {name: 'Dismiss'});
+    expect(dismiss).not.toHaveAttribute('aria-expanded');
+    expect(dismiss).not.toHaveAttribute('aria-controls');
+    expect(
+      screen.getByTestId('child-content').parentElement,
+    ).not.toHaveAttribute('id');
+  });
+
+  it('treats collapsible={false} as not collapsible', () => {
+    render(
+      <Banner status="info" title="Opted out" collapsible={false}>
+        <div data-testid="child-content">Extra content</div>
+      </Banner>,
+    );
+    expect(screen.getByTestId('child-content')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Expand'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows the toggle, open, for collapsible', () => {
+    render(
+      <Banner status="info" title="With Toggle" collapsible>
+        <div data-testid="child-content">Content</div>
+      </Banner>,
+    );
+    expect(screen.getByTestId('child-content')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Collapse'})).toBeInTheDocument();
+  });
+
+  it('starts collapsed for collapsible={{defaultIsOpen: false}}', () => {
+    render(
+      <Banner
+        status="info"
+        title="Collapsed"
+        collapsible={{defaultIsOpen: false}}>
+        <div data-testid="child-content">Content</div>
+      </Banner>,
+    );
+    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
   });
 
   it('does not show expand/collapse button when no children', () => {
-    render(<Banner status="info" title="No Children" />);
+    render(<Banner status="info" title="No Children" collapsible />);
     expect(
       screen.queryByRole('button', {name: 'Expand'}),
     ).not.toBeInTheDocument();
@@ -227,7 +266,10 @@ describe('Banner', () => {
   it('toggles children visibility on expand/collapse click', async () => {
     const user = userEvent.setup();
     render(
-      <Banner status="info" title="Toggle Test">
+      <Banner
+        status="info"
+        title="Toggle Test"
+        collapsible={{defaultIsOpen: false}}>
         <div data-testid="child-content">Extra content</div>
       </Banner>,
     );
@@ -247,18 +289,50 @@ describe('Banner', () => {
     expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
   });
 
-  it('shows collapse button when defaultIsExpanded', () => {
+  it('reports open-state changes through onOpenChange', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
     render(
-      <Banner status="info" title="Expanded" defaultIsExpanded>
-        <div>Content</div>
+      <Banner
+        status="info"
+        title="Notify"
+        collapsible={{defaultIsOpen: false, onOpenChange}}>
+        <div data-testid="child-content">Extra content</div>
       </Banner>,
     );
-    expect(screen.getByRole('button', {name: 'Collapse'})).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Expand'}));
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+    await user.click(screen.getByRole('button', {name: 'Collapse'}));
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('defers to the consumer when collapsible is controlled', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    render(
+      <Banner
+        status="info"
+        title="Controlled"
+        collapsible={{isOpen: false, onOpenChange}}>
+        <div data-testid="child-content">Extra content</div>
+      </Banner>,
+    );
+
+    // A controlled banner must not move on its own: the click reports, the
+    // content stays hidden until the consumer re-renders with isOpen.
+    await user.click(screen.getByRole('button', {name: 'Expand'}));
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
   });
 
   it('renders expand button to the left of dismiss button', () => {
     const {container} = render(
-      <Banner status="info" title="Order Test" isDismissable>
+      <Banner
+        status="info"
+        title="Order Test"
+        isDismissable
+        collapsible={{defaultIsOpen: false}}>
         <div>Content</div>
       </Banner>,
     );
@@ -273,7 +347,7 @@ describe('Banner', () => {
 
   it('links the expand toggle to its content region via aria-controls', () => {
     render(
-      <Banner status="info" title="Controls Test" defaultIsExpanded>
+      <Banner status="info" title="Controls Test" collapsible>
         <div data-testid="region-content">Region content</div>
       </Banner>,
     );
@@ -290,7 +364,10 @@ describe('Banner', () => {
   it('sets aria-controls only while the content region is mounted', async () => {
     const user = userEvent.setup();
     render(
-      <Banner status="info" title="Controls Toggle">
+      <Banner
+        status="info"
+        title="Controls Toggle"
+        collapsible={{defaultIsOpen: false}}>
         <div data-testid="region-content">Region content</div>
       </Banner>,
     );
@@ -419,7 +496,7 @@ describe('Banner', () => {
       ),
     });
     render(
-      <Banner status="info" title="Chevron Test">
+      <Banner status="info" title="Chevron Test" collapsible>
         <div>Content</div>
       </Banner>,
     );
@@ -494,7 +571,10 @@ describe('Banner', () => {
   describe('empty slots', () => {
     it('does not show the expand affordance for children that render nothing', () => {
       render(
-        <Banner status="info" title="Heads up">
+        <Banner
+          status="info"
+          title="Heads up"
+          collapsible={{defaultIsOpen: false}}>
           {false}
         </Banner>,
       );
@@ -505,13 +585,24 @@ describe('Banner', () => {
 
     it('still shows the expand affordance for real children', () => {
       render(
-        <Banner status="info" title="Heads up">
+        <Banner
+          status="info"
+          title="Heads up"
+          collapsible={{defaultIsOpen: false}}>
           <p>Detail</p>
         </Banner>,
       );
-      expect(
-        screen.getByRole('button', {name: 'Expand'}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
+    });
+
+    it('renders no content area for children that render nothing', () => {
+      const {container} = render(
+        <Banner status="info" title="Heads up">
+          {false}
+        </Banner>,
+      );
+      // Header only — an empty slot must not draw the card-background area.
+      expect(container.firstElementChild?.children).toHaveLength(1);
     });
 
     it('renders no description node for a description that renders nothing', () => {
