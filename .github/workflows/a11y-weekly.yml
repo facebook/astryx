@@ -79,8 +79,7 @@ jobs:
             $BASELINE_FLAGS
 
       - name: Summarize report
-        id: summarize
-        env:
+        id: summarize        env:
           AUDIT_OUTCOME: ${{ steps.audit.outcome }}
         run: |
           node .github/scripts/weekly-a11y-summary.js \
@@ -100,6 +99,34 @@ jobs:
             a11y-weekly-summary.md
           retention-days: 30
           if-no-files-found: warn
+
+      # Full sweep of the invariant the PR job checks on changed components
+      # only: no disabled element may paint a hover state. A token or
+      # shared-style change can regress a component no PR touched, which is
+      # what this weekly exists for. continue-on-error so its report still
+      # uploads; the run is failed at the end.
+      - name: Run full-suite disabled-hover audit
+        id: disabled_hover
+        continue-on-error: true
+        run: |
+          node .github/scripts/disabled-hover-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output disabled-hover-weekly-report.json
+
+      - name: Upload disabled-hover report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: disabled-hover-weekly-report
+          path: disabled-hover-weekly-report.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Fail on hover states shown for disabled elements
+        if: steps.disabled_hover.outcome == 'failure'
+        run: |
+          echo "::error::A disabled element paints a hover state — see the disabled-hover-weekly-report artifact"
+          exit 1
 
       # Surface infra breakage (crashed) and gate failures (failed) as a red
       # run. Plain violations without baseline gating stay green here — the

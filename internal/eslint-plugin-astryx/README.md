@@ -270,7 +270,7 @@ Use `:focus-visible`, or `:has(:focus-visible)` when the ring is drawn on a wrap
 
 **Bad:**
 
-```ts
+````ts
 const styles = stylex.create({
   base: {
     outline: {
@@ -291,7 +291,7 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 // Preferred — the shared ring: .focusVisible on the focusable element,
 // .focusWithin (`:has(:focus-visible)`) on a wrapper around it.
 stylex.props(focusOutlineStyles.focusVisible);
-```
+````
 
 **Scope:** `outline` and its longhands only, and only where the ring is drawn — suppressing one on a broader selector (`outline: {':focus': 'none'}`) is legitimate and is not flagged. A field's `:focus-within` border and inset box-shadow (`Field/inputStyles.stylex.ts`) are a different treatment — "you are typing here" — and are deliberately not policed by this rule.
 
@@ -323,6 +323,41 @@ stylex.props(focusOutlineStyles.focusVisible, styles.base);
 ```
 
 **Scope:** only what the ring LOOKS like — the `outline` shorthand, `outlineWidth`, `outlineStyle` — under a literal `:focus-visible` condition. Not flagged: `outlineOffset` (where the ring sits is a local constraint — inset into a tight grid, or held clear of a field border — and such a component still follows the theme's width, style and color), `outlineColor` (re-coloring per variant is the documented override), and a computed condition key such as `stylex.when.ancestor(':has(:focus-visible)', scope)`, which a shared style cannot express because a scope marker cannot be shared between components.
+
+Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.
+
+### `@astryx/no-hover-on-disabled`
+
+Flags a `:hover` condition inside `stylex.create()` that can still match a disabled element. Browsers suppress a disabled control's **events**, not its **hover styling**, so a hover treatment written for the enabled element is painted under the pointer anyway — the control says "press me" while refusing to be pressed.
+
+StyleX will not take it away for you. A `disabled` style setting `backgroundImage: 'none'` overrides the **default** condition only; the variant's `:hover` class survives the merge and wins the moment the pointer arrives. Button shipped that in every variant, and both halves read as correct in review.
+
+**Bad:**
+
+```ts
+const styles = stylex.create({
+  item: {backgroundColor: {default: 'transparent', ':hover': OVERLAY}},
+});
+```
+
+**Good:**
+
+```ts
+const styles = stylex.create({
+  item: {
+    backgroundColor: {
+      default: 'transparent',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': OVERLAY,
+    },
+  },
+});
+```
+
+`:where()` contributes no specificity, so the guarded selector weighs exactly what `:hover` weighed and every existing override still wins the way it used to.
+
+**Scope:** `:hover` on the styled element itself. A key that hovers something else — `:is(th:hover *)`, `stylex.when.ancestor(':hover')` — styles a descendant when an **ancestor** is hovered, which is a different question (a row may legitimately highlight around a disabled control) and is left alone. The rule is deliberately unconditional rather than scoped to components that have a disabled state: on an element that can never be disabled the guard is a no-op, and asking the question per component is what leaves the gaps.
+
+Autofixable, and mirrored at runtime by `.github/scripts/disabled-hover-audit.js`, which forces `:hover` on every disabled element in every story in Chromium and fails on any painted difference.
 
 Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.
 

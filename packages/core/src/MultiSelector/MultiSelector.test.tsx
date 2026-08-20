@@ -1790,7 +1790,7 @@ describe('MultiSelector clear icon theme target', () => {
     expect(css).toContain('.astryx-multi-selector-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-multi-selector-clear-icon:hover {');
+    expect(css).toContain('.astryx-multi-selector-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });

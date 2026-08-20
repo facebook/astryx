@@ -28,7 +28,10 @@
  * the result.
  *
  * The gate is zero-tolerance and has no baseline: a hover state on a disabled
- * element is never correct, so there is nothing to grandfather.
+ * element is never correct, so there is nothing to grandfather. What it does
+ * skip is an element nothing can point at — no box, or `pointer-events: none`
+ * over its whole subtree — because a hover rule that can never be reached is
+ * not a defect a user can see.
  */
 
 const {chromium} = require('playwright');
@@ -209,7 +212,7 @@ const PAGE_HARNESS = `
 window.__astryxHoverAudit = {
   collect(selector) {
     this.nodes = [...document.querySelectorAll(selector)].filter(
-      el => el.getClientRects().length > 0
+      el => el.getClientRects().length > 0 && this.isHoverable(el)
     );
     return this.nodes.map(el => {
       const id = el.id ? '#' + el.id : '';
@@ -219,6 +222,16 @@ window.__astryxHoverAudit = {
       const role = el.getAttribute('role');
       return '<' + el.tagName.toLowerCase() + id + cls + (role ? ' role=' + role : '') + '>';
     });
+  },
+  // An element no pointer can hit never gets :hover in the first place, so a
+  // hover rule matching it is unreachable rather than wrong (Link's disabled
+  // style sets pointer-events: none, for one). A descendant that IS hittable
+  // brings the whole ancestor chain back into :hover, so the subtree decides.
+  isHoverable(el) {
+    if (getComputedStyle(el).pointerEvents !== 'none') return true;
+    return [...el.querySelectorAll('*')].some(
+      child => getComputedStyle(child).pointerEvents !== 'none'
+    );
   },
   snapshot(index, properties) {
     const out = [];
@@ -258,8 +271,20 @@ async function auditStory(context, port, entry, limits) {
       timeout: limits.timeout,
     });
     await page.evaluate(() => document.fonts?.ready).catch(() => {});
+    // Wait for the story to actually mount before counting disabled elements:
+    // a bare `load` can land before React has rendered, and the sweep would
+    // then report a story as having nothing to check.
+    await page
+      .waitForFunction(
+        () => {
+          const root = document.getElementById('storybook-root');
+          return Boolean(root && root.children.length > 0);
+        },
+        {timeout: 5000},
+      )
+      .catch(() => {});
     await page.addStyleTag({content: FREEZE_MOTION});
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(200);
     await page.evaluate(PAGE_HARNESS);
 
     const labels = await page.evaluate(
@@ -282,7 +307,12 @@ async function auditStory(context, port, entry, limits) {
         selector: DISABLED_SELECTOR,
       });
       const boxed = await page.evaluate(
-        selector => [...document.querySelectorAll(selector)].map(el => el.getClientRects().length > 0),
+        selector =>
+          [...document.querySelectorAll(selector)].map(
+            el =>
+              el.getClientRects().length > 0 &&
+              window.__astryxHoverAudit.isHoverable(el),
+          ),
         DISABLED_SELECTOR,
       );
       const hoverable = nodeIds.filter((_, i) => boxed[i]);

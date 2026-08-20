@@ -2340,7 +2340,7 @@ describe('Selector clear icon theme target', () => {
     expect(css).toContain('.astryx-selector-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-selector-clear-icon:hover {');
+    expect(css).toContain('.astryx-selector-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
