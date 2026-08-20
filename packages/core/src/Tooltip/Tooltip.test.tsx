@@ -267,4 +267,147 @@ describe('Tooltip', () => {
       expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
   });
+  describe('touch', () => {
+    /** A tap: the pointer sequence a finger produces before hover is faked. */
+    const tap = (element: HTMLElement) => {
+      fireEvent.pointerDown(element, {pointerType: 'touch'});
+      fireEvent.pointerUp(element, {pointerType: 'touch'});
+      // Touch synthesizes hover after the press; the tooltip must not act on it.
+      fireEvent.mouseEnter(element);
+    };
+
+    it('opens on a tap when the trigger performs no action', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Tooltip text" onOpenChange={onOpenChange} delay={200}>
+          Abbreviation
+        </Tooltip>,
+      );
+
+      tap(screen.getByText('Abbreviation'));
+
+      // Immediately: a tap is a decision, not hover intent, so no delay applies.
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('stays shut on a tap when the trigger performs an action', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Tooltip text" onOpenChange={onOpenChange} delay={0}>
+          <button type="button">Save</button>
+        </Tooltip>,
+      );
+
+      tap(screen.getByRole('button', {name: 'Save'}));
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    });
+
+    it('opens on a tap of an action trigger when touchTrigger is "tap"', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip
+          content="What this metric means"
+          onOpenChange={onOpenChange}
+          touchTrigger="tap"
+          delay={0}>
+          <button type="button">Info</button>
+        </Tooltip>,
+      );
+
+      tap(screen.getByRole('button', {name: 'Info'}));
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('never opens on a tap when touchTrigger is "none"', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip
+          content="Tooltip text"
+          onOpenChange={onOpenChange}
+          touchTrigger="none"
+          delay={0}>
+          Abbreviation
+        </Tooltip>,
+      );
+
+      tap(screen.getByText('Abbreviation'));
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    });
+
+    it('closes on a second tap of the trigger', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Tooltip text" onOpenChange={onOpenChange} delay={0}>
+          Abbreviation
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByText('Abbreviation');
+      tap(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      tap(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('closes on a tap outside — the dismissal a tap-open owes the user', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <>
+          <Tooltip content="Tooltip text" onOpenChange={onOpenChange} delay={0}>
+            Abbreviation
+          </Tooltip>
+          <button type="button">Elsewhere</button>
+        </>,
+      );
+
+      tap(screen.getByText('Abbreviation'));
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      fireEvent.pointerDown(screen.getByRole('button', {name: 'Elsewhere'}), {
+        pointerType: 'touch',
+      });
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('still opens on a real mouse hover after a tap', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Tooltip text" onOpenChange={onOpenChange} delay={0}>
+          <button type="button">Save</button>
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Save'});
+      tap(trigger);
+      await new Promise(resolve => setTimeout(resolve, 20));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+
+      // A hybrid device: the same trigger, now under a mouse.
+      fireEvent.pointerEnter(trigger, {pointerType: 'mouse'});
+      fireEvent.mouseEnter(trigger);
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+  });
 });

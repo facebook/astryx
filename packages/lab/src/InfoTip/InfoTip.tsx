@@ -79,8 +79,8 @@ const styles = stylex.create({
 
 /**
  * An inline info-icon help affordance: a small "i" button that reveals a
- * tooltip on hover and keyboard focus. Use it next to labels, values, and
- * metrics for permission notes, metric definitions, and field help.
+ * tooltip on hover, keyboard focus, and tap. Use it next to labels, values,
+ * and metrics for permission notes, metric definitions, and field help.
  *
  * The value over hand-composing Icon inside Tooltip is the pre-wired
  * accessible trigger: a real button with an aria-label, Tab-reachable,
@@ -130,6 +130,11 @@ export function InfoTip({
   return (
     <Tooltip
       content={content}
+      // The trigger is a real button, so Tooltip's `auto` touch rule would
+      // give the tap to the control and suppress the tooltip. Here the tooltip
+      // IS the control's only purpose, so the tap has to open it — otherwise
+      // an InfoTip's content is unreachable on a phone.
+      touchTrigger="tap"
       isOpen={isDismissed ? false : undefined}
       onOpenChange={handleOpenChange}>
       <button

@@ -804,4 +804,129 @@ describe('HoverCard', () => {
       container.remove();
     });
   });
+
+  describe('touch', () => {
+    /** A tap: the pointer sequence a finger produces before hover is faked. */
+    const tap = (element: HTMLElement) => {
+      fireEvent.pointerDown(element, {pointerType: 'touch'});
+      fireEvent.pointerUp(element, {pointerType: 'touch'});
+      // Touch synthesizes hover after the press; the card must not act on it.
+      fireEvent.mouseEnter(element);
+    };
+
+    it('opens on a tap when the trigger performs no action', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={300}>
+          Ruby Cheung
+        </HoverCard>,
+      );
+
+      tap(screen.getByText('Ruby Cheung'));
+
+      // Immediately: a tap is a decision, not hover intent, so no delay applies.
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('stays shut on a tap when the trigger performs an action', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={0}>
+          <button type="button">Save</button>
+        </HoverCard>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Save'});
+      tap(trigger);
+      // A tap focuses what it activates; that focus must not reopen the card.
+      fireEvent.focusIn(trigger);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    });
+
+    it('opens on a tap of an action trigger when touchTrigger is "tap"', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          touchTrigger="tap"
+          delay={0}>
+          <button type="button">Details</button>
+        </HoverCard>,
+      );
+
+      tap(screen.getByRole('button', {name: 'Details'}));
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('survives a tap on its own content', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<button type="button">Follow</button>}
+          onOpenChange={onOpenChange}
+          delay={0}
+          hideDelay={0}>
+          Ruby Cheung
+        </HoverCard>,
+      );
+
+      tap(screen.getByText('Ruby Cheung'));
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+      onOpenChange.mockClear();
+
+      const action = await screen.findByRole('button', {
+        name: 'Follow',
+        hidden: true,
+      });
+      fireEvent.pointerDown(action, {pointerType: 'touch'});
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+
+    it('closes on a tap outside', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <>
+          <HoverCard
+            content={<span>Card content</span>}
+            onOpenChange={onOpenChange}
+            delay={0}
+            hideDelay={0}>
+            Ruby Cheung
+          </HoverCard>
+          <button type="button">Elsewhere</button>
+        </>,
+      );
+
+      tap(screen.getByText('Ruby Cheung'));
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      fireEvent.pointerDown(screen.getByRole('button', {name: 'Elsewhere'}), {
+        pointerType: 'touch',
+      });
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+  });
 });

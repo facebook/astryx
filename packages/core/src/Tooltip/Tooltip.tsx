@@ -22,11 +22,15 @@ import React, {
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
-import {useTooltip, type TooltipFocusTrigger} from './useTooltip';
+import {
+  useTooltip,
+  type TooltipFocusTrigger,
+  type TooltipTouchTrigger,
+} from './useTooltip';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {colorVars} from '../theme/tokens.stylex';
 
-export type {TooltipFocusTrigger} from './useTooltip';
+export type {TooltipFocusTrigger, TooltipTouchTrigger} from './useTooltip';
 
 const styles = stylex.create({
   wrapperContents: {
@@ -98,6 +102,20 @@ export interface TooltipProps {
    * @default 'auto'
    */
   focusTrigger?: TooltipFocusTrigger;
+
+  /**
+   * What a tap does on a touch pointer, where there is no hover:
+   * - `auto`: tap opens the tooltip, unless the trigger performs an action of
+   *   its own (a button, a link, a form control) — that tap belongs to the
+   *   control, and a hint about a control the user just operated is noise
+   * - `tap`: tap always opens the tooltip. This is what an info icon rendered
+   *   as a button wants: it looks like an action to the DOM, but revealing the
+   *   tooltip is the only thing it does
+   * - `none`: touch never opens the tooltip
+   *
+   * @default 'auto'
+   */
+  touchTrigger?: TooltipTouchTrigger;
 
   /**
    * Whether the tooltip is enabled.
@@ -176,6 +194,7 @@ export function Tooltip({
   delay = 200,
   hideDelay = 0,
   focusTrigger = 'auto',
+  touchTrigger = 'auto',
   isEnabled = true,
   onOpenChange,
   hasHoverIndication = 'auto',
@@ -204,6 +223,7 @@ export function Tooltip({
     delay,
     hideDelay,
     focusTrigger,
+    touchTrigger,
     isEnabled,
     isOpen,
     isDefaultOpen,
