@@ -26,8 +26,9 @@ boolean-or-config convention `SideNav.collapsible` set, and backed by the shared
 render instead of hiding. Run `astryx upgrade` — the
 `banner-collapsible-content` codemod rewrites `defaultIsExpanded` to the
 equivalent config and adds `collapsible={{defaultIsOpen: false}}` to banners
-that relied on the implicit collapse, so behaviour is preserved; those sites get
-a TODO comment, since always-visible content is usually what they want.
+that relied on the implicit collapse, so behaviour is preserved. Those marked
+collapsed are the ones worth a second look afterwards: content that is simply
+visible is usually what a banner wants, and is now one prop shorter to write.
 
 Note for a banner whose content is now always visible: `role="alert"` announces
 the whole region, so an error banner reads its detail out along with its title.
