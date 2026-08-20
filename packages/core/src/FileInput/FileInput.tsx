@@ -680,7 +680,7 @@ export function FileInput({
 
   const renderDropzoneContent = () => {
     if (isLoading) {
-      return <Spinner size="md" />;
+      return <Spinner size="md" shade="inherit" />;
     }
     if (hasFiles) {
       return (
@@ -706,7 +706,7 @@ export function FileInput({
           <span {...stylex.props(styles.fileNameText)}>
             {fileNames ?? displayPlaceholder}
           </span>
-          <Spinner size="sm" />
+          <Spinner size="sm" shade="inherit" />
         </>
       );
     }

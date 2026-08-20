@@ -619,7 +619,7 @@ export function Switch({
               isOn ? styles.thumbOn : styles.thumbOff,
             ),
           )}>
-          {isBusy && <Spinner size="sm" />}
+          {isBusy && <Spinner size="sm" shade="inherit" />}
         </div>
       </div>
       {isBusy && <VisuallyHidden role="status">Loading</VisuallyHidden>}
