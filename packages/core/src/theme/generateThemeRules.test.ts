@@ -160,6 +160,44 @@ describe('generateThemeRules', () => {
     ).toBe(true);
   });
 
+  // A theme authoring `:hover` is describing the ENABLED control. Without a
+  // guard the rule paints a disabled one too, because browsers suppress a
+  // disabled control's events, not its hover styling — and a theme override
+  // would then reintroduce, on every component at once, the defect the
+  // components' own styles were fixed for.
+  it('keeps a themed :hover off disabled elements', () => {
+    const hoverTheme = defineTheme({
+      name: 'hover-guard',
+      components: {
+        button: {
+          base: {
+            ':hover': {color: 'red'},
+            ':focus-visible': {outline: '2px solid blue'},
+          },
+        },
+      },
+    });
+    const hoverRules = generateThemeRules(hoverTheme);
+    const hoverRule = hoverRules.find(rule => rule.includes(':hover'));
+    expect(hoverRule).toContain(
+      '.astryx-button:hover:where(:not(:disabled,[aria-disabled="true"]))',
+    );
+    // Every selector in a comma-separated list carries its own guard —
+    // a trailing pseudo does not distribute over a selector list. (Counted,
+    // not split: the guard contains a comma of its own.)
+    const selectorText = hoverRule.split('{')[0];
+    const hovers = selectorText.match(/:hover/g) || [];
+    const guards = selectorText.match(/:where\(:not\(:disabled/g) || [];
+    expect(hovers.length).toBeGreaterThan(0);
+    expect(guards.length).toBe(hovers.length);
+    // Other pseudo-classes are untouched: a disabled control can still be
+    // focused (that is the point of aria-disabled), and :focus-visible on it
+    // is correct.
+    const focusRule = hoverRules.find(rule => rule.includes(':focus-visible'));
+    expect(focusRule).toContain('.astryx-button:focus-visible {');
+    expect(focusRule).not.toContain('aria-disabled');
+  });
+
   // --- Prose rules ---
 
   it('includes prose heading rules with computed values', () => {

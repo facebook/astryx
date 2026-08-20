@@ -273,7 +273,9 @@ const elevationStyles = stylex.create({
   low: {
     boxShadow: {
       default: shadowVars['--shadow-low'],
-      ':hover': {'@media (hover: hover)': shadowVars['--shadow-med']},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': shadowVars['--shadow-med'],
+      },
     },
     ':focus-within': {
       boxShadow: shadowVars['--shadow-med'],
@@ -292,9 +294,10 @@ const elevationStyles = stylex.create({
     padding: `calc(var(--_chat-composer-padding) - ${borderVars['--border-width']})`,
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': `inset 0px 0px 0px 2px color-mix(in srgb, ${colorVars['--color-border-emphasized']} 30%, transparent)`,
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': `inset 0px 0px 0px 2px color-mix(in srgb, ${colorVars['--color-border-emphasized']} 30%, transparent)`,
+        },
       ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
     },
   },

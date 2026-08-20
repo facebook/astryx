@@ -88,7 +88,7 @@ const styles = stylex.create({
     // Interactive overlay states layered on top via backgroundImage
     backgroundImage: {
       default: `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']}), linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']}), linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,

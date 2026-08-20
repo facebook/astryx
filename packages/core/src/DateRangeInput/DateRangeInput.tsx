@@ -148,7 +148,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },

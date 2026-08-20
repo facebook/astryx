@@ -216,7 +216,8 @@ const handleStyles = stylex.create({
     // can't receive :hover directly.
     '--indicator-color': {
       default: 'transparent',
-      ':hover': colorVars['--color-accent'],
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+        colorVars['--color-accent'],
       ':focus-visible': colorVars['--color-accent'],
     },
     '@media (pointer: coarse)': {

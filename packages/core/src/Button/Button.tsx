@@ -107,11 +107,11 @@ const styles = stylex.create({
     },
   },
   ariaDisabled: {
+    // The variants' hover treatment already steps aside for
+    // `[aria-disabled]`; `:active` still matches a press on an aria-disabled
+    // button, so that one is suppressed here.
     backgroundImage: {
       default: 'none',
-      ':hover': {
-        '@media (hover: hover)': 'none',
-      },
       ':active': 'none',
     },
   },
@@ -198,7 +198,7 @@ const variants = stylex.create({
     color: colorVars['--color-on-accent'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -209,7 +209,7 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -220,7 +220,7 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -235,7 +235,7 @@ const variants = stylex.create({
     outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,

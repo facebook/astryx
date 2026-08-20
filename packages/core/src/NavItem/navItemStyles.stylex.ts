@@ -72,7 +72,7 @@ export const navItemStyles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     textAlign: 'start',
     boxSizing: 'border-box',
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
@@ -98,7 +98,7 @@ export const navItemStyles = stylex.create({
       '@media (forced-colors: active)': 'HighlightText',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: {
           default: colorVars['--color-neutral'],

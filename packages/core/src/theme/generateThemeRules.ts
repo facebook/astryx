@@ -47,11 +47,29 @@ function componentClassSelector(component: string, suffix: string): string {
 }
 
 /**
+ * Guard appended to a themed `:hover` rule so it cannot match a disabled
+ * element.
+ *
+ * A theme authoring `':hover': {backgroundColor: …}` is describing the
+ * enabled control; `:hover` on its own would paint that background on a
+ * disabled one too, because browsers suppress a disabled control's events,
+ * not its hover styling. `:where()` contributes no specificity, so a themed
+ * hover rule still weighs exactly what it weighed before.
+ *
+ * Mirrors the `@astryx/no-hover-on-disabled` lint rule, which enforces the
+ * same guard on the components' own StyleX styles.
+ */
+const HOVER_DISABLED_GUARD = ':where(:not(:disabled,[aria-disabled="true"]))';
+
+/**
  * Append a pseudo-class to every selector in a comma-separated selector list.
  *
  * Selector helpers may emit comma-separated lists. CSS does not distribute a
  * trailing pseudo over selector lists, so `${list}:hover` would only target the
  * final selector. Rewrite each item so the pseudo applies to all of them.
+ *
+ * A `:hover` pseudo also picks up the disabled guard. A pseudo-ELEMENT has to
+ * end the selector, so the guard is spliced in before it.
  */
 function appendPseudoToSelectorList(selector: string, pseudo: string): string {
   const parts: string[] = [];
@@ -71,7 +89,22 @@ function appendPseudoToSelectorList(selector: string, pseudo: string): string {
   }
   parts.push(selector.slice(start).trim());
 
-  return parts.map(part => `${part}${pseudo}`).join(', ');
+  const guarded = guardHoverPseudo(pseudo);
+
+  return parts.map(part => `${part}${guarded}`).join(', ');
+}
+
+/** Insert the disabled guard into a `:hover` pseudo, keeping any pseudo-element last. */
+function guardHoverPseudo(pseudo: string): string {
+  if (!/^:hover(?![-\w])/.test(pseudo) || pseudo.includes('[aria-disabled')) {
+    return pseudo;
+  }
+  const pseudoElement = pseudo.indexOf('::');
+  return pseudoElement === -1
+    ? pseudo + HOVER_DISABLED_GUARD
+    : pseudo.slice(0, pseudoElement) +
+        HOVER_DISABLED_GUARD +
+        pseudo.slice(pseudoElement);
 }
 
 // =============================================================================

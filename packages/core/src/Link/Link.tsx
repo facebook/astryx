@@ -61,7 +61,7 @@ const styles = stylex.create({
     fontWeight: 'inherit',
     textDecoration: {
       default: 'none',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': 'underline',
       },
     },
@@ -103,7 +103,7 @@ const linkColorStyles = stylex.create({
   primary: {
     color: {
       default: colorVars['--color-text-primary'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-primary']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
@@ -111,7 +111,7 @@ const linkColorStyles = stylex.create({
   secondary: {
     color: {
       default: colorVars['--color-text-secondary'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-secondary']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
@@ -125,7 +125,7 @@ const linkColorStyles = stylex.create({
   accent: {
     color: {
       default: colorVars['--color-text-accent'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },

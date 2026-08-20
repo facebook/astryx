@@ -90,7 +90,7 @@ const styles = stylex.create({
   hover: {
     backgroundColor: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },

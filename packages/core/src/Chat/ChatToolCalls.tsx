@@ -197,7 +197,7 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-1'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-1']})`,
     '@media (hover: hover)': {
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },

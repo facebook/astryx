@@ -251,11 +251,11 @@ const treeStyles = stylex.create({
     // Match IconButton ghost hover: subtle overlay background
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
     },
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       color: colorVars['--color-icon-primary'],
     },
   },

@@ -80,7 +80,7 @@ const styles = stylex.create({
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover::after': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },

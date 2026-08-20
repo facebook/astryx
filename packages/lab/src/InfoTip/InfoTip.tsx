@@ -66,7 +66,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     color: {
       default: colorVars['--color-icon-secondary'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         default: null,
         '@media (hover: hover)': colorVars['--color-icon-primary'],
       },

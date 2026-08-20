@@ -82,7 +82,7 @@ const styles = stylex.create({
     fontSize: 'inherit',
     fontWeight: fontWeightVars['--font-weight-normal'],
     textAlign: 'start',
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
@@ -104,7 +104,7 @@ const styles = stylex.create({
   interactiveCollapsed: {
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': 'transparent',
       },
     },

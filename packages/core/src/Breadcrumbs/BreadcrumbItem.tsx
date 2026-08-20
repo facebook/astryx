@@ -158,7 +158,7 @@ const itemStyles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
     textDecoration: {
       default: 'none',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': 'underline',
       },
     },

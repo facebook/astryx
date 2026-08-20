@@ -223,6 +223,18 @@ export default defineConfig(
       '@astryx/no-hardcoded-i18n-string': isStrictMode ? 'error' : 'warn',
     },
   },
+  // A hover state on a disabled control is a defect wherever it ships, so
+  // this one rule reaches past core: lab components are consumed the same
+  // way, and lab is where the next core component comes from.
+  {
+    files: ["packages/lab/src/**/*.{ts,tsx}"],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-hover-on-disabled': 'error',
+    },
+  },
   // The i18n runtime itself defines the message strings the rest of the
   // package resolves against; a "hardcoded string" check against it would be
   // circular. Turn off @astryx/no-hardcoded-i18n-string just for this dir.

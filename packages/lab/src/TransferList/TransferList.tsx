@@ -282,12 +282,12 @@ const styles = stylex.create({
     color: colorVars['--color-text-accent'],
     backgroundImage: {
       default: 'none',
-      ':hover': 'none',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': 'none',
       ':active': 'none',
     },
     textDecoration: {
       default: 'none',
-      ':hover': 'underline',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': 'underline',
     },
     fontSize: typeScaleVars['--text-body-size'],
     fontWeight: typeScaleVars['--text-body-weight'],

@@ -148,7 +148,8 @@ const styles = stylex.create({
     cursor: 'pointer',
     color: {
       default: colorVars['--color-icon-secondary'],
-      ':hover': colorVars['--color-icon-primary'],
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+        colorVars['--color-icon-primary'],
     },
   },
   chevronIcon: {

@@ -103,7 +103,7 @@ const styles = stylex.create({
   },
   labelHover: {
     backgroundColor: {
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -112,7 +112,7 @@ const styles = stylex.create({
       // the base secondary color from `label` (last-wins property merge),
       // leaving linked citations to inherit the surrounding text color.
       default: colorVars['--color-text-secondary'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-text-primary'],
       },
     },
@@ -145,7 +145,7 @@ const styles = stylex.create({
       // hover-only conditional replaces the base accent-muted pill from
       // `number` on merge, leaving linked badges transparent.
       default: colorVars['--color-accent-muted'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },

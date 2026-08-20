@@ -268,7 +268,7 @@ const styles = stylex.create({
   thumbHover: {
     backgroundColor: {
       default: colorVars['--color-accent'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },

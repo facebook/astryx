@@ -49,7 +49,7 @@ const styles = stylex.create({
     userSelect: 'none',
   },
   itemHover: {
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       [HOVER_HOVER]: {
         backgroundColor: colorVars['--color-overlay-hover'],
       },

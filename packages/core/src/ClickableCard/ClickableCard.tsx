@@ -78,7 +78,7 @@ const styles = stylex.create({
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover::after': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
@@ -110,7 +110,7 @@ const styles = stylex.create({
   // @media (hover: hover) so touch devices don't get a stuck hover state.
   borderedHoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         borderColor: colorVars['--color-border-emphasized'],
       },
     },

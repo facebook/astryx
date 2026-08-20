@@ -118,7 +118,7 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         default: 'transparent',
         '@media (hover: hover)': colorVars['--color-border-emphasized'],
       },
@@ -138,7 +138,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
     borderColor: {
       default: colorVars['--color-accent'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         default: colorVars['--color-accent'],
         '@media (hover: hover)': colorVars['--color-accent'],
       },
@@ -170,7 +170,7 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         default: 'transparent',
         '@media (hover: hover)': colorVars['--color-border-emphasized'],
       },
