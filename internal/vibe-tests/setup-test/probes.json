@@ -1,0 +1,63 @@
+{
+  "$comment": "Probe set for the setup test. Each probe names a piece of the EXISTING app's chrome — none of it is what a setup task asks the agent to change. A probe that moves is a regression the agent introduced by installing; a probe that disappears is recorded as `missing` rather than silently skipped.",
+  "probes": [
+    {"name": "page-title", "selector": "header h1", "role": "app text"},
+    {
+      "name": "refresh-button",
+      "selector": "header button:last-of-type",
+      "role": "app control"
+    },
+    {
+      "name": "env-picker-trigger",
+      "selector": "header .relative > button",
+      "role": "app control"
+    },
+    {"name": "runs-card", "selector": "main > div", "role": "app surface"},
+    {"name": "table-header-cell", "selector": "thead th", "role": "app text"},
+    {
+      "name": "run-id-cell",
+      "selector": "tbody tr:first-child td:first-child",
+      "role": "app text"
+    },
+    {
+      "name": "status-badge",
+      "selector": "tbody tr:first-child span",
+      "role": "app status"
+    },
+    {
+      "name": "muted-cell",
+      "selector": "tbody tr:first-child td:nth-child(5)",
+      "role": "app text"
+    },
+    {"name": "body", "selector": "body", "role": "app surface"}
+  ],
+  "properties": [
+    "color",
+    "backgroundColor",
+    "borderColor",
+    "borderWidth",
+    "borderRadius",
+    "fontFamily",
+    "fontSize",
+    "fontWeight",
+    "lineHeight",
+    "letterSpacing",
+    "paddingLeft",
+    "paddingTop",
+    "height",
+    "boxShadow"
+  ],
+  "rootVariables": [
+    "--color-card",
+    "--color-muted",
+    "--color-border",
+    "--color-accent",
+    "--color-background",
+    "--color-foreground",
+    "--radius-md",
+    "--shadow-sm",
+    "--spacing",
+    "--text-xs",
+    "--font-sans"
+  ]
+}

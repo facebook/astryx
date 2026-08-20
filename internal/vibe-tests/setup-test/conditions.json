@@ -1,0 +1,43 @@
+{
+  "name": "setup",
+  "description": "Can an agent get Astryx into an app that already has Tailwind, without damaging the app? The design system is installed in NO condition — installing it is the task. The only variable is the guidance surface the agent can find; the outcome is the rendered app, measured against itself before the install.",
+  "base": {
+    "fixture": "fixture-app",
+    "notes": "Existing Tailwind v4 console: `@import 'tailwindcss'`, its own `:root` vocabulary and `@theme inline` mapping (--color-card, --color-border, --color-accent, --radius-md), real shadcn components under components/ui, house conventions in README.md + AGENTS.md, a dark surface that is CSS variables rather than a color-mode system. It builds and renders before every run."
+  },
+  "conditions": [
+    {
+      "id": "s0-docs",
+      "label": "Public docs only (floor)",
+      "role": "control",
+      "patches": [],
+      "hypothesis": "The agent finds the package README and `astryx docs styling-libraries`, and both print a Tailwind recipe written for an empty globals.css. Applied to a file that already has content, it builds clean and repaints the app. Expect silent-damage, not a failed build."
+    },
+    {
+      "id": "s1-pointer",
+      "label": "AGENTS.md points at the CLI",
+      "role": "candidate",
+      "patches": ["patch:pointer"],
+      "hypothesis": "Discovery improves — more doc lookups before the first edit — but the recipe the agent then finds is the same greenfield one, so the damage is unchanged. If this arm moves the score, the problem was discovery; if it doesn't, the problem is the recipe."
+    },
+    {
+      "id": "s2-existing-app",
+      "label": "An existing-app recipe exists",
+      "role": "candidate",
+      "patches": ["patch:pointer", "patch:existing-app"],
+      "hypothesis": "The candidate guidance: keep the app's Tailwind entry, declare the layer order, skip the bridge unless the app wants its vocabulary re-pointed, and tell the provider the app's color scheme. This is the arm that decides whether a doc change is worth shipping."
+    },
+    {
+      "id": "s3-directed",
+      "label": "Handed the exact edits (ceiling)",
+      "role": "ceiling",
+      "patches": ["patch:pointer", "patch:existing-app", "patch:directed"],
+      "hypothesis": "Damage is near zero by construction. What this arm measures is the RESIDUE — what an install costs an existing app even when nobody makes a mistake. Residue the ceiling cannot remove is a product finding, filed against the packages, not a guidance gap."
+    }
+  ],
+  "measurement": {
+    "reference": "The pristine app, measured by the same code before the agent starts.",
+    "schemes": ["light", "dark"],
+    "notes": "Both color schemes are measured in every run. The system paints through light-dark() and the fixture has no color-mode system for it to read, so an arm can be correct on a dark-mode laptop and unreadable in headless CI. A single-scheme test would inherit whichever machine ran it."
+  }
+}

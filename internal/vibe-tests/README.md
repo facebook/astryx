@@ -141,6 +141,12 @@ internal/vibe-tests/
 │   ├── build-report.ts       # Vite HTML report
 │   └── deploy-report.ts      # gh-pages deployment
 ├── .baseline/           # Real shadcn/ui components for baseline tsc
+├── setup-test/          # Getting the system INTO an app that already has one
+│   ├── PLAN.md               # design, arms, measures, decision rule
+│   ├── fixture-app/          # the existing Tailwind app (builds and renders)
+│   ├── run-setup.mjs         # one sandbox per condition × prompt
+│   ├── setup-measure.mjs     # build + render + probe, in both color schemes
+│   └── setup-eval.ts         # deterministic scorer (deltas vs the app before)
 ├── results/             # Iteration results (gitignored)
 └── README.md            # This file
 ```

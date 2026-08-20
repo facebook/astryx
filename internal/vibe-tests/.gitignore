@@ -1,6 +1,10 @@
 # Astryx agent docs (generated)
 .astryx-docs/
 AGENTS.md
+# …except a fixture app's own AGENTS.md, which is the guidance under test, not
+# generated docs. Without this it is invisible to `git add` and an experiment
+# silently loses its independent variable.
+!setup-test/fixture-app/AGENTS.md
 
 # Baseline comparison docs (generated)
 .baseline-docs/
