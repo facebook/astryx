@@ -3,7 +3,12 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {DateInputNext, MobileDateField} from '@astryxdesign/lab';
+import {
+  DateInputNext,
+  MobileDateField,
+  MOBILE_PICKER_QUERY,
+} from '@astryxdesign/lab';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import type {ISODateString} from '@astryxdesign/core/utils';
 import {Text} from '@astryxdesign/core/Text';
 import {Banner} from '@astryxdesign/core/Banner';
@@ -82,12 +87,21 @@ export const Default: Story = {
   },
   render: () => {
     const [date, setDate] = useState<ISODateString | undefined>();
+    // The banner reports the surface you are ACTUALLY looking at. Hardcoding
+    // "desktop" here was wrong on the one device the story matters most on.
+    const isTouch = useMediaQuery(MOBILE_PICKER_QUERY);
     return (
       <div {...stylex.props(styles.phone)}>
         <Banner
           status="info"
-          title="Showing the desktop surface"
-          description="A coarse pointer under 768px gets the touch picker instead. The stories below force it, so it is reviewable here."
+          title={
+            isTouch ? 'Showing the touch picker' : 'Showing the desktop surface'
+          }
+          description={
+            isTouch
+              ? 'Narrow and a coarse pointer, so you get the picker: tap the field, then scroll the months. On a desktop pointer this same story renders core’s DateInput.'
+              : 'A coarse pointer under 768px gets the touch picker instead. The stories below force it, so it is reviewable here.'
+          }
         />
         <DateInputNext
           label="Event date"
