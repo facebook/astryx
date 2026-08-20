@@ -13,6 +13,7 @@
  * - no-nullish-jsx-guard: Flags `!= null` JSX render guards for rendered values (use isRenderable so false/''/true slots don't leak an empty element)
  * - no-unguarded-ime-keydown: Flags an onKeyDown on an editable surface that branches on command keys without an IME composition guard (isImeKeyEvent/isComposing)
  * - no-hover-on-disabled: Flags a :hover condition that can still match a disabled element (browsers suppress a disabled control's events, not its hover styling)
+ * - no-inline-merge-refs: Flags mergeRefs calls inside JSX ref props (use useMergedRefs for stable identity)
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -37,6 +38,7 @@ import focusOutlineKeyboardOnlyRule from './focus-outline-keyboard-only.js';
 import focusOutlineSharedRule from './focus-outline-shared.js';
 import noHoverOnDisabledRule from './no-hover-on-disabled.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
+import noInlineMergeRefsRule from './no-inline-merge-refs.js';
 import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
 import requireBasePropsRule from './require-base-props.js';
@@ -261,6 +263,7 @@ const plugin = {
     'focus-outline-shared': focusOutlineSharedRule,
     'no-hover-on-disabled': noHoverOnDisabledRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
+    'no-inline-merge-refs': noInlineMergeRefsRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
     'copyright-header': copyrightHeaderRule,
@@ -318,6 +321,7 @@ plugin.configs.strict = {
     // autofixable.
     '@astryx/no-hover-on-disabled': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
+    '@astryx/no-inline-merge-refs': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
     '@astryx/copyright-header': 'error',
@@ -362,6 +366,7 @@ plugin.configs.recommended = {
     // autofixable.
     '@astryx/no-hover-on-disabled': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
+    '@astryx/no-inline-merge-refs': 'error',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',
     '@astryx/copyright-header': 'error',

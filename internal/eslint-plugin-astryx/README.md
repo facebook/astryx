@@ -98,6 +98,34 @@ Style objects imported from another module are read from that module, so
 rewrite that moves the styles onto the child. Removing a node can shift layout,
 so it is never applied by `--fix`.
 
+### `@astryx/no-inline-merge-refs`
+
+Flags two unstable ref-composition patterns:
+
+1. `mergeRefs(...)` inside a JSX `ref` prop. Calling the utility during render
+   creates a new callback ref every time, so React detaches and reattaches the
+   element on unrelated rerenders.
+2. An inline callback passed to `useMergedRefs(...)`. The changing input makes
+   the hook recreate its callback on every render, defeating the hook.
+
+Use `useMergedRefs(...)` with stable ref inputs instead.
+
+```tsx
+// Bad
+<div ref={mergeRefs(forwardedRef, internalRef)} />;
+useMergedRefs(forwardedRef, node => setNode(node));
+
+// Good — the hook itself may be called inline when Hooks ordering is valid
+<div ref={useMergedRefs(forwardedRef, internalRef)} />;
+
+// Also good
+const ref = useMergedRefs(forwardedRef, internalRef);
+<div ref={ref} />;
+```
+
+The rule is an error in both tiers because core contains no inline
+`mergeRefs(...)` JSX callsites.
+
 ### `@astryx/require-letter-spacing`
 
 Recommends adding `letterSpacing` when `fontSize` is defined (common design pattern for badges, labels).
