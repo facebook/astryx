@@ -1842,6 +1842,17 @@ describe('NumberInput stepper padding coupling', () => {
           '--astryx-number-input-padding-block-end: 12px',
         ],
       ],
+      [
+        // `paddingTop` is `paddingBlockStart` in every horizontal writing
+        // mode, so it normalizes onto the same tokens. The physical inline
+        // pair is deliberately not mapped — see generateThemeRules.
+        'the physical block longhands',
+        {paddingTop: '14px', paddingBottom: '6px'},
+        [
+          '--astryx-number-input-padding-block-start: 14px',
+          '--astryx-number-input-padding-block-end: 6px',
+        ],
+      ],
     ])('%s', (_label, base, expected) => {
       const theme = defineTheme({
         name: 'number-input-padding-spelling-test',
@@ -1853,7 +1864,9 @@ describe('NumberInput stepper padding coupling', () => {
       }
       // The expansion consumes the padding: a raw declaration left on the
       // wrapper is padding the column cannot see, which is the gap itself.
-      expect(css).not.toMatch(/^\s*padding(-block|-inline)?(-start|-end)?:/m);
+      expect(css).not.toMatch(
+        /^\s*padding(-block|-inline|-top|-bottom)?(-start|-end)?:/m,
+      );
     });
   });
 
