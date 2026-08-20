@@ -188,11 +188,27 @@ describe('InputClearButton', () => {
       true,
     );
     // ...and nothing wider than that, which would reach into the adornment
-    // gap and the input's caret area.
-    expect(decl(/--_input-clear-hit-inset\s*:\s*-[3-9]px/)).toBe(false);
-    // The overlay itself is what carries the expansion.
+    // gap and the input's caret area. Scoped to the coarse block, because
+    // that is the only place a wider value can appear.
+    expect(
+      decl(
+        /--_input-clear-hit-inset\s*:\s*-(?:[3-9]|\d{2,})px/,
+        'pointer: coarse',
+      ),
+    ).toBe(false);
+    // The overlay exists only on touch. On a fine pointer a generated
+    // ::after would cover the button and take hover away from the glyph
+    // target, so `content` is gated the same way the inset is.
+    expect(decl(/--_input-clear-hit-content\s*:\s*none/)).toBe(true);
+    expect(decl(/--_input-clear-hit-content\s*:\s*""/, 'pointer: coarse')).toBe(
+      true,
+    );
+    // The overlay itself is what carries the expansion, and what is gated.
     expect(
       decl(/::after\s*\{[^}]*inset\s*:\s*var\(--_input-clear-hit-inset\)/),
+    ).toBe(true);
+    expect(
+      decl(/::after\s*\{[^}]*content\s*:\s*var\(--_input-clear-hit-content\)/),
     ).toBe(true);
   });
 

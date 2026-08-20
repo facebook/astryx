@@ -47,8 +47,19 @@ const styles = stylex.create({
       default: '0px',
       '@media (pointer: coarse)': '-2px',
     },
+    // The overlay itself is gated too, not just its size. An ::after that is
+    // generated on a fine pointer sits exactly over the button at inset 0,
+    // where it adds no hit area but is the topmost hit-test box — so hover
+    // stops reaching the descendants and `.astryx-input-clear-icon:hover`, a
+    // public theme target, no longer matches. `content: none` means the
+    // pseudo-element is not generated at all, so on a fine pointer the
+    // overlay does not exist.
+    '--_input-clear-hit-content': {
+      default: 'none',
+      '@media (pointer: coarse)': '""',
+    },
     '::after': {
-      content: '""',
+      content: 'var(--_input-clear-hit-content)',
       position: 'absolute',
       inset: 'var(--_input-clear-hit-inset)',
     },
