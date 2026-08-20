@@ -718,6 +718,51 @@ describe('RadioList', () => {
       expect(disabled).toHaveAttribute('data-disabled', 'disabled');
       expect(plain).not.toHaveAttribute('data-disabled');
     });
+
+    it('rides the painting row element (astryx-item), not a bare layout wrapper', () => {
+      // The row target must sit on the element Item paints — the surface that
+      // renders hover, density padding, and radius — so a theme styling
+      // `radio-list-item`'s background/padding/borderRadius (and its `:hover`)
+      // actually takes effect. Converges with how ListItem lands `list-item`
+      // on the same element as `astryx-item`. The same element also carries
+      // the reflected `data-size`, proving the variant surface moved with it.
+      const {container} = render(
+        <RadioList label="Preference" value="" onChange={() => {}}>
+          <RadioListItem label="Option A" value="a" data-testid="row" />
+        </RadioList>,
+      );
+      const row = screen.getByTestId('row');
+      // A single element carries both the paint class and the theme target.
+      expect(row).toHaveClass('astryx-item');
+      expect(row).toHaveClass('astryx-radio-list-item');
+      expect(row).toHaveAttribute('data-size');
+      // No separate layout wrapper survives outside the painting row: the
+      // target-bearing element is the same one Item renders.
+      expect(
+        container.querySelectorAll('.astryx-radio-list-item'),
+      ).toHaveLength(1);
+    });
+
+    it('exposes a themeable, hover-capable row instead of a zeroed surface', () => {
+      // The painting row must not zero its own padding/radius (the old
+      // behavior). The compiled Item paint classes stay on the row so a theme's
+      // `radio-list-item` padding/radius/hover overrides cascade onto the
+      // surface that shows them. The selected row is painted like
+      // CheckboxListItem's default, not left flat.
+      render(
+        <RadioList label="Preference" value="a" onChange={() => {}}>
+          <RadioListItem label="Selected" value="a" data-testid="selected" />
+          <RadioListItem label="Plain" value="b" data-testid="plain" />
+        </RadioList>,
+      );
+      const selected = screen.getByTestId('selected');
+      const plain = screen.getByTestId('plain');
+      // Both rows are the painting Item; the selected one is visibly painted
+      // (a background class), the default treatment CheckboxListItem uses.
+      expect(selected).toHaveClass('astryx-item');
+      expect(plain).toHaveClass('astryx-item');
+      expect(selected.className).not.toBe(plain.className);
+    });
   });
 });
 

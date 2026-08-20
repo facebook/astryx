@@ -20,8 +20,9 @@
 
 import React, {use, useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {spacingVars} from '../theme/tokens.stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import {RadioListContext} from './RadioList';
 import {mergeProps, isRenderable} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
@@ -31,11 +32,6 @@ import {Item} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-  },
   radioWrapper: {
     position: 'relative',
     display: 'flex',
@@ -92,13 +88,11 @@ const wrapperSizeStyles = stylex.create({
   },
 });
 
-const embeddedStyles = stylex.create({
-  root: {
-    paddingBlock: 0,
-    paddingInline: 0,
-    borderRadius: 0,
-    flex: 1,
-    minWidth: 0,
+const rowStyles = stylex.create({
+  // Paint the selected row like CheckboxListItem does. The `radio-list-item`
+  // target's `selected` state can override this background wholesale.
+  selected: {
+    backgroundColor: colorVars['--color-accent-muted'],
   },
 });
 
@@ -155,6 +149,7 @@ export function RadioListItem({
   xstyle,
   className,
   style,
+  onClick,
   ...rest
 }: RadioListItemProps) {
   const context = use(RadioListContext);
@@ -216,6 +211,10 @@ export function RadioListItem({
           }
           context.onChange(value);
         }}
+        // A consumer onClick rides on the radio input itself, so it fires for
+        // both direct control clicks and row-surface clicks the row delegates
+        // to the input — the same routing CheckboxListItem uses.
+        onClick={onClick as React.MouseEventHandler<HTMLInputElement>}
         aria-describedby={description ? descriptionID : undefined}
         {...stylex.props(
           styles.input,
@@ -243,45 +242,49 @@ export function RadioListItem({
   );
 
   return (
-    <div
+    <Item
       ref={ref}
+      startContent={mediaContent}
+      // Delegate row-surface clicks (label text, description, and the empty
+      // hover area) to the radio input. The input stays the option's sole
+      // focusable control, so the row adds no second tab stop.
+      interactiveRef={radioRef}
+      isDisabled={isDisabled}
+      label={<span>{label}</span>}
+      description={
+        isRenderable(description) ? (
+          <span id={descriptionID}>{description}</span>
+        ) : undefined
+      }
+      endContent={endContent}
+      xstyle={
+        [
+          // Hover reaches the radio visual through this ancestor marker rather
+          // than props, so hovering the row tints the control. The marker rides
+          // the painting row element (Item), the same element that shows the
+          // hover background, so both stay in step.
+          !isDisabled && indicatorScope,
+          isChecked && rowStyles.selected,
+          xstyle,
+        ] as StyleXStyles
+      }
       {...mergeProps(
         // One target for every row, carrying its size and runtime state so a
         // theme can express "selected option at large" or restyle disabled
-        // rows without reaching for structural selectors.
+        // rows without reaching for structural selectors. It lands on the
+        // element Item paints — the row surface that shows hover, density
+        // padding, and radius — so a theme styling `radio-list-item`'s
+        // background/padding/borderRadius (and its `:hover`) actually takes
+        // effect, converging with how ListItem lands `list-item`.
         themeProps('radio-list-item', {
           size,
           selected: isChecked ? 'selected' : null,
           disabled: isDisabled ? 'disabled' : null,
         }),
-        stylex.props(
-          styles.container,
-          // Hover reaches the radio visual through this ancestor marker rather
-          // than props, so hovering the row tints the control.
-          !isDisabled && indicatorScope,
-          xstyle,
-        ),
-        className,
-        style,
+        {className, style},
       )}
-      {...rest}>
-      <Item
-        startContent={mediaContent}
-        // Delegate row-surface clicks (label text, description, and the empty
-        // hover area) to the radio input. The input stays the option's sole
-        // focusable control, so the row adds no second tab stop.
-        interactiveRef={radioRef}
-        isDisabled={isDisabled}
-        label={<span>{label}</span>}
-        description={
-          isRenderable(description) ? (
-            <span id={descriptionID}>{description}</span>
-          ) : undefined
-        }
-        endContent={endContent}
-        xstyle={embeddedStyles.root}
-      />
-    </div>
+      {...rest}
+    />
   );
 }
 
