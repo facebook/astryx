@@ -1,5 +1,103 @@
 # @xds/core
 
+# 0.4.5
+
+#### New Features
+
+- BottomSheet: `snapPoints` makes the drag-to-resize stops the host's choice. A stop is the sheet's visible height, written as a viewport fraction (`0.5`), a percentage (`'50%'`), or a px length (`'320px'`) — matching `height`, where a bare number is also px and a string carries its unit. Fractions and percentages re-resolve when the viewport changes, so a sheet keeps the stop the user chose across a rotation, and swapping the points under a resting sheet re-anchors it the same way. A stop of a quarter of the sheet or less is a peek: it slides away rather than reflowing into a sliver, and thins the scrim. Taller stops are working surfaces, so they lay their content out and keep the scrim full — previously the shortest stop was always a peek, which would have thinned the backdrop of a half-height sheet (#5203).
+  Behavior change, deliberate and not breaking: every sheet used to carry three built-in stops (14%, 50% and 92% of the viewport), so a drag could leave it resting somewhere the host never asked for. A sheet now opens and closes unless `snapPoints` says otherwise; pass `snapPoints={[0.14, 0.5, 0.92]}` to keep the old stops. No prop, type, or DOM output was removed or renamed, and swipe-to-dismiss, the height budgets, and mobile-keyboard accommodation are untouched.
+- Astryx ships translations for 28 more locales. `packages/core/locales/` went from `en` and `fr-FR` to 30 files — Arabic, Catalan, Chinese (Simplified and Traditional), Czech, Danish, Dutch, Finnish, German, Greek, Hebrew, Hungarian, Italian, Japanese, Korean, Norwegian, Polish, Portuguese (Brazil and Portugal), Romanian, Russian, Serbian, Spanish, Swedish, Turkish, Ukrainian, Vietnamese and Afrikaans — covering every `@astryx.*` message the components announce or display (#5185).
+  Nothing changes unless you ask for it: `InternationalizationProvider` still defaults to English, and the catalogs are loaded through the existing `./locales/*.json` export. An app that already passes a `locale` now gets translated component strings where it previously fell back to English.
+
+  The catalogs come from Crowdin and are refreshed nightly (#5186), so a translation landing upstream reaches a release without anyone opening a PR by hand.
+
+- DateRangeInput / Calendar: add `maxRangeSpan` and `minRangeSpan` to constrain the size of a selected range. Once a start date is picked, days outside the allowed window are disabled — e.g. `maxRangeSpan={7}` keeps the range within a 7-day window of the start (#5145).
+- FormLayout: add `defaultOptionality` — set a form-wide default (`'optional'` or `'required'`) so only the exception carries a visible indicator. Under `'optional'` only `isRequired` fields show one; under `'required'` only `isOptional` fields do; a field that restates the default shows nothing. Under `'required'` the unmarked fields also expose `aria-required` so screen readers match what sighted users see — resolved on `aria-required` only, never the native `required` attribute. Unset keeps today's per-field behavior (#4791).
+- Add `astryx-input-clear-button` theme target on the shared clear button wrapper. Themes can now control the clear button's height and hover independently of other ghost buttons — for example suppressing the hover fill or matching a different element size scale (#5093).
+
+#### Fixes
+
+- BottomSheet: a pull up from the scroll area now expands the sheet on iOS. Below the tallest detent, dragging up inside the content did nothing on a real device while the grab handle worked — the sheet took the gesture and then froze for the rest of the pull. iOS Safari raises PointerEvents for a finger under the same numeric id it puts in `Touch.identifier`, so the drag the touch path started was keyed to a live pointer: `beginDrag` captured that pointer, WebKit handed the capture straight back, and the `lostpointercapture` a millisecond later cancelled the drag. Touch-driven drags are now marked as such — they take no pointer capture, and `lostpointercapture`, `pointercancel` and `pointermove` for that same finger no longer cancel, end or double-drive them. Browsers that keep the two id spaces apart were never affected, which is why this only showed up on device (#5178).
+- Calendar weekday headers now use compact CLDR stand-alone-short names for the selected locale, while preserving the existing `Su` / `Mo` / `Tu` English labels.
+- Render generated id attributes on Markdown headings so Outline hash links scroll to their target. Heading slugs now come from parser helpers shared with parseOutlineFromMarkdown, and the components.heading override receives the generated id (#4765).
+- StatusDot: pair each variant with a distinct built-in shape drawn from the system's semantic icon vocabulary — success a check, warning an exclamation, error a cross, neutral a ring, accent the plain filled dot — so status no longer relies on colour alone (WCAG 2.1 SC 1.4.1). The shapes mirror the marks `Banner`/`FieldStatus` render via `defaultIcons`, a different axis of consistency from `AvatarStatusDot`'s presence shapes (the two share only the neutral ring, intentionally). The diagonal check and cross take a slightly heavier stroke so they stay crisp and distinct at 8px. Also adds an `icon` prop for API parity with `AvatarStatusDot`: a rendered icon replaces the built-in glyph, while booleans and empty renders are ignored so `cond && <Icon />` stays safe. The built-in glyphs resolve through the icon registry under scoped `statusdot:<variant>` keys (the `richtext:*` precedent), so themes can reshape a variant's mark everywhere via `defineTheme({icons})` / `registerIcons` — including marks for augmented custom variants — while overrides of the standard 24px semantic icons deliberately do not leak into the 8px field. Themes can also target the new stable `astryx-statusdot-glyph` class and its `data-shape` attribute — a stroked inline `<svg>` painted from the dot's `currentColor` (#4373).
+- `Table`'s row-expansion chevron now mirrors correctly under RTL. It previously rotated on expand with no RTL handling at all, so the directional glyph pointed the same way regardless of text direction, matching the pattern already used by `TreeListItem`'s chevron (#5153).
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @athz
+- @bhamodi
+- @cixzhang
+- @freddymeta
+- @HelloOjasMutreja
+- @imdreamrunner
+- @jiunshinn
+- @nynexman4464
+
+---
+
+# 0.4.4
+
+#### New Components
+
+- Promote `BottomSheet` and `BottomSheetSwitcher` from the canary-only Lab package to Core. The stable package now includes their existing native-dialog, drag-detent, transition, and mobile-keyboard behavior, plus Core documentation and examples (#5080).
+
+#### New Features
+
+- `astryx template --cdn` writes a working no-build-step CDN starter page (#5068).
+  A CDN starter is a template, so it joins the template family beside `--skeleton` rather than claiming a top-level command. It is a flag and not the positional `astryx template cdn` because the positional resolves against everything `discoverAll()` finds, where a `cdn` id would shadow a discovered template. `cdn.template.html` loads Astryx from jsDelivr and esm.sh with no bundler, no install and no build step, with every CDN URL pinned to the Astryx version you have installed — an unpinned CDN URL resolves to whatever is latest and is cached hard, so a page written today breaks tomorrow without being edited. An existing file is never clobbered; `--overwrite` replaces it, and `--json` returns the receipt.
+
+  The annotations are the things that are load-bearing and silent when missing: `?external=react,react-dom` (without it esm.sh bundles a second React and every hook throws `Cannot read properties of null (reading 'useState')`), `react/jsx-runtime` in the import map (the published bundle imports it; omitting it fails the page with `Failed to resolve module specifier`), and a `font-family` on `body` (nothing in the stylesheets sets a document font, so `Button` — which is `font: inherit` — otherwise renders its label in the browser's default serif).
+
+  Three more lessons came out of building a real app on it. The page now `<link>`s the theme's webfont from Google Fonts, because the theme _names_ Figtree and never loads it, so every viewer silently got the fallback stack (#5015 again). It imports the theme OBJECT and wraps in `<Theme theme={neutralTheme} mode="system">`, so light and dark follow the OS — the `data-astryx-theme` attribute alone scopes the stylesheet but cannot switch modes. And `#root:empty` carries a "Loading…" state, because ESM-from-CDN has real latency and a blank page reads as broken. Markup is `htm`, with a comment saying it is optional and `createElement` is the dependency-free alternative.
+
+  A recipe that is only read is a recipe that is only assumed to work, so CI renders it: `.github/scripts/cdn-template-smoke-test.mjs` scaffolds the page with the real CLI and opens it in headless Chromium, failing on any console error, page error or failed request, and on a page that loads without rendering.
+
+- DateTimeInput: expose `date-time-input-toggle-icon` (calendar glyph, with open/closed `state`) and `date-time-input-clock-icon` (leading time glyph) theme targets, so a theme can size and color the leading icons — matching the `date-input-toggle-icon` seam DateInput already offers (#5148).
+- `defineTheme`: `color.accent` accepts a `[light, dark]` tuple (#2279)
+  `ColorScaleConfig.accent` now takes either a single hex or a `[light, dark]` tuple, matching `TokenValue`. With a tuple, `expandColorScale` derives the light half of every generated `light-dark()` pair from the light seed's palettes and the dark half from the dark seed's, so each scheme gets a consistent derived palette (muted, on-accent, neutrals) instead of the `tokens['--color-accent']` workaround that skips scale generation. Single-string configs are unchanged, token for token. Also documents the precedence between `color` and `tokens` for accent-derived values: `tokens` entries win token by token, the `var(--color-accent)` reference tokens follow a `--color-accent` override at runtime, and the baked `--color-on-accent` stays derived from the `color.accent` seed.
+
+#### Fixes
+
+- Banner: `endContent` wraps to its own row on a narrow header instead of squeezing the title to one word per line (#5116).
+- BottomSheet: a swipe that scrolls to the end of the sheet's content and keeps pulling now expands the sheet, instead of stopping dead at the last line. The handoff used to be decided once, when the finger landed: a gesture that started mid-content stayed a scroll for its whole life, so the natural motion — swipe up through the list, reach the bottom, keep pulling — never reached the sheet. Reaching the end of the content is now enough. The sheet is anchored at the point where the content ran out, so only the travel past it moves the sheet, and the pull is left to the content when the finger comes back down or when there is no taller detent to expand into (#5172).
+- BottomSheet: an upward pull at the bottom of scrolled content no longer hijacks the gesture when the sheet is already fully expanded. It used to hand off to a sheet drag with nowhere to expand to, producing a rubber-band the release threw straight back, and — because the handoff swallows the rest of the gesture — leaving the content unscrollable until the finger lifted, so dragging back down collapsed the sheet instead of scrolling. The bottom edge now hands off only when a taller detent exists (#5161).
+- BottomSheet: a sheet resting at a detent now follows the viewport. Its detents were resolved to pixels at gesture time and never revisited, so rotating the device or resizing the window left the sheet frozen at the old geometry — a half-height sheet covering three quarters of a shorter window, and a peek detent whose slide-down could exceed the new viewport entirely, leaving a modal dialog on screen with no sheet in it. Snap fractions are also read from the layout viewport now, so the mobile keyboard no longer moves the detents out from under the sheet it is measuring (#5159).
+- BottomSheet keeps the page still when the mobile keyboard reveals a field the browser focused itself (#5158)
+- Screen-reader announcements are now localizable. MultiSelector, Selector, Typeahead, FileInput, Tokenizer, and Lightbox spoke several live-region messages in hardcoded English — selection and result counts, file selections, token add/remove, and gallery position — so they stayed English under an `InternationalizationProvider`. They now resolve through the message catalog like the rest of the UI, and the counts use ICU plurals instead of appending an English "s", so locales with other plural rules read correctly (#4920).
+- The editable text fields in `Selector`, `MultiSelector`, `Typeahead`, `DateInput`, `DateTimeInput`, `TimeInput`, and `NumberInput` no longer misinterpret the keydown that commits or cancels an IME composition (Korean/Japanese/Chinese input) as a command. Previously a composing Enter would select/toggle the highlighted option or commit a typed date, a composing Escape would exit `Typeahead`'s edit mode, and a composing arrow would step a time or number value — all before the composition finished. Each field now lets the IME finish first, matching the guard already in place for `BaseTypeahead` and the Chat composer (#4908).
+- MobileNav: keep the drawer rendered until the native dialog has actually closed (#4290)
+  `display` was driven by the `isOpen` prop, which flips during the commit, while `dialog.close()` only ran afterwards from an effect — so every close called `close()` on a dialog that was already `display: none` but still open and still in the top layer, and an open modal dialog blocks the whole document whether or not it is rendered. Safari 26.1 never un-blocked it, leaving the page inert with no JavaScript error. `display` now takes part in the transition with `transition-behavior: allow-discrete`, including when React's `<Activity mode="hidden">` hides the drawer inside AppShell, and the unmount close moves into its own effect so the deferred close is no longer cut off by its own cleanup. The close delay is derived from the hold in effect rather than assumed, because that hold is `--duration-medium` — a theme value, which the shipped y2k theme sets to exactly the 250ms the delay used to hard-code.
+- `Switch` with `isLabelHidden` no longer reserves the label gap. The hidden label is `sr-only`, but its wrapper stayed a flex item, so the row still painted the 8px gap beside it: the field box measured 8px wider than the track it contains, and a hidden-label switch stopped 8px inside the edge every neighbouring control lined up on. The gap now collapses with the label, so the field is exactly as wide as the painted track — matching `CheckboxInput`, which already did this (#5112).
+- Inputs (`statusVariant="tooltip"`): the focusable status button now opens its tooltip on hover inside `TextArea`, whose absolutely-positioned trailing slot is `pointer-events: none`. Keyboard focus already worked; pointer hover did not (#5147).
+
+#### Other Changes
+
+- Clear the mechanically fixable ESLint suppressions from the Bottom Sheet promotion: `BottomSheet` and `BottomSheetSwitcher` now use the React 19 context APIs (`<Context>` as provider, `use()`), the panel drops its duplicate body-element ref in favor of the one the gesture hook already tracks, and `useSheetGestures` reads `prefers-reduced-motion` through the shared `useMediaQuery` subscription so an open sheet follows a preference change (#5155).
+- Remove the UMD bundle — it could not work with any React this package supports (#5068).
+  `dist/astryx.umd.js` is no longer built or published, and with it go the `unpkg` and `jsdelivr` package fields, the `./astryx.umd.js` export and the `build:umd` step.
+
+  Nobody has a migration to make, because there was no working configuration to migrate from. The bundle binds Astryx to `window.React` and `window.ReactDOM`, and React 19 does not ship a build that defines them: "UMD builds removed: To load React 19 with a script tag, we recommend using an ESM-based CDN such as esm.sh." `https://unpkg.com/react@19.2.0/umd/react.production.min.js` is a 404 where 18.3.1 is a 200. Our `peerDependencies` are `react >= 19.0.0`, so every supported React is one without a global for the bundle to bind to — it documented a path that never had an entrance.
+
+  If you were loading it with an older React anyway, load the same components as modules instead: an import map for `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client` and `@astryxdesign/core` (pinned, with `?external=react,react-dom`), then one `<script type="module">`. `astryx template --cdn` writes that page for you, pinned to your installed version and annotated; the recipe is also in the core README under "No build step (CDN)".
+
+- `isImeKeyEvent` — the guard that stops an IME composition keystroke being read as a command — now lives at `@astryxdesign/core/utils` alongside the other pure helpers, with the reasoning for its two signals written down in one place. It stays exported from `@astryxdesign/core/hooks` for this release but is deprecated there: it is a plain predicate, not a hook, and that barrel is a `'use client'` boundary, so importing it from `hooks` pulls a server-safe function onto a client path. Move imports to `@astryxdesign/core/utils`; the `hooks` re-export will be removed in an upcoming major (#4907).
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @cixzhang
+- @freddymeta
+- @imdreamrunner
+- @jiunshinn
+- @nynexman4464
+
+---
+
 # 0.4.3
 
 #### New Features
@@ -20,12 +118,14 @@
   Under `@astryxdesign/theme-neutral` the info banner had no background at all, light or dark: the override set `background-color` directly and forced `--color-accent-muted` to `transparent`, and a plain CSS property written by a theme lands in `@layer astryx-theme`, which StyleX's `@layer priority4` outranks. Info now goes through `--color-accent-muted` like the other three statuses and like the stone theme already did.
 
   Also in this change: `children={false}` (the ordinary `{cond && <ul/>}` idiom) no longer produces an expand toggle that opens an empty box, and `description=""` no longer leaves an empty 20px row, both via `isRenderable`; a long unbroken word in the title or description no longer forces the page into horizontal scrolling at a 320px viewport, measured at `document.scrollWidth` 529px before; and the content area's bottom border uses logical `border-block-end` alongside its inline siblings.
+
 - Count and cut text the way people read it: the TextArea character counter (and its over-limit state and screen-reader announcements) counts user-perceived characters — an emoji is 1, not 2; PowerSearch token truncation no longer cuts an emoji or accented letter in half; Table's auto-generated headers capitalize astral-plane letters correctly; Avatar's initials now use the shared character utilities.
 - ComplexSelector: honor the `sm`, `md`, and `lg` element-height tokens exactly.
 - TreeList's `variant` axis is themeable, and a new guard keeps every extensible axis honest. `TreeListVariantMap` invites theme packages to add variants — its own JSDoc shows the module augmentation — but `themeProps('tree-list', {density})` never passed `variant`, so a custom variant type-checked, rendered, and produced no selector to style. It is passed now, and documented in the target's `visualProps` so `astryx theme build` stops calling it an unknown prop.
   `packages/core/src/theme/extensibleAxes.test.ts` is the third theming-drift guard, beside the ones covering `targets` and `vars`/`derived`. Those two check what a component renders against what it documents; neither looked at the open prop unions, which is why this went unnoticed. For every `*Map` that types a component prop, it now asserts the three places that have to agree: the interface is declared in the index a consumer augments (a re-export is invisible to both module augmentation and the CLI), the prop is reflected through `themeProps`, and it is documented as a visual prop. It reads the TypeScript AST rather than the type checker, and holds the map's OWNER accountable — a component forwarding `actionVariant` or `statusVariant` to the component that owns the map is not separately responsible for it.
 
   Registry maps that widen a set of NAMES rather than a visual prop (`IndicatorMap`, `IndicatorFamilyMap`) are out of scope by construction, not by allowlist: the guard only considers maps whose alias types a prop on a `*Props` interface.
+
 - Security: reject `javascript:`, `vbscript:` and `data:text/html` URLs in the Markdown parser, so untrusted markdown can no longer produce an executable link href or image src; and fix `escapeRegExp` in `ChatTokenizedText`, whose character class closed early and left `]` and `\` unescaped, so token values containing them were injected raw into a `RegExp`
 - `extends` now reaches the CSS. A theme that extended another built a stylesheet holding only the declarations it stated itself: the base's tokens, component overrides and surface rules were all absent, and because each theme is `@scope`d to its own `data-astryx-theme` value, loading the base's stylesheet alongside could not fill the gap either. Every consumer of an inheritance chain silently got stock geometry, elevation and type with a new palette painted over it (#5067). Nothing warned; the loss only showed up by diffing two generated stylesheets token by token.
   The cause was `theme build` shadowing its own inputs. It writes `<name>.js` next to `<name>.ts`, and the loader resolved a plain `./<name>` specifier to that generated artifact before the source — so the second build of a family read the artifact, which carries no `components` and exports `<name>Theme` rather than whatever the source exports. A named import that missed became `extends: undefined`, and `defineTheme` treated an absent base as no base at all. The loader now resolves source extensions first, which is also the resolution the author's TypeScript sees, so the CSS a build emits matches the theme that type-checked.

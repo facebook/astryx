@@ -212,4 +212,95 @@ describe('drop-xds-prefix-imports', () => {
     const output = await applyTransform(input);
     expect(output).toBe(input);
   });
+
+  it('aliases a component wrapper collision in place (XDS -> Astryx), leaving the local fn untouched', async () => {
+    const input = [
+      `import {XDSLinkProvider} from '@xds/core/Link';`,
+      `export default function LinkProvider({children}) {`,
+      `  return <XDSLinkProvider component={NextLink}>{children}</XDSLinkProvider>;`,
+      `}`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    // Import aliased in place, local wrapper + its name untouched.
+    expect(output).toContain('import {LinkProvider as AstryxLinkProvider}');
+    expect(output).toContain('function LinkProvider({children})');
+    // JSX rewritten to the alias -> no self-recursion.
+    expect(output).toContain('<AstryxLinkProvider component={NextLink}>');
+    expect(output).not.toContain('XDSLinkProvider');
+    // No duplicate bare LinkProvider import.
+    expect(output).not.toMatch(/import \{LinkProvider\}/);
+  });
+
+  it('aliases a hook collision as use<Astryx>Name (not <Astryx>use)', async () => {
+    const input = [
+      `import {useXDSToast} from '@xds/core';`,
+      `function useToast() {`,
+      `  return useXDSToast();`,
+      `}`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toContain('import {useToast as useAstryxToast}');
+    expect(output).toContain('function useToast()');
+    expect(output).toContain('return useAstryxToast();');
+    expect(output).not.toContain('useXDSToast');
+    // Must not produce the malformed `Astryxuse...` form.
+    expect(output).not.toContain('AstryxuseToast');
+  });
+
+  it('aliases on collision with a local default import binding', async () => {
+    const input = [
+      `import Link from 'next/link';`,
+      `import {XDSLink} from '@xds/core';`,
+      `export const a = <XDSLink href="/" />;`,
+      `export const b = <Link href="/" />;`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toContain('import {Link as AstryxLink}');
+    expect(output).toContain(`import Link from 'next/link';`);
+    expect(output).toContain('<AstryxLink href="/" />');
+    expect(output).toContain('<Link href="/" />');
+    expect(output).not.toContain('XDSLink');
+  });
+
+  it('aliases on collision with a local type alias', async () => {
+    const input = [
+      `import type {XDSTab} from '@xds/core';`,
+      `type Tab = {id: string};`,
+      `const active: XDSTab = null as any;`,
+      `const local: Tab = {id: '1'};`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toContain('Tab as AstryxTab');
+    expect(output).toContain('type Tab = {id: string};');
+    expect(output).toContain('const active: AstryxTab');
+    expect(output).toContain('const local: Tab');
+    expect(output).not.toContain('XDSTab');
+  });
+
+  it('aliases on collision with a local interface', async () => {
+    const input = [
+      `import type {XDSTheme} from '@xds/core';`,
+      `interface Theme {}`,
+      `const t: XDSTheme = null as any;`,
+      `const local: Theme = {};`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toContain('Theme as AstryxTheme');
+    expect(output).toContain('interface Theme {}');
+    expect(output).toContain('const t: AstryxTheme');
+    expect(output).not.toContain('XDSTheme');
+  });
+
+  it('still bare-renames when there is NO colliding local binding', async () => {
+    const input = [
+      `import {XDSButton} from '@xds/core';`,
+      `export const App = () => <XDSButton label="Hi" />;`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    // No local `Button` binding -> existing blind bare-rename behavior kept.
+    expect(output).toContain(`import {Button} from '@xds/core';`);
+    expect(output).toContain('<Button label="Hi" />');
+    expect(output).not.toContain('AstryxButton');
+    expect(output).not.toContain('XDSButton');
+  });
 });

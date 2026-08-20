@@ -52,6 +52,7 @@ import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {characterCount} from '../utils/characters';
@@ -394,6 +395,7 @@ export function TextArea({
 }: TextAreaProps) {
   const size = useSize(sizeProp, 'md');
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const announce = useAnnounce();
   const id = useId();
   const descriptionID = useId();
@@ -598,7 +600,7 @@ export function TextArea({
           autoFocus={hasAutoFocus}
           data-autofocus={hasAutoFocus || undefined}
           aria-describedby={ariaDescribedBy}
-          aria-required={isRequired && !isOptional ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={
             status?.type === 'error' ||
             (maxLength != null && valueLength > maxLength)

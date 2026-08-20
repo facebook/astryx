@@ -10,6 +10,10 @@
  */
 
 export {BottomSheet} from './BottomSheet';
-export type {BottomSheetHeight, BottomSheetProps} from './BottomSheet';
+export type {
+  BottomSheetHeight,
+  BottomSheetProps,
+  BottomSheetSnapPoint,
+} from './BottomSheet';
 export {BottomSheetSwitcher} from './BottomSheetSwitcher';
 export type {BottomSheetSwitcherProps} from './BottomSheetSwitcher';

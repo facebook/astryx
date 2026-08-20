@@ -11,7 +11,7 @@ is the `pr-rtl` job — the RTL sibling of `pr-a11y`.
 
 ## Two layers
 
-### A. Auto-discovery — over every `core-*` story in scope
+### A. Auto-discovery — over every `core-*` and `lab-*` story in scope
 
 The point of the audit is to auto-catch **new or changed** components, so the
 auto-discovery layer runs with **zero curated selectors**. There are two
@@ -24,7 +24,7 @@ independent auto passes: **D1 (icon-mirror)** and **D5 (positional-mirror)**.
 
 ### A.1 D1 icon-mirror
 
-Directional-icon mirroring. For each core story it:
+Directional-icon mirroring. For each audited story it:
 
 1. Loads the story LTR and RTL.
 2. Finds **directional** icons generically — classifying each icon SVG as

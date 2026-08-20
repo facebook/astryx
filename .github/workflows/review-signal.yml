@@ -109,6 +109,10 @@ jobs:
           ENG_OWNERS: ${{ vars.ENGOWNERS }}
           DESIGN_OWNERS: ${{ vars.DESIGNOWNERS }}
         with:
+          # api.github.com 503s intermittently; an unretried one used to leave a
+          # PR with no review-required status at all, blocked forever on
+          # "Expected — waiting for status" (#5149, #5152).
+          retries: 3
           script: |
             const { owner, repo } = context.repo;
             const CODE = process.env.CODE_LABEL;
@@ -201,15 +205,11 @@ jobs:
                   }
                 }
               }
-              try {
-                await github.rest.repos.createCommitStatus({
-                  owner, repo, sha: pr.head.sha,
-                  context: 'review-required', state: 'success',
-                  description: 'Automated (bot) PR — exempt from review gates.',
-                });
-              } catch (e) {
-                core.warning(`Could not set review-required status: ${e.message}`);
-              }
+              await github.rest.repos.createCommitStatus({
+                owner, repo, sha: pr.head.sha,
+                context: 'review-required', state: 'success',
+                description: 'Automated (bot) PR — exempt from review gates.',
+              });
               return;
             }
 
@@ -504,21 +504,21 @@ jobs:
             // (branch protection passes only success); an owner's code approval
             // flips it to success.
             const gateReasons = codeGated ? codeReasons : [];
-            try {
-              await github.rest.repos.createCommitStatus({
-                owner,
-                repo,
-                sha: pr.head.sha,
-                context: 'review-required',
-                state: codeGated ? 'pending' : 'success',
-                description: codeGated
-                  ? `Waiting on code review: ${gateReasons.join(', ')}`.slice(0, 140)
-                  : 'No code review required.',
-              });
-              core.info(`review-required status: ${codeGated ? 'pending' : 'success'}`);
-            } catch (e) {
-              core.warning(`Could not set review-required status: ${e.message}`);
-            }
+            // Never swallow a failure here: the status IS the gate, so a PR
+            // whose POST failed is blocked on a status that will never arrive.
+            // Throwing marks the run red and lets the per-PR catch continue a
+            // backfill; re-run the workflow to retry.
+            await github.rest.repos.createCommitStatus({
+              owner,
+              repo,
+              sha: pr.head.sha,
+              context: 'review-required',
+              state: codeGated ? 'pending' : 'success',
+              description: codeGated
+                ? `Waiting on code review: ${gateReasons.join(', ')}`.slice(0, 140)
+                : 'No code review required.',
+            });
+            core.info(`review-required status: ${codeGated ? 'pending' : 'success'}`);
             // Neutralize any stale "review-required" CHECK RUN left over from the
             // pre-status gate. Such a leftover (conclusion action_required) drags
             // the status rollup to FAILURE even though we now gate via a commit

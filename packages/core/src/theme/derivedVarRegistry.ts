@@ -67,6 +67,10 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
   ],
   field: [{property: 'borderRadius', vars: ['--_field-radius']}],
   hovercard: [{property: 'borderRadius', vars: ['--_hovercard-radius']}],
+  'number-input': [
+    {property: 'padding', expand: 'container'},
+    {property: 'borderRadius', vars: ['--_field-radius']},
+  ],
   popover: [{property: 'borderRadius', vars: ['--_popover-radius']}],
   'progressbar-mark': [
     {property: 'width', vars: ['--_progressbar-mark-width'], replaces: true},

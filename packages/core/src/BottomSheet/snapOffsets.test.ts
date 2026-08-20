@@ -11,23 +11,72 @@
 
 import {describe, it, expect} from 'vitest';
 import {
-  snapFractionsToHeights,
   computeDetentOffsets,
+  isValidSnapPoint,
   nearestOffset,
+  peekOffsetFor,
   resolveSettleOffset,
+  resolveSnapPoints,
   scrimOpacityForOffset,
-  isPeekOffset,
   DETENT_DEDUP_PX,
 } from './snapOffsets';
 
-describe('snapFractionsToHeights', () => {
-  it('scales in-range fractions to px', () => {
-    expect(snapFractionsToHeights([0.5, 0.92], 800)).toEqual([400, 736]);
+describe('resolveSnapPoints', () => {
+  it('reads a bare number as a fraction of the viewport', () => {
+    expect(resolveSnapPoints([0.5, 0.92], 800)).toEqual([400, 736]);
   });
-  it('drops out-of-range fractions', () => {
-    expect(snapFractionsToHeights([0, 0.5, 1, 1.2, -0.3], 1000)).toEqual([
+
+  it('reads a percentage as the same fraction', () => {
+    expect(resolveSnapPoints(['50%', '92%'], 800)).toEqual([400, 736]);
+  });
+
+  it('reads a px length as an absolute height', () => {
+    expect(resolveSnapPoints(['320px'], 800)).toEqual([320]);
+  });
+
+  it('keeps the caller order, mixing forms', () => {
+    expect(resolveSnapPoints(['120px', 0.5, '90%'], 800)).toEqual([
+      120, 400, 720,
+    ]);
+  });
+
+  it('accepts fractional and unit-cased lengths, and surrounding space', () => {
+    expect(resolveSnapPoints(['12.5%', '0.5PX', ' 80px '], 800)).toEqual([
+      100, 0.5, 80,
+    ]);
+  });
+
+  it('drops numbers outside the (0, 1] fraction range', () => {
+    // 200 is the px mistake — a bare number is never a length.
+    expect(resolveSnapPoints([0, 0.5, 1, 1.2, -0.3, 200], 1000)).toEqual([
       500, 1000,
     ]);
+  });
+
+  it('drops lengths it cannot resolve by arithmetic on the viewport', () => {
+    expect(
+      resolveSnapPoints(
+        ['50', '30rem', '50vh', 'calc(50% - 20px)', '-10px', '', '0px'],
+        800,
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe('isValidSnapPoint', () => {
+  it('accepts the three supported forms', () => {
+    expect(isValidSnapPoint(0.5)).toBe(true);
+    expect(isValidSnapPoint(1)).toBe(true);
+    expect(isValidSnapPoint('50%')).toBe(true);
+    expect(isValidSnapPoint('320px')).toBe(true);
+  });
+
+  it('rejects what resolveSnapPoints would silently drop', () => {
+    expect(isValidSnapPoint(200)).toBe(false);
+    expect(isValidSnapPoint(0)).toBe(false);
+    expect(isValidSnapPoint('50')).toBe(false);
+    expect(isValidSnapPoint('50vh')).toBe(false);
+    expect(isValidSnapPoint('calc(50% - 20px)')).toBe(false);
   });
 });
 
@@ -100,66 +149,84 @@ describe('resolveSettleOffset', () => {
   });
 });
 
-describe('isPeekOffset', () => {
-  const offsets = [0, 100, 200]; // full, mid, peek
-
-  it('is true only for the shortest detent', () => {
-    expect(isPeekOffset(200, offsets)).toBe(true);
-    expect(isPeekOffset(100, offsets)).toBe(false);
-    expect(isPeekOffset(0, offsets)).toBe(false);
+describe('peekOffsetFor', () => {
+  it('is the shortest stop when that stop is a sliver', () => {
+    // sheet 800; stops at 800, 400 and 100 visible px. The 100px stop is an
+    // eighth of the sheet, well inside the quarter that makes a peek.
+    expect(peekOffsetFor([0, 400, 700], 800)).toBe(700);
   });
 
-  it('tolerates sub-pixel rounding around the peek', () => {
-    expect(isPeekOffset(200.4, offsets)).toBe(true);
-    expect(isPeekOffset(199.6, offsets)).toBe(true);
-    expect(isPeekOffset(196, offsets)).toBe(false);
+  it('has no peek when the shortest stop is a working height', () => {
+    // A half-height stop lays its content out and keeps a full scrim; it is
+    // the sheet the caller asked for, not a glance at one.
+    expect(peekOffsetFor([0, 400], 800)).toBeNull();
   });
 
   it('has no peek when the sheet has no collapsed stop', () => {
-    expect(isPeekOffset(200, [0])).toBe(false);
-    expect(isPeekOffset(0, [0])).toBe(false);
+    expect(peekOffsetFor([0], 800)).toBeNull();
   });
 
-  it('treats the only collapsed stop as the peek', () => {
-    expect(isPeekOffset(200, [0, 200])).toBe(true);
+  it('takes the quarter mark itself as a peek', () => {
+    expect(peekOffsetFor([0, 600], 800)).toBe(600);
   });
 
-  it('agrees with the detent scrimOpacityForOffset treats as the peek', () => {
-    const dismissOffset = 280;
-    const peek = offsets[offsets.length - 1];
-    expect(isPeekOffset(peek, offsets)).toBe(true);
-    expect(scrimOpacityForOffset(peek, offsets, dismissOffset)).toBeCloseTo(
-      0.3,
-    );
+  it('has no peek without a measured sheet', () => {
+    expect(peekOffsetFor([0, 600], 0)).toBeNull();
   });
 });
 
 describe('scrimOpacityForOffset', () => {
-  describe('with a peek detent (>= 2 detents)', () => {
+  describe('with a peek detent', () => {
     const offsets = [0, 100, 200]; // full, mid, peek
+    const peekOffset = 200;
     const dismissOffset = 280;
 
     it('is full at or above the mid detent', () => {
-      expect(scrimOpacityForOffset(0, offsets, dismissOffset)).toBe(1);
-      expect(scrimOpacityForOffset(100, offsets, dismissOffset)).toBe(1);
-      expect(scrimOpacityForOffset(60, offsets, dismissOffset)).toBe(1);
+      expect(scrimOpacityForOffset(0, offsets, dismissOffset, peekOffset)).toBe(
+        1,
+      );
+      expect(
+        scrimOpacityForOffset(100, offsets, dismissOffset, peekOffset),
+      ).toBe(1);
+      expect(
+        scrimOpacityForOffset(60, offsets, dismissOffset, peekOffset),
+      ).toBe(1);
     });
 
     it('fades linearly from the mid detent toward the peek floor', () => {
       // Halfway from mid (100) to peek (200), opacity is halfway from 1 to the
       // 0.3 floor => 0.65.
-      expect(scrimOpacityForOffset(150, offsets, dismissOffset)).toBeCloseTo(
-        0.65,
-      );
+      expect(
+        scrimOpacityForOffset(150, offsets, dismissOffset, peekOffset),
+      ).toBeCloseTo(0.65);
     });
 
     it('thins to the peek floor at or below the peek detent (still modal)', () => {
-      expect(scrimOpacityForOffset(200, offsets, dismissOffset)).toBeCloseTo(
-        0.3,
-      );
-      expect(scrimOpacityForOffset(240, offsets, dismissOffset)).toBeCloseTo(
-        0.3,
-      );
+      expect(
+        scrimOpacityForOffset(200, offsets, dismissOffset, peekOffset),
+      ).toBeCloseTo(0.3);
+      expect(
+        scrimOpacityForOffset(240, offsets, dismissOffset, peekOffset),
+      ).toBeCloseTo(0.3);
+    });
+  });
+
+  describe('with collapsed stops but no peek among them', () => {
+    // The shortest stop is a working height, so the scrim is full there and
+    // only fades once the sheet is being dragged out below it.
+    const offsets = [0, 100];
+    const dismissOffset = 160;
+
+    it('stays full at every stop, including the shortest', () => {
+      expect(scrimOpacityForOffset(0, offsets, dismissOffset, null)).toBe(1);
+      expect(scrimOpacityForOffset(100, offsets, dismissOffset, null)).toBe(1);
+    });
+
+    it('fades only across the dismiss overshoot below the shortest stop', () => {
+      expect(
+        scrimOpacityForOffset(130, offsets, dismissOffset, null),
+      ).toBeCloseTo(0.5);
+      expect(scrimOpacityForOffset(160, offsets, dismissOffset, null)).toBe(0);
     });
   });
 
@@ -168,14 +235,14 @@ describe('scrimOpacityForOffset', () => {
     const dismissOffset = 160;
 
     it('stays full until the drag begins collapsing', () => {
-      expect(scrimOpacityForOffset(0, offsets, dismissOffset)).toBe(1);
+      expect(scrimOpacityForOffset(0, offsets, dismissOffset, null)).toBe(1);
     });
 
     it('fades across the dismiss overshoot toward the threshold', () => {
-      expect(scrimOpacityForOffset(80, offsets, dismissOffset)).toBeCloseTo(
-        0.5,
-      );
-      expect(scrimOpacityForOffset(160, offsets, dismissOffset)).toBe(0);
+      expect(
+        scrimOpacityForOffset(80, offsets, dismissOffset, null),
+      ).toBeCloseTo(0.5);
+      expect(scrimOpacityForOffset(160, offsets, dismissOffset, null)).toBe(0);
     });
   });
 });

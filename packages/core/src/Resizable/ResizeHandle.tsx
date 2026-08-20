@@ -219,16 +219,22 @@ const dynamicStyles = stylex.create({
   // directions because the pill's own offset is physical. Mixing the previous
   // divider-relative `50%` anchor with a percentage translate stranded the grab
   // zone to one side under RTL; this construction keeps it on the pill.
+  //
+  // Only the offset axis is translated. Unlike the pill — a small box anchored
+  // at the divider's midpoint, so it needs a −50% self-shift to centre — the
+  // grab zone is STRETCHED along the handle by hitAreaHorizontal/Vertical's
+  // 0/0 insets, so it is already in place on that axis. A percentage there
+  // would displace it by half the handle's own length, growing with the panel.
   hitAreaOffsetX: (dir: number) => ({
     insetInlineStart: 0,
     transform: {
-      default: `translate(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px), -50%)`,
-      ':is([dir="rtl"] *)': `translate(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) + 6.5px), -50%)`,
+      default: `translateX(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px))`,
+      ':is([dir="rtl"] *)': `translateX(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) + 6.5px))`,
     },
   }),
   hitAreaOffsetY: (dir: number) => ({
     insetBlockStart: 0,
-    transform: `translate(-50%, calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px))`,
+    transform: `translateY(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px))`,
   }),
   pillOffsetX: (dir: number) => ({
     insetInlineStart: 0,

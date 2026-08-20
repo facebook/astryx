@@ -8,10 +8,17 @@
  * @output Exports Drawer component and DrawerProps
  * @position Lab implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
- * Edge-anchored overlay panel for inspectors, detail views, and sheets —
- * the "click a table row, see its details" pattern. Slides in from any of
- * the four edges: inline start/end (side panels) or block top/bottom
- * (full-width sheets).
+ * Overlay panel for inspectors and detail views — the "click a table row,
+ * see its details" pattern. Slides in from the inline start or end edge and
+ * floats above the page content: unlike a docked panel it never reflows the
+ * layout underneath, it overlays it (with or without a scrim).
+ *
+ * Inline axis only (start/end). Block-axis sheets are BottomSheet's job;
+ * a drawer is always a full-height side panel.
+ *
+ * Sizing is viewport-aware: `width` is the desktop budget, and below
+ * the mobile breakpoint it preserves a 56px reveal of the page behind, capped
+ * by the requested width (or fills the viewport with `isFullWidthOnMobile`).
  *
  * Uses the native `<dialog>` element (same precedent as Dialog/MobileNav):
  * - `showModal()` when `hasScrim` (default) — top-layer rendering, focus
@@ -52,12 +59,17 @@ import {
   easeVars,
   shadowVars,
   spacingVars,
-  typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
-import {useScrollLock, useDevWarning} from '@astryxdesign/core/hooks';
-import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
+import {useScrollLock} from '@astryxdesign/core/hooks';
+import {
+  composeEventHandlers,
+  mergeProps,
+  mergeRefs,
+  themeProps,
+} from '@astryxdesign/core/utils';
+import {overlayPaddingReset} from '@astryxdesign/core/Layout';
 
 // =============================================================================
 // LIFO stacking registry (internal)
@@ -103,9 +115,16 @@ function isTopDrawer(id: string): boolean {
 // Styles
 // =============================================================================
 
-// Structural rail width when collapsed — wide enough for a 44px touch
-// target, matching the raw-number convention used for the size default.
-const RAIL_WIDTH = 44;
+// Below this viewport width the drawer preserves a fixed reveal of the page
+// behind instead of growing proportionally with the viewport. 640px is the
+// repo's mobile breakpoint.
+const MOBILE_BREAKPOINT = 640;
+
+// Material's established mobile drawer pattern leaves a 56dp reveal. Using
+// the same value in CSS pixels gives the overlay a stable visual relationship
+// to the page behind while the requested width remains an upper bound.
+const MOBILE_PAGE_REVEAL = 56;
+const MOBILE_WIDTH_FULL = '100dvw';
 
 const styles = stylex.create({
   dialog: {
@@ -114,6 +133,9 @@ const styles = stylex.create({
     margin: 0,
     padding: 0,
     border: 'none',
+    // Square corners: the drawer is flush with the viewport edge on three
+    // sides, so a radius would only ever cut the two edge-adjacent corners.
+    borderRadius: 0,
     maxWidth: 'none',
     maxHeight: 'none',
     boxSizing: 'border-box',
@@ -123,12 +145,15 @@ const styles = stylex.create({
     overflow: 'hidden',
     overscrollBehavior: 'contain',
     outline: 'none',
+    // Full-height side panel, pinned across the block axis.
+    insetBlockStart: 0,
+    insetBlockEnd: 0,
+    height: '100dvh',
     // Closed state. `display` participates in the transition with
     // allow-discrete so it flips to none only after the slide-out finishes
-    // (@starting-style covers the none -> flex entry). max-width animates
-    // the collapse-to-rail transition.
+    // (@starting-style covers the none -> flex entry).
     display: 'none',
-    transitionProperty: 'transform, max-width, display',
+    transitionProperty: 'transform, display',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
@@ -142,15 +167,11 @@ const styles = stylex.create({
   open: {
     display: 'flex',
   },
-  // Inline-axis panels (start/end): full height, pinned to one inline edge.
-  // start/end transforms flip under RTL; top/bottom (block axis) need no
-  // flip because the block axis is direction-safe.
+  // start/end transforms flip under RTL so the panel always slides in from
+  // the edge it is anchored to.
   end: {
-    insetBlockStart: 0,
-    insetBlockEnd: 0,
     insetInlineEnd: 0,
     insetInlineStart: 'auto',
-    height: '100dvh',
     borderInlineStartWidth: borderVars['--border-width'],
     borderInlineStartStyle: 'solid',
     borderInlineStartColor: colorVars['--color-border'],
@@ -169,11 +190,8 @@ const styles = stylex.create({
     },
   },
   start: {
-    insetBlockStart: 0,
-    insetBlockEnd: 0,
     insetInlineStart: 0,
     insetInlineEnd: 'auto',
-    height: '100dvh',
     borderInlineEndWidth: borderVars['--border-width'],
     borderInlineEndStyle: 'solid',
     borderInlineEndColor: colorVars['--color-border'],
@@ -189,44 +207,6 @@ const styles = stylex.create({
         default: 'translateX(-100%)',
         ':is([dir="rtl"] *)': 'translateX(100%)',
       },
-    },
-  },
-  // Block-axis sheets (top/bottom): full width, pinned to one block edge.
-  // width must be explicit — the UA stylesheet gives <dialog>
-  // `width: fit-content`, which beats the insetInline: 0 stretch and
-  // would leave the sheet content-width in a corner.
-  top: {
-    width: '100dvw',
-    insetInlineStart: 0,
-    insetInlineEnd: 0,
-    insetBlockStart: 0,
-    insetBlockEnd: 'auto',
-    borderBlockEndWidth: borderVars['--border-width'],
-    borderBlockEndStyle: 'solid',
-    borderBlockEndColor: colorVars['--color-border'],
-    transform: 'translateY(-100%)',
-  },
-  topOpen: {
-    transform: {
-      default: 'translateY(0)',
-      '@starting-style': 'translateY(-100%)',
-    },
-  },
-  bottom: {
-    width: '100dvw',
-    insetInlineStart: 0,
-    insetInlineEnd: 0,
-    insetBlockEnd: 0,
-    insetBlockStart: 'auto',
-    borderBlockStartWidth: borderVars['--border-width'],
-    borderBlockStartStyle: 'solid',
-    borderBlockStartColor: colorVars['--color-border'],
-    transform: 'translateY(100%)',
-  },
-  bottomOpen: {
-    transform: {
-      default: 'translateY(0)',
-      '@starting-style': 'translateY(100%)',
     },
   },
   // Scrim via the browser's ::backdrop pseudo-element (top layer).
@@ -253,13 +233,11 @@ const styles = stylex.create({
       },
     },
   },
-  // Collapsed rail: the whole panel shrinks to a narrow strip; max-width
-  // participates in the base transition so expand/collapse animates.
-  collapsedRail: {
-    maxWidth: RAIL_WIDTH,
-  },
   // Scrollable content area — full-bleed; consumers compose their own
-  // header/body/footer padding (see Drawer blocks for the pattern).
+  // header/body/footer padding.
+  // touch-action + overscroll containment keep momentum scrolling inside
+  // the panel on touch devices; the safe-area inset keeps the last row of
+  // content clear of the home indicator.
   content: {
     flexGrow: 1,
     minHeight: 0,
@@ -268,14 +246,10 @@ const styles = stylex.create({
     overflowX: 'hidden',
     overscrollBehavior: 'contain',
     touchAction: 'pan-y',
+    paddingBlockEnd: 'env(safe-area-inset-bottom, 0px)',
     outline: 'none',
   },
-  // Children stay mounted while collapsed (state is preserved); only the
-  // presentation is hidden.
-  contentHidden: {
-    display: 'none',
-  },
-  // Close/collapse affordances float in the top-trailing corner, above the
+  // Close affordance floats in the top-trailing corner, above the
   // scrollable content.
   controls: {
     position: 'absolute',
@@ -285,56 +259,18 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     zIndex: 1,
   },
-  // Full-size expand button shown while collapsed. The label reads
-  // vertically (vertical-rl matches right-side rail convention; flipped
-  // 180deg on the start side so the text still reads top-down).
-  railButton: {
-    appearance: 'none',
-    borderStyle: 'none',
-    margin: 0,
-    paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-1'],
-    flexGrow: 1,
-    width: '100%',
-    minHeight: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': colorVars['--color-background-muted'],
-    },
-    color: colorVars['--color-text-secondary'],
-    fontFamily: 'inherit',
-    fontSize: typeScaleVars['--text-label-size'],
-    fontWeight: typeScaleVars['--text-label-weight'],
-    lineHeight: typeScaleVars['--text-label-leading'],
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    writingMode: 'vertical-rl',
-    outline: 'none',
-  },
-  railButtonStart: {
-    transform: 'rotate(180deg)',
-  },
 });
 
 const dynamicStyles = stylex.create({
-  // Inline-axis budget (start/end): full width on viewports narrower than
-  // the budget (reference drawers collapse to a full overlay on small
-  // screens).
-  inlineSize: (s: string) => ({
-    width: '100dvw',
-    maxWidth: s,
-  }),
-  // Block-axis budget (top/bottom sheets): height caps at the budget,
-  // full-height on shorter viewports — mirrors the inline-axis approach.
-  // (Full-bleed width lives in the static top/bottom side styles.)
-  blockSize: (s: string) => ({
-    height: '100dvh',
-    maxHeight: s,
+  // Width budget: the `width` prop on desktop, a share of the viewport below
+  // the mobile breakpoint. maxWidth keeps a large desktop budget from
+  // overflowing a narrow window.
+  inlineSize: (desktopWidth: string, mobileWidth: string) => ({
+    width: {
+      default: desktopWidth,
+      [`@media (max-width: ${MOBILE_BREAKPOINT}px)`]: mobileWidth,
+    },
+    maxWidth: '100dvw',
   }),
   stackZ: (z: number) => ({
     zIndex: z,
@@ -350,40 +286,47 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
 
   /**
-   * Whether the drawer is open. Fully controlled — pair with `onClose`.
+   * Whether the drawer is open. Fully controlled — pair with `onOpenChange`.
    */
   isOpen: boolean;
 
   /**
-   * Called when the drawer requests to be closed
-   * (Escape key, scrim click, built-in close button). The caller owns the
-   * open state. When sibling drawers are open, Escape only closes the
-   * top (last-opened) drawer.
+   * Called when the drawer requests an open-state change. Escape, scrim
+   * click, and the built-in close button call it with `false`. The caller owns
+   * the open state. When sibling drawers are open, Escape only closes the top
+   * (last-opened) drawer.
    */
-  onClose: () => void;
+  onOpenChange: (isOpen: boolean) => void;
 
   /**
    * Which edge the drawer slides from.
    * - `'end'` — inline-end edge (right in LTR) — the inspector convention
    * - `'start'` — inline-start edge (left in LTR)
-   * - `'top'` / `'bottom'` — full-width sheets on the block axis
    * @default 'end'
    */
-  side?: 'start' | 'end' | 'top' | 'bottom';
+  side?: 'start' | 'end';
 
   /**
-   * Size budget of the panel along its slide axis: width for
-   * `side="start"/"end"`, height for `side="top"/"bottom"`. A number is
-   * pixels; a string is any CSS length (`'50%'`, `'40dvh'`). On viewports
-   * smaller than the budget the drawer fills the axis.
+   * Desktop width budget. A number is pixels; a string is any CSS length
+   * (`'50%'`, `'32rem'`). Below the mobile breakpoint (640px), this
+   * remains the maximum while the drawer preserves a 56px reveal of the page
+   * behind — see `isFullWidthOnMobile`.
    * @default 400
    */
-  size?: number | string;
+  width?: number | string;
+
+  /**
+   * Whether the drawer covers the full viewport width on mobile
+   * (below 640px) instead of preserving the default 56px reveal of the page
+   * behind. The reveal makes the drawer read as an overlay rather than a
+   * navigation.
+   * @default false
+   */
+  isFullWidthOnMobile?: boolean;
 
   /**
    * Accessible label for the drawer (required — the drawer has no
-   * built-in heading to derive a name from). Also names the built-in
-   * collapse/expand affordances.
+   * built-in heading to derive a name from).
    */
   label: string;
 
@@ -399,26 +342,11 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
 
   /**
    * Whether to render the built-in close button in the top-trailing
-   * corner. Defaults to the `hasScrim` value: modal drawers get a close
-   * button, non-modal drawers don't.
-   * @default hasScrim
+   * corner. Enabled by default for both modal and non-modal drawers so every
+   * overlay has an obvious dismissal affordance.
+   * @default true
    */
   hasCloseButton?: boolean;
-
-  /**
-   * Collapse the drawer to a narrow click-to-expand rail. Only supported
-   * for non-modal (`hasScrim={false}`) drawers with `side="start"/"end"`;
-   * ignored (with a dev warning) otherwise. Controlled — pair with
-   * `onCollapsedChange`.
-   */
-  isCollapsed?: boolean;
-
-  /**
-   * Called when the built-in collapse/expand affordances are used.
-   * Providing it renders a collapse toggle next to the close button while
-   * expanded; the collapsed rail always expands on click.
-   */
-  onCollapsedChange?: (collapsed: boolean) => void;
 
   /**
    * Drawer content. Rendered inside a full-height scrollable area.
@@ -437,21 +365,23 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
 // =============================================================================
 
 /**
- * An edge-anchored overlay panel for inspectors, detail views, and sheets.
+ * An overlay panel for inspectors and detail views.
  *
- * Slides in from the logical start/end edge (side panel) or the top/bottom
- * edge (full-width sheet) using the native `<dialog>` element: modal with a
- * scrim by default, or a non-modal inline overlay with `hasScrim={false}`.
- * Escape closes the top-most open drawer; focus returns to the element that
- * opened the drawer. Non-modal side drawers can collapse to a rail via
- * `isCollapsed`/`onCollapsedChange`.
+ * Slides in from the logical start or end edge and floats above the page
+ * using the native `<dialog>` element: modal with a scrim by default, or a
+ * non-modal overlay with `hasScrim={false}` that leaves the page behind
+ * interactive. `width` is the desktop budget; below 640px the panel preserves
+ * a 56px page reveal without exceeding that budget (or fills the viewport
+ * with `isFullWidthOnMobile`). Escape
+ * closes the top-most open drawer; focus returns to the element that
+ * opened it.
  *
  * @example
  * ```
  * const [selected, setSelected] = useState(null);
  * <Drawer
  *   isOpen={selected != null}
- *   onClose={() => setSelected(null)}
+ *   onOpenChange={isOpen => !isOpen && setSelected(null)}
  *   label={`Details: ${selected?.name}`}>
  *   <HostDetails host={selected} />
  * </Drawer>
@@ -459,18 +389,19 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
  */
 export function Drawer({
   isOpen,
-  onClose,
+  onOpenChange,
   side = 'end',
-  size = 400,
+  width = 400,
+  isFullWidthOnMobile = false,
   label,
   hasScrim = true,
-  hasCloseButton,
-  isCollapsed,
-  onCollapsedChange,
+  hasCloseButton = true,
   children,
   xstyle,
   className,
   style,
+  onClick: onClickProp,
+  onKeyDown: onKeyDownProp,
   ref,
   ...props
 }: DrawerProps) {
@@ -478,30 +409,15 @@ export function Drawer({
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   // Element focused when the drawer opened — restored on close.
   const triggerElementRef = useRef<HTMLElement | null>(null);
-  // Registry identity + latest onClose (stable across re-renders so the
-  // registration effect doesn't churn on every onClose identity change).
+  // Registry identity + latest onOpenChange (stable across re-renders so the
+  // registration effect doesn't churn on every onOpenChange identity change).
   const drawerId = useId();
-  const onCloseRef = useRef(onClose);
+  const onOpenChangeRef = useRef(onOpenChange);
   useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
   // z-index assigned by the registry on open (non-modal stacking only).
   const [stackZ, setStackZ] = useState(NON_MODAL_BASE_Z);
-
-  const isSheet = side === 'top' || side === 'bottom';
-  // Collapse only makes sense for a persistent (non-modal) side panel.
-  const canCollapse = !hasScrim && !isSheet;
-  const collapsed = canCollapse && isCollapsed === true;
-  const showCloseButton = hasCloseButton ?? hasScrim;
-
-  // Dev warning for unsupported collapse combinations.
-  useDevWarning(
-    'Drawer',
-    '`isCollapsed` is only supported for non-modal drawers ' +
-      '(hasScrim={false}) with side="start" or side="end". The prop is ' +
-      'ignored.',
-    isCollapsed != null && !canCollapse,
-  );
 
   // Open/close the native dialog. close() is delayed so the slide-out
   // transition can play; focus restore happens after close() because a
@@ -581,7 +497,7 @@ export function Drawer({
     if (!isOpen) {
       return;
     }
-    const z = registerDrawer(drawerId, () => onCloseRef.current());
+    const z = registerDrawer(drawerId, () => onOpenChangeRef.current(false));
     setStackZ(z);
     return () => unregisterDrawer(drawerId);
   }, [isOpen, drawerId]);
@@ -590,40 +506,33 @@ export function Drawer({
   useScrollLock(isOpen && hasScrim);
 
   // Escape closes. The native `cancel` event only fires for showModal();
-  // this keydown handler covers the non-modal show() path too. Only the
+  // this React keydown handler covers the non-modal show() path too. Only the
   // top of the drawer stack closes, so stacked siblings peel off
   // innermost-first.
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog || !isOpen) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDialogElement>) => {
       if (event.key === 'Escape') {
         event.preventDefault();
         if (isTopDrawer(drawerId)) {
-          onClose();
+          onOpenChange(false);
         }
       }
-    };
-
-    dialog.addEventListener('keydown', handleKeyDown);
-    return () => dialog.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, drawerId]);
+    },
+    [onOpenChange, drawerId],
+  );
 
   // Native cancel event (browser Escape handling) — prevent the browser
-  // from closing the dialog directly and route through onClose so the
+  // from closing the dialog directly and route through onOpenChange so the
   // caller's state stays the source of truth. Same top-of-stack rule as
   // the keydown path.
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
       if (isTopDrawer(drawerId)) {
-        onClose();
+        onOpenChange(false);
       }
     },
-    [onClose, drawerId],
+    [onOpenChange, drawerId],
   );
 
   // Clicks on the ::backdrop target the <dialog> element itself; clicks on
@@ -631,26 +540,19 @@ export function Drawer({
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDialogElement>) => {
       if (event.target === event.currentTarget && hasScrim) {
-        onClose();
+        onOpenChange(false);
       }
     },
-    [hasScrim, onClose],
+    [hasScrim, onOpenChange],
   );
 
-  const sizeValue = typeof size === 'number' ? `${size}px` : size;
+  const widthValue = typeof width === 'number' ? `${width}px` : width;
+  const mobileWidth = isFullWidthOnMobile
+    ? MOBILE_WIDTH_FULL
+    : `min(${widthValue}, calc(100dvw - ${MOBILE_PAGE_REVEAL}px))`;
 
-  const sideStyle = {
-    start: styles.start,
-    end: styles.end,
-    top: styles.top,
-    bottom: styles.bottom,
-  }[side];
-  const sideOpenStyle = {
-    start: styles.startOpen,
-    end: styles.endOpen,
-    top: styles.topOpen,
-    bottom: styles.bottomOpen,
-  }[side];
+  const sideStyle = side === 'start' ? styles.start : styles.end;
+  const sideOpenStyle = side === 'start' ? styles.startOpen : styles.endOpen;
 
   // Filter out native `open` to prevent InvalidStateError when passed
   const {open: _open, ...safeProps} = props as Record<string, unknown>;
@@ -658,77 +560,42 @@ export function Drawer({
   return (
     <dialog
       ref={mergeRefs(ref, dialogRef)}
-      aria-label={label}
-      aria-modal={hasScrim ? 'true' : undefined}
-      onClick={handleClick}
-      onCancel={handleCancel}
       {...mergeProps(
         themeProps('drawer', {side}),
         stylex.props(
           styles.dialog,
+          overlayPaddingReset.reset,
           sideStyle,
-          isSheet
-            ? dynamicStyles.blockSize(sizeValue)
-            : dynamicStyles.inlineSize(sizeValue),
+          dynamicStyles.inlineSize(widthValue, mobileWidth),
           isOpen && styles.open,
           isOpen && sideOpenStyle,
           hasScrim ? styles.scrim : dynamicStyles.stackZ(stackZ),
           hasScrim && isOpen && styles.scrimOpen,
-          collapsed && styles.collapsedRail,
           xstyle,
         ),
         className,
         style,
       )}
-      {...safeProps}>
+      {...safeProps}
+      aria-label={label}
+      aria-modal={hasScrim ? 'true' : undefined}
+      onClick={composeEventHandlers(onClickProp, handleClick)}
+      onKeyDown={composeEventHandlers(onKeyDownProp, handleKeyDown)}
+      onCancel={handleCancel}>
       {/* Scrollable content area — tabIndex so the dialog's focusing steps
-          land on the panel body rather than the first button inside.
-          Children stay mounted while collapsed so their state survives. */}
-      <div
-        tabIndex={-1}
-        {...stylex.props(styles.content, collapsed && styles.contentHidden)}>
+          land on the panel body rather than the first button inside. */}
+      <div tabIndex={-1} {...stylex.props(styles.content)}>
         {children}
       </div>
-      {collapsed ? (
-        // Collapsed rail: one full-size expand button with the label
-        // reading vertically.
-        <button
-          type="button"
-          aria-label={`Expand ${label}`}
-          onClick={() => onCollapsedChange?.(false)}
-          {...stylex.props(
-            styles.railButton,
-            side === 'start' && styles.railButtonStart,
-          )}>
-          {label}
-        </button>
-      ) : (
-        (showCloseButton || (canCollapse && onCollapsedChange != null)) && (
-          <div {...stylex.props(styles.controls)}>
-            {canCollapse && onCollapsedChange != null && (
-              <IconButton
-                icon={
-                  <Icon
-                    icon={side === 'start' ? 'chevronLeft' : 'chevronRight'}
-                    size="sm"
-                    color="inherit"
-                  />
-                }
-                label={`Collapse ${label}`}
-                variant="ghost"
-                onClick={() => onCollapsedChange(true)}
-              />
-            )}
-            {showCloseButton && (
-              <IconButton
-                icon={<Icon icon="close" size="sm" color="inherit" />}
-                label="Close"
-                variant="ghost"
-                onClick={onClose}
-              />
-            )}
-          </div>
-        )
+      {hasCloseButton && (
+        <div {...stylex.props(styles.controls)}>
+          <IconButton
+            icon={<Icon icon="close" size="sm" color="inherit" />}
+            label="Close"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+          />
+        </div>
       )}
     </dialog>
   );

@@ -73,6 +73,12 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.9
         version: 4.1.10(vitest@4.1.10)
+      cldr-core:
+        specifier: ^48.2.0
+        version: 48.2.0
+      cldr-dates-full:
+        specifier: ^48.2.0
+        version: 48.2.0(cldr-numbers-full@48.2.0(cldr-core@48.2.0))
       dom-accessibility-api:
         specifier: ^0.6.3
         version: 0.6.3
@@ -566,7 +572,7 @@ importers:
   packages/charts:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../core
       '@stylexjs/stylex':
         specifier: ^0.19.0
@@ -680,7 +686,7 @@ importers:
   packages/lab:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../core
       '@stylexjs/stylex':
         specifier: ^0.19.0
@@ -720,7 +726,7 @@ importers:
   packages/richtext:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../core
       '@stylexjs/stylex':
         specifier: ^0.19.0
@@ -775,7 +781,7 @@ importers:
   packages/themes/butter:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -785,13 +791,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../cli
 
   packages/themes/chocolate:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -801,13 +807,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../cli
 
   packages/themes/gothic:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -817,13 +823,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../cli
 
   packages/themes/matcha:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -833,13 +839,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../cli
 
   packages/themes/neutral:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -849,13 +855,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../cli
 
   packages/themes/stone:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -865,13 +871,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../cli
 
   packages/themes/y2k:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -881,7 +887,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.3
+        specifier: 0.4.5
         version: link:../../cli
 
   packages/vega:
@@ -3959,6 +3965,19 @@ packages:
 
   class-variance-authority@0.7.1:
     resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
+
+  cldr-core@48.2.0:
+    resolution: {integrity: sha512-zfmLothncSwfv2jlevoSrgI2VGgH8SDGHXst6jUEotHA8nq9Igeg9jzdJDFtBso9pgJuG89DK16TzrmZDdo2Bg==}
+
+  cldr-dates-full@48.2.0:
+    resolution: {integrity: sha512-zMrKvjMO414HDftLr6vKH1fNQHakFNe+F1h4S0eg+zmL4WRi9pI41fxB3UrTJDY42MEM87jCuAw/qlqCgYKcAQ==}
+    peerDependencies:
+      cldr-numbers-full: 48.2.0
+
+  cldr-numbers-full@48.2.0:
+    resolution: {integrity: sha512-0EQ+UkVDsyXOlxnWnL1RIENVZFqCnb04D1Yrku0obnOyttbuZz8tHmUd5c5AEvhGS/Gg2zI4fTaCm51LSGITog==}
+    peerDependencies:
+      cldr-core: 48.2.0
 
   cli-cursor@5.0.0:
     resolution: {integrity: sha512-aCj4O5wKyszjMmDT4tZj93kxyydN/K5zPWSCe6/0AV/AA1pqe5ZBIw0a2ZfPQV7lL5/yb5HsUreJ6UFAF1tEQw==}
@@ -9278,6 +9297,16 @@ snapshots:
   class-variance-authority@0.7.1:
     dependencies:
       clsx: 2.1.1
+
+  cldr-core@48.2.0: {}
+
+  cldr-dates-full@48.2.0(cldr-numbers-full@48.2.0(cldr-core@48.2.0)):
+    dependencies:
+      cldr-numbers-full: 48.2.0(cldr-core@48.2.0)
+
+  cldr-numbers-full@48.2.0(cldr-core@48.2.0):
+    dependencies:
+      cldr-core: 48.2.0
 
   cli-cursor@5.0.0:
     dependencies:

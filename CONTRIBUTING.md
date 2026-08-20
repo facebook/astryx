@@ -755,6 +755,9 @@ into your language, visit <https://crowdin.com/project/astryx>. New locales are
 picked up automatically after a maintainer reviews the auto-generated
 translations PR.
 
+Calendar’s compact weekday labels, such as `Su` and `Mo`, are generated from
+Unicode CLDR data because browsers do not provide that format.
+
 ## Contributor License Agreement ("CLA")
 
 In order to accept your pull request, we need you to submit a CLA. You only need

@@ -3,10 +3,17 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
+import {InputGroup} from '@astryxdesign/core/InputGroup';
 import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {RadioIndicator} from '@astryxdesign/core/Indicator';
-import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
+import {
+  UserIcon,
+  CogIcon,
+  BellIcon,
+  LockClosedIcon,
+  GlobeAltIcon,
+} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Selector> = {
   title: 'Core/Selector',
@@ -399,6 +406,85 @@ export const CustomRender: Story = {
           />
         )}
       />
+    );
+  },
+};
+
+// Two-line options: description on the data, and the trigger seam
+export const OptionDescriptions: Story = {
+  render: () => {
+    const visibility = [
+      {
+        value: 'private',
+        label: 'Private',
+        icon: LockClosedIcon,
+        description: 'Only members can access this space and its content.',
+      },
+      {
+        value: 'public',
+        label: 'Public',
+        icon: GlobeAltIcon,
+        description: 'Anyone at the company can find and join this space.',
+      },
+    ];
+    const [condensed, setCondensed] = useState<string | undefined>('private');
+    const [oneLine, setOneLine] = useState<string | undefined>('private');
+    const [full, setFull] = useState<string | undefined>('private');
+    const [grouped, setGrouped] = useState<string | undefined>('private');
+    return (
+      <div style={{display: 'grid', gap: 24}}>
+        <Selector
+          label="Visibility (default trigger)"
+          options={visibility}
+          value={condensed}
+          onChange={setCondensed}
+          data-testid="condensed"
+        />
+        <Selector
+          label="Visibility (renderValue, one line)"
+          options={visibility}
+          value={oneLine}
+          onChange={setOneLine}
+          data-testid="one-line"
+          renderValue={option => (
+            <SelectorOption
+              icon={option.icon}
+              label={option.label ?? option.value}
+            />
+          )}
+        />
+        <Selector
+          label="Visibility (renderValue)"
+          options={visibility}
+          value={full}
+          onChange={setFull}
+          data-testid="full"
+          renderValue={option => (
+            <SelectorOption
+              icon={option.icon}
+              label={option.label ?? option.value}
+              description={option.description}
+            />
+          )}
+        />
+        <InputGroup label="Visibility">
+          <Selector
+            label="Visibility (in a group)"
+            isLabelHidden
+            options={visibility}
+            value={grouped}
+            onChange={setGrouped}
+            renderValue={option => (
+              <SelectorOption
+                icon={option.icon}
+                label={option.label ?? option.value}
+                description={option.description}
+              />
+            )}
+          />
+          <Button label="Save" />
+        </InputGroup>
+      </div>
     );
   },
 };

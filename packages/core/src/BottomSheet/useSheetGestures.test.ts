@@ -129,7 +129,9 @@ describe('useSheetGestures', () => {
     expect(onDismiss).not.toHaveBeenCalled();
     expect(hook.result.current.settledOffset).toBe(200);
     expect(onSnap).toHaveBeenLastCalledWith(200);
-    expect(onScrimOpacity).toHaveBeenLastCalledWith(0.3);
+    // The 200px stop is half the sheet — a working surface, not a peek — so
+    // the backdrop stays full there.
+    expect(onScrimOpacity).toHaveBeenLastCalledWith(1);
   });
 
   it('expands to the tallest detent on a fast upward flick', () => {
@@ -218,13 +220,62 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.settledLayoutOffset).toBe(0);
   });
 
-  it('treats the only collapsed stop as a peek, like the scrim does', () => {
+  it('re-anchors to the same stop when the snap heights change at rest', () => {
+    const onDismiss = vi.fn();
+    const hook = renderHook(
+      (props: UseSheetGesturesOptions) => useSheetGestures(props),
+      {
+        initialProps: {
+          isOpen: true,
+          onDismiss,
+          snapHeights: () => [200],
+        },
+      },
+    );
+    const t = makeTarget();
+
+    // Settle on the one collapsed stop: 400 - 200 = 200px of travel.
+    down(hook, 0, 0, t);
+    move(hook, 180, 700, t);
+    up(hook, 180, 1100, t);
+    act(() => hook.result.current.completeScrollAreaSettle());
+    expect(hook.result.current.settledOffset).toBe(200);
+
+    // A new resolver is a new set of stops. The sheet is resting on the one it
+    // names, so it follows: a 150px stop is 250px of travel. The resolver is
+    // read during render, not from a passive effect — the re-anchor runs in a
+    // layout effect, which would otherwise still see the previous one.
+    hook.rerender({
+      isOpen: true,
+      onDismiss,
+      snapHeights: () => [150],
+    });
+
+    expect(hook.result.current.settledOffset).toBe(250);
+    expect(hook.result.current.settledLayoutOffset).toBe(250);
+  });
+
+  it('resizes the scrolling area at a collapsed stop that is a working height', () => {
+    // A 200px stop on the 400px sheet is half of it: the scrolling area takes
+    // that travel as layout height rather than sliding the sheet away.
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     down(hook, 0, 0, t);
     move(hook, 180, 700, t);
     up(hook, 180, 1100, t);
     expect(hook.result.current.settledOffset).toBe(200);
+    expect(hook.result.current.settledLayoutOffset).toBe(200);
+  });
+
+  it('treats the only collapsed stop as a peek when it is a sliver', () => {
+    // 60px of a 400px sheet is inside the quarter that makes a peek, so the
+    // sheet keeps its full layout height and slides below the viewport.
+    const {hook} = setup({snapHeights: () => [60]});
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    move(hook, 320, 700, t);
+    up(hook, 320, 1100, t);
+    expect(hook.result.current.settledOffset).toBe(340);
     expect(hook.result.current.settledLayoutOffset).toBe(0);
   });
 
@@ -297,20 +348,22 @@ describe('useSheetGestures', () => {
 
     expect(onDismiss).not.toHaveBeenCalled();
     expect(hook.result.current.settledOffset).toBe(200);
-    expect(onScrimOpacity).toHaveBeenLastCalledWith(0.3);
+    // Rebounding restores the scrim the 200px stop rests under — full, since
+    // half a sheet is a working surface rather than a glance.
+    expect(onScrimOpacity).toHaveBeenLastCalledWith(1);
   });
 
   it('fades the scrim from full toward the peek floor as it collapses onto the peek detent', () => {
     const onScrimOpacity = vi.fn();
-    // Sheet 400, detents at 200 and 300 -> offsets [0, 100, 200]. The fade
-    // spans the mid detent (offset 100) to the peek detent (offset 200):
-    // full at/above 100, thinned to the peek floor (0.3) at/below 200.
-    const {hook} = setup({snapHeights: () => [200, 300], onScrimOpacity});
+    // Sheet 400, stops at 300 and a 60px sliver -> offsets [0, 100, 340]. The
+    // fade spans the mid detent (offset 100) to the peek (offset 340): full
+    // at/above 100, thinned to the peek floor (0.3) at/below 340.
+    const {hook} = setup({snapHeights: () => [60, 300], onScrimOpacity});
     const t = makeTarget();
     down(hook, 0, 0, t);
     move(hook, 60, 200, t); // offset 60, above the mid detent -> full
-    move(hook, 150, 600, t); // offset 150, halfway -> between 1 and 0.3 (~0.65)
-    move(hook, 220, 1000, t); // offset 220, past the peek -> peek floor
+    move(hook, 220, 600, t); // offset 220, halfway -> between 1 and 0.3 (~0.65)
+    move(hook, 360, 1000, t); // offset 360, past the peek -> peek floor
     const values = onScrimOpacity.mock.calls.map(c => Number(c[0]));
     expect(values[0]).toBe(1);
     expect(values[1]).toBeGreaterThan(0.55);
@@ -320,14 +373,14 @@ describe('useSheetGestures', () => {
 
   it('thins the scrim to the peek floor when settled at the peek detent (still modal)', () => {
     const onScrimOpacity = vi.fn();
-    const {hook} = setup({snapHeights: () => [200, 300], onScrimOpacity});
+    const {hook} = setup({snapHeights: () => [60, 300], onScrimOpacity});
     const t = makeTarget();
-    // Slow drag down to the peek detent (offset 200).
+    // Slow drag down to the peek detent (offset 340).
     down(hook, 0, 0, t);
-    move(hook, 100, 400, t);
-    move(hook, 200, 900, t);
-    up(hook, 200, 1400, t);
-    expect(hook.result.current.settledOffset).toBe(200);
+    move(hook, 170, 400, t);
+    move(hook, 340, 900, t);
+    up(hook, 340, 1400, t);
+    expect(hook.result.current.settledOffset).toBe(340);
     // Last reported opacity (on settle) is the peek floor, not fully hidden —
     // the sheet is still modal, so the backdrop keeps a minimum dim.
     const values = onScrimOpacity.mock.calls.map(c => Number(c[0]));
@@ -725,6 +778,51 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.settledOffset).toBe(200);
       return el;
     }
+
+    // iOS Safari raises PointerEvents for a finger under the SAME numeric id
+    // it puts in `Touch.identifier`, so a drag the touch path starts is keyed
+    // to a live pointer. WebKit takes that pointer's capture straight back,
+    // and the `lostpointercapture` that follows used to cancel the drag one
+    // event after it began — leaving the sheet inert for the rest of the pull
+    // while the handle still worked. Every browser that keeps the two id
+    // spaces apart hides this, which is why it only showed up on device.
+    it('survives a lostpointercapture for the finger driving it', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 600); // parked at the content end
+      act(() => {
+        touch(el, 'touchstart', 500, 7);
+        touch(el, 'touchmove', 450, 7); // promotes at the armed bottom edge
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      act(() => {
+        hook.result.current.bodyProps.onLostPointerCapture(
+          pointerEvent(450, 0, el, 7), // same id as the touch: iOS does this
+        );
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      act(() => {
+        touch(el, 'touchmove', 400, 7);
+      });
+      // 100px of pull past the touchstart, from the 200px detent.
+      expect(hook.result.current.dragOffset).toBe(100);
+    });
+
+    // `pointercancel` for that same finger arrives the moment WebKit claims
+    // the gesture. Ending the drag on it settles the sheet mid-pull.
+    it('does not end the touch drag on a pointercancel for that finger', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 600);
+      act(() => {
+        touch(el, 'touchstart', 500, 7);
+        touch(el, 'touchmove', 450, 7);
+      });
+      act(() => {
+        hook.result.current.bodyProps.onPointerCancel(
+          pointerEvent(450, 0, el, 7),
+        );
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+    });
 
     it('hands off when the content runs out under a moving finger', () => {
       const {hook} = setup({snapHeights: () => [200]});

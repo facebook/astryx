@@ -56,8 +56,8 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install chromium
 
-      # No --filter: with the flag absent the audit covers every core-* story
-      # (full-suite sweep). continue-on-error because the audit exits non-zero
+      # No --filter: with the flag absent the audit covers every core-* and
+      # lab-* story (full sweep). continue-on-error because the audit exits non-zero
       # on any finding — the summarize step below turns the report into the
       # real status.
       - name: Run full-suite RTL audit

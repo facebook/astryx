@@ -3,8 +3,10 @@
 /**
  * @file parser.ts
  * @input Markdown string
- * @output Array of MarkdownNode AST nodes
- * @position Core parser; consumed by Markdown.tsx
+ * @output Array of MarkdownNode AST nodes; heading slug helpers
+ *   (inlineText, slugify, uniqueSlug) shared by Markdown rendering and
+ *   Outline's parseOutlineFromMarkdown
+ * @position Core parser; consumed by Markdown.tsx and Outline
  */
 
 // ---------------------------------------------------------------------------
@@ -1814,4 +1816,60 @@ export function parseMarkdownIncremental(
   state.prevInput = input;
 
   return mergeSettledBlocks(settledBlocks, unsettledBlocks);
+}
+
+// ---------------------------------------------------------------------------
+// Heading slugs
+// ---------------------------------------------------------------------------
+// Single source of truth for the heading id contract: Markdown renders these
+// slugs as `id` attributes on h1–h6, and Outline's parseOutlineFromMarkdown
+// derives its item ids from the same functions, so outline hash links always
+// resolve to a rendered heading by construction.
+
+/** Flatten inline nodes into their plain text content. */
+export function inlineText(nodes: InlineNode[]): string {
+  return nodes
+    .map(node => {
+      switch (node.type) {
+        case 'text':
+        case 'code':
+          return node.content;
+        case 'bold':
+        case 'italic':
+        case 'strikethrough':
+        case 'link':
+          return inlineText(node.children);
+        case 'image':
+          return node.alt;
+        case 'citation':
+        case 'break':
+          return '';
+      }
+    })
+    .join('');
+}
+
+/** Turn heading text into a URL-safe slug (lowercase, hyphen-separated). */
+export function slugify(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Disambiguate repeated slugs with a numeric suffix (`setup`, `setup-1`, …).
+ * Empty slugs fall back to `section`. The caller owns the counts map so one
+ * document shares a single numbering sequence.
+ */
+export function uniqueSlug(
+  baseSlug: string,
+  counts: Map<string, number>,
+): string {
+  const fallbackSlug = baseSlug || 'section';
+  const count = counts.get(fallbackSlug) ?? 0;
+  counts.set(fallbackSlug, count + 1);
+  return count === 0 ? fallbackSlug : `${fallbackSlug}-${count}`;
 }

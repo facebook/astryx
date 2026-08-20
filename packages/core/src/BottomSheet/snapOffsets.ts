@@ -3,9 +3,9 @@
 /**
  * @file snapOffsets.ts
  * @input Pure geometry helpers — no React, no DOM.
- * @output Converts snap points to translateY offsets for the sheet surface.
- * @position Internal to BottomSheet; consumed by useSheetGestures, tested by
- *   snapOffsets.test.ts.
+ * @output Resolves snap points and converts them to translateY offsets.
+ * @position Internal to BottomSheet; consumed by useSheetGestures and
+ *   BottomSheetPanel, tested by snapOffsets.test.ts.
  *
  * A detent is represented as an offset in px from the fully-open position
  * (0 = fully open, larger = more collapsed). The panel may render that offset
@@ -15,6 +15,21 @@
  */
 
 /**
+ * A height the sheet can rest at, expressed as the sheet's VISIBLE height:
+ *
+ * - a number in `(0, 1]` — a fraction of the viewport (`0.5` is half the
+ *   screen), so the stop tracks rotation and window resizes;
+ * - a `'<n>%'` string — the same thing spelled in CSS;
+ * - a `'<n>px'` string — an absolute height that does not scale.
+ *
+ * Anything else — a unitless string, `calc()`, `vh`, `rem`, a number outside
+ * `(0, 1]` — is ignored with a dev warning. Percentages resolve against the
+ * layout viewport (`window.innerHeight`), the same box the height budgets are
+ * written against, so the mobile keyboard never moves a stop.
+ */
+export type BottomSheetSnapPoint = number | string;
+
+/**
  * Detents whose resting offsets land within this many px of each other are
  * treated as the same stop (the taller one wins). Stops the sheet from having
  * two near-identical rest positions — e.g. when a content-hugging height sits
@@ -22,12 +37,71 @@
  */
 export const DETENT_DEDUP_PX = 48;
 
-/** Resolve snap points given as viewport fractions (0, 1] to px heights. */
-export function snapFractionsToHeights(
-  fractions: ReadonlyArray<number>,
+/**
+ * Largest share of the fully open sheet the shortest stop may fill and still
+ * be a peek. Above it the stop is a working surface — it lays its content out
+ * and keeps a full scrim — so a two-stop sheet like `[0.5]` behaves like the
+ * half-height panel it asks for rather than like a glance.
+ */
+export const PEEK_MAX_HEIGHT_RATIO = 0.25;
+
+// A snap point string: a positive number with a `px` or `%` unit. Deliberately
+// narrow — every accepted unit has to be resolvable by arithmetic on the
+// viewport height, because this runs inside the drag loop. Units that need the
+// DOM to resolve (`rem`, `em`, `calc()`) would cost a layout per frame.
+const SNAP_POINT_PATTERN = /^(\d+(?:\.\d+)?|\.\d+)(px|%)$/i;
+
+/**
+ * Resolve one snap point to a visible height in px, or `null` when it is not a
+ * snap point this sheet can honor.
+ */
+function parseSnapPoint(
+  point: BottomSheetSnapPoint,
+  viewportPx: number,
+): number | null {
+  if (typeof point === 'number') {
+    // A bare number is a viewport fraction. Anything above 1 is a px value in
+    // disguise; the caller warns rather than guessing which was meant.
+    return Number.isFinite(point) && point > 0 && point <= 1
+      ? point * viewportPx
+      : null;
+  }
+  const match = SNAP_POINT_PATTERN.exec(point.trim());
+  if (match === null) {
+    return null;
+  }
+  const value = Number.parseFloat(match[1]);
+  if (!(value > 0)) {
+    return null;
+  }
+  return match[2].toLowerCase() === '%' ? (value / 100) * viewportPx : value;
+}
+
+/**
+ * Whether a snap point can be resolved at all. The viewport only scales the
+ * result, so validity is independent of it.
+ */
+export function isValidSnapPoint(point: BottomSheetSnapPoint): boolean {
+  return parseSnapPoint(point, 1) !== null;
+}
+
+/**
+ * Resolve snap points to candidate visible heights in px, dropping the ones
+ * this sheet cannot honor. Callers warn about those separately — this stays
+ * silent because it runs on every drag frame.
+ */
+export function resolveSnapPoints(
+  points: ReadonlyArray<BottomSheetSnapPoint>,
   viewportPx: number,
 ): number[] {
-  return fractions.filter(f => f > 0 && f <= 1).map(f => f * viewportPx);
+  const heights: number[] = [];
+  for (const point of points) {
+    const height = parseSnapPoint(point, viewportPx);
+    if (height !== null) {
+      heights.push(height);
+    }
+  }
+  return heights;
 }
 
 /**
@@ -81,46 +155,58 @@ export function nearestOffset(
 export const MIN_PEEK_SCRIM_OPACITY = 0.3;
 
 /**
- * Whether `offset` is the peek detent: the shortest stop, where the sheet is a
- * glance rather than a working surface. A sheet with no collapsed stop at all
- * has no peek — the same rule `scrimOpacityForOffset` thins the scrim by.
+ * The peek detent's offset, or `null` when this sheet has no peek.
  *
- * The peek is the one detent the sheet does NOT express as layout height: at a
- * sliver of viewport there is nothing useful to lay out, and reflowing the
- * content into it (then back out on the way up) is churn the user sees. It
- * keeps the full layout height and slides below the viewport instead.
+ * A peek is the shortest stop AND a sliver — at most `PEEK_MAX_HEIGHT_RATIO`
+ * of the fully open sheet. It is the one detent the sheet does NOT express as
+ * layout height: at a sliver there is nothing useful to lay out, and reflowing
+ * the content into it (then back out on the way up) is churn the user sees, so
+ * it keeps the full layout height and slides below the viewport instead. It is
+ * also the only stop that thins the scrim.
+ *
+ * A sheet whose shortest stop is a working height — `[0.5]`, say — has no
+ * peek: half a screen of content deserves to be laid out at half a screen, and
+ * a scrim that thinned there would read as a dismissed sheet.
  */
-export function isPeekOffset(
-  offset: number,
+export function peekOffsetFor(
   offsets: ReadonlyArray<number>,
-  tolerancePx: number = 0.5,
-): boolean {
-  if (offsets.length < 2) {
-    return false;
+  visibleSheetHeight: number,
+): number | null {
+  if (offsets.length < 2 || visibleSheetHeight <= 0) {
+    return null;
   }
-  return Math.abs(offset - offsets[offsets.length - 1]) <= tolerancePx;
+  const shortest = offsets[offsets.length - 1];
+  const heightAtShortest = visibleSheetHeight - shortest;
+  return heightAtShortest <= PEEK_MAX_HEIGHT_RATIO * visibleSheetHeight
+    ? shortest
+    : null;
 }
 
 /**
  * Scrim opacity (1 = fully visible) for a drag/settle `offset`.
- * The scrim stays full while the sheet is at or above its second-shortest
- * detent, then fades as it collapses onto the shortest ("peek") detent — a
- * glance state that thins the backdrop to `MIN_PEEK_SCRIM_OPACITY` (not fully
- * gone, since the sheet is still modal) and holds there below it.
- * A single-detent sheet has no peek, so it instead fades all the way to 0
- * across the dismiss overshoot toward `dismissOffset` (the sheet is leaving).
+ *
+ * The scrim is full down to the shortest stop that is still a working surface,
+ * and only thins past it — onto a peek, where it holds at
+ * `MIN_PEEK_SCRIM_OPACITY` (a glance state, and the sheet is still modal), or
+ * out through the dismiss overshoot toward `dismissOffset`, where it clears
+ * completely because the sheet is leaving.
+ *
+ * So a sheet whose stops are all working heights keeps a full scrim at every
+ * one of them; only the sliver of a peek, or a sheet on its way out, dims less.
  */
 export function scrimOpacityForOffset(
   offset: number,
   offsets: ReadonlyArray<number>,
   dismissOffset: number,
+  peekOffset: number | null,
 ): number {
-  const shortest = offsets[offsets.length - 1];
-  const hasPeek = offsets.length >= 2;
-  const fadeStart = hasPeek ? offsets[offsets.length - 2] : 0;
-  const fadeEnd = hasPeek ? shortest : dismissOffset;
-  // Peek is a resting state on a still-modal sheet, so keep a floor; the
-  // dismiss overshoot is a sheet on its way out, so let it clear completely.
+  const hasPeek = peekOffset !== null;
+  // The last stop that is still a working surface — the peek's neighbor when
+  // there is a peek, otherwise the shortest stop itself.
+  const fadeStart = hasPeek
+    ? offsets[offsets.length - 2]
+    : offsets[offsets.length - 1];
+  const fadeEnd = hasPeek ? peekOffset : dismissOffset;
   const floor = hasPeek ? MIN_PEEK_SCRIM_OPACITY : 0;
   if (offset <= fadeStart) {
     return 1;

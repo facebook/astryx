@@ -128,6 +128,34 @@ const PADDING_PROPS = new Set([
   'paddingInlineEnd',
 ]);
 
+/**
+ * Physical block-axis longhands, and the logical longhand each one *is* in
+ * every horizontal writing mode. Normalizing them costs no direction
+ * assumption, which is why they can join the container expansion.
+ *
+ * `paddingLeft`/`paddingRight` are deliberately absent. They are
+ * direction-relative — left is inline-start in LTR and inline-end in RTL — and
+ * the expansion's tokens are consumed by logical properties, so mapping them
+ * would put the padding on the opposite edge in RTL. They keep their physical
+ * meaning and land on the element as `padding-left`/`padding-right`; the cost
+ * is that a component's internals cannot see them.
+ */
+const PHYSICAL_BLOCK_PADDING_PROPS: Record<string, string> = {
+  paddingTop: 'paddingBlockStart',
+  paddingBottom: 'paddingBlockEnd',
+};
+
+/**
+ * Every padding spelling the container expansion consumes. Kept separate from
+ * PADDING_PROPS, which also routes longhands to `vars`-style derived entries —
+ * those carry one value for the whole box, so a single physical edge must not
+ * reach them.
+ */
+const CONTAINER_PADDING_PROPS = new Set([
+  ...PADDING_PROPS,
+  ...Object.keys(PHYSICAL_BLOCK_PADDING_PROPS),
+]);
+
 interface ParsedPadding {
   blockStart?: string;
   blockEnd?: string;
@@ -138,12 +166,14 @@ interface ParsedPadding {
 
 /**
  * Parse CSS padding shorthand/longhand into block/inline values.
- * Supports 1-3 value shorthands and logical properties.
+ * Supports 1-3 value shorthands, logical properties, and the physical block
+ * longhands normalized by PHYSICAL_BLOCK_PADDING_PROPS.
  */
 function parsePadding(props: [string, string][]): ParsedPadding {
   const result: ParsedPadding = {};
 
-  for (const [prop, value] of props) {
+  for (const [rawProp, value] of props) {
+    const prop = PHYSICAL_BLOCK_PADDING_PROPS[rawProp] ?? rawProp;
     switch (prop) {
       case 'padding': {
         const parts = value.trim().split(/\s+/);
@@ -377,13 +407,28 @@ function generateComponentRules(
             }
           }
         }
+        // A physical block longhand reaches the container expansion only. It
+        // names one edge, so it must not feed a `vars` entry above, which
+        // carries the padding for the whole box.
+        if (
+          prop in PHYSICAL_BLOCK_PADDING_PROPS &&
+          getDerivedVars(component, 'padding').some(
+            e => e.expand === 'container',
+          )
+        ) {
+          containerExpanded = true;
+        }
       }
 
       // Container padding expansion: replace padding props with
       // component-scoped container tokens for layout integration.
       if (containerExpanded) {
-        const paddingProps = props.filter(([p]) => PADDING_PROPS.has(p));
-        const nonPaddingProps = props.filter(([p]) => !PADDING_PROPS.has(p));
+        const paddingProps = props.filter(([p]) =>
+          CONTAINER_PADDING_PROPS.has(p),
+        );
+        const nonPaddingProps = props.filter(
+          ([p]) => !CONTAINER_PADDING_PROPS.has(p),
+        );
         const parsed = parsePadding(paddingProps);
         const containerTokens = expandContainerPadding(component, parsed);
         finalProps = [...nonPaddingProps, ...containerTokens];

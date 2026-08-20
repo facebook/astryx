@@ -84,6 +84,7 @@ import {
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -448,6 +449,7 @@ export function DateTimeInput({
   ...rest
 }: DateTimeInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   // Speaks arrow-key stepping results through the persistent live regions:
   // stepping programmatically rewrites a plain textbox's value, which screen
   // readers do not announce on their own (WCAG 4.1.2).
@@ -1009,7 +1011,7 @@ export function DateTimeInput({
             aria-disabled={showsDisabledMessage ? 'true' : undefined}
             readOnly={showsDisabledMessage || undefined}
             aria-describedby={ariaDescribedBy}
-            aria-required={isRequired === true ? 'true' : undefined}
+            aria-required={isEffectivelyRequired ? 'true' : undefined}
             aria-invalid={
               status?.type === 'error' || !isDateInputValid ? 'true' : undefined
             }
@@ -1098,7 +1100,7 @@ export function DateTimeInput({
               timeLabel ?? t('@astryx.dateTimeInput.timeSuffix', {label})
             }
             aria-describedby={ariaDescribedBy}
-            aria-required={isRequired === true ? 'true' : undefined}
+            aria-required={isEffectivelyRequired ? 'true' : undefined}
             aria-invalid={
               status?.type === 'error' || !isTimeInputValid ? 'true' : undefined
             }

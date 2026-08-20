@@ -29,6 +29,7 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {Field} from '../Field/Field';
 import type {InputStatus} from '../Field/types';
 import {useTooltip} from '../Tooltip';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -218,6 +219,13 @@ export function RadioList({
 
   const groupRef = useRef<HTMLDivElement>(null);
 
+  // The radiogroup exposes the *effective* required state so a form-wide
+  // `defaultOptionality="required"` is announced even when the group carries no
+  // visible indicator. Individual radios keep their native `required` bound to
+  // the explicit `isRequired` (via context), so a layout default never switches
+  // on browser validation for the group.
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
+
   // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
   // controls swallow pointer events, so the tooltip listeners attach to the
   // radiogroup container and the radios stay perceivable via aria-disabled
@@ -387,7 +395,7 @@ export function RadioList({
             .join(' ') || undefined
         }
         aria-invalid={status?.type === 'error' ? true : undefined}
-        aria-required={isRequired || undefined}
+        aria-required={isEffectivelyRequired || undefined}
         {...mergeProps(
           themeProps('radio-list', {orientation, size}),
           stylex.props(
