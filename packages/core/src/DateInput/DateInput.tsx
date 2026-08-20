@@ -58,6 +58,7 @@ import {
 } from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA, isImeKeyEvent, parseDateInput} from '../utils';
@@ -399,6 +400,7 @@ export function DateInput({
   ...rest
 }: DateInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -737,7 +739,7 @@ export function DateInput({
         readOnly={showsDisabledMessage || undefined}
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
-        aria-required={isRequired === true ? 'true' : undefined}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }

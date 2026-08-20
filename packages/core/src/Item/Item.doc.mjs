@@ -40,6 +40,7 @@ export const docs = {
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Spacing density. "compact" uses 4px block padding, "balanced" uses 8px, and "spacious" uses 12px block and inline padding.', default: "'balanced'"},
         {name: 'labelLines', type: 'number', description: 'Max lines before label truncates with ellipsis.'},
         {name: 'descriptionLines', type: 'number', description: 'Max lines before description truncates with ellipsis.'},
+        {name: 'layout', type: "'stacked' | 'inline'", description: 'How the label and description sit together. stacked puts the description on its own line below the label; inline keeps both on one line, description ellipsizing first, so the row fits a fixed-height host.', default: "'stacked'"},
         {name: 'onClick', type: '(event: MouseEvent) => void', description: 'Click handler. Makes the item clickable with button semantics.'},
         {name: 'interactiveRef', type: 'RefObject<HTMLElement | null>', description: 'Ref to a nested control (e.g. a checkbox in startContent) that owns the item\'s keyboard access and action. The row becomes an enlarged click/tap target that delegates surface clicks to it (useClickableContainer) and renders no invisible button/anchor, so the row adds no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href; those are ignored when set.'},
         {name: 'href', type: 'string', description: 'Link URL. Makes the item a link via an invisible anchor element.'},

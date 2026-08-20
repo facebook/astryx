@@ -21,6 +21,8 @@ import {calendarStyles} from './styles';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n/InternationalizationProvider';
+import {standaloneShortWeekdayNamesByLocale} from './standaloneShortWeekdayNames.generated';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -118,6 +120,45 @@ describe('Calendar', () => {
     expect(screen.getByText('Th')).toBeInTheDocument();
     expect(screen.getByText('Fr')).toBeInTheDocument();
     expect(screen.getByText('Sa')).toBeInTheDocument();
+  });
+
+  it('uses the provider locale for stand-alone short day names', () => {
+    const localizedNames = standaloneShortWeekdayNamesByLocale.es;
+    const englishNames = standaloneShortWeekdayNamesByLocale.en;
+    expect(localizedNames).not.toEqual(englishNames);
+
+    const {rerender} = render(
+      <InternationalizationProvider locale="es-ES">
+        <Calendar />
+      </InternationalizationProvider>,
+    );
+
+    expect(
+      screen.getAllByRole('columnheader').map(header => header.textContent),
+    ).toEqual(localizedNames);
+
+    rerender(
+      <InternationalizationProvider locale="en">
+        <Calendar />
+      </InternationalizationProvider>,
+    );
+    expect(
+      screen.getAllByRole('columnheader').map(header => header.textContent),
+    ).toEqual(englishNames);
+  });
+
+  it('rotates localized day names by numeric weekday index', () => {
+    const localizedNames = standaloneShortWeekdayNamesByLocale.es;
+
+    render(
+      <InternationalizationProvider locale="es-ES">
+        <Calendar weekStartsOn={1} />
+      </InternationalizationProvider>,
+    );
+
+    expect(
+      screen.getAllByRole('columnheader').map(header => header.textContent),
+    ).toEqual([...localizedNames.slice(1), localizedNames[0]]);
   });
 
   it('displays correct number of day cells', () => {
@@ -234,6 +275,102 @@ describe('Calendar', () => {
     // January 4, 2026 is a Sunday - should be disabled
     const sunday = getDayButton(4);
     expect(sunday).toBeDisabled();
+  });
+
+  it('caps the end date to maxRangeSpan once a start is picked', async () => {
+    const user = userEvent.setup();
+
+    render(<Calendar mode="range" focusDate="2026-01-01" maxRangeSpan={7} />);
+
+    // Before a start is picked every day is selectable.
+    expect(getDayButton(20)).not.toBeDisabled();
+
+    // Pick Jan 10 as the start. A 7-day window spans Jan 4–16 (start ± 6).
+    await user.click(getDayButton(10));
+
+    expect(getDayButton(16)).not.toBeDisabled(); // 6 days after — the edge
+    expect(getDayButton(17)).toBeDisabled(); // 7 days after — beyond the cap
+    expect(getDayButton(4)).not.toBeDisabled(); // 6 days before — symmetric
+    expect(getDayButton(3)).toBeDisabled(); // 7 days before — beyond the cap
+  });
+
+  it('enforces minRangeSpan once a start is picked', async () => {
+    const user = userEvent.setup();
+
+    render(<Calendar mode="range" focusDate="2026-01-01" minRangeSpan={3} />);
+
+    // Pick Jan 10. A 3-day minimum forbids ends closer than 2 days away.
+    await user.click(getDayButton(10));
+
+    // The picked start itself stays enabled — it is the active selection
+    // anchor, not an unreachable end.
+    expect(getDayButton(10)).not.toBeDisabled();
+    expect(getDayButton(11)).toBeDisabled(); // 1 day apart — too short
+    expect(getDayButton(12)).not.toBeDisabled(); // 3-day span — allowed
+    expect(getDayButton(8)).not.toBeDisabled(); // 3-day span the other way
+    expect(getDayButton(9)).toBeDisabled(); // 2-day span — too short
+  });
+
+  it('clears the in-progress start when the anchor is clicked again', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <Calendar
+        mode="range"
+        focusDate="2026-01-01"
+        onChange={handleChange}
+        minRangeSpan={3}
+      />,
+    );
+
+    // Pick Jan 10 as the start, then click it again.
+    await user.click(getDayButton(10));
+    await user.click(getDayButton(10));
+
+    // No zero-length range is committed…
+    expect(handleChange).not.toHaveBeenCalled();
+
+    // …and the start is cleared: the days that minRangeSpan disabled around
+    // the old anchor are selectable again, so a new start can be placed there.
+    expect(getDayButton(11)).not.toBeDisabled();
+    expect(getDayButton(9)).not.toBeDisabled();
+  });
+
+  it('does not apply range-span constraints in single mode', async () => {
+    const user = userEvent.setup();
+
+    render(<Calendar focusDate="2026-01-01" maxRangeSpan={7} />);
+
+    // A picked single date must not disable far-away days.
+    await user.click(getDayButton(10));
+    expect(getDayButton(25)).not.toBeDisabled();
+  });
+
+  it('keeps a controlled value that is wider than maxRangeSpan (selection-only)', () => {
+    // The span constraint governs which days are pickable, not validation of
+    // an already-set value — so a 15-day value under a 7-day cap stays
+    // rendered and is never silently rewritten.
+    render(
+      <Calendar
+        mode="range"
+        value={{start: '2026-01-05', end: '2026-01-20'}}
+        focusDate="2026-01-01"
+        maxRangeSpan={7}
+      />,
+    );
+
+    // No selection is in progress (both endpoints are set), so no anchor →
+    // every day is pickable and both endpoints render selected.
+    expect(getDayButton(20)).not.toBeDisabled();
+    expect(getDayButton(5).closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(getDayButton(20).closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   // ─── Multi-Month ─────────────────────────────────────────────

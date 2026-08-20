@@ -1036,7 +1036,7 @@ export default function ComponentScoresPage() {
         ref={drawerRef}
         id={AUDIT_PANEL_ID}
         isOpen={isAuditPanelOpen && selectedRow?.entry != null}
-        onClose={() => setIsAuditPanelOpen(false)}
+        onOpenChange={setIsAuditPanelOpen}
         label={
           selectedRow
             ? selectedRow.component +
@@ -1047,7 +1047,7 @@ export default function ComponentScoresPage() {
         }
         hasScrim={false}
         hasCloseButton
-        size={560}>
+        width={560}>
         {selectedRow ? (
           <AuditDetails
             row={selectedRow}

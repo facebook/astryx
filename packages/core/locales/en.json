@@ -323,6 +323,10 @@
     "defaultMessage": "Selected range: {start} to {end}.",
     "description": "Screen-reader announcement after the second pick completes a Calendar range selection. `{start}` and `{end}` are localized full dates in chronological order."
   },
+  "@astryx.calendar.rangeClearedAnnounce": {
+    "defaultMessage": "Cleared start date {date}. Select a start date.",
+    "description": "Screen-reader announcement when the user clicks the in-progress range start again, which clears it instead of completing a zero-length range. `{date}` is the localized full date."
+  },
   "@astryx.carousel.label": {
     "defaultMessage": "Carousel",
     "description": "Screen-reader-only fallback name for a horizontally-scrolling row of items. If \"carousel\" is unfamiliar in your locale, prefer the standard term (e.g. \"slider\")."
@@ -434,6 +438,10 @@
   "@astryx.listInput.removeItem": {
     "defaultMessage": "Remove {itemName} {position, number}",
     "description": "Accessible label and tooltip on the button that deletes one record from a lab ListInput. `{itemName}` is the consumer's singular noun for one record; `{position}` is its 1-based row number (e.g. \"Remove guest 2\")."
+  },
+  "@astryx.listInput.removeUnavailable": {
+    "defaultMessage": "Remove is unavailable while the list is disabled",
+    "description": "Tooltip shown on the Remove button when the ListInput is disabled or loading, explaining why the action cannot be performed."
   },
   "@astryx.listInput.reorderItem": {
     "defaultMessage": "Reorder {itemName} {position, number}",

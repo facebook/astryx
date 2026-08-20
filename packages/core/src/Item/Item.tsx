@@ -107,6 +107,15 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   descriptionLines?: number;
 
   /**
+   * How the label and description sit together. `stacked` puts the description
+   * on its own line below the label; `inline` keeps both on one line, with the
+   * description ellipsizing first, so the row fits a fixed-height host.
+   *
+   * @default 'stacked'
+   */
+  layout?: 'stacked' | 'inline';
+
+  /**
    * Click handler. Makes the item clickable with button semantics.
    */
   onClick?: (event: React.MouseEvent) => void;
@@ -264,6 +273,25 @@ const styles = stylex.create({
     minWidth: 0,
     textAlign: 'start',
   },
+  // `layout="inline"`: label and description share one line, so the row fits a
+  // fixed-height host such as a Selector trigger inside an InputGroup.
+  inlineContent: {
+    flexDirection: 'row',
+    // Centered, not baseline-aligned: two different font sizes on a shared
+    // baseline make a line box taller than either line, which would push a
+    // fixed-height host (a Selector trigger) a pixel off its size token.
+    alignItems: 'center',
+    columnGap: spacingVars['--spacing-1'],
+  },
+  inlineLabel: {
+    flexShrink: 0,
+  },
+  // The description yields width first, so the label — the part that identifies
+  // the item — is the last thing to ellipsize.
+  inlineDescription: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
   label: {
     // Falls back to the primary text token; a parent (e.g. a destructive menu
     // item) can recolor the label by setting --_item-label-color.
@@ -358,6 +386,7 @@ export function Item({
   density = 'balanced',
   labelLines,
   descriptionLines,
+  layout = 'stacked',
   onClick,
   interactiveRef,
   href,
@@ -420,12 +449,16 @@ export function Item({
         ? styles.labelSingleTruncate
         : null;
 
+  // Inline rows are one line by definition, so the description always
+  // ellipsizes there — a ReactNode description cannot wrap the row open.
+  const isInline = layout === 'inline' && description != null;
+
   const descriptionTruncateStyle =
     descriptionLines != null
       ? descriptionLines === 1
         ? styles.descriptionSingleTruncate
         : styles.descriptionMultiTruncate
-      : isStringDescription
+      : isStringDescription || isInline
         ? styles.descriptionSingleTruncate
         : null;
 
@@ -434,6 +467,7 @@ export function Item({
       <span
         {...stylex.props(
           styles.label,
+          isInline && styles.inlineLabel,
           labelTruncateStyle,
           labelLines != null &&
             labelLines > 1 &&
@@ -445,6 +479,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.description,
+            isInline && styles.inlineDescription,
             descriptionTruncateStyle,
             descriptionLines != null &&
               descriptionLines > 1 &&
@@ -481,6 +516,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.content,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -494,6 +530,7 @@ export function Item({
           tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(
             styles.invisibleAnchor,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -505,6 +542,7 @@ export function Item({
           disabled={isDisabled}
           {...stylex.props(
             styles.invisibleButton,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -513,6 +551,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.content,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}

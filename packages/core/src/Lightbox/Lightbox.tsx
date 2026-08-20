@@ -36,6 +36,7 @@ import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {useTranslator} from '../i18n';
 
 /**
@@ -588,7 +589,7 @@ export function Lightbox({
       aria-label={currentItem.alt || t('@astryx.lightbox.mediaViewer')}
       {...mergeProps(
         themeProps('lightbox'),
-        stylex.props(styles.dialog, xstyle),
+        stylex.props(styles.dialog, overlayPaddingReset.reset, xstyle),
         className,
         style,
       )}

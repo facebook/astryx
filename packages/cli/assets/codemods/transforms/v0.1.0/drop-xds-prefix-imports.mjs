@@ -65,6 +65,22 @@ export const meta = {
 const XDS_CORE_SOURCE = /^@xds\/core(\/.*)?$/;
 
 /**
+ * Compute a collision alias for an XDS-prefixed identifier by replacing the
+ * `XDS` segment IN PLACE with `Astryx` (as opposed to prefixing the bare name).
+ * This keeps hook names well-formed:
+ *
+ *   XDSButton       -> AstryxButton
+ *   XDSLinkProvider -> AstryxLinkProvider
+ *   useXDSToast     -> useAstryxToast   (NOT AstryxuseToast)
+ *
+ * Only the first `XDS` occurrence is replaced, matching how `bareName` strips a
+ * single leading prefix.
+ */
+function aliasName(/** @type {any} */ name) {
+  return name.replace('XDS', 'Astryx');
+}
+
+/**
  * Compute the bare (unprefixed) name for an XDS-prefixed identifier.
  * Returns null if the name is not XDS-prefixed in a renameable way.
  */
@@ -190,7 +206,12 @@ export default function transformer(file, api) {
     if (!node) return;
     if (
       (node.type === 'FunctionDeclaration' ||
-        node.type === 'ClassDeclaration') &&
+        node.type === 'ClassDeclaration' ||
+        // Type-only bindings share the module namespace for our purposes: a
+        // `type Tab`/`interface Theme` collides with an un-prefixed `XDSTab`/
+        // `XDSTheme` type import and would create a duplicate declaration.
+        node.type === 'TSTypeAliasDeclaration' ||
+        node.type === 'TSInterfaceDeclaration') &&
       node.id
     ) {
       existingBindings.add(node.id.name);
@@ -239,10 +260,13 @@ export default function transformer(file, api) {
       if (bare !== importedName && existingBindings.has(bare)) {
         // COLLISION: the bare name is already a top-level binding in this file
         // (e.g. a local `export function CodeBlock` alongside imported
-        // `XDSCodeBlock`). Un-prefixing directly would create a duplicate
-        // declaration, so alias the import to `Astryx<Name>` and rename the
+        // `XDSCodeBlock`, or a `type Tab` alongside `XDSTab`). Un-prefixing
+        // directly would create a duplicate declaration (TS2451), so alias the
+        // import by replacing `XDS` with `Astryx` in place and rename the
         // import's references to that alias, leaving the local binding intact.
-        const alias = `Astryx${bare}`;
+        // In-place replacement keeps hooks well-formed: `useXDSToast` becomes
+        // `useAstryxToast`, not `AstryxuseToast`.
+        const alias = aliasName(importedName);
         localRenames.set(importedName, alias);
         existingBindings.add(alias);
         hasChanges = true;

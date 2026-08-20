@@ -189,6 +189,16 @@ const styles = stylex.create({
   trackContainerVertical: {
     width: THUMB_SIZE,
     height: 160,
+    // Same tap target, rotated: the vertical track is the thing you press, and
+    // it is only THUMB_SIZE (20px) wide. `minBlockSize` above floors the
+    // horizontal track's short axis; here the short axis is the inline one
+    // (the block size is already 160px), so floor that instead. The rail,
+    // fill, marks and thumb all center on the inline 50%, so they stay put;
+    // only the invisible tappable area grows. Desktop is unchanged.
+    minInlineSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
     flexDirection: 'column',
     justifyContent: 'center',
     cursor: 'pointer',

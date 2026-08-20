@@ -584,3 +584,82 @@ describe('brutalist-style derived expansion', () => {
     expect(rule).toContain('--_dropdown-menu-padding: 4px');
   });
 });
+
+describe('physical padding longhands', () => {
+  const ruleFor = (
+    component: string,
+    base: Record<string, string>,
+    name = 'test-physical-padding',
+  ) =>
+    generateThemeRules(
+      defineTheme({name, components: {[component]: {base}}}),
+    ).find(r => r.includes(`.astryx-${component}`));
+
+  // `padding-top`/`padding-bottom` ARE the block edges in every horizontal
+  // writing mode, so the expansion can normalize them with no direction
+  // assumption. Without that, the padding lands raw on the element and the
+  // component's internals — the NumberInput stepper column, container bleed —
+  // read the default instead of what the theme set.
+  it.each([
+    ['paddingTop', {paddingTop: '14px'}, 'block-start'],
+    ['paddingBottom', {paddingBottom: '14px'}, 'block-end'],
+  ])('routes %s through the container expansion', (_label, base, edge) => {
+    const rule = ruleFor('card', base);
+    expect(rule).toContain(`--astryx-card-padding-${edge}: 14px`);
+    expect(rule).not.toMatch(/[{;]\s*padding-(top|bottom):/);
+  });
+
+  it('normalizes both block edges together, asymmetrically', () => {
+    const rule = ruleFor('number-input', {
+      paddingTop: '14px',
+      paddingBottom: '6px',
+    });
+    expect(rule).toContain('--astryx-number-input-padding-block-start: 14px');
+    expect(rule).toContain('--astryx-number-input-padding-block-end: 6px');
+  });
+
+  it.each(['card', 'dialog', 'section', 'number-input'])(
+    'reaches %s, which expands its padding',
+    component => {
+      expect(ruleFor(component, {paddingTop: '14px'})).toContain(
+        `--astryx-${component}-padding-block-start: 14px`,
+      );
+    },
+  );
+
+  // THE RTL GUARD. `paddingLeft` is inline-start in LTR and inline-end in RTL,
+  // and the tokens are consumed by logical properties, so mapping it would
+  // silently move the padding to the other edge in RTL. It stays physical —
+  // which is what the author wrote — and does not reach the tokens.
+  it('leaves the direction-relative inline pair physical', () => {
+    const rule = ruleFor('card', {paddingLeft: '20px', paddingRight: '8px'});
+    expect(rule).toContain('padding-left: 20px');
+    expect(rule).toContain('padding-right: 8px');
+    expect(rule).not.toContain('--astryx-card-padding-inline');
+  });
+
+  it('expands the block edges while leaving left physical', () => {
+    const rule = ruleFor('card', {paddingTop: '14px', paddingLeft: '20px'});
+    expect(rule).toContain('--astryx-card-padding-block-start: 14px');
+    expect(rule).toContain('padding-left: 20px');
+  });
+
+  // The shorthand-plus-override case was the worst one: the tokens carried
+  // 10px while the element painted 14px on top, so every internal compensated
+  // by the wrong amount.
+  it('lets a physical longhand override the shorthand per edge', () => {
+    const rule = ruleFor('card', {padding: '10px', paddingTop: '14px'});
+    expect(rule).toContain('--astryx-card-padding-block-start: 14px');
+    expect(rule).toContain('--astryx-card-padding-block-end: 10px');
+    expect(rule).toContain('--astryx-card-padding-inline: 10px');
+    expect(rule).not.toMatch(/[{;]\s*padding(-top)?:/);
+  });
+
+  // A `vars` entry carries one value for the whole box, so a single physical
+  // edge must not feed it — only the container expansion takes these.
+  it('does not feed a single edge to a whole-box derived var', () => {
+    const rule = ruleFor('dropdown-menu', {paddingTop: '14px'});
+    expect(rule).toContain('padding-top: 14px');
+    expect(rule).not.toContain('--_dropdown-menu-padding');
+  });
+});

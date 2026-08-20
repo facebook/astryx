@@ -73,6 +73,7 @@ import {
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
@@ -706,6 +707,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   style,
 }: MultiSelectorProps<T>) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.multiSelector.selectPlaceholder');
   const selectAllLabel =
@@ -1526,7 +1528,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           }
           aria-describedby={ariaDescribedBy}
           aria-labelledby={ariaLabelledBy}
-          aria-required={isRequired ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           // With a disabledMessage the trigger keeps focusability via
