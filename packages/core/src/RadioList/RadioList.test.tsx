@@ -763,7 +763,9 @@ describe('RadioList', () => {
           for (const rule of Array.from(list)) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const anyRule = rule as any;
-            if (anyRule.cssRules) walk(anyRule.cssRules);
+            if (anyRule.cssRules) {
+              walk(anyRule.cssRules);
+            }
             if (
               typeof anyRule.cssText === 'string' &&
               anyRule.cssText.includes(`.${className}`)

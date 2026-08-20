@@ -225,7 +225,7 @@ export function RadioListItem({
         // A consumer onClick rides on the radio input itself, so it fires for
         // both direct control clicks and row-surface clicks the row delegates
         // to the input — the same routing CheckboxListItem uses.
-        onClick={onClick as React.MouseEventHandler<HTMLInputElement>}
+        onClick={onClick}
         aria-describedby={description ? descriptionID : undefined}
         {...stylex.props(
           styles.input,
