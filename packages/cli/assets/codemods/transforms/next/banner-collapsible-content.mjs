@@ -46,7 +46,7 @@ export const meta = {
     '`collapsible={{defaultIsOpen: false}}` to banners that relied on the ' +
     'implicit collapse, so behaviour is preserved. Those sites also get a ' +
     'TODO comment, because always-visible content is usually what they want.',
-  pr: '#5251',
+  pr: '#5255',
 };
 
 const OLD_PROP = 'defaultIsExpanded';
