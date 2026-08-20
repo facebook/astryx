@@ -4,6 +4,7 @@ import {describe, it, expect} from 'vitest';
 
 import {docs as ChatReasoningDocs} from '../ChatReasoning/ChatReasoning.doc.mjs';
 import {docs as CodeEditorDocs} from '../CodeEditor/CodeEditor.doc.mjs';
+import {docs as InputMaskDocs} from '../InputMask/InputMask.doc.mjs';
 import {docs as LogStreamDocs} from '../LogStream/LogStream.doc.mjs';
 import {docs as StepperDocs} from '../Stepper/Stepper.doc.mjs';
 
@@ -53,5 +54,19 @@ describe('Lab API Contract Drift (#4163)', () => {
   it('documents Stepper indicatorPosition prop', () => {
     const props = getProps(StepperDocs).map(p => p.name);
     expect(props).toContain('indicatorPosition');
+  });
+
+  it('documents InputMask props', () => {
+    const props = getProps(InputMaskDocs).map(p => p.name);
+    expect(props).toContain('mask');
+    expect(props).toContain('value');
+    expect(props).toContain('onChange');
+    expect(props).toContain('changeAction');
+    expect(props).toContain('formatHint');
+    expect(props).toContain('autoComplete');
+    expect(props).toContain('hasClear');
+    expect(props).toContain('status');
+    expect(props).toContain('disabledMessage');
+    expect(props).toContain('size');
   });
 });
