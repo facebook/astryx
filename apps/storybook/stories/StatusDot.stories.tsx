@@ -3,6 +3,18 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {StatusDot} from '@astryxdesign/core/StatusDot';
 
+const HUES = [
+  'blue',
+  'cyan',
+  'green',
+  'orange',
+  'pink',
+  'purple',
+  'red',
+  'teal',
+  'yellow',
+] as const;
+
 const meta: Meta<typeof StatusDot> = {
   title: 'Core/StatusDot',
   component: StatusDot,
@@ -10,8 +22,8 @@ const meta: Meta<typeof StatusDot> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['success', 'warning', 'error', 'accent', 'neutral'],
-      description: 'Semantic color variant',
+      options: ['success', 'warning', 'error', 'accent', 'neutral', ...HUES],
+      description: 'Colour variant — five semantic, nine hues',
     },
     label: {
       control: 'text',
@@ -46,6 +58,24 @@ export const Variants: Story = {
       <StatusDot variant="error" label="Negative" />
       <StatusDot variant="accent" label="Info" />
       <StatusDot variant="neutral" label="Neutral" />
+    </div>
+  ),
+};
+
+export const Hues: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The nine non-semantic hues, the same set `Badge` exposes. They carry no built-in meaning — use them to categorise, and keep the semantic variants for status.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+      {HUES.map(hue => (
+        <StatusDot key={hue} variant={hue} label={hue} />
+      ))}
     </div>
   ),
 };
@@ -132,6 +162,7 @@ export const WithIcon: Story = {
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
       <StatusDot variant="success" label="Verified" icon={<DiamondIcon />} />
       <StatusDot variant="accent" label="Featured" icon={<DiamondIcon />} />
+      <StatusDot variant="purple" label="Design" icon={<DiamondIcon />} />
       <span style={{fontSize: '11px'}}>icon carries the status as a shape</span>
     </div>
   ),
