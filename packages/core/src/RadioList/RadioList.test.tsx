@@ -743,25 +743,74 @@ describe('RadioList', () => {
       ).toHaveLength(1);
     });
 
-    it('exposes a themeable, hover-capable row instead of a zeroed surface', () => {
-      // The painting row must not zero its own padding/radius (the old
-      // behavior). The compiled Item paint classes stay on the row so a theme's
-      // `radio-list-item` padding/radius/hover overrides cascade onto the
-      // surface that shows them. The selected row is painted like
-      // CheckboxListItem's default, not left flat.
+    it('keeps the bare default row appearance: zeroed padding/radius, no default background', () => {
+      // The architectural win — the target rides the painting Item — must not
+      // change the DEFAULT look. The painting row zeroes Item's density
+      // padding, its radius, and its interactive hover/press background, so an
+      // unthemed RadioList renders as a flat surface (only the indicator tints
+      // on hover via `indicatorScope`). This matches the appearance before the
+      // target moved onto Item; a theme's `radio-list-item` overrides still win
+      // from the higher `astryx-theme` layer.
       render(
         <RadioList label="Preference" value="a" onChange={() => {}}>
           <RadioListItem label="Selected" value="a" data-testid="selected" />
           <RadioListItem label="Plain" value="b" data-testid="plain" />
         </RadioList>,
       );
-      const selected = screen.getByTestId('selected');
+      const cssFor = (className: string): string => {
+        const rules: string[] = [];
+        const walk = (list: CSSRuleList) => {
+          for (const rule of Array.from(list)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const anyRule = rule as any;
+            if (anyRule.cssRules) walk(anyRule.cssRules);
+            if (
+              typeof anyRule.cssText === 'string' &&
+              anyRule.cssText.includes(`.${className}`)
+            ) {
+              rules.push(anyRule.cssText);
+            }
+          }
+        };
+        for (const sheet of Array.from(document.styleSheets)) {
+          try {
+            walk(sheet.cssRules);
+          } catch {
+            // cross-origin/inaccessible sheet — skip
+          }
+        }
+        return rules.join('\n');
+      };
+
       const plain = screen.getByTestId('plain');
-      // Both rows are the painting Item; the selected one is visibly painted
-      // (a background class), the default treatment CheckboxListItem uses.
-      expect(selected).toHaveClass('astryx-item');
-      expect(plain).toHaveClass('astryx-item');
-      expect(selected.className).not.toBe(plain.className);
+      const atoms = plain.className
+        .split(/\s+/)
+        .filter(c => /^x[a-z0-9]+$/i.test(c));
+      const declarations = atoms.map(cssFor).join('\n');
+
+      // The bare-look declarations land on the painting row.
+      expect(declarations).toMatch(/padding-block:\s*0/);
+      expect(declarations).toMatch(/padding-inline:\s*0/);
+      expect(declarations).toMatch(/border-radius:\s*0/);
+      expect(declarations).toMatch(/background-color:\s*transparent/);
+
+      // No default full-row hover highlight: the flat transparent background
+      // replaces Item's interactive `:hover` overlay, so no hover rule paints
+      // the row's own background. (The indicator still tints via its scope.)
+      expect(declarations).not.toMatch(
+        /:hover[^{]*\{[^}]*background-color:\s*var\(--color-overlay-hover\)/,
+      );
+
+      // No default selected-row background: the selected row differs from the
+      // plain row only by state markers, not by a painted background class.
+      const selected = screen.getByTestId('selected');
+      const selectedAtoms = selected.className
+        .split(/\s+/)
+        .filter(c => /^x[a-z0-9]+$/i.test(c));
+      const selectedDecls = selectedAtoms.map(cssFor).join('\n');
+      expect(selectedDecls).not.toMatch(
+        /background-color:\s*var\(--color-accent-muted\)/,
+      );
     });
   });
 });

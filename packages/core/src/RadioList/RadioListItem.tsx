@@ -22,7 +22,6 @@ import React, {use, useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {colorVars} from '../theme/tokens.stylex';
 import {RadioListContext} from './RadioList';
 import {mergeProps, isRenderable} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
@@ -89,10 +88,22 @@ const wrapperSizeStyles = stylex.create({
 });
 
 const rowStyles = stylex.create({
-  // Paint the selected row like CheckboxListItem does. The `radio-list-item`
-  // target's `selected` state can override this background wholesale.
-  selected: {
-    backgroundColor: colorVars['--color-accent-muted'],
+  // The row's default appearance is a bare surface: no density padding, no
+  // radius, and no full-row background — only the indicator tints on hover
+  // (via `indicatorScope`). Item paints padding/radius/hover as an interactive
+  // row, so this neutralizes them at the component level. A theme's
+  // `radio-list-item` overrides still win: they land in `@layer astryx-theme`,
+  // above the component's base StyleX layer, so themes opt back into row
+  // padding/radius/hover/selected styling. `minWidth: 0` preserves label
+  // truncation now that the Item is the row's flex child.
+  root: {
+    paddingBlock: 0,
+    paddingInline: 0,
+    borderRadius: 0,
+    minWidth: 0,
+    // Suppress Item's interactive hover/press background so the resting and
+    // hovered row look identical by default (a theme can restyle either).
+    backgroundColor: 'transparent',
   },
 });
 
@@ -261,10 +272,14 @@ export function RadioListItem({
         [
           // Hover reaches the radio visual through this ancestor marker rather
           // than props, so hovering the row tints the control. The marker rides
-          // the painting row element (Item), the same element that shows the
-          // hover background, so both stay in step.
+          // the painting row element (Item), the same element that carries the
+          // theme target, so a theme's hover styling stays in step with the tint.
           !isDisabled && indicatorScope,
-          isChecked && rowStyles.selected,
+          // Restore the bare default look: zero Item's padding/radius and its
+          // interactive hover/press background. Applied after Item's own base
+          // styles so it wins within the base layer; a `radio-list-item` theme
+          // still overrides it from the higher `astryx-theme` layer.
+          rowStyles.root,
           xstyle,
         ] as StyleXStyles
       }
@@ -272,10 +287,11 @@ export function RadioListItem({
         // One target for every row, carrying its size and runtime state so a
         // theme can express "selected option at large" or restyle disabled
         // rows without reaching for structural selectors. It lands on the
-        // element Item paints — the row surface that shows hover, density
-        // padding, and radius — so a theme styling `radio-list-item`'s
-        // background/padding/borderRadius (and its `:hover`) actually takes
-        // effect, converging with how ListItem lands `list-item`.
+        // element Item paints — the row surface — so a theme styling
+        // `radio-list-item`'s background/padding/borderRadius (and its
+        // `:hover`) actually takes effect from the `astryx-theme` layer, even
+        // though the component zeroes those by default. Converges with how
+        // ListItem lands `list-item` on the same element as `astryx-item`.
         themeProps('radio-list-item', {
           size,
           selected: isChecked ? 'selected' : null,
