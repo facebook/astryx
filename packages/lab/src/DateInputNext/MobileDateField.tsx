@@ -216,9 +216,12 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: {
       default: 'transparent',
+      // Hover only on a real pointer, and never on a disabled control — a
+      // browser suppresses a disabled element's events, not its hover styling.
       '@media (hover: hover)': {
         default: 'transparent',
-        ':hover': colorVars['--color-overlay-hover'],
+        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+          colorVars['--color-overlay-hover'],
       },
       ':active': colorVars['--color-overlay-pressed'],
     },

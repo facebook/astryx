@@ -83,62 +83,63 @@ export const docs = {
           'Add your own month chevrons around it. Scrolling is the month control; a second one just competes with the gesture.',
       },
     ],
+    anatomy: [
+      {
+        name: 'Field',
+        required: true,
+        description:
+          "Label, description and status — Field's, identical on both surfaces.",
+      },
+      {
+        name: 'Closed field',
+        required: true,
+        description:
+          'A real `<input>` on both surfaces, so `ref` is honestly an input ref and the label associates natively. On touch it is readOnly with inputMode="none", which is what keeps the virtual keyboard from covering the sheet it would fill in.',
+      },
+      {
+        name: 'Sheet',
+        required: false,
+        description:
+          'A BottomSheet holding the picker, sized to hug it (touch surface only; the desktop surface uses DateInput\'s popover).',
+      },
+      {
+        name: 'Header',
+        required: false,
+        description:
+          'The month and year, as a button that swaps the calendar for the wheels, plus Today (or Done while the wheels are up).',
+      },
+      {
+        name: 'Weekday row',
+        required: false,
+        description:
+          'Decorative and outside the scroller, so it does not scroll away with the month. Each day carries its weekday in its accessible name instead.',
+      },
+      {
+        name: 'Month scroller',
+        required: false,
+        description:
+          'The continuous surface: equal-height month panes, each snapped to the top of the scrollport.',
+      },
+      {
+        name: 'Wheels',
+        required: false,
+        description:
+          'A month wheel and a year wheel occupying the same box as the calendar, so opening them never changes the height.',
+      },
+    ],
   },
-  anatomy: [
-    {
-      name: 'Field',
-      description:
-        "Label, description and status — Field's, identical on both surfaces.",
-    },
-    {
-      name: 'Closed field',
-      description:
-        'A real `<input>` on both surfaces, so `ref` is honestly an input ref and the label associates natively. On touch it is readOnly with inputMode="none", which is what keeps the virtual keyboard from covering the sheet it would fill in.',
-    },
-    {
-      name: 'Sheet',
-      description:
-        'A BottomSheet holding the picker, sized to hug it (touch surface only; the desktop surface uses DateInput\'s popover).',
-    },
-    {
-      name: 'Header',
-      description:
-        'The month and year, as a button that swaps the calendar for the wheels, plus Today (or Done while the wheels are up).',
-    },
-    {
-      name: 'Weekday row',
-      description:
-        'Decorative and outside the scroller, so it does not scroll away with the month. Each day carries its weekday in its accessible name instead.',
-    },
-    {
-      name: 'Month scroller',
-      description:
-        'The continuous surface: equal-height month panes, each snapped to the top of the scrollport.',
-    },
-    {
-      name: 'Wheels',
-      description:
-        'A month wheel and a year wheel occupying the same box as the calendar, so opening them never changes the height.',
-    },
-  ],
-  implementationNotes: [
-    'The surface is chosen at runtime by `(max-width: 768px) and (pointer: coarse)` — narrow AND touch, because either alone is the wrong signal: touch alone catches a touchscreen laptop and narrow alone catches a half-width desktop window, and on both of those typing a date beats scrolling to it. 768px is AppShell\'s `md`.',
-    'A runtime switch and not CSS, because the two surfaces are structurally different (a popover anchored to a field versus a full-width sheet holding a scroller): rendering both and hiding one would double the DOM, double the tab stops, and mount two calendars. And the condition is not layout — it is which interaction is faster, which depends on the pointer, which CSS cannot hand to JS.',
-    'Both surfaces render the SAME closed field — a bordered input with a calendar icon and the formatted date — so the post-hydration swap moves nothing on screen; only what opens changes. That is why the switch needs no server-side hint prop.',
-    'One month per screen: every pane is exactly the height of the scrollport and snaps to its start (scroll-snap-type: y mandatory + scroll-snap-align: start), which is what makes the picker a fixed height and leaves no resting position showing half of two months.',
-    'Every pane is a six-row grid, including months that need four or five. A pane whose height depended on its contents would make snap offsets differ month to month. There is no adjacent-month spill either: in a continuous scroller the neighbour is one flick away, and rendering its days here would put the same date on screen twice.',
-    'The list is a century in each direction but only about seven panes are ever mounted: a spacer holds the full scroll height and the visible panes are positioned into it absolutely. Nothing is stitched or recycled mid-scroll, so snap offsets stay constant and momentum is never interrupted — the failure mode of the usual "append months at the edge" approach.',
-    'A jump beyond the mounted window (Today, a wheel commit) mounts the target pane first and scrolls on the next layout pass. Scrolling straight there lands where no snap area exists, and mandatory snapping drags it back to the nearest mounted pane — visibly the wrong month.',
-    'The wheels stay mounted behind the calendar and vice versa (visibility, not display), so the scroller keeps its offset across the round trip and a wheel commit can steer it while it is hidden. The hidden panel is also inert.',
-    'The wheel falloff is a CSS scroll-driven animation on a view() timeline, guarded by @supports — a browser without animation-timeline would otherwise play the same keyframes once on the document timeline. It rides an inner element, never the row: a snap area is the TRANSFORMED border box, so animating the row would move the positions the wheel is snapping to.',
-    'Commit-on-rest uses scrollend where it exists and a quiet-period timer where it does not — mobile Safari below 26 has no scrollend, and that is the browser this component targets.',
-    'Both scrollers state box-sizing: border-box themselves. clientHeight is the pane height, the snap offsets and the virtualization all at once, and the reset that would otherwise supply it is zero-specificity :where().',
-    'Keyboard: one tab stop per month pane, arrows move by day and week across month boundaries, Home/End move within the displayed week, and the wheels are listboxes with arrow/Home/End/PageUp/PageDown. The closed field opens with ArrowDown, Enter or Space, matching the APG combobox pattern DateInput follows.',
-  ],
   theming: {
-    description:
-      'Two CSS variables drive the touch picker\'s whole geometry; everything else derives from them. The desktop surface is DateInput and themes exactly as DateInput does.',
-    variables: [
+    // The field wrapper deliberately shares DateInput's target, so one theme
+    // rule reaches both surfaces; only the picker header is its own.
+    targets: [
+      {className: 'astryx-date-input', visualProps: ['size', 'status', 'disabled']},
+      {className: 'astryx-date-input-toggle-icon', states: ['expanded', 'collapsed']},
+      {className: 'astryx-date-input-next-title', states: ['expanded', 'collapsed']},
+    ],
+    // Two variables drive the touch picker's whole geometry; everything else
+    // derives from them. The desktop surface is DateInput and themes exactly
+    // as DateInput does.
+    vars: [
       {
         name: '--date-input-next-day-size',
         default: '44px',
@@ -154,14 +155,11 @@ export const docs = {
   },
   examples: [
     {
-      name: 'Basic',
-      description:
-        'Identical to a DateInput call, because the props are DateInput\'s.',
+      label: 'Basic — identical to a DateInput call, because the props are DateInput\'s',
       code: `<DateInputNext label="Event date" value={date} onChange={setDate} />`,
     },
     {
-      name: 'Bounded',
-      description: 'min and max stop the scroller and the wheels together.',
+      label: 'Bounded — min and max stop the scroller and the wheels together',
       code: `<DateInputNext
   label="Delivery date"
   min="2026-02-01"
@@ -171,8 +169,7 @@ export const docs = {
 />`,
     },
     {
-      name: 'Weekdays only',
-      description: 'Custom constraints, and a Monday-first week.',
+      label: 'Weekdays only — custom constraints, and a Monday-first week',
       code: `<DateInputNext
   label="Appointment"
   weekStartsOn="mon"
@@ -182,9 +179,8 @@ export const docs = {
 />`,
     },
     {
-      name: 'Touch surface, unconditionally',
-      description:
-        'For a mobile-only app, or a story that must show the picker on a desktop browser.',
+      label:
+        'Touch surface, unconditionally — for a mobile-only app, or a story that must show the picker on a desktop browser',
       code: `<MobileDateField label="Event date" value={date} onChange={setDate} />`,
     },
   ],
@@ -254,7 +250,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Drop-in DateInput that picks its surface: core DateInput everywhere, a touch picker (continuous snap-paged months + month/year wheels) on narrow AND coarse-pointer screens.',

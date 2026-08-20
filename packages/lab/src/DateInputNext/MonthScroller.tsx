@@ -166,13 +166,24 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
   },
   puckHoverable: {
-    // Guarded: on a touch screen a :hover tint sticks to the last tapped day
-    // until something else is tapped.
+    // Two guards, for two different failure modes.
+    //
+    // `@media (hover: hover)`: on a touch screen a :hover tint sticks to the
+    // last tapped day until something else is tapped.
+    //
+    // `:where(:not(:disabled,[aria-disabled="true"]))`: a browser suppresses a
+    // disabled control's EVENTS, not its hover styling, so an unguarded
+    // :hover tints a day you cannot pick. The day's disabled state lives on
+    // the button (as `aria-disabled`, which keeps it focusable) and this puck
+    // is the span inside it, so today the working mechanism is the JS gate at
+    // the call site — this guard is what keeps the rule true if the styles
+    // ever move onto the button itself.
     backgroundColor: {
       default: 'transparent',
       '@media (hover: hover)': {
         default: 'transparent',
-        ':hover': colorVars['--color-overlay-hover'],
+        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+          colorVars['--color-overlay-hover'],
       },
     },
   },
@@ -183,7 +194,11 @@ const styles = stylex.create({
   puckSelected: {
     backgroundColor: {
       default: colorVars['--color-accent'],
-      ':hover': colorVars['--color-accent'],
+      // Holds the accent through hover, overriding puckHoverable's tint.
+      // Same guarded selector, so the two have equal specificity and
+      // application order decides — which is what puts this one on top.
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+        colorVars['--color-accent'],
     },
     borderColor: colorVars['--color-accent'],
     color: colorVars['--color-on-accent'],

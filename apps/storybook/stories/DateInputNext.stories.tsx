@@ -110,7 +110,7 @@ export const Default: Story = {
           onChange={setDate}
           hasClear
         />
-        <Text size="supporting" color="secondary" xstyle={styles.readout}>
+        <Text type="supporting" color="secondary" xstyle={styles.readout}>
           {date ?? 'no date selected'}
         </Text>
       </div>
@@ -145,7 +145,7 @@ export const TouchSurface: Story = {
           onChange={setDate}
           hasClear
         />
-        <Text size="supporting" color="secondary" xstyle={styles.readout}>
+        <Text type="supporting" color="secondary" xstyle={styles.readout}>
           {date ?? 'no date selected'}
         </Text>
       </div>
