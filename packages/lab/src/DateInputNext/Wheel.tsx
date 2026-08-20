@@ -27,9 +27,9 @@
  * the scroll-driven decoration.
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/DateInputMobile/MobileDateField.tsx
- * - /packages/lab/src/DateInputMobile/DateInputMobile.doc.mjs
- * - /packages/lab/src/DateInputMobile/DateInputMobile.test.tsx
+ * - /packages/lab/src/DateInputNext/MobileDateField.tsx
+ * - /packages/lab/src/DateInputNext/DateInputNext.doc.mjs
+ * - /packages/lab/src/DateInputNext/DateInputNext.test.tsx
  */
 
 import {useCallback, useEffect, useId, useRef, useState} from 'react';
@@ -43,11 +43,10 @@ import {
   durationVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {focusOutlineStyles} from '@astryxdesign/core/utils';
-import {dateInputMobileVars, dateInputMobileGeometry} from './tokens.stylex';
+import {dateInputNextVars, dateInputNextGeometry} from './tokens.stylex';
 import {useScrollSettle} from './useScrollSettle';
 
-const ITEM_BLOCK_SIZE =
-  dateInputMobileVars['--date-input-mobile-wheel-item-size'];
+const ITEM_BLOCK_SIZE = dateInputNextVars['--date-input-next-wheel-item-size'];
 
 /**
  * Rows tip away from the centre of the wheel. 0% is a row just entering at the
@@ -84,7 +83,7 @@ const styles = stylex.create({
     minWidth: 0,
   },
   scroller: {
-    blockSize: dateInputMobileGeometry.paneBlockSize,
+    blockSize: dateInputNextGeometry.paneBlockSize,
     // Load-bearing, and stated rather than inherited from the reset (whose
     // rule is zero-specificity `:where`): with content-box the end padding
     // below would be added to the scrollport instead of sitting inside it,
@@ -98,7 +97,7 @@ const styles = stylex.create({
     scrollSnapType: 'y mandatory',
     overscrollBehavior: 'contain',
     // Room for row 0 and row n-1 to reach the centre.
-    paddingBlock: dateInputMobileGeometry.wheelEdgePadding,
+    paddingBlock: dateInputNextGeometry.wheelEdgePadding,
     // Gives the rotateX falloff somewhere to recede to.
     perspective: '520px',
     transformStyle: 'preserve-3d',
@@ -243,7 +242,7 @@ export function Wheel({
   const [activeIndex, setActiveIndex] = useState(selectedIndex);
 
   // Row height in px, read from layout rather than assumed, so a theme that
-  // retunes --date-input-mobile-wheel-item-size still lands on the right row.
+  // retunes --date-input-next-wheel-item-size still lands on the right row.
   const itemBlockSize = useCallback((): number => {
     const first = scrollerRef.current?.firstElementChild;
     return first instanceof HTMLElement && first.offsetHeight > 0

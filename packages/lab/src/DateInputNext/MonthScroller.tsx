@@ -24,9 +24,9 @@
  * which is the failure mode of the usual "append months at the edge" approach.
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/DateInputMobile/MobileDateField.tsx
- * - /packages/lab/src/DateInputMobile/DateInputMobile.doc.mjs
- * - /packages/lab/src/DateInputMobile/DateInputMobile.test.tsx
+ * - /packages/lab/src/DateInputNext/MobileDateField.tsx
+ * - /packages/lab/src/DateInputNext/DateInputNext.doc.mjs
+ * - /packages/lab/src/DateInputNext/DateInputNext.test.tsx
  */
 
 import {
@@ -60,7 +60,7 @@ import {
   DATE_FORMAT_MONTH_YEAR,
   DATE_FORMAT_WITH_WEEKDAY,
 } from '@astryxdesign/core/utils';
-import {dateInputMobileVars, dateInputMobileGeometry} from './tokens.stylex';
+import {dateInputNextVars, dateInputNextGeometry} from './tokens.stylex';
 import {
   fromMonthIndex,
   monthIndexOf,
@@ -69,7 +69,7 @@ import {
   rowsIn,
 } from './monthGeometry';
 
-const DAY_SIZE = dateInputMobileVars['--date-input-mobile-day-size'];
+const DAY_SIZE = dateInputNextVars['--date-input-next-day-size'];
 
 /**
  * Panes mounted on each side of the visible one. Sized against a fast fling:
@@ -83,7 +83,7 @@ const OVERSCAN = 3;
 const styles = stylex.create({
   scroller: {
     position: 'relative',
-    blockSize: dateInputMobileGeometry.paneBlockSize,
+    blockSize: dateInputNextGeometry.paneBlockSize,
     // Stated, not inherited from the reset: the pane height, the snap offsets
     // and the virtualization all key off clientHeight, so a consumer without
     // reset.css (or with a stray box-sizing rule — the reset's is
@@ -107,7 +107,7 @@ const styles = stylex.create({
   pane: {
     position: 'absolute',
     insetInline: 0,
-    blockSize: dateInputMobileGeometry.paneBlockSize,
+    blockSize: dateInputNextGeometry.paneBlockSize,
     scrollSnapAlign: 'start',
     // No `scroll-snap-stop: always`. It would cap every fling at one month,
     // which is tidy but stops the surface being continuous — "three months
@@ -115,7 +115,7 @@ const styles = stylex.create({
     // several panes is why OVERSCAN is what it is.
     display: 'grid',
     gridTemplateColumns: 'repeat(7, 1fr)',
-    gridTemplateRows: dateInputMobileGeometry.paneRows,
+    gridTemplateRows: dateInputNextGeometry.paneRows,
   },
   row: {
     display: 'contents',
@@ -251,7 +251,7 @@ export function MonthScroller({
   const rowCount = maxMonthIndex - minMonthIndex + 1;
 
   // Pane height is read from layout, never assumed: it is whatever the CSS
-  // says the scrollport is, so a theme retuning --date-input-mobile-day-size
+  // says the scrollport is, so a theme retuning --date-input-next-day-size
   // moves the snap offsets and the virtualization together.
   const [paneBlockSize, setPaneBlockSize] = useState(0);
   const [centerRow, setCenterRow] = useState(initialMonthIndex - minMonthIndex);

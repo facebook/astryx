@@ -16,23 +16,23 @@
  * changes the picker's height.
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/DateInputMobile/MobileDateField.tsx
- * - /packages/lab/src/DateInputMobile/DateInputMobile.doc.mjs
- * - /packages/lab/src/DateInputMobile/DateInputMobile.test.tsx
+ * - /packages/lab/src/DateInputNext/MobileDateField.tsx
+ * - /packages/lab/src/DateInputNext/DateInputNext.doc.mjs
+ * - /packages/lab/src/DateInputNext/DateInputNext.test.tsx
  */
 
 import {use, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {InternationalizationContext} from '@astryxdesign/core/i18n';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {dateInputMobileGeometry} from './tokens.stylex';
+import {dateInputNextGeometry} from './tokens.stylex';
 import {Wheel, type WheelOption} from './Wheel';
 import {fromMonthIndex, toMonthIndex} from './monthGeometry';
 
 const styles = stylex.create({
   wheels: {
     display: 'flex',
-    blockSize: dateInputMobileGeometry.paneBlockSize,
+    blockSize: dateInputNextGeometry.paneBlockSize,
     gap: spacingVars['--spacing-2'],
   },
 });

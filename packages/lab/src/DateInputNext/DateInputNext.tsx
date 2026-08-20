@@ -3,10 +3,10 @@
 'use client';
 
 /**
- * @file DateInputMobile.tsx
+ * @file DateInputNext.tsx
  * @input Uses useMediaQuery, core's DateInput, MobileDateField
- * @output Exports DateInputMobile, DateInputMobileProps and the re-exported DateInput types
- * @position Lab component entry; consumed by index.ts, tested by DateInputMobile.test.tsx
+ * @output Exports DateInputNext, DateInputNextProps and the re-exported DateInput types
+ * @position Lab component entry; consumed by index.ts, tested by DateInputNext.test.tsx
  *
  * A drop-in `DateInput` that picks its own surface.
  *
@@ -45,12 +45,12 @@
  * sheet instead of a popover.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/DateInputMobile/MobileDateField.tsx (the touch surface)
- * - /packages/lab/src/DateInputMobile/DateInputMobile.doc.mjs
- * - /packages/lab/src/DateInputMobile/DateInputMobile.test.tsx
- * - /packages/lab/src/DateInputMobile/index.ts
+ * - /packages/lab/src/DateInputNext/MobileDateField.tsx (the touch surface)
+ * - /packages/lab/src/DateInputNext/DateInputNext.doc.mjs
+ * - /packages/lab/src/DateInputNext/DateInputNext.test.tsx
+ * - /packages/lab/src/DateInputNext/index.ts
  * - /packages/lab/src/index.ts
- * - /apps/storybook/stories/DateInputMobile.stories.tsx
+ * - /apps/storybook/stories/DateInputNext.stories.tsx
  */
 
 import {DateInput, type DateInputProps} from '@astryxdesign/core/DateInput';
@@ -69,15 +69,15 @@ export const MOBILE_PICKER_QUERY = '(max-width: 768px) and (pointer: coarse)';
  * `DateInput`, and aliasing the type (rather than restating it) is what keeps
  * it one as `DateInput` grows.
  */
-export type DateInputMobileProps = DateInputProps;
+export type DateInputNextProps = DateInputProps;
 
 // Re-exported so a consumer swapping the import gets the whole vocabulary from
 // one place.
 export type {
-  DateInputSize as DateInputMobileSize,
-  DateInputFormat as DateInputMobileFormat,
-  DateInputStatus as DateInputMobileStatus,
-  DateInputStatusType as DateInputMobileStatusType,
+  DateInputSize as DateInputNextSize,
+  DateInputFormat as DateInputNextFormat,
+  DateInputStatus as DateInputNextStatus,
+  DateInputStatusType as DateInputNextStatusType,
 } from '@astryxdesign/core/DateInput';
 
 /**
@@ -89,10 +89,10 @@ export type {
  *
  * @example
  * ```
- * <DateInputMobile label="Event date" value={date} onChange={setDate} />
+ * <DateInputNext label="Event date" value={date} onChange={setDate} />
  * ```
  */
-export function DateInputMobile(props: DateInputMobileProps) {
+export function DateInputNext(props: DateInputNextProps) {
   const isMobile = useMediaQuery(MOBILE_PICKER_QUERY);
 
   // Two components, never one with a branch inside: the surfaces share no
@@ -101,4 +101,4 @@ export function DateInputMobile(props: DateInputMobileProps) {
   return isMobile ? <MobileDateField {...props} /> : <DateInput {...props} />;
 }
 
-DateInputMobile.displayName = 'DateInputMobile';
+DateInputNext.displayName = 'DateInputNext';

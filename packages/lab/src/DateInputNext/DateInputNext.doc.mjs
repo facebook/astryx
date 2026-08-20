@@ -3,7 +3,7 @@
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
-  name: 'DateInputMobile',
+  name: 'DateInputNext',
   displayName: 'Date Input (Responsive)',
   category: 'Data Input',
   keywords: [
@@ -19,7 +19,7 @@ export const docs = {
     'month',
     'year',
   ],
-  // The prop table is DateInput's, deliberately: `DateInputMobileProps` is an
+  // The prop table is DateInput's, deliberately: `DateInputNextProps` is an
   // ALIAS of `DateInputProps`, not a copy, so a consumer swapping the import
   // needs no second table and this file cannot drift out of step with one.
   // Listed here are only the props whose BEHAVIOR differs on the touch
@@ -140,13 +140,13 @@ export const docs = {
       'Two CSS variables drive the touch picker\'s whole geometry; everything else derives from them. The desktop surface is DateInput and themes exactly as DateInput does.',
     variables: [
       {
-        name: '--date-input-mobile-day-size',
+        name: '--date-input-next-day-size',
         default: '44px',
         description:
           'Height of a day row, the minimum tap target of a day, and the floor under the closed field on a coarse pointer. The pane (and so the picker body, and the wheel body) is six of these.',
       },
       {
-        name: '--date-input-mobile-wheel-item-size',
+        name: '--date-input-next-wheel-item-size',
         default: '40px',
         description: 'Height of a wheel row.',
       },
@@ -157,12 +157,12 @@ export const docs = {
       name: 'Basic',
       description:
         'Identical to a DateInput call, because the props are DateInput\'s.',
-      code: `<DateInputMobile label="Event date" value={date} onChange={setDate} />`,
+      code: `<DateInputNext label="Event date" value={date} onChange={setDate} />`,
     },
     {
       name: 'Bounded',
       description: 'min and max stop the scroller and the wheels together.',
-      code: `<DateInputMobile
+      code: `<DateInputNext
   label="Delivery date"
   min="2026-02-01"
   max="2026-05-31"
@@ -173,7 +173,7 @@ export const docs = {
     {
       name: 'Weekdays only',
       description: 'Custom constraints, and a Monday-first week.',
-      code: `<DateInputMobile
+      code: `<DateInputNext
   label="Appointment"
   weekStartsOn="mon"
   dateConstraints={[d => d.getDay() !== 0 && d.getDay() !== 6]}
@@ -192,7 +192,7 @@ export const docs = {
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
-  name: 'DateInputMobile',
+  name: 'DateInputNext',
   displayName: '日期选择器（响应式）',
   props: [
     {

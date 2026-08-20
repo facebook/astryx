@@ -3,8 +3,8 @@
 /**
  * @file tokens.stylex.ts
  * @input StyleX variable and constant definitions
- * @output Exports DateInputMobile layout variables and derived geometry
- * @position Lab component tokens consumed by DateInputMobile.tsx, MonthScroller.tsx, Wheel.tsx, MonthYearWheels.tsx
+ * @output Exports DateInputNext layout variables and derived geometry
+ * @position Lab component tokens consumed by DateInputNext.tsx, MonthScroller.tsx, Wheel.tsx, MonthYearWheels.tsx
  *
  * The picker's whole geometry derives from two numbers, which is what makes
  * the fixed height and the scroll snapping exact:
@@ -22,7 +22,7 @@
  * from a `.stylex.ts` file. A plain `export const` fails the build with
  * "a style value can only contain an array, string or number".
  *
- * SYNC: When modified, update DateInputMobile.doc.mjs (Theming section).
+ * SYNC: When modified, update DateInputNext.doc.mjs (Theming section).
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -35,23 +35,22 @@ import * as stylex from '@stylexjs/stylex';
  */
 export const WEEKS_PER_PANE = 6;
 
-/** Layout variables exposed for theme-level DateInputMobile tuning. */
-export const dateInputMobileVars = stylex.defineVars({
+/** Layout variables exposed for theme-level DateInputNext tuning. */
+export const dateInputNextVars = stylex.defineVars({
   /**
    * Height of one day row, and the minimum touch target of a day. 44px is the
    * comfortable minimum tap target on both iOS and Android.
    */
-  '--date-input-mobile-day-size': '44px',
+  '--date-input-next-day-size': '44px',
   /** Height of one wheel option row. */
-  '--date-input-mobile-wheel-item-size': '40px',
+  '--date-input-next-wheel-item-size': '40px',
 });
 
-const DAY_SIZE = dateInputMobileVars['--date-input-mobile-day-size'];
-const WHEEL_ITEM_SIZE =
-  dateInputMobileVars['--date-input-mobile-wheel-item-size'];
+const DAY_SIZE = dateInputNextVars['--date-input-next-day-size'];
+const WHEEL_ITEM_SIZE = dateInputNextVars['--date-input-next-wheel-item-size'];
 
 /** Geometry derived from the variables above, shared across the component. */
-export const dateInputMobileGeometry = stylex.defineConsts({
+export const dateInputNextGeometry = stylex.defineConsts({
   /** One month pane — and therefore the scrollport, and the wheel body. */
   paneBlockSize: `calc(${WEEKS_PER_PANE} * ${DAY_SIZE})`,
   /** The six equal week rows inside a pane. */

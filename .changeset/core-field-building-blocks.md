@@ -6,7 +6,7 @@
 correct without
 
 Each of these is something every core input already uses, and a field built
-elsewhere — `@astryxdesign/lab`'s `DateInputMobile`, which has to hold
+elsewhere — `@astryxdesign/lab`'s `DateInputNext`, which has to hold
 `DateInput`'s exact contract — had no way to reach:
 
 - `useResolvedRequired` (from `@astryxdesign/core/hooks`). A field that sets

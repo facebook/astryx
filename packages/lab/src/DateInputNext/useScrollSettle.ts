@@ -20,7 +20,7 @@
  * (~150-300ms after the finger lifts), or the wheel would commit to whichever
  * option it was passing rather than the one it settles on.
  *
- * SYNC: When modified, update DateInputMobile.test.tsx.
+ * SYNC: When modified, update DateInputNext.test.tsx.
  */
 
 import {useEffect, useRef} from 'react';

@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {DateInputMobile, MobileDateField} from '@astryxdesign/lab';
+import {DateInputNext, MobileDateField} from '@astryxdesign/lab';
 import type {ISODateString} from '@astryxdesign/core/utils';
 import {Text} from '@astryxdesign/core/Text';
 import {Banner} from '@astryxdesign/core/Banner';
@@ -25,9 +25,9 @@ const styles = stylex.create({
   },
 });
 
-const meta: Meta<typeof DateInputMobile> = {
-  title: 'Lab/DateInputMobile',
-  component: DateInputMobile,
+const meta: Meta<typeof DateInputNext> = {
+  title: 'Lab/DateInputNext',
+  component: DateInputNext,
   tags: ['autodocs'],
   parameters: {
     docs: {
@@ -59,7 +59,7 @@ const meta: Meta<typeof DateInputMobile> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof DateInputMobile>;
+type Story = StoryObj<typeof DateInputNext>;
 
 // ============================================================
 // RESPONSIVE — the component as you would actually use it
@@ -89,7 +89,7 @@ export const Default: Story = {
           title="Showing the desktop surface"
           description="A coarse pointer under 768px gets the touch picker instead. The stories below force it, so it is reviewable here."
         />
-        <DateInputMobile
+        <DateInputNext
           label="Event date"
           description="Same props as DateInput, either way."
           value={date}

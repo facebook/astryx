@@ -3,26 +3,26 @@
 'use client';
 
 /**
- * @file DateInputMobile component barrel export
+ * @file DateInputNext component barrel export
  */
 
-export {DateInputMobile, MOBILE_PICKER_QUERY} from './DateInputMobile';
+export {DateInputNext, MOBILE_PICKER_QUERY} from './DateInputNext';
 export type {
-  DateInputMobileProps,
-  DateInputMobileSize,
-  DateInputMobileFormat,
-  DateInputMobileStatus,
-  DateInputMobileStatusType,
-} from './DateInputMobile';
+  DateInputNextProps,
+  DateInputNextSize,
+  DateInputNextFormat,
+  DateInputNextStatus,
+  DateInputNextStatusType,
+} from './DateInputNext';
 
 /**
  * The touch surface, unconditionally — no media query, no desktop fallback.
  *
- * `DateInputMobile` is the one to reach for: it picks the right surface for
+ * `DateInputNext` is the one to reach for: it picks the right surface for
  * the device. This is for the two cases where the choice is already made — a
  * mobile-only app that never wants the desktop control, and a story or test
  * that has to render the picker on a desktop browser.
  */
 export {MobileDateField} from './MobileDateField';
 
-export {dateInputMobileVars} from './tokens.stylex';
+export {dateInputNextVars} from './tokens.stylex';

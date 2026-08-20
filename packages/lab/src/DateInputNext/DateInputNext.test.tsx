@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file DateInputMobile.test.tsx
- * @input Uses vitest, @testing-library/react, DateInputMobile and its helpers
+ * @file DateInputNext.test.tsx
+ * @input Uses vitest, @testing-library/react, DateInputNext and its helpers
  * @output Behavior coverage for the responsive date picker
- * @position Test file for /packages/lab/src/DateInputMobile/
+ * @position Test file for /packages/lab/src/DateInputNext/
  *
  * What jsdom can and cannot see here matters, and the split is deliberate:
  *
@@ -36,7 +36,7 @@ import {useState} from 'react';
 import type {ISODateString} from '@astryxdesign/core/utils';
 import {InputGroup} from '@astryxdesign/core/InputGroup';
 import {stableClassName} from '@astryxdesign/core/naming';
-import {DateInputMobile, MOBILE_PICKER_QUERY} from './DateInputMobile';
+import {DateInputNext, MOBILE_PICKER_QUERY} from './DateInputNext';
 import {
   toMonthIndex,
   monthIndexOf,
@@ -154,11 +154,11 @@ function Controlled({
   initial,
   ...props
 }: {initial?: ISODateString} & Partial<
-  React.ComponentProps<typeof DateInputMobile>
+  React.ComponentProps<typeof DateInputNext>
 >) {
   const [value, setValue] = useState<ISODateString | undefined>(initial);
   return (
-    <DateInputMobile
+    <DateInputNext
       label="Event date"
       {...DEFAULT_RANGE}
       value={value}
@@ -211,7 +211,7 @@ function weekdayRow(): HTMLElement {
 // Which surface, and why
 // ---------------------------------------------------------------------------
 
-describe('DateInputMobile — surface selection', () => {
+describe('DateInputNext — surface selection', () => {
   it('asks for narrow AND touch, not either alone', () => {
     // A touchscreen laptop (touch, wide) and a half-width desktop window
     // (narrow, mouse) each match one half and must keep the desktop control,
@@ -235,11 +235,7 @@ describe('DateInputMobile — surface selection', () => {
     setViewport('desktop');
     const onChange = vi.fn();
     render(
-      <DateInputMobile
-        label="Event date"
-        onChange={onChange}
-        min={undefined}
-      />,
+      <DateInputNext label="Event date" onChange={onChange} min={undefined} />,
     );
     fireEvent.change(field(), {target: {value: '2026-03-25'}});
     expect(onChange).toHaveBeenCalledWith('2026-03-25');
@@ -276,15 +272,15 @@ describe('DateInputMobile — surface selection', () => {
 // The field contract, honored identically on the touch surface
 // ---------------------------------------------------------------------------
 
-describe('DateInputMobile — field parity', () => {
+describe('DateInputNext — field parity', () => {
   it('shows a placeholder until a date is chosen, then the formatted value', () => {
     const {rerender} = render(
-      <DateInputMobile label="Ship date" onChange={() => {}} />,
+      <DateInputNext label="Ship date" onChange={() => {}} />,
     );
     expect(field()).toHaveValue('');
     expect(field()).toHaveAttribute('placeholder', 'Select a date');
     rerender(
-      <DateInputMobile
+      <DateInputNext
         label="Ship date"
         value="2026-03-21"
         onChange={() => {}}
@@ -295,7 +291,7 @@ describe('DateInputMobile — field parity', () => {
 
   it('honors a named format', () => {
     render(
-      <DateInputMobile
+      <DateInputNext
         label="Ship date"
         value="2026-03-21"
         format="system_date"
@@ -307,7 +303,7 @@ describe('DateInputMobile — field parity', () => {
 
   it('honors a function format', () => {
     render(
-      <DateInputMobile
+      <DateInputNext
         label="Ship date"
         value="2026-03-21"
         format={iso => `ISO:${iso}`}
@@ -319,7 +315,7 @@ describe('DateInputMobile — field parity', () => {
 
   it('honors a custom placeholder', () => {
     render(
-      <DateInputMobile
+      <DateInputNext
         label="Ship date"
         placeholder="Pick a day"
         onChange={() => {}}
@@ -331,7 +327,7 @@ describe('DateInputMobile — field parity', () => {
   it('clears from the field', () => {
     const onChange = vi.fn();
     render(
-      <DateInputMobile
+      <DateInputNext
         label="Ship date"
         value="2026-03-21"
         hasClear
@@ -344,7 +340,7 @@ describe('DateInputMobile — field parity', () => {
 
   it('does not open the picker until the field is tapped', () => {
     withLayout(() => {
-      render(<DateInputMobile label="Ship date" onChange={() => {}} />);
+      render(<DateInputNext label="Ship date" onChange={() => {}} />);
       expect(field()).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('grid')).not.toBeInTheDocument();
       fireEvent.click(field());
@@ -362,9 +358,7 @@ describe('DateInputMobile — field parity', () => {
   });
 
   it('is not openable while disabled', () => {
-    render(
-      <DateInputMobile label="Ship date" isDisabled onChange={() => {}} />,
-    );
+    render(<DateInputNext label="Ship date" isDisabled onChange={() => {}} />);
     expect(field()).toBeDisabled();
     fireEvent.click(field());
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
@@ -372,7 +366,7 @@ describe('DateInputMobile — field parity', () => {
 
   it('stays focusable and explains itself when disabled with a reason', () => {
     render(
-      <DateInputMobile
+      <DateInputNext
         label="Ship date"
         isDisabled
         disabledMessage="You need the Editor role"
@@ -388,7 +382,7 @@ describe('DateInputMobile — field parity', () => {
 
   it('renders label, description and status through Field', () => {
     render(
-      <DateInputMobile
+      <DateInputNext
         label="Ship date"
         description="When it leaves the warehouse"
         status={{type: 'error', message: 'Pick a date'}}
@@ -405,14 +399,12 @@ describe('DateInputMobile — field parity', () => {
   });
 
   it('marks required for assistive technology', () => {
-    render(
-      <DateInputMobile label="Ship date" isRequired onChange={() => {}} />,
-    );
+    render(<DateInputNext label="Ship date" isRequired onChange={() => {}} />);
     expect(field()).toHaveAttribute('aria-required', 'true');
   });
 
   it('associates the label natively, so the field is named without ARIA', () => {
-    render(<DateInputMobile label="Ship date" onChange={() => {}} />);
+    render(<DateInputNext label="Ship date" onChange={() => {}} />);
     expect(screen.getByLabelText('Ship date')).toBe(field());
   });
 
@@ -426,7 +418,7 @@ describe('DateInputMobile — field parity', () => {
     );
     withLayout(() => {
       render(
-        <DateInputMobile
+        <DateInputNext
           label="Ship date"
           value="2026-03-10"
           min="2026-03-01"
@@ -449,7 +441,7 @@ describe('DateInputMobile — field parity', () => {
   it('drops the Field wrapper inside an InputGroup', () => {
     render(
       <InputGroup label="Range">
-        <DateInputMobile label="Start" onChange={() => {}} />
+        <DateInputNext label="Start" onChange={() => {}} />
       </InputGroup>,
     );
     // Named by the group label plus its own, the way core's inputs are.
@@ -461,7 +453,7 @@ describe('DateInputMobile — field parity', () => {
 // The picker surface
 // ---------------------------------------------------------------------------
 
-describe('DateInputMobile — calendar surface', () => {
+describe('DateInputNext — calendar surface', () => {
   it('opens on the selected month', () => {
     renderAndOpen();
     expect(pane('March 2026')).toBeInTheDocument();
@@ -603,7 +595,7 @@ describe('DateInputMobile — calendar surface', () => {
 // Month / year wheels
 // ---------------------------------------------------------------------------
 
-describe('DateInputMobile — month/year wheels', () => {
+describe('DateInputNext — month/year wheels', () => {
   /**
    * The header title. Queried by attribute rather than by role and accessible
    * name: every role query in here walks a tree of ~150 elements and computes
@@ -611,7 +603,7 @@ describe('DateInputMobile — month/year wheels', () => {
    */
   const title = () =>
     document.querySelector<HTMLElement>(
-      `.${stableClassName('date-input-mobile-title')}`,
+      `.${stableClassName('date-input-next-title')}`,
     )!;
 
   const openWheels = () => fireEvent.click(title());
@@ -785,7 +777,7 @@ describe('monthGeometry', () => {
 // Styles jsdom cannot resolve — assert the definition, not the effect
 // ---------------------------------------------------------------------------
 
-describe('DateInputMobile — scroll CSS (definition-level)', () => {
+describe('DateInputNext — scroll CSS (definition-level)', () => {
   const dir = path.dirname(fileURLToPath(import.meta.url));
   const read = (file: string) => readFileSync(path.join(dir, file), 'utf8');
 
@@ -796,7 +788,7 @@ describe('DateInputMobile — scroll CSS (definition-level)', () => {
     // The pane and the scrollport must come from the same expression, or a
     // pane stops being exactly one screen and every snap offset drifts.
     expect(
-      source.match(/blockSize: dateInputMobileGeometry\.paneBlockSize/g),
+      source.match(/blockSize: dateInputNextGeometry\.paneBlockSize/g),
     ).toHaveLength(2);
   });
 
@@ -812,7 +804,7 @@ describe('DateInputMobile — scroll CSS (definition-level)', () => {
     expect(source).toContain("scrollSnapType: 'y mandatory'");
     expect(source).toContain("scrollSnapAlign: 'center'");
     expect(source).toContain(
-      'paddingBlock: dateInputMobileGeometry.wheelEdgePadding',
+      'paddingBlock: dateInputNextGeometry.wheelEdgePadding',
     );
   });
 

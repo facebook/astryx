@@ -5,10 +5,10 @@
 /**
  * @file MobileDateField.tsx
  * @input Uses React, Field, BottomSheet, Button, Icon, Calendar hooks, MonthScroller, MonthYearWheels
- * @output Exports MobileDateField — the touch surface behind DateInputMobile
- * @position Internal component; consumed by DateInputMobile.tsx
+ * @output Exports MobileDateField — the touch surface behind DateInputNext
+ * @position Internal component; consumed by DateInputNext.tsx
  *
- * The touch half of `DateInputMobile`, holding `DateInput`'s whole prop
+ * The touch half of `DateInputNext`, holding `DateInput`'s whole prop
  * contract so the two are interchangeable. Everything field-shaped —
  * `Field` wrapper, status treatment, optimistic `changeAction`, the
  * disabled-reason tooltip, `InputGroup` membership — behaves exactly as it
@@ -37,9 +37,9 @@
  *    wheel and a year wheel — a flick each to reach 2019 instead of forty.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/DateInputMobile/DateInputMobile.tsx
- * - /packages/lab/src/DateInputMobile/DateInputMobile.doc.mjs
- * - /packages/lab/src/DateInputMobile/DateInputMobile.test.tsx
+ * - /packages/lab/src/DateInputNext/DateInputNext.tsx
+ * - /packages/lab/src/DateInputNext/DateInputNext.doc.mjs
+ * - /packages/lab/src/DateInputNext/DateInputNext.test.tsx
  */
 
 import {
@@ -113,14 +113,14 @@ import {
   fromMonthIndex,
   monthIndexOf,
 } from './monthGeometry';
-import {dateInputMobileVars, dateInputMobileGeometry} from './tokens.stylex';
+import {dateInputNextVars, dateInputNextGeometry} from './tokens.stylex';
 
 /**
  * The comfortable minimum tap target on both iOS and Android. Applied as a
  * FLOOR under the size prop rather than replacing it: `size` still means what
  * it means, it just cannot produce a control a thumb misses.
  */
-const TOUCH_TARGET = dateInputMobileVars['--date-input-mobile-day-size'];
+const TOUCH_TARGET = dateInputNextVars['--date-input-next-day-size'];
 
 const sizeStyles = stylex.create({
   sm: {
@@ -259,7 +259,7 @@ const styles = stylex.create({
   },
   body: {
     display: 'grid',
-    blockSize: dateInputMobileGeometry.paneBlockSize,
+    blockSize: dateInputNextGeometry.paneBlockSize,
     position: 'relative',
   },
   panel: {
@@ -296,7 +296,7 @@ const styles = stylex.create({
 
 /**
  * The touch surface. Takes `DateInput`'s props verbatim; see
- * {@link DateInputMobile} for when it is chosen over the desktop control.
+ * {@link DateInputNext} for when it is chosen over the desktop control.
  */
 export function MobileDateField({
   label,
@@ -522,7 +522,7 @@ export function MobileDateField({
           {...mergeProps(
             // mergeProps, not two spreads: both halves carry a className, and
             // the later spread would drop the theme target entirely.
-            themeProps('date-input-mobile-title', {
+            themeProps('date-input-next-title', {
               state: isWheelOpen ? 'expanded' : 'collapsed',
             }),
             stylex.props(styles.title, focusOutlineStyles.focusVisible),
