@@ -15,6 +15,7 @@ import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
 import {FieldLabel} from './FieldLabel';
+import {themeProps} from '../utils/themeProps';
 
 describe('FieldLabel', () => {
   it('renders label text', () => {
@@ -198,19 +199,31 @@ describe('FieldLabel', () => {
     });
   });
 
-  describe('layout', () => {
-    it('defaults to a stacked layout', () => {
-      render(<FieldLabel label="Email" inputID="email-input" />);
-      const label = screen.getByText('Email').closest('label');
-      expect(label).toHaveAttribute('data-layout', 'stacked');
-    });
-
-    it('reflects layout="beside" as data-layout for themes to target', () => {
+  describe('a control can name its own label target', () => {
+    it('composes a passed target onto the field-label one', () => {
+      // How CheckboxInput and Switch reach their label: the control spreads
+      // its own themeProps in, and both classes end up on the same element,
+      // so a theme can style every label or just this kind.
       render(
-        <FieldLabel label="Notify me" inputID="notify-input" layout="beside" />,
+        <FieldLabel
+          {...themeProps('checkbox-label')}
+          label="Notify me"
+          inputID="notify-input"
+        />,
       );
       const label = screen.getByText('Notify me').closest('label');
-      expect(label).toHaveAttribute('data-layout', 'beside');
+      expect(label).toHaveClass('astryx-field-label');
+      expect(label).toHaveClass('astryx-checkbox-label');
+    });
+
+    it('describes no placement of its own', () => {
+      // The label cannot know how its caller arranged it, so it says nothing:
+      // a `data-layout` here would be a claim that is wrong for at least one
+      // caller (Field's horizontal-labels puts a label beside its control),
+      // and a consumer could set it untruthfully.
+      render(<FieldLabel label="Email" inputID="email-input" />);
+      const label = screen.getByText('Email').closest('label');
+      expect(label).not.toHaveAttribute('data-layout');
     });
   });
 });

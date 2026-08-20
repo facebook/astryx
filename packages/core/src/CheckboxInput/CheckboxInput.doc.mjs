@@ -133,6 +133,7 @@ export const docs = {
       {className: 'astryx-checkbox-input', visualProps: ['size']},
       {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
       {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
+      {className: 'astryx-checkbox-label', description: "The checkbox's own label, which shares a row with the control rather than sitting above it. Target this to style a checkbox label differently from a form field's label — both also carry `astryx-field-label`."},
     ],
   },
   usage: {
@@ -209,6 +210,7 @@ export const docsZh = {
       },
       {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
       {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
+      {className: 'astryx-checkbox-label', description: '复选框自身的标签：它与控件同处一行，而非位于其上方。可通过该目标将复选框标签与表单字段标签区分设置样式——两者同时带有 `astryx-field-label`。'},
     ],
   },
 };

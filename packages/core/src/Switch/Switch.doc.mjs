@@ -167,6 +167,11 @@ export const docs = {
         className: 'astryx-switch-field',
         visualProps: ['labelPosition', 'labelSpacing'],
       },
+      {
+        className: 'astryx-switch-label',
+        description:
+          "The switch's own label, which shares a row with the control rather than sitting above it. Target this to style a switch label differently from a form field's label — both also carry `astryx-field-label`.",
+      },
     ],
   },
   usage: {
@@ -337,6 +342,11 @@ export const docsZh = {
       {
         className: 'astryx-switch-field',
         visualProps: ['labelPosition', 'labelSpacing'],
+      },
+      {
+        className: 'astryx-switch-label',
+        description:
+          '开关自身的标签：它与控件同处一行，而非位于其上方。可通过该目标将开关标签与表单字段标签区分设置样式——两者同时带有 `astryx-field-label`。',
       },
     ],
   },

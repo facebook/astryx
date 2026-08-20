@@ -153,15 +153,6 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
    * ID for the description element (for aria-describedby on the input).
    */
   descriptionID?: string;
-  /**
-   * How the label sits relative to its control, reflected as `data-layout` on
-   * the label so themes can style the two placements differently. `stacked`
-   * (the default) is a label above a field; `beside` is a label sharing a row
-   * with its control, as in CheckboxInput and Switch, where a theme may want to
-   * drop the stacked bottom margin so the text stays vertically centered.
-   * @default 'stacked'
-   */
-  layout?: 'stacked' | 'beside';
 }
 
 /**
@@ -194,7 +185,6 @@ export function FieldLabel({
   style,
   xstyle,
   ref,
-  layout = 'stacked',
   ...rest
 }: FieldLabelProps) {
   const t = useTranslator();
@@ -273,7 +263,14 @@ export function FieldLabel({
         htmlFor={isGroupLabel ? undefined : inputID}
         {...rest}
         {...mergeProps(
-          themeProps('field-label', {layout}),
+          // A control that knows what kind of label this is passes its own
+          // target down (CheckboxInput's `checkbox-label`, Switch's
+          // `switch-label`); it arrives as `className` and composes onto this
+          // one. The label itself does not describe its own placement — it
+          // cannot know it, and any encoding it guessed would be wrong for a
+          // caller that arranges labels differently (Field's
+          // `horizontal-labels`).
+          themeProps('field-label'),
           stylex.props(
             styles.label,
             isDisabled && styles.labelDisabled,
