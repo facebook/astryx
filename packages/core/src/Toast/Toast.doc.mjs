@@ -10,6 +10,10 @@ export const docs = {
   hiddenComponents: ['ToastViewport'],
   keywords: ["toast","notification","snackbar","alert","message","feedback","status"],
 
+  playground: {
+    defaults: {body: 'Changes saved'},
+  },
+
   props: [
     {
       name: 'body',
