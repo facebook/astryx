@@ -253,13 +253,15 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     maxSizePx = Infinity,
     collapsible = false,
     collapsedSize = DEFAULT_COLLAPSED_SIZE,
-    snaps = [],
+    snaps: configuredSnaps,
     autoSaveId,
     defaultIsCollapsed,
     isCollapsed: controlledIsCollapsed,
     onSizeChange,
     onCollapseChange,
   } = config;
+  const emptySnapsRef = useRef<number[]>([]);
+  const snaps = configuredSnaps ?? emptySnapsRef.current;
 
   const resolvedDefault = resolveDefaultSize(defaultSize);
   const persisted = autoSaveId ? loadPersistedState(autoSaveId) : null;
