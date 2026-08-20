@@ -259,7 +259,9 @@ describe('Spinner', () => {
   describe('a theme reaches the spinner through the public vars', () => {
     // jsdom cannot resolve the cascade, so the generated CSS is the proof that
     // a theme's override lands on the target the component reads from.
-    const cssFor = (components: Record<string, unknown>) => {
+    const cssFor = (
+      components: Parameters<typeof defineTheme>[0]['components'],
+    ) => {
       const {prose, component} = generateThemeCSS(
         defineTheme({name: 'spinner-theming-test', components}),
       );
