@@ -179,13 +179,14 @@ describe('generateThemeRules', () => {
     });
     const hoverRules = generateThemeRules(hoverTheme);
     const hoverRule = hoverRules.find(rule => rule.includes(':hover'));
+    expect(hoverRule).toBeDefined();
     expect(hoverRule).toContain(
       '.astryx-button:hover:where(:not(:disabled,[aria-disabled="true"]))',
     );
     // Every selector in a comma-separated list carries its own guard —
     // a trailing pseudo does not distribute over a selector list. (Counted,
     // not split: the guard contains a comma of its own.)
-    const selectorText = hoverRule.split('{')[0];
+    const selectorText = String(hoverRule).split('{')[0];
     const hovers = selectorText.match(/:hover/g) || [];
     const guards = selectorText.match(/:where\(:not\(:disabled/g) || [];
     expect(hovers.length).toBeGreaterThan(0);
