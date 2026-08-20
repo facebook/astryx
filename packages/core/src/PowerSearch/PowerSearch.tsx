@@ -83,9 +83,9 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 // never capped -- see the maxSearchResults prop.
 const DEFAULT_MAX_SEARCH_RESULTS = 10;
 
-// The source caps typed results itself, so the dropdown must not cap again --
-// its own default of 10 would truncate the field list while browsing.
-const VIEW_MENU_ITEMS_UNCAPPED = Number.POSITIVE_INFINITY;
+// Empty-query browsing gets a high safety ceiling, matching XDS. This shows
+// every practical field list without allowing an accidental unbounded DOM.
+const MAX_BROWSE_MENU_ITEMS = 1000;
 
 const OPERATOR_VALUE_TYPE_TO_ICON: Record<string, IconName> = {
   string: 'search',
@@ -419,7 +419,7 @@ export interface PowerSearchProps extends Omit<
   /**
    * Max ranked results shown for a non-empty query. This does not affect the
    * value editor shown after selecting a field. Browsing the field list with
-   * an empty query always shows every field. @default 10
+   * an empty query shows up to 1,000 fields. @default 10
    */
   maxSearchResults?: number;
   /** Label for the save button in edit popover. @default 'Apply' */
@@ -1066,7 +1066,7 @@ export function PowerSearch({
           onChange={handleTokenizerChange}
           renderToken={renderToken}
           renderItem={renderItem}
-          maxMenuItems={VIEW_MENU_ITEMS_UNCAPPED}
+          maxMenuItems={MAX_BROWSE_MENU_ITEMS}
           placeholder={filters.length === 0 ? placeholder : ''}
           hasAutoFocus={hasAutoFocus}
           hasClear={hasClear && !isReadOnly}
