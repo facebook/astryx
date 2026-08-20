@@ -246,6 +246,15 @@ export * from './CircularProgress';
 // ListInput — compact editor for short collections of simple records
 export * from './ListInput';
 
+// DateInputMobile — touch-first date picker: continuous snap-paged months,
+// with month/year wheels behind the header title
+export {
+  DateInputMobile,
+  type DateInputMobileProps,
+  type DateInputMobileLabels,
+  dateInputMobileVars,
+} from './DateInputMobile';
+
 // LogStream — experimental streaming log viewer
 export {
   LogStream,
