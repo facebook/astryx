@@ -17,6 +17,7 @@
  * - no-hover-on-disabled: Flags a :hover condition that can still match a disabled element (browsers suppress a disabled control's events, not its hover styling)
  * - require-table-section: Requires TableRow/tr to sit inside TableHeader/TableBody/TableFooter (a row directly inside a table emits <table><tr>, which browsers repair on parse and React does not)
  * - disabled-cursor: Flags a cursor that promises an interaction without giving way to not-allowed on a disabled element
+ * - no-inline-merge-refs: Flags mergeRefs calls inside JSX ref props (use useMergedRefs for stable identity)
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -43,6 +44,7 @@ import focusOutlineSharedRule from './focus-outline-shared.js';
 import noHoverOnDisabledRule from './no-hover-on-disabled.js';
 import disabledCursorRule from './disabled-cursor.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
+import noInlineMergeRefsRule from './no-inline-merge-refs.js';
 import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
 import requireBasePropsRule from './require-base-props.js';
@@ -270,6 +272,7 @@ const plugin = {
     'no-hover-on-disabled': noHoverOnDisabledRule,
     'disabled-cursor': disabledCursorRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
+    'no-inline-merge-refs': noInlineMergeRefsRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
     'copyright-header': copyrightHeaderRule,
@@ -338,6 +341,7 @@ plugin.configs.strict = {
     // honour. Error in both tiers, and autofixable.
     '@astryx/disabled-cursor': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
+    '@astryx/no-inline-merge-refs': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
     '@astryx/copyright-header': 'error',
@@ -395,6 +399,7 @@ plugin.configs.recommended = {
     // honour. Error in both tiers, and autofixable.
     '@astryx/disabled-cursor': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
+    '@astryx/no-inline-merge-refs': 'error',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',
     '@astryx/copyright-header': 'error',
