@@ -35,6 +35,7 @@ import {CLI_ROOT, findCoreDir} from '../../foundation/fs/paths.mjs';
 import {detectPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {findConfigPath, Project} from '../../foundation/config/project.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
+import {checkCssEscapes, checkSwizzled} from './theme-drift.mjs';
 
 const _require = createRequire(import.meta.url);
 
@@ -830,6 +831,8 @@ export const CHECKS = [
   checkVersionAlignment,
   checkThemes,
   checkThemeBuilt,
+  checkCssEscapes,
+  checkSwizzled,
   checkConfig,
   checkAgentDocs,
   checkPeerDeps,
