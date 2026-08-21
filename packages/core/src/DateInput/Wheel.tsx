@@ -187,7 +187,13 @@ const styles = stylex.create({
     insetBlockStart: `calc(50% - (${ITEM_BLOCK_SIZE} / 2))`,
     blockSize: ITEM_BLOCK_SIZE,
     borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-background-muted'],
+    // `--color-neutral`, not `--color-background-muted`. Muted is 4.7% alpha,
+    // which puts the whole plate 17 units of colour away from the sheet
+    // behind it — so when the wheels fade in, the band's animation has 17
+    // units to happen in while the text beside it travels 412. It did not
+    // read as fading, it read as appearing. Neutral is 10%, which doubles the
+    // range to 36 and is still quiet enough to sit under text.
+    backgroundColor: colorVars['--color-neutral'],
     pointerEvents: 'none',
   },
 });

@@ -1788,6 +1788,24 @@ describe('DateInput — scroll CSS (definition-level)', () => {
   });
 
   /**
+   * The selection band has to be visible enough that fading it reads as a
+   * fade. At `--color-background-muted` (4.7% alpha) the whole plate sat 17
+   * units of colour from the sheet behind it, so its animation had 17 units
+   * to happen in while the text beside it travelled 412 — it did not look
+   * like it was fading, it looked like it appeared at the end.
+   * `--color-neutral` (10%) doubles that to 36 and is still quiet enough to
+   * sit under text.
+   */
+  it('gives the wheel band enough contrast for its fade to read', () => {
+    const source = read('Wheel.tsx');
+    const band = source.slice(
+      source.indexOf('  band: {'),
+      source.indexOf('});', source.indexOf('  band: {')),
+    );
+    expect(band).toContain("backgroundColor: colorVars['--color-neutral']");
+  });
+
+  /**
    * `--ease-standard` is `cubic-bezier(0.24, 1, 0.4, 1)`: right for something
    * travelling a distance, wrong for a fade. Measured with it, opacity hit
    * 50% in 91ms and 95% in 241ms of a 410ms transition — the fade was over

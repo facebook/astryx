@@ -126,14 +126,19 @@ const TOUCH_TARGET = dateInputTouchVars['--date-input-touch-day-size'];
 
 /**
  * Each leg of the panel swap: the outgoing panel's fade out, then the
- * incoming one's fade in. Two of these back to back is the whole gesture, so
- * it lands close to `--duration-medium` overall — the scale's entrance/exit
- * band, which is what this is.
+ * incoming one's fade in. Two legs back to back is the whole gesture, so this
+ * is half the budget for it.
+ *
+ * 110ms a leg, 220ms in total — near `--duration-fast`'s 175ms rather than
+ * `--duration-medium`'s 410. Sequencing the two halves is what set the
+ * budget: a 410ms swap spends 410ms with one surface or the other absent,
+ * and the wait was the part that read as slow. Overlapping them would be
+ * quicker still and is what the sequencing exists to avoid.
  *
  * A literal rather than a token: the tokens are whole durations, and this is
  * deliberately half of one.
  */
-const PANEL_FADE_MS = '200ms';
+const PANEL_FADE_MS = '110ms';
 
 const sizeStyles = stylex.create({
   sm: {
