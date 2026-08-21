@@ -411,15 +411,21 @@ const styles = stylex.create({
     transitionDelay: '0s',
   },
   footer: {
-    display: 'flex',
-    alignItems: 'center',
-    // One action, so it sits at the end — where a sheet's confirming action
-    // belongs, and under the thumb.
-    justifyContent: 'flex-end',
-    gap: spacingVars['--spacing-2'],
     paddingBlockStart: spacingVars['--spacing-2'],
     // Same reason as the header: the content box owns the inline inset, so
     // Done's edge lines up with the grid's rather than sitting 4px inside it.
+    // One grid cell, so the two actions stack and the row is as tall as one
+    // button whichever is showing.
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+  },
+  /**
+   * One footer action. Both occupy the same cell and cross-fade on the
+   * panels' two-leg timing, so the row never changes height and the outgoing
+   * button is gone before the incoming one arrives.
+   */
+  footerAction: {
+    gridArea: '1 / 1',
     transitionProperty: 'opacity, visibility',
     transitionDuration: PANEL_FADE_MS,
     transitionDelay: PANEL_FADE_MS,
@@ -429,17 +435,11 @@ const styles = stylex.create({
       transitionDelay: '0s',
     },
   },
-  /**
-   * Hidden while the wheels are up. Done dismisses the whole sheet, and
-   * offering that mid-detour invites ending the trip early: the wheels were
-   * opened to reach a month, and the way out of them is the title that opened
-   * them. Hidden rather than unmounted, like the arrows — the footer is the
-   * sheet's last row, so dropping it would shorten the sheet mid-fade.
-   */
-  footerHidden: {
+  footerActionHidden: {
     visibility: 'hidden',
     opacity: 0,
     pointerEvents: 'none',
+    // Leaving goes first, and waits for nobody.
     transitionDelay: '0s',
   },
   sheetBody: {
@@ -903,16 +903,45 @@ export function TouchDateField({
           purpose. Reaching today by scrolling still works. */}
       <div
         inert={isWheelOpen ? true : undefined}
-        {...stylex.props(styles.footer, isWheelOpen && styles.footerHidden)}>
-        <Button
-          variant="primary"
-          // md, not sm: it is the only action in the footer and the one a
-          // thumb reaches for, so it gets the comfortable size rather than
-          // the compact one the header's ghost buttons used.
-          size="md"
-          label={t('@astryx.dateInput.donePicking')}
-          onClick={() => setIsSheetOpen(false)}
-        />
+        {...stylex.props(styles.footer)}>
+        {/* Both actions share one grid cell and take turns, the same way the
+            panels above them do — so the footer never changes height and the
+            two never overlap. Each belongs to a surface: Save finishes on the
+            calendar, Done finishes the detour through the wheels. */}
+        <div
+          inert={isWheelOpen ? true : undefined}
+          {...stylex.props(
+            styles.footerAction,
+            isWheelOpen && styles.footerActionHidden,
+          )}>
+          <Button
+            variant="primary"
+            // md, not sm: it is the action a thumb reaches for, so it gets
+            // the comfortable size rather than the compact one the header's
+            // ghost buttons use.
+            size="md"
+            width="100%"
+            label={t('@astryx.dateInput.savePicking')}
+            onClick={() => setIsSheetOpen(false)}
+          />
+        </div>
+        <div
+          inert={isWheelOpen ? undefined : true}
+          {...stylex.props(
+            styles.footerAction,
+            !isWheelOpen && styles.footerActionHidden,
+          )}>
+          <Button
+            // secondary, not primary: this one does not finish the task, it
+            // finishes a step. Giving both surfaces a primary button would
+            // say the wheels are somewhere you can complete from.
+            variant="secondary"
+            size="md"
+            width="100%"
+            label={t('@astryx.dateInput.doneChoosingMonth')}
+            onClick={() => setIsWheelOpen(false)}
+          />
+        </div>
       </div>
     </div>
   );

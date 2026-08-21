@@ -711,9 +711,13 @@
     "defaultMessage": "Invalid date",
     "description": "Screen-reader-only live-region alert in DateInput / DateTimeInput when the typed date cannot be parsed. The field silently reverts on blur, so this is the only rejection feedback a screen-reader user gets."
   },
-  "@astryx.dateInput.donePicking": {
+  "@astryx.dateInput.savePicking": {
+    "defaultMessage": "Save",
+    "description": "Full-width primary button that closes the mobile date picker, on the calendar. The date is already committed by the tap that chose it, so this only dismisses — but it is worded as saving because that is how the action reads to someone finishing a form. Use the word your platform uses for accepting and closing a sheet."
+  },
+  "@astryx.dateInput.doneChoosingMonth": {
     "defaultMessage": "Done",
-    "description": "Primary button that closes the mobile date picker. It does NOT commit anything — the date is already chosen by the time it is pressed — so word it as finishing/closing, not as confirming or saving."
+    "description": "Full-width button under the month and year wheels in the mobile date picker. It does NOT close the picker — it returns to the calendar, having set the month. Word it as finishing this step, not as finishing the whole task; the calendar's own button is the one that closes."
   },
   "@astryx.dateInput.chooseMonthYear": {
     "defaultMessage": "{monthYear}, Choose month and year",

@@ -593,35 +593,36 @@ describe('DateInput — calendar surface', () => {
     expect(field()).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('Done closes the sheet without touching the value', () => {
+  it('Save closes the sheet without touching the value', () => {
     const onChange = vi.fn();
     renderAndOpen(<Controlled initial="2026-03-21" onChange={onChange} />);
     fireEvent.click(
       within(pane('March 2026')).getByRole('button', {name: /March 25, 2026/}),
     );
     onChange.mockClear();
-    fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
     expect(field()).toHaveAttribute('aria-expanded', 'false');
-    // Purely a dismiss: the value was committed by the tap, so Done must not
-    // fire anything of its own.
+    // Named for what it means to someone finishing a form, not for what it
+    // does internally: the value was already committed by the tap that chose
+    // it, so this fires nothing of its own.
     expect(onChange).not.toHaveBeenCalled();
     expect(field()).toHaveValue('March 25, 2026');
   });
 
-  it('Done closes even with no date chosen, committing nothing', () => {
+  it('Save closes even with no date chosen, committing nothing', () => {
     const onChange = vi.fn();
     withLayout(() => {
       render(<DateInput label="Ship date" onChange={onChange} />);
       fireEvent.click(field());
-      fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+      fireEvent.click(screen.getByRole('button', {name: 'Save'}));
     });
     expect(field()).toHaveAttribute('aria-expanded', 'false');
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('has Done in the footer and no Today button', () => {
+  it('has Save in the footer and no Today button', () => {
     renderAndOpen();
-    expect(screen.getByRole('button', {name: 'Done'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Save'})).toBeInTheDocument();
     // "Today" moved the calendar to the current month WITHOUT selecting it,
     // which read as broken — the one thing the name promises is the thing it
     // did not do. Removed until it can be navigate-or-select on purpose.
@@ -1058,44 +1059,102 @@ describe('DateInput — month/year wheels', () => {
     expect(panel('wheels')).toHaveAttribute('inert');
   });
 
-  it('Done closes the whole picker, and only from the calendar', () => {
-    // The two dismissals are distinct on purpose: the title swaps surfaces
-    // inside the picker, Done leaves the picker. Wiring Done to "go back to
-    // the calendar" would make the button mean two things by position — so
-    // instead it is simply not offered while the wheels are up.
+  it('Save closes the whole picker; Done only leaves the wheels', () => {
+    // Two finishes, deliberately different: Save ends the task, Done ends a
+    // step. They never appear together — each belongs to the surface it is
+    // shown on — so neither has to carry two meanings by position.
     renderAndOpen();
+    openWheels();
     fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+    // Back on the calendar, still open.
+    expect(field()).toHaveAttribute('aria-expanded', 'true');
+    expect(title()).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
     expect(field()).toHaveAttribute('aria-expanded', 'false');
   });
 
   /**
-   * Done dismisses the whole sheet, and offering it mid-detour invites
-   * ending the trip early: the wheels were opened to reach a month, and the
-   * way out of them is the title that opened them. `inert` is what takes it
-   * out of the accessibility tree, so it is unreachable and not just unseen.
+   * The two actions share one grid cell and take turns, so the footer is one
+   * button tall whichever is showing and the sheet never changes height
+   * mid-swap. `inert` is what keeps the hidden one out of the accessibility
+   * tree, rather than merely out of sight.
    */
-  it('takes Done away while the wheels are up', () => {
+  it('shows exactly one footer action, and only the visible one is reachable', () => {
     renderAndOpen();
     // Queried off the DOM rather than by role: every role-with-name query
     // walks this tree computing accessible names, and there are ~150
     // elements in it. Same reason the title helper above does it this way.
-    const done = () =>
+    const cell = (label: string) =>
       [...document.querySelectorAll('dialog[open] button')].find(
-        el => el.textContent?.trim() === 'Done',
-      );
-    const footer = done()!.parentElement!;
-    expect(footer).not.toHaveAttribute('inert');
+        el => el.textContent?.trim() === label,
+      )!.parentElement!;
+
+    expect(cell('Save')).not.toHaveAttribute('inert');
+    expect(cell('Done')).toHaveAttribute('inert');
+    expect(screen.queryByRole('button', {name: 'Done'})).toBeNull();
 
     openWheels();
-    // `inert` is what takes it out of the accessibility tree, so it is
-    // unreachable rather than merely unseen.
-    expect(footer).toHaveAttribute('inert');
-    // Kept in the layout, so the sheet does not change height mid-fade.
-    expect(done()).toBeInTheDocument();
+    expect(cell('Save')).toHaveAttribute('inert');
+    expect(cell('Done')).not.toHaveAttribute('inert');
+    expect(screen.queryByRole('button', {name: 'Save'})).toBeNull();
 
-    // Back on the calendar it returns.
+    // Both stay mounted throughout, which is what keeps the row's height
+    // fixed across the swap.
+    expect(cell('Save')).toBeInTheDocument();
+    expect(cell('Done')).toBeInTheDocument();
+  });
+
+  it('the year wheel keeps the month', () => {
+    renderAndOpen(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+    openWheels();
+    fireEvent.click(
+      within(screen.getByRole('listbox', {name: 'Year'})).getByText('2025'),
+    );
+    expect(title()).toHaveTextContent('March 2025');
+  });
+
+  it('is a single tab stop driven by the arrow keys', () => {
+    renderAndOpen();
+    openWheels();
+    const months = screen.getByRole('listbox', {name: 'Month'});
+    expect(months).toHaveAttribute('tabindex', '0');
+    fireEvent.keyDown(months, {key: 'ArrowDown'});
+    expect(title()).toHaveTextContent('April 2026');
+    fireEvent.keyDown(months, {key: 'ArrowUp'});
+    expect(title()).toHaveTextContent('March 2026');
+  });
+
+  it('will not commit a row outside min/max', () => {
+    renderAndOpen(<Controlled initial="2026-03-10" />);
+    openWheels();
+    const december = within(screen.getByRole('listbox', {name: 'Month'}))
+      .getByText('December')
+      .closest('[role="option"]')!;
+    expect(december).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(december);
+    expect(title()).toHaveTextContent('March 2026');
+  });
+
+  it('bounds the year wheel to the reachable range', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-10" min="2025-01-01" max="2027-12-31" />,
+    );
+    openWheels();
+    expect(
+      within(screen.getByRole('listbox', {name: 'Year'}))
+        .getAllByRole('option')
+        .map(o => o.textContent),
+    ).toEqual(['2025', '2026', '2027']);
+  });
+
+  it('the title is what closes them again', () => {
+    renderAndOpen();
+    openWheels();
+    expect(title()).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(title());
-    expect(footer).not.toHaveAttribute('inert');
+    expect(title()).toHaveAttribute('aria-expanded', 'false');
+    expect(panel('wheels')).toHaveAttribute('inert');
   });
 });
 
@@ -1764,6 +1823,16 @@ describe('DateInput — scroll CSS (definition-level)', () => {
    * second. Measured on an iPhone 15 profile afterwards: zero frames with
    * both panels painting.
    */
+  /**
+   * Both footer actions span the sheet. A full-width primary is the shape a
+   * phone form ends with, and it puts the target under the thumb wherever
+   * the hand is.
+   */
+  it('gives both footer actions the full width of the sheet', () => {
+    const source = read('TouchDateField.tsx');
+    expect(source.match(/width="100%"/g)).toHaveLength(2);
+  });
+
   it('fades the two surfaces in turn, never at the same time', () => {
     const source = read('TouchDateField.tsx');
     const styles = source.slice(
