@@ -21,7 +21,13 @@
  * - /packages/core/src/theme/index.ts
  */
 
-import {createContext, use, useMemo, useSyncExternalStore} from 'react';
+import {
+  createContext,
+  use,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from 'react';
 import type {ThemeMode} from './types';
 import type {DefinedTheme} from './defineTheme';
 import {resolveThemeTokens} from './tokens';
@@ -281,14 +287,25 @@ export function useTheme(): UseThemeReturn {
     [theme, effectiveMode],
   );
 
-  const token = (name: string): string => {
-    return tokens[name] ?? '';
-  };
+  const token = useCallback(
+    (name: string): string => tokens[name] ?? '',
+    [tokens],
+  );
 
-  return {
-    name: theme?.name ?? 'default',
-    mode: effectiveMode,
-    token,
-    tokens,
-  };
+  const themeName = theme?.name ?? 'default';
+
+  // Memoized on the same values consumers actually care about, so a
+  // rerender that doesn't change the resolved theme/mode returns the exact
+  // same object and token function. Without this, useChartColors (and any
+  // other consumer memoizing off `token`) rebuilds on every unrelated
+  // rerender instead of only when the theme or effective mode changes.
+  return useMemo(
+    () => ({
+      name: themeName,
+      mode: effectiveMode,
+      token,
+      tokens,
+    }),
+    [themeName, effectiveMode, token, tokens],
+  );
 }

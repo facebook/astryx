@@ -309,4 +309,15 @@ describe('useTheme root-attribute observer lifecycle', () => {
     second.unmount();
     expect(disconnect).toHaveBeenCalledTimes(2);
   });
+
+  it('keeps the returned token function and object stable across rerenders when theme and mode are unchanged', () => {
+    const {result, rerender} = renderHook(() => useTheme());
+
+    const first = result.current;
+    rerender();
+    const second = result.current;
+
+    expect(second.token).toBe(first.token);
+    expect(second).toBe(first);
+  });
 });
