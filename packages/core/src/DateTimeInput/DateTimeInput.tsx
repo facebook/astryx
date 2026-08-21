@@ -17,7 +17,6 @@
  */
 
 import {
-  use,
   useId,
   useState,
   useCallback,
@@ -89,7 +88,7 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {useTranslator, InternationalizationContext} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
@@ -450,8 +449,8 @@ export function DateTimeInput({
   ...rest
 }: DateTimeInputProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
-  const {locale} = use(InternationalizationContext);
   // Speaks arrow-key stepping results through the persistent live regions:
   // stepping programmatically rewrites a plain textbox's value, which screen
   // readers do not announce on their own (WCAG 4.1.2).

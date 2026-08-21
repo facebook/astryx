@@ -161,6 +161,27 @@ describe('Calendar', () => {
     ).toEqual([...localizedNames.slice(1), localizedNames[0]]);
   });
 
+  it('updates the month header and subsequent navigation with provider locale', async () => {
+    const user = userEvent.setup();
+    const renderCalendar = (locale: 'en-US' | 'es-ES') => (
+      <InternationalizationProvider locale={locale}>
+        <Calendar focusDate="2026-01-01" />
+      </InternationalizationProvider>
+    );
+    const {rerender} = render(renderCalendar('en-US'));
+
+    expect(screen.getByText('January 2026')).toBeInTheDocument();
+
+    rerender(renderCalendar('es-ES'));
+    expect(screen.getByText('enero de 2026')).toBeInTheDocument();
+
+    const nextButton =
+      document.querySelector<HTMLButtonElement>('[data-nav="next"]');
+    expect(nextButton).not.toBeNull();
+    await user.click(nextButton!);
+    expect(screen.getByText('febrero de 2026')).toBeInTheDocument();
+  });
+
   it('displays correct number of day cells', () => {
     render(<Calendar />);
 

@@ -11,7 +11,7 @@
  * - no-raw-paragraph: Disallows components from rendering a <p> by default (render <div> so any content composes)
  * - no-style-only-wrapper: Disallows div/span wrappers that only style a single Astryx component (use xstyle)
  * - no-nullish-jsx-guard: Flags `!= null` JSX render guards for rendered values (use isRenderable so false/''/true slots don't leak an empty element)
- * - no-raw-intl-locale: Forbids raw Intl formatting/comparison outside the approved i18n infrastructure boundary, and navigator.language(s) as a locale source
+ * - no-raw-intl-locale: Forbids raw Intl formatting/comparison outside the approved i18n infrastructure boundary, navigator.language(s) as a locale source, and date-helper calls without provider locale
  * - no-unguarded-ime-keydown: Flags an onKeyDown on an editable surface that branches on command keys without an IME composition guard (isImeKeyEvent/isComposing)
  * - no-hover-on-disabled: Flags a :hover condition that can still match a disabled element (browsers suppress a disabled control's events, not its hover styling)
  *
@@ -57,7 +57,10 @@ const STYLE_PROPERTIES = {
     pattern: /^['"]?\d+(\.\d+)?(px|rem|em)['"]?$/,
     tokenVar: 'textSizeVars',
     message: 'Use textSizeVars token instead of hardcoded fontSize',
-    examples: ["textSizeVars['--font-size-xs']", "textSizeVars['--font-size-base']"],
+    examples: [
+      "textSizeVars['--font-size-xs']",
+      "textSizeVars['--font-size-base']",
+    ],
   },
   fontWeight: {
     pattern: /^\d{3}$/,
@@ -78,20 +81,76 @@ const STYLE_PROPERTIES = {
     message: 'Use spacingVars token instead of hardcoded padding',
     examples: ["spacingVars['--spacing-2']"],
   },
-  paddingTop: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  paddingRight: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  paddingBottom: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  paddingLeft: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  paddingBlock: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  paddingInline: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  margin: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginTop: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginRight: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginBottom: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginLeft: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginBlock: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginInline: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  gap: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
+  paddingTop: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  paddingRight: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  paddingBottom: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  paddingLeft: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  paddingBlock: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  paddingInline: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  margin: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginTop: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginRight: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginBottom: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginLeft: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginBlock: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginInline: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  gap: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
   // Border radius
   borderRadius: {
     pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
@@ -121,8 +180,18 @@ const STYLE_PROPERTIES = {
 
 // Properties to skip (these are typically fine as hardcoded values)
 const SKIP_VALUES = [
-  '0', '0px', 'inherit', 'initial', 'unset', 'auto', 'none',
-  '100%', '50%', '0%', 'transparent', 'currentColor',
+  '0',
+  '0px',
+  'inherit',
+  'initial',
+  'unset',
+  'auto',
+  'none',
+  '100%',
+  '50%',
+  '0%',
+  'transparent',
+  'currentColor',
 ];
 
 /**
@@ -161,7 +230,8 @@ const noHardcodedStylesRule = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce usage of Astryx design tokens instead of hardcoded values in StyleX',
+      description:
+        'Enforce usage of Astryx design tokens instead of hardcoded values in StyleX',
       category: 'Best Practices',
       recommended: true,
     },
@@ -176,7 +246,7 @@ const noHardcodedStylesRule = {
           // Allow specific properties to be ignored
           ignore: {
             type: 'array',
-            items: { type: 'string' },
+            items: {type: 'string'},
           },
         },
         additionalProperties: false,

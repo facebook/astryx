@@ -39,6 +39,24 @@ describe('DateTimeInput', () => {
     expect(screen.getByLabelText('Meeting time')).toBeInTheDocument();
   });
 
+  it('updates the committed date display when provider locale changes', () => {
+    const renderDateTimeInput = (locale: 'en-US' | 'es-ES') => (
+      <InternationalizationProvider locale={locale}>
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-01-25T14:30' as ISODateTimeString}
+          onChange={() => {}}
+        />
+      </InternationalizationProvider>
+    );
+    const {rerender} = render(renderDateTimeInput('en-US'));
+
+    expect(screen.getByRole('combobox')).toHaveValue('January 25, 2026');
+
+    rerender(renderDateTimeInput('es-ES'));
+    expect(screen.getByRole('combobox')).toHaveValue('25 de enero de 2026');
+  });
+
   it('derives the time input label from the field label (forms-15)', () => {
     render(<DateTimeInput label="Meeting time" onChange={() => {}} />);
     // Not a hardcoded "Time" — tied to the field label so it is localizable

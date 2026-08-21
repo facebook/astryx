@@ -615,6 +615,26 @@ describe('plainDateFormat', () => {
       );
     }
   });
+
+  it('uses Gregorian fields for a non-Gregorian locale extension', () => {
+    expect(
+      plainDateFormat(
+        {year: 2026, month: 8, day: 22},
+        {year: 'numeric'},
+        'en-US-u-ca-buddhist',
+      ),
+    ).toBe('2026');
+  });
+
+  it('honors an explicit options.calendar override', () => {
+    expect(
+      plainDateFormat(
+        {year: 2026, month: 8, day: 22},
+        {year: 'numeric', calendar: 'buddhist'},
+        'en-US',
+      ),
+    ).toContain('2569');
+  });
 });
 
 describe('formatSharedDate', () => {

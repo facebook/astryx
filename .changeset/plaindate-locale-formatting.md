@@ -2,6 +2,8 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] `DateInput`, `DateTimeInput`, `DateRangeInput`, and `Calendar` now format and parse dates using the ambient `InternationalizationProvider` locale instead of the host/browser locale. `plainDateFormat` (backing `formatSharedDate`) previously called `Intl.DateTimeFormat(undefined, ...)`, and `dateParser`'s day/month disambiguation heuristic for ambiguous numeric input (e.g. `3/4/2026`) called `Intl.DateTimeFormat()` with no locale at all, so a tree wrapped in a non-English `locale` still formatted and parsed dates using the host locale.
+[fix] `DateInput`, `DateTimeInput`, `DateRangeInput`, and `Calendar` now format dates using the live `InternationalizationProvider` locale, including after the provider changes. Public date helpers retain optional locale parameters for compatibility but default to deterministic English and Gregorian `PlainDate` semantics when called without a provider locale.
+
+The parser's locale-sensitive behavior is intentionally limited to choosing day-first or month-first order for ambiguous ASCII numeric input such as `3/4/2026`. It does not parse localized month names, non-ASCII digits, or arbitrary locale-specific strings.
 
 @HelloOjasMutreja
