@@ -19,8 +19,14 @@ import {resolveOperatorLabel} from './resolveOperatorLabel';
 import type {InternalConfig} from './useInternalConfig';
 import type {PowerSearchItem, PowerSearchOperator, FilterValue} from './types';
 
+/**
+ * @param maxTypedResults Cap applied to ranked results for a non-empty query.
+ *   The source never truncates empty-query browsing; PowerSearch's view applies
+ *   a separate 1,000-row safety ceiling.
+ */
 export function usePowerSearchSource(
   config: InternalConfig,
+  maxTypedResults: number,
 ): SearchSource<PowerSearchItem> {
   const t = useTranslator();
   return useMemo(() => {
@@ -198,14 +204,14 @@ export function usePowerSearchSource(
           }
         }
 
-        return results;
+        return results.slice(0, maxTypedResults);
       },
 
       bootstrap(): PowerSearchItem[] {
         return allItems;
       },
     };
-  }, [config, t]);
+  }, [config, t, maxTypedResults]);
 }
 
 interface ValueMatch {

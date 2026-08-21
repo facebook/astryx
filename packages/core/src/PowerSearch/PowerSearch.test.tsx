@@ -492,3 +492,81 @@ describe('PowerSearch statusVariant forwarding', () => {
     );
   });
 });
+
+describe('field menu sizing', () => {
+  const FIELD_COUNT = 25;
+  const manyFields: PowerSearchConfig = {
+    name: 'ManyFields',
+    fields: Array.from({length: FIELD_COUNT}, (_, i) => ({
+      key: `field_${i}`,
+      label: `Zebra ${String(i).padStart(2, '0')}`,
+      defaultOperator: 'is',
+      operators: [{key: 'is', label: 'is', value: {type: 'string'} as const}],
+    })),
+  };
+
+  async function openMenu(
+    props?: {maxSearchResults?: number},
+    config: PowerSearchConfig = manyFields,
+  ) {
+    const user = userEvent.setup();
+    render(
+      <PowerSearch
+        config={config}
+        filters={[]}
+        onChange={() => {}}
+        {...props}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+    });
+    return user;
+  }
+
+  const optionCount = () =>
+    screen.getAllByRole('option', {hidden: true}).length;
+
+  it('shows every field in a normal field list while browsing', async () => {
+    await openMenu();
+    expect(optionCount()).toBe(FIELD_COUNT);
+  });
+
+  it('caps an extreme field list at the 1,000-row browsing ceiling', async () => {
+    const extremeConfig: PowerSearchConfig = {
+      name: 'ExtremeFields',
+      fields: Array.from({length: 1001}, (_, i) => ({
+        key: `extreme_${i}`,
+        label: `Extreme ${i}`,
+        defaultOperator: 'is',
+        operators: [{key: 'is', label: 'is', value: {type: 'string'} as const}],
+      })),
+    };
+
+    await openMenu(undefined, extremeConfig);
+    expect(optionCount()).toBe(1000);
+  });
+
+  it('caps ranked results while typing', async () => {
+    const user = await openMenu();
+    // "zebra" matches every field label.
+    await user.type(screen.getByRole('combobox'), 'zebra');
+    await waitFor(() => {
+      expect(optionCount()).toBe(10);
+    });
+  });
+
+  it('caps ranked results at maxSearchResults while typing', async () => {
+    const user = await openMenu({maxSearchResults: 3});
+    await user.type(screen.getByRole('combobox'), 'zebra');
+    await waitFor(() => {
+      expect(optionCount()).toBe(3);
+    });
+  });
+
+  it('does not apply maxSearchResults while browsing', async () => {
+    await openMenu({maxSearchResults: 3});
+    expect(optionCount()).toBe(FIELD_COUNT);
+  });
+});
