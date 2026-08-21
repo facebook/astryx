@@ -98,9 +98,16 @@ const styles = stylex.create({
       default: null,
       '@media (pointer: coarse)': '50%',
     },
+    // The input is positioned via logical `insetInlineStart`, which resolves
+    // from the right edge under RTL. The centering translate is a physical
+    // (screen-space) transform, so it must flip its X direction under RTL to
+    // keep the input centered over the visible indicator (#5170).
     transform: {
       default: null,
-      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+      '@media (pointer: coarse)': {
+        default: 'translate(-50%, -50%)',
+        ':is([dir="rtl"] *)': 'translate(50%, -50%)',
+      },
     },
   },
   inputDisabled: {
