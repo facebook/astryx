@@ -18,6 +18,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -592,23 +593,23 @@ export function useLayer(
     clearContextMount();
   }, [onHide, clearContextMount]);
 
-  // Ref for trigger element (context mode only)
-  const ref: RefCallback<HTMLElement> | undefined =
-    mode === 'context'
-      ? (el: HTMLElement | null) => {
-          // Remove only THIS layer's anchor name from the previous element so
-          // other layers sharing the same trigger keep their anchors.
-          if (triggerRef.current && triggerRef.current !== el) {
-            removeAnchorName(triggerRef.current, anchorId);
-          }
+  // Stable ref for the trigger element (context mode only).
+  const contextRef = useCallback(
+    (el: HTMLElement | null) => {
+      // Remove only THIS layer's anchor name from the previous element so
+      // other layers sharing the same trigger keep their anchors.
+      if (triggerRef.current && triggerRef.current !== el) {
+        removeAnchorName(triggerRef.current, anchorId);
+      }
 
-          if (el) {
-            addAnchorName(el, anchorId);
-          }
+      if (el) {
+        addAnchorName(el, anchorId);
+      }
 
-          triggerRef.current = el;
-        }
-      : undefined;
+      triggerRef.current = el;
+    },
+    [anchorId],
+  );
 
   // Reconcile browser-initiated closes (light-dismiss, popover="auto" stack
   // eviction). These are the only cases where the DOM mutates without going
@@ -865,24 +866,29 @@ export function useLayer(
     [popoverRefCallback, id, lightDismiss],
   );
 
-  if (mode === 'context') {
-    return {
-      ref: ref as RefCallback<HTMLElement>,
+  const contextResult = useMemo<ContextLayerReturn>(
+    () => ({
+      ref: contextRef,
       anchorId,
       show,
       hide,
       isOpen,
       id,
       render: renderContext,
-    };
-  }
+    }),
+    [contextRef, anchorId, show, hide, isOpen, id, renderContext],
+  );
+  const fixedResult = useMemo<FixedLayerReturn>(
+    () => ({
+      ref: undefined,
+      show,
+      hide,
+      isOpen,
+      id,
+      render: renderFixed,
+    }),
+    [show, hide, isOpen, id, renderFixed],
+  );
 
-  return {
-    ref: undefined,
-    show,
-    hide,
-    isOpen,
-    id,
-    render: renderFixed,
-  };
+  return mode === 'context' ? contextResult : fixedResult;
 }
