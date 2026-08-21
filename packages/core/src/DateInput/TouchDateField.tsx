@@ -46,6 +46,7 @@
 
 import {
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useOptimistic,
@@ -220,7 +221,7 @@ const styles = stylex.create({
     marginInlineStart: 'auto',
     // Fades with the panels, for the same reason the weekday row does.
     transitionProperty: 'opacity, visibility',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
@@ -292,7 +293,7 @@ const styles = stylex.create({
   titleChevron: {
     display: 'inline-flex',
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
@@ -309,7 +310,7 @@ const styles = stylex.create({
     // Fades with the panels below it: the row belongs to the calendar, and
     // snapping it out while they cross-fade reads as two separate events.
     transitionProperty: 'opacity, visibility',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
@@ -343,7 +344,14 @@ const styles = stylex.create({
     // the calendar's opacity dutifully animated 1 -> 0 while its computed
     // visibility was `hidden` for every frame of it.
     transitionProperty: 'opacity, visibility',
-    transitionDuration: durationVars['--duration-fast'],
+    // `medium`, not `fast`. The scale's own bands say it: `fast` is for
+    // micro-interactions, `medium` for entrance and exit — and swapping a
+    // calendar for a pair of wheels is an exit and an entrance, not a state
+    // flicker on a control. At `fast` the cross-fade read as a cut, which is
+    // the wrong story: the two surfaces are the same picker, and the fade is
+    // what says so. Every part of the swap shares this duration, so the
+    // header, the weekday row, the arrows and the panels move as one event.
+    transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
@@ -548,6 +556,11 @@ export function TouchDateField({
 
   const openSheet = useCallback(() => {
     if (!isEffectivelyDisabled) {
+      // Always onto the calendar, whatever was showing last time. The wheels
+      // are a detour taken to reach a far month, not a mode to be left in:
+      // reopening into them would answer a question the user has not asked
+      // yet, and hide the dates they came back for behind another tap.
+      setIsWheelOpen(false);
       setIsSheetOpen(true);
     }
   }, [isEffectivelyDisabled]);
@@ -622,6 +635,31 @@ export function TouchDateField({
     },
     [isWheelOpen],
   );
+
+  /**
+   * Put the calendar back where it belongs when the wheels close.
+   *
+   * The wheels steer it while it is hidden, and a hidden scroller is not a
+   * reliable place to leave a scroll position: `visibility: hidden` keeps the
+   * layout box, but iOS re-snaps the scroller when it becomes visible again,
+   * and it does not necessarily re-snap to the pane we put it on. That fires
+   * a scroll at the exact moment reports start being trusted again — which is
+   * why the month drifted on the way back to the dates.
+   *
+   * Re-asserting is cheap when nothing moved (the scroller is already there,
+   * so nothing scrolls) and exactly right when something did. `scrollToMonth`
+   * marks the target as steered, so this correction does not report itself
+   * back either.
+   */
+  useEffect(() => {
+    if (isWheelOpen) {
+      return;
+    }
+    scrollerHandle.current?.scrollToMonth(monthIndex, 'auto');
+    // `monthIndex` is deliberately NOT a dependency: this fires when the
+    // calendar becomes the surface again, not every time the month changes
+    // while it already is one — that would fight a swipe in progress.
+  }, [isWheelOpen]);
 
   // APG combobox keys. The field takes no text, so every printable key is
   // free — but only the documented openers are wired, so a stray keystroke

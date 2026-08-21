@@ -292,6 +292,13 @@ export function MonthScroller({
   // A row to scroll to once its pane is mounted; see scrollToMonth.
   const pendingScrollRef = useRef<number | null>(null);
 
+  /**
+   * The row a programmatic scroll is heading for, so its own scroll events
+   * are not reported back as if the user had gone there. Null once a finger
+   * touches the scroller, or once the steered scroll has arrived.
+   */
+  const steeredRowRef = useRef<number | null>(null);
+
   // Keyboard focus moves by date, not by cell index, so it crosses month
   // boundaries the way a calendar should. Null until the user takes the grid
   // with the keyboard.
@@ -359,6 +366,7 @@ export function MonthScroller({
         setCenterRow(row);
         return;
       }
+      steeredRowRef.current = row;
       scroller.scrollTo({
         left: scrollOffsetForRow(row, paneSize, isRTL),
         behavior,
@@ -418,6 +426,12 @@ export function MonthScroller({
     if (scroller == null || paneSize === 0) {
       return;
     }
+    // A finger on the scroller ends any steering: from here the months it
+    // passes are the user's doing and every one of them is worth reporting.
+    const onTouchStart = () => {
+      steeredRowRef.current = null;
+    };
+
     const onScroll = () => {
       if (frameRef.current != null) {
         return;
@@ -435,12 +449,36 @@ export function MonthScroller({
         }
         centerRowRef.current = row;
         setCenterRow(row);
+        // Report nothing while a steer is in flight. `scrollToMonth` is only
+        // ever called by something that already knows the month — a wheel
+        // commit, a header arrow, the re-assert when the wheels close — so
+        // none of the scrolling it causes is news, including whatever the
+        // scroller passes through on the way.
+        //
+        // Reporting it is a feedback cycle, and worse on iOS. A wheel commit
+        // steers this scroller while it is hidden behind the wheels, and a
+        // hidden scroller does not reliably stay where it was put: iOS
+        // re-snaps it when the panel becomes visible again, firing scrolls at
+        // the exact moment reports start being trusted again. The month drifted
+        // on the way back to the calendar.
+        //
+        // Cleared on arrival, or by a touch below — once a finger is on the
+        // scroller the user owns it, and every month it passes is worth
+        // reporting.
+        if (steeredRowRef.current != null) {
+          if (steeredRowRef.current === row) {
+            steeredRowRef.current = null;
+          }
+          return;
+        }
         onVisibleMonthChangeRef.current(minMonthIndex + row);
       });
     };
     scroller.addEventListener('scroll', onScroll, {passive: true});
+    scroller.addEventListener('touchstart', onTouchStart, {passive: true});
     return () => {
       scroller.removeEventListener('scroll', onScroll);
+      scroller.removeEventListener('touchstart', onTouchStart);
       if (frameRef.current != null) {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = undefined;

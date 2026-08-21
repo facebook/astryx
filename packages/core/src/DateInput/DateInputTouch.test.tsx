@@ -28,7 +28,13 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest';
-import {render, screen, fireEvent, within} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from '@testing-library/react';
 import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -659,6 +665,64 @@ describe('DateInput — calendar surface', () => {
     expect(header()).toHaveTextContent('March 2026');
   });
 
+  /**
+   * A programmatic scroll must not report its own arrival as if the user had
+   * scrolled there. Nothing needs the report — whatever asked for the scroll
+   * already knows the month — and trusting it turns a steer into a cycle.
+   *
+   * The case that bit: a wheel commit steers this scroller while it is hidden
+   * behind the wheels, and a hidden scroller does not reliably stay put. On
+   * iOS the position is re-snapped when the panel becomes visible again,
+   * firing a scroll just as the wheels close and reports start being trusted
+   * again — so the month drifted on the way back to the calendar.
+   */
+  it('does not report a scroll it was told to make', async () => {
+    await withLayout(async () => {
+      render(
+        <Controlled initial="2026-03-21" min="2026-01-01" max="2026-12-31" />,
+      );
+      fireEvent.click(field());
+      const header = () =>
+        document.querySelector<HTMLElement>(
+          `.${stableClassName('date-input-touch-title')}`,
+        )!;
+      const scroller = document.querySelector<HTMLElement>(
+        '[data-scroller="months"]',
+      )!;
+
+      // An arrow steers it to April. The scroll that lands there is our own
+      // doing, so whatever it reports must not move the month again.
+      fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+      expect(header()).toHaveTextContent('April 2026');
+      // Row 3 of a range starting in January is April: the month the steer
+      // was aiming at, arriving.
+      scroller.scrollLeft = 3 * SCROLLPORT_WIDTH;
+      fireEvent.scroll(scroller);
+      await frame();
+      expect(header()).toHaveTextContent('April 2026');
+
+      // A finger ends the steering: from here the months it passes are the
+      // user's, and every one of them counts.
+      // jsdom has no constructible TouchEvent, and a bare Event carries no
+      // `touches` — which crashes the gesture hook that reads `touches[0]`.
+      // That crash is the fake event's fault, not the hook's: a browser's
+      // touchstart always has the list.
+      const touchStart = new Event('touchstart', {bubbles: true});
+      const point = {identifier: 1, clientX: 100, clientY: 100};
+      Object.defineProperties(touchStart, {
+        touches: {value: [point]},
+        targetTouches: {value: [point]},
+        changedTouches: {value: [point]},
+      });
+      scroller.dispatchEvent(touchStart);
+      scroller.scrollLeft = 5 * SCROLLPORT_WIDTH;
+      fireEvent.scroll(scroller);
+      // The report is made from inside a rAF callback, so the state update
+      // lands outside the act() that fireEvent wraps.
+      await waitFor(() => expect(header()).toHaveTextContent('June 2026'));
+    });
+  });
+
   it('disables an arrow at the end of the reachable range', () => {
     // Kept mounted rather than hidden, so the title does not shift sideways
     // on the first or last month.
@@ -875,6 +939,75 @@ describe('DateInput — month/year wheels', () => {
     // The other direction — the calendar reporting its month when it IS the
     // surface — is what every test in the calendar-surface block above
     // depends on, so it is covered rather than restated here.
+  });
+
+  /**
+   * The reveal case, which is the one that was reported from a device.
+   *
+   * A wheel commit steers the calendar while it is hidden behind the wheels,
+   * and `visibility: hidden` keeps the layout box but does not guarantee the
+   * scroll position survives: iOS re-snaps the scroller when it becomes
+   * visible again, and not necessarily onto the pane it was put on. That
+   * fires a scroll exactly as the wheels close and reports start being
+   * trusted again — so the month drifted on the way back to the dates.
+   *
+   * Simulated here by moving the hidden scroller somewhere it was never sent,
+   * which is what the re-snap amounts to.
+   */
+  it('holds the month when the hidden calendar is re-snapped on reveal', async () => {
+    await withLayout(async () => {
+      render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+      fireEvent.click(field());
+      openWheels();
+      fireEvent.click(
+        within(screen.getByRole('listbox', {name: 'Month'})).getByText(
+          'January',
+        ),
+      );
+      expect(title()).toHaveTextContent('January 2026');
+
+      // iOS moves the hidden scroller off the pane it was steered to.
+      const scroller = document.querySelector<HTMLElement>(
+        '[data-scroller="months"]',
+      )!;
+      scroller.scrollLeft += 4 * SCROLLPORT_WIDTH;
+
+      // Back to the dates. Two things have to hold: the stray position must
+      // not become the month, and the calendar must be put back on the pane
+      // the month names — or the header would say January over a different
+      // month's grid.
+      const scrollTo = vi.mocked(Element.prototype.scrollTo);
+      scrollTo.mockClear();
+      fireEvent.click(title());
+      fireEvent.scroll(scroller);
+      await frame();
+      await frame();
+      expect(title()).toHaveTextContent('January 2026');
+
+      // January 2026 is row 24 of a range that starts in January 2024.
+      expect(scrollTo).toHaveBeenCalledWith(
+        expect.objectContaining({left: 24 * SCROLLPORT_WIDTH}),
+      );
+    });
+  });
+
+  /**
+   * The wheels are a detour to reach a far month, not a mode. Reopening into
+   * them would answer a question the user has not asked yet, and hide the
+   * dates they came back for behind another tap.
+   */
+  it('always reopens on the calendar, whatever was showing last time', () => {
+    renderAndOpen();
+    openWheels();
+    expect(title()).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(field());
+    expect(title()).toHaveAttribute('aria-expanded', 'false');
+    expect(panel('calendar')).not.toHaveAttribute('inert');
+    expect(panel('wheels')).toHaveAttribute('inert');
   });
 
   it('the year wheel keeps the month', () => {
@@ -1605,6 +1738,26 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(icon.slice(0, icon.indexOf('}'))).toContain(
       "display: 'inline-flex'",
     );
+  });
+
+  /**
+   * The panels, the weekday row, the header arrows and the title chevron are
+   * one event — a calendar leaving and wheels arriving. Different durations
+   * would let the parts arrive separately, which reads as several things
+   * happening rather than one surface replacing another.
+   *
+   * `medium` is the scale's entrance/exit band; `fast` is for
+   * micro-interactions, and at `fast` the cross-fade read as a cut.
+   */
+  it('cross-fades every part of the swap on one duration', () => {
+    const source = read('TouchDateField.tsx');
+    const styles = source.slice(
+      source.indexOf('const styles = stylex.create('),
+    );
+    expect(
+      styles.match(/transitionDuration: durationVars\['--duration-medium'\]/g),
+    ).toHaveLength(4);
+    expect(styles).not.toContain("durationVars['--duration-fast']");
   });
 
   it('keeps the virtual keyboard down on the touch field', () => {
