@@ -255,6 +255,16 @@ const styles = stylex.create({
    * `visibility: hidden` also takes them out of the tab order and the
    * accessibility tree, so there is nothing to reach that cannot be seen.
    */
+  /**
+   * An arrow with nowhere to go. Hidden, not unmounted, and not merely
+   * disabled — it keeps its 44px so the remaining arrow does not slide
+   * sideways as the range's edge is reached, and `visibility: hidden` takes
+   * it out of the tab order and the accessibility tree so nothing invisible
+   * is reachable.
+   */
+  monthArrowUnavailable: {
+    visibility: 'hidden',
+  },
   monthArrowsHidden: {
     visibility: 'hidden',
     opacity: 0,
@@ -426,6 +436,11 @@ const styles = stylex.create({
    */
   footerAction: {
     gridArea: '1 / 1',
+    // Side by side and equal: the calendar's cell holds Clear and Save, the
+    // wheels' holds one button. `1fr` each rather than content width, so
+    // neither label's length decides how the row is divided.
+    display: 'flex',
+    gap: spacingVars['--spacing-2'],
     transitionProperty: 'opacity, visibility',
     transitionDuration: PANEL_FADE_MS,
     transitionDelay: PANEL_FADE_MS,
@@ -636,6 +651,33 @@ export function TouchDateField({
     inputRef.current?.focus();
   }, [fireChange]);
 
+  /**
+   * Empty the field and bring the calendar home.
+   *
+   * Two things, because clearing a date and then being left staring at the
+   * month of the date you just cleared is a half-finished action — the
+   * calendar should look the way it does before anything is chosen.
+   *
+   * "If possible" is load-bearing: a range can exclude the current month
+   * entirely (a booking window starting next quarter), and there is no
+   * honest place to go in that case. `clampIndex` would silently land on the
+   * nearest edge, which is a different month presented as if it were today's,
+   * so the move is skipped instead and the calendar stays where it is. The
+   * value is still cleared either way — that half never depends on the range.
+   */
+  const handleClearInSheet = useCallback(() => {
+    fireChange(undefined);
+    const currentMonth = monthIndexOf(today);
+    if (currentMonth < minMonthIndex || currentMonth > maxMonthIndex) {
+      return;
+    }
+    if (currentMonth === monthIndex) {
+      return;
+    }
+    setMonthIndex(currentMonth);
+    scrollerHandleRef.current?.scrollToMonth(currentMonth, 'smooth');
+  }, [fireChange, today, monthIndex, minMonthIndex, maxMonthIndex]);
+
   // Selection commits on the tap and leaves the sheet up, so a mistake can be
   // corrected in place and a nearby date reconsidered without reopening.
   // Dismissal is the footer's Done (and the handle, the scrim, Escape) — none
@@ -646,6 +688,14 @@ export function TouchDateField({
     },
     [fireChange],
   );
+
+  // Whether there is anywhere to step. An arrow with nowhere to go is hidden
+  // rather than disabled: a disabled control still says "this is a thing you
+  // could do", and at the end of a range it is not — the range is the whole
+  // truth, and there is no state the user can reach where it becomes
+  // available. A greyed chevron sitting there permanently reads as broken.
+  const canStepBack = monthIndex > minMonthIndex;
+  const canStepForward = monthIndex < maxMonthIndex;
 
   // One month either way, clamped to the reachable range. Goes through the
   // same scrollToMonth the swipe settles on, so the arrows and the gesture
@@ -809,8 +859,11 @@ export function TouchDateField({
           <IconButton
             variant="ghost"
             size="sm"
-            xstyle={styles.monthArrow}
-            isDisabled={monthIndex <= minMonthIndex}
+            xstyle={[
+              styles.monthArrow,
+              !canStepBack && styles.monthArrowUnavailable,
+            ]}
+            isDisabled={!canStepBack}
             onClick={() => stepMonth(-1)}
             label={t('@astryx.calendar.previousMonth')}
             icon={
@@ -822,8 +875,11 @@ export function TouchDateField({
           <IconButton
             variant="ghost"
             size="sm"
-            xstyle={styles.monthArrow}
-            isDisabled={monthIndex >= maxMonthIndex}
+            xstyle={[
+              styles.monthArrow,
+              !canStepForward && styles.monthArrowUnavailable,
+            ]}
+            isDisabled={!canStepForward}
             onClick={() => stepMonth(1)}
             label={t('@astryx.calendar.nextMonth')}
             icon={
@@ -914,6 +970,13 @@ export function TouchDateField({
             styles.footerAction,
             isWheelOpen && styles.footerActionHidden,
           )}>
+          <Button
+            variant="secondary"
+            size="md"
+            width="100%"
+            label={t('@astryx.dateInput.clearPicking')}
+            onClick={handleClearInSheet}
+          />
           <Button
             variant="primary"
             // md, not sm: it is the action a thumb reaches for, so it gets

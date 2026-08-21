@@ -720,14 +720,45 @@ describe('DateInput — calendar surface', () => {
     });
   });
 
-  it('disables an arrow at the end of the reachable range', () => {
-    // Kept mounted rather than hidden, so the title does not shift sideways
-    // on the first or last month.
+  /**
+   * An arrow with nowhere to go is hidden, not greyed. A disabled control
+   * still says "this is a thing you could do", and at the edge of a range it
+   * is not — there is no state the user can reach where it becomes
+   * available, so a permanently greyed chevron just reads as broken.
+   *
+   * It keeps its box, though: `visibility: hidden` rather than unmounting,
+   * so the remaining arrow does not slide sideways as an edge is reached.
+   */
+  it('hides an arrow at the end of the reachable range', () => {
     renderAndOpen(
       <Controlled initial="2026-03-10" min="2026-03-01" max="2026-03-31" />,
     );
-    expect(screen.getByRole('button', {name: 'Previous month'})).toBeDisabled();
-    expect(screen.getByRole('button', {name: 'Next month'})).toBeDisabled();
+    // Queried by attribute, not by role: `visibility: hidden` is exactly what
+    // strips an element of its accessible name, so a role query cannot see
+    // these — which is the point of the assertion below.
+    const arrow = (name: string) =>
+      document.querySelector<HTMLElement>(
+        `dialog[open] button[aria-label="${name}"]`,
+      );
+    for (const name of ['Previous month', 'Next month']) {
+      // Still mounted, so the header cannot reflow...
+      expect(arrow(name)).toBeInTheDocument();
+      expect(arrow(name)).toBeDisabled();
+      // ...but gone from the accessibility tree, and so unreachable.
+      expect(screen.queryByRole('button', {name})).toBeNull();
+    }
+  });
+
+  it('shows both arrows when there is somewhere to go in each direction', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-10" min="2026-01-01" max="2026-12-31" />,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Previous month'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Next month'}),
+    ).toBeInTheDocument();
   });
 
   it('does not change the selection when paging', () => {
@@ -1057,6 +1088,62 @@ describe('DateInput — month/year wheels', () => {
     fireEvent.click(title());
     expect(title()).toHaveAttribute('aria-expanded', 'false');
     expect(panel('wheels')).toHaveAttribute('inert');
+  });
+
+  it('Clear empties the field and brings the calendar home', () => {
+    const onChange = vi.fn();
+    // Today is 15 March 2026 in these tests; open on a month away from it.
+    renderAndOpen(
+      <Controlled
+        initial="2026-08-21"
+        onChange={onChange}
+        min="2026-01-01"
+        max="2026-12-31"
+      />,
+    );
+    expect(title()).toHaveTextContent('August 2026');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Clear'}));
+    expect(onChange).toHaveBeenCalledWith(undefined);
+    expect(field()).toHaveValue('');
+    // Clearing the date and leaving the calendar on the month of the date you
+    // just cleared is a half-finished action.
+    expect(title()).toHaveTextContent('March 2026');
+    // And it does not dismiss — the sheet is still there to pick again.
+    expect(field()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  /**
+   * "If possible" is the whole subtlety. A range can exclude the current
+   * month entirely — a booking window that opens next quarter — and there is
+   * then no honest month to go to. Clamping would land on the nearest edge
+   * and present a different month as though it were today's, so the move is
+   * skipped and the calendar stays put. The value clears either way.
+   */
+  it('clears without moving when the current month is out of range', () => {
+    const onChange = vi.fn();
+    renderAndOpen(
+      <Controlled
+        initial="2027-05-10"
+        onChange={onChange}
+        min="2027-01-01"
+        max="2027-12-31"
+      />,
+    );
+    expect(title()).toHaveTextContent('May 2027');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Clear'}));
+    expect(onChange).toHaveBeenCalledWith(undefined);
+    expect(field()).toHaveValue('');
+    expect(title()).toHaveTextContent('May 2027');
+  });
+
+  it('offers Clear only on the calendar, beside Save', () => {
+    renderAndOpen();
+    expect(screen.getByRole('button', {name: 'Clear'})).toBeInTheDocument();
+    openWheels();
+    // The wheels choose a month; there is no date there to clear.
+    expect(screen.queryByRole('button', {name: 'Clear'})).toBeNull();
   });
 
   it('Save closes the whole picker; Done only leaves the wheels', () => {
@@ -1828,9 +1915,12 @@ describe('DateInput — scroll CSS (definition-level)', () => {
    * phone form ends with, and it puts the target under the thumb wherever
    * the hand is.
    */
-  it('gives both footer actions the full width of the sheet', () => {
+  it('spans the footer with its actions', () => {
     const source = read('TouchDateField.tsx');
-    expect(source.match(/width="100%"/g)).toHaveLength(2);
+    // Clear + Save share the calendar's cell; Done is the wheels'. Each
+    // fills the space it is given, so the row divides evenly rather than by
+    // label length.
+    expect(source.match(/width="100%"/g)).toHaveLength(3);
   });
 
   it('fades the two surfaces in turn, never at the same time', () => {
