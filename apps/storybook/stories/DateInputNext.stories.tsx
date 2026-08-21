@@ -41,9 +41,9 @@ const meta: Meta<typeof DateInputNext> = {
           'A drop-in `DateInput` that picks its own surface. On anything but ' +
           'a narrow touch screen it renders core’s `DateInput` unchanged; on ' +
           'a narrow touch screen (`max-width: 768px` **and** `pointer: ' +
-          'coarse`) it renders a picker built for a thumb — continuously ' +
-          'scrolling, snap-paged months with month and year wheels behind ' +
-          'the header title.\n\n' +
+          'coarse`) it renders a picker built for a thumb — months swiped ' +
+          'through sideways one screen at a time, arrows in the header for a ' +
+          'single step, and month and year wheels behind the header title.\n\n' +
           'Its props are `DateInputProps`, the same type, so adopting it is ' +
           'a changed import.\n\n' +
           '**Reviewing on a desktop browser:** the first story below will ' +
@@ -99,7 +99,7 @@ export const Default: Story = {
           }
           description={
             isTouch
-              ? 'Narrow and a coarse pointer, so you get the picker: tap the field, then scroll the months. On a desktop pointer this same story renders core’s DateInput.'
+              ? 'Narrow and a coarse pointer, so you get the picker: tap the field, then swipe the months sideways. On a desktop pointer this same story renders core’s DateInput.'
               : 'A coarse pointer under 768px gets the touch picker instead. The stories below force it, so it is reviewable here.'
           }
         />
@@ -129,9 +129,10 @@ export const TouchSurface: Story = {
       description: {
         story:
           'The mobile field with the media query skipped. Tap the field to ' +
-          'open the sheet, then scroll the months — every pane is exactly ' +
-          'one screen and snaps to the top, so the picker is a fixed height ' +
-          'and never rests between two months.\n\nA tap on a day commits it ' +
+          'open the sheet, then swipe the months sideways — every pane is ' +
+          'exactly one screen wide and snaps to its start, so the picker is ' +
+          'a fixed height and never rests between two months. The header ' +
+          'arrows step one month at a time.\n\nA tap on a day commits it ' +
           'straight away (watch the readout) and leaves the sheet up, so a ' +
           'mistake can be corrected in place. Done just closes.',
       },

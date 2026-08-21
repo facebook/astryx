@@ -31,8 +31,10 @@
  * 1. One month per screen. Every pane is exactly the height of the scrollport
  *    and snaps to its start, so the picker is a fixed height and there is no
  *    resting position showing half of two months. See MonthScroller.
- * 2. Scrolling is the month control. No chevrons: the neighbouring months are
- *    a flick away in the direction you already think of them.
+ * 2. Swiping is the month control, and the arrows are the backup. A flick
+ *    reaches a neighbouring month in the direction you already think of it;
+ *    the pair of arrows in the header's trailing corner is there for a
+ *    deliberate single step, and for anyone not swiping at all.
  * 3. The title is the escape hatch. Tap it and the same box becomes a month
  *    wheel and a year wheel — a flick each to reach 2019 instead of forty.
  *
@@ -72,6 +74,7 @@ import {
   useResolvedRequired,
 } from '@astryxdesign/core/hooks';
 import {Icon} from '@astryxdesign/core/Icon';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {groupStyles, useInputGroup} from '@astryxdesign/core/InputGroup';
 import {stableClassName} from '@astryxdesign/core/naming';
@@ -207,61 +210,54 @@ const styles = stylex.create({
     // extra here would push the arrows off the line the day grid sits on.
   },
   /**
-   * The chevrons page one month. They sit at the two corners, so the pair
-   * frames the title and each is under a thumb at the edge it points to —
-   * and they are the keyboard/pointer equivalent of the swipe, which is
-   * otherwise the only way to change month.
+   * Both arrows together, at the trailing corner. `IconButton` draws each
+   * one — a hand-rolled button had the glyph off-centre, and matching
+   * Button's optical centring by hand is exactly the sort of thing a shared
+   * component is for.
    */
-  monthArrow: {
+  monthArrows: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    // A 44px target on a 24px glyph: the arrows are the smallest things in
-    // the picker and the easiest to miss.
-    inlineSize: dateInputNextVars['--date-input-next-day-size'],
-    blockSize: dateInputNextVars['--date-input-next-day-size'],
-    padding: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    borderRadius: radiusVars['--radius-full'],
-    backgroundColor: {
-      default: 'transparent',
-      '@media (hover: hover)': {
-        default: 'transparent',
-        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
-          colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
-    color: colorVars['--color-icon-secondary'],
-    cursor: 'pointer',
+    gap: spacingVars['--spacing-0-5'],
+    // The pair is the trailing item; the title takes the space before it.
+    marginInlineStart: 'auto',
   },
-  monthArrowDisabled: {
-    // At the end of the reachable range. Kept mounted rather than hidden so
-    // the title does not shift sideways on the first or last month.
-    color: colorVars['--color-icon-disabled'],
-    cursor: 'not-allowed',
+  /**
+   * `Button`'s own sizes top out at 36px, which is fine for a mouse and short
+   * of the 44px every other target in this sheet honours. Floor it on a
+   * coarse pointer, the same way the field and the day cells do.
+   */
+  monthArrow: {
+    minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},
+    minInlineSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},
   },
-  /** Centred between the arrows, and free to shrink before they do. */
-  titleSlot: {
-    display: 'flex',
-    flex: 1,
-    minWidth: 0,
-    justifyContent: 'center',
+  /**
+   * The wrapper the RTL mirror rides on has to be a flex box. A bare inline
+   * span puts the glyph on the text baseline, which lifts it a few px off the
+   * button's optical centre — the whole reason these are `IconButton`s now.
+   * Core's Calendar carries the identical `navIcon` rule.
+   */
+  monthArrowIcon: {
+    display: 'inline-flex',
   },
+  /**
+   * The month and year, and the toggle into the wheels. Leading, so it reads
+   * first and sits on the same line as the day grid below it.
+   */
   title: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     blockSize: '100%',
     paddingInline: spacingVars['--spacing-2'],
+    // Pulls the text back onto the grid's line: the button's own padding
+    // would otherwise inset the label past it.
+    marginInlineStart: `calc(-1 * ${spacingVars['--spacing-2']})`,
     borderWidth: 0,
     borderStyle: 'none',
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: {
       default: 'transparent',
-      // Hover only on a real pointer, and never on a disabled control — a
-      // browser suppresses a disabled element's events, not its hover styling.
       '@media (hover: hover)': {
         default: 'transparent',
         ':hover:where(:not(:disabled,[aria-disabled="true"]))':
@@ -588,59 +584,61 @@ export function MobileDateField({
       <div {...stylex.props(styles.header)}>
         <button
           type="button"
-          onClick={() => stepMonth(-1)}
-          disabled={monthIndex <= minMonthIndex}
-          aria-label={t('@astryx.calendar.previousMonth')}
-          {...stylex.props(
-            styles.monthArrow,
-            monthIndex <= minMonthIndex && styles.monthArrowDisabled,
-            focusOutlineStyles.focusVisible,
+          onClick={() => setIsWheelOpen(open => !open)}
+          aria-expanded={isWheelOpen}
+          aria-label={`${monthYearLabel}, ${t('@astryx.dateInput.chooseMonthYear')}`}
+          {...mergeProps(
+            // mergeProps, not two spreads: both halves carry a className, and
+            // the later spread would drop the theme target entirely.
+            themeProps('date-input-next-title', {
+              state: isWheelOpen ? 'expanded' : 'collapsed',
+            }),
+            stylex.props(styles.title, focusOutlineStyles.focusVisible),
           )}>
-          {/* Mirrored under RTL by the shared rtl helper: "previous" is the
-              earlier month, which is on the right when the axis runs that
-              way — and the pane order mirrors with it. */}
-          <span {...stylex.props(rtlStyles.mirror)}>
-            <Icon icon="chevronLeft" size="md" color="inherit" />
-          </span>
-        </button>
-        <span {...stylex.props(styles.titleSlot)}>
-          <button
-            type="button"
-            onClick={() => setIsWheelOpen(open => !open)}
-            aria-expanded={isWheelOpen}
-            aria-label={`${monthYearLabel}, ${t('@astryx.dateInput.chooseMonthYear')}`}
-            {...mergeProps(
-              // mergeProps, not two spreads: both halves carry a className, and
-              // the later spread would drop the theme target entirely.
-              themeProps('date-input-next-title', {
-                state: isWheelOpen ? 'expanded' : 'collapsed',
-              }),
-              stylex.props(styles.title, focusOutlineStyles.focusVisible),
+          <span>{monthYearLabel}</span>
+          <span
+            {...stylex.props(
+              styles.titleChevron,
+              isWheelOpen && styles.titleChevronOpen,
             )}>
-            <span>{monthYearLabel}</span>
-            <span
-              {...stylex.props(
-                styles.titleChevron,
-                isWheelOpen && styles.titleChevronOpen,
-              )}>
-              <Icon icon="chevronDown" size="sm" color="secondary" />
-            </span>
-          </button>
-        </span>
-        <button
-          type="button"
-          onClick={() => stepMonth(1)}
-          disabled={monthIndex >= maxMonthIndex}
-          aria-label={t('@astryx.calendar.nextMonth')}
-          {...stylex.props(
-            styles.monthArrow,
-            monthIndex >= maxMonthIndex && styles.monthArrowDisabled,
-            focusOutlineStyles.focusVisible,
-          )}>
-          <span {...stylex.props(rtlStyles.mirror)}>
-            <Icon icon="chevronRight" size="md" color="inherit" />
+            <Icon icon="chevronDown" size="sm" color="secondary" />
           </span>
         </button>
+        {/* Both arrows at the trailing corner, as a pair. `IconButton` gives
+            them Button's optical centring, focus ring, disabled treatment and
+            hit area — the hand-rolled version had the glyph off-centre.
+
+            Mirrored under RTL by the shared helper: "previous" is the earlier
+            month, which sits on the right when the inline axis runs that way,
+            and the panes mirror with it. */}
+        <span {...stylex.props(styles.monthArrows)}>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            xstyle={styles.monthArrow}
+            isDisabled={monthIndex <= minMonthIndex}
+            onClick={() => stepMonth(-1)}
+            label={t('@astryx.calendar.previousMonth')}
+            icon={
+              <span {...stylex.props(styles.monthArrowIcon, rtlStyles.mirror)}>
+                <Icon icon="chevronLeft" size="sm" color="inherit" />
+              </span>
+            }
+          />
+          <IconButton
+            variant="ghost"
+            size="sm"
+            xstyle={styles.monthArrow}
+            isDisabled={monthIndex >= maxMonthIndex}
+            onClick={() => stepMonth(1)}
+            label={t('@astryx.calendar.nextMonth')}
+            icon={
+              <span {...stylex.props(styles.monthArrowIcon, rtlStyles.mirror)}>
+                <Icon icon="chevronRight" size="sm" color="inherit" />
+              </span>
+            }
+          />
+        </span>
       </div>
 
       {/* Decorative: each day carries its weekday in its accessible name, so

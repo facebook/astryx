@@ -62,6 +62,7 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
 } from '@astryxdesign/core/utils';
 import {dateInputNextVars, dateInputNextGeometry} from './tokens.stylex';
+import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {
   fromMonthIndex,
   monthIndexOf,
@@ -383,12 +384,25 @@ export function MonthScroller({
 
   useImperativeHandle(handleRef, () => ({scrollToMonth}), [scrollToMonth]);
 
-  // No gesture claim here any more, unlike the wheels. The scroller pages
-  // along the INLINE axis now and `touch-action: pan-x` splits the gesture by
-  // direction: horizontal pans stay here, vertical ones go straight to the
-  // sheet. So there is nothing to fight over, and a downward drag on the
-  // calendar goes back to meaning swipe-to-dismiss — which is what a sheet
-  // should do. The wheels still claim, because they are still vertical.
+  // Claim horizontal gestures, leave vertical ones to the sheet.
+  //
+  // `touch-action: pan-x` alone is NOT enough: it governs what the browser
+  // pans natively, and the sheet's listener is JavaScript whose
+  // preventDefault() cancels the scroll regardless. Measured — a swipe 9° off
+  // horizontal had every touchmove cancelled by the sheet and the month never
+  // changed. The axis lock is biased toward horizontal, because a thumb arcs
+  // as it swipes; `onSwipe` then pages the diagonals the browser itself
+  // declines to pan, so no angle is left doing nothing. See
+  // useOwnScrollGesture.
+  useOwnScrollGesture(scrollerRef, 'inline', {
+    onSwipe: direction => {
+      const scroller = scrollerRef.current;
+      if (scroller == null || paneSize === 0) {
+        return;
+      }
+      scroller.scrollBy({left: direction * paneSize, behavior: 'smooth'});
+    },
+  });
 
   // rAF-throttled: a touch scroll fires far more scroll events than frames,
   // and all this does is move a label and widen a window.

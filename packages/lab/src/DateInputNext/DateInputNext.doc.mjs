@@ -50,7 +50,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'A drop-in `DateInput` that picks its own surface. On anything but a narrow touch screen it renders core\'s `DateInput` unchanged. On a narrow touch screen it renders a picker built for a thumb: one month per screen, months swiped through sideways (or paged with a chevron at each corner), and month and year wheels behind the header title for the far jumps swiping is bad at. A tap on a day commits it immediately and leaves the sheet up, so a mistake can be corrected in place; Done closes. Its props are `DateInputProps` — the same type, not a copy — so adopting it is a changed import and nothing else.',
+      'A drop-in `DateInput` that picks its own surface. On anything but a narrow touch screen it renders core\'s `DateInput` unchanged. On a narrow touch screen it renders a picker built for a thumb: one month per screen, months swiped through sideways (or stepped with the arrow pair in the header\'s trailing corner), and month and year wheels behind the header title for the far jumps swiping is bad at. A tap on a day commits it immediately and leaves the sheet up, so a mistake can be corrected in place; Done closes. Its props are `DateInputProps` — the same type, not a copy — so adopting it is a changed import and nothing else.',
     bestPractices: [
       {
         guidance: true,
@@ -85,7 +85,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Add your own month chevrons around it. Scrolling is the month control; a second one just competes with the gesture.',
+          'Add your own month chevrons around it. The header already carries a pair, and a second set just competes with the swipe.',
       },
     ],
     anatomy: [
@@ -111,7 +111,7 @@ export const docs = {
         name: 'Header',
         required: false,
         description:
-          'A chevron at each corner pages one month, framing the month and year in the middle — which is itself a button that swaps the calendar for the wheels and back, its chevron rotating to show which surface is up.',
+          'The month and year lead, as a button that swaps the calendar for the wheels and back, its chevron rotating to show which surface is up. A pair of arrows sits in the trailing corner, each stepping one month and disabling at the end of the range.',
       },
       {
         name: 'Weekday row',
@@ -275,7 +275,7 @@ export const docsDense = {
       { guidance: true, description: 'MobileDateField only when the choice is already made (mobile-only app, desktop-browser story).' },
       { guidance: false, description: 'Hand-roll the media query and branch yourself.' },
       { guidance: false, description: 'Put the touch surface in a container shorter than the picker — fixed height is what makes snapping exact.' },
-      { guidance: false, description: 'Add month chevrons around it; scrolling is the month control.' },
+      { guidance: false, description: 'Add month chevrons around it; the header already has a pair.' },
     ],
   },
   propDescriptions: {

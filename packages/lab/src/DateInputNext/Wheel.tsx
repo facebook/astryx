@@ -321,7 +321,9 @@ export function Wheel({
   // Keep the finger. Inside a BottomSheet the sheet would otherwise read a
   // downward drag here as swipe-to-dismiss; see useOwnScrollGesture. Gated on
   // isActive because the hidden panel keeps its layout box.
-  useOwnScrollGesture(scrollerRef, isActive);
+  // 'all': a wheel scrolls vertically, the same axis the sheet wants, so
+  // there is no way to share — it takes every touch that lands on it.
+  useOwnScrollGesture(scrollerRef, 'all', {isEnabled: isActive});
 
   // Commit on rest. A disabled row is bounced back to the committed one rather
   // than silently keeping a value the wheel is not showing.

@@ -48,6 +48,7 @@ import {
   rowsIn,
   DEFAULT_MONTH_REACH,
 } from './monthGeometry';
+import {SWIPE_DISTANCE} from './useOwnScrollGesture';
 
 // ---------------------------------------------------------------------------
 // jsdom scaffolding
@@ -854,18 +855,69 @@ describe('DateInputNext — nested scrollers keep their own touch gesture', () =
    * The stand-in below carries it, so an event that DOES reach the sheet
    * exercises the sheet rather than blowing up inside it.
    */
-  const touch = (el: Element, type: string) => {
+  const touch = (
+    el: Element,
+    type: string,
+    at: {x: number; y: number} = {x: 100, y: 200},
+  ) => {
     const event = new Event(type, {
       bubbles: true,
       cancelable: type !== 'touchend',
     });
-    const point = {identifier: 1, clientX: 100, clientY: 200, target: el};
+    const point = {identifier: 1, clientX: at.x, clientY: at.y, target: el};
     Object.defineProperties(event, {
       changedTouches: {value: [point]},
       touches: {value: type === 'touchend' ? [] : [point]},
       targetTouches: {value: type === 'touchend' ? [] : [point]},
     });
     return el.dispatchEvent(event);
+  };
+
+  /**
+   * A whole gesture: down at the origin, drag by (dx, dy), lift. Returns the
+   * scroller's stubbed `scrollBy`, which is how the paging fallback shows up
+   * (jsdom implements neither scrolling nor `scrollBy`).
+   */
+  const swipe = (
+    el: Element,
+    dx: number,
+    dy: number,
+    {scrollsBy = 0}: {scrollsBy?: number} = {},
+  ) => {
+    // jsdom has no layout, so `scrollLeft` never moves on its own. Shadow it
+    // on this instance for the gesture: a native pan is the browser moving
+    // the scroller mid-drag, and watching for exactly that is how the hook
+    // knows whether its claim was honoured. Instance-only and deleted after,
+    // per the prototype-getter cost noted at the top of this file.
+    let offset = 0;
+    const scrollBy = vi.fn();
+    Object.defineProperties(el, {
+      scrollLeft: {
+        configurable: true,
+        get: () => offset,
+        set: (value: number) => {
+          offset = value;
+        },
+      },
+      scrollBy: {configurable: true, value: scrollBy},
+    });
+    const origin = {x: 150, y: 200};
+    touch(el, 'touchstart', origin);
+    for (const step of [0.5, 1]) {
+      if (step === 0.5) {
+        offset += scrollsBy;
+      }
+      touch(el, 'touchmove', {
+        x: origin.x + dx * step,
+        y: origin.y + dy * step,
+      });
+    }
+    touch(el, 'touchend');
+    // @ts-expect-error - removing the shadows restores the prototype's
+    delete el.scrollLeft;
+    // @ts-expect-error - same
+    delete el.scrollBy;
+    return scrollBy;
   };
 
   it('lets a touch on the calendar reach the sheet, now that it pages sideways', () => {
@@ -876,11 +928,81 @@ describe('DateInputNext — nested scrollers keep their own touch gesture', () =
     touch(scroller, 'touchmove');
     // The calendar used to claim the gesture, because it scrolled vertically
     // and the sheet read every downward drag as a dismiss. Paging sideways
-    // removes the conflict: `touch-action: pan-x` keeps horizontal pans here
-    // and hands vertical ones to the sheet, so a downward drag can go back to
-    // meaning swipe-to-dismiss. The wheels still claim — they are vertical.
+    // removes the conflict: horizontal pans stay here and vertical ones go to
+    // the sheet, so a downward drag can go back to meaning swipe-to-dismiss.
+    // A move with no direction yet (the same point twice) is nobody's.
     expect(ancestor.seen).toEqual(['touchstart', 'touchmove']);
     ancestor.stop();
+  });
+
+  it('claims a horizontal drag on the calendar', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    swipe(scroller, -80, 0);
+    // touchstart still propagates — 'inline' cannot know the direction yet —
+    // but every move after the axis locks is ours.
+    expect(ancestor.seen).not.toContain('touchmove');
+    ancestor.stop();
+  });
+
+  it('leaves a downward drag on the calendar to the sheet', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    swipe(scroller, 0, 80);
+    expect(ancestor.seen).toContain('touchmove');
+    ancestor.stop();
+  });
+
+  it('keeps a diagonal drag, because a thumb arcs as it swipes', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    // ~50° off horizontal: past the browser's own pan-x cone, still ours.
+    swipe(scroller, -60, 72);
+    expect(ancestor.seen).not.toContain('touchmove');
+    ancestor.stop();
+  });
+
+  /**
+   * The band between our claim and the browser's `pan-x` cone. The sheet has
+   * been told to keep off, and the compositor refuses to pan, so without the
+   * fallback these gestures would do nothing at all — measured as a dead zone
+   * from 45° to 60° on an iPhone 15 profile.
+   */
+  it('pages a month itself when the browser refuses to pan a claimed swipe', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+
+    const forward = swipe(scroller, -60, 72);
+    expect(forward).toHaveBeenCalledTimes(1);
+    expect(forward.mock.calls[0][0]).toMatchObject({behavior: 'smooth'});
+    // Swiping left advances: the offset moves towards the end of the line.
+    expect(forward.mock.calls[0][0].left).toBeGreaterThan(0);
+
+    const back = swipe(scroller, 60, 72);
+    expect(back.mock.calls[0][0].left).toBeLessThan(0);
+  });
+
+  it('stays out of the way when the browser did pan', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    // Native momentum and snapping own this one; a second nudge would fight
+    // them. `scrollsBy` stands in for the compositor moving the scroller.
+    expect(swipe(scroller, -120, 0, {scrollsBy: 40})).not.toHaveBeenCalled();
+  });
+
+  it('ignores a claimed gesture too short to be a swipe', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    expect(swipe(scroller, -SWIPE_DISTANCE + 4, 0)).not.toHaveBeenCalled();
+  });
+
+  it('never pages from a drag it gave to the sheet', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    expect(swipe(scroller, -40, 200)).not.toHaveBeenCalled();
   });
 
   it('stops a touch on a wheel from reaching the sheet', () => {
@@ -1142,11 +1264,42 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
   it('floors the touch target without discarding the size prop', () => {
     const source = read('MobileDateField.tsx');
     // Each size keeps its own height AND cannot render below a thumb's reach.
+    const sizeMap = source.slice(
+      source.indexOf('const sizeStyles = stylex.create('),
+      source.indexOf('const styles = stylex.create('),
+    );
     expect(
-      source.match(
+      sizeMap.match(
         /minBlockSize: \{default: null, '@media \(pointer: coarse\)': TOUCH_TARGET\}/g,
       ),
     ).toHaveLength(3);
+  });
+
+  it('floors the month arrows too — Button tops out at 36px', () => {
+    const source = read('MobileDateField.tsx');
+    const arrow = source.slice(
+      source.indexOf('  monthArrow: {'),
+      source.indexOf('  monthArrowIcon: {'),
+    );
+    expect(arrow).toContain(
+      "minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET}",
+    );
+    expect(arrow).toContain(
+      "minInlineSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET}",
+    );
+  });
+
+  /**
+   * A bare inline wrapper puts the glyph on the text baseline, a few px above
+   * the button's optical centre. Core's Calendar carries the same rule on its
+   * own nav icons.
+   */
+  it('keeps the mirrored arrow glyph centred', () => {
+    const source = read('MobileDateField.tsx');
+    const icon = source.slice(source.indexOf('  monthArrowIcon: {'));
+    expect(icon.slice(0, icon.indexOf('}'))).toContain(
+      "display: 'inline-flex'",
+    );
   });
 
   it('keeps the virtual keyboard down on the touch field', () => {
