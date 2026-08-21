@@ -1057,6 +1057,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   } = useMultiCombobox({
     selectableItems: sortedItems,
     isDisabled,
+    isLoading,
     isOpen: popover.isOpen,
     hasSearch,
     onOpen: useCallback(() => {

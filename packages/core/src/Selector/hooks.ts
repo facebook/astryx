@@ -157,6 +157,7 @@ interface UseComboboxOptions {
   selectableItems: SelectorOptionData[];
   value?: string;
   isDisabled?: boolean;
+  isLoading?: boolean;
   isOpen: boolean;
   hasSearch?: boolean;
   onOpen: () => void;
@@ -201,6 +202,7 @@ export function useCombobox({
   selectableItems,
   value,
   isDisabled = false,
+  isLoading = false,
   isOpen,
   hasSearch = false,
   onOpen,
@@ -210,6 +212,7 @@ export function useCombobox({
   onSearchSeed,
   listboxId,
 }: UseComboboxOptions): UseComboboxResult {
+  const isInactive = isDisabled || isLoading;
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
   const getItemId = useCallback(
@@ -244,7 +247,7 @@ export function useCombobox({
   );
 
   const onTriggerClick = useCallback(() => {
-    if (isDisabled) {
+    if (isInactive) {
       return;
     }
     if (isOpen) {
@@ -256,7 +259,7 @@ export function useCombobox({
         setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
       }
     }
-  }, [isDisabled, isOpen, onOpen, closeAndReset, findSelectedIndex, hasSearch]);
+  }, [isInactive, isOpen, onOpen, closeAndReset, findSelectedIndex, hasSearch]);
 
   const onItemMouseEnter = useCallback(
     (item: SelectorOptionData, index: number) => {
@@ -269,7 +272,7 @@ export function useCombobox({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (isDisabled) {
+      if (isInactive) {
         return;
       }
 
@@ -403,7 +406,7 @@ export function useCombobox({
       }
     },
     [
-      isDisabled,
+      isInactive,
       isOpen,
       onOpen,
       closeAndReset,

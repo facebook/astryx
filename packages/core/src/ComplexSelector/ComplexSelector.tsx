@@ -389,7 +389,7 @@ export function ComplexSelector<Value>({
   const isOpen = popover.isOpen;
 
   const handleTriggerClick = useCallback(() => {
-    if (isDisabled || Date.now() - lastHideTimeRef.current < 50) {
+    if (isDisabled || isLoading || Date.now() - lastHideTimeRef.current < 50) {
       return;
     }
     if (popover.isOpen) {
@@ -397,7 +397,7 @@ export function ComplexSelector<Value>({
     } else {
       popover.show();
     }
-  }, [isDisabled, popover]);
+  }, [isDisabled, isLoading, popover]);
 
   const close = useCallback(() => {
     popover.hide();
@@ -407,13 +407,13 @@ export function ComplexSelector<Value>({
     handleRef,
     () => ({
       open: () => {
-        if (!isDisabled) {
+        if (!isDisabled && !isLoading) {
           popover.show();
         }
       },
       close: () => popover.hide(),
       toggle: () => {
-        if (isDisabled) {
+        if (isDisabled || isLoading) {
           return;
         }
         if (popover.isOpen) {
@@ -424,7 +424,7 @@ export function ComplexSelector<Value>({
       },
       isOpen: () => popover.isOpen,
     }),
-    [isDisabled, popover],
+    [isDisabled, isLoading, popover],
   );
 
   const commitValue = useCallback(
@@ -505,7 +505,12 @@ export function ComplexSelector<Value>({
           aria-busy={isBusy || undefined}
           disabled={isDisabled}
           onKeyDown={event => {
-            if (event.key === 'ArrowDown' && !isOpen && !isDisabled) {
+            if (
+              event.key === 'ArrowDown' &&
+              !isOpen &&
+              !isDisabled &&
+              !isLoading
+            ) {
               event.preventDefault();
               popover.show();
             }
