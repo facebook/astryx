@@ -47,6 +47,10 @@ import {
   collectUnloadedFonts,
   formatFontLoadingHelp,
 } from './font-warning.mjs';
+import {
+  collectContrastFailures,
+  formatContrastFailure,
+} from './contrast-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -58,12 +62,14 @@ import {
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
+/** @type {any} */ let _resolveThemeTokens = null;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
+  _resolveThemeTokens = coreTheme.resolveThemeTokens;
 } catch (e) {
   // Capture the reason so the theme action can surface a precise, actionable
   // error. We don't throw here: this module is imported eagerly by the CLI
@@ -1429,6 +1435,35 @@ Or with a <link> tag:
   }
   if (unloadedFonts.length > 0) {
     logger.log(formatFontLoadingHelp(themeDef.name, unloadedFonts));
+  }
+
+  // Colour pairs the theme broke by hand-writing one side (#5014). Unlike the
+  // font notice above, this IS the theme's own defect and fixable in the theme
+  // file, so it warns. Pairs the theme never touched are not its doing and are
+  // left alone — the defaults' own failures belong to the defaults (#5019).
+  //
+  // `__inputTokens` is how the check knows which side was hand-written, and the
+  // legacy loader (used whenever the theme file cannot be imported) hands back
+  // the theme's raw INPUT instead of a DefinedTheme — whose `tokens` are
+  // exactly the hand-written set, so re-running defineTheme mints the
+  // `__inputTokens` this needs. A prebuilt theme has no hand-written set left
+  // to recover, every token in it being resolved output, so it is left alone.
+  const contrastTheme =
+    resolvedTheme?.__inputTokens || resolvedTheme?.__built
+      ? resolvedTheme
+      : (_defineTheme?.({...themeDef}) ?? resolvedTheme);
+  const contrastFailures = _resolveThemeTokens
+    ? collectContrastFailures(contrastTheme, _resolveThemeTokens)
+    : [];
+  for (const failure of contrastFailures) {
+    const msg = formatContrastFailure(failure);
+    warningMessages.push(msg);
+    logger.warn(`  ⚠ ${msg}`);
+  }
+  if (contrastFailures.length > 0) {
+    logger.warn(
+      `  ${contrastFailures.length} contrast failure(s). The colour scale holds text at 4.5:1 and control boundaries at 3:1 for what it generates; a token you write yourself is yours to verify, in both modes.`,
+    );
   }
 
   return {
