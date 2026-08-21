@@ -57,6 +57,14 @@ const styles = stylex.create({
     position: 'fixed',
     inset: 0,
     width: '100dvw',
+    // The DYNAMIC viewport, and it has to stay that way. iOS Safari extends an
+    // overlay that is flush with the layout viewport's bottom edge down behind
+    // its translucent address bar, so the sheet's own surface is what shows
+    // through the bar rather than the page. Overshoot that edge -- `100lvh`,
+    // the whole screen -- and Safari stops extending and clips at the viewport
+    // instead, which puts the page back behind the bar. Measured in the iOS 26
+    // simulator: flush, the sheet's white reaches the physical screen bottom
+    // (874pt); overshooting, it stops at 776pt and the page shows through.
     height: '100dvh',
     maxWidth: 'none',
     maxHeight: 'none',
@@ -75,7 +83,14 @@ const styles = stylex.create({
     pointerEvents: 'none',
     zIndex: 1000,
     width: '100%',
-    height: '100%',
+    // `100dvh`, NOT `100%`. A percentage on a fixed element resolves against
+    // the initial containing block, which on iOS is the SMALL viewport -- it
+    // does not grow when the address bar retracts. So a non-modal sheet stayed
+    // a bar's height short of the viewport once the bar went compact, its
+    // bottom edge no longer flush, and the page showed through the strip below
+    // it. The modal path above was always `100dvh` and tracked correctly, which
+    // is why only no-scrim sheets showed the page under the bar.
+    height: '100dvh',
   },
   scrim: {
     '::backdrop': {

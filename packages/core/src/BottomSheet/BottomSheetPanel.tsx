@@ -16,6 +16,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
  * - /packages/core/src/BottomSheet/BottomSheetPanel.test.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetSafeArea.test.tsx
  * - /packages/core/src/BottomSheet/snapOffsets.ts
  * - /packages/core/src/BottomSheet/useMobileKeyboard.ts
  * - /packages/core/src/BottomSheet/useSheetGestures.ts
@@ -64,6 +65,33 @@ export type {BottomSheetSnapPoint};
 
 // SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts.
 const OVERSCROLL_PADDING = 48;
+// Breathing room the sheet keeps under its content, on top of whatever the
+// device reserves at the bottom edge. Without it content ends exactly where the
+// home indicator begins, and flush against the sheet's edge on a device
+// without one.
+const BOTTOM_GUTTER = 16;
+// The gutter clears the home indicator only -- NOT the browser's address bar.
+// iOS Safari keeps the layout viewport entirely above its bar and extends a
+// flush overlay's own surface down behind it (see `dialog` in BottomSheet.tsx),
+// so the bar never occludes sheet content and reserving space for it would
+// just waste a bar's height. `env(safe-area-inset-bottom)` reads 0 while the
+// bar is out, for exactly that reason, and becomes the indicator's height once
+// the bar retracts -- which is the moment the sheet does need the room.
+//
+// The gutter and the height ceiling are held in custom properties rather than
+// written inline in each rule: StyleX's dev-time runtime rewrites `env()` with
+// a fallback into invalid CSS when it appears inside a larger expression
+// (`env(0px * , * safe-area-inset-bottom)`), and folds a `min()` of two
+// literals down to one of its operands. Behind a variable both survive
+// untouched, in the compiler's output and the runtime's alike.
+const GUTTER_VAR = '--_sheet-bottom-gutter';
+const MAX_HEIGHT_VAR = '--_sheet-max-height';
+// The sheet's height budget is the height of its CONTENT: the bottom gutter is
+// added to it rather than taken out of it, so a sheet shows the same amount of
+// content on a device with a home indicator as on one without. The ceiling
+// keeps it inside the layout viewport, less the top inset, so the taller sheet
+// cannot push its rounded top edge under the status bar or the notch.
+const SHEET_HEIGHT = `calc(min(calc(var(--_sheet-budget) + var(${GUTTER_VAR})), var(${MAX_HEIGHT_VAR})) + ${OVERSCROLL_PADDING}px)`;
 const MOBILE_KEYBOARD_BOTTOM_CLEARANCE = 48;
 const TRANSITION_BACKSTOP_BUFFER_MS = 50;
 // The floating handle bar's height. The bar is out of flow, so this is not
@@ -134,7 +162,9 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-high'],
     outline: 'none',
     overflow: 'hidden',
-    paddingBlockEnd: `calc(env(safe-area-inset-bottom, 0px) + ${OVERSCROLL_PADDING}px)`,
+    [GUTTER_VAR]: `calc(${BOTTOM_GUTTER}px + env(safe-area-inset-bottom, 0px))`,
+    [MAX_HEIGHT_VAR]: 'calc(100dvh - env(safe-area-inset-top, 0px))',
+    paddingBlockEnd: `calc(var(${GUTTER_VAR}) + ${OVERSCROLL_PADDING}px)`,
     marginBlockEnd: `${-OVERSCROLL_PADDING}px`,
     transform: {
       default: 'translateY(0)',
@@ -220,11 +250,11 @@ const styles = stylex.create({
     },
   },
   budget: {
-    height: `calc(var(--_sheet-budget) + ${OVERSCROLL_PADDING}px)`,
+    height: SHEET_HEIGHT,
   },
   hugHeight: {
     height: 'fit-content',
-    maxHeight: `calc(${HEIGHT_BUDGETS.hug} + ${OVERSCROLL_PADDING}px)`,
+    maxHeight: SHEET_HEIGHT,
   },
 });
 
