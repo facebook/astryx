@@ -157,6 +157,13 @@ export const docs = {
       default: "'date_long'",
     },
     {
+      name: 'nativePicker',
+      type: "'touch' | 'always' | 'never'",
+      description:
+        "Whether date picking is handed to the browser/OS instead of the built-in Calendar popover. 'touch' uses the native control on touch devices (coarse pointer) and the Calendar popover on mouse-driven ones; 'always' uses it wherever the browser supports input type=date; 'never' always uses the Calendar popover. In native mode the browser owns the picker, so numberOfMonths and weekStartsOn no longer apply — they describe a calendar grid the native picker does not have. format and placeholder still apply: DateInput paints the closed field's text itself, over the control. On a desktop control, whose segments the browser lets the user type into, the field reverts to the browser's format while focused; a touch picker has no segments, so our text holds throughout. min and max carry over but dateConstraints cannot, so 'touch' keeps the Calendar popover whenever dateConstraints is set.",
+      default: "'touch'",
+    },
+    {
       name: 'width',
       type: 'SizeValue',
       description:
@@ -236,7 +243,7 @@ export const docs = {
         name: 'Text input',
         required: true,
         description:
-          'A field where the user can type a date directly. Parses common formats like MM/DD/YYYY.',
+          'A field where the user can type a date directly. Parses common formats like MM/DD/YYYY. On touch devices it becomes a native date control the OS picker fills in.',
       },
       {
         name: 'Calendar icon',
@@ -248,7 +255,7 @@ export const docs = {
         name: 'Calendar popover',
         required: false,
         description:
-          'A month grid that appears when the icon is clicked or the input is focused.',
+          'A month grid that appears when the icon is clicked or the input is focused. On touch devices the browser/OS date picker takes its place.',
       },
       {
         name: 'Clear button',
@@ -438,6 +445,13 @@ export const docsZh = {
       default: "'date_long'",
     },
     {
+      name: 'nativePicker',
+      type: "'touch' | 'always' | 'never'",
+      description:
+        "是否将日期选择交给浏览器/操作系统，而非内置的日历弹出层。'touch' 在触摸设备（粗指针）上使用原生控件，在鼠标设备上使用日历弹出层；'always' 在支持 input type=date 的浏览器上始终使用原生控件；'never' 始终使用日历弹出层。原生模式下选择器由浏览器提供，因此 numberOfMonths 和 weekStartsOn 不再生效（它们描述的是原生选择器没有的日历网格）。format 和 placeholder 仍然生效：DateInput 会在控件上方自行绘制关闭状态下的文本。在允许键入日期分段的桌面端控件上，聚焦时会交还给浏览器自身的格式；触摸设备的选择器没有分段，因此始终显示我们的文本。min 和 max 会传递给原生控件，但 dateConstraints 无法传递，所以设置 dateConstraints 时 'touch' 会保留日历弹出层。",
+      default: "'touch'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -459,7 +473,8 @@ export const docsZh = {
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'text input w/ calendar popover for picking a date',
+  description:
+    'text input w/ calendar popover for picking a date; native OS picker on touch',
   usage: {
     description:
       'DateInput lets the user type or pick a date from a calendar popover. Use for scheduling, deadlines, booking dates, or any form field needing a calendar date.',
@@ -537,6 +552,8 @@ export const docsDense = {
     weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     format:
       "committed-value display: 'date_long' (default, March 21, 2026), 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Committed value only, not while typing.",
+    nativePicker:
+      "browser/OS date picker instead of the Calendar popover: 'touch' (default) = native on touch (coarse pointer), 'always', 'never'. Native mode ignores numberOfMonths/weekStartsOn; format+placeholder still apply (DateInput paints the closed field over the control; a segment-editable desktop control reverts to the browser format while focused). min+max carry over, dateConstraints keeps 'touch' on the popover.",
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };

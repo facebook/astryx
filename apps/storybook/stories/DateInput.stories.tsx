@@ -85,6 +85,12 @@ const meta: Meta<typeof DateInput> = {
       description:
         "Display format for the committed value, reusing Timestamp's vocabulary. Defaults to 'date_long' (long-month date).",
     },
+    nativePicker: {
+      control: 'radio',
+      options: ['touch', 'always', 'never'],
+      description:
+        "Whether the browser/OS date picker replaces the Calendar popover. 'touch' (default) switches on touch devices.",
+    },
   },
 };
 
@@ -432,6 +438,54 @@ export const AllVariations: Story = {
             type: 'error',
             message: 'Invalid date selection',
           }}
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * On a touch device DateInput hands date picking to the browser, rendering
+ * `<input type="date">` so the platform's own picker opens — the iOS wheel,
+ * the Android calendar dialog. Open this story on a phone, or in a desktop
+ * browser's device emulation (which reports a coarse pointer), to see the
+ * default field switch. `format` still applies: DateInput paints the closed
+ * field's text over the control, so all three fields below read alike.
+ */
+export const NativePicker: Story = {
+  name: 'Native picker on touch',
+  render: () => {
+    const [touch, setTouch] = useState<ISODateString | undefined>('2026-03-21');
+    const [always, setAlways] = useState<ISODateString | undefined>(
+      '2026-03-21',
+    );
+    const [never, setNever] = useState<ISODateString | undefined>('2026-03-21');
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <DateInput
+          label="Touch (the default)"
+          description="Native control on a coarse pointer, Calendar popover on a mouse"
+          value={touch}
+          onChange={setTouch}
+          hasClear
+        />
+        <DateInput
+          label="Always native"
+          description="Native control on this device too"
+          nativePicker="always"
+          value={always}
+          onChange={setAlways}
+          min="2026-01-01"
+          max="2026-12-31"
+          hasClear
+        />
+        <DateInput
+          label="Never native"
+          description="Calendar popover everywhere, phones included"
+          nativePicker="never"
+          value={never}
+          onChange={setNever}
+          hasClear
         />
       </div>
     );
