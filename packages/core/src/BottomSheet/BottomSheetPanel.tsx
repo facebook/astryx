@@ -131,6 +131,18 @@ const styles = stylex.create({
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
     },
+    // The sheet is a fixed-position overlay, but it is still a DOM descendant
+    // of whatever container opened it, so it inherits that container's
+    // `--container-padding-*` vars even though it has visually left the
+    // container's box. A nested Section reads those vars to escape its
+    // parent's padding (see Section.tsx's nestedStyles), so without this
+    // reset a Section inside the sheet "escapes" padding that was never
+    // visually there and overflows the sheet. Reset to 0 here, the same way
+    // Section's own inner wrapper resets for its descendants.
+    '--container-padding-inline-start': '0px',
+    '--container-padding-inline-end': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
   },
   sheetClosing: {
     transform: 'translateY(100%)',
