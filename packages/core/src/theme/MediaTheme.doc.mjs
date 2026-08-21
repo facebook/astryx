@@ -85,10 +85,10 @@ export const docs = {
   props: [
     {
       name: 'mode',
-      type: "'dark' | 'light'",
+      type: "'dark' | 'light' | 'off'",
       required: true,
       description:
-        'Surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions).',
+        'Surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions), off for no inversion — the element still renders, so a surface can switch contexts without remounting children.',
     },
     {
       name: 'children',
@@ -129,6 +129,6 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    mode: 'surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions)',
+    mode: 'surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions), off for no inversion (element still renders, so children never remount)',
   },
 };

@@ -22,6 +22,8 @@
  *    `onDark.components` / `onLight.components` in defineTheme().
  * 4. Children (Button, Link, Text, etc.) pick up inverted tokens
  *    naturally through CSS custom property inheritance
+ * 5. `mode="off"` renders the same element with no media attribute, so a
+ *    surface can drop the inversion without changing the tree.
  *
  * @example
  * ```
@@ -41,17 +43,23 @@ import {dataAttr} from '../naming';
 const styles = stylex.create({
   root: {
     display: 'contents',
+  },
+  active: {
     color: colorVars['--color-text-primary'],
   },
 });
+
+/** Surface luminance context, or `"off"` for no media context at all. */
+export type MediaThemeMode = 'dark' | 'light' | 'off';
 
 export interface MediaThemeProps {
   /**
    * The surface luminance context for children.
    * - `"dark"` — children are on a dark background (get light text/icons)
    * - `"light"` — children are on a light background (get dark text/icons)
+   * - `"off"` — children keep the ambient theme; the surface needs no inversion
    */
-  mode: 'dark' | 'light';
+  mode: MediaThemeMode;
   /** Content to render in the media context */
   children: React.ReactNode;
 }
@@ -67,11 +75,13 @@ export function MediaTheme({
   mode,
   children,
 }: MediaThemeProps): React.ReactElement {
+  // "off" keeps the element — and therefore the React tree and the DOM
+  // structure — identical, so a surface can switch its media context on and
+  // off without remounting its children.
   return (
     <div
-      {...{[dataAttr('media')]: mode}}
-      {...stylex.props(styles.root)}
-    >
+      {...(mode === 'off' ? null : {[dataAttr('media')]: mode})}
+      {...stylex.props(styles.root, mode !== 'off' && styles.active)}>
       {children}
     </div>
   );

@@ -20,6 +20,7 @@ import {
 import {mergeProps} from '../utils';
 import {useTheme} from '../theme';
 import {MediaTheme} from '../theme/MediaTheme';
+import {useContrastMode} from '../hooks/useContrastMode';
 import type {ToastType, ToastDismissReason} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -92,8 +93,9 @@ export interface ToastProps {
  * Individual toast notification.
  *
  * Renders with inverted surface colors for the default variant,
- * and error-inverted for the error variant. Uses MediaTheme
- * to set the correct token context for children. Pauses auto-dismiss
+ * and error-inverted for the error variant. Measures the painted
+ * surface against the ambient text color and applies MediaTheme only
+ * when that pairing is short of contrast. Pauses auto-dismiss
  * on hover and focus.
  *
  * @example
@@ -196,13 +198,20 @@ export function Toast({
   }, [onDismiss]);
 
   const isError = type === 'error';
-  // Determine media mode: inverted surface is always dark in light mode,
-  // always light in dark mode. Error toast is always on a dark surface.
+  // The inverted surface is *usually* dark in light mode and light in dark
+  // mode — but only the painted colors know for sure, since a theme can
+  // define --color-background-inverted as anything. This is the guess for
+  // the first frame; useContrastMode measures and corrects it before paint,
+  // and answers 'off' when the surface never lost contrast to begin with.
   const {mode} = useTheme();
-  const mediaMode = isError || mode === 'light' ? 'dark' : 'light';
+  const staticMediaMode = isError || mode === 'light' ? 'dark' : 'light';
+  const rootRef = useRef<HTMLDivElement>(null);
+  const contrast = useContrastMode(rootRef, {watch: [type]});
+  const mediaMode = contrast?.mode ?? staticMediaMode;
 
   return (
     <div
+      ref={rootRef}
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
       aria-atomic="true"

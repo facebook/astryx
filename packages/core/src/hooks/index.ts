@@ -75,6 +75,13 @@ export type {
 export {useImageMode} from './useImageMode';
 export type {ImageSampleRegion, UseImageModeOptions} from './useImageMode';
 
+export {useContrastMode, decideContrastMode} from './useContrastMode';
+export type {
+  ContrastMode,
+  ContrastMeasurement,
+  UseContrastModeOptions,
+} from './useContrastMode';
+
 export {
   useClickableContainer,
   INTERACTIVE_SELECTORS,
