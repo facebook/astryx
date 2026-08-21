@@ -30,7 +30,7 @@ export const docs = {
       name: 'numberOfMonths',
       type: '1 | 2',
       description:
-        'Desktop only. The touch surface is a single continuously scrolling column, where a second month is just the month already one flick away — so the prop is accepted (the types are shared) and ignored there.',
+        'Desktop only. The touch surface pages one month at a time, where a second month is just the month already one swipe away — so the prop is accepted (the types are shared) and ignored there.',
       default: '1',
     },
     {
@@ -50,7 +50,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'A drop-in `DateInput` that picks its own surface. On anything but a narrow touch screen it renders core\'s `DateInput` unchanged. On a narrow touch screen it renders a picker built for a thumb: one month per screen, months chosen by scrolling continuously through them, and month and year wheels behind the header title for the far jumps scrolling is bad at. A tap on a day commits it immediately and leaves the sheet up, so a mistake can be corrected in place; Done closes. Its props are `DateInputProps` — the same type, not a copy — so adopting it is a changed import and nothing else.',
+      'A drop-in `DateInput` that picks its own surface. On anything but a narrow touch screen it renders core\'s `DateInput` unchanged. On a narrow touch screen it renders a picker built for a thumb: one month per screen, months swiped through sideways (or paged with a chevron at each corner), and month and year wheels behind the header title for the far jumps swiping is bad at. A tap on a day commits it immediately and leaves the sheet up, so a mistake can be corrected in place; Done closes. Its props are `DateInputProps` — the same type, not a copy — so adopting it is a changed import and nothing else.',
     bestPractices: [
       {
         guidance: true,
@@ -111,7 +111,7 @@ export const docs = {
         name: 'Header',
         required: false,
         description:
-          'The month and year, as a button that swaps the calendar for the wheels and back; its chevron rotates to show which surface is up.',
+          'A chevron at each corner pages one month, framing the month and year in the middle — which is itself a button that swaps the calendar for the wheels and back, its chevron rotating to show which surface is up.',
       },
       {
         name: 'Weekday row',
@@ -123,7 +123,7 @@ export const docs = {
         name: 'Month scroller',
         required: false,
         description:
-          'The continuous surface: equal-height month panes, each snapped to the top of the scrollport.',
+          'The continuous surface: equal-width month panes swiped sideways, each snapped to the start of the scrollport.',
       },
       {
         name: 'Wheels',
@@ -265,7 +265,7 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Drop-in DateInput that picks its surface: core DateInput everywhere, a touch picker (continuous snap-paged months + month/year wheels) on narrow AND coarse-pointer screens.',
+    'Drop-in DateInput that picks its surface: core DateInput everywhere, a touch picker (side-swiped snap-paged months + month/year wheels) on narrow AND coarse-pointer screens.',
   usage: {
     description:
       'Props ARE DateInputProps (type alias, not a copy) — adopting it is a changed import. Switch is `(max-width: 768px) and (pointer: coarse)`: touch alone catches a touchscreen laptop, narrow alone a half-width window, and on both typing beats scrolling. Both surfaces render the same closed field, so the post-hydration swap is invisible. MobileDateField exports the touch surface unconditionally.',
@@ -279,7 +279,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    numberOfMonths: 'Desktop only; the touch scroller is one continuous column. Accepted and ignored there.',
+    numberOfMonths: 'Desktop only; the touch surface pages one month at a time. Accepted and ignored there.',
     size: "'sm' | 'md' | 'lg', floored at a 44px tap target on a coarse pointer.",
     placeholder: "Empty-state text on both surfaces. Default 'Select a date'.",
   },

@@ -7,7 +7,7 @@
  * @position Internal helper; consumed by MonthScroller.tsx and DateInputNext.tsx
  *
  * A "month index" is a single integer that totally orders calendar months:
- * `year * 12 + (month - 1)`. The scroller is a list of equal-height panes, so
+ * `year * 12 + (month - 1)`. The scroller is a list of equal-width panes, so
  * one integer converts freely between a month, a row in that list, and a
  * scroll offset — which is the whole trick behind continuous scrolling.
  *
@@ -48,18 +48,38 @@ export function clampIndex(value: number, min: number, max: number): number {
 /**
  * The month a scrollport is resting on (or nearest to, mid-scroll).
  *
- * Returns a row offset from the top of the list, not a month index — add
+ * Returns a row offset from the start of the list, not a month index — add
  * `minMonthIndex` for that.
+ *
+ * `scrollOffset` is `scrollLeft` for the horizontal scroller. Under RTL that
+ * is NEGATIVE — the spec has the inline start at 0 and scrolling run down
+ * from there — so the sign is normalized away here rather than at each call
+ * site, where forgetting it would silently pin the calendar to month zero.
  */
-export function rowAtScrollTop(
-  scrollTop: number,
-  paneBlockSize: number,
+export function rowAtScrollOffset(
+  scrollOffset: number,
+  paneSize: number,
   rowCount: number,
+  isRTL: boolean = false,
 ): number {
-  if (paneBlockSize <= 0) {
+  if (paneSize <= 0) {
     return 0;
   }
-  return clampIndex(Math.round(scrollTop / paneBlockSize), 0, rowCount - 1);
+  const distance = isRTL ? -scrollOffset : scrollOffset;
+  return clampIndex(Math.round(distance / paneSize), 0, rowCount - 1);
+}
+
+/**
+ * The scroll offset that brings `row` to rest, ready for `scrollTo`. The
+ * inverse of {@link rowAtScrollOffset}, including its RTL sign.
+ */
+export function scrollOffsetForRow(
+  row: number,
+  paneSize: number,
+  isRTL: boolean = false,
+): number {
+  const distance = row * paneSize;
+  return isRTL ? -distance : distance;
 }
 
 export interface PaneWindow {

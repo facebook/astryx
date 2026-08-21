@@ -46,15 +46,18 @@ export const dateInputNextVars = stylex.defineVars({
    * Height of one wheel option row, and so the spacing between options and
    * the height of the selection band.
    *
-   * 34px against a day's 44px: a wheel row is scroll-first — a value is
+   * 28px against a day's 44px: a wheel row is scroll-first — a value is
    * chosen by bringing it under the band, and tapping one is a shortcut
    * rather than the mechanism — so it does not carry a day cell's tap-target
    * duty, and a mis-tap costs nothing, because the neighbouring rows are the
-   * same control and the result is visible immediately. Tighter also matches
-   * the platform pickers this imitates (iOS rows are ~32) and puts ~8 options
-   * on screen instead of ~6, which is rather the point of a wheel.
+   * same control and the result is visible immediately.
+   *
+   * The row is deliberately close to the text it holds (17px), the way a
+   * platform picker packs them: the list should read as one continuous
+   * column of values, not as a stack of buttons with air between them. At
+   * this height ~9 options are on screen.
    */
-  '--date-input-next-wheel-item-size': '34px',
+  '--date-input-next-wheel-item-size': '28px',
 });
 
 const DAY_SIZE = dateInputNextVars['--date-input-next-day-size'];

@@ -39,6 +39,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useCalendarDays} from '@astryxdesign/core/Calendar';
+import {useDirection} from '@astryxdesign/core/i18n';
 import {
   colorVars,
   radiusVars,
@@ -61,13 +62,13 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
 } from '@astryxdesign/core/utils';
 import {dateInputNextVars, dateInputNextGeometry} from './tokens.stylex';
-import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {
   fromMonthIndex,
   monthIndexOf,
   paneWindow,
-  rowAtScrollTop,
+  rowAtScrollOffset,
   rowsIn,
+  scrollOffsetForRow,
 } from './monthGeometry';
 
 const DAY_SIZE = dateInputNextVars['--date-input-next-day-size'];
@@ -85,29 +86,33 @@ const styles = stylex.create({
   scroller: {
     position: 'relative',
     blockSize: dateInputNextGeometry.paneBlockSize,
-    // Stated, not inherited from the reset: the pane height, the snap offsets
-    // and the virtualization all key off clientHeight, so a consumer without
-    // reset.css (or with a stray box-sizing rule — the reset's is
+    // Stated, not inherited from the reset: the pane size, the snap offsets
+    // and the virtualization all key off the measured box, so a consumer
+    // without reset.css (or with a stray box-sizing rule — the reset's is
     // zero-specificity `:where`) must not be able to change what it means.
     boxSizing: 'border-box',
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    // The paging behaviour. Every snap area is a full pane, so the scroller
-    // has exactly one resting position per month.
-    scrollSnapType: 'y mandatory',
-    // Keeps a fling inside the picker instead of handing it to the sheet or
-    // the page behind it once the ends are reached.
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    // The paging behaviour, now along the inline axis. Every snap area is a
+    // full pane, so there is exactly one resting position per month.
+    scrollSnapType: 'x mandatory',
+    // Keeps a fling inside the picker rather than handing it to the page.
     overscrollBehavior: 'contain',
     scrollbarWidth: 'none',
-    touchAction: 'pan-y',
+    // pan-x, so the browser keeps horizontal pans here and hands VERTICAL
+    // ones straight to the sheet. That is why this scroller no longer claims
+    // the gesture the way the wheels do: with the axes separated there is
+    // nothing to fight over, and a downward drag on the calendar can go back
+    // to meaning swipe-to-dismiss.
+    touchAction: 'pan-x',
   },
   spacer: {
     position: 'relative',
-    inlineSize: '100%',
+    blockSize: '100%',
   },
   pane: {
     position: 'absolute',
-    insetInline: 0,
+    insetBlock: 0,
     blockSize: dateInputNextGeometry.paneBlockSize,
     scrollSnapAlign: 'start',
     // No `scroll-snap-stop: always`. It would cap every fling at one month,
@@ -212,11 +217,14 @@ const styles = stylex.create({
 });
 
 const dynamic = stylex.create({
-  spacer: (blockSize: number) => ({
-    blockSize: `${blockSize}px`,
+  spacer: (inlineSize: number) => ({
+    inlineSize: `${inlineSize}px`,
   }),
-  pane: (insetBlockStart: number) => ({
-    insetBlockStart: `${insetBlockStart}px`,
+  // insetInlineStart, not left: under RTL the panes have to lay out from the
+  // right, and the scroll math mirrors with them (see scrollOffsetForRow).
+  pane: (insetInlineStart: number, inlineSize: number) => ({
+    insetInlineStart: `${insetInlineStart}px`,
+    inlineSize: `${inlineSize}px`,
   }),
 });
 
@@ -266,10 +274,14 @@ export function MonthScroller({
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const rowCount = maxMonthIndex - minMonthIndex + 1;
 
-  // Pane height is read from layout, never assumed: it is whatever the CSS
-  // says the scrollport is, so a theme retuning --date-input-next-day-size
-  // moves the snap offsets and the virtualization together.
-  const [paneBlockSize, setPaneBlockSize] = useState(0);
+  // Pane WIDTH is read from layout, never assumed: it is whatever the CSS
+  // says the scrollport is, so the snap offsets and the virtualization follow
+  // a resize (rotation, a split-screen change) without re-deriving anything.
+  const [paneSize, setPaneSize] = useState(0);
+  // Which way the inline axis runs. Under RTL the panes lay out from the
+  // right and scrollLeft counts DOWN from 0, so every conversion between a
+  // row and a scroll offset has to know.
+  const isRTL = useDirection() === 'rtl';
   const [centerRow, setCenterRow] = useState(initialMonthIndex - minMonthIndex);
   // The visible row, mirrored so the scroll handler can tell "changed" from
   // "same" without reading state, and notify the parent OUTSIDE a state
@@ -295,11 +307,11 @@ export function MonthScroller({
     }
     const measure = () => {
       // Ignore zero: the picker can be mounted inside something not yet
-      // displayed (a closed BottomSheet), and a zero height would unmount
+      // displayed (a closed BottomSheet), and a zero width would unmount
       // every pane and lose the scroll position.
-      const measured = scroller.clientHeight;
+      const measured = scroller.clientWidth;
       if (measured > 0) {
-        setPaneBlockSize(measured);
+        setPaneSize(measured);
       }
     };
     measure();
@@ -313,17 +325,21 @@ export function MonthScroller({
   const hasPositionedRef = useRef(false);
   useLayoutEffect(() => {
     const scroller = scrollerRef.current;
-    if (scroller == null || paneBlockSize === 0 || hasPositionedRef.current) {
+    if (scroller == null || paneSize === 0 || hasPositionedRef.current) {
       return;
     }
     hasPositionedRef.current = true;
-    scroller.scrollTop = (initialMonthIndex - minMonthIndex) * paneBlockSize;
-  }, [paneBlockSize, initialMonthIndex, minMonthIndex]);
+    scroller.scrollLeft = scrollOffsetForRow(
+      initialMonthIndex - minMonthIndex,
+      paneSize,
+      isRTL,
+    );
+  }, [paneSize, initialMonthIndex, minMonthIndex, isRTL]);
 
   const scrollToMonth = useCallback(
     (monthIndex: number, behavior: ScrollBehavior = 'smooth') => {
       const scroller = scrollerRef.current;
-      if (scroller == null || paneBlockSize === 0) {
+      if (scroller == null || paneSize === 0) {
         return;
       }
       const row = Math.min(
@@ -342,9 +358,12 @@ export function MonthScroller({
         setCenterRow(row);
         return;
       }
-      scroller.scrollTo({top: row * paneBlockSize, behavior});
+      scroller.scrollTo({
+        left: scrollOffsetForRow(row, paneSize, isRTL),
+        behavior,
+      });
     },
-    [paneBlockSize, minMonthIndex, rowCount],
+    [paneSize, minMonthIndex, rowCount, isRTL],
   );
 
   // Deliberately un-keyed: it runs after every render, costs a null check, and
@@ -352,19 +371,24 @@ export function MonthScroller({
   useLayoutEffect(() => {
     const row = pendingScrollRef.current;
     const scroller = scrollerRef.current;
-    if (row == null || scroller == null || paneBlockSize === 0) {
+    if (row == null || scroller == null || paneSize === 0) {
       return;
     }
     pendingScrollRef.current = null;
-    scroller.scrollTo({top: row * paneBlockSize, behavior: 'auto'});
+    scroller.scrollTo({
+      left: scrollOffsetForRow(row, paneSize, isRTL),
+      behavior: 'auto',
+    });
   });
 
   useImperativeHandle(handleRef, () => ({scrollToMonth}), [scrollToMonth]);
 
-  // Keep the finger. Inside a BottomSheet a downward drag here would otherwise
-  // be read as swipe-to-dismiss — measured dismissing the sheet outright
-  // before this existed. See useOwnScrollGesture.
-  useOwnScrollGesture(scrollerRef);
+  // No gesture claim here any more, unlike the wheels. The scroller pages
+  // along the INLINE axis now and `touch-action: pan-x` splits the gesture by
+  // direction: horizontal pans stay here, vertical ones go straight to the
+  // sheet. So there is nothing to fight over, and a downward drag on the
+  // calendar goes back to meaning swipe-to-dismiss — which is what a sheet
+  // should do. The wheels still claim, because they are still vertical.
 
   // rAF-throttled: a touch scroll fires far more scroll events than frames,
   // and all this does is move a label and widen a window.
@@ -377,7 +401,7 @@ export function MonthScroller({
     // to be handled by that stale listener. Every pane then unmounts except
     // rows 0-2, and `scroll-snap-type: mandatory` yanks the scroller to the
     // nearest surviving snap area, a century away from where it just landed.
-    if (scroller == null || paneBlockSize === 0) {
+    if (scroller == null || paneSize === 0) {
       return;
     }
     const onScroll = () => {
@@ -386,7 +410,12 @@ export function MonthScroller({
       }
       frameRef.current = requestAnimationFrame(() => {
         frameRef.current = undefined;
-        const row = rowAtScrollTop(scroller.scrollTop, paneBlockSize, rowCount);
+        const row = rowAtScrollOffset(
+          scroller.scrollLeft,
+          paneSize,
+          rowCount,
+          isRTL,
+        );
         if (row === centerRowRef.current) {
           return;
         }
@@ -403,7 +432,7 @@ export function MonthScroller({
         frameRef.current = undefined;
       }
     };
-  }, [paneBlockSize, rowCount, minMonthIndex]);
+  }, [paneSize, rowCount, minMonthIndex, isRTL]);
 
   // Move the keyboard focus by whole days and let the scroller follow. Paging
   // by month is PageUp/PageDown; everything else is the APG grid vocabulary.
@@ -496,16 +525,14 @@ export function MonthScroller({
       data-scroller="months"
       {...stylex.props(styles.scroller)}>
       <div
-        {...stylex.props(
-          styles.spacer,
-          dynamic.spacer(rowCount * paneBlockSize),
-        )}>
-        {paneBlockSize > 0 &&
+        {...stylex.props(styles.spacer, dynamic.spacer(rowCount * paneSize))}>
+        {paneSize > 0 &&
           rowsIn(visibleRows).map(row => (
             <MonthPane
               key={row}
               monthIndex={minMonthIndex + row}
-              insetBlockStart={row * paneBlockSize}
+              insetInlineStart={row * paneSize}
+              inlineSize={paneSize}
               selectedDate={selectedDate}
               focusedDate={focusedDate}
               today={today}
@@ -525,7 +552,8 @@ MonthScroller.displayName = 'MonthScroller';
 
 interface MonthPaneProps {
   monthIndex: number;
-  insetBlockStart: number;
+  insetInlineStart: number;
+  inlineSize: number;
   selectedDate: PlainDate | null;
   focusedDate: PlainDate | null;
   today: PlainDate;
@@ -545,7 +573,8 @@ interface MonthPaneProps {
  */
 function MonthPane({
   monthIndex,
-  insetBlockStart,
+  insetInlineStart,
+  inlineSize,
   selectedDate,
   focusedDate,
   today,
@@ -596,7 +625,10 @@ function MonthPane({
       role="grid"
       aria-label={monthLabel}
       data-month={monthLabel}
-      {...stylex.props(styles.pane, dynamic.pane(insetBlockStart))}>
+      {...stylex.props(
+        styles.pane,
+        dynamic.pane(insetInlineStart, inlineSize),
+      )}>
       {weeks.map(week => (
         <div key={week[0].iso} role="row" {...stylex.props(styles.row)}>
           {week.map(day => {

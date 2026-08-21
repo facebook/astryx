@@ -42,7 +42,8 @@ import {
   monthIndexOf,
   fromMonthIndex,
   clampIndex,
-  rowAtScrollTop,
+  rowAtScrollOffset,
+  scrollOffsetForRow,
   paneWindow,
   rowsIn,
   DEFAULT_MONTH_REACH,
@@ -58,8 +59,14 @@ class MockResizeObserver {
   disconnect() {}
 }
 
-/** One pane at the default 44px day size: 6 rows. */
+/** An arbitrary pane size for the pure geometry tests. */
 const PANE = 264;
+/**
+ * What the month scrollport measures as. The scroller pages along the INLINE
+ * axis, so its pane size is a WIDTH — a phone's worth, since the value only
+ * has to be non-zero and consistent for the virtualization to mount panes.
+ */
+const SCROLLPORT_WIDTH = 360;
 
 /** Matches the repo-wide setup polyfill, so hover-gated behavior still works. */
 const HOVER_CAPABLE = /\(\s*hover\s*:\s*hover\s*\)/;
@@ -94,19 +101,19 @@ function setViewport(kind: 'mobile' | 'desktop'): void {
  * EVERY later DOM read take a slow path, measured at ~2.4s per test here.
  */
 function withLayout<T>(fn: () => T): T {
-  // jsdom defines clientHeight on Element.prototype; shadowing it on
+  // jsdom defines clientWidth on Element.prototype; shadowing it on
   // HTMLElement.prototype and deleting the shadow afterwards restores the
   // original getter without having to copy its descriptor.
-  Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+  Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
     configurable: true,
     get(this: HTMLElement) {
-      return this.dataset?.scroller === 'months' ? PANE : 0;
+      return this.dataset?.scroller === 'months' ? SCROLLPORT_WIDTH : 0;
     },
   });
   try {
     return fn();
   } finally {
-    delete (HTMLElement.prototype as {clientHeight?: unknown}).clientHeight;
+    delete (HTMLElement.prototype as {clientWidth?: unknown}).clientWidth;
   }
 }
 
@@ -573,6 +580,38 @@ describe('DateInputNext — calendar surface', () => {
     expect(tabbable[0]).toHaveAttribute('data-date', '2026-03-21');
   });
 
+  it('pages a month with the header arrows', () => {
+    renderAndOpen();
+    const header = () =>
+      document.querySelector<HTMLElement>(
+        `.${stableClassName('date-input-next-title')}`,
+      )!;
+    expect(header()).toHaveTextContent('March 2026');
+    fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+    expect(header()).toHaveTextContent('April 2026');
+    fireEvent.click(screen.getByRole('button', {name: 'Previous month'}));
+    expect(header()).toHaveTextContent('March 2026');
+  });
+
+  it('disables an arrow at the end of the reachable range', () => {
+    // Kept mounted rather than hidden, so the title does not shift sideways
+    // on the first or last month.
+    renderAndOpen(
+      <Controlled initial="2026-03-10" min="2026-03-01" max="2026-03-31" />,
+    );
+    expect(screen.getByRole('button', {name: 'Previous month'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Next month'})).toBeDisabled();
+  });
+
+  it('does not change the selection when paging', () => {
+    const onChange = vi.fn();
+    renderAndOpen(<Controlled initial="2026-03-21" onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+    // Navigating is not selecting — the mistake the old Today button made.
+    expect(onChange).not.toHaveBeenCalled();
+    expect(field()).toHaveValue('March 21, 2026');
+  });
+
   it('disables days outside min/max and refuses to commit them', () => {
     const onChange = vi.fn();
     renderAndOpen(
@@ -829,17 +868,18 @@ describe('DateInputNext — nested scrollers keep their own touch gesture', () =
     return el.dispatchEvent(event);
   };
 
-  it('stops a touch on the calendar from reaching the sheet', () => {
+  it('lets a touch on the calendar reach the sheet, now that it pages sideways', () => {
     renderAndOpen();
     const scroller = document.querySelector('[data-scroller="months"]')!;
     const ancestor = watchAncestor();
     touch(scroller, 'touchstart');
     touch(scroller, 'touchmove');
-    // Without this, the sheet reads the body's scrollTop — which is 0 forever
-    // in a sheet sized to hug its content — and promotes the drag to a
-    // dismiss. Measured doing exactly that before the fix.
-    expect(ancestor.seen).not.toContain('touchstart');
-    expect(ancestor.seen).not.toContain('touchmove');
+    // The calendar used to claim the gesture, because it scrolled vertically
+    // and the sheet read every downward drag as a dismiss. Paging sideways
+    // removes the conflict: `touch-action: pan-x` keeps horizontal pans here
+    // and hands vertical ones to the sheet, so a downward drag can go back to
+    // meaning swipe-to-dismiss. The wheels still claim — they are vertical.
+    expect(ancestor.seen).toEqual(['touchstart', 'touchmove']);
     ancestor.stop();
   });
 
@@ -924,25 +964,49 @@ describe('monthGeometry', () => {
     expect(clampIndex(15, 10, 20)).toBe(15);
   });
 
-  describe('rowAtScrollTop', () => {
+  describe('rowAtScrollOffset', () => {
     it('maps an exact offset to its row', () => {
-      expect(rowAtScrollTop(0, PANE, 100)).toBe(0);
-      expect(rowAtScrollTop(PANE * 7, PANE, 100)).toBe(7);
+      expect(rowAtScrollOffset(0, PANE, 100)).toBe(0);
+      expect(rowAtScrollOffset(PANE * 7, PANE, 100)).toBe(7);
     });
 
     it('rounds to the nearest row mid-scroll', () => {
-      expect(rowAtScrollTop(PANE * 7 + 10, PANE, 100)).toBe(7);
-      expect(rowAtScrollTop(PANE * 7 - 10, PANE, 100)).toBe(7);
-      expect(rowAtScrollTop(PANE * 6.6, PANE, 100)).toBe(7);
+      expect(rowAtScrollOffset(PANE * 7 + 10, PANE, 100)).toBe(7);
+      expect(rowAtScrollOffset(PANE * 7 - 10, PANE, 100)).toBe(7);
+      expect(rowAtScrollOffset(PANE * 6.6, PANE, 100)).toBe(7);
     });
 
     it('never leaves the list', () => {
-      expect(rowAtScrollTop(-500, PANE, 100)).toBe(0);
-      expect(rowAtScrollTop(PANE * 1000, PANE, 100)).toBe(99);
+      expect(rowAtScrollOffset(-500, PANE, 100)).toBe(0);
+      expect(rowAtScrollOffset(PANE * 1000, PANE, 100)).toBe(99);
     });
 
-    it('is 0 before the pane height is known, rather than dividing by zero', () => {
-      expect(rowAtScrollTop(1234, 0, 100)).toBe(0);
+    it('is 0 before the pane size is known, rather than dividing by zero', () => {
+      expect(rowAtScrollOffset(1234, 0, 100)).toBe(0);
+    });
+
+    it('reads RTL scrollLeft, which counts down from zero', () => {
+      // The spec puts the inline start at 0 and runs negative from there, so
+      // an unsigned read would pin an RTL calendar to month zero forever.
+      expect(rowAtScrollOffset(-PANE * 7, PANE, 100, true)).toBe(7);
+      expect(rowAtScrollOffset(-PANE * 7 - 10, PANE, 100, true)).toBe(7);
+      expect(rowAtScrollOffset(0, PANE, 100, true)).toBe(0);
+    });
+  });
+
+  describe('scrollOffsetForRow', () => {
+    it('is the inverse of rowAtScrollOffset, in both directions', () => {
+      for (const isRTL of [false, true]) {
+        for (const row of [0, 1, 7, 99]) {
+          const offset = scrollOffsetForRow(row, PANE, isRTL);
+          expect(rowAtScrollOffset(offset, PANE, 100, isRTL)).toBe(row);
+        }
+      }
+    });
+
+    it('runs negative under RTL', () => {
+      expect(scrollOffsetForRow(3, PANE, false)).toBe(PANE * 3);
+      expect(scrollOffsetForRow(3, PANE, true)).toBe(-PANE * 3);
     });
   });
 
@@ -971,10 +1035,14 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
   const dir = path.dirname(fileURLToPath(import.meta.url));
   const read = (file: string) => readFileSync(path.join(dir, file), 'utf8');
 
-  it('snaps the month scroller one whole pane at a time', () => {
+  it('pages the month scroller one whole pane at a time, horizontally', () => {
     const source = read('MonthScroller.tsx');
-    expect(source).toContain("scrollSnapType: 'y mandatory'");
+    expect(source).toContain("scrollSnapType: 'x mandatory'");
     expect(source).toContain("scrollSnapAlign: 'start'");
+    // pan-x is what splits the gesture by axis: horizontal pans stay with the
+    // calendar, vertical ones reach the sheet as swipe-to-dismiss. Without it
+    // the two would fight again, the way they did when this scrolled down.
+    expect(source).toContain("touchAction: 'pan-x'");
     // The pane and the scrollport must come from the same expression, or a
     // pane stops being exactly one screen and every snap offset drifts.
     expect(
@@ -982,11 +1050,40 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
     ).toHaveLength(2);
   });
 
+  it('positions panes with logical properties, so RTL mirrors', () => {
+    const source = read('MonthScroller.tsx');
+    // Scoped to the style objects: `scrollTo({left})` is the DOM API and is
+    // supposed to say left — it is the CSS that must stay logical, because
+    // physical `left` would lay the months out identically in both directions
+    // while the scroll math mirrored, and the two would disagree under RTL.
+    const styles = source
+      .slice(
+        source.indexOf('const styles = stylex.create('),
+        source.indexOf('export interface MonthScrollerHandle'),
+      )
+      // Comments explain the rule ("insetInlineStart, not left") and would
+      // otherwise trip it.
+      .replace(/\/\/.*$/gm, '');
+    expect(styles).toContain('insetInlineStart');
+    expect(styles).not.toMatch(/\bleft:/);
+    expect(styles).not.toMatch(/\bright:/);
+  });
+
   it('keeps the month scroller and the wheels on border-box', () => {
     // Load-bearing: clientHeight is the pane height, the snap offsets and the
     // virtualization all at once.
     expect(read('MonthScroller.tsx')).toContain("boxSizing: 'border-box'");
     expect(read('Wheel.tsx')).toContain("boxSizing: 'border-box'");
+  });
+
+  it('sizes the wheel row tighter than a day cell, with larger text', () => {
+    const tokens = read('tokens.stylex.ts');
+    // Scroll-first rows: closer together than day cells and closer to the
+    // text they hold, the way a platform picker packs them.
+    expect(tokens).toContain("'--date-input-next-wheel-item-size': '28px'");
+    expect(read('Wheel.tsx')).toContain(
+      "fontSize: typeScaleVars['--text-large-size']",
+    );
   });
 
   it('centers wheel rows and pads both ends so either extreme can reach the band', () => {
@@ -1019,6 +1116,27 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
     );
     expect(item).not.toContain('animationTimeline');
     expect(item).not.toContain("overflow: 'hidden'");
+  });
+
+  it('insets the sheet content equally on every edge', () => {
+    const source = read('MobileDateField.tsx');
+    // One inset, and the header/footer must not add their own on top of it —
+    // that is what put the title and Done 4px off the day grid's line.
+    expect(source).toContain("paddingInline: spacingVars['--spacing-4']");
+    expect(source).toContain("paddingBlockEnd: spacingVars['--spacing-4']");
+    // The block-start is the documented exception: the grab handle floats out
+    // of flow, so the content wrapper owes it the height it occupies.
+    expect(source).toContain("paddingBlockStart: spacingVars['--spacing-6']");
+    const header = source.slice(
+      source.indexOf('  header: {'),
+      source.indexOf('  title: {'),
+    );
+    expect(header).not.toContain('paddingInline');
+    const footer = source.slice(
+      source.indexOf('  footer: {'),
+      source.indexOf('  sheetBody: {'),
+    );
+    expect(footer).not.toContain('paddingInline');
   });
 
   it('floors the touch target without discarding the size prop', () => {

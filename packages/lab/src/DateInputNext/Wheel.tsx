@@ -116,7 +116,10 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
-    fontSize: typeScaleVars['--text-body-size'],
+    // Larger than body text, and larger than the calendar's day numbers: on
+    // a wheel the value under the band is the whole interface, and the rows
+    // above and below are read at a glance while moving.
+    fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
     whiteSpace: 'nowrap',

@@ -97,6 +97,7 @@ import {
   mergeProps,
   mergeRefs,
   normalizeDayOfWeek,
+  rtlStyles,
   themeProps,
   formatSharedDate,
   plainDateFromISO,
@@ -202,7 +203,51 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-2'],
     blockSize: sizeVars['--size-element-lg'],
-    paddingInline: spacingVars['--spacing-1'],
+    // No inline padding of its own: the content box owns the inset, and any
+    // extra here would push the arrows off the line the day grid sits on.
+  },
+  /**
+   * The chevrons page one month. They sit at the two corners, so the pair
+   * frames the title and each is under a thumb at the edge it points to —
+   * and they are the keyboard/pointer equivalent of the swipe, which is
+   * otherwise the only way to change month.
+   */
+  monthArrow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // A 44px target on a 24px glyph: the arrows are the smallest things in
+    // the picker and the easiest to miss.
+    inlineSize: dateInputNextVars['--date-input-next-day-size'],
+    blockSize: dateInputNextVars['--date-input-next-day-size'],
+    padding: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    borderRadius: radiusVars['--radius-full'],
+    backgroundColor: {
+      default: 'transparent',
+      '@media (hover: hover)': {
+        default: 'transparent',
+        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+          colorVars['--color-overlay-hover'],
+      },
+      ':active': colorVars['--color-overlay-pressed'],
+    },
+    color: colorVars['--color-icon-secondary'],
+    cursor: 'pointer',
+  },
+  monthArrowDisabled: {
+    // At the end of the reachable range. Kept mounted rather than hidden so
+    // the title does not shift sideways on the first or last month.
+    color: colorVars['--color-icon-disabled'],
+    cursor: 'not-allowed',
+  },
+  /** Centred between the arrows, and free to shrink before they do. */
+  titleSlot: {
+    display: 'flex',
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
   },
   title: {
     display: 'flex',
@@ -210,7 +255,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     blockSize: '100%',
     paddingInline: spacingVars['--spacing-2'],
-    marginInlineStart: `calc(-1 * ${spacingVars['--spacing-2']})`,
     borderWidth: 0,
     borderStyle: 'none',
     borderRadius: radiusVars['--radius-element'],
@@ -291,14 +335,17 @@ const styles = stylex.create({
     justifyContent: 'flex-end',
     gap: spacingVars['--spacing-2'],
     paddingBlockStart: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-1'],
+    // Same reason as the header: the content box owns the inline inset, so
+    // Done's edge lines up with the grid's rather than sitting 4px inside it.
   },
   sheetBody: {
-    paddingInline: spacingVars['--spacing-2'],
-    // Clears the sheet's floating grab handle, which is out of flow and so
-    // costs no layout space of its own — the content wrapper owes it.
+    // One inset on every edge. The block-start is the exception and has to
+    // be: the sheet's grab handle floats out of flow, costing no layout
+    // height of its own, so the content wrapper owes it the 24px it occupies
+    // — which reads as the same inset, because the handle sits in it.
+    paddingInline: spacingVars['--spacing-4'],
     paddingBlockStart: spacingVars['--spacing-6'],
-    paddingBlockEnd: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-4'],
   },
   divider: {
     blockSize: borderVars['--border-width'],
@@ -491,6 +538,25 @@ export function MobileDateField({
     [fireChange],
   );
 
+  // One month either way, clamped to the reachable range. Goes through the
+  // same scrollToMonth the swipe settles on, so the arrows and the gesture
+  // cannot disagree about where a month rests.
+  const stepMonth = useCallback(
+    (delta: number) => {
+      const target = clampIndex(
+        monthIndex + delta,
+        minMonthIndex,
+        maxMonthIndex,
+      );
+      if (target === monthIndex) {
+        return;
+      }
+      setMonthIndex(target);
+      scrollerHandle.current?.scrollToMonth(target, 'smooth');
+    },
+    [monthIndex, minMonthIndex, maxMonthIndex],
+  );
+
   // A wheel commit steers the scroller immediately, even though it is behind
   // the wheels: it keeps its layout box while hidden, so by the time the
   // wheels close it is already resting on the new month.
@@ -522,24 +588,57 @@ export function MobileDateField({
       <div {...stylex.props(styles.header)}>
         <button
           type="button"
-          onClick={() => setIsWheelOpen(open => !open)}
-          aria-expanded={isWheelOpen}
-          aria-label={`${monthYearLabel}, ${t('@astryx.dateInput.chooseMonthYear')}`}
-          {...mergeProps(
-            // mergeProps, not two spreads: both halves carry a className, and
-            // the later spread would drop the theme target entirely.
-            themeProps('date-input-next-title', {
-              state: isWheelOpen ? 'expanded' : 'collapsed',
-            }),
-            stylex.props(styles.title, focusOutlineStyles.focusVisible),
+          onClick={() => stepMonth(-1)}
+          disabled={monthIndex <= minMonthIndex}
+          aria-label={t('@astryx.calendar.previousMonth')}
+          {...stylex.props(
+            styles.monthArrow,
+            monthIndex <= minMonthIndex && styles.monthArrowDisabled,
+            focusOutlineStyles.focusVisible,
           )}>
-          <span>{monthYearLabel}</span>
-          <span
-            {...stylex.props(
-              styles.titleChevron,
-              isWheelOpen && styles.titleChevronOpen,
+          {/* Mirrored under RTL by the shared rtl helper: "previous" is the
+              earlier month, which is on the right when the axis runs that
+              way — and the pane order mirrors with it. */}
+          <span {...stylex.props(rtlStyles.mirror)}>
+            <Icon icon="chevronLeft" size="md" color="inherit" />
+          </span>
+        </button>
+        <span {...stylex.props(styles.titleSlot)}>
+          <button
+            type="button"
+            onClick={() => setIsWheelOpen(open => !open)}
+            aria-expanded={isWheelOpen}
+            aria-label={`${monthYearLabel}, ${t('@astryx.dateInput.chooseMonthYear')}`}
+            {...mergeProps(
+              // mergeProps, not two spreads: both halves carry a className, and
+              // the later spread would drop the theme target entirely.
+              themeProps('date-input-next-title', {
+                state: isWheelOpen ? 'expanded' : 'collapsed',
+              }),
+              stylex.props(styles.title, focusOutlineStyles.focusVisible),
             )}>
-            <Icon icon="chevronDown" size="sm" color="secondary" />
+            <span>{monthYearLabel}</span>
+            <span
+              {...stylex.props(
+                styles.titleChevron,
+                isWheelOpen && styles.titleChevronOpen,
+              )}>
+              <Icon icon="chevronDown" size="sm" color="secondary" />
+            </span>
+          </button>
+        </span>
+        <button
+          type="button"
+          onClick={() => stepMonth(1)}
+          disabled={monthIndex >= maxMonthIndex}
+          aria-label={t('@astryx.calendar.nextMonth')}
+          {...stylex.props(
+            styles.monthArrow,
+            monthIndex >= maxMonthIndex && styles.monthArrowDisabled,
+            focusOutlineStyles.focusVisible,
+          )}>
+          <span {...stylex.props(rtlStyles.mirror)}>
+            <Icon icon="chevronRight" size="md" color="inherit" />
           </span>
         </button>
       </div>
