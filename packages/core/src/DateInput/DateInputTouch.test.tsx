@@ -49,6 +49,7 @@ import {
   DEFAULT_MONTH_REACH,
 } from './monthGeometry';
 import {SWIPE_DISTANCE} from './useOwnScrollGesture';
+import {DRAG_SLOP} from './usePointerDragScroll';
 
 // ---------------------------------------------------------------------------
 // jsdom scaffolding
@@ -226,8 +227,7 @@ function Controlled({
 }
 
 /** The closed field — a real input on both surfaces. */
-const field = (): HTMLInputElement =>
-  screen.getByRole('combobox');
+const field = (): HTMLInputElement => screen.getByRole('combobox');
 
 /** Render, then open the picker. Both mount panes, so both need the layout. */
 function renderAndOpen(
@@ -782,6 +782,28 @@ describe('DateInput — month/year wheels', () => {
     expect(screen.getByRole('listbox', {name: 'Year'})).toBeInTheDocument();
   });
 
+  /**
+   * The arrows step the calendar, and the calendar is not on screen. They
+   * keep their layout box rather than unmounting: they are the tallest thing
+   * in the header on a coarse pointer (44px against the title's 36), so
+   * dropping them would shorten it and shift the sheet mid-cross-fade.
+   */
+  it('hides the month arrows while the wheels are up', () => {
+    renderAndOpen();
+    const arrows = document.querySelector<HTMLElement>(
+      '[data-arrows="months"]',
+    )!;
+    expect(arrows).not.toHaveAttribute('inert');
+
+    openWheels();
+    expect(arrows).toHaveAttribute('inert');
+    // Still in the layout, so the header cannot change height.
+    expect(arrows).toBeInTheDocument();
+
+    fireEvent.click(title());
+    expect(arrows).not.toHaveAttribute('inert');
+  });
+
   it('offers twelve months, with the current one selected', () => {
     renderAndOpen();
     openWheels();
@@ -1111,6 +1133,178 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
       within(pane('March 2026')).getByRole('button', {name: /March 25, 2026/}),
     );
     expect(onChange).toHaveBeenCalledWith('2026-03-25');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dragging a wheel with a mouse
+// ---------------------------------------------------------------------------
+
+/**
+ * A wheel is a scroll container, so a finger pans it for free. A mouse gets
+ * nothing: browsers do not drag-scroll an overflow container, so pressing and
+ * pulling on the one control shaped like a thing you spin did nothing at all.
+ *
+ * It matters on desktop specifically because that is where this surface is
+ * reviewed, themed and screenshotted.
+ */
+describe('DateInput — a mouse can drag a wheel', () => {
+  const title = () =>
+    document.querySelector<HTMLElement>(
+      `.${stableClassName('date-input-touch-title')}`,
+    )!;
+
+  /** jsdom has no layout: give the rows a height and the wheel a scrollTop. */
+  function withWheelLayout<T>(fn: () => T): T {
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.getAttribute('role') === 'option' ? 28 : 0;
+      },
+    });
+    try {
+      return fn();
+    } finally {
+      // @ts-expect-error - deleting the shadow restores Element's own getter
+      delete HTMLElement.prototype.offsetHeight;
+    }
+  }
+
+  const wheel = () => screen.getByRole('listbox', {name: 'Month'});
+
+  const pointer = (
+    type: string,
+    {y = 0, pointerType = 'mouse', button = 0, id = 1} = {},
+  ) => {
+    const event = new Event(type, {bubbles: true, cancelable: true});
+    Object.defineProperties(event, {
+      clientY: {value: y},
+      pointerId: {value: id},
+      pointerType: {value: pointerType},
+      button: {value: button},
+    });
+    return event;
+  };
+
+  /** Stubs jsdom's missing capture API and records scrollTop as it moves. */
+  function trackable(el: HTMLElement) {
+    let top = 0;
+    Object.defineProperty(el, 'scrollTop', {
+      configurable: true,
+      get: () => top,
+      set: (v: number) => {
+        top = v;
+      },
+    });
+    el.setPointerCapture = () => {};
+    el.releasePointerCapture = () => {};
+    el.hasPointerCapture = () => true;
+    el.scrollTo = ((opts: ScrollToOptions) => {
+      top = opts.top ?? top;
+    }) as HTMLElement['scrollTo'];
+    return {
+      get scrollTop() {
+        return top;
+      },
+    };
+  }
+
+  it('scrolls the wheel when a mouse drags it', () => {
+    renderAndOpen();
+    fireEvent.click(title());
+    withWheelLayout(() => {
+      const el = wheel();
+      const track = trackable(el);
+      el.dispatchEvent(pointer('pointerdown', {y: 200}));
+      el.dispatchEvent(pointer('pointermove', {y: 160}));
+      // Content follows the hand: pulling up scrolls further down the list.
+      expect(track.scrollTop).toBe(40);
+      el.dispatchEvent(pointer('pointerup', {y: 160}));
+      // And the release lands on a row boundary rather than between two.
+      expect(track.scrollTop % 28).toBe(0);
+    });
+  });
+
+  it('ignores movement too small to be a drag, so a click is still a click', () => {
+    renderAndOpen();
+    fireEvent.click(title());
+    withWheelLayout(() => {
+      const el = wheel();
+      const track = trackable(el);
+      el.dispatchEvent(pointer('pointerdown', {y: 200}));
+      el.dispatchEvent(pointer('pointermove', {y: 200 - (DRAG_SLOP - 1)}));
+      expect(track.scrollTop).toBe(0);
+    });
+  });
+
+  it('leaves touch and pen alone — they pan natively, and better', () => {
+    renderAndOpen();
+    fireEvent.click(title());
+    withWheelLayout(() => {
+      for (const pointerType of ['touch', 'pen']) {
+        const el = wheel();
+        const track = trackable(el);
+        el.dispatchEvent(pointer('pointerdown', {y: 200, pointerType}));
+        el.dispatchEvent(pointer('pointermove', {y: 120, pointerType}));
+        expect(track.scrollTop).toBe(0);
+        el.dispatchEvent(pointer('pointerup', {y: 120, pointerType}));
+      }
+    });
+  });
+
+  it('ignores a secondary button, which belongs to the context menu', () => {
+    renderAndOpen();
+    fireEvent.click(title());
+    withWheelLayout(() => {
+      const el = wheel();
+      const track = trackable(el);
+      el.dispatchEvent(pointer('pointerdown', {y: 200, button: 2}));
+      el.dispatchEvent(pointer('pointermove', {y: 120}));
+      expect(track.scrollTop).toBe(0);
+    });
+  });
+
+  /**
+   * `scroll-snap-type: y mandatory` re-snaps after every scroll, programmatic
+   * ones included. Measured with it left on: 7 of 8 five-pixel drag steps were
+   * yanked back to a snap position, so the wheel stuck to a row and then
+   * jumped a whole one.
+   */
+  it('suspends snapping for the drag, and restores it after', () => {
+    renderAndOpen();
+    fireEvent.click(title());
+    withWheelLayout(() => {
+      const el = wheel();
+      trackable(el);
+      expect(el.style.scrollSnapType).toBe('');
+      el.dispatchEvent(pointer('pointerdown', {y: 200}));
+      el.dispatchEvent(pointer('pointermove', {y: 160}));
+      expect(el.style.scrollSnapType).toBe('none');
+      el.dispatchEvent(pointer('pointerup', {y: 160}));
+      el.dispatchEvent(new Event('scrollend'));
+      expect(el.style.scrollSnapType).toBe('');
+    });
+  });
+
+  /**
+   * BottomSheet starts its own drag-to-dismiss from a `pointerdown` on its
+   * body and CAPTURES the pointer for it, which retargets every later pointer
+   * event — including the click. Measured before this: a click on a wheel row
+   * that wobbled more than a pixel selected nothing at all.
+   */
+  it('keeps the press away from the sheet, which would capture the pointer', () => {
+    renderAndOpen();
+    fireEvent.click(title());
+    withWheelLayout(() => {
+      const el = wheel();
+      trackable(el);
+      const seen: string[] = [];
+      const listener = (event: Event) => seen.push(event.type);
+      document.body.addEventListener('pointerdown', listener);
+      el.dispatchEvent(pointer('pointerdown', {y: 200}));
+      expect(seen).not.toContain('pointerdown');
+      document.body.removeEventListener('pointerdown', listener);
+    });
   });
 });
 

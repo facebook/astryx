@@ -218,6 +218,27 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     // The pair is the trailing item; the title takes the space before it.
     marginInlineStart: 'auto',
+    // Fades with the panels, for the same reason the weekday row does.
+    transitionProperty: 'opacity, visibility',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
+  },
+  /**
+   * Hidden while the wheels are up: they step the calendar, and the calendar
+   * is not on screen. Hidden rather than unmounted because they are the
+   * tallest thing in the header — dropping them would shorten it by 8px and
+   * shift the whole sheet just as the panels cross-fade.
+   *
+   * `visibility: hidden` also takes them out of the tab order and the
+   * accessibility tree, so there is nothing to reach that cannot be seen.
+   */
+  monthArrowsHidden: {
+    visibility: 'hidden',
+    opacity: 0,
+    pointerEvents: 'none',
   },
   /**
    * `Button`'s own sizes top out at 36px, which is fine for a mouse and short
@@ -629,14 +650,24 @@ export function TouchDateField({
             ]}
           />
         </button>
-        {/* Both arrows at the trailing corner, as a pair. `IconButton` gives
-            them Button's optical centring, focus ring, disabled treatment and
-            hit area — the hand-rolled version had the glyph off-centre.
+        {/* Both arrows at the trailing corner, as a pair — and only while the
+            calendar is the surface they step. `IconButton` gives them
+            Button's optical centring, focus ring, disabled treatment and hit
+            area; the hand-rolled version had the glyph off-centre.
 
             Mirrored under RTL by the shared helper: "previous" is the earlier
             month, which sits on the right when the inline axis runs that way,
             and the panes mirror with it. */}
-        <span {...stylex.props(styles.monthArrows)}>
+        <span
+          data-arrows="months"
+          // `inert` as well as the hidden styling: the fade keeps them
+          // `visible` until it finishes, and a control that is on its way out
+          // should not answer a click or a Tab in the meantime.
+          inert={isWheelOpen ? true : undefined}
+          {...stylex.props(
+            styles.monthArrows,
+            isWheelOpen && styles.monthArrowsHidden,
+          )}>
           <IconButton
             variant="ghost"
             size="sm"

@@ -45,6 +45,7 @@ import {
 import {focusOutlineStyles} from '../utils';
 import {dateInputTouchVars, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
+import {usePointerDragScroll} from './usePointerDragScroll';
 import {useScrollSettle} from './useScrollSettle';
 
 const ITEM_BLOCK_SIZE =
@@ -325,6 +326,11 @@ export function Wheel({
   // 'all': a wheel scrolls vertically, the same axis the sheet wants, so
   // there is no way to share — it takes every touch that lands on it.
   useOwnScrollGesture(scrollerRef, 'all', {isEnabled: isActive});
+
+  // A mouse cannot drag a scroll container, so without this the wheel ignores
+  // the one gesture its shape invites. Touch is untouched — it pans natively,
+  // with momentum this could not match. See usePointerDragScroll.
+  usePointerDragScroll(scrollerRef, isActive);
 
   // Commit on rest. A disabled row is bounced back to the committed one rather
   // than silently keeping a value the wheel is not showing.

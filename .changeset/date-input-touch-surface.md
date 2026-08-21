@@ -39,4 +39,12 @@ Also new, all additive:
   variables, and four `@astryx.dateInput.*` catalog keys for the picker's
   header and footer.
 
+The wheels also answer a mouse now. A wheel is a scroll container, so a finger
+pans it for free; a mouse got nothing, because browsers do not drag-scroll an
+overflow container — pressing and pulling on the one control shaped like a
+thing you spin did nothing at all. Dragging with a mouse works, and fixes a
+related bug on the way: BottomSheet begins its own drag from a `pointerdown`
+on its body and captures the pointer for it, so a click on a wheel row that
+wobbled more than a pixel or two used to select nothing.
+
 @imdreamrunner
