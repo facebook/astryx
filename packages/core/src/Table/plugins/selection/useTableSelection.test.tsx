@@ -13,6 +13,7 @@ import {act, render, renderHook, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Table} from '../../Table';
 import {useTableSelection} from './useTableSelection';
+import {colorVars} from '../../../theme/tokens.stylex';
 import type {BodyRowRenderProps, TableColumn} from '../../types';
 
 // =============================================================================
@@ -41,10 +42,12 @@ function SelectionTable({
   getIsItemSelectable,
   getIsItemEnabled,
   getRowLabel,
+  hasRowHighlight,
 }: {
   getIsItemSelectable?: (item: SelectableUser) => boolean;
   getIsItemEnabled?: (item: SelectableUser) => boolean;
   getRowLabel?: (item: SelectableUser) => string;
+  hasRowHighlight?: boolean;
 }) {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
@@ -78,6 +81,7 @@ function SelectionTable({
     getIsItemSelectable,
     getIsItemEnabled,
     getRowLabel,
+    hasRowHighlight,
   });
 
   return (
@@ -209,6 +213,78 @@ describe('useTableSelection', () => {
     const headerRow = screen.getAllByRole('row')[0];
     const headers = within(headerRow).getAllByRole('columnheader');
     expect(headers).toHaveLength(3);
+  });
+
+  describe('hasRowHighlight', () => {
+    const selectedBgColor = colorVars['--color-accent-muted'];
+
+    it('paints a checked row with the accent wash by default', async () => {
+      const user = userEvent.setup();
+      render(<SelectionTable />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+
+      const row = screen.getAllByRole('row')[1];
+      expect(row.style.backgroundColor).toBe(selectedBgColor);
+      expect(row).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('leaves the row background alone when hasRowHighlight is false', async () => {
+      const user = userEvent.setup();
+      render(<SelectionTable hasRowHighlight={false} />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+
+      const row = screen.getAllByRole('row')[1];
+      expect(row.style.backgroundColor).toBe('');
+      // The wash is opt-out; the semantics are not.
+      expect(row).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('clears an already-painted row when the flag flips to false', async () => {
+      const user = userEvent.setup();
+      const {rerender} = render(<SelectionTable />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+      expect(screen.getAllByRole('row')[1].style.backgroundColor).toBe(
+        selectedBgColor,
+      );
+
+      rerender(<SelectionTable hasRowHighlight={false} />);
+
+      const row = screen.getAllByRole('row')[1];
+      expect(row.style.backgroundColor).toBe('');
+      expect(row).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('repaints an already-checked row when the flag flips back to true', async () => {
+      const user = userEvent.setup();
+      const {rerender} = render(<SelectionTable hasRowHighlight={false} />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+      rerender(<SelectionTable hasRowHighlight />);
+
+      expect(screen.getAllByRole('row')[1].style.backgroundColor).toBe(
+        selectedBgColor,
+      );
+    });
+
+    it('never paints unchecked rows in either mode', async () => {
+      const user = userEvent.setup();
+      const {rerender} = render(<SelectionTable />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+      expect(screen.getAllByRole('row')[2].style.backgroundColor).toBe('');
+      expect(screen.getAllByRole('row')[2]).not.toHaveAttribute(
+        'aria-selected',
+      );
+
+      rerender(<SelectionTable hasRowHighlight={false} />);
+      expect(screen.getAllByRole('row')[2].style.backgroundColor).toBe('');
+      expect(screen.getAllByRole('row')[2]).not.toHaveAttribute(
+        'aria-selected',
+      );
+    });
   });
 
   it('unsubscribes detached row refs instead of accumulating listeners', () => {
