@@ -43,13 +43,12 @@ import {
   durationVars,
 } from '../theme/tokens.stylex';
 import {focusOutlineStyles} from '../utils';
-import {dateInputTouchVars, dateInputTouchGeometry} from './tokens.stylex';
+import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {usePointerDragScroll} from './usePointerDragScroll';
 import {useScrollSettle} from './useScrollSettle';
 
-const ITEM_BLOCK_SIZE =
-  dateInputTouchVars['--date-input-touch-wheel-item-size'];
+const ITEM_BLOCK_SIZE = dateInputTouchSizes.wheelItemSize;
 
 /**
  * Rows tip away from the centre of the wheel. 0% is a row just entering at the

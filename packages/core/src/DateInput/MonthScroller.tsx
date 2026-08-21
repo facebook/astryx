@@ -61,7 +61,7 @@ import {
   DATE_FORMAT_MONTH_YEAR,
   DATE_FORMAT_WITH_WEEKDAY,
 } from '../utils';
-import {dateInputTouchVars, dateInputTouchGeometry} from './tokens.stylex';
+import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {
   fromMonthIndex,
@@ -72,7 +72,7 @@ import {
   scrollOffsetForRow,
 } from './monthGeometry';
 
-const DAY_SIZE = dateInputTouchVars['--date-input-touch-day-size'];
+const DAY_SIZE = dateInputTouchSizes.daySize;
 
 /**
  * Panes mounted on each side of the visible one. Sized against a fast fling:

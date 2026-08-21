@@ -17,10 +17,3 @@ export type {
   DateInputStatus,
   DateInputStatusType,
 } from './DateInput';
-
-/**
- * Layout variables for the touch surface — the day cell and wheel row sizes.
- * Only meaningful where the primary pointer is a finger; the pointer surface
- * is unaffected by them.
- */
-export {dateInputTouchVars} from './tokens.stylex';

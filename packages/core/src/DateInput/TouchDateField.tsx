@@ -115,14 +115,14 @@ import {
   fromMonthIndex,
   monthIndexOf,
 } from './monthGeometry';
-import {dateInputTouchVars, dateInputTouchGeometry} from './tokens.stylex';
+import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 
 /**
  * The comfortable minimum tap target on both iOS and Android. Applied as a
  * FLOOR under the size prop rather than replacing it: `size` still means what
  * it means, it just cannot produce a control a thumb misses.
  */
-const TOUCH_TARGET = dateInputTouchVars['--date-input-touch-day-size'];
+const TOUCH_TARGET = dateInputTouchSizes.daySize;
 
 /**
  * Each leg of the panel swap: the outgoing panel's fade out, then the
@@ -767,14 +767,14 @@ export function TouchDateField({
           aria-label={t('@astryx.dateInput.chooseMonthYear', {
             monthYear: monthYearLabel,
           })}
-          {...mergeProps(
-            // mergeProps, not two spreads: both halves carry a className, and
-            // the later spread would drop the theme target entirely.
-            themeProps('date-input-touch-title', {
-              state: isWheelOpen ? 'expanded' : 'collapsed',
-            }),
-            stylex.props(styles.title, focusOutlineStyles.focusVisible),
-          )}>
+          // A `data-` hook rather than a theme target. `themeProps` would
+          // publish `astryx-date-input-touch-title` as a themeable selector,
+          // and this is internal structure of the sheet — the field and its
+          // toggle icon are the documented targets, and nothing has asked to
+          // restyle the header button. Adding a target later is additive;
+          // withdrawing one is not.
+          data-title="month-year"
+          {...stylex.props(styles.title, focusOutlineStyles.focusVisible)}>
           <span>{monthYearLabel}</span>
           <Icon
             icon="chevronDown"

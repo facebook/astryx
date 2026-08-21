@@ -292,13 +292,6 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   // other.
   '--_card-elevation',
   '--_card-ring',
-  // Cell metrics inside DateInput's touch sheet — the day button's size and
-  // the wheel row's height. Neither is a property of the `date-input` target
-  // itself (the field), and the elements they size live in a sheet that is
-  // not rendered at all on a pointer device, so no standard property on the
-  // component maps onto them; a theme sets the var directly.
-  '--date-input-touch-day-size',
-  '--date-input-touch-wheel-item-size',
 ]);
 
 // ---------------------------------------------------------------------------

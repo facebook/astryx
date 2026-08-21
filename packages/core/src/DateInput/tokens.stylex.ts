@@ -3,7 +3,7 @@
 /**
  * @file tokens.stylex.ts
  * @input StyleX variable and constant definitions
- * @output Exports DateInput layout variables and derived geometry
+ * @output Exports DateInput layout constants and derived geometry
  * @position Lab component tokens consumed by DateInput.tsx, MonthScroller.tsx, Wheel.tsx, MonthYearWheels.tsx
  *
  * The picker's whole geometry derives from two numbers, which is what makes
@@ -22,7 +22,6 @@
  * from a `.stylex.ts` file. A plain `export const` fails the build with
  * "a style value can only contain an array, string or number".
  *
- * SYNC: When modified, update DateInput.doc.mjs (Theming section).
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -35,13 +34,32 @@ import * as stylex from '@stylexjs/stylex';
  */
 export const WEEKS_PER_PANE = 6;
 
-/** Layout variables exposed for theme-level DateInput tuning. */
-export const dateInputTouchVars = stylex.defineVars({
+/**
+ * The picker's two size inputs.
+ *
+ * `defineConsts`, not `defineVars`: these are inlined at build time and emit
+ * no CSS custom property, so they are internal geometry rather than public
+ * theming API. That is deliberate for both of them.
+ *
+ * The day size is an accessibility floor — 44px is the comfortable minimum
+ * tap target on iOS and Android, and every other target in the sheet is held
+ * to it. Exposing it as a variable would let a theme quietly lower the floor,
+ * which is not a knob a design system should hand out.
+ *
+ * The wheel row height is only meaningful against the day size (see below),
+ * so tuning one without the other produces a picker whose panes no longer
+ * agree — a variable that is only safe to change in lockstep with another is
+ * not really a variable.
+ *
+ * If a real need to theme either appears, promoting a const to a var is an
+ * additive change; removing a var that consumers have started setting is not.
+ */
+export const dateInputTouchSizes = stylex.defineConsts({
   /**
    * Height of one day row, and the minimum touch target of a day. 44px is the
    * comfortable minimum tap target on both iOS and Android.
    */
-  '--date-input-touch-day-size': '44px',
+  daySize: '44px',
   /**
    * Height of one wheel option row, and so the spacing between options and
    * the height of the selection band.
@@ -57,14 +75,17 @@ export const dateInputTouchVars = stylex.defineVars({
    * column of values, not as a stack of buttons with air between them. At
    * this height ~9 options are on screen.
    */
-  '--date-input-touch-wheel-item-size': '28px',
+  wheelItemSize: '28px',
 });
 
-const DAY_SIZE = dateInputTouchVars['--date-input-touch-day-size'];
-const WHEEL_ITEM_SIZE =
-  dateInputTouchVars['--date-input-touch-wheel-item-size'];
+// Local aliases for the derived values below. StyleX resolves a `defineConsts`
+// member through an import, so consumers read `dateInputTouchSizes.*` directly
+// rather than a re-exported plain const, which its static analysis cannot
+// follow across files.
+const DAY_SIZE = dateInputTouchSizes.daySize;
+const WHEEL_ITEM_SIZE = dateInputTouchSizes.wheelItemSize;
 
-/** Geometry derived from the variables above, shared across the component. */
+/** Geometry derived from the sizes above, shared across the component. */
 export const dateInputTouchGeometry = stylex.defineConsts({
   /** One month pane — and therefore the scrollport, and the wheel body. */
   paneBlockSize: `calc(${WEEKS_PER_PANE} * ${DAY_SIZE})`,

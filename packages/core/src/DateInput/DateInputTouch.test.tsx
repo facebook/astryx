@@ -655,9 +655,7 @@ describe('DateInput — calendar surface', () => {
   it('pages a month with the header arrows', () => {
     renderAndOpen();
     const header = () =>
-      document.querySelector<HTMLElement>(
-        `.${stableClassName('date-input-touch-title')}`,
-      )!;
+      document.querySelector<HTMLElement>('[data-title="month-year"]')!;
     expect(header()).toHaveTextContent('March 2026');
     fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
     expect(header()).toHaveTextContent('April 2026');
@@ -683,9 +681,7 @@ describe('DateInput — calendar surface', () => {
       );
       fireEvent.click(field());
       const header = () =>
-        document.querySelector<HTMLElement>(
-          `.${stableClassName('date-input-touch-title')}`,
-        )!;
+        document.querySelector<HTMLElement>('[data-title="month-year"]')!;
       const scroller = document.querySelector<HTMLElement>(
         '[data-scroller="months"]',
       )!;
@@ -825,9 +821,7 @@ describe('DateInput — month/year wheels', () => {
    * a name for each, which dominates the runtime of these tests.
    */
   const title = () =>
-    document.querySelector<HTMLElement>(
-      `.${stableClassName('date-input-touch-title')}`,
-    )!;
+    document.querySelector<HTMLElement>('[data-title="month-year"]')!;
 
   const openWheels = () => fireEvent.click(title());
 
@@ -1296,9 +1290,7 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
   it('stops a touch on a wheel from reaching the sheet', () => {
     renderAndOpen();
     fireEvent.click(
-      document.querySelector<HTMLElement>(
-        `.${stableClassName('date-input-touch-title')}`,
-      )!,
+      document.querySelector<HTMLElement>('[data-title="month-year"]')!,
     );
     const wheel = screen.getByRole('listbox', {name: 'Month'});
     const ancestor = watchAncestor();
@@ -1323,7 +1315,7 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
     // The header is not a scroller: a drag there is the sheet's to interpret,
     // and it is one of the two places a dismiss can still start from.
     const title = document.querySelector<HTMLElement>(
-      `.${stableClassName('date-input-touch-title')}`,
+      '[data-title="month-year"]',
     )!;
     const ancestor = watchAncestor();
     touch(title, 'touchstart');
@@ -1356,9 +1348,7 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
  */
 describe('DateInput — a mouse can drag a wheel', () => {
   const title = () =>
-    document.querySelector<HTMLElement>(
-      `.${stableClassName('date-input-touch-title')}`,
-    )!;
+    document.querySelector<HTMLElement>('[data-title="month-year"]')!;
 
   /** jsdom has no layout: give the rows a height and the wheel a scrollTop. */
   function withWheelLayout<T>(fn: () => T): T {
@@ -1662,7 +1652,7 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     const tokens = read('tokens.stylex.ts');
     // Scroll-first rows: closer together than day cells and closer to the
     // text they hold, the way a platform picker packs them.
-    expect(tokens).toContain("'--date-input-touch-wheel-item-size': '28px'");
+    expect(tokens).toContain("wheelItemSize: '28px'");
     expect(read('Wheel.tsx')).toContain(
       "fontSize: typeScaleVars['--text-large-size']",
     );

@@ -28,15 +28,20 @@ typable field (its keyboard is right there), while a narrowed desktop window is
 still a mouse. Adding a width test would only re-exclude tablets, which are the
 clearest case for a thumb picker.
 
-Also new, all additive:
+The public surface barely moves. One new export — `TOUCH_POINTER_QUERY`, the
+media query the switch uses, so an app can ask the same question the component
+does and lay out to match — plus four `@astryx.dateInput.*` catalog keys for
+the picker's header and footer.
 
-- `TOUCH_POINTER_QUERY` — the media query the switch uses, exported so an app
-  can ask the same question the component does and lay out to match. There is
-  deliberately no export that forces a surface: the touch picker is reachable
-  by being on a touch device, which is the only place it is worth looking at.
-- `--date-input-touch-day-size` and `--date-input-touch-wheel-item-size` theme
-  variables, and four `@astryx.dateInput.*` catalog keys for the picker's
-  header and footer.
+Nothing else is published, on purpose. There is no export that forces a
+surface: the touch picker is reachable by being on a touch device, which is
+the only place it is worth looking at. The picker's two sizes (the 44px day
+cell, the 28px wheel row) are compile-time constants rather than theme
+variables — the day size is an accessibility floor, and a variable a theme can
+quietly lower is not a floor. And the sheet's header button is addressed by a
+`data-` attribute rather than a theme target, because nothing has asked to
+restyle it. Each of those is additive later and awkward to withdraw once
+shipped.
 
 The wheels also answer a mouse now. A wheel is a scroll container, so a finger
 pans it for free; a mouse got nothing, because browsers do not drag-scroll an
