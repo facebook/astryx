@@ -225,7 +225,14 @@ const styles = stylex.create({
    * neighbour that merely shows it.
    */
   dayOutside: {
+    // Exactly what the desktop calendar does to its own spill days: the
+    // secondary text colour AND half opacity, which is what makes them read
+    // as background rather than as dimmer choices. (Calendar splits these
+    // across two style objects — `dayOutside` in its theme layer carries the
+    // colour, the one in its structural layer the opacity — so applying only
+    // the colour, as this did at first, was half the treatment.)
     color: colorVars['--color-text-secondary'],
+    opacity: 0.5,
   },
   dayDisabled: {
     color: colorVars['--color-text-disabled'],
@@ -732,8 +739,12 @@ function MonthPane({
                   {...stylex.props(
                     styles.day,
                     focusOutlineStyles.focusVisible,
-                    isDisabled && styles.dayDisabled,
+                    // Outside FIRST, so disabled wins where both apply: a
+                    // spilled day past the range is unselectable, and must
+                    // not be painted more available than the in-month days
+                    // beside it.
                     day.isOutside && styles.dayOutside,
+                    isDisabled && styles.dayDisabled,
                   )}>
                   <span
                     {...stylex.props(

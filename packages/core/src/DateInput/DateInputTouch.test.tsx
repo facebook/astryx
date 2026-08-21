@@ -1194,7 +1194,7 @@ describe('DateInput — month/year wheels', () => {
     expect(panel('wheels')).toHaveAttribute('inert');
   });
 
-  it('Clear empties the field and brings the calendar home', () => {
+  it('Reset empties the field and brings the calendar home', () => {
     const onChange = vi.fn();
     // Today is 15 March 2026 in these tests; open on a month away from it.
     renderAndOpen(
@@ -1207,7 +1207,7 @@ describe('DateInput — month/year wheels', () => {
     );
     expect(title()).toHaveTextContent('August 2026');
 
-    fireEvent.click(screen.getByRole('button', {name: 'Clear'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Reset'}));
     expect(onChange).toHaveBeenCalledWith(undefined);
     expect(field()).toHaveValue('');
     // Clearing the date and leaving the calendar on the month of the date you
@@ -1236,18 +1236,18 @@ describe('DateInput — month/year wheels', () => {
     );
     expect(title()).toHaveTextContent('May 2027');
 
-    fireEvent.click(screen.getByRole('button', {name: 'Clear'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Reset'}));
     expect(onChange).toHaveBeenCalledWith(undefined);
     expect(field()).toHaveValue('');
     expect(title()).toHaveTextContent('May 2027');
   });
 
-  it('offers Clear only on the calendar, beside Save', () => {
+  it('offers Reset only on the calendar, beside Save', () => {
     renderAndOpen();
-    expect(screen.getByRole('button', {name: 'Clear'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Reset'})).toBeInTheDocument();
     openWheels();
     // The wheels choose a month; there is no date there to clear.
-    expect(screen.queryByRole('button', {name: 'Clear'})).toBeNull();
+    expect(screen.queryByRole('button', {name: 'Reset'})).toBeNull();
   });
 
   it('Save closes the whole picker; Done only leaves the wheels', () => {
@@ -1306,7 +1306,7 @@ describe('DateInput — month/year wheels', () => {
 
     renderAndOpen();
     expect(inertAncestorsOf('Save')).toEqual([]);
-    expect(inertAncestorsOf('Clear')).toEqual([]);
+    expect(inertAncestorsOf('Reset')).toEqual([]);
 
     openWheels();
     expect(inertAncestorsOf('Done')).toEqual([]);
@@ -1932,6 +1932,64 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(styles).not.toMatch(/\bright:/);
   });
 
+  /**
+   * Adjacent days take the desktop calendar's exact treatment, and the point
+   * of reading BOTH files is that "exact" stays true if the desktop's changes.
+   *
+   * Calendar splits the treatment across two style objects — `dayCellTheme`
+   * carries the colour, `dayCellStyles` the opacity — so copying it by eye
+   * gets you one half and not the other. This pane took only the colour at
+   * first, and the spill days came out visibly heavier than the desktop's.
+   */
+  it('mutes adjacent days exactly as the desktop calendar does', () => {
+    /** The declarations inside one named style object, comments stripped. */
+    const declarations = (source: string, object: string) => {
+      const open = source.indexOf(`  ${object}: {`);
+      expect(open).toBeGreaterThan(-1);
+      return source
+        .slice(open, source.indexOf('\n  },', open))
+        .replace(/\/\/.*$/gm, '')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.endsWith(','));
+    };
+
+    // The desktop's two halves, read out of its own source rather than
+    // restated here — so the check follows the desktop if its treatment
+    // moves, instead of freezing today's values into this file.
+    const desktop = read('../Calendar/styles.ts');
+    const structural = declarations(
+      desktop.slice(desktop.indexOf('export const dayCellStyles')),
+      'dayOutside',
+    );
+    const theme = declarations(
+      desktop.slice(desktop.indexOf('export const dayCellTheme')),
+      'dayOutside',
+    );
+    // Both halves must have found something, or the parity check below is
+    // `arrayContaining([])` and passes on anything at all.
+    expect(structural.length).toBeGreaterThan(0);
+    expect(theme.length).toBeGreaterThan(0);
+
+    // And the touch pane carries all of it, in its one object.
+    const touch = declarations(read('MonthScroller.tsx'), 'dayOutside');
+    expect(touch).toEqual(expect.arrayContaining([...structural, ...theme]));
+  });
+
+  /**
+   * Order matters as much as the values: `dayDisabled` is applied AFTER
+   * `dayOutside`, so a spilled day beyond min/max paints disabled rather than
+   * merely outside. Reversed, an unselectable date would look more available
+   * than the selectable ones beside it.
+   */
+  it('lets disabled win over outside on a spilled day past min/max', () => {
+    const applied = read('MonthScroller.tsx');
+    const outside = applied.indexOf('day.isOutside && styles.dayOutside');
+    const disabled = applied.indexOf('isDisabled && styles.dayDisabled');
+    expect(outside).toBeGreaterThan(-1);
+    expect(outside).toBeLessThan(disabled);
+  });
+
   it('keeps the month scroller and the wheels on border-box', () => {
     // Load-bearing: clientHeight is the pane height, the snap offsets and the
     // virtualization all at once.
@@ -2062,7 +2120,7 @@ describe('DateInput — scroll CSS (definition-level)', () => {
    */
   it('spans the footer with its actions', () => {
     const source = read('TouchDateField.tsx');
-    // Clear + Save share the calendar's cell; Done is the wheels'. Each
+    // Reset + Save share the calendar's cell; Done is the wheels'. Each
     // fills the space it is given, so the row divides evenly rather than by
     // label length.
     expect(source.match(/width="100%"/g)).toHaveLength(3);

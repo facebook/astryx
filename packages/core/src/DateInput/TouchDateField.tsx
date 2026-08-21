@@ -437,7 +437,7 @@ const styles = stylex.create({
    */
   footerAction: {
     gridArea: '1 / 1',
-    // Side by side and equal: the calendar's cell holds Clear and Save, the
+    // Side by side and equal: the calendar's cell holds Reset and Save, the
     // wheels' holds one button. `1fr` each rather than content width, so
     // neither label's length decides how the row is divided.
     display: 'flex',
@@ -679,7 +679,7 @@ export function TouchDateField({
   }, [fireChange]);
 
   /**
-   * Empty the field and bring the calendar home.
+   * Put the picker back to how it opens: no date, current month.
    *
    * Two things, because clearing a date and then being left staring at the
    * month of the date you just cleared is a half-finished action — the
@@ -692,7 +692,7 @@ export function TouchDateField({
    * so the move is skipped instead and the calendar stays where it is. The
    * value is still cleared either way — that half never depends on the range.
    */
-  const handleClearInSheet = useCallback(() => {
+  const handleResetInSheet = useCallback(() => {
     fireChange(undefined);
     const currentMonth = monthIndexOf(today);
     if (currentMonth < minMonthIndex || currentMonth > maxMonthIndex) {
@@ -1004,8 +1004,8 @@ export function TouchDateField({
             variant="secondary"
             size="md"
             width="100%"
-            label={t('@astryx.dateInput.clearPicking')}
-            onClick={handleClearInSheet}
+            label={t('@astryx.dateInput.resetPicking')}
+            onClick={handleResetInSheet}
           />
           <Button
             variant="primary"

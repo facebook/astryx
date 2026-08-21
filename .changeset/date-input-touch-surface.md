@@ -15,7 +15,10 @@ finger (`pointer: coarse`): a bottom sheet holding one month per screen, swiped
 sideways, with month and year wheels behind the header title for the far jumps
 swiping is bad at, arrows in the header corner for a single step, and every
 target floored at 44px. A day commits the moment it is tapped and leaves the
-sheet up, so a mistake can be corrected in place; Done just closes.
+sheet up, so a mistake can be corrected in place; Save closes the picker, and
+Reset puts it back to how it opened — no date, current month. The grid spills
+adjacent-month days and lets you pick them, and the weekday header is three
+letters rather than two, both as the desktop calendar has them.
 
 Nothing changes at the call site. It is one component with two surfaces, not
 two components — same props, same values, no new import, no media query to
@@ -30,7 +33,7 @@ clearest case for a thumb picker.
 
 The public surface barely moves. One new export — `TOUCH_POINTER_QUERY`, the
 media query the switch uses, so an app can ask the same question the component
-does and lay out to match — plus four `@astryx.dateInput.*` catalog keys for
+does and lay out to match — plus six `@astryx.dateInput.*` catalog keys for
 the picker's header and footer.
 
 Nothing else is published, on purpose. There is no export that forces a
