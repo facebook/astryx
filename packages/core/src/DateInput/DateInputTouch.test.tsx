@@ -1208,6 +1208,47 @@ describe('DateInput — month/year wheels', () => {
    * mid-swap. `inert` is what keeps the hidden one out of the accessibility
    * tree, rather than merely out of sight.
    */
+  /**
+   * `inert` disables everything INSIDE it, so an inert ancestor is enough to
+   * kill a button that looks perfectly fine on its own.
+   *
+   * This is not hypothetical. The footer kept an `inert` from an earlier
+   * version where it was hidden wholesale on the wheels; once the wheels grew
+   * their own Done button inside that same footer, the button rendered,
+   * looked right, passed every attribute assertion — and did nothing when
+   * tapped.
+   *
+   * Nothing above caught it: `inert` has no behavioural effect in jsdom, so
+   * role queries still found the button, and the cell's own attribute was
+   * correct. The only honest check is to walk the ancestors, which is what
+   * this does.
+   */
+  it('leaves no inert ancestor over whichever action is showing', () => {
+    const inertAncestorsOf = (label: string) => {
+      const el = [...document.querySelectorAll('dialog[open] button')].find(
+        b => b.textContent?.trim() === label,
+      )!;
+      const blocking: string[] = [];
+      // Start above the button's own cell, which is legitimately inert for
+      // the action that is currently hidden.
+      let node = el.parentElement?.parentElement ?? null;
+      while (node != null && node.tagName !== 'BODY') {
+        if (node.hasAttribute('inert')) {
+          blocking.push(node.tagName.toLowerCase());
+        }
+        node = node.parentElement;
+      }
+      return blocking;
+    };
+
+    renderAndOpen();
+    expect(inertAncestorsOf('Save')).toEqual([]);
+    expect(inertAncestorsOf('Clear')).toEqual([]);
+
+    openWheels();
+    expect(inertAncestorsOf('Done')).toEqual([]);
+  });
+
   it('shows exactly one footer action, and only the visible one is reachable', () => {
     renderAndOpen();
     // Queried off the DOM rather than by role: every role-with-name query

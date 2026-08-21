@@ -984,9 +984,12 @@ export function TouchDateField({
           did not. Navigating and selecting are two different intents and it
           conflated them, so it is gone until it can be one or the other on
           purpose. Reaching today by scrolling still works. */}
-      <div
-        inert={isWheelOpen ? true : undefined}
-        {...stylex.props(styles.footer)}>
+      {/* No `inert` here: the two cells below take turns, so the footer as a
+          whole is always live. It carried one while the footer was hidden
+          entirely on the wheels, and leaving it behind made the wheels' own
+          Done button unreachable — an inert ancestor disables everything
+          inside it. */}
+      <div {...stylex.props(styles.footer)}>
         {/* Both actions share one grid cell and take turns, the same way the
             panels above them do — so the footer never changes height and the
             two never overlap. Each belongs to a surface: Save finishes on the
