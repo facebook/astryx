@@ -213,10 +213,10 @@ const styles = stylex.create({
   },
   /**
    * A day belonging to the month either side of this pane. Muted the way
-   * Calendar mutes its own, and still selectable — the desktop calendar lets
-   * you click into the next month from the last row, and a thumb should be
-   * able to do the same rather than being told to swipe for a date it can
-   * already see.
+   * Calendar mutes its own, and unselectable for the same reason it is
+   * there: it exists to show where the month ends, not to offer a date. A
+   * pane is one month, and tapping out of it would move the calendar under
+   * your thumb; the swipe or the arrow says "next month" without ambiguity.
    *
    * It needs no special handling for the roving tab order: `tabbableISO` is
    * resolved per pane and only ever names a date in THAT pane's own month,
@@ -717,10 +717,17 @@ function MonthPane({
       {weeks.map(week => (
         <div key={week[0].iso} role="row" {...stylex.props(styles.row)}>
           {week.map(day => {
-            const isDisabled = isDateDisabled(day.date);
+            // A spilled day is context, not a choice. Calendar computes the
+            // same thing as `effectivelyDisabled: isDisabled || isOutside`,
+            // and guards today/selected on `!isOutside` beside it, so a date
+            // borrowed from a neighbouring month never carries a ring or a
+            // puck in the pane that is only showing it.
+            const isDisabled = day.isOutside || isDateDisabled(day.date);
             const isSelected =
-              selectedDate != null && plainDateIsEqual(day.date, selectedDate);
-            const isToday = plainDateIsEqual(day.date, today);
+              !day.isOutside &&
+              selectedDate != null &&
+              plainDateIsEqual(day.date, selectedDate);
+            const isToday = !day.isOutside && plainDateIsEqual(day.date, today);
 
             return (
               <div

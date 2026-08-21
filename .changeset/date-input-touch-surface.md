@@ -17,8 +17,13 @@ swiping is bad at, arrows in the header corner for a single step, and every
 target floored at 44px. A day commits the moment it is tapped and leaves the
 sheet up, so a mistake can be corrected in place; Save closes the picker, and
 Reset puts it back to how it opened — no date, current month. The grid spills
-adjacent-month days and lets you pick them, and the weekday header is three
+adjacent-month days, muted and unselectable, and the weekday header is three
 letters rather than two, both as the desktop calendar has them.
+
+Opening the wheels is a cover, not a cross-fade: an opaque plate the colour of
+the sheet lands over the calendar on the first frame and the month and year
+fade in against it, so nothing of the calendar animates and no frame shows a
+day number and a year through each other. Tapping Done uncovers in one frame.
 
 Nothing changes at the call site. It is one component with two surfaces, not
 two components — same props, same values, no new import, no media query to

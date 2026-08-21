@@ -836,15 +836,73 @@ describe('DateInput — calendar surface', () => {
     expect(april.getAllByRole('button')).toHaveLength(42);
   });
 
-  it('commits an adjacent-month day like any other', () => {
+  /**
+   * A spilled day is shown, not offered.
+   *
+   * It was pickable at first, on the reasoning that a date you can see is a
+   * date you should be able to tap. The desktop calendar disagrees — it makes
+   * its own outside days unselectable — and on a pane that IS the month, so
+   * does the interaction: committing April 1 from March's pane would move the
+   * calendar out from under the thumb that just tapped it. The swipe and the
+   * arrows say "next month" without that ambiguity.
+   */
+  it('does not commit an adjacent-month day', () => {
     const onChange = vi.fn();
     renderAndOpen(<Controlled initial="2026-03-21" onChange={onChange} />);
-    fireEvent.click(
-      within(pane('March 2026')).getByRole('button', {name: /April 1, 2026/}),
+    const april1 = within(pane('March 2026')).getByRole('button', {
+      name: /April 1, 2026/,
+    });
+    expect(april1).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(april1);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Being outside is enough on its own — a spill day inside the allowed range
+   * is still not a choice. Worth its own case because `isDateDisabled` says
+   * nothing about April 1 here, so only the outside test can be what disables
+   * it.
+   */
+  it('disables a spilled day the range would otherwise allow', () => {
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2026-01-01" max="2026-12-31" />,
     );
-    // A date you can see is a date you can pick; being told to swipe for one
-    // already on screen would be the odd behaviour.
-    expect(onChange).toHaveBeenCalledWith('2026-04-01');
+    const march = within(pane('March 2026'));
+    // In range, and in its own pane it is perfectly pickable.
+    expect(
+      within(pane('April 2026')).getByRole('button', {name: /April 1, 2026/}),
+    ).not.toHaveAttribute('aria-disabled');
+    // Borrowed by March, it is not.
+    expect(march.getByRole('button', {name: /April 1, 2026/})).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+  });
+
+  /**
+   * The selection and today's ring belong to the month that owns the date.
+   * Calendar guards both on `!isOutside`; without the same guard a date would
+   * wear its puck twice, once in its own pane and once in the neighbour that
+   * only borrows it.
+   */
+  it('leaves the puck and the today ring with the month that owns the day', () => {
+    renderAndOpen(
+      <Controlled initial="2026-04-01" min="2026-01-01" max="2026-12-31" />,
+    );
+    const spilled = within(pane('March 2026')).getByRole('button', {
+      name: /April 1, 2026/,
+    });
+    const owned = within(pane('April 2026')).getByRole('button', {
+      name: /April 1, 2026/,
+    });
+    // Same date, same label — and only one of them is dressed as selected.
+    expect(owned.className).not.toBe(spilled.className);
+    expect(
+      within(pane('April 2026')).getAllByRole('gridcell', {selected: true}),
+    ).toHaveLength(1);
+    expect(
+      within(pane('March 2026')).queryAllByRole('gridcell', {selected: true}),
+    ).toHaveLength(0);
   });
 
   /**
@@ -1317,24 +1375,29 @@ describe('DateInput — month/year wheels', () => {
     // Queried off the DOM rather than by role: every role-with-name query
     // walks this tree computing accessible names, and there are ~150
     // elements in it. Same reason the title helper above does it this way.
-    const cell = (label: string) =>
+    const button = (label: string) =>
       [...document.querySelectorAll('dialog[open] button')].find(
         el => el.textContent?.trim() === label,
-      )!.parentElement!;
+      );
+    // Which ANCESTOR carries `inert`, not which parent — the wheels' action
+    // sits inside a fading wrapper, and asserting on `parentElement` would
+    // pass or fail on that nesting rather than on reachability.
+    const isBlocked = (label: string) =>
+      button(label)?.closest('[inert]') != null;
 
-    expect(cell('Save')).not.toHaveAttribute('inert');
-    expect(cell('Done')).toHaveAttribute('inert');
+    expect(isBlocked('Save')).toBe(false);
+    expect(isBlocked('Done')).toBe(true);
     expect(screen.queryByRole('button', {name: 'Done'})).toBeNull();
 
     openWheels();
-    expect(cell('Save')).toHaveAttribute('inert');
-    expect(cell('Done')).not.toHaveAttribute('inert');
+    expect(isBlocked('Save')).toBe(true);
+    expect(isBlocked('Done')).toBe(false);
     expect(screen.queryByRole('button', {name: 'Save'})).toBeNull();
 
     // Both stay mounted throughout, which is what keeps the row's height
     // fixed across the swap.
-    expect(cell('Save')).toBeInTheDocument();
-    expect(cell('Done')).toBeInTheDocument();
+    expect(button('Save')).toBeInTheDocument();
+    expect(button('Done')).toBeInTheDocument();
   });
 
   it('the year wheel keeps the month', () => {
@@ -1899,7 +1962,8 @@ describe('DateInput — scroll CSS (definition-level)', () => {
   const read = (file: string) => readFileSync(path.join(dir, file), 'utf8');
 
   /**
-   * The declarations inside one named style object, comments stripped.
+   * The declarations inside one named style object, comments stripped and
+   * trailing commas removed.
    *
    * Crude on purpose — a nested value object contributes its own inner lines
    * too. Every caller looks for a specific property prefix, so the noise is
@@ -1914,7 +1978,8 @@ describe('DateInput — scroll CSS (definition-level)', () => {
       .replace(/\/\/.*$/gm, '')
       .split('\n')
       .map(line => line.trim())
-      .filter(line => line.endsWith(','));
+      .filter(line => line.endsWith(','))
+      .map(line => line.slice(0, -1));
   };
 
   /** The same, scoped to one `export const <group> = stylex.create({...})`. */
@@ -1967,13 +2032,11 @@ describe('DateInput — scroll CSS (definition-level)', () => {
    * gets you one half and not the other. This pane took only the colour at
    * first, and the spill days came out visibly heavier than the desktop's.
    *
-   * One honest difference, and it is behavioural rather than a drift: the
-   * desktop makes its spill days UNCLICKABLE, so on screen they always carry
-   * the disabled fade on top of this treatment (~203 on white). This pane
-   * lets you pick them, so they show the treatment alone (~169) — darker than
-   * the desktop's spill days, and deliberately so, because a day you can tap
-   * must not look like one you cannot. It is the same style either way; what
-   * differs is whether `dayDisabled` lands on top of it.
+   * Both surfaces now render the same three tiers, measured in a browser on
+   * the same story: 23 for a day you can pick, 185 for one the range rules
+   * out, 203 for a spilled day (which is outside AND therefore disabled, so
+   * it takes both). The enabled-adjacent tier that used to sit at 169 is gone
+   * with the tap that produced it.
    */
   it('mutes adjacent days exactly as the desktop calendar does', () => {
     // The desktop's two halves, read out of its own source rather than
@@ -2150,17 +2213,131 @@ describe('DateInput — scroll CSS (definition-level)', () => {
   });
 
   /**
-   * The panels share one grid cell, so a cross-fade overlays them — and the
-   * wheels' translucent selection band then tints a strip of the calendar
-   * grid showing through underneath, one band-shaped rectangle of the
-   * outgoing surface looking unlike the rest of it. That is what "the grey
-   * area animates differently" was.
+   * The swap is a cover, not a cross-fade, and only one thing in it moves.
    *
-   * They take turns instead: everything leaving fades out over the first leg
-   * with no delay, everything arriving waits a leg and fades in over the
-   * second. Measured on an iPhone 15 profile afterwards: zero frames with
-   * both panels painting.
+   * It used to take turns: the outgoing surface faded out over a first leg,
+   * the incoming one waited and faded in over a second. That existed because
+   * the wheels' panel was transparent — overlapping them put the wheels'
+   * translucent selection band over the live calendar grid and tinted one
+   * band-shaped strip of it, which is what "the grey area animates
+   * differently from the content" was.
+   *
+   * An opaque plate removes the reason and then removes the cross-fade too:
+   * the plate covers the calendar on the first frame, and the month and year
+   * fade in against IT. Nothing of the calendar animates, and no frame ever
+   * shows a day number and a year sharing a pixel.
+   *
+   * What this pins is the split, because it is the whole design: layers get
+   * `visibility` and no opacity, content gets opacity and no background.
    */
+  it('covers the calendar rather than fading it out', () => {
+    const source = read('TouchDateField.tsx');
+    const layer = declarations(source, 'panelLayer');
+    const plate = declarations(source, 'panelPlate');
+    const content = declarations(source, 'overlayContent');
+
+    // A layer is shown or not shown. It never fades — fading the base layer
+    // is precisely "animating the date picker out".
+    expect(layer.some(d => d.startsWith('opacity'))).toBe(false);
+    expect(layer.some(d => d.startsWith('transition'))).toBe(false);
+    expect(declarations(source, 'panelLayerHidden')).toContain(
+      "visibility: 'hidden'",
+    );
+
+    // The plate is opaque, in the token the sheet paints itself with, and
+    // carries no transition of its own.
+    expect(plate).toEqual([
+      "backgroundColor: colorVars['--color-background-surface']",
+    ]);
+
+    // Only the content fades, and it has no background to fade with it.
+    expect(declarations(source, 'overlayContentShown')).toContain(
+      "transitionProperty: 'opacity'",
+    );
+    expect(content.some(d => d.startsWith('backgroundColor'))).toBe(false);
+
+    // Both panels and both footer actions are layers; the plate and the
+    // fading content belong to the wheels' side of each pair.
+    const count = (name: string) =>
+      source.match(new RegExp(`styles\\.${name},`, 'g'))?.length ?? 0;
+    expect(count('panelLayer')).toBe(4);
+    expect(count('panelPlate')).toBe(2);
+    expect(count('overlayContent')).toBe(2);
+  });
+
+  /**
+   * Each layer paints as a unit, which is what makes "opaque" mean "covers".
+   *
+   * Backgrounds and text paint in separate phases, so without a stacking
+   * context a later sibling's background lands UNDER an earlier sibling's
+   * text — the plate went in opaque and the calendar's day numbers showed
+   * straight through it. Measured before and after: ink inside the grid's box
+   * 5% into the swap went from the calendar's full 2.5% of pixels to 0.0%.
+   *
+   * It is easy to lose because the old panel animated `opacity`, and any
+   * opacity below 1 makes a stacking context by accident — the cover only
+   * broke when the fade moved off the panel and onto the content inside it.
+   */
+  it('paints each layer as a unit, so the plate really covers', () => {
+    expect(declarations(read('TouchDateField.tsx'), 'panelLayer')).toContain(
+      "isolation: 'isolate'",
+    );
+  });
+
+  /**
+   * The month and year fade IN and not out.
+   *
+   * The hidden state is the BASE and carries no transition; the transition
+   * rides on the shown state, and a transition is governed by the state being
+   * entered — so arriving animates and leaving does not. Doing it the other
+   * way round, with a `transition-duration: 0s` on the hidden state, both
+   * reads backwards and trips `build-css.test.mjs`, which reserves that
+   * declaration for inside a `prefers-reduced-motion` block.
+   *
+   * Leaving is instant on purpose: a fade out would put a wait between
+   * tapping Done and seeing the calendar it was tapped for — the wheels would
+   * dissolve to a blank plate first, and the calendar would still arrive in
+   * one frame at the end of it.
+   */
+  it('fades the month and year in, and never out', () => {
+    const source = read('TouchDateField.tsx');
+    const base = declarations(source, 'overlayContent');
+    const shown = declarations(source, 'overlayContentShown');
+
+    expect(base).toContain('opacity: 0');
+    expect(base.some(d => d.startsWith('transition'))).toBe(false);
+
+    expect(shown).toContain('opacity: 1');
+    expect(shown).toContain('transitionDuration: SWAP_DURATION');
+
+    // Applied on the way IN — `isWheelOpen &&`, not `!isWheelOpen &&`.
+    expect(
+      source.match(/isWheelOpen && styles\.overlayContentShown/g),
+    ).toHaveLength(2);
+  });
+
+  /**
+   * Nothing of the calendar animates — not the grid, and not the two pieces
+   * of chrome the plate cannot reach, since it begins below the header.
+   *
+   * They could have faded on their own, but then the calendar would leave in
+   * two parts at two speeds. Clearing them with the cover keeps it one
+   * surface that goes at once.
+   */
+  it('takes the calendar chrome with the grid, not on its own timing', () => {
+    const source = read('TouchDateField.tsx');
+    for (const name of ['weekdaysHidden', 'monthArrowsHidden']) {
+      const hidden = declarations(source, name);
+      expect(hidden).toContain("visibility: 'hidden'");
+      expect(hidden.some(d => d.startsWith('transition'))).toBe(false);
+    }
+    for (const name of ['weekdays', 'monthArrows']) {
+      expect(
+        declarations(source, name).some(d => d.startsWith('transition')),
+      ).toBe(false);
+    }
+  });
+
   /**
    * Both footer actions span the sheet. A full-width primary is the shape a
    * phone form ends with, and it puts the target under the thumb wherever
@@ -2172,19 +2349,6 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     // fills the space it is given, so the row divides evenly rather than by
     // label length.
     expect(source.match(/width="100%"/g)).toHaveLength(3);
-  });
-
-  it('fades the two surfaces in turn, never at the same time', () => {
-    const source = read('TouchDateField.tsx');
-    const styles = source.slice(
-      source.indexOf('const styles = stylex.create('),
-    );
-    // Panels, weekday row, header arrows, footer: each waits a leg to arrive.
-    expect(styles.match(/transitionDelay: PANEL_FADE_MS/g)).toHaveLength(4);
-    // ...and each of their hidden states leaves at once, with no delay.
-    expect(
-      styles.match(/transitionDelay: '0s'/g)?.length ?? 0,
-    ).toBeGreaterThanOrEqual(8);
   });
 
   /**
@@ -2233,7 +2397,31 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(
       styles.match(/transitionTimingFunction: easeVars\['--ease-standard'\]/g),
     ).toHaveLength(1);
-    expect(styles.match(/transitionTimingFunction: 'linear'/g)).toHaveLength(4);
+    expect(styles.match(/transitionTimingFunction: 'linear'/g)).toHaveLength(1);
+  });
+
+  /**
+   * The two things that do move run for the same time, so they land
+   * together. The chevron included — it used to run `--duration-medium`
+   * against a 220ms swap and was still turning well after the wheels had
+   * settled.
+   *
+   * A token rather than a literal, so a consumer's motion scale carries: the
+   * Storybook theme resolves `--duration-fast` to 125ms, not the default
+   * 175ms, and the swap follows it without knowing.
+   */
+  it('runs the whole swap on one duration', () => {
+    const source = read('TouchDateField.tsx');
+    const styles = source.slice(
+      source.indexOf('const styles = stylex.create('),
+    );
+    // The content's fade in, and the chevron's rotation.
+    expect(styles.match(/SWAP_DURATION/g)).toHaveLength(2);
+    // And no leftover hand-rolled timing beside them.
+    expect(styles).not.toContain('PANEL_FADE_MS');
+    expect(source).toContain(
+      "const SWAP_DURATION = durationVars['--duration-fast']",
+    );
   });
 
   it('keeps the virtual keyboard down on the touch field', () => {
