@@ -15,11 +15,11 @@ export const docs = {
       {guidance: true, description: 'Use range mode when the user needs to pick a start and end date, like a trip or a time-off request.'},
       {guidance: true, description: 'Use dateConstraints to disable specific dates like weekends or holidays, and explain why they are unavailable.'},
       {guidance: true, description: 'Show two months side by side when the user frequently selects dates that span a month boundary.'},
-      {guidance: false, description: 'Use a calendar for dates far in the past or future like a birth date. A text input is faster for open-ended entry.'},
+      {guidance: false, description: 'Rely on the prev/next arrows alone for dates far in the past or future like a birth date. Enable hasMonthYearPickers to jump straight to the month, or pair the calendar with a DateInput for typed entry.'},
       {guidance: false, description: 'Disable large blocks of dates without context. The user should understand why dates are unavailable.'},
     ],
     anatomy: [
-      {name: 'Month header', required: true, description: 'The month name and year with navigation arrows to move between months. The arrows mirror automatically under dir="rtl".'},
+      {name: 'Month header', required: true, description: 'The month name and year with navigation arrows to move between months. With hasMonthYearPickers, the caption becomes compact Month and Year dropdowns (accessible names "Month" and "Year") for jumping straight to a distant month; month changes are still announced to screen readers. The arrows mirror automatically under dir="rtl".'},
       {name: 'Day grid', required: true, description: 'A 7-column grid of days with column headers for the day names.'},
       {name: 'Selected day', required: false, description: 'The currently selected date, highlighted. In range mode, the start and end dates plus the days between them.'},
       {name: 'Today marker', required: false, description: 'A subtle indicator on the current date for orientation.'},
@@ -114,6 +114,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'hasMonthYearPickers',
+      type: 'boolean',
+      description: 'Replace the static caption with Month and Year pickers for jumping straight to a distant month. The year list derives from min/max (1900–2099 when unbounded), always widened to include the visible year; months and years outside the bounds are disabled rather than hidden. Ignored when numberOfMonths is 2.',
+      default: 'false',
+    },
+    {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
       description: 'First day of week. Accepts a number (0=Sunday) or a three-letter day name (e.g. "mon").',
@@ -124,6 +130,7 @@ export const docs = {
     targets: [
       {className: 'astryx-calendar', visualProps: ['mode']},
       {className: 'astryx-calendar-nav', visualProps: ['nav'], states: ['disabled']},
+      {className: 'astryx-calendar-picker', visualProps: ['picker']},
       {className: 'astryx-calendar-day', states: ['selected', 'today', 'disabled', 'in-range', 'marker']},
     ],
   },
@@ -141,7 +148,7 @@ export const docsZh = {
       {guidance: true, description: 'Use range mode when the user needs to pick a start and end date, like a trip or a time-off request.'},
       {guidance: true, description: 'Use dateConstraints to disable specific dates like weekends or holidays, and explain why they are unavailable.'},
       {guidance: true, description: 'Show two months side by side when the user frequently selects dates that span a month boundary.'},
-      {guidance: false, description: 'Use a calendar for dates far in the past or future like a birth date. A text input is faster for open-ended entry.'},
+      {guidance: false, description: 'Rely on the prev/next arrows alone for dates far in the past or future like a birth date. Enable hasMonthYearPickers to jump straight to the month, or pair the calendar with a DateInput for typed entry.'},
       {guidance: false, description: 'Disable large blocks of dates without context. The user should understand why dates are unavailable.'},
     ],
   },
@@ -162,6 +169,7 @@ export const docsZh = {
     {name: 'hasOutsideDays', type: 'boolean', description: '显示相邻月份的日期。', default: 'true'},
     {name: 'hasWeekNumbers', type: 'boolean', description: '显示 ISO 周数。', default: 'false'},
     {name: 'hasVariableRowCount', type: 'boolean', description: '可变行数与固定 6 行网格。', default: 'false'},
+    {name: 'hasMonthYearPickers', type: 'boolean', description: '将静态标题替换为月份和年份选择器，可直接跳转到较远的月份。年份列表由 min/max 派生（无边界时为 1900–2099），并始终扩展以包含当前可见年份；超出边界的月份和年份将被禁用而非隐藏。numberOfMonths 为 2 时忽略。', default: 'false'},
     {name: 'weekStartsOn', type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'", description: '每周起始日。可为数字（0=周日）或三字母星期缩写（如 "mon"）。', default: '0'},
   ],
   theming: {
@@ -179,6 +187,12 @@ export const docsZh = {
         ],
         states: [
           'disabled',
+        ],
+      },
+      {
+        className: 'astryx-calendar-picker',
+        visualProps: [
+          'picker',
         ],
       },
       {
@@ -206,7 +220,7 @@ export const docsDense = {
       {guidance: true, description: 'Use range mode when user picks start + end dates: trip, time-off request.'},
       {guidance: true, description: 'Use dateConstraints to disable specific dates (weekends/holidays); explain why unavailable.'},
       {guidance: true, description: 'Show two months side by side when user frequently selects dates spanning a month boundary.'},
-      {guidance: false, description: 'Use for dates far in the past/future; text input is faster.'},
+      {guidance: false, description: 'Rely on prev/next arrows alone for distant dates; enable hasMonthYearPickers or pair with DateInput.'},
       {guidance: false, description: 'Disable dates without explaining why.'},
     ],
   },
@@ -227,6 +241,7 @@ export const docsDense = {
     hasOutsideDays: 'show days from adjacent months',
     hasWeekNumbers: 'show ISO week numbers',
     hasVariableRowCount: 'variable vs fixed 6-row grid',
+    hasMonthYearPickers: 'Month/Year dropdowns replace caption to jump to distant months; year list from min/max (else 1900-2099), out-of-bounds months/years disabled; ignored when numberOfMonths=2',
     weekStartsOn: 'first day of week (0=Sunday, or name e.g. "mon")',
   },
 };
