@@ -11,7 +11,14 @@
 
 import {useState} from 'react';
 import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
-import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  act,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {PowerSearch} from './PowerSearch';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -490,5 +497,68 @@ describe('PowerSearch statusVariant forwarding', () => {
       'data-variant',
       'detached',
     );
+  });
+});
+
+describe('maxOperatorMenuItems', () => {
+  it('caps entity suggestions after selecting a field', async () => {
+    const people = Array.from({length: 6}, (_, index) => ({
+      id: `person-${index}`,
+      label: `Person ${index}`,
+    }));
+    const config: PowerSearchConfig = {
+      name: 'PeopleSearch',
+      fields: [
+        {
+          key: 'person',
+          label: 'Person',
+          defaultOperator: 'is_any_of',
+          operators: [
+            {
+              key: 'is_any_of',
+              label: 'is any of',
+              value: {
+                type: 'entity_list',
+                searchSource: {
+                  search: query =>
+                    people.filter(person => person.label.includes(query)),
+                  bootstrap: () => people,
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const user = userEvent.setup();
+    render(
+      <PowerSearch
+        config={config}
+        filters={[
+          {
+            field: 'person',
+            operator: 'is_any_of',
+            value: {type: 'entity_list', value: [people[0]]},
+          },
+        ]}
+        onChange={() => {}}
+        maxOperatorMenuItems={2}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Person: is any of'}));
+    const inputs = screen.getAllByRole('combobox', {hidden: true});
+    const valueInput = inputs[inputs.length - 1];
+    await user.type(valueInput, 'Person');
+
+    const listboxID = valueInput.getAttribute('aria-controls');
+    expect(listboxID).not.toBeNull();
+    const listbox = document.getElementById(listboxID!);
+    expect(listbox).not.toBeNull();
+    await waitFor(() => {
+      expect(
+        within(listbox!).getAllByRole('option', {hidden: true}),
+      ).toHaveLength(2);
+    });
   });
 });

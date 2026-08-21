@@ -401,7 +401,7 @@ export interface PowerSearchProps extends Omit<
   menuWidth?: number;
   /** Max display length for filter token values. @default 40 */
   maxTokenLength?: number;
-  /** Max items in operator dropdown. */
+  /** Max suggestions in string and entity value typeaheads. @default 10 */
   maxOperatorMenuItems?: number;
   /** Label for the save button in edit popover. @default 'Apply' */
   popoverSaveButtonLabel?: string;
@@ -543,6 +543,7 @@ export function PowerSearch({
   status,
   statusVariant = 'attached',
   maxTokenLength = 40,
+  maxOperatorMenuItems,
   popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
   timezoneID,
   tokenOverflowBehavior,
@@ -962,6 +963,7 @@ export function PowerSearch({
         onSave={handlePopoverSave}
         onCancel={handlePopoverCancel}
         saveButtonLabel={popoverSaveButtonLabel}
+        maxMenuItems={maxOperatorMenuItems}
         isReadOnly={isReadOnly}
       />
     );
@@ -974,6 +976,7 @@ export function PowerSearch({
     handlePopoverSave,
     handlePopoverCancel,
     popoverSaveButtonLabel,
+    maxOperatorMenuItems,
     isReadOnly,
   ]);
 
