@@ -98,6 +98,12 @@ export const docs = {
       default: "'attached'",
     },
     {
+      name: 'menuWidth',
+      type: 'number | string',
+      description:
+        "Width of the field-search menu. Numbers are pixels, strings are used as-is. Never renders narrower than the input. Omitted, the menu matches the input and grows with its content. Does not size the operator and value popovers.",
+    },
+    {
       name: 'maxTokenLength',
       type: 'number',
       description: 'Max character length for filter value display in tokens.',
@@ -263,6 +269,12 @@ export const docsZh = {
       default: "'attached'",
     },
     {
+      name: 'menuWidth',
+      type: 'number | string',
+      description:
+        '字段搜索菜单的宽度。数字为像素，字符串按原样使用。菜单不会窄于输入框。省略时，菜单与输入框等宽并随内容增长。不会影响运算符和值弹出层的宽度。',
+    },
+    {
       name: 'maxTokenLength',
       type: 'number',
       description: '令牌中过滤器值显示的最大字符长度。',
@@ -347,6 +359,7 @@ export const docsDense = {
     status: 'Validation status object w/ type + optional message.',
     startIcon: 'Icon at input start, before filter tokens. Forwarded to internal Tokenizer.',
     statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
+    menuWidth: 'Field-search menu width; never narrower than input. Not the operator/value popovers.',
     maxTokenLength: 'Max char length for filter value display in tokens.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',

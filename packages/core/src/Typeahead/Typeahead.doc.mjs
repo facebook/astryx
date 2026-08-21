@@ -84,6 +84,12 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number | string',
+      description:
+        'Width of the dropdown menu. Numbers are pixels, strings are used as-is. Never renders narrower than the field. Omitted, the menu matches the field and grows with its content.',
+    },
+    {
       name: 'status',
       type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:

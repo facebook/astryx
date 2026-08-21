@@ -136,6 +136,12 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number | string',
+      description:
+        'Width of the dropdown menu. Numbers are pixels, strings are used as-is. Never renders narrower than the field. Omitted, the menu matches the field and grows with its content.',
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
       description: 'Text shown when search returns no results.',
@@ -369,6 +375,12 @@ export const docsZh = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number | string',
+      description:
+        '\u4e0b\u62c9\u83dc\u5355\u7684\u5bbd\u5ea6\u3002\u6570\u5b57\u4e3a\u50cf\u7d20\uff0c\u5b57\u7b26\u4e32\u6309\u539f\u6837\u4f7f\u7528\u3002\u83dc\u5355\u4e0d\u4f1a\u7a84\u4e8e\u8f93\u5165\u6846\u3002\u7701\u7565\u65f6\uff0c\u83dc\u5355\u4e0e\u8f93\u5165\u6846\u7b49\u5bbd\u5e76\u968f\u5185\u5bb9\u589e\u957f\u3002',
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
       description: '\u641c\u7d22\u65e0\u7ed3\u679c\u65f6\u663e\u793a\u7684\u6587\u672c\u3002',
@@ -490,6 +502,7 @@ export const docsDense = {
     labelTooltip: 'Tooltip on label.',
     hasEntriesOnFocus: 'Show bootstrap results on focus before typing.',
     maxMenuItems: 'Max dropdown items to display.',
+    menuWidth: 'Dropdown menu width; never narrower than the field.',
     emptySearchResultsText: 'Text when search returns no results.',
     hasAutoFocus: 'Auto-focus input on mount.',
     size: 'Input+token size.',

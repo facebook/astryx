@@ -319,6 +319,10 @@ const meta: Meta<typeof PowerSearch> = {
     isReadOnly: {control: 'boolean'},
     hasClear: {control: 'boolean'},
     maxTokenLength: {control: 'number'},
+    menuWidth: {
+      control: 'text',
+      description: 'Field-search menu width (number for px or CSS string)',
+    },
     popoverSaveButtonLabel: {control: 'text'},
     size: {
       control: 'radio',
@@ -1076,6 +1080,66 @@ export const WithStartIcon: Story = {
   name: 'With Start Icon',
 };
 
+export const MenuWidth: Story = {
+  decorators: [
+    Story => (
+      <div style={{width: 900}}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => {
+    const [a, setA] = useState<PowerSearchFilter[]>([]);
+    const [b, setB] = useState<PowerSearchFilter[]>([]);
+    const [c, setC] = useState<PowerSearchFilter[]>([]);
+    const [d, setD] = useState<PowerSearchFilter[]>([]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+        <div style={{width: 360}}>
+          <PowerSearch
+            label="Default width"
+            isLabelHidden={false}
+            config={basicConfig}
+            filters={a}
+            onChange={next => setA([...next])}
+          />
+        </div>
+        <div style={{width: 360}}>
+          <PowerSearch
+            label="Wider than the input"
+            isLabelHidden={false}
+            menuWidth={640}
+            config={basicConfig}
+            filters={b}
+            onChange={next => setB([...next])}
+          />
+        </div>
+        <div style={{width: 360}}>
+          <PowerSearch
+            label="Narrower than the input"
+            isLabelHidden={false}
+            menuWidth={200}
+            config={basicConfig}
+            filters={c}
+            onChange={next => setC([...next])}
+          />
+        </div>
+        <div style={{width: 360}}>
+          <PowerSearch
+            label="A CSS length"
+            isLabelHidden={false}
+            menuWidth="34rem"
+            config={basicConfig}
+            filters={d}
+            onChange={next => setD([...next])}
+          />
+        </div>
+      </div>
+    );
+  },
+  name: 'Menu Width',
+};
+
 export const WithResultCount: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([
@@ -1381,7 +1445,8 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<PowerSearchFilter[]>([]);
     const [b, setB] = useState<PowerSearchFilter[]>([]);
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 400}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 400}}>
         <PowerSearch
           config={basicConfig}
           filters={a}

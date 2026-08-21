@@ -397,8 +397,17 @@ export interface PowerSearchProps extends Omit<
    * @default 'attached'
    */
   statusVariant?: FieldStatusVariant;
-  /** Max width for dropdown menu. */
-  menuWidth?: number;
+  /**
+   * Width of the field-search menu — the dropdown that offers fields and
+   * free-text search. Numbers are pixels, strings are used as-is (e.g.
+   * `'32rem'`). The menu never renders narrower than the input, so a value
+   * below the input's width has no effect. Omitted, the menu matches the
+   * input and grows with its content.
+   *
+   * Does not size the operator and value popovers that follow a field
+   * choice — those track the input on their own.
+   */
+  menuWidth?: number | string;
   /** Max display length for filter token values. @default 40 */
   maxTokenLength?: number;
   /** Max items in operator dropdown. */
@@ -542,6 +551,7 @@ export function PowerSearch({
   onBlur,
   status,
   statusVariant = 'attached',
+  menuWidth,
   maxTokenLength = 40,
   popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
   timezoneID,
@@ -1048,6 +1058,7 @@ export function PowerSearch({
           isDisabled={isDisabled}
           disabledMessage={disabledMessage}
           size={size}
+          menuWidth={menuWidth}
           tokenOverflowBehavior={tokenOverflowBehavior}
           hasEntriesOnFocus
           debounceMs={0}
