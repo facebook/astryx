@@ -1405,8 +1405,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         // A standalone divider between groups would orphan itself once its
         // neighbors are filtered out, so skip it while searching.
         if (!isSearching) {
+          // role="listbox" only permits option/group children; the divider
+          // carries no information the options don't, so it's hidden from
+          // the accessibility tree entirely rather than exposing
+          // role="separator" as a disallowed listbox child (axe
+          // aria-required-children).
           elements.push(
-            <Divider key={`divider-${i}`} xstyle={styles.divider} />,
+            <Divider
+              key={`divider-${i}`}
+              aria-hidden="true"
+              xstyle={styles.divider}
+            />,
           );
         }
       } else if (isSection(option)) {
