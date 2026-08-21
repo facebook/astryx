@@ -192,6 +192,15 @@ const styles = stylex.create({
     overflowY: 'auto',
     overscrollBehavior: 'none',
     touchAction: 'pan-y',
+    // The scrolling area paints the surface itself, covering the sheet's whole
+    // inner box. Without it the sheet's edge is not uniform: a theme that packs
+    // an inset ring into --shadow-high (the bundled themes all add one in dark
+    // mode) draws that ring just inside the sheet, where an opaque content
+    // wrapper such as Section paints over it -- so the ring shows only in the
+    // gap below where the content ends, and the sheet's side edges appear to
+    // change width partway down. Painting the surface here hides the ring
+    // evenly, leaving the border below as the sheet's one edge.
+    backgroundColor: colorVars['--color-background-surface'],
     // No reserve for the handle bar: it floats, so the content starts at the
     // sheet's top edge and rides up under the pill. The pill is 4px centered
     // in a 24px band, so it occupies only 10-14px from the edge -- inside the

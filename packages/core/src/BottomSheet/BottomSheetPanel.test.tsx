@@ -307,4 +307,25 @@ describe('BottomSheetPanel', () => {
     // padding, so it carries no hairline to draw.
     expect(sheet![1]).not.toContain('borderBlockEndWidth');
   });
+
+  // A theme that packs an inset ring into --shadow-high (the bundled themes all
+  // add one in dark mode) draws it just inside the sheet, where an opaque
+  // content wrapper such as Section paints over it -- so it showed only in the
+  // gap below the content and the side edges appeared to change width partway
+  // down. The scrolling body paints the surface across the whole inner box to
+  // hide the ring evenly.
+  it('paints the surface across the scrolling body so the edge stays uniform', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, './BottomSheetPanel.tsx'),
+      'utf-8',
+    );
+
+    const body = source.match(/\n {2}body: \{([\s\S]*?)\n {2}\},/);
+    expect(body).not.toBeNull();
+    expect(body![1]).toContain(
+      "backgroundColor: colorVars['--color-background-surface']",
+    );
+  });
 });
