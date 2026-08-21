@@ -286,7 +286,9 @@ const styles = stylex.create({
   footer: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    // One action, so it sits at the end — where a sheet's confirming action
+    // belongs, and under the thumb.
+    justifyContent: 'flex-end',
     gap: spacingVars['--spacing-2'],
     paddingBlockStart: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-1'],
@@ -489,16 +491,6 @@ export function MobileDateField({
     [fireChange],
   );
 
-  const handleToday = useCallback(() => {
-    const target = clampIndex(
-      monthIndexOf(today),
-      minMonthIndex,
-      maxMonthIndex,
-    );
-    setMonthIndex(target);
-    scrollerHandle.current?.scrollToMonth(target, 'smooth');
-  }, [today, minMonthIndex, maxMonthIndex]);
-
   // A wheel commit steers the scroller immediately, even though it is behind
   // the wheels: it keeps its layout box while hidden, so by the time the
   // wheels close it is already resting on the new month.
@@ -607,24 +599,24 @@ export function MobileDateField({
         </div>
       </div>
 
-      {/* Navigation on the left, dismissal on the right — the usual reading
-          order for a sheet footer, and it keeps the destination-changing
-          action away from the thumb's path to the one that closes.
-
-          Done does NOT commit: a tap on a day has already fired onChange by
+      {/* Done does NOT commit: a tap on a day has already fired onChange by
           the time it is reachable. It is a close button, exactly equivalent
           to the grab handle, the scrim and Escape — which is why it is safe
-          for those to remain, and why there is no Cancel to pair it with. */}
+          for those to remain, and why there is no Cancel to pair it with.
+
+          It sits alone. A "Today" button was here and only moved the calendar
+          to the current month WITHOUT selecting it, which read as broken: the
+          one thing a button called Today should obviously do is the thing it
+          did not. Navigating and selecting are two different intents and it
+          conflated them, so it is gone until it can be one or the other on
+          purpose. Reaching today by scrolling still works. */}
       <div {...stylex.props(styles.footer)}>
         <Button
-          variant="ghost"
-          size="sm"
-          label={t('@astryx.dateInput.today')}
-          onClick={handleToday}
-        />
-        <Button
           variant="primary"
-          size="sm"
+          // md, not sm: it is the only action in the footer and the one a
+          // thumb reaches for, so it gets the comfortable size rather than
+          // the compact one the header's ghost buttons used.
+          size="md"
           label={t('@astryx.dateInput.donePicking')}
           onClick={() => setIsSheetOpen(false)}
         />

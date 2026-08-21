@@ -135,7 +135,7 @@ export const docs = {
         name: 'Footer',
         required: false,
         description:
-          'Today at the start, which goes to the current month on either surface, and Done at the end, which closes the sheet. Done commits nothing — a tap on a day has already done that — so it is exactly equivalent to the grab handle, the scrim and Escape.',
+          'A single Done at the end, which closes the sheet. It commits nothing — a tap on a day has already done that — so it is exactly equivalent to the grab handle, the scrim and Escape.',
       },
     ],
   },

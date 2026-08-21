@@ -540,14 +540,13 @@ describe('DateInputNext — calendar surface', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('puts Today and Done in a footer, in that order', () => {
+  it('has Done in the footer and no Today button', () => {
     renderAndOpen();
-    const buttons = screen
-      .getAllByRole('button')
-      .map(b => b.textContent?.trim())
-      .filter(label => label === 'Today' || label === 'Done');
-    // Navigation first, dismissal last — the reading order of the footer.
-    expect(buttons).toEqual(['Today', 'Done']);
+    expect(screen.getByRole('button', {name: 'Done'})).toBeInTheDocument();
+    // "Today" moved the calendar to the current month WITHOUT selecting it,
+    // which read as broken — the one thing the name promises is the thing it
+    // did not do. Removed until it can be navigate-or-select on purpose.
+    expect(screen.queryByRole('button', {name: 'Today'})).toBeNull();
   });
 
   it('marks the selection and today', () => {
@@ -767,19 +766,14 @@ describe('DateInputNext — month/year wheels', () => {
     expect(field()).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('keeps Today available while the wheels are up', () => {
-    // The footer does not change with the surface, and Today still means "go
-    // to the current month" — which the wheels can do as well as the calendar.
+  it('keeps the same footer while the wheels are up', () => {
+    // The footer does not change with the surface — the header's action used
+    // to swap between Today and Done, and that was the confusing part.
     renderAndOpen(
       <Controlled initial="2026-03-21" min="2025-01-01" max="2027-12-31" />,
     );
     openWheels();
-    fireEvent.click(
-      within(screen.getByRole('listbox', {name: 'Year'})).getByText('2025'),
-    );
-    expect(title()).toHaveTextContent('March 2025');
-    fireEvent.click(screen.getByRole('button', {name: 'Today'}));
-    expect(title()).toHaveTextContent('March 2026');
+    expect(screen.getByRole('button', {name: 'Done'})).toBeInTheDocument();
   });
 });
 
