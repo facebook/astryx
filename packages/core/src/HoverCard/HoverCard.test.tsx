@@ -25,6 +25,7 @@ import {StrictMode} from 'react';
 import {Button} from '../Button/Button';
 import {Theme, defineTheme} from '../theme';
 import {HoverCard} from './HoverCard';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -806,8 +807,17 @@ describe('HoverCard', () => {
   });
 
   describe('touch', () => {
+    // The modality is document-global; a tap in one case must not decide the
+    // next one's answer.
+    beforeEach(() => {
+      __resetInteractionModalityForTest();
+    });
+
     /** A tap: the pointer sequence a finger produces before hover is faked. */
     const tap = (element: HTMLElement) => {
+      // A finger's arrival fires pointerenter too, and that is the path a pen
+      // must not take — cover it here rather than starting at pointerdown.
+      fireEvent.pointerEnter(element, {pointerType: 'touch'});
       fireEvent.pointerDown(element, {pointerType: 'touch'});
       fireEvent.pointerUp(element, {pointerType: 'touch'});
       // Touch synthesizes hover after the press; the card must not act on it.
@@ -926,6 +936,60 @@ describe('HoverCard', () => {
 
       await waitFor(() => {
         expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('closes on a second tap of the trigger', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={0}
+          hideDelay={0}>
+          Ruby Cheung
+        </HoverCard>,
+      );
+
+      const trigger = screen.getByText('Ruby Cheung');
+      tap(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      tap(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('ignores the focus a tap leaves behind, but not keyboard focus', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={0}>
+          <button type="button">Save</button>
+        </HoverCard>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Save'});
+      // The tap goes to the button, as `auto` decides for an action trigger —
+      // and the focus it leaves behind must not put the card over the control
+      // the user just pressed.
+      tap(trigger);
+      fireEvent.focusIn(trigger);
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+
+      // Reaching for the keyboard ends the touch interaction: the same trigger,
+      // focused by Tab, still opens.
+      fireEvent.keyDown(document, {key: 'Tab'});
+      fireEvent.focusIn(trigger);
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
       });
     });
   });

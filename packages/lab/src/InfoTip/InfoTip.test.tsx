@@ -169,6 +169,7 @@ describe('InfoTip', () => {
   describe('touch', () => {
     /** A tap: the pointer sequence a finger produces before hover is faked. */
     const tap = (element: HTMLElement) => {
+      fireEvent.pointerEnter(element, {pointerType: 'touch'});
       fireEvent.pointerDown(element, {pointerType: 'touch'});
       fireEvent.pointerUp(element, {pointerType: 'touch'});
       fireEvent.mouseEnter(element);

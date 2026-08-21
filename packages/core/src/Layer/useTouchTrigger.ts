@@ -41,7 +41,14 @@ import {
  */
 export type LayerTouchTrigger = 'auto' | 'tap' | 'none';
 
-/** Pointer types with no hover state of their own. */
+/**
+ * Pointer types whose *press* is a tap rather than a click.
+ *
+ * A pen belongs here but not in the arrival path: in detection range it hovers
+ * — firing `pointerenter`/`pointermove` with no contact, exactly as a mouse
+ * does, on a device where `(hover: hover)` matches — and only becomes a tap
+ * once it lands. See `handlePointerEnter`.
+ */
 const TOUCH_POINTER_TYPES = new Set(['touch', 'pen']);
 
 /**
@@ -73,6 +80,11 @@ const ACTION_ROLES = new Set([
  * Deliberately narrower than "focusable": the wrapper a text-only Tooltip
  * renders carries `tabindex=0` so keyboard users can reach the hint, and it
  * still performs no action.
+ *
+ * True only decides that the layer stays shut — the tap itself is never
+ * swallowed. Nothing here calls `preventDefault` or `stopPropagation`, so an
+ * inert trigger that happens to carry its own `onClick` (a `<div onClick>`
+ * with no role) gets both: the layer opens and the handler runs.
  */
 export function isActionTrigger(element: HTMLElement): boolean {
   const role = element.getAttribute('role');
@@ -139,7 +151,11 @@ export interface UseTouchTriggerOptions {
 }
 
 export interface UseTouchTriggerReturn {
-  /** Whether the pointer that last touched this trigger was a finger or pen. */
+  /**
+   * Whether the pointer in play on this trigger has no hover of its own: a
+   * finger, or a pen that has landed. A hovering pen reads as false, because
+   * it hovers.
+   */
   isTouchPointerRef: RefObject<boolean>;
 
   /**
@@ -149,7 +165,11 @@ export interface UseTouchTriggerReturn {
    */
   isTouchInteraction: () => boolean;
 
-  /** Attach to the trigger: records pointer type ahead of synthesized hover. */
+  /**
+   * Attach to the trigger: records pointer type ahead of synthesized hover.
+   * Arrival alone only marks a finger — a pen hovers, so it is left to the
+   * hover path until it presses.
+   */
   handlePointerEnter: (event: PointerEvent) => void;
 
   /**
@@ -268,7 +288,11 @@ export function useTouchTrigger(
   );
 
   const handlePointerEnter = useCallback((event: PointerEvent) => {
-    isTouchPointerRef.current = TOUCH_POINTER_TYPES.has(event.pointerType);
+    // Only a finger is hoverless on arrival. A pen in detection range hovers
+    // like a mouse, and treating its arrival as touch would bail out of the
+    // hover path and leave a stylus user with no tooltip at all. A pen that
+    // presses is a tap, and `handlePointerDown` still reads it as one.
+    isTouchPointerRef.current = event.pointerType === 'touch';
   }, []);
 
   const handlePointerDown = useCallback(

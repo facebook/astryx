@@ -9,9 +9,18 @@
  * SYNC: When Tooltip.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterAll,
+} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Tooltip} from './Tooltip';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -268,8 +277,17 @@ describe('Tooltip', () => {
     });
   });
   describe('touch', () => {
+    // The modality is document-global; a tap in one case must not decide the
+    // next one's answer.
+    beforeEach(() => {
+      __resetInteractionModalityForTest();
+    });
+
     /** A tap: the pointer sequence a finger produces before hover is faked. */
     const tap = (element: HTMLElement) => {
+      // A finger's arrival fires pointerenter too, and that is the path a pen
+      // must not take — cover it here rather than starting at pointerdown.
+      fireEvent.pointerEnter(element, {pointerType: 'touch'});
       fireEvent.pointerDown(element, {pointerType: 'touch'});
       fireEvent.pointerUp(element, {pointerType: 'touch'});
       // Touch synthesizes hover after the press; the tooltip must not act on it.
@@ -404,6 +422,98 @@ describe('Tooltip', () => {
       // A hybrid device: the same trigger, now under a mouse.
       fireEvent.pointerEnter(trigger, {pointerType: 'mouse'});
       fireEvent.mouseEnter(trigger);
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('opens on a hovering pen, which is a hover and not a tap', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Tooltip text" onOpenChange={onOpenChange} delay={0}>
+          <button type="button">Save</button>
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Save'});
+      // A stylus in detection range: pointerenter with nothing in contact, on
+      // a device where `(hover: hover)` matches. Reading that as touch would
+      // bail out of the hover path and leave the user no tooltip at all.
+      fireEvent.pointerEnter(trigger, {pointerType: 'pen', buttons: 0});
+      fireEvent.mouseEnter(trigger);
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('tap-opens when a pen lands on an inert trigger', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Tooltip text" onOpenChange={onOpenChange} delay={200}>
+          Abbreviation
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByText('Abbreviation');
+      // Hovering first, as a real pen does — then contact, which is a tap.
+      fireEvent.pointerEnter(trigger, {pointerType: 'pen', buttons: 0});
+      fireEvent.pointerDown(trigger, {pointerType: 'pen'});
+      fireEvent.pointerUp(trigger, {pointerType: 'pen'});
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('does not reopen from the focus a tapped text field takes', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Tooltip text" onOpenChange={onOpenChange} delay={0}>
+          <input type="text" aria-label="Amount" />
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByLabelText('Amount');
+      // A tapped text field matches `:focus-visible` in a real browser —
+      // deliberately, per Selectors 4, so typing has a visible home. jsdom
+      // does not model that, so stand it up here; without it this case cannot
+      // fail, whatever the focus path does.
+      const realMatches = trigger.matches.bind(trigger);
+      vi.spyOn(trigger, 'matches').mockImplementation((selector: string) =>
+        selector === ':focus-visible' ? true : realMatches(selector),
+      );
+
+      // An `<input>` is an action trigger, so `auto` gives it the tap — and
+      // the focus it takes must not put the tooltip back over the field the
+      // user is about to type into.
+      tap(trigger);
+      fireEvent.focusIn(trigger);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    });
+
+    it('still opens on keyboard focus of a trigger a finger touched', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Tooltip text" onOpenChange={onOpenChange} delay={0}>
+          <input type="text" aria-label="Amount" />
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByLabelText('Amount');
+      const realMatches = trigger.matches.bind(trigger);
+      vi.spyOn(trigger, 'matches').mockImplementation((selector: string) =>
+        selector === ':focus-visible' ? true : realMatches(selector),
+      );
+
+      tap(trigger);
+      // Reaching for the keyboard ends the touch interaction; the guard is on
+      // the gesture in flight, not on the device the trigger last saw.
+      fireEvent.keyDown(document, {key: 'Tab'});
+      fireEvent.focusIn(trigger);
 
       await waitFor(() => {
         expect(onOpenChange).toHaveBeenCalledWith(true);

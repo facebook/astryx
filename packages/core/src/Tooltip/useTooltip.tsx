@@ -381,6 +381,14 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       if (!isEnabled) {
         return;
       }
+      // A tap focuses the trigger it activates, and `:focus-visible` does not
+      // filter that out on every element: a tapped `<input>` or contenteditable
+      // matches it. Those are exactly the action triggers `auto` just decided
+      // to keep shut, so without this the focus reopens what the tap
+      // suppressed, over the field the user is trying to type into.
+      if (touch.isTouchInteraction()) {
+        return;
+      }
       // Only show tooltip for keyboard focus (:focus-visible),
       // not programmatic focus (e.g. dialog auto-focus, touch tap)
       const target = e.target as HTMLElement;
@@ -390,7 +398,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       clearTimeouts();
       layer.show();
     },
-    [isEnabled, clearTimeouts, layer],
+    [isEnabled, touch, clearTimeouts, layer],
   );
 
   const handleFocusOut = useCallback(() => {
