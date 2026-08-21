@@ -253,13 +253,21 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     maxSizePx = Infinity,
     collapsible = false,
     collapsedSize = DEFAULT_COLLAPSED_SIZE,
-    snaps = [],
+    snaps: snapsProp,
     autoSaveId,
     defaultIsCollapsed,
     isCollapsed: controlledIsCollapsed,
     onSizeChange,
     onCollapseChange,
   } = config;
+
+  // A `snaps = []` default in the destructure above allocates a new array
+  // every render, which changes identity on every `expand`/`resize`/
+  // `onResizeMove` useCallback below (and on `props._snaps`) even when the
+  // caller's config never changes. Keep one stable empty array per hook
+  // instance instead, and only fall back to it when the caller omitted snaps.
+  const emptySnapsRef = useRef<number[]>([]);
+  const snaps = snapsProp ?? emptySnapsRef.current;
 
   const resolvedDefault = resolveDefaultSize(defaultSize);
   const persisted = autoSaveId ? loadPersistedState(autoSaveId) : null;

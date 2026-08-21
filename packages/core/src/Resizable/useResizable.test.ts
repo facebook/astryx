@@ -3,7 +3,8 @@
 /**
  * @file useResizable.test.ts
  * @input Uses vitest, @testing-library/react renderHook, useResizable
- * @output Unit tests for useResizable persistence and collapse state
+ * @output Unit tests for useResizable persistence, collapse state, and
+ *   callback/prop stability
  * @position Testing; validates useResizable implementation
  *
  * Persistence coverage originated in #4824 by @AKnassa.
@@ -15,6 +16,7 @@ import {useLayoutEffect} from 'react';
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import {useResizable} from './useResizable';
+import type {UseResizableSingleConfig} from './useResizable';
 
 const AUTO_SAVE_ID = 'test-panel';
 const KEY = `astryx-resizable:${AUTO_SAVE_ID}`;
@@ -398,5 +400,39 @@ describe('useResizable live collapse state', () => {
     });
 
     expect(onCollapseChange).toHaveBeenCalledExactlyOnceWith(true);
+  });
+});
+
+describe('useResizable callback stability', () => {
+  it('keeps expand, resize, and props._snaps stable across rerenders when snaps is omitted', () => {
+    const config: UseResizableSingleConfig = {
+      defaultSize: 200,
+      minSizePx: 100,
+      maxSizePx: 400,
+    };
+    const {result, rerender} = renderHook(() => useResizable(config));
+
+    const first = result.current;
+    rerender();
+    const second = result.current;
+
+    expect(second.expand).toBe(first.expand);
+    expect(second.resize).toBe(first.resize);
+    expect(second.props._snaps).toBe(first.props._snaps);
+  });
+
+  it('still returns a stable snaps identity for a caller-provided array across rerenders', () => {
+    const snaps = [100, 200, 300];
+    const config: UseResizableSingleConfig = {
+      defaultSize: 200,
+      minSizePx: 100,
+      maxSizePx: 400,
+      snaps,
+    };
+    const {result, rerender} = renderHook(() => useResizable(config));
+
+    expect(result.current.props._snaps).toBe(snaps);
+    rerender();
+    expect(result.current.props._snaps).toBe(snaps);
   });
 });
