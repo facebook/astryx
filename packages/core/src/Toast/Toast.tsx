@@ -20,7 +20,6 @@ import {
 import {mergeProps} from '../utils';
 import {useTheme} from '../theme';
 import {MediaTheme} from '../theme/MediaTheme';
-import {useContrastMode} from '../hooks/useContrastMode';
 import type {ToastType, ToastDismissReason} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -198,21 +197,14 @@ export function Toast({
   }, [onDismiss]);
 
   const isError = type === 'error';
-  // The inverted surface is *usually* dark in light mode and light in dark
-  // mode, but a theme can define --color-background-inverted as anything.
-  // This is the intent; useContrastMode hands it back untouched unless the
-  // painted surface makes it unreadable.
+  // The surface is *usually* dark in light mode and light in dark mode, but a
+  // theme can define --color-background-inverted as anything — so the mode is
+  // measured, not assumed. This is only the pre-measurement fallback.
   const {mode} = useTheme();
-  const requestedMediaMode = isError || mode === 'light' ? 'dark' : 'light';
-  const rootRef = useRef<HTMLDivElement>(null);
-  const contrast = useContrastMode(rootRef, requestedMediaMode, {
-    watch: [type],
-  });
-  const mediaMode = contrast?.mode ?? requestedMediaMode;
+  const fallbackMediaMode = isError || mode === 'light' ? 'dark' : 'light';
 
   return (
     <div
-      ref={rootRef}
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
       aria-atomic="true"
@@ -228,7 +220,7 @@ export function Toast({
           isExiting && styles.exiting,
         ),
       )}>
-      <MediaTheme mode={mediaMode}>
+      <MediaTheme mode="auto" fallback={fallbackMediaMode}>
         <div {...stylex.props(styles.inner)}>
           <div {...stylex.props(styles.content)}>{body}</div>
 

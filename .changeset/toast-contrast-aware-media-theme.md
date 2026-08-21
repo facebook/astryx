@@ -2,22 +2,28 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Toast: don't apply a media theme the surface can't carry
+[feat] MediaTheme: add `mode="auto"` and `mode="off"`
 
-Toast assumed `--color-background-inverted` is inverted, and applied a dark
-media context whenever the page was light. A theme is free to define that
-token as a soft grey — and then the toast painted white text on a pale
-surface at 1.25:1, with no way to know, because the assumption lived in a
-ternary rather than in anything measured.
+A theme is free to define `--color-background-inverted` as something that is
+not inverted — and a component that hardcodes `mode="dark"` then paints white
+text on pale grey at 1.25:1. The surface color is a runtime value and the mode
+was a compile-time guess, so no amount of care in the component could catch
+it.
 
-Toast still asks for the context it wants. That request is now checked against
-the colors the browser actually painted, and only overridden when it comes out
-unreadable — below 3:1, WCAG's own non-text floor. This is a bug guard, not a
-contrast enforcer: a theme that picks a soft-but-legible pairing keeps it, and
-every stock Astryx surface keeps the mode it has today.
+`mode="auto"` measures the surface the browser actually painted and applies
+whichever of the theme's own `--color-on-dark` / `--color-on-light` reads
+better on it. There is no threshold and no contrast target: it picks between
+the theme's two answers, so a theme that wants a soft pairing still gets one.
+Deciding a surface needs _no_ media context stays an authoring choice —
+that is the new `mode="off"`, which renders the same element without the media
+attribute so children never remount.
 
-`MediaTheme` gains `mode="off"` to support it — the same element without the
-media attribute, so a correction is a prop change rather than a tree change
-and children never remount.
+When the backdrop is not knowable from CSS — during SSR, on the first client
+frame, and most often behind a `background-image`, whose pixels need sampling
+(see `useImageMode`) rather than a computed style — `auto` uses the new
+`fallback` prop instead of guessing.
+
+Toast now uses `mode="auto"`, with its previous rule kept only as that
+fallback. Every stock Astryx surface renders exactly as before.
 
 @cixzhang
