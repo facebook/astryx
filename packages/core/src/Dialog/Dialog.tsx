@@ -47,13 +47,14 @@ import {
   overlayPaddingReset,
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {devWarn} from '../utils/devWarning';
 import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
 import type {DialogVariantMap} from './index';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 /**
  * Calculate a directional translate offset for dialog entry animation.
  * Returns a normalized vector from the trigger element toward the viewport
@@ -415,6 +416,8 @@ export function Dialog({
     [titleId, hasConsumerName],
   );
 
+  const mergedDialogRef = useMergedRefs(ref, attachDialog);
+
   // Capture the element that was focused when the dialog opened,
   // for directional animation origin and focus restoration on close.
   const triggerElementRef = useRef<HTMLElement | null>(null);
@@ -632,7 +635,7 @@ export function Dialog({
 
   return (
     <dialog
-      ref={mergeRefs(ref, attachDialog)}
+      ref={mergedDialogRef}
       {...safeProps}
       {...mergeProps(
         themeProps('dialog', {variant}),

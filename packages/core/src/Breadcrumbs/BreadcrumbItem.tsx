@@ -42,7 +42,7 @@ import {
 import {BreadcrumbContext} from './Breadcrumbs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {Icon} from '../Icon';
@@ -63,6 +63,7 @@ import {
 } from '../DropdownMenu/menuItemRoles';
 import type {DropdownMenuOption} from '../DropdownMenu/DropdownMenu';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Props
 // =============================================================================
@@ -339,6 +340,8 @@ export function BreadcrumbItem({
     }
   });
 
+  const mergedItemRef = useMergedRefs(ref, liRef);
+
   const content = (
     <>
       {startIcon && <span {...stylex.props(itemStyles.icon)}>{startIcon}</span>}
@@ -349,7 +352,7 @@ export function BreadcrumbItem({
   if (isCurrent) {
     return (
       <li
-        ref={mergeRefs(ref, liRef)}
+        ref={mergedItemRef}
         {...mergeProps(
           themeProps('breadcrumb-item'),
           stylex.props(
@@ -398,7 +401,7 @@ export function BreadcrumbItem({
   // The effect handles adding aria-current for auto-last detection.
   return (
     <li
-      ref={mergeRefs(ref, liRef)}
+      ref={mergedItemRef}
       {...mergeProps(
         themeProps('breadcrumb-item'),
         stylex.props(
@@ -607,7 +610,7 @@ function BreadcrumbMenuTrigger({
   return (
     <>
       <button
-        ref={mergeRefs(
+        ref={useMergedRefs(
           ref as React.Ref<HTMLButtonElement>,
           buttonRef,
           popover.triggerRef,

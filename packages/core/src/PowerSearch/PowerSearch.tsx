@@ -46,7 +46,6 @@ import {
   typeScaleVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
-import {mergeRefs} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
@@ -75,6 +74,7 @@ import type {
   PowerSearchComponents,
 } from './types';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Icon mapping for typeahead entries
 // =============================================================================
@@ -1029,7 +1029,10 @@ export function PowerSearch({
   return (
     <>
       <div
-        ref={mergeRefs(ref, popover.triggerRef as React.Ref<HTMLDivElement>)}
+        ref={useMergedRefs(
+          ref,
+          popover.triggerRef as React.Ref<HTMLDivElement>,
+        )}
         {...themeProps('power-search')}>
         <Tokenizer
           handleRef={tokenizerRef}

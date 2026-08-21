@@ -24,13 +24,14 @@ import type {BaseProps} from '../BaseProps';
 import {TabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
 import {useSize} from '../SizeContext/SizeContext';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {useListFocus} from '../hooks/useListFocus';
 import {useKeyboardHint} from '../hooks/useKeyboardHint';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 /**
  * Selector matching the focusable stops in the tab strip: every Tab
  * (`[data-tab-value]`) and every TabMenu trigger (`[data-tab-menu]`),
@@ -207,7 +208,7 @@ export function TabList({
   return (
     <TabListContext value={contextValue}>
       <nav
-        ref={mergeRefs(ref, listRef)}
+        ref={useMergedRefs(ref, listRef)}
         {...restProps}
         aria-label={ariaLabel}
         onKeyDown={handleRootKeyDown}

@@ -53,7 +53,7 @@ import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {Grid} from '../Grid/Grid';
 import {Icon} from '../Icon';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
@@ -61,6 +61,7 @@ import {useTopNavRenderMode} from './TopNavRenderContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -448,7 +449,7 @@ function DefaultMegaMenu({
   return (
     <>
       <button
-        ref={mergeRefs(triggerButtonRef, setTriggerEl, ref)}
+        ref={useMergedRefs(triggerButtonRef, setTriggerEl, ref)}
         type="button"
         {...popover.triggerProps}
         {...hoverTriggerProps}

@@ -44,7 +44,7 @@ import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
@@ -52,6 +52,7 @@ import {useIndicator} from '../Indicator';
 import {themeProps} from '../utils/themeProps';
 import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   container: {
     display: 'flex',
@@ -406,7 +407,7 @@ export function CheckboxInput({
           {...focusProps}>
           <input
             {...rest}
-            ref={mergeRefs(
+            ref={useMergedRefs(
               ref,
               indeterminateRef,
               disabledMessageTooltip.positionRef,

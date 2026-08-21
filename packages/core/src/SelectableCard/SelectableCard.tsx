@@ -40,7 +40,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import type {Elevation, SizeValue, SpacingStep} from '../utils/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {Card} from '../Card/Card';
 import type {CardVariant} from '../Card/Card';
 import {useClickableContainer} from '../hooks/useClickableContainer';
@@ -48,6 +48,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles — selection + interaction; Card handles the rest
 // =============================================================================
@@ -343,7 +344,7 @@ export function SelectableCard({
 
   return (
     <Card
-      ref={mergeRefs(ref, containerRef)}
+      ref={useMergedRefs(ref, containerRef)}
       width={width}
       height={height}
       maxWidth={maxWidth}

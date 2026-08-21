@@ -35,11 +35,12 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {mergeProps, mergeRefs, rtlStyles} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import type {ResizableProps} from './useResizable';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
 
@@ -537,7 +538,7 @@ export function ResizeHandle({
 
   return (
     <div
-      ref={mergeRefs(ref, handleRef)}
+      ref={useMergedRefs(ref, handleRef)}
       role="separator"
       aria-orientation={isHorizontal ? 'vertical' : 'horizontal'}
       aria-valuenow={ariaValueNow}

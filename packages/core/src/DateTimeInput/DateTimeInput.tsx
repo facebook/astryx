@@ -72,7 +72,6 @@ import {
   adjustTime,
   isImeKeyEvent,
   mergeProps,
-  mergeRefs,
   isFocusDetached,
 } from '../utils';
 import {
@@ -91,6 +90,7 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {useTranslator, InternationalizationContext} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
 };
@@ -1006,7 +1006,7 @@ export function DateTimeInput({
             />
           </button>
           <input
-            ref={mergeRefs(ref, dateInputRef)}
+            ref={useMergedRefs(ref, dateInputRef)}
             id={dateInputId}
             type="text"
             role="combobox"
