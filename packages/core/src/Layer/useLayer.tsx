@@ -676,23 +676,27 @@ function useLayerImplementation(
     clearContextMount();
   }, [onHide, clearContextMount]);
 
-  // Ref for trigger element (context mode only)
+  // Ref for trigger element (context mode only). Stable across renders so
+  // React does not detach and reattach an unchanged trigger element, which
+  // would otherwise remove and reapply the CSS anchor name for no reason.
+  const contextTriggerRef: RefCallback<HTMLElement> = useCallback(
+    (el: HTMLElement | null) => {
+      // Remove only THIS layer's anchor name from the previous element so
+      // other layers sharing the same trigger keep their anchors.
+      if (triggerRef.current && triggerRef.current !== el) {
+        removeAnchorName(triggerRef.current, anchorId);
+      }
+
+      if (el) {
+        addAnchorName(el, anchorId);
+      }
+
+      triggerRef.current = el;
+    },
+    [anchorId],
+  );
   const ref: RefCallback<HTMLElement> | undefined =
-    mode === 'context'
-      ? (el: HTMLElement | null) => {
-          // Remove only THIS layer's anchor name from the previous element so
-          // other layers sharing the same trigger keep their anchors.
-          if (triggerRef.current && triggerRef.current !== el) {
-            removeAnchorName(triggerRef.current, anchorId);
-          }
-
-          if (el) {
-            addAnchorName(el, anchorId);
-          }
-
-          triggerRef.current = el;
-        }
-      : undefined;
+    mode === 'context' ? contextTriggerRef : undefined;
 
   // Arm only when the dismissing gesture's click is still ahead of us. Some
   // engines deliver click first; in that order there is nothing left to absorb.
@@ -997,8 +1001,13 @@ function useLayerImplementation(
     [popoverRefCallback, id, lightDismiss],
   );
 
-  if (mode === 'context') {
-    return {
+  // Memoized on the same members consumers actually see, so a rerender that
+  // doesn't change any of them (isOpen, the callbacks, the render function)
+  // returns the exact same object. Without this, every rerender produces a
+  // new API object, which reruns effects/listeners in consumers that
+  // correctly depend on it even though nothing about the layer changed.
+  const contextReturn = useMemo(
+    () => ({
       ref: ref as RefCallback<HTMLElement>,
       anchorId,
       show,
@@ -1007,18 +1016,28 @@ function useLayerImplementation(
       wasJustDismissed,
       id,
       render: renderContext,
-    };
+    }),
+    [ref, anchorId, show, hide, isOpen, wasJustDismissed, id, renderContext],
+  );
+
+  const fixedReturn = useMemo(
+    () => ({
+      ref: undefined,
+      show,
+      hide,
+      isOpen,
+      wasJustDismissed,
+      id,
+      render: renderFixed,
+    }),
+    [show, hide, isOpen, wasJustDismissed, id, renderFixed],
+  );
+
+  if (mode === 'context') {
+    return contextReturn;
   }
 
-  return {
-    ref: undefined,
-    show,
-    hide,
-    isOpen,
-    wasJustDismissed,
-    id,
-    render: renderFixed,
-  };
+  return fixedReturn;
 }
 
 export function useLayer(options: ContextLayerOptions): ContextLayerReturn;
