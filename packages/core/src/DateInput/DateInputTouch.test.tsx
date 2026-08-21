@@ -144,6 +144,11 @@ function setViewport(kind: 'mobile' | 'desktop'): void {
  * and torn down immediately: a getter left on `HTMLElement.prototype` makes
  * EVERY later DOM read take a slow path, measured at ~2.4s per test here.
  */
+/** One animation frame, for the rAF-throttled scroll handlers. */
+async function frame(): Promise<void> {
+  return new Promise(resolve => requestAnimationFrame(() => resolve()));
+}
+
 function withLayout<T>(fn: () => T): T {
   // jsdom defines clientWidth on Element.prototype; shadowing it on
   // HTMLElement.prototype and deleting the shadow afterwards restores the
@@ -824,6 +829,52 @@ describe('DateInput — month/year wheels', () => {
       ),
     );
     expect(title()).toHaveTextContent('September 2026');
+  });
+
+  /**
+   * A wheel commit steers the hidden calendar, and the calendar reports the
+   * month it lands on. Taking that report back while the wheels are open
+   * closes a cycle: commit -> echo -> the echo moves the wheel's selected row
+   * -> the wheel is repositioned -> that scroll reads as another commit.
+   *
+   * Whether it converges comes down to how precisely a browser says
+   * "scrolling stopped". Chrome has `scrollend` and settles at once; iOS
+   * below Safari 26 has none, and its momentum runs on after the finger
+   * lifts, so each lap committed the next month along and the month climbed
+   * on its own — reported from a device, invisible in Chrome.
+   *
+   * Driven here through the calendar's real scroll listener, which needs a
+   * measured scrollport (`withLayout`) and a `scrollLeft` far enough to land
+   * on another pane, then a frame for the rAF throttle. No timing assumptions:
+   * the echo either reaches the month or it does not.
+   */
+  it('ignores the calendar echo while the wheels are steering it', async () => {
+    await withLayout(async () => {
+      render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+      fireEvent.click(field());
+      openWheels();
+      fireEvent.click(
+        within(screen.getByRole('listbox', {name: 'Month'})).getByText(
+          'January',
+        ),
+      );
+      expect(title()).toHaveTextContent('January 2026');
+
+      // The calendar, scrolling to January behind the wheels, reports each
+      // month it passes. None of it may move the month the wheels just set.
+      const scroller = document.querySelector<HTMLElement>(
+        '[data-scroller="months"]',
+      )!;
+      for (const row of [5, 6, 7, 8]) {
+        scroller.scrollLeft = row * SCROLLPORT_WIDTH;
+        fireEvent.scroll(scroller);
+        await frame();
+      }
+      expect(title()).toHaveTextContent('January 2026');
+    });
+    // The other direction — the calendar reporting its month when it IS the
+    // surface — is what every test in the calendar-surface block above
+    // depends on, so it is covered rather than restated here.
   });
 
   it('the year wheel keeps the month', () => {

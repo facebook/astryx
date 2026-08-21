@@ -24,6 +24,7 @@
 import {use, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {InternationalizationContext} from '../i18n';
+import {DATE_FORMAT_MONTH_ONLY, plainDateFormat} from '../utils';
 import {spacingVars} from '../theme/tokens.stylex';
 import {dateInputTouchGeometry} from './tokens.stylex';
 import {Wheel, type WheelOption} from './Wheel';
@@ -69,14 +70,22 @@ export function MonthYearWheels({
   const {locale} = use(InternationalizationContext);
   const {year, month} = fromMonthIndex(monthIndex);
 
-  const monthNames = useMemo(() => {
-    const format = new Intl.DateTimeFormat(locale, {month: 'long'});
-    // Day 15 of a fixed year, formatted locally: no timezone can push it into
-    // an adjacent month the way day 1 or day 31 can.
-    return Array.from({length: 12}, (_, index) =>
-      format.format(new Date(2021, index, 15)),
-    );
-  }, [locale]);
+  const monthNames = useMemo(
+    () =>
+      // Day 15 of a fixed year: no timezone can push it into an adjacent
+      // month the way day 1 or day 31 can. `plainDateFormat` rather than a
+      // raw `Intl.DateTimeFormat` so the locale traces back to
+      // InternationalizationProvider like every other formatted date here —
+      // `locale` stays in the dependency list because that provider value is
+      // what makes the memo stale.
+      Array.from({length: 12}, (_, index) =>
+        plainDateFormat(
+          {year: 2021, month: index + 1, day: 15},
+          DATE_FORMAT_MONTH_ONLY,
+        ),
+      ),
+    [locale],
+  );
 
   // Months outside the range stay on the wheel rather than vanishing: a list
   // whose length changes with the year would jump under the finger.

@@ -268,10 +268,45 @@ export function Wheel({
     [itemBlockSize],
   );
 
+  // Commit on rest. A disabled row is bounced back to the committed one
+  // rather than silently keeping a value the wheel is not showing.
+  //
+  // Declared here, above the park effect, because that effect consults the
+  // `isAtRestRef` this returns before it repositions anything.
+  const {isAtRestRef} = useScrollSettle(
+    scrollerRef,
+    scroller => {
+      const size = itemBlockSize();
+      if (size === 0) {
+        return;
+      }
+      const index = Math.min(
+        options.length - 1,
+        Math.max(0, Math.round(scroller.scrollTop / size)),
+      );
+      const option = options[index];
+      if (option == null || option.isDisabled) {
+        scrollToIndex(selectedIndex, 'smooth');
+        return;
+      }
+      if (option.value !== value) {
+        onChange(option.value);
+      }
+    },
+    isActive,
+  );
+
   // Park the committed row under the band whenever the wheel is shown, or the
   // value is changed from outside (the calendar scrolled to another month).
+  //
+  // NEVER while the wheel is still moving. A scroller that is mid-gesture or
+  // still carrying momentum is the user's, and repositioning it does not stop
+  // the momentum — on iOS it feeds a cycle where the scroll this causes reads
+  // as a new settle, commits the next row along, and parks again. See
+  // useScrollSettle. The settle handler re-checks the position afterwards, so
+  // a correction that is genuinely needed still happens, just at rest.
   useEffect(() => {
-    if (!isActive) {
+    if (!isActive || !isAtRestRef.current) {
       return;
     }
     const size = itemBlockSize();
@@ -283,7 +318,7 @@ export function Wheel({
       scroller.scrollTo({top: selectedIndex * size, behavior: 'auto'});
     }
     setActiveIndex(selectedIndex);
-  }, [isActive, selectedIndex, itemBlockSize]);
+  }, [isActive, selectedIndex, itemBlockSize, isAtRestRef]);
 
   // Highlight follows the finger. rAF-throttled: a scroll can fire far more
   // often than the display refreshes, and this only feeds a repaint.
@@ -331,31 +366,6 @@ export function Wheel({
   // the one gesture its shape invites. Touch is untouched — it pans natively,
   // with momentum this could not match. See usePointerDragScroll.
   usePointerDragScroll(scrollerRef, isActive);
-
-  // Commit on rest. A disabled row is bounced back to the committed one rather
-  // than silently keeping a value the wheel is not showing.
-  useScrollSettle(
-    scrollerRef,
-    scroller => {
-      const size = itemBlockSize();
-      if (size === 0) {
-        return;
-      }
-      const index = Math.min(
-        options.length - 1,
-        Math.max(0, Math.round(scroller.scrollTop / size)),
-      );
-      const option = options[index];
-      if (option == null || option.isDisabled) {
-        scrollToIndex(selectedIndex, 'smooth');
-        return;
-      }
-      if (option.value !== value) {
-        onChange(option.value);
-      }
-    },
-    isActive,
-  );
 
   const moveBy = useCallback(
     (delta: number) => {

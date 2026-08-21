@@ -595,6 +595,34 @@ export function TouchDateField({
     scrollerHandle.current?.scrollToMonth(next, 'auto');
   }, []);
 
+  /**
+   * The calendar reports the month it has scrolled to — but only while it is
+   * the surface being scrolled.
+   *
+   * While the wheels are up the wheels are the source of truth, and the
+   * calendar is being STEERED by them: a wheel commit calls `scrollToMonth`
+   * above, the calendar scrolls, and it would report that month straight back
+   * here. That closes a cycle — wheel commits, calendar echoes, the echo moves
+   * the wheel's selected row, the wheel is repositioned onto it, and the
+   * resulting scroll reads as another commit.
+   *
+   * Whether that cycle converges depends on how precisely a browser reports
+   * "scrolling stopped", which is not something to rely on. With `scrollend`
+   * (Chrome) it settles at once; on iOS below Safari 26 there is no
+   * `scrollend` and momentum runs on for a second or more after the finger
+   * lifts, so each lap committed the next month along and the value climbed
+   * on its own. Ignoring the echo removes the cycle instead of damping it.
+   */
+  const handleVisibleMonthChange = useCallback(
+    (next: number) => {
+      if (isWheelOpen) {
+        return;
+      }
+      setMonthIndex(next);
+    },
+    [isWheelOpen],
+  );
+
   // APG combobox keys. The field takes no text, so every printable key is
   // free — but only the documented openers are wired, so a stray keystroke
   // does not pop a sheet.
@@ -728,7 +756,7 @@ export function TouchDateField({
             minMonthIndex={minMonthIndex}
             maxMonthIndex={maxMonthIndex}
             initialMonthIndex={monthIndex}
-            onVisibleMonthChange={setMonthIndex}
+            onVisibleMonthChange={handleVisibleMonthChange}
             selectedDate={selectedDate}
             today={today}
             isDateDisabled={isDateDisabled}

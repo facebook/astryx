@@ -278,6 +278,12 @@ export const DATE_FORMAT_MONTH_YEAR: Intl.DateTimeFormatOptions = {
   month: 'long',
 };
 
+// e.g. "January" (locale-dependent) — the month on its own, for a control
+// that shows a list of months and carries the year separately.
+export const DATE_FORMAT_MONTH_ONLY: Intl.DateTimeFormatOptions = {
+  month: 'long',
+};
+
 // e.g. "Jan 25" (locale-dependent)
 export const DATE_FORMAT_SHORT: Intl.DateTimeFormatOptions = {
   month: 'short',
