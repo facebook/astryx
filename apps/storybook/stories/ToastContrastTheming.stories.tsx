@@ -10,7 +10,10 @@ import {
   defineTheme,
   useTheme,
 } from '@astryxdesign/core/theme';
-import {useContrastMode} from '@astryxdesign/core/hooks';
+// useContrastMode is deliberately not part of the package's public surface —
+// Toast is its only consumer. The story reaches into source the way other
+// internal-mechanism stories in this repo do.
+import {useContrastMode} from '../../../packages/core/src/hooks/useContrastMode';
 import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
 import {Stack} from '@astryxdesign/core/Stack';
@@ -21,7 +24,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'Prototype: Toast decides whether to apply MediaTheme by measuring the colors the browser actually painted, instead of assuming `--color-background-inverted` is inverted. `useContrastMode` reads the surface and the ambient text color, and returns `dark`, `light`, or `off`. `MediaTheme` gained an `off` mode so the switch is a prop change, not a tree change.',
+          'Toast asks for a media context; the guard hands it back unless the surface the browser actually painted makes it unreadable. It is a bug catcher — white-on-pale-grey — not a contrast enforcer: anything above a 3:1 floor is left to the theme. `MediaTheme` gained an `off` mode so a correction is a prop change, not a tree change.',
       },
     },
   },
@@ -114,12 +117,12 @@ export const FlatSurfaceTheme: StoryObj = {
           <Text>
             This theme sets <code>--color-background-inverted</code> to a pale
             grey in light mode. The static rule paints white text on it; the
-            contrast-aware toast measures the pairing and leaves MediaTheme off.
+            guarded toast measures the mode it asked for and corrects it.
           </Text>
           <SurfacePanel label="Static rule — MediaTheme applied unconditionally">
             <StaticRuleToast />
           </SurfacePanel>
-          <SurfacePanel label="Contrast-aware — measures first, stays off here">
+          <SurfacePanel label="Guarded — corrects the unreadable request">
             <ContrastAwareToast />
           </SurfacePanel>
         </Stack>
@@ -130,7 +133,7 @@ export const FlatSurfaceTheme: StoryObj = {
     docs: {
       description: {
         story:
-          'The failure the prototype targets: a theme whose inverted background is not inverted. The static rule paints white on pale grey (~1.3:1); the contrast-aware toast measures the pairing, finds the ambient text already clears AA, and leaves MediaTheme off.',
+          'The failure the guard targets: a theme whose inverted background is not inverted. The static rule paints white on pale grey (~1.25:1); the guarded toast measures the mode it asked for, finds it unreadable, and corrects to the side that matches the surface.',
       },
     },
   },
@@ -147,7 +150,7 @@ export const StockTheme: StoryObj = {
         <SurfacePanel label="Static rule">
           <StaticRuleToast />
         </SurfacePanel>
-        <SurfacePanel label="Contrast-aware">
+        <SurfacePanel label="Guarded">
           <ContrastAwareToast />
         </SurfacePanel>
       </Stack>
@@ -162,7 +165,7 @@ export const ErrorVariant: StoryObj = {
         <SurfacePanel label="Static rule">
           <StaticRuleToast type="error" />
         </SurfacePanel>
-        <SurfacePanel label="Contrast-aware">
+        <SurfacePanel label="Guarded">
           <Toast
             type="error"
             body="Could not reach the server"
@@ -217,9 +220,13 @@ export const Playground: StoryObj = {
   render: function PlaygroundStory() {
     const [surface, setSurface] = useState('#E4E6EB');
     const [text, setText] = useState('#1C2B33');
-    const [threshold, setThreshold] = useState(7);
+    const [requested, setRequested] = useState<'dark' | 'light'>('dark');
+    const [minContrast, setMinContrast] = useState(3);
     const ref = useRef<HTMLDivElement>(null);
-    const contrast = useContrastMode(ref, {threshold, watch: [surface, text]});
+    const contrast = useContrastMode(ref, requested, {
+      minContrast,
+      watch: [surface, text],
+    });
 
     return (
       <Stack gap={4}>
@@ -241,14 +248,25 @@ export const Playground: StoryObj = {
             />
           </label>
           <label style={{fontSize: 13}}>
-            Threshold {threshold.toFixed(1)}{' '}
+            Requested{' '}
+            <select
+              value={requested}
+              onChange={e =>
+                setRequested(e.target.value === 'light' ? 'light' : 'dark')
+              }>
+              <option value="dark">dark</option>
+              <option value="light">light</option>
+            </select>
+          </label>
+          <label style={{fontSize: 13}}>
+            Broken below {minContrast.toFixed(1)}{' '}
             <input
               type="range"
               min={1}
-              max={12}
+              max={7}
               step={0.5}
-              value={threshold}
-              onChange={e => setThreshold(Number(e.target.value))}
+              value={minContrast}
+              onChange={e => setMinContrast(Number(e.target.value))}
             />
           </label>
         </Stack>
@@ -268,7 +286,7 @@ export const Playground: StoryObj = {
               maxWidth: '100%',
             } as React.CSSProperties
           }>
-          <MediaTheme mode={contrast?.mode ?? 'off'}>
+          <MediaTheme mode={contrast?.mode ?? requested}>
             <Stack direction="horizontal" gap={3} align="center">
               <Text>Your changes were saved</Text>
               <Button label="Undo" variant="ghost" size="sm" />
@@ -292,20 +310,29 @@ export const Playground: StoryObj = {
             </span>
           </div>
           <div style={readoutRow}>
-            <span>ambient contrast</span>
+            <span>requested ({requested})</span>
+            <span>
+              {contrast ? `${contrast.requestedRatio.toFixed(2)}:1` : '—'}
+            </span>
+          </div>
+          <div style={readoutRow}>
+            <span>ambient</span>
             <span>
               {contrast ? `${contrast.ambientRatio.toFixed(2)}:1` : '—'}
             </span>
           </div>
           <div style={readoutRow}>
-            <span>applied contrast</span>
+            <span>applied</span>
             <span>
               {contrast ? `${contrast.resolvedRatio.toFixed(2)}:1` : '—'}
             </span>
           </div>
           <div style={{...readoutRow, fontWeight: 700}}>
             <span>MediaTheme</span>
-            <span>{contrast?.mode ?? '—'}</span>
+            <span>
+              {contrast?.mode ?? '—'}
+              {contrast?.isCorrected ? ' (corrected)' : ''}
+            </span>
           </div>
         </Stack>
       </Stack>
@@ -315,7 +342,7 @@ export const Playground: StoryObj = {
     docs: {
       description: {
         story:
-          'Drag the surface and text colors to watch the decision flip. Pale surface with dark text stays `off`; darken the surface and it flips to `dark`; a surface close to the text color in either direction picks whichever media foreground scores best.',
+          'The requested mode is what a component asks for; the hook hands it straight back unless the painted surface makes it unreadable. Pale surface + requested `dark` is the bug — watch it correct. Drag "broken below" down to 1 and the guard stops firing entirely: nothing is ever unreadable enough, and the request always stands.',
       },
     },
   },

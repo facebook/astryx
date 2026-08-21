@@ -23,7 +23,7 @@ import {MediaTheme} from '../theme/MediaTheme';
 
 function Surface({background}: {background?: string}) {
   const ref = useRef<HTMLDivElement>(null);
-  const contrast = useContrastMode(ref);
+  const contrast = useContrastMode(ref, 'dark');
   return (
     <div ref={ref} style={background ? {background} : undefined}>
       <MediaTheme mode={contrast?.mode ?? 'dark'}>
@@ -39,7 +39,7 @@ const mediaOf = () =>
     .parentElement?.getAttribute('data-astryx-media') ?? 'off';
 
 describe('useContrastMode', () => {
-  it('keeps the static fallback when no opaque backdrop can be found', () => {
+  it('leaves the requested mode alone when no opaque backdrop can be found', () => {
     render(<Surface />);
     expect(mediaOf()).toBe('dark');
   });

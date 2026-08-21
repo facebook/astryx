@@ -6,15 +6,21 @@
  * @file useContrastMode.ts
  * @input Ref to the element that paints the surface
  * @output MediaTheme mode ('dark' | 'light' | 'off') plus the measurement behind it
- * @position Hook; auto-detects a MediaTheme mode from painted colors.
- *   Sibling to useImageMode, which detects one from image pixels.
+ * @position INTERNAL hook — not exported from the package. Toast is the only
+ *   consumer; a second one, or a decision to fold this into
+ *   `MediaTheme mode="auto"`, is what would settle its public shape.
+ *   Sibling to useImageMode, which detects a mode from image pixels.
  *
- * A surface only needs MediaTheme when its own background pulls the ambient
- * foreground out of contrast. Themes are free to define
- * `--color-background-inverted` as something that is not actually inverted,
- * and then a statically-applied `mode="dark"` paints white text on a light
- * surface. This hook decides from what the browser actually painted instead
- * of from what the token is named.
+ * A component asks for the media context it wants. This hook only checks
+ * whether that request is obviously broken on the surface the browser
+ * actually painted, and escapes if so — it does not enforce contrast, and it
+ * does not second-guess a theme that is merely low-contrast on purpose.
+ *
+ * The bug it exists for: `--color-background-inverted` is not required to be
+ * inverted. A theme can define it as a pale grey, and a statically-applied
+ * `mode="dark"` then paints white text on it at 1.25:1. That is not a taste
+ * question, it is unreadable — and the component has no way to know, because
+ * the assumption lives in a ternary rather than in anything measured.
  *
  * The measurement deliberately reads the surface element — the one that owns
  * the background and sits OUTSIDE the MediaTheme it controls. Both inputs are
@@ -29,41 +35,42 @@
  * @example
  * ```
  * const ref = useRef<HTMLDivElement>(null);
- * const contrast = useContrastMode(ref);
+ * // "dark" is the intent; the hook returns it back unless it is broken here.
+ * const contrast = useContrastMode(ref, 'dark');
  * return (
  *   <div ref={ref} style={{background: 'var(--color-background-inverted)'}}>
  *     <MediaTheme mode={contrast?.mode ?? 'dark'}>{children}</MediaTheme>
  *   </div>
  * );
  * ```
- *
- * SYNC: When modified, update:
- * - /packages/core/src/hooks/index.ts
  */
 
 import {useState} from 'react';
 import type {RefObject} from 'react';
 import type {RGBA} from '../utils/color';
 import {parseColor, formatColor} from '../utils/color';
-import {
-  contrastRatio,
-  compositeOver,
-  relativeLuminance,
-} from '../theme/contrast';
+import {contrastRatio, compositeOver} from '../theme/contrast';
 import {useTheme} from '../theme/useTheme';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
 /** Surface luminance context, including "no media theme at all". */
 export type ContrastMode = 'dark' | 'light' | 'off';
 
+/** The media context a component asks for, before any measurement. */
+export type RequestedMediaMode = 'dark' | 'light';
+
 /** What the DOM measurement found, and what it implies. */
 export interface ContrastMeasurement {
-  /** MediaTheme mode this surface should use. */
+  /** MediaTheme mode to use — the requested one unless it was broken. */
   mode: ContrastMode;
-  /** Ratio of the ambient foreground against the surface, WCAG 2.x [1, 21]. */
-  ambientRatio: number;
-  /** Ratio the chosen mode yields — equal to ambientRatio when 'off'. */
+  /** True when the request was overridden. */
+  isCorrected: boolean;
+  /** Ratio the requested mode would have produced, WCAG 2.x [1, 21]. */
+  requestedRatio: number;
+  /** Ratio the returned mode produces. */
   resolvedRatio: number;
+  /** Ratio of the ambient foreground against the surface. */
+  ambientRatio: number;
   /** Composited surface color, as an opaque `#RRGGBB` string. */
   background: string;
   /** Ambient foreground (`--color-text-primary`), as a `#RRGGBB` string. */
@@ -72,16 +79,18 @@ export interface ContrastMeasurement {
 
 export interface UseContrastModeOptions {
   /**
-   * Contrast the ambient pairing must reach for the surface to stay 'off'.
+   * The ratio below which the requested mode counts as broken rather than
+   * merely low-contrast.
    *
-   * Defaults to 7 (WCAG AAA) rather than the 4.5 AA line on purpose: a media
-   * theme carries more than text color — interaction overlays, borders and
-   * accent all flip with it — so a surface should only skip it when the
-   * ambient pairing is comfortable, not merely passing. At 7, every stock
-   * Astryx surface keeps the mode it has today.
-   * @default 7
+   * This is a floor for "obviously a bug", not a contrast target: the hook is
+   * here to catch white-on-pale-grey, not to enforce WCAG or to overrule a
+   * theme that chose a soft pairing deliberately. 3:1 is WCAG's own
+   * non-text/large-text line — below it nothing is arguably legible, above it
+   * the theme's call stands. Raising this turns the guard into an enforcer;
+   * that is a different feature and probably belongs elsewhere.
+   * @default 3
    */
-  threshold?: number;
+  minContrast?: number;
   /**
    * Values that change the painted colors and so must force a re-measure
    * (a variant prop, for example). Theme and color mode are tracked already.
@@ -164,55 +173,70 @@ function resolveBackdrop(element: HTMLElement): RGBA | null {
 }
 
 /**
- * Choose a mode from measured colors. Pure — the DOM read is the caller's.
+ * Check a requested media mode against measured colors, and escape only if it
+ * is broken. Pure — the DOM read is the caller's.
  *
- * Stays 'off' when the ambient pairing already clears the threshold, and
- * also when neither media foreground would beat it: a media theme that does
- * not improve contrast is a change with no benefit.
+ * The escape prefers the opposite mode over `'off'`: the component asked for
+ * media treatment, and the usual bug is that it named the wrong side, not
+ * that it wanted no treatment. `'off'` is the answer when neither media side
+ * works but the theme's own ambient text does. When nothing clears the floor
+ * the request stands — there is no better answer, and churning the tree to a
+ * different broken state helps no one.
  */
 export function decideContrastMode(
+  requested: RequestedMediaMode,
   foreground: RGBA,
   background: RGBA,
   mediaForegrounds: MediaForegrounds,
-  threshold: number,
+  minContrast: number,
 ): Omit<ContrastMeasurement, 'background' | 'foreground'> {
+  const ratioOf = (color: RGBA | null): number | null =>
+    color === null ? null : contrastRatio(color, background);
+
   const ambientRatio = contrastRatio(foreground, background);
-  if (ambientRatio >= threshold) {
-    return {mode: 'off', ambientRatio, resolvedRatio: ambientRatio};
+  const requestedRatio = ratioOf(mediaForegrounds[requested]);
+
+  const keep = (
+    mode: ContrastMode,
+    resolvedRatio: number,
+  ): Omit<ContrastMeasurement, 'background' | 'foreground'> => ({
+    mode,
+    isCorrected: mode !== requested,
+    // With no readable --color-on-* token there is nothing to report but the
+    // ambient measurement; the request is passed through untouched.
+    requestedRatio: requestedRatio ?? ambientRatio,
+    resolvedRatio,
+    ambientRatio,
+  });
+
+  if (requestedRatio === null || requestedRatio >= minContrast) {
+    return keep(requested, requestedRatio ?? ambientRatio);
   }
 
-  const candidates = (['dark', 'light'] as const)
-    .map(mode => {
-      const color = mediaForegrounds[mode];
-      return color === null
-        ? null
-        : {mode, ratio: contrastRatio(color, background)};
-    })
-    .filter(candidate => candidate !== null);
-
-  if (candidates.length === 0) {
-    // No usable --color-on-* tokens: fall back to the luminance of the
-    // surface, which is what a hand-written static rule would have assumed.
-    const mode = relativeLuminance(background) < 0.5 ? 'dark' : 'light';
-    return {mode, ambientRatio, resolvedRatio: ambientRatio};
+  const flipped: RequestedMediaMode = requested === 'dark' ? 'light' : 'dark';
+  const flippedRatio = ratioOf(mediaForegrounds[flipped]);
+  if (flippedRatio !== null && flippedRatio >= minContrast) {
+    return keep(flipped, flippedRatio);
   }
 
-  const best = candidates.reduce((a, b) => (b.ratio > a.ratio ? b : a));
-  return best.ratio > ambientRatio
-    ? {mode: best.mode, ambientRatio, resolvedRatio: best.ratio}
-    : {mode: 'off', ambientRatio, resolvedRatio: ambientRatio};
+  if (ambientRatio >= minContrast) {
+    return keep('off', ambientRatio);
+  }
+
+  return keep(requested, requestedRatio);
 }
 
 /**
- * Decide whether a surface needs MediaTheme, from the colors the browser
- * painted. Returns null until the first measurement (SSR, or before the
- * layout effect runs) — render a static guess for that frame.
+ * Check whether a requested media mode is broken on the surface the browser
+ * painted, and escape if so. Returns null until the first measurement (SSR,
+ * or before the layout effect runs) — render the requested mode until then.
  */
 export function useContrastMode(
   ref: RefObject<HTMLElement | null>,
+  requested: RequestedMediaMode,
   options: UseContrastModeOptions = {},
 ): ContrastMeasurement | null {
-  const {threshold = 7, watch = [], isEnabled = true} = options;
+  const {minContrast = 3, watch = [], isEnabled = true} = options;
   const [measurement, setMeasurement] = useState<ContrastMeasurement | null>(
     null,
   );
@@ -240,18 +264,19 @@ export function useContrastMode(
 
     // No opaque backdrop in the chain, or a color we cannot parse (a
     // wide-gamut or relative-color token): we do not know what is painted,
-    // and a guess is worse than the caller's static fallback. This is also
-    // what keeps jsdom — where no stylesheet is applied — from "measuring"
-    // black on white and switching every surface off.
+    // and a guess is worse than leaving the request alone. This is also what
+    // keeps jsdom — where no stylesheet is applied — from "measuring" black
+    // on white and correcting every surface.
     if (foreground === null || background === null) {
       return;
     }
 
     const decision = decideContrastMode(
+      requested,
       foreground,
       background,
       {dark: onDark, light: onLight},
-      threshold,
+      minContrast,
     );
 
     const next: ContrastMeasurement = {
@@ -269,7 +294,7 @@ export function useContrastMode(
         ? current
         : next,
     );
-  }, [ref, threshold, isEnabled, tokens, themeMode, ...watch]);
+  }, [ref, requested, minContrast, isEnabled, tokens, themeMode, ...watch]);
 
   return isEnabled ? measurement : null;
 }
