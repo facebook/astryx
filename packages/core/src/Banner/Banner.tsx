@@ -17,10 +17,11 @@
  *   the glyph (#4166); for a custom `icon` node it stays on the layout wrapper
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
- * - Children render in the content area by default. Passing `collapsible`
- *   puts them behind a disclosure toggle in the header end area; the whole
- *   collapse axis (enabled / default / controlled) lives on that one prop and
- *   is driven by the shared `useCollapsible` hook rather than local state.
+ * - Children are collapsible by default: a toggle appears in the header end
+ *   area and the content starts closed. `collapsible={false}` opts out and
+ *   pins the content open with no toggle. The whole collapse axis (enabled /
+ *   default / controlled) lives on that one prop and is driven by the shared
+ *   `useCollapsible` hook rather than local state.
  *
  * A status added through `BannerStatusMap` augmentation has no entry in the
  * status lookups, so it renders with no status fill, no default glyph and the
@@ -145,26 +146,29 @@ export interface BannerProps extends BaseProps<HTMLDivElement> {
    */
   elevation?: Elevation;
   /**
-   * Whether the content area (children) collapses behind a toggle in the
-   * header. Omit it and children are always visible — no toggle, no
-   * `aria-expanded`, and the content region stays mounted.
+   * Whether the content area (children) sits behind an expand/collapse toggle
+   * in the header. On by default, so a banner with children behaves as it
+   * always has.
    *
-   * - `true` — collapsible, starts open (the `useCollapsible` default)
-   * - `{defaultIsOpen: false}` — collapsible, starts collapsed
+   * - omitted / `true` — collapsible, starts collapsed
+   * - `{defaultIsOpen: true}` — collapsible, starts open
    * - `{isOpen, onOpenChange}` — controlled by the consumer
-   * - `false` or omitted — not collapsible
+   * - `false` — not collapsible: children are always visible, with no toggle,
+   *   no `aria-expanded`, and a content region that stays mounted
    *
    * Takes the shared `CollapsibleConfig` so a banner's disclosure is
    * configured exactly like `Collapsible`'s, rather than through a
-   * Banner-only vocabulary.
+   * Banner-only vocabulary. Banner's default differs from the hook's on one
+   * point — it starts closed, not open — because a banner's message lives in
+   * its header and the content is supplementary.
    *
-   * @default undefined
+   * @default true
    */
   collapsible?: boolean | CollapsibleConfig;
   /**
    * Extra content rendered below the header in a card-background area.
    * Use for rich content like lists, links, or detailed information.
-   * Visible by default; pass `collapsible` to put it behind a toggle.
+   * Collapsed behind a toggle unless `collapsible={false}`.
    */
   children?: ReactNode;
 }
@@ -385,9 +389,10 @@ const elevationStyles = stylex.create({
  * - Header: colored status background with icon, title, description, and actions
  * - Content (optional): card background area for additional rich content
  *
- * Children are visible by default. Pass `collapsible` and a chevron toggle
- * appears in the header end area (to the left of the dismiss button if
- * present), hiding and showing the content area.
+ * When children are provided, a chevron toggle appears in the header end area
+ * (to the left of the dismiss button if present) and the content starts
+ * collapsed. Pass `collapsible={false}` for content that is always visible,
+ * or a config object to change the initial state or control it.
  *
  * Manages its own dismissed state internally — the banner hides on dismiss
  * even if `onDismiss` is not provided, so product teams don't need to wire
@@ -418,8 +423,13 @@ const elevationStyles = stylex.create({
  * <Banner
  *   status="warning"
  *   title="Configuration changes"
- *   collapsible={{defaultIsOpen: false}}>
+ *   collapsible={{defaultIsOpen: true}}>
  *   <p>Details here...</p>
+ * </Banner>
+ * <Banner status="error" title="3 fields need attention" collapsible={false}>
+ *   <ul>
+ *     <li>Email address is invalid</li>
+ *   </ul>
  * </Banner>
  * ```
  */
@@ -433,7 +443,7 @@ export function Banner({
   endContent,
   container = 'card',
   elevation = 'none',
-  collapsible,
+  collapsible = true,
   children,
   xstyle,
   className,
@@ -446,13 +456,24 @@ export function Banner({
   const t = useTranslator();
   const [isDismissed, setIsDismissed] = useState(false);
   // The disclosure state machine is the shared one — Banner owns no collapse
-  // state of its own. `isEnabled` is false when `collapsible` is omitted, and
-  // that is what makes the content permanently visible.
+  // state of its own. `collapsible={false}` disables it, and that is what
+  // makes the content permanently visible.
+  //
+  // The one place Banner departs from the hook's defaults: `useCollapsible`
+  // opens by default, a banner starts closed. Its header already carries the
+  // message, so the content is supplementary — and this is the behaviour
+  // Banner has always had.
+  const collapsibleConfig = typeof collapsible === 'object' ? collapsible : {};
   const {
     isEnabled: isCollapsible,
     isOpen: isExpanded,
     toggle: handleToggleExpand,
-  } = useCollapsible({isCollapsible: collapsible});
+  } = useCollapsible({
+    isCollapsible: collapsible !== false && {
+      ...collapsibleConfig,
+      defaultIsOpen: collapsibleConfig.defaultIsOpen ?? false,
+    },
+  });
   // The element focus came from before it entered the banner. Dismissing
   // unmounts the whole banner, dismiss button included, so without a handoff
   // the browser drops focus to <body> and a keyboard user loses their place.

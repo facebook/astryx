@@ -17,7 +17,7 @@ export const docs = {
       {guidance: true, description: 'Keep titles short and scannable: "Payment failed" not "There was a problem processing your most recent payment."'},
       {guidance: false, description: 'Use Banner for short-lived messages that disappear on their own; use Toast instead.'},
       {guidance: false, description: 'Stack multiple banners with the same status; combine related messages into one banner.'},
-      {guidance: true, description: 'Leave content visible when the user needs it to act on the message. Reach for collapsible only when the detail is long enough to bury the banner\u2019s own message.'},
+      {guidance: true, description: 'Set collapsible={false} when the user needs the content to act on the message, like the list of fields that failed validation. Keep the default toggle when the detail is long enough to bury the banner\u2019s own message.'},
       {guidance: true, description: 'Error and warning banners render as role="alert"; info and success render as role="status". Mount an alert banner in response to an event rather than on first paint, so assistive tech has a change to report.'},
       {guidance: false, description: 'Rely on the status color or icon alone to carry meaning; say which status it is in the title text, because the icon is decorative to a screen reader.'},
     ],
@@ -27,7 +27,7 @@ export const docs = {
       {name: 'Description', required: false, description: 'Additional detail below the title.'},
       {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
       {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
-      {name: 'Content', required: false, description: 'Extra detail below the banner header, like a list of errors. Visible by default; set collapsible to put it behind an expand/collapse toggle.'},
+      {name: 'Content', required: false, description: 'Extra detail below the banner header, like a list of errors. Sits behind an expand/collapse toggle by default; set collapsible={false} to keep it visible.'},
     ],
   },
 
@@ -95,14 +95,14 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Content rendered in the card-background area below the colored header. Always visible unless `collapsible` is set.',
+        'Content rendered in the card-background area below the colored header. Sits behind an expand/collapse toggle unless `collapsible={false}`.',
     },
     {
       name: 'collapsible',
       type: 'boolean | {defaultIsOpen?: boolean; isOpen?: boolean; onOpenChange?: (isOpen: boolean) => void}',
       description:
-        'Puts the content area (children) behind an expand/collapse toggle in the header. Omit it and children are always visible, with no toggle. `true` enables it starting open; `{defaultIsOpen: false}` starts collapsed; `{isOpen, onOpenChange}` is controlled. Takes the same CollapsibleConfig as Collapsible.',
-      default: 'undefined',
+        'Whether the content area (children) sits behind an expand/collapse toggle in the header. On by default, starting collapsed. `false` opts out: children are always visible with no toggle. `{defaultIsOpen: true}` starts open; `{isOpen, onOpenChange}` is controlled. Takes the same CollapsibleConfig as Collapsible.',
+      default: 'true',
     },
     {
       name: 'xstyle',
@@ -155,7 +155,7 @@ export const docsZh = {
       {name: 'Description', required: false, description: 'Additional detail below the title.'},
       {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
       {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
-      {name: 'Content', required: false, description: 'Extra detail below the banner header, like a list of errors. Visible by default; set collapsible to put it behind an expand/collapse toggle.'},
+      {name: 'Content', required: false, description: 'Extra detail below the banner header, like a list of errors. Sits behind an expand/collapse toggle by default; set collapsible={false} to keep it visible.'},
     ],
   },
   props: [
@@ -168,8 +168,8 @@ export const docsZh = {
     {name: 'endContent', type: 'ReactNode', description: '渲染在头部区域末端对齐的操作内容，通常是按钮或链接。头部过窄时会整体换行到文本下方，自成一行。'},
     {name: 'container', type: "'card' | 'section'", description: '视觉变体：card 带圆角；section 无圆角全宽，适用于页面级场景。', default: "'card'"},
     {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: '静止阴影深度。用于悬浮于内容之上的浮动横幅；none 为默认内联横幅。', default: "'none'"},
-    {name: 'children', type: 'ReactNode', description: '渲染在彩色头部下方卡片背景区域的内容。默认始终可见，除非设置 collapsible。'},
-    {name: 'collapsible', type: 'boolean | {defaultIsOpen?: boolean; isOpen?: boolean; onOpenChange?: (isOpen: boolean) => void}', description: '将内容区域（children）置于头部的展开/折叠开关之后。省略时内容始终可见且没有开关。true 表示启用并默认展开；{defaultIsOpen: false} 表示默认折叠；{isOpen, onOpenChange} 为受控模式。与 Collapsible 使用同一套 CollapsibleConfig。', default: 'undefined'},
+    {name: 'children', type: 'ReactNode', description: '渲染在彩色头部下方卡片背景区域的内容。默认位于展开/折叠开关之后，除非设置 collapsible={false}。'},
+    {name: 'collapsible', type: 'boolean | {defaultIsOpen?: boolean; isOpen?: boolean; onOpenChange?: (isOpen: boolean) => void}', description: '内容区域（children）是否位于头部的展开/折叠开关之后。默认开启，且初始为折叠状态。false 表示关闭：内容始终可见且没有开关。{defaultIsOpen: true} 表示初始展开；{isOpen, onOpenChange} 为受控模式。与 Collapsible 使用同一套 CollapsibleConfig。', default: 'true'},
     {
       name: 'xstyle',
       type: 'StyleXStyles',
@@ -229,7 +229,7 @@ export const docsDense = {
       {name: 'Description', required: false, description: 'Detail below title.'},
       {name: 'Action button', required: false, description: 'CTA like Review or Retry.'},
       {name: 'Dismiss button', required: false, description: 'Close button via isDismissable.'},
-      {name: 'Content', required: false, description: 'Detail area; always visible unless collapsible is set.'},
+      {name: 'Content', required: false, description: 'Detail area; behind a toggle unless collapsible={false}.'},
     ],
   },
   propDescriptions: {
@@ -242,8 +242,8 @@ export const docsDense = {
     endContent: 'end-aligned action in header, typically button/link; wraps to its own row when the header is too narrow',
     container: 'card=border-radius; section=full-width no radius for page-level',
     elevation: 'resting shadow depth: none|low|med|high; raise for a floating banner',
-    children: 'content in card-bg area below colored header; always visible unless collapsible is set',
-    collapsible: 'put children behind a header toggle: true=open, {defaultIsOpen:false}=collapsed, {isOpen,onOpenChange}=controlled; omitted=always visible, no toggle',
+    children: 'content in card-bg area below colored header; behind a toggle unless collapsible={false}',
+    collapsible: 'children behind a header toggle; default true=collapsed. false=always visible, no toggle. {defaultIsOpen:true}=starts open, {isOpen,onOpenChange}=controlled',
     xstyle: 'StyleX layout customization via stylex.create()',
   },
 };
