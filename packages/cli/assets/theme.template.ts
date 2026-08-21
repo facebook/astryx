@@ -126,9 +126,11 @@ export const myTheme = defineTheme({
    *     are not derived from the accent. They keep their defaults, which are
    *     tuned for the default surfaces; check them against yours.
    *
-   * Either way the check is the same: resolve the pair in BOTH modes and
-   * measure it. `useTheme()` and `resolveThemeTokens()` return the resolved
-   * values, and the rendered DOM is the final word.
+   * `astryx theme build` measures the first case for you and warns — it knows
+   * which side you wrote. The second it cannot judge, since both sides are
+   * inherited: resolve the pair in BOTH modes and measure it yourself
+   * (`useTheme()` and `resolveThemeTokens()` return resolved values, and the
+   * rendered DOM is the final word).
    *
    * Reference: `astryx docs color` for what each semantic role means,
    * `astryx docs tokens` for every colour token and its light/dark default.
@@ -218,6 +220,10 @@ export const myTheme = defineTheme({
     '--color-on-accent': ['#FFFFFF', '#FFFFFF'],
     '--color-background-body': ['#F1F4F7', '#111112'],
     '--color-background-surface': ['#FFFFFF', '#1F1F22'],
+    // And moving a surface means re-checking what is drawn ON it: the
+    // generated control boundary was toned for the surface this replaces, and
+    // fell to 2.94:1 against this one — under the 3:1 a control boundary owes.
+    '--color-border-emphasized': ['#8F909E', '#6F747C'],
     '--focus-outline-color': 'var(--color-accent)',
     '--shadow-low': '0 1px 2px light-dark(#0000001A, #00000066)',
   },

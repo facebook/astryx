@@ -177,12 +177,12 @@ export const doc = {
     {
       value: 'theme.build.check',
       description:
-        'The --check receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: missing | outdated}), and the full list of checked paths. Writes nothing.',
+        'The --check receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: missing | outdated}), the full list of checked paths, and any validation warnings. Writes nothing.',
     },
     {
       value: 'theme.build.batch',
       description:
-        'Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme\'s theme.build (or theme.build.check) envelope, or null when it produced no CSS.',
+        "Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme's theme.build (or theme.build.check) envelope, or null when it produced no CSS.",
     },
     {
       value: 'theme.list',

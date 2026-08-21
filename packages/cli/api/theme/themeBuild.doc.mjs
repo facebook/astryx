@@ -78,7 +78,7 @@ export const doc = {
     {
       type: 'theme.build.check',
       description:
-        'The {check: true} receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: "missing" | "outdated"}), and the full list of checked paths. Writes nothing.',
+        'The {check: true} receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: "missing" | "outdated"}), the full list of checked paths, and any validation warnings. Writes nothing.',
     },
   ],
   throws: [

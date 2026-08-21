@@ -47,10 +47,11 @@ import {
   collectThemingTargets,
   targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
+import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 import {
-  collectUnloadedFonts,
-  formatFontLoadingHelp,
-} from './font-warning.mjs';
+  collectContrastFailures,
+  formatContrastFailure,
+} from './contrast-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -63,13 +64,18 @@ import {
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
 /** @type {any} */ let _dataTokenDefaults = null;
+/** @type {any} */ let _resolveThemeTokens = null;
+/** @type {any} */ let _parseColor = null;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
+  const coreUtils = await import('@astryxdesign/core/utils');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
   _dataTokenDefaults = coreTheme.dataTokenDefaults;
+  _resolveThemeTokens = coreTheme.resolveThemeTokens;
+  _parseColor = coreUtils.parseColor;
 } catch (e) {
   // Capture the reason so the theme action can surface a precise, actionable
   // error. We don't throw here: this module is imported eagerly by the CLI
@@ -343,7 +349,6 @@ function readComponentDeclarations(pascalName) {
   return contents;
 }
 
-
 /** @type {Map<string, Array<{moduleName: string, interfacePrefix: string}>>} */
 const _augmentationTargetCache = new Map();
 
@@ -402,7 +407,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+        if (entry.name === 'node_modules' || entry.name === '__tests__')
+          continue;
         await scan(full);
         continue;
       }
@@ -539,12 +545,13 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (values.size === 0) continue;
 
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (await resolveAugmentationTargetCandidates(component)).find(
-        candidate =>
-          componentHasAugmentableInterface(
-            candidate.moduleName,
-            `${candidate.interfacePrefix}${propPascal}Map`,
-          ),
+      const target = (
+        await resolveAugmentationTargetCandidates(component)
+      ).find(candidate =>
+        componentHasAugmentableInterface(
+          candidate.moduleName,
+          `${candidate.interfacePrefix}${propPascal}Map`,
+        ),
       );
 
       // Only augment interfaces that actually exist as an extension point in
@@ -1303,6 +1310,36 @@ export async function themeBuild(
     writes.push({dest: variantDtsPath, content: variantContent});
   }
 
+  // Colour pairs the theme broke by hand-writing one side (#5014). Unlike the
+  // font notice below, this IS the theme's own defect and fixable in the theme
+  // file, so it warns. Pairs the theme never touched are not its doing and are
+  // left alone — the defaults' own failures belong to the defaults (#5019).
+  //
+  // `__inputTokens` is how the check knows which side was hand-written, and the
+  // legacy loader (used whenever the theme file cannot be imported) hands back
+  // the theme's raw INPUT instead of a DefinedTheme — whose `tokens` are
+  // exactly the hand-written set, so re-running defineTheme mints the
+  // `__inputTokens` this needs. A prebuilt theme has no hand-written set left
+  // to recover, every token in it being resolved output, so it is left alone.
+  const contrastTheme =
+    resolvedTheme?.__inputTokens || resolvedTheme?.__built
+      ? resolvedTheme
+      : (_defineTheme?.({...themeDef}) ?? resolvedTheme);
+  const contrastFailures =
+    _resolveThemeTokens && _parseColor
+      ? collectContrastFailures(contrastTheme, _resolveThemeTokens, _parseColor)
+      : [];
+  for (const failure of contrastFailures) {
+    const msg = formatContrastFailure(failure);
+    warningMessages.push(msg);
+    logger.warn(`  ⚠ ${msg}`);
+  }
+  if (contrastFailures.length > 0) {
+    logger.warn(
+      `  ${contrastFailures.length} contrast failure(s). The colour scale holds text at 4.5:1 and control boundaries at 3:1 for what it generates; a token you write yourself is yours to verify, in both modes.`,
+    );
+  }
+
   // Check mode: compare generated content against what's on disk instead of
   // writing. A file is "stale" if it's missing or its content differs once the
   // volatile @generated `Command:` line is ignored. Returns a
@@ -1342,6 +1379,7 @@ export async function themeBuild(
         upToDate,
         stale,
         checked: writes.map(w => path.relative(cwd, w.dest)),
+        warnings: warningMessages,
       },
     };
   }

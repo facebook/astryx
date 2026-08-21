@@ -34,7 +34,7 @@
  * xds --json theme build <file> --check
  * @typedef {object} ThemeBuildCheckResponse
  * @property {'theme.build.check'} type
- * @property {{name: string, upToDate: boolean, stale: Array<{path: string, reason: 'missing' | 'outdated'}>, checked: string[]}} data
+ * @property {{name: string, upToDate: boolean, stale: Array<{path: string, reason: 'missing' | 'outdated'}>, checked: string[], warnings: string[]}} data
  */
 
 /**

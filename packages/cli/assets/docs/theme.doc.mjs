@@ -152,6 +152,10 @@ function App() {
         },
         {
           type: 'prose',
+          text: 'Overriding one side of a colour pair (an accent without its `--color-on-accent`, a surface without the border drawn on it) leaves the other side holding the value generated for the colour you replaced, which is how a theme ships text below 4.5:1 without anyone writing a bad colour. `astryx theme build` measures the pairs you half-wrote and warns; pairs you set on both sides, or left entirely alone, are yours to check.',
+        },
+        {
+          type: 'prose',
           text: 'For an annotated map of the whole surface (every defineTheme field, the token families, and the component override syntax, each with the CLI command that prints its reference), run `astryx theme template`. It writes `theme.template.ts` into your project to read and copy from (`astryx init --features theme` writes it as part of project setup).',
         },
       ],
