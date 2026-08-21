@@ -10,23 +10,30 @@ Renders [Vega](https://vega.github.io/vega/) and [Vega-Lite](https://vega.github
 
 ## File Manifest
 
-| File                | Role      | Purpose                                                      |
-| ------------------- | --------- | ------------------------------------------------------------ |
-| `package.json`      | Config    | Package metadata, deps, build scripts                        |
-| `tsconfig.json`     | Config    | TypeScript compiler config (extends root)                    |
-| `tsup.config.ts`    | Config    | Build config: CJS + ESM + `.d.ts` outputs                    |
-| `src/index.ts`      | Barrel    | Public API surface                                           |
-| `src/VegaChart.tsx` | Component | Inspects `$schema`, compiles or renders, owns View lifecycle |
-| `src/schema.ts`     | Utility   | Parses and validates Vega/Vega-Lite `$schema` URLs           |
-| `src/types.ts`      | Types     | Shared TypeScript types for this package                     |
+| File                    | Role      | Purpose                                                      |
+| ----------------------- | --------- | ------------------------------------------------------------ |
+| `package.json`          | Config    | Package metadata, deps, build scripts                        |
+| `tsconfig.json`         | Config    | TypeScript compiler config (extends root)                    |
+| `tsconfig.build.json`   | Config    | Declaration-emit config; excludes tests from `dist`          |
+| `tsup.config.ts`        | Config    | Build config: CJS + ESM + `.d.ts` outputs                    |
+| `src/index.ts`          | Barrel    | Public API surface                                           |
+| `src/VegaChart.tsx`     | Component | Inspects `$schema`, compiles or renders, owns View lifecycle |
+| `src/schema.ts`         | Utility   | Parses and validates Vega/Vega-Lite `$schema` URLs           |
+| `src/vegaLiteConfig.ts` | Utility   | Astryx-themed Vega-Lite config + compile-option merge        |
+| `src/types.ts`          | Types     | Shared TypeScript types for this package                     |
 
 ## Installation
 
 Vega is published **only** under the `@canary` dist-tag, so you must request that tag explicitly. There is no `latest` version to install yet.
 
 ```bash
-npm install @astryxdesign/vega@canary vega vega-lite
+npm install @astryxdesign/vega@canary @astryxdesign/core vega vega-lite
 ```
+
+`@astryxdesign/charts` comes along as a direct dependency — it owns the shared
+data-visualization palette that keeps Vega charts and the compositional charts
+looking identical. `@astryxdesign/core` is a peer dependency: the wrapper reads
+the active `<Theme>` from it to resolve tokens to concrete values.
 
 > Canary builds track the latest commit on `main` (`0.x.y-canary.<sha>`). They can break between any two versions — pin an exact version if you need stability.
 
@@ -121,11 +128,11 @@ import {VegaChart} from '@astryxdesign/vega';
 
 `compileOptions` fields (Vega-Lite specs only, ignored otherwise):
 
-| `compileOptions` field | Type                           | Description                                         |
-| ---------------------- | ------------------------------ | --------------------------------------------------- |
-| `config`               | `VegaLiteConfig`               | Vega-Lite config merged on top of the spec's config |
-| `logger`               | `LoggerInterface`              | Custom logger used during compilation               |
-| `fieldTitle`           | `(fieldDef, config) => string` | Custom field title formatter                        |
+| `compileOptions` field | Type                           | Description                                               |
+| ---------------------- | ------------------------------ | --------------------------------------------------------- |
+| `config`               | `VegaLiteConfig`               | Vega-Lite config merged on top of the Astryx theme config |
+| `logger`               | `LoggerInterface`              | Custom logger used during compilation                     |
+| `fieldTitle`           | `(fieldDef, config) => string` | Custom field title formatter                              |
 
 `parseOptions` fields:
 
@@ -154,6 +161,41 @@ To update data dynamically after render, use `onReady` to get the live View and 
     view.runAsync();
   }}
 />
+```
+
+### Theming
+
+Vega-Lite specs are themed out of the box. `VegaChart` reads the active
+`<Theme>` and compiles the spec with the Astryx config from
+`buildVegaLiteConfig` as its base — axis, legend, line/point, title and view
+chrome, plus the scale ranges. The categorical range comes straight from
+`CATEGORICAL_TOKENS` in `@astryxdesign/charts`, so a series colored blue in a
+`<Chart>` is the same blue here.
+
+Precedence, weakest first:
+
+1. The derived Astryx theme config
+2. `compileOptions.config` you pass to `<VegaChart>`
+3. The spec's own inline `config`
+
+Merging is recursive, so a partial override like
+`compileOptions={{config: {axis: {grid: true}}}}` replaces only `axis.grid` and
+leaves the rest of the themed `axis` block intact.
+
+Native Vega specs are **not** themed — they bypass Vega-Lite compilation
+entirely. Pass `parseConfig` for those.
+
+To build the config yourself (custom compile pipeline, SSR, a `vega-embed`
+host):
+
+```tsx
+import {useTheme} from '@astryxdesign/core/theme';
+import {buildVegaLiteConfig, withAstryxConfig} from '@astryxdesign/vega';
+
+const {token} = useTheme();
+
+buildVegaLiteConfig(token); // the themed VegaLiteConfig
+withAstryxConfig(token, compileOptions); // …folded into compile options
 ```
 
 ### `parseSchema(schema)` (exported utility)

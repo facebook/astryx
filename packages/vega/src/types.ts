@@ -12,9 +12,19 @@
 import type React from 'react';
 import type {Spec as VegaSpec, Config, View, ViewOptions} from 'vega';
 import type {LoggerInterface} from 'vega-util';
-import type {TopLevelSpec as VegaLiteSpec, Config as VegaLiteConfig} from 'vega-lite';
+import type {
+  TopLevelSpec as VegaLiteSpec,
+  Config as VegaLiteConfig,
+} from 'vega-lite';
 
-export type {VegaSpec, VegaLiteSpec, Config, View, ViewOptions, LoggerInterface};
+export type {
+  VegaSpec,
+  VegaLiteSpec,
+  Config,
+  View,
+  ViewOptions,
+  LoggerInterface,
+};
 
 /**
  * Options for the Vega-Lite `compile()` function.
@@ -140,6 +150,10 @@ export interface VegaChartProps extends Omit<
    * Options passed to `vega-lite`'s `compile()` function.
    * Only applied when `spec.$schema` identifies a `vega-lite` spec.
    * Ignored for native Vega specs.
+   *
+   * `config` here is merged *on top of* the Astryx theme config the component
+   * applies by default, so it overrides the theme rather than replacing it.
+   *
    * @see https://github.com/vega/vega-lite/blob/main/src/compile/compile.ts
    */
   compileOptions?: CompileOptions;
