@@ -29,6 +29,7 @@ import {
   plainDateFormat,
   formatSharedDate,
   DATE_FORMAT_WITH_WEEKDAY,
+  DATE_FORMAT_MONTH_YEAR,
 } from './plainDate';
 import type {ISODateString} from './dateTypes';
 
@@ -588,6 +589,33 @@ describe('plainDateFormat', () => {
     );
     expect(result).toContain('2026');
     expect(result).toContain('25');
+  });
+
+  it('defaults to en, not the runtime locale', () => {
+    expect(
+      plainDateFormat({year: 2026, month: 8, day: 22}, DATE_FORMAT_MONTH_YEAR),
+    ).toBe('August 2026');
+  });
+
+  it('honours an explicit locale', () => {
+    expect(
+      plainDateFormat(
+        {year: 2026, month: 8, day: 22},
+        DATE_FORMAT_MONTH_YEAR,
+        'fr',
+      ),
+    ).toBe('août 2026');
+  });
+
+  it('does not depend on the ambient runtime locale', () => {
+    // Equal on every host, whatever Intl resolves there. This is the
+    // hydration-safety guarantee.
+    const pd: PlainDate = {year: 2026, month: 8, day: 22};
+    for (const options of [DATE_FORMAT_MONTH_YEAR, DATE_FORMAT_WITH_WEEKDAY]) {
+      expect(plainDateFormat(pd, options)).toBe(
+        plainDateFormat(pd, options, 'en'),
+      );
+    }
   });
 });
 

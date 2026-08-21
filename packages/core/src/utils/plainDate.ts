@@ -7,6 +7,7 @@
  * @position Shared utility; replaces scattered Date usage across Calendar hooks
  */
 
+import type {Locale} from '../i18n/types';
 import type {ISODateString, PlainDate} from './dateTypes';
 
 export type {PlainDate} from './dateTypes';
@@ -290,13 +291,19 @@ export const DATE_FORMAT_SHORT_WITH_YEAR: Intl.DateTimeFormatOptions = {
   year: 'numeric',
 };
 
+/**
+ * Format a `PlainDate` for display.
+ *
+ * `locale` defaults to `'en'` rather than `undefined`: an undefined locale
+ * resolves to the runtime's, which differs across an SSR boundary and causes
+ * hydration mismatches. Pass `useLocale()` under a provider.
+ */
 export function plainDateFormat(
   pd: PlainDate,
   options: Intl.DateTimeFormatOptions,
+  locale: Locale = 'en',
 ): string {
-  return new Intl.DateTimeFormat(undefined, options).format(
-    plainDateToDate(pd),
-  );
+  return new Intl.DateTimeFormat(locale, options).format(plainDateToDate(pd));
 }
 
 // =============================================================================
