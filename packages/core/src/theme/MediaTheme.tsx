@@ -22,7 +22,7 @@
  *    `onDark.components` / `onLight.components` in defineTheme().
  * 4. Children (Button, Link, Text, etc.) pick up inverted tokens
  *    naturally through CSS custom property inheritance
- * 5. `mode="auto"` measures the painted surface and picks the side itself;
+ * 5. `mode="auto"` measures the painted surface and picks a side — or none;
  *    `mode="off"` renders the same element with no media attribute, so
  *    either can change without remounting children.
  *
@@ -60,8 +60,9 @@ export interface MediaThemeProps {
    * The surface luminance context for children.
    * - `"dark"` — children are on a dark background (get light text/icons)
    * - `"light"` — children are on a light background (get dark text/icons)
-   * - `"auto"` — measure the painted surface and pick whichever side reads
-   *   better on it
+   * - `"auto"` — measure the painted surface and use whichever side reads
+   *   better on it, or no media context at all when the surface's ambient
+   *   text already reads better than either
    * - `"off"` — children keep the ambient theme; the surface needs no
    *   inversion
    */

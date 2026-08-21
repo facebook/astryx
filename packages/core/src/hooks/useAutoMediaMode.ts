@@ -19,11 +19,12 @@
  * colour is a runtime value and the mode is a compile-time guess, no amount
  * of care in the component can catch that.
  *
- * The decision is simply which of `--color-on-dark` / `--color-on-light`
- * reads better against the backdrop. There is no threshold and no contrast
- * target: this picks the better of the theme's own two answers, so a theme
- * that wants a soft pairing still gets one. Deciding a surface needs NO media
- * context is an authoring choice, not a measurement — that is `mode="off"`.
+ * The answer can also be `'off'`: when the surface's own ambient text already
+ * reads on it, the surface is not effectively inverted and does not want a
+ * media context. Verified in Chromium that this loses nothing on a surface
+ * that is chromatic but legible — the dark-mode error toast renders
+ * identically either way, because a dark page already resolves those tokens
+ * to the values the media context would install.
  *
  * @example
  * ```
@@ -40,8 +41,8 @@ import {contrastRatio, compositeOver} from '../theme/contrast';
 import {useTheme} from '../theme/useTheme';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
-/** A surface luminance context that can be measured. */
-export type DetectedMediaMode = 'dark' | 'light';
+/** A surface luminance context, or `"off"` when no media context is wanted. */
+export type DetectedMediaMode = 'dark' | 'light' | 'off';
 
 /**
  * Resolve token references to the colors they actually paint, by reading them
@@ -115,18 +116,45 @@ function resolveBackdrop(element: HTMLElement): RGBA | null {
 }
 
 /**
- * Which media context a backdrop wants: whichever on-color reads better.
- * Pure — the DOM read is the caller's. Ties go to dark, matching the
- * convention that an inverted surface is usually the dark one.
+ * Contrast at which a surface's own ambient text counts as reading well
+ * enough that no media context is wanted.
+ *
+ * WCAG's non-text / large-text line. It is deliberately low: this decides
+ * whether a surface is *effectively inverted*, not whether its text meets a
+ * standard. A pairing that clears 3:1 is one the theme is rendering
+ * successfully, and swapping in a media context there changes accent,
+ * overlays and borders for no legibility gain.
+ */
+const AMBIENT_READS_AT = 3;
+
+/**
+ * Which media context a surface wants: `'off'` when its ambient text already
+ * reads on the surface, otherwise whichever on-color reads better. Pure — the
+ * DOM read is the caller's. Ties between the two sides go to dark, matching
+ * the convention that an inverted surface is usually the dark one.
+ *
+ * The `'off'` answer is the point of measuring at all. A surface that a theme
+ * calls inverted but paints pale does not want an inverted context; its own
+ * text is already correct for it, and forcing one is how white-on-pale-grey
+ * happens.
  */
 export function pickMediaMode(
   background: RGBA,
+  ambient: RGBA | null,
   onDark: RGBA | null,
   onLight: RGBA | null,
 ): DetectedMediaMode | null {
   if (onDark === null || onLight === null) {
     return null;
   }
+
+  if (
+    ambient !== null &&
+    contrastRatio(ambient, background) >= AMBIENT_READS_AT
+  ) {
+    return 'off';
+  }
+
   return contrastRatio(onDark, background) >= contrastRatio(onLight, background)
     ? 'dark'
     : 'light';
@@ -186,11 +214,12 @@ export function useAutoMediaMode(
     }
     lastRef.current = {background: backgroundKey, tokens};
 
-    const [onDark, onLight] = resolvePaintedColors(surface, [
+    const [ambient, onDark, onLight] = resolvePaintedColors(surface, [
+      '--color-text-primary',
       '--color-on-dark',
       '--color-on-light',
     ]);
-    const next = pickMediaMode(background, onDark, onLight);
+    const next = pickMediaMode(background, ambient, onDark, onLight);
     if (next === null) {
       return;
     }

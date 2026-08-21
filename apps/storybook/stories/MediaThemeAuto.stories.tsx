@@ -20,7 +20,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          '`MediaTheme mode="auto"` measures the surface the browser actually painted and applies whichever side reads better on it. A theme is free to define `--color-background-inverted` as something that is not inverted, and a hardcoded `mode="dark"` then paints white text on pale grey — the surface color is a runtime value, so no compile-time guess can be right for every theme. `off` stays an authoring choice: measurement decides *which* side, never *whether* to have one.',
+          '`MediaTheme mode="auto"` measures the surface the browser actually painted and decides from it: no media context when the surface\'s own text already reads on it (3:1, WCAG\'s non-text line), otherwise whichever side reads better. A theme is free to define `--color-background-inverted` as something that is not inverted, and a hardcoded `mode="dark"` then paints white text on pale grey — the surface color is a runtime value, so no compile-time guess can be right for every theme.',
       },
     },
   },
@@ -114,7 +114,7 @@ export const FlatSurfaceTheme: StoryObj = {
           <SurfacePanel label="Hardcoded — inverts because the page is light">
             <HardcodedToast />
           </SurfacePanel>
-          <SurfacePanel label="Auto — measures the surface and picks the other side">
+          <SurfacePanel label="Auto — the surface reads fine already, so no media context">
             <AutoToast />
           </SurfacePanel>
         </Stack>
@@ -125,7 +125,7 @@ export const FlatSurfaceTheme: StoryObj = {
     docs: {
       description: {
         story:
-          'Light mode: the hardcoded rule paints white on pale grey at 1.25:1, auto picks light for 14.36:1. Dark mode it inverts the other way. Nothing about the component changed — only whether the mode was assumed or measured.',
+          "Light mode: the hardcoded rule paints white on pale grey at 1.25:1; auto measures the theme's own text at 14.36:1, concludes the surface is not really inverted, and applies nothing (14.36:1). Dark mode is the mirror image — 1.08:1 becomes 15.83:1.",
       },
     },
   },
@@ -184,7 +184,7 @@ export const ToastVariants: StoryObj = {
     docs: {
       description: {
         story:
-          'Toast passes `mode="auto"`, with its old rule kept only as the pre-measurement fallback. The error surface is dark in both color modes and auto keeps it dark on its own merits — no special case.',
+          'Toast passes `mode="auto"`, with its old rule kept only as the pre-measurement fallback. In light mode both surfaces invert. In dark mode the error surface resolves to `off`: its ambient text already reads at 4.50:1, and the rendering is pixel-identical to the media context, because a dark page already resolves those tokens to the same values.',
       },
     },
   },
@@ -298,7 +298,7 @@ export const Playground: StoryObj = {
     docs: {
       description: {
         story:
-          'Drag the surface through the greys on `auto` and watch the resolved mode flip where the better-reading side changes. Switch to `dark` or `light` to see what a hardcoded mode does on the same surface, and to `off` for the authoring escape — the element stays put in every case, so children never remount.',
+          "Drag the surface through the greys on `auto`. Near the page's own text color it inverts; once the ambient pairing clears 3:1 it resolves to `off` and leaves the theme alone. Switch to `dark` or `light` to see what a hardcoded mode does on the same surface. The element stays put in every case, so children never remount.",
       },
     },
   },
