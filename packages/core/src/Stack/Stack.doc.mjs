@@ -14,6 +14,35 @@ export const docs = {
       {className: 'astryx-stack-item', visualProps: ['size']},
     ],
   },
+  props: [
+    {
+      name: 'direction',
+      type: "'row' | 'column' | 'row-reverse' | 'column-reverse'",
+      description: 'Flex direction for item layout.',
+      default: "'column'",
+    },
+    {
+      name: 'gap',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Spacing step between items.',
+      default: '0',
+    },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Inner padding on all sides using the spacing scale.',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description: 'Width of the stack container.',
+    },
+    {
+      name: 'height',
+      type: 'SizeValue',
+      description: 'Height of the stack container.',
+    },
+  ],
   components: [
     {
       name: 'Stack',

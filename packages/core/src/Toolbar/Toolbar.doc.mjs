@@ -134,6 +134,11 @@ export const docs = {
           default: "'transparent'",
         },
         {
+          name: 'dividers',
+          type: "Array<'top' | 'bottom' | 'start' | 'end'>",
+          description: 'Borders/dividers rendered around the toolbar.',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
