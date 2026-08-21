@@ -18,6 +18,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -592,23 +593,27 @@ export function useLayer(
     clearContextMount();
   }, [onHide, clearContextMount]);
 
-  // Ref for trigger element (context mode only)
+  // Ref for trigger element (context mode only). Stable across renders so
+  // React does not detach and reattach an unchanged trigger element, which
+  // would otherwise remove and reapply the CSS anchor name for no reason.
+  const contextTriggerRef: RefCallback<HTMLElement> = useCallback(
+    (el: HTMLElement | null) => {
+      // Remove only THIS layer's anchor name from the previous element so
+      // other layers sharing the same trigger keep their anchors.
+      if (triggerRef.current && triggerRef.current !== el) {
+        removeAnchorName(triggerRef.current, anchorId);
+      }
+
+      if (el) {
+        addAnchorName(el, anchorId);
+      }
+
+      triggerRef.current = el;
+    },
+    [anchorId],
+  );
   const ref: RefCallback<HTMLElement> | undefined =
-    mode === 'context'
-      ? (el: HTMLElement | null) => {
-          // Remove only THIS layer's anchor name from the previous element so
-          // other layers sharing the same trigger keep their anchors.
-          if (triggerRef.current && triggerRef.current !== el) {
-            removeAnchorName(triggerRef.current, anchorId);
-          }
-
-          if (el) {
-            addAnchorName(el, anchorId);
-          }
-
-          triggerRef.current = el;
-        }
-      : undefined;
+    mode === 'context' ? contextTriggerRef : undefined;
 
   // Reconcile browser-initiated closes (light-dismiss, popover="auto" stack
   // eviction). These are the only cases where the DOM mutates without going
@@ -865,8 +870,13 @@ export function useLayer(
     [popoverRefCallback, id, lightDismiss],
   );
 
-  if (mode === 'context') {
-    return {
+  // Memoized on the same members consumers actually see, so a rerender that
+  // doesn't change any of them (isOpen, the callbacks, the render function)
+  // returns the exact same object. Without this, every rerender produces a
+  // new API object, which reruns effects/listeners in consumers that
+  // correctly depend on it even though nothing about the layer changed.
+  const contextReturn = useMemo(
+    () => ({
       ref: ref as RefCallback<HTMLElement>,
       anchorId,
       show,
@@ -874,15 +884,25 @@ export function useLayer(
       isOpen,
       id,
       render: renderContext,
-    };
+    }),
+    [ref, anchorId, show, hide, isOpen, id, renderContext],
+  );
+
+  const fixedReturn = useMemo(
+    () => ({
+      ref: undefined,
+      show,
+      hide,
+      isOpen,
+      id,
+      render: renderFixed,
+    }),
+    [show, hide, isOpen, id, renderFixed],
+  );
+
+  if (mode === 'context') {
+    return contextReturn;
   }
 
-  return {
-    ref: undefined,
-    show,
-    hide,
-    isOpen,
-    id,
-    render: renderFixed,
-  };
+  return fixedReturn;
 }

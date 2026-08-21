@@ -17,6 +17,8 @@ import type {
   LayerPlacement,
   LayerAlignment,
   ContextRenderProps,
+  ContextLayerReturn,
+  FixedLayerReturn,
 } from './useLayer';
 
 function mockCSSStyleDeclaration(
@@ -59,6 +61,40 @@ function ContextLayerHarness({
       {layer.render(<span>Layer content</span>, {placement, alignment})}
     </>
   );
+}
+
+/**
+ * Reports the full context-mode API object on every render, so tests can
+ * compare identity across rerenders (issue #5271).
+ */
+function ContextStabilityHarness({
+  onLayer,
+  onShow,
+}: {
+  onLayer: (layer: ContextLayerReturn) => void;
+  onShow?: () => void;
+}) {
+  const layer = useLayer({mode: 'context', onShow});
+  onLayer(layer);
+  return (
+    <>
+      <button type="button" ref={layer.ref}>
+        Trigger
+      </button>
+      {layer.render(<span>Layer content</span>)}
+    </>
+  );
+}
+
+/** Same as ContextStabilityHarness but for fixed mode. */
+function FixedStabilityHarness({
+  onLayer,
+}: {
+  onLayer: (layer: FixedLayerReturn) => void;
+}) {
+  const layer = useLayer({mode: 'fixed'});
+  onLayer(layer);
+  return <>{layer.render(<span>Layer content</span>, {x: 0, y: 0})}</>;
 }
 
 function ContextHostingHarness({
@@ -871,5 +907,63 @@ describe('useLayer context positioning', () => {
       container.querySelector('[popover]')?.getAttribute('style') ?? '';
     expect(style).not.toContain('position-area');
     expect(style).not.toContain('position-anchor');
+  });
+});
+
+describe('useLayer stability (issue #5271)', () => {
+  it('keeps the context trigger ref stable across unrelated rerenders', () => {
+    // Mounting a context layer settles its own internal contextMount state
+    // (set from the sentinel ref callback) before any explicit rerender, so
+    // more than one render can already have happened by the time render()
+    // returns. Compare the last settled render against one triggered after
+    // it, not a fixed array length.
+    const layers: ContextLayerReturn[] = [];
+    const onLayer = (layer: ContextLayerReturn) => layers.push(layer);
+
+    const {rerender} = render(<ContextStabilityHarness onLayer={onLayer} />);
+    const beforeRerender = layers.at(-1)!;
+    rerender(<ContextStabilityHarness onLayer={onLayer} />);
+    const afterRerender = layers.at(-1)!;
+
+    expect(afterRerender.ref).toBe(beforeRerender.ref);
+  });
+
+  it('keeps the context return object stable while its members are unchanged', () => {
+    const layers: ContextLayerReturn[] = [];
+    const onLayer = (layer: ContextLayerReturn) => layers.push(layer);
+
+    const {rerender} = render(<ContextStabilityHarness onLayer={onLayer} />);
+    const beforeRerender = layers.at(-1)!;
+    rerender(<ContextStabilityHarness onLayer={onLayer} />);
+    const afterRerender = layers.at(-1)!;
+
+    expect(afterRerender).toBe(beforeRerender);
+  });
+
+  it('keeps the fixed return object stable while its members are unchanged', () => {
+    const layers: FixedLayerReturn[] = [];
+    const onLayer = (layer: FixedLayerReturn) => layers.push(layer);
+
+    const {rerender} = render(<FixedStabilityHarness onLayer={onLayer} />);
+    rerender(<FixedStabilityHarness onLayer={onLayer} />);
+
+    expect(layers[1]).toBe(layers[0]);
+  });
+
+  it('refreshes the context API object when onShow changes, without replacing the trigger ref', () => {
+    const layers: ContextLayerReturn[] = [];
+    const onLayer = (layer: ContextLayerReturn) => layers.push(layer);
+    const onShowA = () => {};
+    const onShowB = () => {};
+
+    const {rerender} = render(
+      <ContextStabilityHarness onLayer={onLayer} onShow={onShowA} />,
+    );
+    const beforeRerender = layers.at(-1)!;
+    rerender(<ContextStabilityHarness onLayer={onLayer} onShow={onShowB} />);
+    const afterRerender = layers.at(-1)!;
+
+    expect(afterRerender).not.toBe(beforeRerender);
+    expect(afterRerender.ref).toBe(beforeRerender.ref);
   });
 });
