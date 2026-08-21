@@ -288,9 +288,12 @@ Two open upstream items bear on this test and should be tracked with it:
 - **facebook/astryx#5205** — the StyleX layer splitter only ran in the Vite dev
   server, so a production build ships atoms in flat `@layer priorityN` blocks
   that outrank `astryx-theme`. _"The layer order we advertise is real in dev and
-  fiction in production."_ Until it lands, any layer-order claim verified in a
-  dev server is unverified. This harness measures a production build for exactly
-  that reason.
+  fiction in production."_ This does **not** reach the path measured here: the
+  shipped `core/dist/astryx.css` is one flat `@layer astryx-base { … }` with no
+  `priorityN`, and an app following the docs imports that file. It bites anything
+  that COMPILES the system from source — Storybook, the docsite, any app that
+  adds core to `transpilePackages` — so it is a precondition for our own previews
+  being truthful rather than for a consumer install.
 - **facebook/astryx#5165** — a theme cannot declare an app-specific semantic
   token, which is the escape hatch an existing app needs when its vocabulary is
   wider than the system's.
