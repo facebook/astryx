@@ -124,6 +124,17 @@ import {dateInputTouchVars, dateInputTouchGeometry} from './tokens.stylex';
  */
 const TOUCH_TARGET = dateInputTouchVars['--date-input-touch-day-size'];
 
+/**
+ * Each leg of the panel swap: the outgoing panel's fade out, then the
+ * incoming one's fade in. Two of these back to back is the whole gesture, so
+ * it lands close to `--duration-medium` overall — the scale's entrance/exit
+ * band, which is what this is.
+ *
+ * A literal rather than a token: the tokens are whole durations, and this is
+ * deliberately half of one.
+ */
+const PANEL_FADE_MS = '200ms';
+
 const sizeStyles = stylex.create({
   sm: {
     height: sizeVars['--size-element-sm'],
@@ -219,12 +230,15 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     // The pair is the trailing item; the title takes the space before it.
     marginInlineStart: 'auto',
-    // Fades with the panels, for the same reason the weekday row does.
+    // Leaves with the calendar and returns with it, on the same two-leg
+    // timing as the panels below.
     transitionProperty: 'opacity, visibility',
-    transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easeVars['--ease-standard'],
+    transitionDuration: PANEL_FADE_MS,
+    transitionDelay: PANEL_FADE_MS,
+    transitionTimingFunction: 'linear',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
+      transitionDelay: '0s',
     },
   },
   /**
@@ -240,6 +254,7 @@ const styles = stylex.create({
     visibility: 'hidden',
     opacity: 0,
     pointerEvents: 'none',
+    transitionDelay: '0s',
   },
   /**
    * `Button`'s own sizes top out at 36px, which is fine for a mouse and short
@@ -292,6 +307,11 @@ const styles = stylex.create({
   },
   titleChevron: {
     display: 'inline-flex',
+    // The one part of the swap that keeps `--ease-standard`, because it is
+    // the one part that travels: a rotation has a distance to cover, and
+    // fast-out-slow-in is what that curve is for. It also runs the WHOLE
+    // swap rather than one leg of it — the panels take turns underneath, and
+    // the chevron turning through both is what ties them together.
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -307,13 +327,15 @@ const styles = stylex.create({
     gridTemplateColumns: 'repeat(7, 1fr)',
     blockSize: sizeVars['--size-element-sm'],
     alignItems: 'center',
-    // Fades with the panels below it: the row belongs to the calendar, and
-    // snapping it out while they cross-fade reads as two separate events.
+    // Belongs to the calendar, so it leaves and returns with it — same
+    // two-leg timing as the panels.
     transitionProperty: 'opacity, visibility',
-    transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easeVars['--ease-standard'],
+    transitionDuration: PANEL_FADE_MS,
+    transitionDelay: PANEL_FADE_MS,
+    transitionTimingFunction: 'linear',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
+      transitionDelay: '0s',
     },
   },
   weekdaysHidden: {
@@ -321,6 +343,7 @@ const styles = stylex.create({
     // opening the wheels would make the picker shorter.
     visibility: 'hidden',
     opacity: 0,
+    transitionDelay: '0s',
   },
   weekday: {
     textAlign: 'center',
@@ -333,28 +356,43 @@ const styles = stylex.create({
     blockSize: dateInputTouchGeometry.paneBlockSize,
     position: 'relative',
   },
+  /**
+   * The two panels share one grid cell, so a plain cross-fade overlays them.
+   * That is wrong for these two: the wheels carry a translucent selection
+   * band, and mid-fade it tints a strip of the calendar grid showing through
+   * underneath — one band-shaped rectangle of the outgoing surface looking
+   * unlike the rest of it, which is exactly the "the grey area animates
+   * differently" this used to read as.
+   *
+   * So they take turns instead: the outgoing panel fades out over the first
+   * half, the incoming one waits (`transitionDelay`) and fades in over the
+   * second. Nothing is ever superimposed, and the swap still reads as one
+   * continuous motion rather than a cut.
+   *
+   * `visibility` rides along with `opacity` throughout. It is not a
+   * continuous property, but it has its own interpolation rule — across a
+   * transition it stays `visible` until the very end — and without it the
+   * outgoing panel is cut to `hidden` on the first frame, so its half of the
+   * animation is never seen at all.
+   *
+   * Easing is `linear`, not `--ease-standard`. That token is
+   * `cubic-bezier(0.24, 1, 0.4, 1)`, which is right for something travelling
+   * a distance and wrong for a fade: measured, it put the opacity at 50% in
+   * 91ms and 95% in 241ms of a 410ms transition, so the fade was over long
+   * before the duration was, and lengthening the duration bought an
+   * imperceptible tail rather than a slower fade. A fade has no distance to
+   * cover, so its progress should be its progress.
+   */
   panel: {
     gridArea: '1 / 1',
     minWidth: 0,
-    // `visibility` rides along with `opacity` deliberately. It is not a
-    // continuous property, but it has its own interpolation rule: across a
-    // transition it stays `visible` until the very end. Leave it out and the
-    // outgoing panel is cut to `hidden` on the first frame, so only the
-    // incoming half of the cross-fade is ever seen — measured, before this:
-    // the calendar's opacity dutifully animated 1 -> 0 while its computed
-    // visibility was `hidden` for every frame of it.
     transitionProperty: 'opacity, visibility',
-    // `medium`, not `fast`. The scale's own bands say it: `fast` is for
-    // micro-interactions, `medium` for entrance and exit — and swapping a
-    // calendar for a pair of wheels is an exit and an entrance, not a state
-    // flicker on a control. At `fast` the cross-fade read as a cut, which is
-    // the wrong story: the two surfaces are the same picker, and the fade is
-    // what says so. Every part of the swap shares this duration, so the
-    // header, the weekday row, the arrows and the panels move as one event.
-    transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easeVars['--ease-standard'],
+    transitionDuration: PANEL_FADE_MS,
+    transitionDelay: PANEL_FADE_MS,
+    transitionTimingFunction: 'linear',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
+      transitionDelay: '0s',
     },
   },
   panelHidden: {
@@ -364,6 +402,8 @@ const styles = stylex.create({
     visibility: 'hidden',
     opacity: 0,
     pointerEvents: 'none',
+    // Leaving goes first, and waits for nobody.
+    transitionDelay: '0s',
   },
   footer: {
     display: 'flex',
@@ -375,6 +415,27 @@ const styles = stylex.create({
     paddingBlockStart: spacingVars['--spacing-2'],
     // Same reason as the header: the content box owns the inline inset, so
     // Done's edge lines up with the grid's rather than sitting 4px inside it.
+    transitionProperty: 'opacity, visibility',
+    transitionDuration: PANEL_FADE_MS,
+    transitionDelay: PANEL_FADE_MS,
+    transitionTimingFunction: 'linear',
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+      transitionDelay: '0s',
+    },
+  },
+  /**
+   * Hidden while the wheels are up. Done dismisses the whole sheet, and
+   * offering that mid-detour invites ending the trip early: the wheels were
+   * opened to reach a month, and the way out of them is the title that opened
+   * them. Hidden rather than unmounted, like the arrows — the footer is the
+   * sheet's last row, so dropping it would shorten the sheet mid-fade.
+   */
+  footerHidden: {
+    visibility: 'hidden',
+    opacity: 0,
+    pointerEvents: 'none',
+    transitionDelay: '0s',
   },
   sheetBody: {
     // One inset on every edge. The block-start is the exception and has to
@@ -829,7 +890,9 @@ export function TouchDateField({
           did not. Navigating and selecting are two different intents and it
           conflated them, so it is gone until it can be one or the other on
           purpose. Reaching today by scrolling still works. */}
-      <div {...stylex.props(styles.footer)}>
+      <div
+        inert={isWheelOpen ? true : undefined}
+        {...stylex.props(styles.footer, isWheelOpen && styles.footerHidden)}>
         <Button
           variant="primary"
           // md, not sm: it is the only action in the footer and the one a

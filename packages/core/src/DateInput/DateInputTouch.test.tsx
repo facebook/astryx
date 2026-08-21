@@ -1001,7 +1001,9 @@ describe('DateInput — month/year wheels', () => {
     openWheels();
     expect(title()).toHaveAttribute('aria-expanded', 'true');
 
-    fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+    // Dismissed from the wheels, where Done is deliberately not offered —
+    // the handle, the scrim and Escape are the ways out.
+    fireEvent.keyDown(document.querySelector('dialog[open]')!, {key: 'Escape'});
     expect(field()).toHaveAttribute('aria-expanded', 'false');
 
     fireEvent.click(field());
@@ -1062,24 +1064,44 @@ describe('DateInput — month/year wheels', () => {
     expect(panel('wheels')).toHaveAttribute('inert');
   });
 
-  it('the footer Done closes the whole sheet, not just the wheels', () => {
+  it('Done closes the whole picker, and only from the calendar', () => {
     // The two dismissals are distinct on purpose: the title swaps surfaces
     // inside the picker, Done leaves the picker. Wiring Done to "go back to
-    // the calendar" would make the button mean two things by position.
+    // the calendar" would make the button mean two things by position — so
+    // instead it is simply not offered while the wheels are up.
     renderAndOpen();
-    openWheels();
     fireEvent.click(screen.getByRole('button', {name: 'Done'}));
     expect(field()).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('keeps the same footer while the wheels are up', () => {
-    // The footer does not change with the surface — the header's action used
-    // to swap between Today and Done, and that was the confusing part.
-    renderAndOpen(
-      <Controlled initial="2026-03-21" min="2025-01-01" max="2027-12-31" />,
-    );
+  /**
+   * Done dismisses the whole sheet, and offering it mid-detour invites
+   * ending the trip early: the wheels were opened to reach a month, and the
+   * way out of them is the title that opened them. `inert` is what takes it
+   * out of the accessibility tree, so it is unreachable and not just unseen.
+   */
+  it('takes Done away while the wheels are up', () => {
+    renderAndOpen();
+    // Queried off the DOM rather than by role: every role-with-name query
+    // walks this tree computing accessible names, and there are ~150
+    // elements in it. Same reason the title helper above does it this way.
+    const done = () =>
+      [...document.querySelectorAll('dialog[open] button')].find(
+        el => el.textContent?.trim() === 'Done',
+      );
+    const footer = done()!.parentElement!;
+    expect(footer).not.toHaveAttribute('inert');
+
     openWheels();
-    expect(screen.getByRole('button', {name: 'Done'})).toBeInTheDocument();
+    // `inert` is what takes it out of the accessibility tree, so it is
+    // unreachable rather than merely unseen.
+    expect(footer).toHaveAttribute('inert');
+    // Kept in the layout, so the sheet does not change height mid-fade.
+    expect(done()).toBeInTheDocument();
+
+    // Back on the calendar it returns.
+    fireEvent.click(title());
+    expect(footer).not.toHaveAttribute('inert');
   });
 });
 
@@ -1741,23 +1763,59 @@ describe('DateInput — scroll CSS (definition-level)', () => {
   });
 
   /**
-   * The panels, the weekday row, the header arrows and the title chevron are
-   * one event — a calendar leaving and wheels arriving. Different durations
-   * would let the parts arrive separately, which reads as several things
-   * happening rather than one surface replacing another.
+   * The panels share one grid cell, so a cross-fade overlays them — and the
+   * wheels' translucent selection band then tints a strip of the calendar
+   * grid showing through underneath, one band-shaped rectangle of the
+   * outgoing surface looking unlike the rest of it. That is what "the grey
+   * area animates differently" was.
    *
-   * `medium` is the scale's entrance/exit band; `fast` is for
-   * micro-interactions, and at `fast` the cross-fade read as a cut.
+   * They take turns instead: everything leaving fades out over the first leg
+   * with no delay, everything arriving waits a leg and fades in over the
+   * second. Measured on an iPhone 15 profile afterwards: zero frames with
+   * both panels painting.
    */
-  it('cross-fades every part of the swap on one duration', () => {
+  it('fades the two surfaces in turn, never at the same time', () => {
     const source = read('TouchDateField.tsx');
     const styles = source.slice(
       source.indexOf('const styles = stylex.create('),
     );
+    // Panels, weekday row, header arrows, footer: each waits a leg to arrive.
+    expect(styles.match(/transitionDelay: PANEL_FADE_MS/g)).toHaveLength(4);
+    // ...and each of their hidden states leaves at once, with no delay.
     expect(
-      styles.match(/transitionDuration: durationVars\['--duration-medium'\]/g),
-    ).toHaveLength(4);
-    expect(styles).not.toContain("durationVars['--duration-fast']");
+      styles.match(/transitionDelay: '0s'/g)?.length ?? 0,
+    ).toBeGreaterThanOrEqual(8);
+  });
+
+  /**
+   * `--ease-standard` is `cubic-bezier(0.24, 1, 0.4, 1)`: right for something
+   * travelling a distance, wrong for a fade. Measured with it, opacity hit
+   * 50% in 91ms and 95% in 241ms of a 410ms transition — the fade was over
+   * long before the duration was, so lengthening the duration bought an
+   * imperceptible tail rather than a slower fade. A fade covers no distance,
+   * so its progress should simply be its progress.
+   *
+   * The title chevron is the exception and keeps the token: it rotates, and
+   * rotation is travel.
+   */
+  it('fades linearly, and eases only the thing that travels', () => {
+    const source = read('TouchDateField.tsx');
+    const styles = source.slice(
+      source.indexOf('const styles = stylex.create('),
+    );
+    const chevron = styles.slice(
+      styles.indexOf('  titleChevron: {'),
+      styles.indexOf('  titleChevronOpen: {'),
+    );
+    expect(chevron).toContain("transitionProperty: 'transform'");
+    expect(chevron).toContain(
+      "transitionTimingFunction: easeVars['--ease-standard']",
+    );
+    // The chevron is the only eased transition; every fade is linear.
+    expect(
+      styles.match(/transitionTimingFunction: easeVars\['--ease-standard'\]/g),
+    ).toHaveLength(1);
+    expect(styles.match(/transitionTimingFunction: 'linear'/g)).toHaveLength(4);
   });
 
   it('keeps the virtual keyboard down on the touch field', () => {
