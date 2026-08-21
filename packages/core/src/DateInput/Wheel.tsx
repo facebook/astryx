@@ -317,6 +317,7 @@ export function Wheel({
     if (Math.round(scroller.scrollTop / size) !== selectedIndex) {
       scroller.scrollTo({top: selectedIndex * size, behavior: 'auto'});
     }
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- the highlight follows a scroll position, which only exists after layout
     setActiveIndex(selectedIndex);
   }, [isActive, selectedIndex, itemBlockSize, isAtRestRef]);
 

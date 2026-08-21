@@ -171,7 +171,13 @@ export function usePointerDragScroll(
       }
       // `scrollend` is the honest signal; the timer covers browsers that do
       // not fire it, and the case where the glide had nowhere to go.
-      element.addEventListener('scrollend', restoreSnap, {once: true});
+      // Not `{once: true}`: a listener that never fires is never removed by
+      // it, so a component unmounted mid-glide would leave one attached.
+      // `restoreSnap` removes it itself, whichever of the two gets there
+      // first, and the cleanup below calls `restoreSnap` on unmount.
+      //
+      // eslint-disable-next-line @eslint-react/web-api-no-leaked-event-listener -- removed by restoreSnap, which the cleanup calls
+      element.addEventListener('scrollend', restoreSnap);
       restoreTimer = window.setTimeout(restoreSnap, SETTLE_FALLBACK_MS);
     };
 

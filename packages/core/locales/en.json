@@ -716,8 +716,8 @@
     "description": "Primary button that closes the mobile date picker. It does NOT commit anything — the date is already chosen by the time it is pressed — so word it as finishing/closing, not as confirming or saving."
   },
   "@astryx.dateInput.chooseMonthYear": {
-    "defaultMessage": "Choose month and year",
-    "description": "Trailing half of the accessible name on the mobile date picker's header button, after the visible month and year: \"March 2026, Choose month and year\". Describes what activating the button does. Imperative verb."
+    "defaultMessage": "{monthYear}, Choose month and year",
+    "description": "Accessible name for the mobile date picker's header button, which swaps the calendar for month and year wheels. {monthYear} is the currently shown month and year, already localized (e.g. \"March 2026\"). The whole label is one string so the separator and word order can change per locale."
   },
   "@astryx.dateInput.monthWheel": {
     "defaultMessage": "Month",

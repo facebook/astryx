@@ -544,7 +544,7 @@ export function TouchDateField({
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isWheelOpen, setIsWheelOpen] = useState(false);
-  const scrollerHandle = useRef<MonthScrollerHandle | null>(null);
+  const scrollerHandleRef = useRef<MonthScrollerHandle | null>(null);
 
   const today = useMemo(() => plainDateToday(), []);
   const selectedDate = useMemo(
@@ -656,7 +656,7 @@ export function TouchDateField({
         return;
       }
       setMonthIndex(target);
-      scrollerHandle.current?.scrollToMonth(target, 'smooth');
+      scrollerHandleRef.current?.scrollToMonth(target, 'smooth');
     },
     [monthIndex, minMonthIndex, maxMonthIndex],
   );
@@ -666,7 +666,7 @@ export function TouchDateField({
   // wheels close it is already resting on the new month.
   const handleWheelChange = useCallback((next: number) => {
     setMonthIndex(next);
-    scrollerHandle.current?.scrollToMonth(next, 'auto');
+    scrollerHandleRef.current?.scrollToMonth(next, 'auto');
   }, []);
 
   /**
@@ -712,14 +712,16 @@ export function TouchDateField({
    * marks the target as steered, so this correction does not report itself
    * back either.
    */
+  // Read through a ref so this effect depends on the surface change alone.
+  // Listing `monthIndex` would re-run it on every month the user swipes to,
+  // yanking the scroller back mid-gesture.
+  const monthIndexRef = useRef(monthIndex);
+  monthIndexRef.current = monthIndex;
   useEffect(() => {
     if (isWheelOpen) {
       return;
     }
-    scrollerHandle.current?.scrollToMonth(monthIndex, 'auto');
-    // `monthIndex` is deliberately NOT a dependency: this fires when the
-    // calendar becomes the surface again, not every time the month changes
-    // while it already is one — that would fight a swipe in progress.
+    scrollerHandleRef.current?.scrollToMonth(monthIndexRef.current, 'auto');
   }, [isWheelOpen]);
 
   // APG combobox keys. The field takes no text, so every printable key is
@@ -755,7 +757,11 @@ export function TouchDateField({
           type="button"
           onClick={() => setIsWheelOpen(open => !open)}
           aria-expanded={isWheelOpen}
-          aria-label={`${monthYearLabel}, ${t('@astryx.dateInput.chooseMonthYear')}`}
+          // One string, not a template: the comma and the word order are
+          // the translator's to choose, not English's.
+          aria-label={t('@astryx.dateInput.chooseMonthYear', {
+            monthYear: monthYearLabel,
+          })}
           {...mergeProps(
             // mergeProps, not two spreads: both halves carry a className, and
             // the later spread would drop the theme target entirely.
@@ -851,7 +857,7 @@ export function TouchDateField({
           {...stylex.props(styles.panel, isWheelOpen && styles.panelHidden)}>
           <MonthScroller
             key={`${minMonthIndex}:${maxMonthIndex}`}
-            handleRef={scrollerHandle}
+            handleRef={scrollerHandleRef}
             minMonthIndex={minMonthIndex}
             maxMonthIndex={maxMonthIndex}
             initialMonthIndex={monthIndex}

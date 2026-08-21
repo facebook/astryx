@@ -21,9 +21,8 @@
  * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
-import {use, useMemo} from 'react';
+import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {InternationalizationContext} from '../i18n';
 import {DATE_FORMAT_MONTH_ONLY, plainDateFormat} from '../utils';
 import {spacingVars} from '../theme/tokens.stylex';
 import {dateInputTouchGeometry} from './tokens.stylex';
@@ -67,24 +66,25 @@ export function MonthYearWheels({
   yearLabel,
   isActive = true,
 }: MonthYearWheelsProps) {
-  const {locale} = use(InternationalizationContext);
   const {year, month} = fromMonthIndex(monthIndex);
 
+  // Day 15 of a fixed year: no timezone can push it into an adjacent month
+  // the way day 1 or day 31 can.
+  //
+  // `plainDateFormat` rather than a raw `Intl.DateTimeFormat`, which the
+  // shared lint rule forbids and which would duplicate the format vocabulary
+  // besides. It resolves the locale itself, so there is nothing here for the
+  // memo to depend on — the same is true of Calendar's own month labels, and
+  // is why this list is constant for the life of the component.
   const monthNames = useMemo(
     () =>
-      // Day 15 of a fixed year: no timezone can push it into an adjacent
-      // month the way day 1 or day 31 can. `plainDateFormat` rather than a
-      // raw `Intl.DateTimeFormat` so the locale traces back to
-      // InternationalizationProvider like every other formatted date here —
-      // `locale` stays in the dependency list because that provider value is
-      // what makes the memo stale.
       Array.from({length: 12}, (_, index) =>
         plainDateFormat(
           {year: 2021, month: index + 1, day: 15},
           DATE_FORMAT_MONTH_ONLY,
         ),
       ),
-    [locale],
+    [],
   );
 
   // Months outside the range stay on the wheel rather than vanishing: a list

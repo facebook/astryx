@@ -319,6 +319,7 @@ export function MonthScroller({
       // every pane and lose the scroll position.
       const measured = scroller.clientWidth;
       if (measured > 0) {
+        // eslint-disable-next-line @eslint-react/set-state-in-effect -- pane width is a measurement; layout is the only place it exists
         setPaneSize(measured);
       }
     };
