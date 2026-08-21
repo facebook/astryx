@@ -152,6 +152,7 @@ const DEFAULT_RANGE = {min: '2026-02-01', max: '2026-04-30'} as const;
 
 function Controlled({
   initial,
+  onChange,
   ...props
 }: {initial?: ISODateString} & Partial<
   React.ComponentProps<typeof DateInputNext>
@@ -161,9 +162,15 @@ function Controlled({
     <DateInputNext
       label="Event date"
       {...DEFAULT_RANGE}
-      value={value}
-      onChange={setValue}
       {...props}
+      value={value}
+      // Composed, not overridden: spreading a test's `onChange` over this one
+      // used to replace the state setter, so the field silently stopped
+      // updating in exactly the tests that were watching it most closely.
+      onChange={next => {
+        setValue(next);
+        onChange?.(next);
+      }}
     />
   );
 }
@@ -485,14 +492,62 @@ describe('DateInputNext — calendar surface', () => {
     expect(february.getAllByRole('gridcell')).toHaveLength(42);
   });
 
-  it('commits the tapped day and dismisses the sheet', () => {
+  it('commits the tapped day and LEAVES the sheet open', () => {
     const onChange = vi.fn();
     renderAndOpen(<Controlled initial="2026-03-21" onChange={onChange} />);
     fireEvent.click(
       within(pane('March 2026')).getByRole('button', {name: /March 25, 2026/}),
     );
+    // The tap is the commit. Staying open lets a mistake be corrected in
+    // place, and a nearby date reconsidered, without reopening.
     expect(onChange).toHaveBeenCalledWith('2026-03-25');
+    expect(field()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('lets a second tap correct the first, still without closing', () => {
+    const onChange = vi.fn();
+    renderAndOpen(<Controlled initial="2026-03-21" onChange={onChange} />);
+    const march = within(pane('March 2026'));
+    fireEvent.click(march.getByRole('button', {name: /March 25, 2026/}));
+    fireEvent.click(march.getByRole('button', {name: /March 26, 2026/}));
+    expect(onChange).toHaveBeenLastCalledWith('2026-03-26');
+    expect(field()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('Done closes the sheet without touching the value', () => {
+    const onChange = vi.fn();
+    renderAndOpen(<Controlled initial="2026-03-21" onChange={onChange} />);
+    fireEvent.click(
+      within(pane('March 2026')).getByRole('button', {name: /March 25, 2026/}),
+    );
+    onChange.mockClear();
+    fireEvent.click(screen.getByRole('button', {name: 'Done'}));
     expect(field()).toHaveAttribute('aria-expanded', 'false');
+    // Purely a dismiss: the value was committed by the tap, so Done must not
+    // fire anything of its own.
+    expect(onChange).not.toHaveBeenCalled();
+    expect(field()).toHaveValue('March 25, 2026');
+  });
+
+  it('Done closes even with no date chosen, committing nothing', () => {
+    const onChange = vi.fn();
+    withLayout(() => {
+      render(<DateInputNext label="Ship date" onChange={onChange} />);
+      fireEvent.click(field());
+      fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+    });
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('puts Today and Done in a footer, in that order', () => {
+    renderAndOpen();
+    const buttons = screen
+      .getAllByRole('button')
+      .map(b => b.textContent?.trim())
+      .filter(label => label === 'Today' || label === 'Done');
+    // Navigation first, dismissal last — the reading order of the footer.
+    expect(buttons).toEqual(['Today', 'Done']);
   });
 
   it('marks the selection and today', () => {
@@ -693,12 +748,38 @@ describe('DateInputNext — month/year wheels', () => {
     ).toEqual(['2025', '2026', '2027']);
   });
 
-  it('Done puts the calendar back', () => {
+  it('the title is what closes them again', () => {
+    renderAndOpen();
+    openWheels();
+    expect(title()).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(title());
+    expect(title()).toHaveAttribute('aria-expanded', 'false');
+    expect(panel('wheels')).toHaveAttribute('inert');
+  });
+
+  it('the footer Done closes the whole sheet, not just the wheels', () => {
+    // The two dismissals are distinct on purpose: the title swaps surfaces
+    // inside the picker, Done leaves the picker. Wiring Done to "go back to
+    // the calendar" would make the button mean two things by position.
     renderAndOpen();
     openWheels();
     fireEvent.click(screen.getByRole('button', {name: 'Done'}));
-    expect(title()).toHaveAttribute('aria-expanded', 'false');
-    expect(panel('wheels')).toHaveAttribute('inert');
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps Today available while the wheels are up', () => {
+    // The footer does not change with the surface, and Today still means "go
+    // to the current month" — which the wheels can do as well as the calendar.
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2025-01-01" max="2027-12-31" />,
+    );
+    openWheels();
+    fireEvent.click(
+      within(screen.getByRole('listbox', {name: 'Year'})).getByText('2025'),
+    );
+    expect(title()).toHaveTextContent('March 2025');
+    fireEvent.click(screen.getByRole('button', {name: 'Today'}));
+    expect(title()).toHaveTextContent('March 2026');
   });
 });
 

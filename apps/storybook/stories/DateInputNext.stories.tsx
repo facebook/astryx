@@ -131,7 +131,9 @@ export const TouchSurface: Story = {
           'The mobile field with the media query skipped. Tap the field to ' +
           'open the sheet, then scroll the months — every pane is exactly ' +
           'one screen and snaps to the top, so the picker is a fixed height ' +
-          'and never rests between two months.',
+          'and never rests between two months.\n\nA tap on a day commits it ' +
+          'straight away (watch the readout) and leaves the sheet up, so a ' +
+          'mistake can be corrected in place. Done just closes.',
       },
     },
   },

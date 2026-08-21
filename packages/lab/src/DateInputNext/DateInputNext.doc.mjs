@@ -50,7 +50,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'A drop-in `DateInput` that picks its own surface. On anything but a narrow touch screen it renders core\'s `DateInput` unchanged. On a narrow touch screen it renders a picker built for a thumb: one month per screen, months chosen by scrolling continuously through them, and month and year wheels behind the header title for the far jumps scrolling is bad at. Its props are `DateInputProps` — the same type, not a copy — so adopting it is a changed import and nothing else.',
+      'A drop-in `DateInput` that picks its own surface. On anything but a narrow touch screen it renders core\'s `DateInput` unchanged. On a narrow touch screen it renders a picker built for a thumb: one month per screen, months chosen by scrolling continuously through them, and month and year wheels behind the header title for the far jumps scrolling is bad at. A tap on a day commits it immediately and leaves the sheet up, so a mistake can be corrected in place; Done closes. Its props are `DateInputProps` — the same type, not a copy — so adopting it is a changed import and nothing else.',
     bestPractices: [
       {
         guidance: true,
@@ -71,6 +71,11 @@ export const docs = {
         guidance: false,
         description:
           'Branch on your own media query and render DateInput or MobileDateField yourself; that is this component, and it gets the "narrow AND touch" condition right.',
+      },
+      {
+        guidance: false,
+        description:
+          'Treat Done as a confirm step, or pair it with a Cancel. onChange has already fired by the time it is reachable, so there is nothing pending to confirm and nothing to roll back — it is a close button, and the handle, scrim and Escape do the same thing.',
       },
       {
         guidance: false,
@@ -106,7 +111,7 @@ export const docs = {
         name: 'Header',
         required: false,
         description:
-          'The month and year, as a button that swaps the calendar for the wheels, plus Today (or Done while the wheels are up).',
+          'The month and year, as a button that swaps the calendar for the wheels and back; its chevron rotates to show which surface is up.',
       },
       {
         name: 'Weekday row',
@@ -125,6 +130,12 @@ export const docs = {
         required: false,
         description:
           'A month wheel and a year wheel occupying the same box as the calendar, so opening them never changes the height.',
+      },
+      {
+        name: 'Footer',
+        required: false,
+        description:
+          'Today at the start, which goes to the current month on either surface, and Done at the end, which closes the sheet. Done commits nothing — a tap on a day has already done that — so it is exactly equivalent to the grab handle, the scrim and Escape.',
       },
     ],
   },
@@ -148,8 +159,9 @@ export const docs = {
       },
       {
         name: '--date-input-next-wheel-item-size',
-        default: '40px',
-        description: 'Height of a wheel row.',
+        default: '34px',
+        description:
+          'Height of a wheel row, and so the spacing between options and the height of the selection band. Deliberately tighter than a day cell: a wheel row is scroll-first, so it does not carry the same tap-target duty, and the tighter row puts ~8 options on screen instead of ~6.',
       },
     ],
   },

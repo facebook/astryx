@@ -283,6 +283,14 @@ const styles = stylex.create({
     opacity: 0,
     pointerEvents: 'none',
   },
+  footer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-2'],
+    paddingBlockStart: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-1'],
+  },
   sheetBody: {
     paddingInline: spacingVars['--spacing-2'],
     // Clears the sheet's floating grab handle, which is out of flow and so
@@ -470,10 +478,13 @@ export function MobileDateField({
     inputRef.current?.focus();
   }, [fireChange]);
 
+  // Selection commits on the tap and leaves the sheet up, so a mistake can be
+  // corrected in place and a nearby date reconsidered without reopening.
+  // Dismissal is the footer's Done (and the handle, the scrim, Escape) — none
+  // of which commit anything, because this already has.
   const handleSelect = useCallback(
     (next: ISODateString) => {
       fireChange(next);
-      setIsSheetOpen(false);
     },
     [fireChange],
   );
@@ -539,21 +550,6 @@ export function MobileDateField({
             <Icon icon="chevronDown" size="sm" color="secondary" />
           </span>
         </button>
-        {isWheelOpen ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            label={t('@astryx.dateInput.doneChoosingMonth')}
-            onClick={() => setIsWheelOpen(false)}
-          />
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            label={t('@astryx.dateInput.today')}
-            onClick={handleToday}
-          />
-        )}
       </div>
 
       {/* Decorative: each day carries its weekday in its accessible name, so
@@ -609,6 +605,29 @@ export function MobileDateField({
             isActive={isWheelOpen}
           />
         </div>
+      </div>
+
+      {/* Navigation on the left, dismissal on the right — the usual reading
+          order for a sheet footer, and it keeps the destination-changing
+          action away from the thumb's path to the one that closes.
+
+          Done does NOT commit: a tap on a day has already fired onChange by
+          the time it is reachable. It is a close button, exactly equivalent
+          to the grab handle, the scrim and Escape — which is why it is safe
+          for those to remain, and why there is no Cancel to pair it with. */}
+      <div {...stylex.props(styles.footer)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          label={t('@astryx.dateInput.today')}
+          onClick={handleToday}
+        />
+        <Button
+          variant="primary"
+          size="sm"
+          label={t('@astryx.dateInput.donePicking')}
+          onClick={() => setIsSheetOpen(false)}
+        />
       </div>
     </div>
   );
