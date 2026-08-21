@@ -643,14 +643,35 @@ that browsers repair on parse and React does not.
 Ships as an **error in both tiers**: the repo is clean after the fixes in the
 commit below this one, and this keeps it that way.
 
-**Known limitations (intentional false-negatives):** the check is lexical. It
-walks up from the row through the wrappers that are transparent in the DOM —
-fragments, expression containers, `&&`/ternary guards, and the arrow body of an
-inline `.map()` — and reports only when the first real element it reaches is the
-table. A row assigned to a variable, returned from a named helper, or passed as
-a prop has left its lexical position, and where it lands is not knowable from
-that file, so the rule stays silent rather than guessing. A deliberate
-unwrapped row (the contract test in `Table.test.tsx`) opts out with a
+**How the walk decides.** The check is lexical. It walks up from the row through
+the wrappers that are transparent in the DOM — fragments, expression containers,
+`&&`/ternary guards, `if`/`switch`/`try` inside a callback, array literals and
+JSX spread children — and reports only when the first real element it reaches is
+the table.
+
+Calls are the subtle part, and the transparency there is **position-aware**, not
+a node-type lookup. The walk steps out of a callback only for `.map()` and
+`.flatMap()`, whose result is spliced into the JSX position the call occupies,
+and it follows a chain chained off that result (`rows.map(...).filter(Boolean)`).
+It does **not** step out of a call whose argument is the row itself: a row handed
+to a function is data, not placement, and the callee routinely puts it somewhere
+valid. `wrapInBody(<TableRow/>)` and
+`React.createElement('tbody', null, <TableRow/>)` are silent for that reason —
+flagging them told authors to wrap code that was already correct.
+
+Element names resolve on their last segment, so `Astryx.TableRow` is a row and
+`Rx.Fragment` is a fragment. There is no import resolution, deliberately: the
+rule already trusts a bare `Table`, and resolving the segment applies that same
+trade consistently.
+
+**Known limitations (intentional false-negatives):** a row that has left its
+lexical position — assigned to a variable, returned from a named helper, passed
+as a prop, or handed to a function as an argument — could land anywhere, so the
+rule stays silent rather than guessing. The same goes for an aliased import
+(`<DataTable>`), a sequence expression, and an awaited wrapper such as
+`await Promise.all(rows.map(...))`. Each of those is pinned as a valid fixture in
+the tests, so a change in that behaviour has to be deliberate. A deliberate
+unwrapped row (the contract test in `Table.test.tsx`) opts out with an
 `eslint-disable-next-line` and a reason.
 
 See: https://github.com/facebook/astryx/issues/5277

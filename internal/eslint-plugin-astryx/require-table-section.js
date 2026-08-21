@@ -66,26 +66,36 @@ const TABLE_ELEMENTS = new Set(['Table', 'BaseTable', 'table']);
 
 // JSX elements that render nothing of their own, so a row inside one is still
 // a direct child of whatever encloses it.
-const FRAGMENT_ELEMENTS = new Set(['Fragment', 'React.Fragment']);
+const FRAGMENT_ELEMENTS = new Set(['Fragment']);
 
 // Expression and statement nodes a row can sit inside while remaining, in the
 // emitted DOM, a direct child of the enclosing element.
 const TRANSPARENT_NODES = new Set([
   'JSXFragment',
   'JSXExpressionContainer',
+  'JSXSpreadChild',
   'ConditionalExpression',
   'LogicalExpression',
   'ArrayExpression',
   'ReturnStatement',
   'BlockStatement',
+  'IfStatement',
+  'SwitchStatement',
+  'SwitchCase',
+  'TryStatement',
+  'CatchClause',
   'ArrowFunctionExpression',
   'FunctionExpression',
-  'CallExpression',
   'ChainExpression',
   'TSAsExpression',
   'TSSatisfiesExpression',
   'TSNonNullExpression',
 ]);
+
+// Array methods whose result is spliced straight into the JSX position the call
+// occupies. Stepping out of one of these callbacks keeps the row where it looks
+// like it is; stepping out of any other call does not.
+const SPLICING_METHODS = new Set(['map', 'flatMap']);
 
 /** Flatten a JSX element name to a string: `Table`, `React.Fragment`, `svg:a`. */
 function nameOf(name) {
@@ -108,6 +118,55 @@ function nameOf(name) {
 
 function elementName(node) {
   return node?.type === 'JSXElement' ? nameOf(node.openingElement?.name) : null;
+}
+
+/**
+ * The part of an element name that identifies the component. Names arrive
+ * flattened (`React.Fragment`, `Astryx.TableRow`), and the namespace is just
+ * how the module was imported — `Rx.Fragment` is still a fragment. The rule
+ * already trusts a bare `Table` without resolving imports, so resolving the
+ * last segment is the same trade, applied consistently.
+ */
+function lastSegment(name) {
+  return name == null ? null : name.slice(name.lastIndexOf('.') + 1);
+}
+
+/**
+ * Can the walk step from `child` up through `parent` and still be describing
+ * the same position in the DOM?
+ *
+ * A call needs more than its node type. `CallExpression` is in the walk so that
+ * `{rows.map(r => <TableRow/>)}` works — the callback's return value lands
+ * exactly where the call sits. But a row handed to a function as an ARGUMENT is
+ * data, not placement: `wrapInBody(<TableRow/>)` and
+ * `React.createElement('tbody', null, <TableRow/>)` put it somewhere the callee
+ * chooses, and blaming the enclosing table for those flags correct code.
+ */
+function isTransparent(parent, child) {
+  if (parent.type === 'CallExpression') {
+    // Chained off the result: `rows.map(...).filter(Boolean)`.
+    if (parent.callee === child) {
+      return true;
+    }
+    // Stepping out of a callback, but only for the methods that splice their
+    // result into this position. A callback given to some other helper is that
+    // helper's to place.
+    const isCallbackArg =
+      parent.arguments.includes(child) &&
+      (child.type === 'ArrowFunctionExpression' ||
+        child.type === 'FunctionExpression');
+    return (
+      isCallbackArg &&
+      parent.callee?.type === 'MemberExpression' &&
+      SPLICING_METHODS.has(lastSegment(nameOf(parent.callee.property) ?? parent.callee.property?.name))
+    );
+  }
+  // `rows.map(...)` inside `rows.map(...).filter(...)` — we came up the object
+  // side of the chain, not out of a computed key.
+  if (parent.type === 'MemberExpression') {
+    return parent.object === child;
+  }
+  return TRANSPARENT_NODES.has(parent.type);
 }
 
 const rule = {
@@ -133,15 +192,17 @@ const rule = {
   create(context) {
     return {
       JSXElement(node) {
-        const row = elementName(node);
+        const row = lastSegment(elementName(node));
         if (!ROW_ELEMENTS.has(row)) {
           return;
         }
 
+        let child = node;
         for (let current = node.parent; current; current = current.parent) {
           if (current.type === 'JSXElement') {
-            const parent = elementName(current);
+            const parent = lastSegment(elementName(current));
             if (FRAGMENT_ELEMENTS.has(parent)) {
+              child = current;
               continue;
             }
             if (SECTION_ELEMENTS.has(parent)) {
@@ -159,11 +220,13 @@ const rule = {
             return;
           }
 
-          if (!TRANSPARENT_NODES.has(current.type)) {
+          if (!isTransparent(current, child)) {
             // The row has escaped its JSX position (assigned to a variable,
-            // returned from a named helper, passed as a prop). Stay silent.
+            // returned from a named helper, handed to a function as an
+            // argument, passed as a prop). Stay silent.
             return;
           }
+          child = current;
         }
       },
     };

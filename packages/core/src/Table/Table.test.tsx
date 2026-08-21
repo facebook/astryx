@@ -1031,6 +1031,45 @@ describe('Table', () => {
     );
   });
 
+  // Columns do not bring a thead with them in children mode — BaseTable's
+  // `children ? children : <>...</>` short-circuits the whole data-driven
+  // branch, header included. The header is TableHeader's job here.
+  it('children mode renders no thead even when columns are supplied', () => {
+    const {container} = render(
+      <Table columns={columns}>
+        <TableBody>
+          <TableRow>
+            <TableCell>Only body</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    expect(container.querySelector('thead')).toBeNull();
+    expect(container.querySelector('tbody > tr')).not.toBeNull();
+  });
+
+  it('children mode renders the thead TableHeader supplies', () => {
+    const {container} = render(
+      <Table columns={columns}>
+        <TableHeader>
+          <TableRow isHeaderRow>
+            <TableCell>H</TableCell>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell>B</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    const table = container.querySelector('table');
+    expect(Array.from(table?.children ?? []).map(el => el.tagName)).toEqual([
+      'THEAD',
+      'TBODY',
+    ]);
+  });
+
   it('children mode puts the rows in the tbody TableBody renders', () => {
     const {container} = render(
       <Table density="balanced">

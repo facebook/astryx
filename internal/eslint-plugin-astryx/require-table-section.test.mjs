@@ -55,6 +55,52 @@ ruleTester.run('require-table-section', requireTableSectionRule, {
     {code: 'function renderRow() { return <TableRow/>; }'},
     // A standalone row with no table around it at all (unit-test fixtures).
     {code: '<TableRow><TableCell>x</TableCell></TableRow>'},
+
+    // A component we know nothing about, INSIDE a table: it may well render the
+    // tbody itself, so guessing here would flag correct code.
+    {code: '<Table><Wrapper><TableRow/></Wrapper></Table>'},
+    // A row handed to Table as a prop — the prop's renderer decides where it lands.
+    {code: '<Table rowSlot={<TableRow/>}><TableBody/></Table>'},
+    {code: '<Table children={<TableRow/>}/>'},
+    // BaseTable renders the same <table>; a section is still a section under it.
+    {code: '<BaseTable><tbody><tr/></tbody></BaseTable>'},
+    // Fragment shorthand inside a section stays valid.
+    {
+      code: '<Table><TableBody><>{list.map(r => <TableRow key={r}/>)}</></TableBody></Table>',
+    },
+    // Nested tables, both composed correctly.
+    {
+      code: '<Table><TableBody><TableRow><TableCell><Table><TableBody><TableRow/></TableBody></Table></TableCell></TableRow></TableBody></Table>',
+    },
+
+    // A row passed to a function as an ARGUMENT is data, not placement: the
+    // callee decides where it ends up, and it is routinely somewhere valid.
+    // Flagging these told authors to wrap code that was already correct.
+    {code: '<Table>{wrapInBody(<TableRow/>)}</Table>'},
+    {code: "<Table>{React.createElement('tbody', null, <TableRow/>)}</Table>"},
+    {code: '<table>{createPortal(<tr/>, node)}</table>'},
+    // Same for a callback handed to a helper: only an inline .map()/.flatMap()
+    // splices its result straight into this JSX position.
+    {code: '<Table>{withBody(() => <TableRow/>)}</Table>'},
+    {
+      code: '<Table columns={c}>{buildGroupedBodies(groups, g => <TableRow key={g.id}/>)}</Table>',
+    },
+
+    // Name matching is lexical — no import resolution, by design. An aliased
+    // table or row is invisible, the same way a bare `Table` from any package
+    // is treated as ours.
+    {code: '<DataTable><TableRow/></DataTable>'},
+    // Accepted limitations, pinned so a change of behaviour is deliberate:
+    // a sequence expression and an awaited wrapper both break the walk.
+    {code: '<Table>{(0, <TableRow/>)}</Table>'},
+    {
+      code: '<Table>{await Promise.all(rows.map(async r => <TableRow key={r.id}/>))}</Table>',
+    },
+    // Only the method form splices: a helper that happens to be named `map`
+    // still places the row itself.
+    {code: '<Table>{map(rows, r => <TableRow key={r.id}/>)}</Table>'},
+    // The chain is followed up the object side, not out of a computed key.
+    {code: '<Table>{arr[<TableRow/>]}</Table>'},
   ],
   invalid: [
     // The straightforward case.
@@ -104,6 +150,67 @@ ruleTester.run('require-table-section', requireTableSectionRule, {
         {messageId: 'rowOutsideSection'},
         {messageId: 'rowOutsideSection'},
       ],
+    },
+    // BaseTable renders the <table>; core's own tests compose it directly.
+    {
+      code: '<BaseTable><tr><td>x</td></tr></BaseTable>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    // Fragment shorthand, single and nested.
+    {
+      code: '<Table><>{list.map(r => <TableRow key={r}/>)}</></Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    {
+      code: '<Table><><><TableRow/></></></Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    // An array literal spliced into the table.
+    {
+      code: '<Table>{[<TableRow key="a"/>]}</Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    // ...and the same rows spread in. Flagging the literal row but not the
+    // spread beside it would be a green lint over the same broken DOM.
+    {
+      code: '<Table>{...rows.map(r => <TableRow key={r.id}/>)}</Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    // Nested tables: only the inner, section-less one is reported.
+    {
+      code: '<Table><TableBody><TableRow><TableCell><Table><TableRow/></Table></TableCell></TableRow></TableBody></Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    // A method chained after the map is the most idiomatic row-list shape there
+    // is, and it must not hide the rows.
+    {
+      code: '<Table>{rows.map(r => <TableRow key={r.id}/>).filter(Boolean)}</Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    // A return one statement deeper inside the map callback.
+    {
+      code: '<Table>{rows.map(r => { if (r.ok) { return <TableRow key={r.id}/>; } return null; })}</Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    // Member-expression element names resolve on their last segment, so a
+    // namespaced import is not a blind spot.
+    {
+      code: '<Astryx.Table><Astryx.TableRow/></Astryx.Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    // ...and an aliased React import still reads as a fragment.
+    {
+      code: '<Table><Rx.Fragment><TableRow/></Rx.Fragment></Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    // Optional chaining and flatMap are the same splice.
+    {
+      code: '<Table>{rows?.map(r => <TableRow key={r.id}/>)}</Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
+    },
+    {
+      code: '<Table>{groups.flatMap(g => g.rows.map(r => <TableRow key={r.id}/>))}</Table>',
+      errors: [{messageId: 'rowOutsideSection'}],
     },
   ],
 });
