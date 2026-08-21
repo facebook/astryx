@@ -17,7 +17,6 @@
  */
 
 import {
-  use,
   useId,
   useState,
   useCallback,
@@ -179,7 +178,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
-import {useTranslator, InternationalizationContext} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface DateInputProps extends Omit<
@@ -465,8 +464,8 @@ function PointerDateField({
   ...rest
 }: DateInputProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
-  const {locale} = use(InternationalizationContext);
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');

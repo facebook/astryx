@@ -19,7 +19,6 @@
  */
 
 import {
-  use,
   useState,
   useMemo,
   useCallback,
@@ -90,7 +89,7 @@ import type {
 } from '../utils/dateTypes';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator, InternationalizationContext} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -228,7 +227,7 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
  */
 export function Calendar({ref, ...props}: CalendarProps) {
   const t = useTranslator();
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
   const {
     handleRef,
     mode = 'single',
@@ -654,7 +653,7 @@ function MonthGrid({
   pendingFocus,
   onPendingFocusHandled,
 }: MonthGridProps) {
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
   const year = month.year;
 
   // Use hooks for days generation and constraints
@@ -1035,7 +1034,7 @@ function DayCell({
   onDayHover,
 }: DayCellProps) {
   const t = useTranslator();
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
   const {date, isOutside, dayNumber} = day;
 
   if (isOutside && !hasOutsideDays) {

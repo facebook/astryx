@@ -21,7 +21,7 @@ This plugin implements a two-tier linting strategy:
 ### `@astryx/no-raw-intl-locale`
 
 `InternationalizationProvider` is the sole user-facing locale source. This
-rule forbids two independent things, anywhere in the lint scope:
+rule forbids three independent things, anywhere in the lint scope:
 
 1. **Raw `Intl` access** — constructing a locale-sensitive `Intl` formatter,
    calling `toLocaleString`/`toLocaleDateString`/`toLocaleTimeString`/
@@ -40,12 +40,17 @@ Intl.DateTimeFormat`), destructuring (`const {DateTimeFormat} = Intl`),
    _any_ position, not only as an argument to an `Intl`/locale-method call.
    `recognition.lang = lang ?? navigator.language` is flagged even though no
    `Intl` API is involved.
+3. **Date-helper calls without a locale** — calls to `plainDateFormat`,
+   `formatSharedDate`, `parseDateInput`, and `isLocaleDayFirst` imported from
+   the Astryx helper modules must pass their locale argument. The rule follows
+   named imports, aliases, and namespace imports without matching unrelated
+   local functions that happen to use the same name.
 
 Shipped component code should read the locale through the public
 provider-aware utilities instead — `useLocale()`/`useCollator()` (exported
-from `@astryxdesign/core/i18n`) — or an existing formatting helper such as
-`plainDateFormat`/`formatInstant`/`formatFilterValue`, so the value always
-traces back to the provider.
+from `@astryxdesign/core/i18n`) — or use an existing formatting helper such as
+`plainDateFormat`/`formatInstant`/`formatFilterValue`. Date-helper callers pass
+`useLocale()` explicitly so the value always traces back to the provider.
 
 **Raw `Intl` is controlled by two closed file lists in the rule source:**
 
@@ -53,11 +58,12 @@ traces back to the provider.
   implementations. Direct Intl calls there still require a syntactically
   explicit locale; `Intl.NumberFormat(undefined)`, an omitted locale, and
   locale methods without their locale argument are errors. Aliasing or
-  destructuring Intl is also rejected. The only temporary ambient exceptions
-  are the existing calls inside the named `plainDateFormat` and
-  `isLocaleDayFirst` functions, pending #5120.
+  destructuring Intl is also rejected.
 - `APPROVED_TEST_ORACLE_FILES` contains named tests that deliberately construct
   independent Intl expectations so assertions are not circular.
+- `DATE_HELPER_DEFAULT_TEST_FILES` contains only the two helper suites that
+  verify the backward-compatible default locale. This exemption applies only
+  to the helper-call locale requirement, not to raw Intl or navigator access.
 
 Approved implementations:
 
@@ -83,6 +89,11 @@ Named test oracles:
 - `packages/core/src/Timestamp/tooltipEntries.test.ts`
 - `packages/core/src/PowerSearch/formatFilterValue.test.ts`
 - `packages/core/src/Timestamp/Timestamp.test.tsx`
+
+Named helper-default test files:
+
+- `packages/core/src/utils/plainDate.test.ts`
+- `packages/core/src/utils/dateParser.test.ts`
 
 These lists are the **only** exception mechanism. There is no rule option or
 `eslint.config.js` override that widens them. A new entry requires a rule-source
