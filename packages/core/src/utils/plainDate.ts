@@ -278,6 +278,16 @@ export const DATE_FORMAT_MONTH_YEAR: Intl.DateTimeFormatOptions = {
   month: 'long',
 };
 
+// e.g. "Sun" (locale-dependent) — the weekday on its own, abbreviated.
+//
+// This is CLDR's `abbreviated` width, which `Intl` reaches natively. Note
+// that Calendar's 2-letter header ("Su") is CLDR's *short* width, a
+// different thing that `Intl` cannot express at all — which is why that one
+// needs the generated lookup table beside it and this one does not.
+export const DATE_FORMAT_WEEKDAY_ONLY: Intl.DateTimeFormatOptions = {
+  weekday: 'short',
+};
+
 // e.g. "January" (locale-dependent) — the month on its own, for a control
 // that shows a list of months and carries the year separately.
 export const DATE_FORMAT_MONTH_ONLY: Intl.DateTimeFormatOptions = {

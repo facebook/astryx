@@ -811,14 +811,55 @@ describe('DateInput — calendar surface', () => {
     expect(march.queryByRole('button', {name: /February 28, 2026/})).toBeNull();
   });
 
-  it('rotates the weekday header with weekStartsOn', () => {
+  const weekdayNames = () =>
+    [...weekdayRow().children].map(c => c.textContent?.trim());
+
+  /**
+   * Three letters, where Calendar's own header uses two.
+   *
+   * The sheet is full width — ~51px a column against Calendar's popover — so
+   * there is room for the form people actually read, and a picker driven by
+   * thumb should not make anyone decode "Tu" against "Th".
+   *
+   * Exact equality, not `toHaveTextContent`: that matches substrings, so it
+   * passes against "Sun" while asserting "Su" and would not have noticed this
+   * change at all.
+   */
+  it('labels the columns with three-letter weekday names', () => {
     renderAndOpen();
-    expect(weekdayRow().children[0]).toHaveTextContent('Su');
+    expect(weekdayNames()).toEqual([
+      'Sun',
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+    ]);
+  });
+
+  it('rotates the weekday header with weekStartsOn', () => {
+    renderAndOpen(<Controlled initial="2026-03-21" weekStartsOn={1} />);
+    expect(weekdayNames()).toEqual([
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun',
+    ]);
   });
 
   it('accepts weekStartsOn as a day name, like Calendar and DateInput', () => {
-    renderAndOpen(<Controlled initial="2026-03-21" weekStartsOn="mon" />);
-    expect(weekdayRow().children[0]).toHaveTextContent('Mo');
+    renderAndOpen(<Controlled initial="2026-03-21" weekStartsOn="sat" />);
+    expect(weekdayNames()[0]).toBe('Sat');
+    // The columns rotate with the header, or the grid would be mislabelled.
+    expect(
+      within(pane('March 2026'))
+        .getAllByRole('button')[0]
+        .getAttribute('aria-label'),
+    ).toMatch(/February 28, 2026|March/);
   });
 
   it('moves keyboard focus by date, across the month boundary', () => {
