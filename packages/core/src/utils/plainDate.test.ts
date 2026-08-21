@@ -592,10 +592,6 @@ describe('plainDateFormat', () => {
   });
 
   it('defaults to en, not the runtime locale', () => {
-    // The regression this guards: with `undefined` the month label resolved to
-    // whatever locale the runtime had, so an SSR host with no LC_ALL emitted
-    // the CLDR root form ("2026 M08") while the browser rendered "August
-    // 2026" — a hydration mismatch in every SSR'd Calendar/DateInput.
     expect(
       plainDateFormat({year: 2026, month: 8, day: 22}, DATE_FORMAT_MONTH_YEAR),
     ).toBe('August 2026');
@@ -612,11 +608,8 @@ describe('plainDateFormat', () => {
   });
 
   it('does not depend on the ambient runtime locale', () => {
-    // The determinism guarantee, which is what makes it hydration-safe: the
-    // two-argument call must equal the explicit-'en' call on every host,
-    // whatever `Intl.DateTimeFormat().resolvedOptions().locale` happens to be
-    // there. Verified in production against a sandcastle host that resolves
-    // the CLDR root while the browser resolves en-US.
+    // Equal on every host, whatever Intl resolves there. This is the
+    // hydration-safety guarantee.
     const pd: PlainDate = {year: 2026, month: 8, day: 22};
     for (const options of [DATE_FORMAT_MONTH_YEAR, DATE_FORMAT_WITH_WEEKDAY]) {
       expect(plainDateFormat(pd, options)).toBe(
