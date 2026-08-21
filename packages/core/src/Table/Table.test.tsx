@@ -369,9 +369,11 @@ describe('BaseTable', () => {
   it('renders children mode instead of data', () => {
     render(
       <BaseTable>
-        <tr>
-          <td>Manual cell</td>
-        </tr>
+        <tbody>
+          <tr>
+            <td>Manual cell</td>
+          </tr>
+        </tbody>
       </BaseTable>,
     );
     expect(screen.getByText('Manual cell')).toBeInTheDocument();
@@ -380,9 +382,11 @@ describe('BaseTable', () => {
   it('does not render thead in children mode without columns', () => {
     const {container} = render(
       <BaseTable>
-        <tr>
-          <td>Content</td>
-        </tr>
+        <tbody>
+          <tr>
+            <td>Content</td>
+          </tr>
+        </tbody>
       </BaseTable>,
     );
     expect(container.querySelector('thead')).toBeNull();
@@ -988,20 +992,60 @@ describe('Table', () => {
   it('renders children mode with TableRow and TableCell', () => {
     render(
       <Table density="balanced" dividers="rows">
-        <TableRow>
-          <TableCell>Streamed A</TableCell>
-          <TableCell>Streamed B</TableCell>
-        </TableRow>
-        <TableRow>
-          <TableCell>Streamed C</TableCell>
-          <TableCell>Streamed D</TableCell>
-        </TableRow>
+        <TableBody>
+          <TableRow>
+            <TableCell>Streamed A</TableCell>
+            <TableCell>Streamed B</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Streamed C</TableCell>
+            <TableCell>Streamed D</TableCell>
+          </TableRow>
+        </TableBody>
       </Table>,
     );
     expect(screen.getByText('Streamed A')).toBeInTheDocument();
     expect(screen.getByText('Streamed D')).toBeInTheDocument();
     expect(screen.getAllByRole('row')).toHaveLength(2);
     expect(screen.getAllByRole('cell')).toHaveLength(4);
+  });
+
+  // Children mode hands the children straight to <table> — it does not wrap
+  // them the way the data-driven path does. That is deliberate (it is what
+  // makes the section components composable), but it was never written down,
+  // and a caller who skipped the section shipped `<table><tr>` (#5277).
+  it("children mode renders no tbody of its own — the section is the caller's", () => {
+    const {container} = render(
+      <Table density="balanced">
+        {/* The unwrapped shape is the subject of this test, not a mistake. */}
+        {/* eslint-disable-next-line @astryx/require-table-section */}
+        <TableRow>
+          <TableCell>Unwrapped</TableCell>
+        </TableRow>
+      </Table>,
+    );
+    const table = container.querySelector('table');
+    expect(table?.querySelector('tbody')).toBeNull();
+    expect(Array.from(table?.children ?? []).map(el => el.tagName)).toContain(
+      'TR',
+    );
+  });
+
+  it('children mode puts the rows in the tbody TableBody renders', () => {
+    const {container} = render(
+      <Table density="balanced">
+        <TableBody>
+          <TableRow>
+            <TableCell>Wrapped</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    const table = container.querySelector('table');
+    expect(
+      Array.from(table?.children ?? []).map(el => el.tagName),
+    ).not.toContain('TR');
+    expect(table?.querySelector('tbody > tr')).not.toBeNull();
   });
 
   it('passes through idKey string to base table', () => {
