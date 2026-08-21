@@ -1015,6 +1015,7 @@ export function Selector<T extends SelectorOptionType>(
     // already replaced.
     value: optimisticValue,
     isDisabled,
+    isLoading,
     isOpen: popover.isOpen,
     hasSearch,
     onOpen: useCallback(() => {
@@ -1067,13 +1068,13 @@ export function Selector<T extends SelectorOptionType>(
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       // With hasSearch the query input owns typing, so type-to-select is off.
-      if (!isDisabled && !hasSearch && typeahead.onKeyDown(e)) {
+      if (!isDisabled && !isLoading && !hasSearch && typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }
       onKeyDown(e);
     },
-    [isDisabled, hasSearch, typeahead, onKeyDown],
+    [isDisabled, isLoading, hasSearch, typeahead, onKeyDown],
   );
 
   // Keep the highlighted option visible during keyboard navigation. The

@@ -18,6 +18,7 @@ import type {MultiSelectorOptionData} from './types';
 interface UseMultiComboboxOptions {
   selectableItems: MultiSelectorOptionData[];
   isDisabled?: boolean;
+  isLoading?: boolean;
   isOpen: boolean;
   hasSearch?: boolean;
   onOpen: () => void;
@@ -55,6 +56,7 @@ interface UseMultiComboboxResult {
 export function useMultiCombobox({
   selectableItems,
   isDisabled = false,
+  isLoading = false,
   isOpen,
   hasSearch = false,
   onOpen,
@@ -64,6 +66,7 @@ export function useMultiCombobox({
   hasValue = false,
   listboxId,
 }: UseMultiComboboxOptions): UseMultiComboboxResult {
+  const isInactive = isDisabled || isLoading;
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [typeahead, setTypeahead] = useState('');
   const typeaheadTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -87,7 +90,7 @@ export function useMultiCombobox({
   }, [onClose]);
 
   const onTriggerClick = useCallback(() => {
-    if (isDisabled) {
+    if (isInactive) {
       return;
     }
     if (isOpen) {
@@ -98,7 +101,7 @@ export function useMultiCombobox({
         setHighlightedIndex(0);
       }
     }
-  }, [isDisabled, isOpen, onOpen, closeAndReset, hasSearch]);
+  }, [isInactive, isOpen, onOpen, closeAndReset, hasSearch]);
 
   const onItemMouseEnter = useCallback(
     (item: MultiSelectorOptionData, index: number) => {
@@ -111,7 +114,7 @@ export function useMultiCombobox({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (isDisabled) {
+      if (isInactive) {
         return;
       }
 
@@ -250,7 +253,7 @@ export function useMultiCombobox({
       }
     },
     [
-      isDisabled,
+      isInactive,
       isOpen,
       onOpen,
       closeAndReset,
