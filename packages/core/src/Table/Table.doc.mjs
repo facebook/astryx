@@ -107,7 +107,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Children mode: render TableRow/TableCell directly instead of using data-driven rendering.',
+      description: 'Children mode: render structural children directly instead of using data-driven rendering. Wrap rows in TableHeader/TableBody/TableFooter yourself; Table no longer wraps children in a tbody for you.',
     },
     {
       name: 'xstyle',
@@ -116,6 +116,9 @@ export const docs = {
     },
   ],
   components: [
+    {name: 'TableHeader'},
+    {name: 'TableBody'},
+    {name: 'TableFooter'},
     {name: 'TableRow'},
     {name: 'TableCell'},
     {name: 'TableHeaderCell'},
