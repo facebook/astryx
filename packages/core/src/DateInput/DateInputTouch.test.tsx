@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file DateInputNext.test.tsx
- * @input Uses vitest, @testing-library/react, DateInputNext and its helpers
+ * @file DateInputTouch.test.tsx
+ * @input Uses vitest, @testing-library/react, DateInput and its helpers
  * @output Behavior coverage for the responsive date picker
- * @position Test file for /packages/lab/src/DateInputNext/
+ * @position Test file for /packages/core/src/DateInput/
  *
  * What jsdom can and cannot see here matters, and the split is deliberate:
  *
@@ -33,10 +33,10 @@ import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {useState} from 'react';
-import type {ISODateString} from '@astryxdesign/core/utils';
-import {InputGroup} from '@astryxdesign/core/InputGroup';
-import {stableClassName} from '@astryxdesign/core/naming';
-import {DateInputNext, MOBILE_PICKER_QUERY} from './DateInputNext';
+import type {ISODateString} from '../utils';
+import {InputGroup} from '../InputGroup';
+import {stableClassName} from '../naming';
+import {DateInput, TOUCH_POINTER_QUERY} from './DateInput';
 import {
   toMonthIndex,
   monthIndexOf,
@@ -74,23 +74,65 @@ const HOVER_CAPABLE = /\(\s*hover\s*:\s*hover\s*\)/;
 
 /**
  * Point the surface switch at a phone or at a desktop. Only
- * {@link MOBILE_PICKER_QUERY} is forced; every other query keeps the answer
+ * {@link TOUCH_POINTER_QUERY} is forced; every other query keeps the answer
  * the shared test setup gives it.
  */
+/**
+ * Answer media queries the way a given device would.
+ *
+ * Width queries are answered HONESTLY against `width`, so a width bound
+ * creeping back into the surface switch fails a test rather than passing
+ * silently on a stub that ignores it.
+ */
+function stubMedia({
+  pointer,
+  anyPointer,
+  width,
+}: {
+  pointer: 'coarse' | 'fine';
+  anyPointer?: 'coarse' | 'fine';
+  width: number;
+}): void {
+  vi.stubGlobal('matchMedia', (query: string) => {
+    let matches: boolean;
+    const maxWidth = /\(\s*max-width:\s*(\d+)px\s*\)/.exec(query);
+    const minWidth = /\(\s*min-width:\s*(\d+)px\s*\)/.exec(query);
+    if (/any-pointer:\s*coarse/.test(query)) {
+      matches = (anyPointer ?? pointer) === 'coarse';
+    } else if (/pointer:\s*coarse/.test(query)) {
+      matches = pointer === 'coarse';
+    } else if (/pointer:\s*fine/.test(query)) {
+      matches = pointer === 'fine';
+    } else if (maxWidth) {
+      matches = width <= Number(maxWidth[1]);
+    } else if (minWidth) {
+      matches = width >= Number(minWidth[1]);
+    } else {
+      matches = HOVER_CAPABLE.test(query);
+    }
+    // A compound query is only true when every part of it is.
+    if (matches && maxWidth && query.includes('pointer:')) {
+      matches = width <= Number(maxWidth[1]);
+    }
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    };
+  });
+}
+
 function setViewport(kind: 'mobile' | 'desktop'): void {
-  vi.stubGlobal('matchMedia', (query: string) => ({
-    matches:
-      query === MOBILE_PICKER_QUERY
-        ? kind === 'mobile'
-        : HOVER_CAPABLE.test(query),
-    media: query,
-    onchange: null,
-    addListener: () => {},
-    removeListener: () => {},
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    dispatchEvent: () => false,
-  }));
+  stubMedia(
+    kind === 'mobile'
+      ? {pointer: 'coarse', width: 393}
+      : {pointer: 'fine', width: 1280},
+  );
 }
 
 /**
@@ -163,11 +205,11 @@ function Controlled({
   onChange,
   ...props
 }: {initial?: ISODateString} & Partial<
-  React.ComponentProps<typeof DateInputNext>
+  React.ComponentProps<typeof DateInput>
 >) {
   const [value, setValue] = useState<ISODateString | undefined>(initial);
   return (
-    <DateInputNext
+    <DateInput
       label="Event date"
       {...DEFAULT_RANGE}
       {...props}
@@ -185,7 +227,7 @@ function Controlled({
 
 /** The closed field — a real input on both surfaces. */
 const field = (): HTMLInputElement =>
-  screen.getByRole('combobox') as HTMLInputElement;
+  screen.getByRole('combobox');
 
 /** Render, then open the picker. Both mount panes, so both need the layout. */
 function renderAndOpen(
@@ -226,14 +268,36 @@ function weekdayRow(): HTMLElement {
 // Which surface, and why
 // ---------------------------------------------------------------------------
 
-describe('DateInputNext — surface selection', () => {
-  it('asks for narrow AND touch, not either alone', () => {
-    // A touchscreen laptop (touch, wide) and a half-width desktop window
-    // (narrow, mouse) each match one half and must keep the desktop control,
-    // where typing a date beats scrolling to it.
-    expect(MOBILE_PICKER_QUERY).toBe(
-      '(max-width: 768px) and (pointer: coarse)',
-    );
+describe('DateInput — surface selection', () => {
+  it('switches on the pointer alone, so a tablet gets the picker too', () => {
+    // `pointer` is the PRIMARY device, which is what makes it the whole test:
+    // a touchscreen laptop reports `fine` (its trackpad) and keeps the
+    // typable field, and a narrowed desktop window is still a mouse. A width
+    // bound would only re-exclude tablets — the clearest case for a thumb
+    // picker there is — so there deliberately is not one.
+    expect(TOUCH_POINTER_QUERY).toBe('(pointer: coarse)');
+
+    // An 1194px tablet in landscape: coarse pointer, far wider than any
+    // handset breakpoint. It answers width queries honestly, so a width bound
+    // creeping back in would fail here rather than pass silently.
+    stubMedia({pointer: 'coarse', width: 1194});
+    render(<Controlled initial="2026-03-21" />);
+    expect(field()).toHaveAttribute('readonly');
+  });
+
+  it('keeps the typable field for a touchscreen laptop', () => {
+    // Touch available, but the trackpad is primary — so `pointer` is `fine`
+    // and only `any-pointer` is coarse. The keyboard is right there, and
+    // typing a date beats scrolling to it.
+    stubMedia({pointer: 'fine', anyPointer: 'coarse', width: 1366});
+    render(<Controlled initial="2026-03-21" />);
+    expect(field()).not.toHaveAttribute('readonly');
+  });
+
+  it('keeps the typable field in a narrowed desktop window', () => {
+    stubMedia({pointer: 'fine', width: 500});
+    render(<Controlled initial="2026-03-21" />);
+    expect(field()).not.toHaveAttribute('readonly');
   });
 
   it('renders the desktop DateInput when the query does not match', () => {
@@ -250,7 +314,7 @@ describe('DateInputNext — surface selection', () => {
     setViewport('desktop');
     const onChange = vi.fn();
     render(
-      <DateInputNext label="Event date" onChange={onChange} min={undefined} />,
+      <DateInput label="Event date" onChange={onChange} min={undefined} />,
     );
     fireEvent.change(field(), {target: {value: '2026-03-25'}});
     expect(onChange).toHaveBeenCalledWith('2026-03-25');
@@ -287,26 +351,22 @@ describe('DateInputNext — surface selection', () => {
 // The field contract, honored identically on the touch surface
 // ---------------------------------------------------------------------------
 
-describe('DateInputNext — field parity', () => {
+describe('DateInput — field parity', () => {
   it('shows a placeholder until a date is chosen, then the formatted value', () => {
     const {rerender} = render(
-      <DateInputNext label="Ship date" onChange={() => {}} />,
+      <DateInput label="Ship date" onChange={() => {}} />,
     );
     expect(field()).toHaveValue('');
     expect(field()).toHaveAttribute('placeholder', 'Select a date');
     rerender(
-      <DateInputNext
-        label="Ship date"
-        value="2026-03-21"
-        onChange={() => {}}
-      />,
+      <DateInput label="Ship date" value="2026-03-21" onChange={() => {}} />,
     );
     expect(field()).toHaveValue('March 21, 2026');
   });
 
   it('honors a named format', () => {
     render(
-      <DateInputNext
+      <DateInput
         label="Ship date"
         value="2026-03-21"
         format="system_date"
@@ -318,7 +378,7 @@ describe('DateInputNext — field parity', () => {
 
   it('honors a function format', () => {
     render(
-      <DateInputNext
+      <DateInput
         label="Ship date"
         value="2026-03-21"
         format={iso => `ISO:${iso}`}
@@ -330,7 +390,7 @@ describe('DateInputNext — field parity', () => {
 
   it('honors a custom placeholder', () => {
     render(
-      <DateInputNext
+      <DateInput
         label="Ship date"
         placeholder="Pick a day"
         onChange={() => {}}
@@ -342,7 +402,7 @@ describe('DateInputNext — field parity', () => {
   it('clears from the field', () => {
     const onChange = vi.fn();
     render(
-      <DateInputNext
+      <DateInput
         label="Ship date"
         value="2026-03-21"
         hasClear
@@ -355,7 +415,7 @@ describe('DateInputNext — field parity', () => {
 
   it('does not open the picker until the field is tapped', () => {
     withLayout(() => {
-      render(<DateInputNext label="Ship date" onChange={() => {}} />);
+      render(<DateInput label="Ship date" onChange={() => {}} />);
       expect(field()).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('grid')).not.toBeInTheDocument();
       fireEvent.click(field());
@@ -373,7 +433,7 @@ describe('DateInputNext — field parity', () => {
   });
 
   it('is not openable while disabled', () => {
-    render(<DateInputNext label="Ship date" isDisabled onChange={() => {}} />);
+    render(<DateInput label="Ship date" isDisabled onChange={() => {}} />);
     expect(field()).toBeDisabled();
     fireEvent.click(field());
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
@@ -381,7 +441,7 @@ describe('DateInputNext — field parity', () => {
 
   it('stays focusable and explains itself when disabled with a reason', () => {
     render(
-      <DateInputNext
+      <DateInput
         label="Ship date"
         isDisabled
         disabledMessage="You need the Editor role"
@@ -397,7 +457,7 @@ describe('DateInputNext — field parity', () => {
 
   it('renders label, description and status through Field', () => {
     render(
-      <DateInputNext
+      <DateInput
         label="Ship date"
         description="When it leaves the warehouse"
         status={{type: 'error', message: 'Pick a date'}}
@@ -414,26 +474,26 @@ describe('DateInputNext — field parity', () => {
   });
 
   it('marks required for assistive technology', () => {
-    render(<DateInputNext label="Ship date" isRequired onChange={() => {}} />);
+    render(<DateInput label="Ship date" isRequired onChange={() => {}} />);
     expect(field()).toHaveAttribute('aria-required', 'true');
   });
 
   it('associates the label natively, so the field is named without ARIA', () => {
-    render(<DateInputNext label="Ship date" onChange={() => {}} />);
+    render(<DateInput label="Ship date" onChange={() => {}} />);
     expect(screen.getByLabelText('Ship date')).toBe(field());
   });
 
   it('runs changeAction and shows a busy state', async () => {
     let resolve: () => void = () => {};
     const changeAction = vi.fn(
-      () =>
+      async () =>
         new Promise<void>(r => {
           resolve = r;
         }),
     );
     withLayout(() => {
       render(
-        <DateInputNext
+        <DateInput
           label="Ship date"
           value="2026-03-10"
           min="2026-03-01"
@@ -456,7 +516,7 @@ describe('DateInputNext — field parity', () => {
   it('drops the Field wrapper inside an InputGroup', () => {
     render(
       <InputGroup label="Range">
-        <DateInputNext label="Start" onChange={() => {}} />
+        <DateInput label="Start" onChange={() => {}} />
       </InputGroup>,
     );
     // Named by the group label plus its own, the way core's inputs are.
@@ -468,7 +528,7 @@ describe('DateInputNext — field parity', () => {
 // The picker surface
 // ---------------------------------------------------------------------------
 
-describe('DateInputNext — calendar surface', () => {
+describe('DateInput — calendar surface', () => {
   it('opens on the selected month', () => {
     renderAndOpen();
     expect(pane('March 2026')).toBeInTheDocument();
@@ -540,7 +600,7 @@ describe('DateInputNext — calendar surface', () => {
   it('Done closes even with no date chosen, committing nothing', () => {
     const onChange = vi.fn();
     withLayout(() => {
-      render(<DateInputNext label="Ship date" onChange={onChange} />);
+      render(<DateInput label="Ship date" onChange={onChange} />);
       fireEvent.click(field());
       fireEvent.click(screen.getByRole('button', {name: 'Done'}));
     });
@@ -585,7 +645,7 @@ describe('DateInputNext — calendar surface', () => {
     renderAndOpen();
     const header = () =>
       document.querySelector<HTMLElement>(
-        `.${stableClassName('date-input-next-title')}`,
+        `.${stableClassName('date-input-touch-title')}`,
       )!;
     expect(header()).toHaveTextContent('March 2026');
     fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
@@ -689,7 +749,7 @@ describe('DateInputNext — calendar surface', () => {
 // Month / year wheels
 // ---------------------------------------------------------------------------
 
-describe('DateInputNext — month/year wheels', () => {
+describe('DateInput — month/year wheels', () => {
   /**
    * The header title. Queried by attribute rather than by role and accessible
    * name: every role query in here walks a tree of ~150 elements and computes
@@ -697,7 +757,7 @@ describe('DateInputNext — month/year wheels', () => {
    */
   const title = () =>
     document.querySelector<HTMLElement>(
-      `.${stableClassName('date-input-next-title')}`,
+      `.${stableClassName('date-input-touch-title')}`,
     )!;
 
   const openWheels = () => fireEvent.click(title());
@@ -821,7 +881,7 @@ describe('DateInputNext — month/year wheels', () => {
 // Gesture ownership — the nested scrollers vs. the sheet's swipe-to-dismiss
 // ---------------------------------------------------------------------------
 
-describe('DateInputNext — nested scrollers keep their own touch gesture', () => {
+describe('DateInput — nested scrollers keep their own touch gesture', () => {
   /**
    * Stand-in for `BottomSheet`'s swipe-to-dismiss listener: a NATIVE listener
    * on an ancestor, in the bubble phase, which is exactly how the sheet
@@ -1009,7 +1069,7 @@ describe('DateInputNext — nested scrollers keep their own touch gesture', () =
     renderAndOpen();
     fireEvent.click(
       document.querySelector<HTMLElement>(
-        `.${stableClassName('date-input-next-title')}`,
+        `.${stableClassName('date-input-touch-title')}`,
       )!,
     );
     const wheel = screen.getByRole('listbox', {name: 'Month'});
@@ -1035,7 +1095,7 @@ describe('DateInputNext — nested scrollers keep their own touch gesture', () =
     // The header is not a scroller: a drag there is the sheet's to interpret,
     // and it is one of the two places a dismiss can still start from.
     const title = document.querySelector<HTMLElement>(
-      `.${stableClassName('date-input-next-title')}`,
+      `.${stableClassName('date-input-touch-title')}`,
     )!;
     const ancestor = watchAncestor();
     touch(title, 'touchstart');
@@ -1153,7 +1213,7 @@ describe('monthGeometry', () => {
 // Styles jsdom cannot resolve — assert the definition, not the effect
 // ---------------------------------------------------------------------------
 
-describe('DateInputNext — scroll CSS (definition-level)', () => {
+describe('DateInput — scroll CSS (definition-level)', () => {
   const dir = path.dirname(fileURLToPath(import.meta.url));
   const read = (file: string) => readFileSync(path.join(dir, file), 'utf8');
 
@@ -1168,7 +1228,7 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
     // The pane and the scrollport must come from the same expression, or a
     // pane stops being exactly one screen and every snap offset drifts.
     expect(
-      source.match(/blockSize: dateInputNextGeometry\.paneBlockSize/g),
+      source.match(/blockSize: dateInputTouchGeometry\.paneBlockSize/g),
     ).toHaveLength(2);
   });
 
@@ -1202,7 +1262,7 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
     const tokens = read('tokens.stylex.ts');
     // Scroll-first rows: closer together than day cells and closer to the
     // text they hold, the way a platform picker packs them.
-    expect(tokens).toContain("'--date-input-next-wheel-item-size': '28px'");
+    expect(tokens).toContain("'--date-input-touch-wheel-item-size': '28px'");
     expect(read('Wheel.tsx')).toContain(
       "fontSize: typeScaleVars['--text-large-size']",
     );
@@ -1213,7 +1273,7 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
     expect(source).toContain("scrollSnapType: 'y mandatory'");
     expect(source).toContain("scrollSnapAlign: 'center'");
     expect(source).toContain(
-      'paddingBlock: dateInputNextGeometry.wheelEdgePadding',
+      'paddingBlock: dateInputTouchGeometry.wheelEdgePadding',
     );
   });
 
@@ -1241,7 +1301,7 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
   });
 
   it('insets the sheet content equally on every edge', () => {
-    const source = read('MobileDateField.tsx');
+    const source = read('TouchDateField.tsx');
     // One inset, and the header/footer must not add their own on top of it —
     // that is what put the title and Done 4px off the day grid's line.
     expect(source).toContain("paddingInline: spacingVars['--spacing-4']");
@@ -1262,7 +1322,7 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
   });
 
   it('floors the touch target without discarding the size prop', () => {
-    const source = read('MobileDateField.tsx');
+    const source = read('TouchDateField.tsx');
     // Each size keeps its own height AND cannot render below a thumb's reach.
     const sizeMap = source.slice(
       source.indexOf('const sizeStyles = stylex.create('),
@@ -1276,7 +1336,7 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
   });
 
   it('floors the month arrows too — Button tops out at 36px', () => {
-    const source = read('MobileDateField.tsx');
+    const source = read('TouchDateField.tsx');
     const arrow = source.slice(
       source.indexOf('  monthArrow: {'),
       source.indexOf('  monthArrowIcon: {'),
@@ -1295,7 +1355,7 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
    * own nav icons.
    */
   it('keeps the mirrored arrow glyph centred', () => {
-    const source = read('MobileDateField.tsx');
+    const source = read('TouchDateField.tsx');
     const icon = source.slice(source.indexOf('  monthArrowIcon: {'));
     expect(icon.slice(0, icon.indexOf('}'))).toContain(
       "display: 'inline-flex'",
@@ -1303,7 +1363,7 @@ describe('DateInputNext — scroll CSS (definition-level)', () => {
   });
 
   it('keeps the virtual keyboard down on the touch field', () => {
-    const source = read('MobileDateField.tsx');
+    const source = read('TouchDateField.tsx');
     // readOnly alone still opens the keyboard on some Android browsers.
     expect(source).toContain('readOnly');
     expect(source).toContain('inputMode="none"');

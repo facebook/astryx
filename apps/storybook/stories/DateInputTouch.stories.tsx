@@ -4,10 +4,10 @@ import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  DateInputNext,
-  MobileDateField,
-  MOBILE_PICKER_QUERY,
-} from '@astryxdesign/lab';
+  DateInput,
+  DateInputTouchSurface,
+  TOUCH_POINTER_QUERY,
+} from '@astryxdesign/core/DateInput';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import type {ISODateString} from '@astryxdesign/core/utils';
 import {Text} from '@astryxdesign/core/Text';
@@ -30,26 +30,27 @@ const styles = stylex.create({
   },
 });
 
-const meta: Meta<typeof DateInputNext> = {
-  title: 'Lab/DateInputNext',
-  component: DateInputNext,
+const meta: Meta<typeof DateInput> = {
+  title: 'Core/DateInput/Touch surface',
+  component: DateInput,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'A drop-in `DateInput` that picks its own surface. On anything but ' +
-          'a narrow touch screen it renders core’s `DateInput` unchanged; on ' +
-          'a narrow touch screen (`max-width: 768px` **and** `pointer: ' +
-          'coarse`) it renders a picker built for a thumb — months swiped ' +
-          'through sideways one screen at a time, arrows in the header for a ' +
-          'single step, and month and year wheels behind the header title.\n\n' +
-          'Its props are `DateInputProps`, the same type, so adopting it is ' +
-          'a changed import.\n\n' +
-          '**Reviewing on a desktop browser:** the first story below will ' +
-          'show you the *desktop* control, because that is the correct ' +
-          'answer for a mouse. Every other story renders `MobileDateField` ' +
-          'directly, which is the touch surface with the media query skipped.',
+          '`DateInput` fits the pointer it is used with. With a mouse it is ' +
+          'the text field and popover calendar documented under Core/' +
+          'DateInput. Where the primary pointer is a finger (`pointer: ' +
+          'coarse`) the same component renders a picker built for one — ' +
+          'months swiped through sideways one screen at a time, arrows in ' +
+          'the header for a single step, and month and year wheels behind ' +
+          'the header title.\n\n' +
+          'Same props, same values, no new import: these are two surfaces ' +
+          'of one component.\n\n' +
+          '**Reviewing on a desktop browser:** the first story shows you ' +
+          'the *pointer* surface, because that is the right answer for a ' +
+          'mouse. Every other story renders `DateInputTouchSurface`, which ' +
+          'is the touch half with the pointer test skipped.',
       },
     },
   },
@@ -64,7 +65,7 @@ const meta: Meta<typeof DateInputNext> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof DateInputNext>;
+type Story = StoryObj<typeof DateInput>;
 
 // ============================================================
 // RESPONSIVE — the component as you would actually use it
@@ -76,7 +77,7 @@ export const Default: Story = {
     docs: {
       description: {
         story:
-          'On this desktop browser you are seeing core’s `DateInput` — the ' +
+          'On this desktop browser you are seeing the pointer surface — the ' +
           'correct surface for a mouse. Open the same story on a phone, or ' +
           'in a device-emulated tab that reports a coarse pointer, and the ' +
           'field starts opening a sheet instead of a popover. Nothing else ' +
@@ -89,21 +90,23 @@ export const Default: Story = {
     const [date, setDate] = useState<ISODateString | undefined>();
     // The banner reports the surface you are ACTUALLY looking at. Hardcoding
     // "desktop" here was wrong on the one device the story matters most on.
-    const isTouch = useMediaQuery(MOBILE_PICKER_QUERY);
+    const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
     return (
       <div {...stylex.props(styles.phone)}>
         <Banner
           status="info"
           title={
-            isTouch ? 'Showing the touch picker' : 'Showing the desktop surface'
+            isTouch
+              ? 'Showing the touch surface'
+              : 'Showing the pointer surface'
           }
           description={
             isTouch
-              ? 'Narrow and a coarse pointer, so you get the picker: tap the field, then swipe the months sideways. On a desktop pointer this same story renders core’s DateInput.'
-              : 'A coarse pointer under 768px gets the touch picker instead. The stories below force it, so it is reviewable here.'
+              ? 'Your primary pointer is a finger, so you get the picker: tap the field, then swipe the months sideways. With a mouse this same story renders the text field and popover.'
+              : 'A coarse pointer gets the touch picker instead \u2014 at any width, since a finger is a finger on a tablet too. The stories below force it, so it is reviewable here.'
           }
         />
-        <DateInputNext
+        <DateInput
           label="Event date"
           description="Same props as DateInput, either way."
           value={date}
@@ -142,7 +145,7 @@ export const TouchSurface: Story = {
     const [date, setDate] = useState<ISODateString | undefined>('2026-03-21');
     return (
       <div {...stylex.props(styles.phone)}>
-        <MobileDateField
+        <DateInputTouchSurface
           label="Event date"
           value={date}
           onChange={setDate}
@@ -172,7 +175,11 @@ export const Wheels: Story = {
     const [date, setDate] = useState<ISODateString | undefined>('2026-03-21');
     return (
       <div {...stylex.props(styles.phone)}>
-        <MobileDateField label="Event date" value={date} onChange={setDate} />
+        <DateInputTouchSurface
+          label="Event date"
+          value={date}
+          onChange={setDate}
+        />
       </div>
     );
   },
@@ -198,7 +205,7 @@ export const Bounded: Story = {
     const [date, setDate] = useState<ISODateString | undefined>('2026-03-10');
     return (
       <div {...stylex.props(styles.phone)}>
-        <MobileDateField
+        <DateInputTouchSurface
           label="Delivery date"
           description="Between Feb 1 and May 31, 2026."
           min="2026-02-01"
@@ -221,7 +228,7 @@ export const WeekdaysOnly: Story = {
     const [date, setDate] = useState<ISODateString | undefined>();
     return (
       <div {...stylex.props(styles.phone)}>
-        <MobileDateField
+        <DateInputTouchSurface
           label="Appointment"
           description="Weekends are not bookable."
           weekStartsOn="mon"
@@ -255,7 +262,7 @@ export const FieldStates: Story = {
     const [date, setDate] = useState<ISODateString | undefined>();
     return (
       <div {...stylex.props(styles.phone)}>
-        <MobileDateField
+        <DateInputTouchSurface
           label="Required, with an error"
           isRequired
           value={date}
@@ -266,9 +273,9 @@ export const FieldStates: Story = {
               : undefined
           }
         />
-        <MobileDateField label="Small" size="sm" onChange={() => {}} />
-        <MobileDateField label="Large" size="lg" onChange={() => {}} />
-        <MobileDateField
+        <DateInputTouchSurface label="Small" size="sm" onChange={() => {}} />
+        <DateInputTouchSurface label="Large" size="lg" onChange={() => {}} />
+        <DateInputTouchSurface
           label="Disabled, with a reason"
           isDisabled
           disabledMessage="You need the Editor role to change this"

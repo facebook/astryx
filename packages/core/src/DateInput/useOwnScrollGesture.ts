@@ -74,7 +74,7 @@
  * Nothing here calls `preventDefault`, so the listeners stay passive and the
  * scroller keeps native momentum, snapping and rubber-banding.
  *
- * SYNC: When modified, update DateInputNext.test.tsx.
+ * SYNC: When modified, update DateInputTouch.test.tsx.
  */
 
 import {useEffect, useRef} from 'react';

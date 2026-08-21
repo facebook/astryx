@@ -15,6 +15,10 @@ export const docs = {
     'dateselect',
     'dateentry',
     'datechooser',
+    'mobile',
+    'touch',
+    'bottomsheet',
+    'wheel',
   ],
   props: [
     {
@@ -174,11 +178,28 @@ export const docs = {
       {className: 'astryx-date-input', visualProps: ['size', 'status'], states: ['disabled']},
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
       {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
+      // Touch surface only: the sheet header's month/year button, which
+      // swaps the calendar for the wheels.
+      {className: 'astryx-date-input-touch-title', states: ['state']},
+    ],
+    vars: [
+      {
+        name: '--date-input-touch-day-size',
+        default: '44px',
+        description:
+          'Day cell size on the touch surface, and the floor every other target there is held to. 44px; below about 44 a thumb starts missing.',
+      },
+      {
+        name: '--date-input-touch-wheel-item-size',
+        default: '28px',
+        description:
+          'Row height of the month and year wheels on the touch surface.',
+      },
     ],
   },
   usage: {
     description:
-      'DateInput lets the user type or pick a date from a calendar popover. Use it for scheduling, deadlines, booking dates, or any form field that needs a specific calendar date.',
+      'DateInput lets the user type or pick a date from a calendar popover. Use it for scheduling, deadlines, booking dates, or any form field that needs a specific calendar date. Where the primary pointer is a finger it renders a touch picker instead — a bottom sheet of side-swiped months with month and year wheels — from the same props, so a call site never chooses.',
     bestPractices: [
       {
         guidance: true,
@@ -218,7 +239,12 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Rely on the calendar alone; the text input lets users type dates directly, which is faster for known dates.',
+          'Rely on the calendar alone on a pointer device; the text input lets users type dates directly, which is faster for known dates. On touch there is no text entry — the keyboard it summons would cover the picker it is meant to fill in.',
+      },
+      {
+        guidance: false,
+        description:
+          'Branch on a media query and render your own mobile date field. DateInput already switches on the primary pointer; a second switch fights it and drifts from the shared contract.',
       },
       {
         guidance: false,
@@ -453,16 +479,18 @@ export const docsZh = {
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
       {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
+      // 仅触摸界面：面板标题中的月/年按钮，用于在日历与滚轮之间切换。
+      {className: 'astryx-date-input-touch-title', states: ['state']},
     ],
   },
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'text input w/ calendar popover for picking a date',
+  description: 'date field: text input + calendar popover on a pointer, bottom-sheet touch picker on a finger',
   usage: {
     description:
-      'DateInput lets the user type or pick a date from a calendar popover. Use for scheduling, deadlines, booking dates, or any form field needing a calendar date.',
+      'DateInput lets the user type or pick a date from a calendar popover. Use for scheduling, deadlines, booking dates, or any form field needing a calendar date. On `pointer: coarse` the SAME component renders a touch picker instead (bottom sheet, side-swiped months, month/year wheels, no text entry) — same props, no call-site branch.',
     bestPractices: [
       {
         guidance: true,

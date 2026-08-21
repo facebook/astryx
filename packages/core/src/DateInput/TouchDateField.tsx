@@ -3,12 +3,12 @@
 'use client';
 
 /**
- * @file MobileDateField.tsx
+ * @file TouchDateField.tsx
  * @input Uses React, Field, BottomSheet, Button, Icon, Calendar hooks, MonthScroller, MonthYearWheels
- * @output Exports MobileDateField — the touch surface behind DateInputNext
- * @position Internal component; consumed by DateInputNext.tsx
+ * @output Exports TouchDateField — the touch surface behind DateInput
+ * @position Internal component; consumed by DateInput.tsx
  *
- * The touch half of `DateInputNext`, holding `DateInput`'s whole prop
+ * The touch half of `DateInput`, holding `DateInput`'s whole prop
  * contract so the two are interchangeable. Everything field-shaped —
  * `Field` wrapper, status treatment, optimistic `changeAction`, the
  * disabled-reason tooltip, `InputGroup` membership — behaves exactly as it
@@ -39,9 +39,9 @@
  *    wheel and a year wheel — a flick each to reach 2019 instead of forty.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/DateInputNext/DateInputNext.tsx
- * - /packages/lab/src/DateInputNext/DateInputNext.doc.mjs
- * - /packages/lab/src/DateInputNext/DateInputNext.test.tsx
+ * - /packages/core/src/DateInput/DateInput.tsx
+ * - /packages/core/src/DateInput/DateInput.doc.mjs
+ * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
 import {
@@ -54,13 +54,10 @@ import {
   useTransition,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {BottomSheet} from '@astryxdesign/core/BottomSheet';
-import {Button} from '@astryxdesign/core/Button';
-import {
-  useCalendarConstraints,
-  useCalendarDays,
-} from '@astryxdesign/core/Calendar';
-import type {DateInputProps} from '@astryxdesign/core/DateInput';
+import {BottomSheet} from '../BottomSheet';
+import {Button} from '../Button';
+import {useCalendarConstraints, useCalendarDays} from '../Calendar';
+import type {DateInputProps} from './DateInput';
 import {
   Field,
   InputClearButton,
@@ -68,18 +65,17 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
-} from '@astryxdesign/core/Field';
-import {
-  useInputStatusIcon,
-  useResolvedRequired,
-} from '@astryxdesign/core/hooks';
-import {Icon} from '@astryxdesign/core/Icon';
-import {IconButton} from '@astryxdesign/core/IconButton';
-import {useTranslator} from '@astryxdesign/core/i18n';
-import {groupStyles, useInputGroup} from '@astryxdesign/core/InputGroup';
-import {stableClassName} from '@astryxdesign/core/naming';
-import {useSize} from '@astryxdesign/core/SizeContext';
-import {Spinner} from '@astryxdesign/core/Spinner';
+} from '../Field';
+import {useInputStatusIcon} from '../hooks';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {Icon} from '../Icon';
+import {IconButton} from '../IconButton';
+import {useTranslator} from '../i18n';
+import {useInputGroup} from '../InputGroup';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {stableClassName} from '../naming';
+import {useSize} from '../SizeContext';
+import {Spinner} from '../Spinner';
 import {
   colorVars,
   spacingVars,
@@ -91,15 +87,15 @@ import {
   typographyVars,
   durationVars,
   easeVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {useTooltip} from '@astryxdesign/core/Tooltip';
-import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
+} from '../theme/tokens.stylex';
+import {useTooltip} from '../Tooltip';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {
   focusOutlineStyles,
   getInputARIA,
+  isImeKeyEvent,
   mergeProps,
   mergeRefs,
-  normalizeDayOfWeek,
   rtlStyles,
   themeProps,
   formatSharedDate,
@@ -108,7 +104,8 @@ import {
   plainDateFormat,
   DATE_FORMAT_MONTH_YEAR,
   type ISODateString,
-} from '@astryxdesign/core/utils';
+} from '../utils';
+import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {MonthScroller, type MonthScrollerHandle} from './MonthScroller';
 import {MonthYearWheels} from './MonthYearWheels';
 import {
@@ -117,14 +114,14 @@ import {
   fromMonthIndex,
   monthIndexOf,
 } from './monthGeometry';
-import {dateInputNextVars, dateInputNextGeometry} from './tokens.stylex';
+import {dateInputTouchVars, dateInputTouchGeometry} from './tokens.stylex';
 
 /**
  * The comfortable minimum tap target on both iOS and Android. Applied as a
  * FLOOR under the size prop rather than replacing it: `size` still means what
  * it means, it just cannot produce a control a thumb misses.
  */
-const TOUCH_TARGET = dateInputNextVars['--date-input-next-day-size'];
+const TOUCH_TARGET = dateInputTouchVars['--date-input-touch-day-size'];
 
 const sizeStyles = stylex.create({
   sm: {
@@ -288,11 +285,20 @@ const styles = stylex.create({
     gridTemplateColumns: 'repeat(7, 1fr)',
     blockSize: sizeVars['--size-element-sm'],
     alignItems: 'center',
+    // Fades with the panels below it: the row belongs to the calendar, and
+    // snapping it out while they cross-fade reads as two separate events.
+    transitionProperty: 'opacity, visibility',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
   },
   weekdaysHidden: {
     // Hidden, not unmounted: the row still owes the surface its height, or
     // opening the wheels would make the picker shorter.
     visibility: 'hidden',
+    opacity: 0,
   },
   weekday: {
     textAlign: 'center',
@@ -302,13 +308,20 @@ const styles = stylex.create({
   },
   body: {
     display: 'grid',
-    blockSize: dateInputNextGeometry.paneBlockSize,
+    blockSize: dateInputTouchGeometry.paneBlockSize,
     position: 'relative',
   },
   panel: {
     gridArea: '1 / 1',
     minWidth: 0,
-    transitionProperty: 'opacity',
+    // `visibility` rides along with `opacity` deliberately. It is not a
+    // continuous property, but it has its own interpolation rule: across a
+    // transition it stays `visible` until the very end. Leave it out and the
+    // outgoing panel is cut to `hidden` on the first frame, so only the
+    // incoming half of the cross-fade is ever seen — measured, before this:
+    // the calendar's opacity dutifully animated 1 -> 0 while its computed
+    // visibility was `hidden` for every frame of it.
+    transitionProperty: 'opacity, visibility',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     '@media (prefers-reduced-motion: reduce)': {
@@ -352,9 +365,9 @@ const styles = stylex.create({
 
 /**
  * The touch surface. Takes `DateInput`'s props verbatim; see
- * {@link DateInputNext} for when it is chosen over the desktop control.
+ * {@link DateInput} for when it is chosen over the desktop control.
  */
-export function MobileDateField({
+export function TouchDateField({
   label,
   isLabelHidden = false,
   description,
@@ -566,6 +579,14 @@ export function MobileDateField({
   // does not pop a sheet.
   const handleInputKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
+      // Same guard core's pointer surface carries. This field is readOnly and
+      // takes no composition of its own, but an IME sitting over it still
+      // sends its committing Enter here first — and opening a date sheet on
+      // the keystroke that finishes a Korean syllable is the same wrong
+      // answer. See utils/ime.ts.
+      if (isImeKeyEvent(event.nativeEvent)) {
+        return;
+      }
       if (
         event.key === 'ArrowDown' ||
         event.key === 'Enter' ||
@@ -590,19 +611,23 @@ export function MobileDateField({
           {...mergeProps(
             // mergeProps, not two spreads: both halves carry a className, and
             // the later spread would drop the theme target entirely.
-            themeProps('date-input-next-title', {
+            themeProps('date-input-touch-title', {
               state: isWheelOpen ? 'expanded' : 'collapsed',
             }),
             stylex.props(styles.title, focusOutlineStyles.focusVisible),
           )}>
           <span>{monthYearLabel}</span>
-          <span
-            {...stylex.props(
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="secondary"
+            // The transform rides on the Icon itself, not a wrapper span, so
+            // the element a theme can target is the element that moves.
+            xstyle={[
               styles.titleChevron,
               isWheelOpen && styles.titleChevronOpen,
-            )}>
-            <Icon icon="chevronDown" size="sm" color="secondary" />
-          </span>
+            ]}
+          />
         </button>
         {/* Both arrows at the trailing corner, as a pair. `IconButton` gives
             them Button's optical centring, focus ring, disabled treatment and
@@ -858,4 +883,4 @@ export function MobileDateField({
   );
 }
 
-MobileDateField.displayName = 'MobileDateField';
+TouchDateField.displayName = 'TouchDateField';

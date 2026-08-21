@@ -27,9 +27,9 @@
  * the scroll-driven decoration.
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/DateInputNext/MobileDateField.tsx
- * - /packages/lab/src/DateInputNext/DateInputNext.doc.mjs
- * - /packages/lab/src/DateInputNext/DateInputNext.test.tsx
+ * - /packages/core/src/DateInput/TouchDateField.tsx
+ * - /packages/core/src/DateInput/DateInput.doc.mjs
+ * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
 import {useCallback, useEffect, useId, useRef, useState} from 'react';
@@ -41,13 +41,14 @@ import {
   typeScaleVars,
   spacingVars,
   durationVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {focusOutlineStyles} from '@astryxdesign/core/utils';
-import {dateInputNextVars, dateInputNextGeometry} from './tokens.stylex';
+} from '../theme/tokens.stylex';
+import {focusOutlineStyles} from '../utils';
+import {dateInputTouchVars, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {useScrollSettle} from './useScrollSettle';
 
-const ITEM_BLOCK_SIZE = dateInputNextVars['--date-input-next-wheel-item-size'];
+const ITEM_BLOCK_SIZE =
+  dateInputTouchVars['--date-input-touch-wheel-item-size'];
 
 /**
  * Rows tip away from the centre of the wheel. 0% is a row just entering at the
@@ -84,7 +85,7 @@ const styles = stylex.create({
     minWidth: 0,
   },
   scroller: {
-    blockSize: dateInputNextGeometry.paneBlockSize,
+    blockSize: dateInputTouchGeometry.paneBlockSize,
     // Load-bearing, and stated rather than inherited from the reset (whose
     // rule is zero-specificity `:where`): with content-box the end padding
     // below would be added to the scrollport instead of sitting inside it,
@@ -98,7 +99,7 @@ const styles = stylex.create({
     scrollSnapType: 'y mandatory',
     overscrollBehavior: 'contain',
     // Room for row 0 and row n-1 to reach the centre.
-    paddingBlock: dateInputNextGeometry.wheelEdgePadding,
+    paddingBlock: dateInputTouchGeometry.wheelEdgePadding,
     // Gives the rotateX falloff somewhere to recede to.
     perspective: '520px',
     transformStyle: 'preserve-3d',
@@ -203,7 +204,7 @@ export interface WheelProps {
   /** Accessible name for the column, e.g. "Month". */
   label: string;
   /** Rows, top to bottom. */
-  options: readonly WheelOption[];
+  options: ReadonlyArray<WheelOption>;
   /** Committed value; must match one option's `value`. */
   value: number;
   /** Fired when the wheel comes to rest on a different, enabled row. */
@@ -246,7 +247,7 @@ export function Wheel({
   const [activeIndex, setActiveIndex] = useState(selectedIndex);
 
   // Row height in px, read from layout rather than assumed, so a theme that
-  // retunes --date-input-next-wheel-item-size still lands on the right row.
+  // retunes --date-input-touch-wheel-item-size still lands on the right row.
   const itemBlockSize = useCallback((): number => {
     const first = scrollerRef.current?.firstElementChild;
     return first instanceof HTMLElement && first.offsetHeight > 0

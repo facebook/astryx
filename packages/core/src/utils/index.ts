@@ -9,20 +9,7 @@
 
 export type {SizeValue} from './types';
 
-export type {
-  ISODateString,
-  DayOfWeek,
-  DayOfWeekName,
-  PlainDate,
-  DateRange,
-} from './dateTypes';
-
-/**
- * Exported for components outside core that accept the same
- * `weekStartsOn: DayOfWeek | DayOfWeekName` prop Calendar and the date inputs
- * do; they need the identical normalization to stay compatible with it.
- */
-export {normalizeDayOfWeek} from './dateTypes';
+export type {ISODateString, DayOfWeek, PlainDate, DateRange} from './dateTypes';
 
 export {
   parseDateInput,

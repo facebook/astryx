@@ -4,7 +4,7 @@
  * @file monthGeometry.ts
  * @input PlainDate values, scroll offsets, pane heights
  * @output Pure month-index arithmetic and the virtualized pane window
- * @position Internal helper; consumed by MonthScroller.tsx and DateInputNext.tsx
+ * @position Internal helper; consumed by MonthScroller.tsx and DateInput.tsx
  *
  * A "month index" is a single integer that totally orders calendar months:
  * `year * 12 + (month - 1)`. The scroller is a list of equal-width panes, so
@@ -14,10 +14,10 @@
  * These are pure functions on purpose: the scroll math is the part most likely
  * to be wrong, and it is testable without a layout engine.
  *
- * SYNC: When modified, update DateInputNext.test.tsx.
+ * SYNC: When modified, update DateInputTouch.test.tsx.
  */
 
-import type {PlainDate} from '@astryxdesign/core/utils';
+import type {PlainDate} from '../utils';
 
 /** How many months are reachable in either direction when unbounded. */
 export const DEFAULT_MONTH_REACH = 600;

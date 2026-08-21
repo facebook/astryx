@@ -6,7 +6,7 @@
  * @file MonthYearWheels.tsx
  * @input A month index, the reachable month bounds, a change callback
  * @output Exports MonthYearWheels — the month + year wheel pair
- * @position Internal component; consumed by MobileDateField.tsx
+ * @position Internal component; consumed by TouchDateField.tsx
  *
  * The shortcut out of continuous scrolling. Scrolling is the right gesture for
  * "a month or two either way" and the wrong one for "December 2019", so the
@@ -16,23 +16,23 @@
  * changes the picker's height.
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/DateInputNext/MobileDateField.tsx
- * - /packages/lab/src/DateInputNext/DateInputNext.doc.mjs
- * - /packages/lab/src/DateInputNext/DateInputNext.test.tsx
+ * - /packages/core/src/DateInput/TouchDateField.tsx
+ * - /packages/core/src/DateInput/DateInput.doc.mjs
+ * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
 import {use, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {InternationalizationContext} from '@astryxdesign/core/i18n';
-import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {dateInputNextGeometry} from './tokens.stylex';
+import {InternationalizationContext} from '../i18n';
+import {spacingVars} from '../theme/tokens.stylex';
+import {dateInputTouchGeometry} from './tokens.stylex';
 import {Wheel, type WheelOption} from './Wheel';
 import {fromMonthIndex, toMonthIndex} from './monthGeometry';
 
 const styles = stylex.create({
   wheels: {
     display: 'flex',
-    blockSize: dateInputNextGeometry.paneBlockSize,
+    blockSize: dateInputTouchGeometry.paneBlockSize,
     gap: spacingVars['--spacing-2'],
   },
 });

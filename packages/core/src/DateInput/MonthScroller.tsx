@@ -6,7 +6,7 @@
  * @file MonthScroller.tsx
  * @input Month bounds, selected value, constraints, week start
  * @output Exports MonthScroller and MonthScrollerHandle
- * @position Internal component; consumed by MobileDateField.tsx
+ * @position Internal component; consumed by TouchDateField.tsx
  *
  * The continuous surface: months stacked vertically in one scroller, each pane
  * exactly as tall as the scrollport and snapped to its start. Two consequences
@@ -24,9 +24,9 @@
  * which is the failure mode of the usual "append months at the edge" approach.
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/DateInputNext/MobileDateField.tsx
- * - /packages/lab/src/DateInputNext/DateInputNext.doc.mjs
- * - /packages/lab/src/DateInputNext/DateInputNext.test.tsx
+ * - /packages/core/src/DateInput/TouchDateField.tsx
+ * - /packages/core/src/DateInput/DateInput.doc.mjs
+ * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
 import {
@@ -38,8 +38,8 @@ import {
   useState,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useCalendarDays} from '@astryxdesign/core/Calendar';
-import {useDirection} from '@astryxdesign/core/i18n';
+import {useCalendarDays} from '../Calendar';
+import {useDirection} from '../i18n';
 import {
   colorVars,
   radiusVars,
@@ -47,8 +47,8 @@ import {
   typeScaleVars,
   durationVars,
   borderVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {focusOutlineStyles} from '@astryxdesign/core/utils';
+} from '../theme/tokens.stylex';
+import {focusOutlineStyles} from '../utils';
 import {
   type DayOfWeek,
   type ISODateString,
@@ -60,8 +60,8 @@ import {
   plainDateToISO,
   DATE_FORMAT_MONTH_YEAR,
   DATE_FORMAT_WITH_WEEKDAY,
-} from '@astryxdesign/core/utils';
-import {dateInputNextVars, dateInputNextGeometry} from './tokens.stylex';
+} from '../utils';
+import {dateInputTouchVars, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {
   fromMonthIndex,
@@ -72,7 +72,7 @@ import {
   scrollOffsetForRow,
 } from './monthGeometry';
 
-const DAY_SIZE = dateInputNextVars['--date-input-next-day-size'];
+const DAY_SIZE = dateInputTouchVars['--date-input-touch-day-size'];
 
 /**
  * Panes mounted on each side of the visible one. Sized against a fast fling:
@@ -86,7 +86,7 @@ const OVERSCAN = 3;
 const styles = stylex.create({
   scroller: {
     position: 'relative',
-    blockSize: dateInputNextGeometry.paneBlockSize,
+    blockSize: dateInputTouchGeometry.paneBlockSize,
     // Stated, not inherited from the reset: the pane size, the snap offsets
     // and the virtualization all key off the measured box, so a consumer
     // without reset.css (or with a stray box-sizing rule — the reset's is
@@ -114,7 +114,7 @@ const styles = stylex.create({
   pane: {
     position: 'absolute',
     insetBlock: 0,
-    blockSize: dateInputNextGeometry.paneBlockSize,
+    blockSize: dateInputTouchGeometry.paneBlockSize,
     scrollSnapAlign: 'start',
     // No `scroll-snap-stop: always`. It would cap every fling at one month,
     // which is tidy but stops the surface being continuous — "three months
@@ -122,7 +122,7 @@ const styles = stylex.create({
     // several panes is why OVERSCAN is what it is.
     display: 'grid',
     gridTemplateColumns: 'repeat(7, 1fr)',
-    gridTemplateRows: dateInputNextGeometry.paneRows,
+    gridTemplateRows: dateInputTouchGeometry.paneRows,
   },
   row: {
     display: 'contents',

@@ -246,23 +246,6 @@ export * from './CircularProgress';
 // ListInput — compact editor for short collections of simple records
 export * from './ListInput';
 
-// DateInputNext — a drop-in DateInput that picks its own surface: core's
-// DateInput everywhere, a touch picker (continuous snap-paged months, with
-// month/year wheels behind the header title) on a narrow touch screen
-export {
-  DateInputNext,
-  // The touch surface on its own, for a mobile-only app or a desktop-browser
-  // story; DateInputNext is the one that chooses.
-  MobileDateField,
-  MOBILE_PICKER_QUERY,
-  type DateInputNextProps,
-  type DateInputNextSize,
-  type DateInputNextFormat,
-  type DateInputNextStatus,
-  type DateInputNextStatusType,
-  dateInputNextVars,
-} from './DateInputNext';
-
 // LogStream — experimental streaming log viewer
 export {
   LogStream,
