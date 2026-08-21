@@ -75,6 +75,21 @@ export const docs = {
       required: true,
     },
     {
+      name: 'title',
+      type: 'string',
+      description: 'Source title (passed via source.title).',
+    },
+    {
+      name: 'url',
+      type: 'string',
+      description: 'Source target URL (passed via source.url).',
+    },
+    {
+      name: 'icon',
+      type: 'string',
+      description: 'Favicon image URL (passed via source.icon).',
+    },
+    {
       name: 'number',
       type: 'number',
       description: 'The display index for this citation.',

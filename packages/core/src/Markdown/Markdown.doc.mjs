@@ -97,6 +97,11 @@ export const docs = {
         "Opt-in autolinking of bare URLs and emails. 'gfm' applies GitHub-Flavored Markdown autolink-literal rules: bare https?://..., www...., <scheme:url>, <email>, and user@host all become links. Trailing sentence punctuation and unbalanced trailing close-parens are excluded; matches inside code spans, code blocks, existing links, and image alt text are skipped. Default behavior (option unset) is unchanged.",
     },
     {
+      name: 'components',
+      type: 'MarkdownComponents',
+      description: 'Custom React component overrides for rendered Markdown elements (code, link, heading, paragraph, image, blockquote, hr, citation).',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
