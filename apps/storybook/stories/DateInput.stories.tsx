@@ -25,12 +25,11 @@ const meta: Meta<typeof DateInput> = {
           'behind the header title, and no text entry (the keyboard would ' +
           'cover the sheet it is meant to fill in). Same props either way — ' +
           'there is nothing to opt into.\n\n' +
-          '**Seeing the touch surface:** open any of these stories on a ' +
-          'phone or tablet, or in a device-emulated tab that reports a ' +
-          'coarse pointer. It is deliberately not forced into a story here: ' +
-          'the sheet is a viewport-width overlay, so on a desktop-sized ' +
-          'canvas it renders full-bleed and clipped, which flatters nothing ' +
-          'and teaches less than the real thing on a real device.',
+          '**Seeing the touch surface:** open any story below on a phone or ' +
+          'tablet, or in a device-emulated tab reporting a coarse pointer. ' +
+          'Every one of them renders it — they are the same stories, and ' +
+          'that is the point. There is no separate touch story because there ' +
+          'is no separate thing to adopt.',
       },
     },
   },
