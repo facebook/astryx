@@ -202,6 +202,12 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
+      name: 'tokenOverflowBehavior',
+      type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
+      description: 'Controls how tokens overflow when the container is too narrow.',
+      default: "'none'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:

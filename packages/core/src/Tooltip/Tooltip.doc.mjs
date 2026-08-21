@@ -96,6 +96,11 @@ export const docs = {
           type: 'boolean',
           description: 'Whether the tooltip should be shown on mount. Still dismissible.',
         },
+        {
+          name: 'isOpen',
+          type: 'boolean',
+          description: 'Controlled open state for the tooltip.',
+        },
       ],
     },
   ],

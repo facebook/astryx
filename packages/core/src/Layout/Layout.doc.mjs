@@ -95,9 +95,9 @@ export const docs = {
     },
     {
       name: 'contentWidth',
-      type: 'number | string',
+      type: 'SizeValue',
       description:
-        'Maximum width of the content within each slot (header, content, footer, panels), centered when narrower than the available space. Dividers stay full-bleed. Numbers are pixels, strings are used as-is (e.g. `60ch`). Common page widths: 640 for forms, settings, and text-focused pages; 960 for content pages and wider layouts.',
+        'Maximum width of the content within each slot (header, content, footer, panels), centered when narrower than the available space. Dividers stay full-bleed. Common page widths: 640 for forms, settings, and text-focused pages; 960 for content pages and wider layouts.',
     },
     {
       name: 'padding',

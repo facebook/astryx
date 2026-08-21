@@ -208,6 +208,23 @@ export const docs = {
             'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
         },
         {
+          name: 'startIcon',
+          type: 'IconType | ReactNode',
+          description: 'Icon displayed at the start of the selector trigger.',
+        },
+        {
+          name: 'hasClear',
+          type: 'boolean',
+          description: 'Shows a clear button when values are selected.',
+          default: 'false',
+        },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: 'Whether the dropdown starts open on mount.',
+          default: 'false',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
