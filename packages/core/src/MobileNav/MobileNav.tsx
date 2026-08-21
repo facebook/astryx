@@ -52,6 +52,7 @@ import {
   holdScrollbarGutter,
   type ScrollbarGutterHold,
 } from '../hooks/scrollbarGutter';
+import {useEscapeStackEntry} from '../hooks/useFocusTrap';
 import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import type {BaseProps} from '../BaseProps';
@@ -535,6 +536,13 @@ export function MobileNav({
       }
     };
   }, []);
+
+  // Register on the shared Escape stack while open so a Dialog (or other
+  // overlay) layered underneath correctly defers to this drawer instead of
+  // closing itself on the same Escape press. The drawer's own dismissal is
+  // still handled natively below via the dialog's `cancel` event.
+  const getEscapeContainer = useCallback(() => dialogRef.current, []);
+  useEscapeStackEntry(isOpen, getEscapeContainer);
 
   // Handle native cancel event (Escape key) — prevent default and route through onOpenChange
   const handleCancel = useCallback(

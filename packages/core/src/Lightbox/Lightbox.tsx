@@ -31,6 +31,7 @@ import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useScrollLock} from '../hooks/useScrollLock';
+import {useEscapeStackEntry} from '../hooks/useFocusTrap';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -350,6 +351,13 @@ export function Lightbox({
 
   // Scroll lock
   useScrollLock(isOpen);
+
+  // Register on the shared Escape stack while open so a Dialog (or other
+  // overlay) layered underneath correctly defers to this Lightbox instead of
+  // closing itself on the same Escape press. The Lightbox's own dismissal is
+  // still handled natively below via the dialog's `cancel` event.
+  const getEscapeContainer = useCallback(() => dialogRef.current, []);
+  useEscapeStackEntry(isOpen, getEscapeContainer);
 
   // Reset zoom on image change
   useEffect(() => {
