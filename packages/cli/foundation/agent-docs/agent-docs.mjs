@@ -33,7 +33,6 @@ const CURSOR_RULES = '.cursorrules';
 const HERMES_DOT_MD = '.hermes.md';
 const HERMES_MD = 'HERMES.md';
 
-
 const MARKER_START = '<!-- ASTRYX:START -->';
 const MARKER_END = '<!-- ASTRYX:END -->';
 // Legacy markers — read during migration so the script finds existing XDS blocks
@@ -131,7 +130,10 @@ export function isAstryxInitialized(targetDir = process.cwd()) {
   for (const rel of discoverAgentDocs(targetDir)) {
     try {
       const content = fs.readFileSync(path.join(targetDir, rel), 'utf-8');
-      if (content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START)) {
+      if (
+        content.includes(MARKER_START) ||
+        content.includes(LEGACY_MARKER_START)
+      ) {
         return true;
       }
     } catch {
@@ -204,7 +206,11 @@ export function inspectAgentDocs(targetDir, installedVersion) {
   const staleEntries = files.filter(f => f.stale);
   const staleFiles = staleEntries.map(f => f.path);
   const blockVersions = [
-    ...new Set(staleEntries.map(f => f.blockVersion).filter(/** @returns {v is string} */ (v) => v != null)),
+    ...new Set(
+      staleEntries
+        .map(f => f.blockVersion)
+        .filter(/** @returns {v is string} */ v => v != null),
+    ),
   ];
 
   /** @type {'missing' | 'stale' | 'current'} */
@@ -235,7 +241,9 @@ export function resolveAgentPaths(targetDir, agent) {
     return {inject: [], create: [AGENTS_MD, CLAUDE_DIR_MD]};
   }
 
-  const searchPaths = /** @type {Record<string, string[]>} */ (AGENT_PRESETS)[agent];
+  const searchPaths = /** @type {Record<string, string[]>} */ (AGENT_PRESETS)[
+    agent
+  ];
   if (!searchPaths) {
     return {inject: [], create: [AGENTS_MD]};
   }
@@ -262,8 +270,60 @@ export function resolveAgentPaths(targetDir, agent) {
  * safe default. Precedence: stylex (compiler wired) → tailwind → css.
  *
  * @param {string} targetDir
- * @returns {'stylex' | 'tailwind' | 'css'}
+ * @returns {'stylex' | 'tailwind-bridge' | 'tailwind' | 'css'}
  */
+/**
+ * Conventional stylesheet entry points, in the order a project is likely to use
+ * one. Bounded on purpose: this runs on every `init` and `upgrade`, and a
+ * filesystem walk to answer a styling question is not a trade worth making.
+ */
+const CSS_ENTRY_POINTS = [
+  'app/globals.css',
+  'src/app/globals.css',
+  'src/globals.css',
+  'styles/globals.css',
+  'src/styles/globals.css',
+  'src/index.css',
+  'src/main.css',
+  'app/global.css',
+  'globals.css',
+];
+
+/**
+ * Does this project import the Tailwind bridge?
+ *
+ * `tailwind-theme.css` declares Astryx's tokens into Tailwind's own `@theme`
+ * namespaces, so `bg-surface` and `rounded-lg` resolve to system values. In a
+ * project built around Astryx that is the intended setup and an agent should be
+ * told to use those utilities.
+ *
+ * In a project that ALREADY had Tailwind it is a different thing entirely: the
+ * bridge declares ~25 names Tailwind ships by default and ~11 more that the
+ * common shadcn vocabulary uses, so importing it re-points utilities the app is
+ * already using, app-wide. Such a project usually — correctly — does not import
+ * it, and an agent told to reach for `bg-surface` there will either produce
+ * classes that resolve to nothing or add the import and restyle the app.
+ *
+ * Both are "a Tailwind project" to `package.json`, so the dependency list cannot
+ * separate them. What the app did with its own stylesheet can.
+ *
+ * @param {string} targetDir
+ * @returns {boolean}
+ */
+export function usesTailwindBridge(targetDir) {
+  for (const entry of CSS_ENTRY_POINTS) {
+    try {
+      const file = path.join(targetDir, entry);
+      if (!fs.existsSync(file)) continue;
+      if (/tailwind-theme\.css/.test(fs.readFileSync(file, 'utf-8')))
+        return true;
+    } catch {
+      // An unreadable entry point is not evidence either way; keep looking.
+    }
+  }
+  return false;
+}
+
 export function detectStylingSystem(targetDir) {
   try {
     const pkgPath = path.join(targetDir, 'package.json');
@@ -280,7 +340,9 @@ export function detectStylingSystem(targetDir) {
       'stylex-webpack',
     ];
     if (stylexCompilers.some(d => d in deps)) return 'stylex';
-    if ('tailwindcss' in deps) return 'tailwind';
+    if ('tailwindcss' in deps) {
+      return usesTailwindBridge(targetDir) ? 'tailwind-bridge' : 'tailwind';
+    }
     return 'css';
   } catch {
     // Best-effort: default to the universally-safe CSS-variable path.
@@ -300,10 +362,13 @@ export function detectStylingSystem(targetDir) {
  * styling path that isn't compiled here.
  *
  * @param {string} version
- * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string}} [options]
+ * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind-bridge'|'tailwind'|'css', zh?: boolean, lang?: string}} [options]
  * @returns {string}
  */
-export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css'} = {}) {
+export function generateCompressedIndex(
+  version,
+  {coreDir, invocation = getCliInvocation(), stylingSystem = 'css'} = {},
+) {
   const run = invocation;
   const lines = [MARKER_START];
 
@@ -322,39 +387,82 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
 
   // Header — state the CLI prefix once; commands below are shown as `astryx <cmd>`.
   lines.push(`Astryx v${version} · ${componentCount} components`);
-  lines.push(`CLI: run every command as \`${run} <cmd>\` (shown below as \`astryx ...\`).`);
+  lines.push(
+    `CLI: run every command as \`${run} <cmd>\` (shown below as \`astryx ...\`).`,
+  );
   lines.push('');
 
   // Required setup — components ship precompiled CSS; without these imports
   // everything renders unstyled. Theme is optional (a default ships in astryx.css).
-  lines.push('SETUP (once, in your app entry e.g. main.tsx) — without these, components render unstyled:');
+  lines.push(
+    'SETUP (once, in your app entry e.g. main.tsx) — without these, components render unstyled:',
+  );
   lines.push('  import "@astryxdesign/core/reset.css";');
   lines.push('  import "@astryxdesign/core/astryx.css";');
   lines.push('');
 
   // Workflow — `build` is the front door; discover before writing UI.
   lines.push("WORKFLOW — discover, don't guess. Before writing UI:");
-  lines.push('1. `astryx build "<idea>"` — START HERE: returns a kit (closest [page] + [block]s + [component]s). No args = full playbook.');
-  lines.push('2. `astryx template <name> [--skeleton]` — scaffold the [page]/[block]s it named, or study their layout. Templates are reference code.');
-  lines.push('3. `astryx component <Name>` — props + examples for every component you use.');
+  lines.push(
+    '1. `astryx build "<idea>"` — START HERE: returns a kit (closest [page] + [block]s + [component]s). No args = full playbook.',
+  );
+  lines.push(
+    '2. `astryx template <name> [--skeleton]` — scaffold the [page]/[block]s it named, or study their layout. Templates are reference code.',
+  );
+  lines.push(
+    '3. `astryx component <Name>` — props + examples for every component you use.',
+  );
   lines.push('');
 
   // Rules — the top error-preventers.
   lines.push('RULES:');
-  lines.push('- No <div> — components do all layout/spacing, page frame included.');
-  lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.');
-  lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
+  lines.push(
+    '- No <div> — components do all layout/spacing, page frame included.',
+  );
+  lines.push(
+    '- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.',
+  );
+  lines.push(
+    '- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.',
+  );
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
   // utilities need Tailwind). Tokens are always the source of truth.
   if (stylingSystem === 'stylex') {
-    lines.push('- Custom styling: component props first; else the xstyle prop / StyleX tokens (@astryxdesign/core/theme/tokens.stylex). No raw hex/px.');
+    lines.push(
+      '- Custom styling: component props first; else the xstyle prop / StyleX tokens (@astryxdesign/core/theme/tokens.stylex). No raw hex/px.',
+    );
+  } else if (stylingSystem === 'tailwind-bridge') {
+    lines.push(
+      '- Custom styling: component props first; else Tailwind utilities backed by tokens (bg-surface, text-primary, rounded-lg) via tailwind-theme.css. No raw hex/px.',
+    );
   } else if (stylingSystem === 'tailwind') {
-    lines.push('- Custom styling: component props first; else Tailwind utilities backed by tokens (bg-surface, text-primary, rounded-lg) via tailwind-theme.css. No raw hex/px.');
+    lines.push(
+      "- Custom styling: component props first; else this app's OWN Tailwind token classes — read its globals.css for the vocabulary and match the components next to yours. No raw hex/px.",
+    );
+    lines.push(
+      "- This app had Tailwind before Astryx and owns its utility layer. Do NOT add `@astryxdesign/core/tailwind-theme.css`: it declares --color-card/-muted/-border/-accent/-primary/-secondary, --radius-*, --shadow-*, --text-* and --spacing into Tailwind's theme, re-pointing utilities the app already uses everywhere.",
+    );
   } else {
-    lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
+    lines.push(
+      "- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)",
+    );
   }
-  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx theme template` for a custom one) — never override --color-* in :root.');
+  lines.push(
+    '- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx theme template` for a custom one) — never override --color-* in :root.',
+  );
+  if (stylingSystem === 'tailwind') {
+    // The one place the rule above has to bend. A theme's tokens are set on the
+    // element carrying data-astryx-theme, which the provider also syncs onto
+    // <html>; a same-named app token declared in :root (or hoisted there by
+    // `@theme`) is a lower-priority layer and loses. Re-declaring on the
+    // boundary element is how the app keeps a name it already owned — and the
+    // pairing matters: --color-accent without --color-on-accent is how you get
+    // a button nobody can read.
+    lines.push(
+      "- Exception, for a name this app already defines (--color-accent and --color-border are the usual pair): re-assert it on [data-astryx-theme], not :root — :root loses to the theme layer. Override a colour's partner too (--color-on-accent with --color-accent), or the pairing breaks.",
+    );
+  }
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.
@@ -362,8 +470,10 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   const selfCheckFix = {
     stylex:
       'replace any className=, style={{…}}, raw <div>/<span> layout, imported .css/@apply, or hardcoded #hex/px with the component or the xstyle prop + a token',
-    tailwind:
+    'tailwind-bridge':
       'replace any style={{…}}, raw <div>/<span> layout, imported .css/@apply, or hardcoded/arbitrary value (e.g. bg-[#fff], p-[13px]) with the component or a token-backed utility',
+    tailwind:
+      "replace any style={{…}}, raw <div>/<span> layout, imported .css/@apply, or hardcoded/arbitrary value (e.g. bg-[#fff], p-[13px]) with the component or one of this app's own token classes",
     css: 'replace any raw <div>/<span> layout, imported .css/@apply, or hardcoded value (#hex, 16px) with the component or a token (var(--color-*|--spacing-*|…))',
   };
   lines.push(
@@ -373,19 +483,25 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
 
   // Command reference — build/template/component are covered in WORKFLOW above.
   lines.push('MORE CLI:');
-  lines.push('  search "<query>"   find any component / hook / doc / template / block');
+  lines.push(
+    '  search "<query>"   find any component / hook / doc / template / block',
+  );
   lines.push(`  component --list   ${componentCount} components by category`);
   lines.push('  template --list    page + block recipes');
   const docsDir = path.join(CLI_ROOT, 'assets', 'docs');
   if (fs.existsSync(docsDir)) {
-    const topics = fs.readdirSync(docsDir)
+    const topics = fs
+      .readdirSync(docsDir)
       .map(f => f.match(/^(\w+)\.doc\.mjs$/))
-      .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
+      .filter(/** @returns {m is RegExpMatchArray} */ m => m != null)
       .map(m => m[1])
       .sort();
-    if (topics.length > 0) lines.push(`  docs <topic>       ${topics.join(', ')}`);
+    if (topics.length > 0)
+      lines.push(`  docs <topic>       ${topics.join(', ')}`);
   }
-  lines.push('  swizzle <Name>     eject component source for deep customization');
+  lines.push(
+    '  swizzle <Name>     eject component source for deep customization',
+  );
   lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
   lines.push(MARKER_END);
 
@@ -424,7 +540,11 @@ export function getXdsVersion(coreDir) {
  * @param {boolean} [options.onlyReplace] - Only write if Astryx markers already exist (skip files without markers)
  * @returns {boolean} Whether the file was written
  */
-export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = false, header = '', onlyReplace = false} = {}) {
+export function injectXdsBlock(
+  filePath,
+  compressedIndex,
+  {createIfMissing = false, header = '', onlyReplace = false} = {},
+) {
   let content;
 
   if (fs.existsSync(filePath)) {
@@ -438,7 +558,10 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
         content.slice(0, block.start) +
         compressedIndex +
         content.slice(block.end);
-    } else if (content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START)) {
+    } else if (
+      content.includes(MARKER_START) ||
+      content.includes(LEGACY_MARKER_START)
+    ) {
       // A START with no matching END (e.g. an interrupted previous write). Don't
       // append a second block below the broken one — that leaves two STARTs the
       // tool can never converge. Refuse and ask the user to clean it up.
@@ -453,7 +576,9 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
       content = content.trimEnd() + '\n\n' + compressedIndex + '\n';
     }
   } else if (createIfMissing) {
-    content = header ? header + '\n\n' + compressedIndex + '\n' : compressedIndex + '\n';
+    content = header
+      ? header + '\n\n' + compressedIndex + '\n'
+      : compressedIndex + '\n';
   } else {
     return false;
   }
@@ -568,12 +693,21 @@ export function removeAgentDocs(targetDir) {
  * @param {boolean} [options.onlyReplace] - Only update files that already have Astryx markers (for upgrades)
  * @returns {string[]} List of files written
  */
-export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false} = {}) {
+export function installAgentDocs(
+  targetDir,
+  {zh = false, lang, agent, paths, onlyReplace = false} = {},
+) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const invocation = getCliInvocation(targetDir);
   const stylingSystem = detectStylingSystem(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem});
+  const compressedIndex = generateCompressedIndex(version, {
+    coreDir,
+    zh,
+    lang,
+    invocation,
+    stylingSystem,
+  });
   /** @type {string[]} */
   const written = [];
 
@@ -627,7 +761,11 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
 
   if (existing.length > 0) {
     for (const p of existing) {
-      const didWrite = injectXdsBlock(path.join(targetDir, p), compressedIndex, {onlyReplace});
+      const didWrite = injectXdsBlock(
+        path.join(targetDir, p),
+        compressedIndex,
+        {onlyReplace},
+      );
       if (didWrite) written.push(p);
     }
     return written;

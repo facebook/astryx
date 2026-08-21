@@ -64,12 +64,18 @@ describe('generateCompressedIndex', () => {
   it('tailors the self-check to the styling system (xstyle for StyleX, not className for Tailwind)', () => {
     // StyleX path: className/inline style are veers; the fix is the xstyle prop + a token
     const stylex = generateCompressedIndex('1.0.0', {stylingSystem: 'stylex'});
-    const stylexSelfCheck = stylex.split('\n').find(l => l.includes('SELF-CHECK'));
+    const stylexSelfCheck = stylex
+      .split('\n')
+      .find(l => l.includes('SELF-CHECK'));
     expect(stylexSelfCheck).toMatch(/xstyle/);
     expect(stylexSelfCheck).toMatch(/className=/);
     // className IS the system in Tailwind — it must NOT be flagged
-    const tailwind = generateCompressedIndex('1.0.0', {stylingSystem: 'tailwind'});
-    const tailwindSelfCheck = tailwind.split('\n').find(l => l.includes('SELF-CHECK'));
+    const tailwind = generateCompressedIndex('1.0.0', {
+      stylingSystem: 'tailwind',
+    });
+    const tailwindSelfCheck = tailwind
+      .split('\n')
+      .find(l => l.includes('SELF-CHECK'));
     expect(tailwindSelfCheck).toBeDefined();
     expect(tailwindSelfCheck).not.toMatch(/className=/);
   });
@@ -87,10 +93,51 @@ describe('generateCompressedIndex', () => {
     expect(result).toMatch(/xstyle prop \/ StyleX tokens/);
   });
 
-  it('recommends Tailwind utilities when Tailwind is configured', () => {
-    const result = generateCompressedIndex('1.0.0', {stylingSystem: 'tailwind'});
+  it('recommends the bridge utilities when the project imports the bridge', () => {
+    const result = generateCompressedIndex('1.0.0', {
+      stylingSystem: 'tailwind-bridge',
+    });
     expect(result).toMatch(/Tailwind utilities backed by tokens/);
     expect(result).toMatch(/tailwind-theme\.css/);
+  });
+
+  it("points at the app's own classes when Tailwind is there without the bridge", () => {
+    const result = generateCompressedIndex('1.0.0', {
+      stylingSystem: 'tailwind',
+    });
+    // The app owns its utility layer: send the agent to read the vocabulary,
+    // not to reach for names the bridge would have had to introduce.
+    expect(result).toMatch(/OWN Tailwind token classes/);
+    expect(result).toMatch(/read its globals\.css/);
+    expect(result).not.toMatch(/Tailwind utilities backed by tokens/);
+  });
+
+  it('tells an existing Tailwind app not to add the bridge, and why', () => {
+    const result = generateCompressedIndex('1.0.0', {
+      stylingSystem: 'tailwind',
+    });
+    expect(result).toMatch(
+      /Do NOT add `@astryxdesign\/core\/tailwind-theme\.css`/,
+    );
+    // The reason has to travel with the rule, or it reads as arbitrary.
+    expect(result).toMatch(/re-pointing utilities the app already uses/);
+  });
+
+  it('gives the boundary-element exception only where it applies', () => {
+    const existing = generateCompressedIndex('1.0.0', {
+      stylingSystem: 'tailwind',
+    });
+    expect(existing).toMatch(
+      /re-assert it on \[data-astryx-theme\], not :root/,
+    );
+    // ...and names the pairing, because taking --color-accent alone is how you
+    // get a button whose label nobody can read.
+    expect(existing).toMatch(/--color-on-accent with --color-accent/);
+
+    for (const stylingSystem of ['tailwind-bridge', 'stylex', 'css']) {
+      const other = generateCompressedIndex('1.0.0', {stylingSystem});
+      expect(other).not.toMatch(/data-astryx-theme/);
+    }
   });
 
   it('includes upgrade command and migration rule', () => {
@@ -100,19 +147,25 @@ describe('generateCompressedIndex', () => {
   });
 
   it('states the invocation once in the CLI header (yarn)', () => {
-    const result = generateCompressedIndex('1.0.0', {invocation: 'yarn astryx'});
+    const result = generateCompressedIndex('1.0.0', {
+      invocation: 'yarn astryx',
+    });
     expect(result).toContain('yarn astryx <cmd>');
     expect(result).not.toContain('npx astryx');
   });
 
   it('uses the pnpm exec invocation', () => {
-    const result = generateCompressedIndex('1.0.0', {invocation: 'pnpm exec astryx'});
+    const result = generateCompressedIndex('1.0.0', {
+      invocation: 'pnpm exec astryx',
+    });
     expect(result).toContain('pnpm exec astryx <cmd>');
     expect(result).not.toContain('npx astryx');
   });
 
   it('uses the scoped package for one-off (uninstalled) runs so agents never hit the bare name', () => {
-    const result = generateCompressedIndex('1.0.0', {invocation: 'npx @astryxdesign/cli'});
+    const result = generateCompressedIndex('1.0.0', {
+      invocation: 'npx @astryxdesign/cli',
+    });
     expect(result).toContain('npx @astryxdesign/cli <cmd>');
     // The header defines the mapping; the bare "run every command as `npx astryx`" footgun must be absent.
     expect(result).not.toContain('npx astryx <cmd>');
@@ -146,6 +199,30 @@ describe('detectStylingSystem', () => {
     expect(detectStylingSystem(tmpDir)).toBe('tailwind');
   });
 
+  it('separates a bridge project from an app that already had Tailwind', () => {
+    // Same dependency list either way — what the app did with its own
+    // stylesheet is the only thing that can tell them apart.
+    writePkg({tailwindcss: '4.0.0'});
+    expect(detectStylingSystem(tmpDir)).toBe('tailwind');
+
+    fs.mkdirSync(path.join(tmpDir, 'app'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'app', 'globals.css'),
+      '@import "tailwindcss";\n@import "@astryxdesign/core/tailwind-theme.css";\n',
+    );
+    expect(detectStylingSystem(tmpDir)).toBe('tailwind-bridge');
+  });
+
+  it('does not call it a bridge project when the entry point omits it', () => {
+    writePkg({tailwindcss: '4.0.0'});
+    fs.mkdirSync(path.join(tmpDir, 'src'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'src', 'index.css'),
+      '@import "tailwindcss";\n@import "@astryxdesign/core/astryx.css";\n',
+    );
+    expect(detectStylingSystem(tmpDir)).toBe('tailwind');
+  });
+
   it('does NOT treat the StyleX runtime alone as a compiler', () => {
     // Only the runtime, no compiler plugin → must stay on the safe css path.
     writePkg({'@stylexjs/stylex': '0.0.1'});
@@ -176,7 +253,10 @@ describe('injectXdsBlock', () => {
     const filePath = path.join(tmpDir, 'test.md');
     fs.writeFileSync(filePath, '# Existing content\n');
 
-    const result = injectXdsBlock(filePath, '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->');
+    const result = injectXdsBlock(
+      filePath,
+      '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->',
+    );
 
     expect(result).toBe(true);
     const content = fs.readFileSync(filePath, 'utf-8');
@@ -186,7 +266,10 @@ describe('injectXdsBlock', () => {
 
   it('replaces existing markers', () => {
     const filePath = path.join(tmpDir, 'test.md');
-    fs.writeFileSync(filePath, 'before\n<!-- XDS:START -->\nold\n<!-- XDS:END -->\nafter\n');
+    fs.writeFileSync(
+      filePath,
+      'before\n<!-- XDS:START -->\nold\n<!-- XDS:END -->\nafter\n',
+    );
 
     injectXdsBlock(filePath, '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->');
 
@@ -200,7 +283,10 @@ describe('injectXdsBlock', () => {
   it('returns false and does not create file when createIfMissing is false', () => {
     const filePath = path.join(tmpDir, 'nonexistent.md');
 
-    const result = injectXdsBlock(filePath, '<!-- ASTRYX:START -->\ncontent\n<!-- ASTRYX:END -->');
+    const result = injectXdsBlock(
+      filePath,
+      '<!-- ASTRYX:START -->\ncontent\n<!-- ASTRYX:END -->',
+    );
 
     expect(result).toBe(false);
     expect(fs.existsSync(filePath)).toBe(false);
@@ -210,7 +296,11 @@ describe('injectXdsBlock', () => {
     const filePath = path.join(tmpDir, 'test.md');
     fs.writeFileSync(filePath, '# Existing content\n\nNo XDS markers here.\n');
 
-    const result = injectXdsBlock(filePath, '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->', {onlyReplace: true});
+    const result = injectXdsBlock(
+      filePath,
+      '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->',
+      {onlyReplace: true},
+    );
 
     expect(result).toBe(false);
     const content = fs.readFileSync(filePath, 'utf-8');
@@ -220,9 +310,16 @@ describe('injectXdsBlock', () => {
 
   it('replaces existing markers even when onlyReplace is true', () => {
     const filePath = path.join(tmpDir, 'test.md');
-    fs.writeFileSync(filePath, 'before\n<!-- XDS:START -->\nold\n<!-- XDS:END -->\nafter\n');
+    fs.writeFileSync(
+      filePath,
+      'before\n<!-- XDS:START -->\nold\n<!-- XDS:END -->\nafter\n',
+    );
 
-    const result = injectXdsBlock(filePath, '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->', {onlyReplace: true});
+    const result = injectXdsBlock(
+      filePath,
+      '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->',
+      {onlyReplace: true},
+    );
 
     expect(result).toBe(true);
     const content = fs.readFileSync(filePath, 'utf-8');
@@ -233,10 +330,14 @@ describe('injectXdsBlock', () => {
   it('creates file when createIfMissing is true', () => {
     const filePath = path.join(tmpDir, 'new.md');
 
-    const result = injectXdsBlock(filePath, '<!-- ASTRYX:START -->\ncontent\n<!-- ASTRYX:END -->', {
-      createIfMissing: true,
-      header: '# Header',
-    });
+    const result = injectXdsBlock(
+      filePath,
+      '<!-- ASTRYX:START -->\ncontent\n<!-- ASTRYX:END -->',
+      {
+        createIfMissing: true,
+        header: '# Header',
+      },
+    );
 
     expect(result).toBe(true);
     const content = fs.readFileSync(filePath, 'utf-8');
@@ -296,7 +397,10 @@ Existing agent docs.
 
 describe('injectClaudeMd', () => {
   it('injects into existing CLAUDE.md', () => {
-    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Claude Config\n\nExisting rules.\n');
+    fs.writeFileSync(
+      path.join(tmpDir, 'CLAUDE.md'),
+      '# Claude Config\n\nExisting rules.\n',
+    );
 
     const result = injectClaudeMd(tmpDir, '1.0.0');
 
@@ -389,7 +493,10 @@ XDS index stuff
 
     removeAgentDocs(tmpDir);
 
-    const claudeContent = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    const claudeContent = fs.readFileSync(
+      path.join(tmpDir, 'CLAUDE.md'),
+      'utf-8',
+    );
     expect(claudeContent).toContain('Rules.');
     expect(claudeContent).toContain('More rules.');
     expect(claudeContent).not.toContain('<!-- XDS:START -->');
@@ -415,7 +522,9 @@ describe('installAgentDocs', () => {
     expect(written).toEqual(['AGENTS.md']);
     expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
     // Must NOT create the Claude-specific file by default.
-    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(
+      false,
+    );
     const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
     expect(content).toContain('# AGENTS.md');
     expect(content).toContain('<!-- ASTRYX:START -->');
@@ -425,13 +534,19 @@ describe('installAgentDocs', () => {
     // Default (no agent): tool-agnostic AGENTS.md, never the Claude file.
     setupCorePackage(tmpDir);
     expect(installAgentDocs(tmpDir)).toEqual(['AGENTS.md']);
-    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(
+      false,
+    );
 
     // Explicit Claude: the Claude-specific file, in a fresh project.
-    const claudeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-agent-docs-claude-'));
+    const claudeDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-agent-docs-claude-'),
+    );
     setupCorePackage(claudeDir);
     try {
-      expect(installAgentDocs(claudeDir, {agent: 'claude'})).toEqual(['.claude/CLAUDE.md']);
+      expect(installAgentDocs(claudeDir, {agent: 'claude'})).toEqual([
+        '.claude/CLAUDE.md',
+      ]);
       expect(fs.existsSync(path.join(claudeDir, 'AGENTS.md'))).toBe(false);
     } finally {
       fs.rmSync(claudeDir, {recursive: true, force: true});
@@ -440,28 +555,46 @@ describe('installAgentDocs', () => {
 
   it('injects into CLAUDE.md at root when it exists', () => {
     setupCorePackage(tmpDir);
-    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Claude\n\nProject rules.\n');
+    fs.writeFileSync(
+      path.join(tmpDir, 'CLAUDE.md'),
+      '# Claude\n\nProject rules.\n',
+    );
 
     const written = installAgentDocs(tmpDir);
 
     expect(written).toEqual(['CLAUDE.md']);
     expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
-    const claudeContent = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    const claudeContent = fs.readFileSync(
+      path.join(tmpDir, 'CLAUDE.md'),
+      'utf-8',
+    );
     expect(claudeContent).toContain('<!-- ASTRYX:START -->');
     expect(claudeContent).toContain('Project rules.');
   });
 
   it('injects into all existing agent doc files', () => {
     setupCorePackage(tmpDir);
-    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '# Agents\n\nAgent rules.\n');
-    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Claude\n\nClaude rules.\n');
+    fs.writeFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      '# Agents\n\nAgent rules.\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'CLAUDE.md'),
+      '# Claude\n\nClaude rules.\n',
+    );
 
     const written = installAgentDocs(tmpDir);
 
     expect(written).toContain('AGENTS.md');
     expect(written).toContain('CLAUDE.md');
-    const agentsContent = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
-    const claudeContent = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    const agentsContent = fs.readFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      'utf-8',
+    );
+    const claudeContent = fs.readFileSync(
+      path.join(tmpDir, 'CLAUDE.md'),
+      'utf-8',
+    );
     expect(agentsContent).toContain('<!-- ASTRYX:START -->');
     expect(claudeContent).toContain('<!-- ASTRYX:START -->');
   });
@@ -469,12 +602,18 @@ describe('installAgentDocs', () => {
   it('updates existing .claude/CLAUDE.md', () => {
     setupCorePackage(tmpDir);
     fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
-    fs.writeFileSync(path.join(tmpDir, '.claude', 'CLAUDE.md'), '# Project\n\nExisting content.\n');
+    fs.writeFileSync(
+      path.join(tmpDir, '.claude', 'CLAUDE.md'),
+      '# Project\n\nExisting content.\n',
+    );
 
     const written = installAgentDocs(tmpDir);
 
     expect(written).toEqual(['.claude/CLAUDE.md']);
-    const content = fs.readFileSync(path.join(tmpDir, '.claude', 'CLAUDE.md'), 'utf-8');
+    const content = fs.readFileSync(
+      path.join(tmpDir, '.claude', 'CLAUDE.md'),
+      'utf-8',
+    );
     expect(content).toContain('Existing content.');
     expect(content).toContain('<!-- ASTRYX:START -->');
   });
@@ -528,7 +667,10 @@ describe('installAgentDocs', () => {
 
   it('onlyReplace: skips files without XDS markers', () => {
     setupCorePackage(tmpDir);
-    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Claude\n\nProject rules only.\n');
+    fs.writeFileSync(
+      path.join(tmpDir, 'CLAUDE.md'),
+      '# Claude\n\nProject rules only.\n',
+    );
 
     const written = installAgentDocs(tmpDir, {onlyReplace: true});
 
@@ -561,7 +703,9 @@ describe('installAgentDocs', () => {
 
     expect(written).toEqual([]);
     expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
-    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(
+      false,
+    );
   });
 });
 
@@ -653,7 +797,9 @@ describe('parseBlockVersion', () => {
   });
 
   it('returns null when no versioned header is present', () => {
-    expect(parseBlockVersion('<!-- XDS:START -->\nold\n<!-- XDS:END -->')).toBeNull();
+    expect(
+      parseBlockVersion('<!-- XDS:START -->\nold\n<!-- XDS:END -->'),
+    ).toBeNull();
     expect(parseBlockVersion('')).toBeNull();
     expect(parseBlockVersion(undefined)).toBeNull();
   });
@@ -663,7 +809,10 @@ describe('inspectAgentDocs', () => {
   function writeBlock(rel, version) {
     const filePath = path.join(tmpDir, rel);
     fs.mkdirSync(path.dirname(filePath), {recursive: true});
-    fs.writeFileSync(filePath, `# Doc\n\n${generateCompressedIndex(version)}\n`);
+    fs.writeFileSync(
+      filePath,
+      `# Doc\n\n${generateCompressedIndex(version)}\n`,
+    );
   }
 
   it('reports missing when no agent docs exist at all', () => {
@@ -674,7 +823,10 @@ describe('inspectAgentDocs', () => {
   });
 
   it('reports missing when agent files exist but carry no Astryx marker', () => {
-    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '# Agents\n\nHand-written notes.\n');
+    fs.writeFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      '# Agents\n\nHand-written notes.\n',
+    );
     expect(inspectAgentDocs(tmpDir, '1.0.0').status).toBe('missing');
   });
 
@@ -717,7 +869,10 @@ describe('inspectAgentDocs', () => {
   it('defaults the installed version to the core package when omitted', () => {
     const coreDir = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
     fs.mkdirSync(coreDir, {recursive: true});
-    fs.writeFileSync(path.join(coreDir, 'package.json'), JSON.stringify({version: '3.0.0'}));
+    fs.writeFileSync(
+      path.join(coreDir, 'package.json'),
+      JSON.stringify({version: '3.0.0'}),
+    );
     writeBlock('AGENTS.md', '3.0.0');
     const res = inspectAgentDocs(tmpDir);
     expect(res.installedVersion).toBe('3.0.0');
@@ -750,8 +905,12 @@ describe('injectXdsBlock / removeXdsBlock — malformed managed blocks (no user-
   it('refuses to append a second block when a START has no matching END', () => {
     const f = path.join(tmpDir, 'c.md');
     fs.writeFileSync(f, `# Doc\nUSER1\n${S}\nOLD (no end)\nUSER2\n`);
-    expect(() => injectXdsBlock(f, BLOCK)).toThrow(/end marker|malformed|no matching/i);
-    expect((fs.readFileSync(f, 'utf-8').match(/ASTRYX:START/g) || []).length).toBe(1);
+    expect(() => injectXdsBlock(f, BLOCK)).toThrow(
+      /end marker|malformed|no matching/i,
+    );
+    expect(
+      (fs.readFileSync(f, 'utf-8').match(/ASTRYX:START/g) || []).length,
+    ).toBe(1);
   });
 
   it('replaces a single well-formed block idempotently, preserving surrounding content', () => {
@@ -806,6 +965,8 @@ describe('isAstryxInitialized — resilient to malformed markers (postinstall ho
   });
 
   it('returns false for a nonexistent directory', () => {
-    expect(isAstryxInitialized(path.join(tmpDir, 'does-not-exist'))).toBe(false);
+    expect(isAstryxInitialized(path.join(tmpDir, 'does-not-exist'))).toBe(
+      false,
+    );
   });
 });
