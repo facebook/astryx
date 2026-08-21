@@ -278,4 +278,33 @@ describe('BottomSheetPanel', () => {
     expect(handleBar![1]).toContain('linear-gradient(to bottom');
     expect(handleBar![1]).toContain("colorVars['--color-background-surface']");
   });
+
+  // In dark mode the surface fill and the scrim sit a few RGB steps apart and
+  // the drop shadow is black on near-black, so the fill alone leaves the
+  // sheet's left and right edges invisible against the scrim. A hairline on
+  // the scrim-facing edges is what draws them. Asserted on the style
+  // definition for the same reason as the test above.
+  it('draws a hairline on the three edges that face the scrim', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, './BottomSheetPanel.tsx'),
+      'utf-8',
+    );
+
+    const sheet = source.match(/\n {2}sheet: \{([\s\S]*?)\n {2}\},/);
+    expect(sheet).not.toBeNull();
+    for (const edge of [
+      'borderBlockStart',
+      'borderInlineStart',
+      'borderInlineEnd',
+    ]) {
+      expect(sheet![1]).toContain(`${edge}Width: borderVars['--border-width']`);
+      expect(sheet![1]).toContain(`${edge}Style: 'solid'`);
+      expect(sheet![1]).toContain(`${edge}Color: colorVars['--color-border']`);
+    }
+    // The block-end edge sits below the viewport, under the overscroll
+    // padding, so it carries no hairline to draw.
+    expect(sheet![1]).not.toContain('borderBlockEndWidth');
+  });
 });

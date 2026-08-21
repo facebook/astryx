@@ -34,6 +34,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {useDevWarning} from '../hooks';
 import {
+  borderVars,
   colorVars,
   durationVars,
   easeVars,
@@ -112,6 +113,22 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 640,
     backgroundColor: colorVars['--color-background-surface'],
+    // Hairline on the three edges that face the scrim. The surface fill alone
+    // separates sheet from scrim in light mode, but not in dark: there the two
+    // sit within a few RGB steps of each other and the drop shadow is black on
+    // near-black, so the sheet's left and right edges disappear. Same
+    // treatment MobileNav gives its scrim-facing edge. The block-end edge is
+    // deliberately left bare; it sits below the viewport, under the overscroll
+    // padding.
+    borderBlockStartWidth: borderVars['--border-width'],
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: colorVars['--color-border'],
+    borderInlineStartWidth: borderVars['--border-width'],
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: colorVars['--color-border'],
+    borderInlineEndWidth: borderVars['--border-width'],
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: colorVars['--color-border'],
     borderStartStartRadius: radiusVars['--radius-container'],
     borderStartEndRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-high'],
