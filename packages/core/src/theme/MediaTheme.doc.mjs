@@ -98,7 +98,7 @@ export const docs = {
     {
       name: 'fallback',
       type: "'dark' | 'light'",
-      defaultValue: "'dark'",
+      default: "'dark'",
       description:
         'Which side auto uses when the surface cannot be measured: during SSR, on the first client frame, and whenever the backdrop is not knowable from CSS — most often a background-image, whose pixels need sampling (useImageMode) rather than a computed style. Ignored unless mode is auto.',
     },
