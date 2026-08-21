@@ -7,6 +7,7 @@
  * @position Shared utility; replaces scattered Date usage across Calendar hooks
  */
 
+import type {Locale} from '../i18n/types';
 import type {ISODateString, PlainDate} from './dateTypes';
 
 export type {PlainDate} from './dateTypes';
@@ -290,13 +291,28 @@ export const DATE_FORMAT_SHORT_WITH_YEAR: Intl.DateTimeFormatOptions = {
   year: 'numeric',
 };
 
+/**
+ * Format a `PlainDate` for display.
+ *
+ * `locale` defaults to `'en'` rather than `undefined`. Passing `undefined` to
+ * `Intl.DateTimeFormat` resolves to the RUNTIME's locale, which differs across
+ * the SSR boundary: a server with no `LC_ALL` resolves the CLDR root and emits
+ * "2026 M08" where the browser renders "August 2026", and React reports a
+ * hydration mismatch for a component nobody touched. `'en'` matches what
+ * `useLocale()` returns outside a provider, so the default agrees with the rest
+ * of the i18n contract.
+ *
+ * Components under an `InternationalizationProvider` should thread the provider
+ * locale — `plainDateFormat(pd, options, useLocale())` — which is both
+ * deterministic and correctly localized. See `useLocale`, which names this
+ * helper as its intended consumer.
+ */
 export function plainDateFormat(
   pd: PlainDate,
   options: Intl.DateTimeFormatOptions,
+  locale: Locale = 'en',
 ): string {
-  return new Intl.DateTimeFormat(undefined, options).format(
-    plainDateToDate(pd),
-  );
+  return new Intl.DateTimeFormat(locale, options).format(plainDateToDate(pd));
 }
 
 // =============================================================================
