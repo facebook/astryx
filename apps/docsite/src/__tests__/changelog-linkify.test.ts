@@ -11,6 +11,7 @@ import {
   linkifyPRs,
   linkifyContributors,
   linkifyComponents,
+  addEmptyReleasePlaceholders,
   stripTitle,
 } from '../components/changelogLinkify';
 
@@ -126,6 +127,38 @@ describe('linkifyComponents', () => {
     );
     expect(linkifyComponents('Use Button', names)).toBe(
       'Use [Button](/components/Button)',
+    );
+  });
+});
+
+describe('addEmptyReleasePlaceholders', () => {
+  it('labels an empty release without hiding populated releases', () => {
+    const input = [
+      '# 0.4.5',
+      '',
+      '---',
+      '',
+      '# 0.4.4',
+      '',
+      '#### Fixes',
+      '',
+      '- Fixed the CLI.',
+    ].join('\n');
+
+    expect(addEmptyReleasePlaceholders(input)).toBe(
+      [
+        '# 0.4.5',
+        '',
+        '_No changes in this release._',
+        '',
+        '---',
+        '',
+        '# 0.4.4',
+        '',
+        '#### Fixes',
+        '',
+        '- Fixed the CLI.',
+      ].join('\n'),
     );
   });
 });
