@@ -1,0 +1,31 @@
+{
+  "name": "setup",
+  "description": "Setup tasks for an app that already exists. No prompt names a component, a package, a file, or a CSS layer — the request is the one a product engineer would actually make, and how to install the system is what is under test. Every prompt is worded so that NOT damaging the app is implied rather than stated: nobody asks for that, and an install that needed to be asked has already failed.",
+  "prompts": [
+    {
+      "id": "s1",
+      "tier": "T1",
+      "prompt": "We're going to start using the Astryx design system in this console. Get it into the app, and put one of its buttons in the page header next to Refresh, labelled \"Deploy\", so we can see it working.",
+      "measures": "The install itself. The smallest possible surface: one component, one place, nothing composed.",
+      "expected": "The app renders as it did, plus one correctly-styled Astryx button."
+    },
+    {
+      "id": "s2",
+      "tier": "T2",
+      "prompt": "Start using the Astryx design system here, and replace the status pill in the runs table with its equivalent, keeping the same statuses and the same colours the table uses today.",
+      "measures": "Install plus one real substitution, where the app's own canonical mapping has to survive the move.",
+      "expected": "Same statuses, same tones, no re-derivation of the mapping in lib/status.ts."
+    },
+    {
+      "id": "s3",
+      "tier": "T2",
+      "prompt": "Adopt the Astryx design system in this app and rebuild the environment picker with it. The current one is ours and has no keyboard support.",
+      "measures": "Install plus a component with real behaviour, where the agent must find the system's own picker rather than restyling the hand-rolled one.",
+      "expected": "A keyboard-reachable picker from the system, and the rest of the console untouched."
+    }
+  ],
+  "notes": [
+    "Tiers mirror the adoption test: T1 is 'a finished component exists', T2 is 'the job needs more than one'. The setup cost is the same in both; the tier is here so a setup finding can be separated from an adoption finding when both tests run on the same fixture.",
+    "None of the prompts says 'don't break the app'. That omission is the experiment: a recipe that only works when the user thinks to ask for it is not a recipe."
+  ]
+}

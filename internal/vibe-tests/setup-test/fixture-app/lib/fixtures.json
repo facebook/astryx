@@ -1,0 +1,161 @@
+{
+  "runs": [
+    {
+      "id": "r-8812",
+      "service": "checkout-api",
+      "env": "prod",
+      "status": "succeeded",
+      "startedAt": "09:41",
+      "durationMs": 252000,
+      "buildId": "b-41f9",
+      "ticketId": "T-2201"
+    },
+    {
+      "id": "r-8811",
+      "service": "checkout-api",
+      "env": "prod",
+      "status": "failed",
+      "startedAt": "09:12",
+      "durationMs": 123000,
+      "buildId": "b-41f2",
+      "ticketId": "T-2199"
+    },
+    {
+      "id": "r-8810",
+      "service": "billing-web",
+      "env": "prod",
+      "status": "running",
+      "startedAt": "09:02",
+      "durationMs": 104000,
+      "buildId": "b-41e7",
+      "ticketId": null
+    },
+    {
+      "id": "r-8809",
+      "service": "billing-web",
+      "env": "prod",
+      "status": "needs_review",
+      "startedAt": "08:55",
+      "durationMs": 61000,
+      "buildId": "b-41e1",
+      "ticketId": "T-2190"
+    },
+    {
+      "id": "r-8808",
+      "service": "search-idx",
+      "env": "prod",
+      "status": "blocked",
+      "startedAt": "08:31",
+      "durationMs": 31000,
+      "buildId": "b-41d8",
+      "ticketId": "T-2188"
+    },
+    {
+      "id": "r-8807",
+      "service": "search-idx",
+      "env": "prod",
+      "status": "queued",
+      "startedAt": "08:20",
+      "durationMs": 0,
+      "buildId": "b-41d0",
+      "ticketId": null
+    },
+    {
+      "id": "r-8806",
+      "service": "notifier",
+      "env": "prod",
+      "status": "abandoned",
+      "startedAt": "08:02",
+      "durationMs": 12000,
+      "buildId": "b-41c4",
+      "ticketId": null
+    },
+    {
+      "id": "r-8805",
+      "service": "checkout-api",
+      "env": "staging",
+      "status": "succeeded",
+      "startedAt": "07:44",
+      "durationMs": 201000,
+      "buildId": "b-41b9",
+      "ticketId": "T-2185"
+    },
+    {
+      "id": "r-8804",
+      "service": "billing-web",
+      "env": "canary",
+      "status": "running",
+      "startedAt": "07:20",
+      "durationMs": 88000,
+      "buildId": "b-41a2",
+      "ticketId": null
+    },
+    {
+      "id": "r-8803",
+      "service": "notifier",
+      "env": "dev",
+      "status": "failed",
+      "startedAt": "07:01",
+      "durationMs": 44000,
+      "buildId": "b-4197",
+      "ticketId": "T-2180"
+    }
+  ],
+  "builds": {
+    "default": {
+      "id": "b-0000",
+      "title": "Unknown build",
+      "author": "unknown",
+      "status": "queued",
+      "branch": "main",
+      "landedAt": null
+    },
+    "b-41f9": {
+      "id": "b-41f9",
+      "title": "Cache the pricing table per region",
+      "author": "rjaffe",
+      "status": "succeeded",
+      "branch": "main",
+      "landedAt": "09:38"
+    },
+    "b-41f2": {
+      "id": "b-41f2",
+      "title": "Retry idempotent charge submissions",
+      "author": "hbarrow",
+      "status": "failed",
+      "branch": "main",
+      "landedAt": "09:05"
+    },
+    "b-41e7": {
+      "id": "b-41e7",
+      "title": "Move invoice PDF render off the request path",
+      "author": "cwynn",
+      "status": "running",
+      "branch": "main",
+      "landedAt": null
+    }
+  },
+  "tickets": {
+    "default": {
+      "id": "T-0000",
+      "title": "Unknown ticket",
+      "assignee": "unknown",
+      "state": "open",
+      "priority": "p3"
+    },
+    "T-2201": {
+      "id": "T-2201",
+      "title": "Checkout p99 regression in eu-west",
+      "assignee": "rjaffe",
+      "state": "in_progress",
+      "priority": "p1"
+    },
+    "T-2199": {
+      "id": "T-2199",
+      "title": "Duplicate charges on retry",
+      "assignee": "hbarrow",
+      "state": "open",
+      "priority": "p0"
+    }
+  }
+}
