@@ -801,14 +801,77 @@ describe('DateInput — calendar surface', () => {
     ).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('renders no adjacent-month days, so a date is on screen in one place only', () => {
+  /**
+   * Spill days, the way the desktop calendar has them.
+   *
+   * These were left out at first, on the theory that a horizontal scroller
+   * would show the same date twice — greyed at the foot of one pane and
+   * again at the head of the next. Measured, that cannot happen: both panes
+   * are exactly the scrollport wide and share one 7-column grid, so a given
+   * weekday column is only ever visible in ONE pane at a time, and a date
+   * always sits in its weekday's column. Swept across a full pane boundary
+   * in 10% steps — 42 dates on screen throughout, zero duplicated.
+   */
+  it('renders adjacent-month days, muted, like the desktop calendar', () => {
     renderAndOpen();
     const march = within(pane('March 2026'));
-    // The grid still has 42 cells; the ones outside March are simply empty.
+    // Every cell in the 6x7 grid is now a real day.
     expect(march.getAllByRole('gridcell')).toHaveLength(42);
-    expect(march.getAllByRole('button')).toHaveLength(31);
-    expect(march.queryByRole('button', {name: /April 1, 2026/})).toBeNull();
-    expect(march.queryByRole('button', {name: /February 28, 2026/})).toBeNull();
+    expect(march.getAllByRole('button')).toHaveLength(42);
+    // March 2026 begins on a Sunday, so it spills only forwards.
+    expect(
+      march.getByRole('button', {name: /April 1, 2026/}),
+    ).toBeInTheDocument();
+  });
+
+  it('spills backwards too, on a month that does not start the week', () => {
+    renderAndOpen(
+      <Controlled initial="2026-04-15" min="2026-01-01" max="2026-12-31" />,
+    );
+    const april = within(pane('April 2026'));
+    // April 2026 starts on a Wednesday: the first row opens with late March.
+    expect(
+      april.getByRole('button', {name: /March 29, 2026/}),
+    ).toBeInTheDocument();
+    expect(april.getAllByRole('button')).toHaveLength(42);
+  });
+
+  it('commits an adjacent-month day like any other', () => {
+    const onChange = vi.fn();
+    renderAndOpen(<Controlled initial="2026-03-21" onChange={onChange} />);
+    fireEvent.click(
+      within(pane('March 2026')).getByRole('button', {name: /April 1, 2026/}),
+    );
+    // A date you can see is a date you can pick; being told to swipe for one
+    // already on screen would be the odd behaviour.
+    expect(onChange).toHaveBeenCalledWith('2026-04-01');
+  });
+
+  /**
+   * A date shown in two panes must not be two tab stops — the pane that owns
+   * it, and the neighbour that merely spills it. That holds because
+   * `tabbableISO` is resolved per pane and only names dates in that pane's
+   * own month, so it is worth pinning: the case below is the one that would
+   * break if it ever became global, since April 1 is both the selection and
+   * a spill day in March's pane.
+   */
+  it('gives a spilled date no tab stop in the pane that borrows it', () => {
+    renderAndOpen(
+      <Controlled initial="2026-04-01" min="2026-01-01" max="2026-12-31" />,
+    );
+    const tabbableIn = (label: string) =>
+      within(pane(label))
+        .getAllByRole('button')
+        .filter(b => b.getAttribute('tabindex') === '0')
+        .map(b => b.getAttribute('aria-label'));
+
+    // April owns the date, so its stop is the date itself.
+    expect(tabbableIn('April 2026')).toHaveLength(1);
+    expect(tabbableIn('April 2026')[0]).toMatch(/April 1, 2026/);
+    // March shows the same date, but its stop falls back to a March date —
+    // every pane keeps exactly one, and never on a day it does not own.
+    expect(tabbableIn('March 2026')).toHaveLength(1);
+    expect(tabbableIn('March 2026')[0]).toMatch(/March/);
   });
 
   const weekdayNames = () =>

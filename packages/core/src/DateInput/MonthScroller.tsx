@@ -211,6 +211,22 @@ const styles = stylex.create({
     color: colorVars['--color-on-accent'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
+  /**
+   * A day belonging to the month either side of this pane. Muted the way
+   * Calendar mutes its own, and still selectable — the desktop calendar lets
+   * you click into the next month from the last row, and a thumb should be
+   * able to do the same rather than being told to swipe for a date it can
+   * already see.
+   *
+   * It needs no special handling for the roving tab order: `tabbableISO` is
+   * resolved per pane and only ever names a date in THAT pane's own month,
+   * so an outside cell can never match it. Which is the property that keeps
+   * a date from having two tab stops — the pane that owns it, and the
+   * neighbour that merely shows it.
+   */
+  dayOutside: {
+    color: colorVars['--color-text-secondary'],
+  },
   dayDisabled: {
     color: colorVars['--color-text-disabled'],
     cursor: 'not-allowed',
@@ -685,21 +701,6 @@ function MonthPane({
       {weeks.map(week => (
         <div key={week[0].iso} role="row" {...stylex.props(styles.row)}>
           {week.map(day => {
-            // No adjacent-month spill. In a continuous scroller the
-            // neighbouring month is one flick away and rendering its days
-            // here puts the same date on screen twice — mid-scroll you see a
-            // week greyed at the bottom of one pane and again at the top of
-            // the next. An empty cell keeps the grid aligned and leaves each
-            // date in exactly one place.
-            if (day.isOutside) {
-              return (
-                <div
-                  key={day.iso}
-                  role="gridcell"
-                  {...stylex.props(styles.cell)}
-                />
-              );
-            }
             const isDisabled = isDateDisabled(day.date);
             const isSelected =
               selectedDate != null && plainDateIsEqual(day.date, selectedDate);
@@ -732,6 +733,7 @@ function MonthPane({
                     styles.day,
                     focusOutlineStyles.focusVisible,
                     isDisabled && styles.dayDisabled,
+                    day.isOutside && styles.dayOutside,
                   )}>
                   <span
                     {...stylex.props(
