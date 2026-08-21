@@ -1898,6 +1898,32 @@ describe('DateInput — scroll CSS (definition-level)', () => {
   const dir = path.dirname(fileURLToPath(import.meta.url));
   const read = (file: string) => readFileSync(path.join(dir, file), 'utf8');
 
+  /**
+   * The declarations inside one named style object, comments stripped.
+   *
+   * Crude on purpose — a nested value object contributes its own inner lines
+   * too. Every caller looks for a specific property prefix, so the noise is
+   * harmless, and a real parser here would be more machinery than the
+   * question deserves.
+   */
+  const declarations = (source: string, object: string) => {
+    const open = source.indexOf(`  ${object}: {`);
+    expect(open).toBeGreaterThan(-1);
+    return source
+      .slice(open, source.indexOf('\n  },', open))
+      .replace(/\/\/.*$/gm, '')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.endsWith(','));
+  };
+
+  /** The same, scoped to one `export const <group> = stylex.create({...})`. */
+  const declarationsIn = (source: string, group: string, object: string) => {
+    const at = source.indexOf(`export const ${group}`);
+    expect(at).toBeGreaterThan(-1);
+    return declarations(source.slice(at), object);
+  };
+
   it('pages the month scroller one whole pane at a time, horizontally', () => {
     const source = read('MonthScroller.tsx');
     expect(source).toContain("scrollSnapType: 'x mandatory'");
@@ -1940,32 +1966,22 @@ describe('DateInput — scroll CSS (definition-level)', () => {
    * carries the colour, `dayCellStyles` the opacity — so copying it by eye
    * gets you one half and not the other. This pane took only the colour at
    * first, and the spill days came out visibly heavier than the desktop's.
+   *
+   * One honest difference, and it is behavioural rather than a drift: the
+   * desktop makes its spill days UNCLICKABLE, so on screen they always carry
+   * the disabled fade on top of this treatment (~203 on white). This pane
+   * lets you pick them, so they show the treatment alone (~169) — darker than
+   * the desktop's spill days, and deliberately so, because a day you can tap
+   * must not look like one you cannot. It is the same style either way; what
+   * differs is whether `dayDisabled` lands on top of it.
    */
   it('mutes adjacent days exactly as the desktop calendar does', () => {
-    /** The declarations inside one named style object, comments stripped. */
-    const declarations = (source: string, object: string) => {
-      const open = source.indexOf(`  ${object}: {`);
-      expect(open).toBeGreaterThan(-1);
-      return source
-        .slice(open, source.indexOf('\n  },', open))
-        .replace(/\/\/.*$/gm, '')
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.endsWith(','));
-    };
-
     // The desktop's two halves, read out of its own source rather than
     // restated here — so the check follows the desktop if its treatment
     // moves, instead of freezing today's values into this file.
     const desktop = read('../Calendar/styles.ts');
-    const structural = declarations(
-      desktop.slice(desktop.indexOf('export const dayCellStyles')),
-      'dayOutside',
-    );
-    const theme = declarations(
-      desktop.slice(desktop.indexOf('export const dayCellTheme')),
-      'dayOutside',
-    );
+    const structural = declarationsIn(desktop, 'dayCellStyles', 'dayOutside');
+    const theme = declarationsIn(desktop, 'dayCellTheme', 'dayOutside');
     // Both halves must have found something, or the parity check below is
     // `arrayContaining([])` and passes on anything at all.
     expect(structural.length).toBeGreaterThan(0);
@@ -1974,6 +1990,38 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     // And the touch pane carries all of it, in its one object.
     const touch = declarations(read('MonthScroller.tsx'), 'dayOutside');
     expect(touch).toEqual(expect.arrayContaining([...structural, ...theme]));
+  });
+
+  /**
+   * Disabled days follow the desktop too, and this is the half that actually
+   * answered "the disabled dates and the adjacent ones look the same".
+   *
+   * The desktop FADES a disabled day rather than recolouring it: `opacity:
+   * 0.3` over whatever colour the day already had. This pane used to paint a
+   * flat `--color-text-disabled` instead, which on white put a disabled
+   * in-month day at ~163 and an ENABLED adjacent day at ~168 — five levels
+   * apart, indistinguishable, and with the disabled one the darker of the
+   * two, so the unpickable date read as the more solid one. Fading instead
+   * puts every disabled day lighter than every enabled one, which is the
+   * ordering a calendar needs.
+   */
+  it('fades disabled days as the desktop does, rather than recolouring them', () => {
+    const desktop = read('../Calendar/styles.ts');
+    const theme = declarationsIn(desktop, 'dayCellTheme', 'dayDisabled');
+    const touch = declarations(read('MonthScroller.tsx'), 'dayDisabled');
+
+    // Whatever opacity the desktop fades to, this pane fades to the same one.
+    const fade = theme.find(d => d.startsWith('opacity:'));
+    expect(fade).toBeDefined();
+    expect(touch).toContain(fade);
+
+    // And no colour of its own: a colour would override the secondary one a
+    // spilled day carries, collapsing "disabled" and "disabled and adjacent"
+    // into a single shade.
+    expect(touch.some(d => d.startsWith('color:'))).toBe(false);
+    // Parity, not a rule of this pane's own — if the desktop ever starts
+    // recolouring a disabled day, this fires and says to follow it.
+    expect(theme.some(d => d.startsWith('color:'))).toBe(false);
   });
 
   /**

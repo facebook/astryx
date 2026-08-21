@@ -235,7 +235,16 @@ const styles = stylex.create({
     opacity: 0.5,
   },
   dayDisabled: {
-    color: colorVars['--color-text-disabled'],
+    // The desktop's disabled treatment, and deliberately not a disabled
+    // COLOUR: it fades whatever colour the day already had (0.3), so an
+    // in-month day and a spilled one stay a step apart while disabled, and
+    // both land LIGHTER than an enabled spill day rather than darker.
+    //
+    // A flat `--color-text-disabled` is what this had, and it put an enabled
+    // adjacent day at ~168 against a disabled in-month day at ~163 on white:
+    // five levels apart, which is no difference at all. That is the whole
+    // reason the two were hard to tell apart.
+    opacity: 0.3,
     cursor: 'not-allowed',
   },
 });
