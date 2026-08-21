@@ -286,7 +286,7 @@ export const ChatConversation: StoryObj = {
     const nameStyle = {
       fontSize: 12,
       fontWeight: 600,
-      color: '#666',
+      color: '#4E606F',
       lineHeight: '16px',
     };
     return (

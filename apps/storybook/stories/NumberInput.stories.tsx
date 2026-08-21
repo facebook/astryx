@@ -614,7 +614,7 @@ export const WithEventHandlers: Story = {
           onBlur={() => addEvent('onBlur')}
           onEnter={() => addEvent('onEnter')}
         />
-        <div style={{marginTop: '16px', fontSize: '12px', color: '#666'}}>
+        <div style={{marginTop: '16px', fontSize: '12px', color: '#4E606F'}}>
           <strong>Events:</strong>
           <ul style={{margin: '4px 0', paddingLeft: '20px'}}>
             {events.map((event, i) => (

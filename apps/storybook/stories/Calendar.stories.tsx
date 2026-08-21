@@ -292,7 +292,7 @@ export const AllVariations: Story = {
             onChange={val => setSingleValue(val)}
             focusDate="2026-01-01"
           />
-          <p style={{marginTop: '8px', fontSize: '14px', color: '#666'}}>
+          <p style={{marginTop: '8px', fontSize: '14px', color: '#4E606F'}}>
             Selected: {singleValue ?? 'None'}
           </p>
         </div>
@@ -306,7 +306,7 @@ export const AllVariations: Story = {
             onChange={range => setRangeValue(range)}
             focusDate="2026-01-01"
           />
-          <p style={{marginTop: '8px', fontSize: '14px', color: '#666'}}>
+          <p style={{marginTop: '8px', fontSize: '14px', color: '#4E606F'}}>
             Range:{' '}
             {rangeValue
               ? `${rangeValue.start} to ${rangeValue.end}`
@@ -324,7 +324,7 @@ export const AllVariations: Story = {
             onChange={val => setConstrainedValue(val)}
             focusDate="2026-01-01"
           />
-          <p style={{marginTop: '8px', fontSize: '14px', color: '#666'}}>
+          <p style={{marginTop: '8px', fontSize: '14px', color: '#4E606F'}}>
             Selected: {constrainedValue ?? 'None'}
           </p>
         </div>
