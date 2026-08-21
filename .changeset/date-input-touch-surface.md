@@ -31,10 +31,9 @@ clearest case for a thumb picker.
 Also new, all additive:
 
 - `TOUCH_POINTER_QUERY` — the media query the switch uses, exported so an app
-  can ask the same question the component does.
-- `DateInputTouchSurface` — the touch surface with the pointer test skipped,
-  for a story or test that has to show it on a desktop browser, and for an app
-  that only ever runs on a handset. Prefer `DateInput`, which chooses.
+  can ask the same question the component does and lay out to match. There is
+  deliberately no export that forces a surface: the touch picker is reachable
+  by being on a touch device, which is the only place it is worth looking at.
 - `--date-input-touch-day-size` and `--date-input-touch-wheel-item-size` theme
   variables, and four `@astryx.dateInput.*` catalog keys for the picker's
   header and footer.
