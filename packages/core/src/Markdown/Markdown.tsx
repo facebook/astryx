@@ -1376,6 +1376,7 @@ function renderBlock(
             listStyle={node.ordered ? 'decimal' : 'disc'}
             density="compact"
             start={node.ordered ? node.start : undefined}
+            data-delimiter={node.ordered ? node.delimiter : undefined}
             xstyle={styles.blockIndent}>
             {node.items.map((item, i) => {
               const firstChild = item.children[0];
@@ -1470,6 +1471,7 @@ function renderBlock(
                   <TableHeaderCell
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table columns are positional by definition
                     key={i}
+                    data-align={node.alignments[i] ?? undefined}
                     xstyle={[
                       dynamicStyles.cellMinWidth(`${colMinWidths[i]}px`),
                       node.alignments[i] === 'center' && cellAlignStyles.center,
@@ -1497,6 +1499,7 @@ function renderBlock(
                   <TableCell
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table cells are positional by row and column
                     key={j}
+                    data-align={node.alignments[j] ?? undefined}
                     xstyle={[
                       node.alignments[j] === 'center' && cellAlignStyles.center,
                       node.alignments[j] === 'right' && cellAlignStyles.end,
@@ -1622,6 +1625,7 @@ export function Markdown({
   className,
   style,
   'data-testid': testId,
+  ...props
 }: MarkdownProps): React.ReactElement {
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
@@ -1744,6 +1748,8 @@ export function Markdown({
     const renderedInline = (
       <span
         ref={ref}
+        // Consumer props first: what the component sets for itself wins.
+        {...props}
         data-testid={testId}
         {...mergeProps(
           themeProps('markdown', {density}),
@@ -1775,8 +1781,11 @@ export function Markdown({
 
   const rendered = (
     <div
-      role="document"
       ref={ref as React.Ref<HTMLDivElement>}
+      // Consumer props first: what the component sets for itself — the
+      // document role included — wins.
+      {...props}
+      role="document"
       data-testid={testId}
       {...mergeProps(
         themeProps('markdown', {density}),
