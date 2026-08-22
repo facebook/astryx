@@ -149,8 +149,27 @@ const styles = stylex.create({
       transitionDuration: '0.01s',
     },
   },
+  /**
+   * The exit is its own motion, not the entrance played backwards.
+   *
+   * `--ease-standard` is `cubic-bezier(0.24, 1, 0.4, 1)`, a decelerate curve:
+   * it spends its speed immediately and coasts. That is right for an entrance,
+   * where the sheet arrives fast and settles, and wrong for an exit. Measured
+   * on device, it put the sheet half off-screen in 59ms of a 410ms close and
+   * 90% off in 163ms -- the travel is over before the eye has followed it, and
+   * the rest of the duration moves pixels already below the fold.
+   *
+   * An exit accelerates instead: away from rest, gathering speed, quickest as
+   * it leaves the screen. The curve is deliberately gentle rather than a hard
+   * `ease-in` -- it is moving within ~50ms, so the close reads as one
+   * departure rather than a hesitation and a snap. The duration is the
+   * entrance's own band, so only the curve differs between the two
+   * directions; a shorter band leaves too little visible travel once a theme
+   * scales the motion scale down (neutral's medium is 300ms against 410ms).
+   */
   sheetClosing: {
     transform: 'translateY(100%)',
+    transitionTimingFunction: 'cubic-bezier(0.3, 0, 0.6, 0.6)',
   },
   sheetFading: {
     opacity: 0,
