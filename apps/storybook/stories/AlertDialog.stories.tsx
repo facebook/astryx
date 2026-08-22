@@ -86,29 +86,22 @@ export const Async: Story = {
 };
 
 /**
- * Non-destructive confirmation with a primary action button.
+ * Narrow surface with long decision labels. The dialog itself is the responsive
+ * container: actions stack and labels wrap without treating narrow width as a
+ * proxy for touch input.
  */
-export const Informational: Story = {
-  render: () => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-      <>
-        <Button
-          label="Show notice"
-          variant="secondary"
-          onClick={() => setIsOpen(true)}
-        />
-        <AlertDialog
-          isOpen={isOpen}
-          onOpenChange={setIsOpen}
-          title="Session expired"
-          description="Your session has expired. You will be redirected to the login page."
-          actionLabel="Sign in"
-          actionVariant="primary"
-          onAction={() => setIsOpen(false)}
-        />
-      </>
-    );
+export const NarrowLongActions: Story = {
+  args: {
+    isOpen: true,
+    isInline: true,
+    width: 280,
+    title: 'Permanently delete this workspace?',
+    description:
+      'Everyone will lose access to its dashboards, saved queries, and sharing links. This cannot be undone.',
+    cancelLabel: 'Keep this workspace',
+    actionLabel: 'Permanently delete workspace',
+    onOpenChange: () => {},
+    onAction: () => {},
   },
 };
 

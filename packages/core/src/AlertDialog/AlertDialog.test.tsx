@@ -12,6 +12,9 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {readFileSync} from 'node:fs';
+import {join} from 'node:path';
+import ts from 'typescript';
 import {AlertDialog} from './AlertDialog';
 import {useImperativeAlertDialog} from './useImperativeAlertDialog';
 
@@ -25,6 +28,65 @@ beforeEach(() => {
     this.removeAttribute('open');
   });
 });
+
+const SOURCE = readFileSync(join(__dirname, 'AlertDialog.tsx'), 'utf8');
+const SOURCE_FILE = ts.createSourceFile(
+  'AlertDialog.tsx',
+  SOURCE,
+  ts.ScriptTarget.Latest,
+  true,
+  ts.ScriptKind.TSX,
+);
+
+function styleDefinition(name: string): ts.ObjectLiteralExpression {
+  let stylesObject: ts.ObjectLiteralExpression | undefined;
+
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === 'styles' &&
+      node.initializer != null &&
+      ts.isCallExpression(node.initializer) &&
+      node.initializer.arguments[0] != null &&
+      ts.isObjectLiteralExpression(node.initializer.arguments[0])
+    ) {
+      stylesObject = node.initializer.arguments[0];
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(SOURCE_FILE);
+
+  const style = stylesObject?.properties.find(
+    property =>
+      ts.isPropertyAssignment(property) &&
+      ts.isIdentifier(property.name) &&
+      property.name.text === name &&
+      ts.isObjectLiteralExpression(property.initializer),
+  );
+  if (style == null || !ts.isPropertyAssignment(style)) {
+    throw new Error(`No AlertDialog style named "${name}"`);
+  }
+  return style.initializer as ts.ObjectLiteralExpression;
+}
+
+function styleProperty(
+  style: ts.ObjectLiteralExpression,
+  name: string,
+): ts.PropertyAssignment {
+  const property = style.properties.find(
+    candidate =>
+      ts.isPropertyAssignment(candidate) &&
+      (ts.isIdentifier(candidate.name) ||
+        ts.isStringLiteral(candidate.name) ||
+        ts.isComputedPropertyName(candidate.name)) &&
+      candidate.name.getText(SOURCE_FILE).replace(/^\[|\]$/g, '') === name,
+  );
+  if (property == null || !ts.isPropertyAssignment(property)) {
+    throw new Error(`No AlertDialog style property named "${name}"`);
+  }
+  return property;
+}
 
 describe('AlertDialog', () => {
   const defaultProps = {
@@ -107,6 +169,39 @@ describe('AlertDialog', () => {
   it('accepts custom width', () => {
     render(<AlertDialog {...defaultProps} width={600} />);
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+  });
+
+  describe('responsive actions', () => {
+    it('queries the dialog layout rather than the viewport', () => {
+      const layout = styleDefinition('layout');
+      expect(styleProperty(layout, 'containerType').initializer.getText()).toBe(
+        "'inline-size'",
+      );
+      expect(styleProperty(layout, 'containerName').initializer.getText()).toBe(
+        'ALERT_DIALOG_CONTAINER',
+      );
+      expect(styleProperty(layout, 'width').initializer.getText()).toBe(
+        "'100%'",
+      );
+    });
+
+    it('wraps actions and stacks them when the dialog surface is narrow', () => {
+      const actions = styleDefinition('actions').getText(SOURCE_FILE);
+      expect(actions).toContain("flexWrap: 'wrap'");
+      expect(actions).toContain('[STACKED_ACTIONS_QUERY]');
+      expect(actions).toContain("flexDirection: 'column'");
+      expect(actions).toContain("alignItems: 'stretch'");
+    });
+
+    it('keeps complete action labels instead of truncating them', () => {
+      const action = styleDefinition('action').getText(SOURCE_FILE);
+      expect(action).toContain("maxWidth: '100%'");
+      expect(action).toContain("height: 'auto'");
+      expect(action).toContain("minHeight: sizeVars['--size-element-md']");
+      expect(action).toContain("whiteSpace: 'normal'");
+      expect(action).toContain('[STACKED_ACTIONS_QUERY]');
+      expect(action).toContain("width: '100%'");
+    });
   });
 
   it('defaults cancel label to Cancel', () => {

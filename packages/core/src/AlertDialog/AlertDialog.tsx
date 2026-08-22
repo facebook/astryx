@@ -4,7 +4,7 @@
 
 /**
  * @file AlertDialog.tsx
- * @input Uses React, Dialog, Layout, Heading, Text, Button
+ * @input Uses React, StyleX, theme size tokens, Dialog, Layout, Heading, Text, Button
  * @output Exports AlertDialog component, AlertDialogProps type
  * @position Core implementation; consumed by index.ts, tested by AlertDialog.test.tsx
  *
@@ -17,6 +17,7 @@
  */
 
 import React, {useId, useCallback} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {Dialog} from '../Dialog';
 import {Layout} from '../Layout/Layout';
 import {LayoutContent} from '../Layout/LayoutContent';
@@ -29,6 +30,38 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {sizeVars} from '../theme/tokens.stylex';
+
+const ALERT_DIALOG_CONTAINER = 'astryx-alert-dialog';
+const STACKED_ACTIONS_QUERY = `@container ${ALERT_DIALOG_CONTAINER} (max-width: 20rem)`;
+
+const styles = stylex.create({
+  layout: {
+    containerType: 'inline-size',
+    containerName: ALERT_DIALOG_CONTAINER,
+    width: '100%',
+  },
+  actions: {
+    width: '100%',
+    flexWrap: 'wrap',
+    [STACKED_ACTIONS_QUERY]: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+    },
+  },
+  action: {
+    // AlertDialog labels communicate the decision and must remain complete.
+    // The shared Button stays compact; only this decision surface opts into
+    // wrapping and lets its height grow when localization or zoom needs it.
+    maxWidth: '100%',
+    height: 'auto',
+    minHeight: sizeVars['--size-element-md'],
+    whiteSpace: 'normal',
+    [STACKED_ACTIONS_QUERY]: {
+      width: '100%',
+    },
+  },
+});
 
 export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
@@ -173,6 +206,7 @@ export function AlertDialog({
       xstyle={xstyle}
       data-testid={testId}>
       <Layout
+        xstyle={styles.layout}
         content={
           <LayoutContent>
             <Heading level={2} id={titleId}>
@@ -185,11 +219,12 @@ export function AlertDialog({
         }
         footer={
           <LayoutFooter>
-            <HStack gap={2} hAlign="end">
+            <HStack gap={2} hAlign="end" wrap="wrap" xstyle={styles.actions}>
               <Button
                 variant="ghost"
                 label={cancelLabel}
                 onClick={handleCancel}
+                xstyle={styles.action}
                 // Dialog focuses [data-autofocus] itself after showModal(),
                 // because React's autoFocus runs during commit while the
                 // dialog is still invisible. Cancel is the least destructive
@@ -201,6 +236,7 @@ export function AlertDialog({
                 label={actionLabel}
                 onClick={onAction}
                 isLoading={isActionLoading}
+                xstyle={styles.action}
               />
             </HStack>
           </LayoutFooter>
