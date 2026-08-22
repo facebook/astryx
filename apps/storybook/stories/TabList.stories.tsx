@@ -3,7 +3,6 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {TabList, Tab, TabMenu} from '@astryxdesign/core/TabList';
-import {Carousel} from '@astryxdesign/core/Carousel';
 import {Button} from '@astryxdesign/core/Button';
 import {PlusIcon, FunnelIcon} from '@heroicons/react/24/outline';
 
@@ -300,9 +299,10 @@ export const FillLayout: Story = {
 };
 
 /**
- * When tabs overflow, wrap TabList's children in Carousel.
- * The Carousel handles scroll, fade masks, and arrow buttons.
- * Each tab keeps its intrinsic label width — no truncation.
+ * A strip narrower than its tabs scrolls. Every tab stays a tab — nothing is
+ * hidden behind a menu — and the edges fade to show there is more. Pointers
+ * that can hover also get arrow affordances; keyboard users reach every tab
+ * with the arrow keys, which scrolls the focused tab into view.
  */
 export const Overflow: Story = {
   render: () => {
@@ -310,7 +310,55 @@ export const Overflow: Story = {
     return (
       <div style={{maxWidth: '400px', border: '1px dashed #ccc'}}>
         <TabList value={value} onChange={setValue}>
-          <Carousel gap={0.5} hasSnap={false}>
+          <Tab value="overview" label="Overview" />
+          <Tab value="activity" label="Activity" />
+          <Tab value="members" label="Members" />
+          <Tab value="settings" label="Settings" />
+          <Tab value="integrations" label="Integrations" />
+          <Tab value="billing" label="Billing & Plans" />
+          <Tab value="security" label="Security" />
+          <Tab value="notifications" label="Notifications" />
+          <Tab value="api" label="API Keys" />
+        </TabList>
+      </div>
+    );
+  },
+};
+
+/**
+ * Overflow with divider — typical page header in a narrow viewport. The
+ * selected indicator still sits on the rail while the strip scrolls.
+ */
+export const OverflowWithDivider: Story = {
+  render: () => {
+    const [value, setValue] = useState('dashboard');
+    return (
+      <div style={{maxWidth: '350px'}}>
+        <TabList value={value} onChange={setValue} hasDivider size="lg">
+          <Tab value="dashboard" label="Dashboard" />
+          <Tab value="analytics" label="Analytics" />
+          <Tab value="reports" label="Reports" />
+          <Tab value="customers" label="Customers" />
+          <Tab value="products" label="Products" />
+          <Tab value="orders" label="Orders" />
+        </TabList>
+      </div>
+    );
+  },
+};
+
+/**
+ * A tab selected while it is out of view is scrolled back in — on mount and
+ * whenever the host changes `value` itself.
+ */
+export const OverflowSelectedOffscreen: Story = {
+  render: () => {
+    const [value, setValue] = useState('api');
+    return (
+      <div
+        style={{display: 'grid', gap: '8px', maxWidth: '400px', minWidth: 0}}>
+        <div style={{border: '1px dashed #ccc', minWidth: 0}}>
+          <TabList value={value} onChange={setValue}>
             <Tab value="overview" label="Overview" />
             <Tab value="activity" label="Activity" />
             <Tab value="members" label="Members" />
@@ -320,30 +368,46 @@ export const Overflow: Story = {
             <Tab value="security" label="Security" />
             <Tab value="notifications" label="Notifications" />
             <Tab value="api" label="API Keys" />
-          </Carousel>
-        </TabList>
+          </TabList>
+        </div>
+        <div style={{display: 'flex', gap: '4px'}}>
+          <Button
+            label="Select first"
+            variant="secondary"
+            size="sm"
+            onClick={() => setValue('overview')}
+          />
+          <Button
+            label="Select last"
+            variant="secondary"
+            size="sm"
+            onClick={() => setValue('api')}
+          />
+        </div>
       </div>
     );
   },
 };
 
 /**
- * Overflow with divider — typical page header in a narrow viewport.
+ * `overflow="none"` opts out: the tabs keep their intrinsic widths and spill
+ * out of the strip, for a host that handles overflow itself.
  */
-export const OverflowWithDivider: Story = {
+export const OverflowNone: Story = {
   render: () => {
-    const [value, setValue] = useState('dashboard');
+    const [value, setValue] = useState('overview');
     return (
-      <div style={{maxWidth: '350px'}}>
-        <TabList value={value} onChange={setValue} hasDivider size="lg">
-          <Carousel gap={0.5} hasSnap={false}>
-            <Tab value="dashboard" label="Dashboard" />
-            <Tab value="analytics" label="Analytics" />
-            <Tab value="reports" label="Reports" />
-            <Tab value="customers" label="Customers" />
-            <Tab value="products" label="Products" />
-            <Tab value="orders" label="Orders" />
-          </Carousel>
+      <div style={{maxWidth: '400px', border: '1px dashed #ccc'}}>
+        <TabList value={value} onChange={setValue} overflow="none">
+          <Tab value="overview" label="Overview" />
+          <Tab value="activity" label="Activity" />
+          <Tab value="members" label="Members" />
+          <Tab value="settings" label="Settings" />
+          <Tab value="integrations" label="Integrations" />
+          <Tab value="billing" label="Billing & Plans" />
+          <Tab value="security" label="Security" />
+          <Tab value="notifications" label="Notifications" />
+          <Tab value="api" label="API Keys" />
         </TabList>
       </div>
     );
