@@ -16,6 +16,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheet.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheet.test.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.tsx
@@ -43,6 +44,7 @@ import {
   type BottomSheetPanelMotion,
   type BottomSheetPanelState,
 } from './BottomSheetPanel';
+import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -355,6 +357,8 @@ function StandaloneBottomSheet({
           {children}
         </BottomSheetPanel>
       </div>
+      {/* A modal sheet's ::backdrop already answers Safari's edge sampler. */}
+      {hasScrim ? null : <BottomSheetEdgeTint />}
     </dialog>
   );
 }
