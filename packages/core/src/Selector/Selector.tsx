@@ -1493,7 +1493,10 @@ export function Selector<T extends SelectorOptionType>(
           {...rest}
           aria-haspopup="listbox"
           aria-expanded={popover.isOpen}
-          aria-controls={listboxId}
+          // The listbox is lazy-mounted on first open. Do not reference an
+          // absent element from the initial closed trigger; axe treats that as
+          // an invalid critical ARIA relationship.
+          aria-controls={popover.isOpen ? listboxId : undefined}
           aria-activedescendant={
             !hasSearch && popover.isOpen && highlightedIndex >= 0
               ? getItemId(highlightedIndex)

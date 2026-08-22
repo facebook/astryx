@@ -1253,6 +1253,21 @@ describe('Selector', () => {
   });
 
   describe('keyboard accessibility', () => {
+    it('does not reference the listbox before the popup is mounted', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).not.toHaveAttribute('aria-controls');
+
+      await user.click(trigger);
+      const listbox = screen.getByRole('listbox', h);
+      expect(trigger).toHaveAttribute('aria-controls', listbox.id);
+
+      await user.keyboard('{Escape}');
+      expect(trigger).not.toHaveAttribute('aria-controls');
+    });
+
     it('trigger is focusable via Tab when enabled', async () => {
       const user = userEvent.setup();
       render(<Selector label="Fruit" options={OPTIONS} />);
