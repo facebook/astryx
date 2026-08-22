@@ -188,6 +188,15 @@ describe('BottomSheet overlay stays flush with the layout viewport', () => {
       expect(property(style, 'height')).toBe("'100dvh'");
     },
   );
+
+  it('pins the sheet to the viewport, not to the dialog it lives in', () => {
+    // `absolute` here means "the dialog's bottom edge", which is a computed
+    // `100dvh` length -- and that length goes stale on iOS while Safari's
+    // address bar animates, leaving the sheet a bar's height off the bottom
+    // and the page visible through the bar. `fixed` resolves against the
+    // viewport at paint time, so there is no number to go stale.
+    expect(property('positioner', 'position')).toBe("'fixed'");
+  });
 });
 
 describe('BottomSheet bottom gutter', () => {

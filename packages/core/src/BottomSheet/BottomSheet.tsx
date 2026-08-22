@@ -109,7 +109,20 @@ const styles = stylex.create({
     },
   },
   positioner: {
-    position: 'absolute',
+    // FIXED, not absolute: the sheet hangs off the bottom edge of this box, so
+    // whatever that edge is pinned to decides where the sheet sits. Absolute
+    // pinned it to the dialog's own bottom, which is a computed `100dvh`
+    // length -- and on iOS that length goes stale while Safari's address bar
+    // animates between its expanded and compact states. A stale length leaves
+    // the sheet a bar's height above the viewport bottom: no longer flush, so
+    // Safari stops extending the sheet's surface behind the bar and the page
+    // shows through it.
+    //
+    // `fixed` is not a length. The compositor resolves it against the viewport
+    // at paint time, so there is no number to go stale and the sheet is flush
+    // in every bar state. (A scrim-backed sheet never hit this because it locks
+    // page scroll, and the bar only changes state on scroll.)
+    position: 'fixed',
     insetInline: 0,
     insetBlockEnd: 0,
     display: 'flex',
