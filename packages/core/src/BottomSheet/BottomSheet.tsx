@@ -93,6 +93,20 @@ const styles = stylex.create({
       },
     },
   },
+  /**
+   * The dim leaves with the sheet, on a curve that matches.
+   *
+   * A fade covers no distance, so the decelerate token front-loads its
+   * progress and simply ends it early: `--ease-standard` puts the scrim at 90%
+   * faded in 163ms of a 410ms close, leaving an undimmed page under a sheet
+   * that is still sliding across it. `linear` spends the duration it is given.
+   * Same reasoning the touch date picker's surface swap already carries.
+   */
+  scrimClosing: {
+    '::backdrop': {
+      transitionTimingFunction: 'linear',
+    },
+  },
   positioner: {
     position: 'absolute',
     insetInline: 0,
@@ -327,6 +341,7 @@ function StandaloneBottomSheet({
         styles.dialog,
         shouldPresent && styles.dialogOpen,
         hasScrim && styles.scrim,
+        hasScrim && !isOpen && isPresented && styles.scrimClosing,
         !hasScrim && styles.dialogNonModal,
       )}
       ref={dialogRef}
