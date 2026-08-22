@@ -5,6 +5,43 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Avatar} from './Avatar';
 import {AvatarStatusDot} from './AvatarStatusDot';
+import {colorDefaults} from '../theme/tokens.stylex';
+import {contrastRatio, compositeOver} from '../theme/contrast';
+import {parseColor, formatColor} from '../utils/color';
+
+/**
+ * Split a light-dark(a, b) token into its [light, dark] halves, respecting
+ * nested parens (e.g. the `rgba(...)` inside --color-neutral's arguments).
+ */
+function splitLightDark(value: string): [light: string, dark: string] {
+  const prefix = 'light-dark(';
+  if (!value.startsWith(prefix) || !value.endsWith(')')) {
+    return [value, value];
+  }
+  const inner = value.slice(prefix.length, -1);
+  let depth = 0;
+  for (let i = 0; i < inner.length; i++) {
+    const char = inner[i];
+    if (char === '(') {
+      depth++;
+    } else if (char === ')') {
+      depth--;
+    } else if (char === ',' && depth === 0) {
+      return [inner.slice(0, i).trim(), inner.slice(i + 1).trim()];
+    }
+  }
+  return [value, value];
+}
+
+/** Composite a translucent color over its backdrop, returning a solid hex/rgb string. */
+function compositeHex(foreground: string, backdrop: string): string {
+  const fg = parseColor(foreground);
+  const bg = parseColor(backdrop);
+  if (fg === null || bg === null) {
+    throw new Error(`could not parse "${foreground}" or "${backdrop}"`);
+  }
+  return formatColor(compositeOver(fg, bg));
+}
 
 describe('Avatar', () => {
   it('exposes role="img" with the name as accessible name', () => {
@@ -63,6 +100,38 @@ describe('Avatar', () => {
     const icon = document.querySelector('.astryx-avatar-fallback');
     expect(icon).not.toBeNull();
     expect(icon?.querySelector('svg')).not.toBeNull();
+  });
+
+  it('gives fallback initials at least 4.5:1 contrast in both light and dark mode (#5279)', () => {
+    // The fallback surface (--color-neutral) is translucent, so its rendered
+    // color depends on what shows through — composite it over the surface
+    // it's paired with (matching expandColorScale's WCAG test convention)
+    // before measuring contrast against the initials' light-dark() color.
+    const [neutralLight, neutralDark] = splitLightDark(
+      colorDefaults['--color-neutral'],
+    );
+    const [surfaceLight, surfaceDark] = splitLightDark(
+      colorDefaults['--color-background-surface'],
+    );
+    const [textSecondaryLight] = splitLightDark(
+      colorDefaults['--color-text-secondary'],
+    );
+    const [, textPrimaryDark] = splitLightDark(
+      colorDefaults['--color-text-primary'],
+    );
+
+    const surfaceOnLight = compositeHex(neutralLight, surfaceLight);
+    const surfaceOnDark = compositeHex(neutralDark, surfaceDark);
+
+    // Light mode: initials render in --color-text-secondary.
+    expect(
+      contrastRatio(textSecondaryLight, surfaceOnLight),
+    ).toBeGreaterThanOrEqual(4.5);
+    // Dark mode: initials render in --color-text-primary (the fix) — using
+    // --color-text-secondary here would fall below 4.5:1.
+    expect(
+      contrastRatio(textPrimaryDark, surfaceOnDark),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
   it('puts the avatar box on the element that carries the theme target', () => {
