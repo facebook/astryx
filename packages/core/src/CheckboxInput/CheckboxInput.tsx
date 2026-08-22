@@ -477,6 +477,11 @@ export function CheckboxInput({
         </div>
         <div {...stylex.props(styles.labelWrapper)}>
           <FieldLabel
+            // A checkbox's label shares a row with its control, unlike a form
+            // field's label above its input. Naming the label rather than the
+            // arrangement means a theme asks for the thing it wants, and the
+            // component that actually knows what this is says so.
+            {...themeProps('checkbox-label')}
             label={label}
             inputID={id}
             isLabelHidden={isLabelHidden}

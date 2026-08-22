@@ -167,6 +167,7 @@ export const docs = {
         className: 'astryx-switch-field',
         visualProps: ['labelPosition', 'labelSpacing'],
       },
+      {className: 'astryx-switch-label'},
     ],
   },
   usage: {
@@ -338,6 +339,7 @@ export const docsZh = {
         className: 'astryx-switch-field',
         visualProps: ['labelPosition', 'labelSpacing'],
       },
+      {className: 'astryx-switch-label'},
     ],
   },
   usage: {
