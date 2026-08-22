@@ -623,14 +623,12 @@ function BreadcrumbMenuTrigger({
         type="button"
         onClick={handleClick}
         onKeyDown={handleKeyDown}
+        {...popover.triggerProps}
+        aria-haspopup="menu"
+        aria-controls={menuId}
+        aria-current={isCurrent ? 'page' : undefined}
         {...mergeProps(
           themeProps('breadcrumb-item-menu-trigger', {variant}),
-          {
-            ...popover.triggerProps,
-            'aria-haspopup': 'menu' as const,
-            'aria-controls': menuId,
-            'aria-current': isCurrent ? ('page' as const) : undefined,
-          },
           // Through mergeProps, not a second spread: a sibling stylex.props()
           // spread replaces the className themeProps() built, which is how the
           // documented breadcrumb-item-menu-trigger target came to render on

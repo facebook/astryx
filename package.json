@@ -73,6 +73,7 @@
     "husky": "^9.1.7",
     "jsdom": "^27.4.0",
     "lint-staged": "^17.0.8",
+    "pngjs": "^7.0.0",
     "prettier": "catalog:",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

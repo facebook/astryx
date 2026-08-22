@@ -9,6 +9,7 @@ import {
 import type {BreadcrumbMenuOption} from '@astryxdesign/core/Breadcrumbs';
 import {Icon} from '@astryxdesign/core/Icon';
 import {rtlStyles} from '@astryxdesign/core/utils';
+import * as stylex from '@stylexjs/stylex';
 import {HomeIcon, Cog6ToothIcon, FolderIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Breadcrumbs> = {
@@ -67,7 +68,10 @@ export const AutoDetectCurrent: Story = {
 
 export const CustomSeparator: Story = {
   render: () => (
-    <Breadcrumbs separator={'›'}>
+    // The chevron points along the reading direction, so it carries
+    // rtlStyles.mirror. A non-directional glyph would not need it.
+    <Breadcrumbs
+      separator={<span {...stylex.props(rtlStyles.mirror)}>{'›'}</span>}>
       <BreadcrumbItem href="/">Home</BreadcrumbItem>
       <BreadcrumbItem href="/docs">Docs</BreadcrumbItem>
       <BreadcrumbItem isCurrent>API Reference</BreadcrumbItem>
