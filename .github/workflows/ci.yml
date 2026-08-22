@@ -110,47 +110,81 @@ jobs:
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ packages/lab/src/ | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1)
           echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
-  # Run tests (parallel with build)
-  test:
+  # Run tests (parallel with build), split on the vitest project boundary first
+  # and by file hash only inside `ui`. Only the `node` project's globalSetup
+  # builds core (~42s on this runner), so keeping node to a single job pays that
+  # once instead of once per shard, while `--project=ui` skips it entirely.
+  # Measured on 2-core-ubuntu-arm: hashing all 499 files three ways ran
+  # 198s/284s/215s — the hash is blind to duration — and splitting by project
+  # alone left ui at 439s against node's 173s. This shape lands at 271s/292s/224s
+  # (test check 296s, against 329s for the three-way hash). Sharding ui is not
+  # free either: two shards cost 476s of pnpm test against 439s unsharded, since
+  # each re-pays vitest startup and the shared StyleX transform. A third ui shard
+  # is therefore worth much less than 439s/3 suggests.
+  # Repo-sync checks run once, on the node job — the shortest of the three.
+  test-project:
+    name: test (${{ matrix.name }})
     needs: [check-scope]
+    if: needs.check-scope.outputs.docsite_only != 'true'
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ui 1/2
+            project: ui
+            shard: '1/2'
+          - name: ui 2/2
+            project: ui
+            shard: '2/2'
+          - name: node
+            project: node
+            shard: '1/1'
     steps:
-      - name: Skip for docsite-only changes
-        if: needs.check-scope.outputs.docsite_only == 'true'
-        run: echo "Docsite-only PR — skipping full test suite"
-
       - uses: actions/checkout@v7
-        if: needs.check-scope.outputs.docsite_only != 'true'
 
       - uses: ./.github/actions/setup
-        if: needs.check-scope.outputs.docsite_only != 'true'
 
       - name: Check copyright headers
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: matrix.project == 'node'
         run: ./scripts/add-copyright.sh --check
 
       - name: Check package.json exports are in sync
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: matrix.project == 'node'
         run: node scripts/sync-exports.js --check
 
       - name: Verify the published CLI ./api type surface
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: matrix.project == 'node'
         run: node .github/scripts/cli-api-types-verify.mjs
 
       - name: Check token docs are in sync
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: matrix.project == 'node'
         run: node scripts/generate-token-docs.mjs --check
 
       # Fails when the lab readiness manifest claims a check the source tree
       # contradicts — the report is derived, never hand-maintained.
       - name: Check lab readiness manifest is current
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: matrix.project == 'node'
         run: pnpm lab:readiness:check
 
-      - run: pnpm test
-        if: needs.check-scope.outputs.docsite_only != 'true'
+      - run: pnpm test --project=${{ matrix.project }} --shard=${{ matrix.shard }}
+
+  # Join gate that keeps the historical `test` check name (same pattern as the
+  # `build` join below): branch protection and tooling keyed on "test" keep
+  # working, and it fails when any matrix job fails. Skipped jobs (docsite-only
+  # PRs) skip this gate too, matching the old single-job behavior.
+  test:
+    needs: [test-project]
+    if: ${{ !cancelled() && needs.test-project.result != 'skipped' }}
+    runs-on: ubuntu-slim
+    permissions: {}
+    steps:
+      - name: Assert every test job succeeded
+        run: |
+          echo "test-project: ${{ needs.test-project.result }}"
+          [ "${{ needs.test-project.result }}" = "success" ] || exit 1
 
   # Build storybook + typecheck + analyze components (parallel with test and
   # build-sandbox). Uploads the storybook preview and analysis artifacts for
