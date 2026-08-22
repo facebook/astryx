@@ -130,7 +130,7 @@ const styles = stylex.create({
     // frozen at 50% forever. Clipping belongs on the inner element.
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     userSelect: 'none',
     transitionProperty: 'color, font-weight',
@@ -177,7 +177,7 @@ const styles = stylex.create({
   },
   itemDisabled: {
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   /**
    * The selection band: a single centred row-height plate behind the options.

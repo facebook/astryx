@@ -105,7 +105,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   // Trigger button — the actual combobox button, visually integrated with the container
@@ -129,7 +129,7 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     // The wrapper (inputWrapperStyles.base) renders the focus ring via
     // :focus-within when this button is focused, matching
@@ -238,7 +238,7 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     borderRadius: radiusVars['--radius-element'],
   },
@@ -263,7 +263,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
 
@@ -297,7 +297,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     // Row typography lives here, not on the label span, so a theme override on
     // the row target reaches both the fallback label and renderOption output
@@ -317,7 +317,7 @@ const styles = stylex.create({
   itemDisabled: {
     opacity: 0.5,
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 
   // Decorative checkbox (non-interactive, purely visual)

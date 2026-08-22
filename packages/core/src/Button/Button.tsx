@@ -84,7 +84,7 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',
@@ -101,7 +101,7 @@ const styles = stylex.create({
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     backgroundImage: 'none',
     transform: {

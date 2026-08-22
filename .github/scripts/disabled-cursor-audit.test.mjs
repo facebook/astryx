@@ -57,10 +57,10 @@ describe('selectStories', () => {
 });
 
 describe('verdictFor', () => {
-  it('passes a control that answers not-allowed', () => {
-    expect(verdictFor([sample('self', 'not-allowed')])).toEqual({
+  it('passes a control that answers with the disabled cursor', () => {
+    expect(verdictFor([sample('self', 'default')])).toEqual({
       status: 'ok',
-      cursor: 'not-allowed',
+      cursor: 'default',
     });
   });
 
@@ -73,16 +73,18 @@ describe('verdictFor', () => {
 
   it('fails on a child that declares its own cursor', () => {
     const verdict = verdictFor([
-      sample('self', 'not-allowed'),
+      sample('self', 'default'),
       sample('descendant', 'text'),
     ]);
     expect(verdict).toEqual({status: 'violation', cursor: 'text'});
   });
 
   it('counts a pointer-events:none subtree as unreachable, not a violation', () => {
-    expect(verdictFor([sample('ancestor', 'default')])).toEqual({
+    // The pointer lands on the ancestor, so whatever it shows — even the
+    // right cursor — is the ancestor's doing, not the control's.
+    expect(verdictFor([sample('ancestor', 'auto')])).toEqual({
       status: 'unreachable',
-      cursor: 'default',
+      cursor: 'auto',
     });
   });
 
@@ -94,7 +96,7 @@ describe('verdictFor', () => {
 
   it('lets one reachable point decide over an unreachable one', () => {
     expect(
-      verdictFor([sample('ancestor', 'default'), sample('self', 'pointer')]),
+      verdictFor([sample('ancestor', 'auto'), sample('self', 'pointer')]),
     ).toEqual({status: 'violation', cursor: 'pointer'});
   });
 });
@@ -108,7 +110,7 @@ describe('DISABLED_SELECTOR', () => {
 
 describe('formatViolations', () => {
   it('says so plainly when there is nothing to report', () => {
-    expect(formatViolations([])).toContain('not-allowed');
+    expect(formatViolations([])).toContain('default');
   });
 
   it('groups by component and names the story and the cursor', () => {
@@ -122,7 +124,7 @@ describe('formatViolations', () => {
     ]);
     expect(output).toContain('Core/Button (1)');
     expect(output).toContain('core-button--disabled');
-    expect(output).toContain('cursor: pointer (expected not-allowed)');
+    expect(output).toContain('cursor: pointer (expected default)');
   });
 });
 

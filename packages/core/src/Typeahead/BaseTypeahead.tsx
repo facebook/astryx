@@ -215,7 +215,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   dropdown: {
     boxSizing: 'border-box',
@@ -235,7 +235,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     outline: 'none',
     backgroundColor: 'transparent',

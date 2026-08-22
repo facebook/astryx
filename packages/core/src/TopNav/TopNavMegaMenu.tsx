@@ -80,7 +80,7 @@ const styles = stylex.create({
     textDecoration: 'none',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     transitionProperty: 'background-color, color',
     transitionDuration: durationVars['--duration-fast'],

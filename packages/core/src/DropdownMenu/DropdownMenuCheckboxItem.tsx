@@ -48,13 +48,13 @@ const styles = stylex.create({
     },
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     outline: 'none',
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   // Rendered in Item's `marker` slot as a raw flex child, so `order` moves it
   // relative to the label within the row. On touch it moves to the inline-end.

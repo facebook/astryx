@@ -150,10 +150,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    cursor: {
-      default: 'default',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
-    },
+    cursor: 'default',
     userSelect: 'none',
     minHeight: 0,
   },
@@ -161,19 +158,19 @@ const styles = stylex.create({
     cursor: {
       default: 'zoom-in',
       '@media (hover: hover)': 'zoom-in',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   imageWrapperZoomed: {
     cursor: {
       default: 'grab',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   imageWrapperDragging: {
     cursor: {
       default: 'grabbing',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   image: {

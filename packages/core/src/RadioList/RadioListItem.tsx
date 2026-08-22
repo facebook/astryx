@@ -46,7 +46,7 @@ const styles = stylex.create({
     opacity: 0,
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     zIndex: 1,
     minInlineSize: {
@@ -71,7 +71,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   // Holds only the indicator, so the focus ring has one unambiguous target.
   indicatorSlot: {

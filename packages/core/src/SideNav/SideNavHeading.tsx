@@ -66,10 +66,7 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     textDecoration: 'none',
     color: 'inherit',
-    cursor: {
-      default: 'default',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
-    },
+    cursor: 'default',
   },
   rootCollapsed: {
     justifyContent: 'center',
@@ -78,7 +75,7 @@ const styles = stylex.create({
   interactive: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
@@ -99,7 +96,7 @@ const styles = stylex.create({
   menuTrigger: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
@@ -223,7 +220,7 @@ const styles = stylex.create({
     marginInline: spacingVars['--spacing-1'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   // Chevron inside the popover heading — same as chevron but rotated up

@@ -79,7 +79,7 @@ const expansionStyles = stylex.create({
     borderRadius: radiusVars['--radius-inner'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     color: colorVars['--color-icon-secondary'],
     transitionProperty: 'transform, color',

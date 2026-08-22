@@ -154,7 +154,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-popover'],
     cursor: {
       default: 'text',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     transition: `box-shadow ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}, border-color ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
   },

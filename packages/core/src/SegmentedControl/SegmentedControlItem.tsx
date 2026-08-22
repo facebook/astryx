@@ -84,7 +84,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     whiteSpace: 'nowrap',
     transitionProperty: 'color, background-color, box-shadow',
@@ -124,7 +124,7 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-low'],
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     color: colorVars['--color-text-disabled'],
   },
   fill: {

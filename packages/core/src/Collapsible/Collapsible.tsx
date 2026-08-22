@@ -67,7 +67,7 @@ const styles = stylex.create({
     width: '100%',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-large-size'],
@@ -87,7 +87,7 @@ const styles = stylex.create({
   // button blocks click + keyboard activation; these styles restore the
   // visual affordance that `all: unset` wipes.
   triggerDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   // Chevron indicator

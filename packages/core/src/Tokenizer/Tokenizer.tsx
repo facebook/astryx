@@ -226,7 +226,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     cursor: {
       default: 'text',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     height: 'auto',
   },

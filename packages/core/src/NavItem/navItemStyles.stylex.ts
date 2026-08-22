@@ -67,7 +67,7 @@ export const navItemStyles = stylex.create({
     textDecoration: 'none',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
@@ -123,7 +123,7 @@ export const navItemStyles = stylex.create({
   /** Disabled state — muted color, no interaction */
   disabled: {
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
     pointerEvents: 'none' as const,
   },
 

@@ -148,7 +148,7 @@ const styles = stylex.create({
     padding: `${spacingVars['--spacing-2']} 0`,
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     color: colorVars['--color-accent'],
     fontSize: typeScaleVars['--text-body-size'],

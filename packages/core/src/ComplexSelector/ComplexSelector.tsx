@@ -72,7 +72,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   trigger: {
@@ -95,7 +95,7 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     outline: 'none',
     borderRadius: radiusVars['--radius-element'],
@@ -184,7 +184,7 @@ const styles = stylex.create({
     height: sizeVars['--size-element-lg'],
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 

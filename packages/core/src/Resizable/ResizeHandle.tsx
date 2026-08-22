@@ -121,7 +121,7 @@ const styles = stylex.create({
     height: '100%',
     cursor: {
       default: 'col-resize',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   vertical: {
@@ -129,7 +129,7 @@ const styles = stylex.create({
     width: '100%',
     cursor: {
       default: 'row-resize',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   noDividerHorizontal: {
@@ -147,7 +147,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-border-emphasized'],
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     pointerEvents: 'none',
   },
 
@@ -163,7 +163,7 @@ const styles = stylex.create({
     bottom: 0,
     cursor: {
       default: 'col-resize',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   hitAreaVertical: {
@@ -172,7 +172,7 @@ const styles = stylex.create({
     insetInlineEnd: 0,
     cursor: {
       default: 'row-resize',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   // Centered grab zone (pillPlacement 'center' / no bias): sit the hit area on

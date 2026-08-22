@@ -164,7 +164,7 @@ const itemStyles = stylex.create({
     },
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   // Reset native button styles so onClick-only items match link appearance

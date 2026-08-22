@@ -126,7 +126,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-muted'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     fontFamily: typographyVars['--font-family-body'],
     boxSizing: 'border-box',
@@ -182,7 +182,7 @@ const styles = stylex.create({
     color: colorVars['--color-icon-secondary'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     boxSizing: 'border-box',
     fontSize: 15,

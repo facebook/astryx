@@ -216,7 +216,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-neutral'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
@@ -230,7 +230,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent'],
   },
   dotDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   activePage: {

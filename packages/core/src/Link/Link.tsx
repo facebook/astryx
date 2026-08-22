@@ -67,7 +67,7 @@ const styles = stylex.create({
     },
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     transitionProperty: 'color, text-decoration',
     transitionDuration: durationVars['--duration-fast'],
@@ -88,7 +88,7 @@ const styles = stylex.create({
     textDecoration: 'underline',
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     pointerEvents: 'none',
   },

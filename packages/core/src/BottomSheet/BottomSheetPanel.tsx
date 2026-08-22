@@ -179,7 +179,7 @@ const styles = stylex.create({
     touchAction: 'none',
     cursor: {
       default: 'grab',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   handlePill: {

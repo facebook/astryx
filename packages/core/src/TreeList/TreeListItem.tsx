@@ -97,7 +97,7 @@ const styles = stylex.create({
   interactive: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
@@ -111,7 +111,7 @@ const styles = stylex.create({
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     pointerEvents: 'none' as const,
   },
@@ -122,7 +122,7 @@ const styles = stylex.create({
     all: 'unset',
     cursor: {
       default: 'inherit',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     font: 'inherit',
     color: 'inherit',
@@ -138,7 +138,7 @@ const styles = stylex.create({
     all: 'unset',
     cursor: {
       default: 'inherit',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     font: 'inherit',
     color: 'inherit',
@@ -185,7 +185,7 @@ const styles = stylex.create({
     fontSize: spacingVars['--spacing-4'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     border: 'none',
     background: 'none',
@@ -205,7 +205,7 @@ const styles = stylex.create({
     fontSize: spacingVars['--spacing-4'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],

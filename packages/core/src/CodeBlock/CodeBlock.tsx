@@ -217,7 +217,7 @@ const styles = stylex.create({
   headerCollapsible: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     userSelect: 'none',
     // Restore a keyboard-only focus ring with the standard token/offset so this
