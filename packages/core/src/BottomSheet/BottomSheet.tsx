@@ -52,11 +52,29 @@ import {
 export type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
 import type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
 
+// SYNC: must match `maxWidth` on `sheet` in BottomSheetPanel.tsx -- the
+// overdraw strip below the sheet has to be exactly as wide as the sheet it
+// continues, or it shows as a wider band on a viewport past the cap.
+const SHEET_MAX_WIDTH = 640;
+// How far the sheet's surface continues below the viewport's bottom edge, on
+// top of the 48px the sheet's own negative margin already provides. Sized to
+// outlast a momentum-scroll lag (the tallest iOS address bar is ~84pt), not to
+// any layout: it is painted below the viewport and clipped there at rest.
+const OVERDRAW_HEIGHT = 200;
+
 const styles = stylex.create({
   dialog: {
     position: 'fixed',
     inset: 0,
     width: '100dvw',
+    // The DYNAMIC viewport, and it has to stay that way. iOS Safari extends an
+    // overlay that is flush with the layout viewport's bottom edge down behind
+    // its translucent address bar, so the sheet's own surface is what shows
+    // through the bar rather than the page. Overshoot that edge -- `100lvh`,
+    // the whole screen -- and Safari stops extending and clips at the viewport
+    // instead, which puts the page back behind the bar. Measured in the iOS 26
+    // simulator: flush, the sheet's white reaches the physical screen bottom
+    // (874pt); overshooting, it stops at 776pt and the page shows through.
     height: '100dvh',
     maxWidth: 'none',
     maxHeight: 'none',
@@ -75,7 +93,14 @@ const styles = stylex.create({
     pointerEvents: 'none',
     zIndex: 1000,
     width: '100%',
-    height: '100%',
+    // `100dvh`, NOT `100%`. A percentage on a fixed element resolves against
+    // the initial containing block, which on iOS is the SMALL viewport -- it
+    // does not grow when the address bar retracts. So a non-modal sheet stayed
+    // a bar's height short of the viewport once the bar went compact, its
+    // bottom edge no longer flush, and the page showed through the strip below
+    // it. The modal path above was always `100dvh` and tracked correctly, which
+    // is why only no-scrim sheets showed the page under the bar.
+    height: '100dvh',
   },
   scrim: {
     '::backdrop': {
@@ -94,12 +119,49 @@ const styles = stylex.create({
     },
   },
   positioner: {
-    position: 'absolute',
+    // FIXED, not absolute: the sheet hangs off the bottom edge of this box, so
+    // whatever that edge is pinned to decides where the sheet sits. Absolute
+    // pinned it to the dialog's own bottom, which is a computed `100dvh`
+    // length -- and on iOS that length goes stale while Safari's address bar
+    // animates between its expanded and compact states. A stale length leaves
+    // the sheet a bar's height above the viewport bottom: no longer flush, so
+    // Safari stops extending the sheet's surface behind the bar and the page
+    // shows through it.
+    //
+    // `fixed` is not a length. The compositor resolves it against the viewport
+    // at paint time, so there is no number to go stale and the sheet is flush
+    // in every bar state. (A scrim-backed sheet never hit this because it locks
+    // page scroll, and the bar only changes state on scroll.)
+    position: 'fixed',
     insetInline: 0,
     insetBlockEnd: 0,
     display: 'flex',
     justifyContent: 'center',
     pointerEvents: 'none',
+    // Surface that continues below the viewport's bottom edge, so a sheet that
+    // lags behind a moving viewport still has something of its own under it.
+    //
+    // iOS repositions `fixed` elements a frame or two late during momentum
+    // scrolling, and the address bar resizing the viewport IS a scroll. The
+    // sheet already overdraws `OVERSCROLL_PADDING` (48px) past the bottom edge,
+    // which absorbs a small lag; a fast flick can outrun it, and the page shows
+    // in the sliver between the sheet and the bar until the next frame lands.
+    //
+    // This is a paint-only strip: `::after` takes no layout box in the flex
+    // row, so the sheet's measured height -- which the drag and snap maths read
+    // for its detents -- is untouched. At rest the strip is below the viewport,
+    // where nothing is painted at all, so it costs exactly nothing.
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      insetBlockStart: '100%',
+      insetInline: 0,
+      marginInline: 'auto',
+      maxWidth: SHEET_MAX_WIDTH,
+      height: OVERDRAW_HEIGHT,
+      backgroundColor: colorVars['--color-background-surface'],
+      pointerEvents: 'none',
+    },
   },
   positionerHidden: {
     display: 'none',
