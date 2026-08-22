@@ -43,6 +43,12 @@ export const docs = {
         'URL to navigate to; when provided, the tab renders as an anchor element.',
     },
     {
+      name: 'panelId',
+      type: 'string',
+      description:
+        'Id of the panel this tab controls, wired up as aria-controls in a tablist-mode TabList. Put the same id on the panel element. No effect in nav mode.',
+    },
+    {
       name: 'as',
       type: 'LinkComponentType',
       description:
@@ -137,6 +143,12 @@ export const docsZh = {
       name: 'href',
       type: 'string',
       description: '要导航到的 URL；提供时，标签渲染为锚点元素。',
+    },
+    {
+      name: 'panelId',
+      type: 'string',
+      description:
+        'Id of the panel this tab controls, wired up as aria-controls in a tablist-mode TabList. Put the same id on the panel element. No effect in nav mode.',
     },
     {
       name: 'as',

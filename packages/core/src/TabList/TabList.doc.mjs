@@ -61,6 +61,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'mode',
+      type: "'nav' | 'tablist'",
+      description: "Which ARIA pattern the strip implements. 'nav' (the default) is a navigation landmark whose current item is marked with aria-current. 'tablist' is the WAI-ARIA tabs pattern: role=\"tablist\" / role=\"tab\" and aria-selected, with each tab pointing at the panel it controls via its panelId. Only tabs may live in a tablist strip, and an href on a tab is ignored there.",
+      default: "'nav'",
+    },
+    {
       name: 'overflow',
       type: "'auto' | 'scroll' | 'none'",
       description: "What happens when the tabs are wider than the strip. 'auto' lets the component choose, which today always scrolls. 'scroll' scrolls the tabs horizontally, with edge fades and arrow affordances for pointers that can hover. 'none' turns overflow handling off and lets the tabs spill out of the strip. The selected tab is always scrolled back into view.",

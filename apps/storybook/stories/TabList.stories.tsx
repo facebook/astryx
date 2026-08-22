@@ -404,3 +404,61 @@ export const OverflowNone: Story = {
     );
   },
 };
+
+/**
+ * `mode="tablist"` speaks the WAI-ARIA tabs pattern instead of the navigation
+ * one: `role="tablist"` / `role="tab"`, `aria-selected`, and each tab pointing
+ * at the panel it controls. Use it when the strip has real panels below it —
+ * a screen reader then announces "tab 2 of 3, selected" and can move to the
+ * panel it opens. `nav` remains the default.
+ */
+export const TabsPattern: Story = {
+  render: () => {
+    const [value, setValue] = useState('overview');
+    const panels = {
+      overview: 'Everything at a glance.',
+      activity: 'What happened recently.',
+      members: 'Who has access.',
+    };
+    return (
+      <div style={{display: 'grid', gap: '12px', maxWidth: '400px'}}>
+        <TabList
+          value={value}
+          onChange={setValue}
+          mode="tablist"
+          aria-label="Project views"
+          hasDivider>
+          <Tab
+            value="overview"
+            label="Overview"
+            id="tab-overview"
+            panelId="panel-overview"
+          />
+          <Tab
+            value="activity"
+            label="Activity"
+            id="tab-activity"
+            panelId="panel-activity"
+          />
+          <Tab
+            value="members"
+            label="Members"
+            id="tab-members"
+            panelId="panel-members"
+          />
+        </TabList>
+        {Object.entries(panels).map(([key, text]) => (
+          <div
+            key={key}
+            id={`panel-${key}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${key}`}
+            tabIndex={0}
+            hidden={key !== value}>
+            {text}
+          </div>
+        ))}
+      </div>
+    );
+  },
+};

@@ -21,4 +21,4 @@ export {TabMenu} from './TabMenu';
 export type {TabMenuProps, TabMenuOption} from './TabMenu';
 
 export {useTabListContext} from './TabListContext';
-export type {TabListSize, TabListLayout} from './TabListContext';
+export type {TabListSize, TabListLayout, TabListMode} from './TabListContext';
