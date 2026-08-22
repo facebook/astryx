@@ -175,6 +175,130 @@ describe('useTableGroupedRows', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('does not run a column renderCell against a group header row', () => {
+    // The realistic shape: a renderer that keys a lookup off a field rather
+    // than printing it. The header Proxy answers `''`, which is not a member
+    // of the map, so reaching into the result throws unless the header is
+    // skipped outright.
+    const TEAM_META: Record<string, {dot: string}> = {
+      Core: {dot: 'green'},
+      Infra: {dot: 'blue'},
+    };
+    const seen: Person[] = [];
+    const lookupColumns: TableColumn<Person>[] = [
+      {
+        key: 'team',
+        header: 'Team',
+        renderCell: item => {
+          seen.push(item);
+          return <span>{TEAM_META[item.team].dot}</span>;
+        },
+      },
+    ];
+
+    function LookupHarness() {
+      const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+      const grouped = useTableGroupedRows<Person>({
+        data: people,
+        groupBy: p => p.team,
+        collapsedGroups: collapsed,
+        onToggleGroup: k => setCollapsed(new Set([k])),
+        getRowKey: p => p.id,
+      });
+      return (
+        <Table
+          data={grouped.data}
+          columns={lookupColumns}
+          idKey={grouped.idKey}
+          plugins={{grouped: grouped.plugin}}
+        />
+      );
+    }
+
+    expect(() => render(<LookupHarness />)).not.toThrow();
+    // Only the three real rows reached the renderer.
+    expect(seen).toHaveLength(3);
+    expect(seen.map(p => p.name)).toEqual(['Alice', 'Bob', 'Carol']);
+    // Group headers still render their own label.
+    expect(screen.getByText('Core')).toBeInTheDocument();
+    expect(screen.getByText('Infra')).toBeInTheDocument();
+  });
+
+  it('returns the same wrapped column objects across calls', () => {
+    // BaseTable compares the resolved column array element by element to
+    // decide whether every row needs re-rendering, so the guard must not
+    // allocate a fresh column on each render.
+    const stableColumns: TableColumn<Person>[] = [
+      {key: 'name', header: 'Name', renderCell: item => <>{item.name}</>},
+      {key: 'team', header: 'Team'},
+    ];
+    let transform:
+      ((c: TableColumn<Person>[]) => TableColumn<Person>[]) | null = null;
+    function StabilityHarness() {
+      const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+      const grouped = useTableGroupedRows<Person>({
+        data: people,
+        groupBy: p => p.team,
+        collapsedGroups: collapsed,
+        onToggleGroup: k => setCollapsed(new Set([k])),
+        getRowKey: p => p.id,
+      });
+      transform = grouped.plugin.transformColumns ?? null;
+      return (
+        <Table
+          data={grouped.data}
+          columns={stableColumns}
+          idKey={grouped.idKey}
+          plugins={{grouped: grouped.plugin}}
+        />
+      );
+    }
+    render(<StabilityHarness />);
+    expect(transform).not.toBeNull();
+    const first = transform!(stableColumns);
+    const second = transform!(stableColumns);
+    expect(first[0]).toBe(second[0]);
+    // A column with no renderCell needs no wrapper at all.
+    expect(first[1]).toBe(stableColumns[1]);
+  });
+
+  it('exposes isGroupHeader to distinguish synthetic rows from real ones', () => {
+    const calls: {key: string; header: boolean}[] = [];
+    function PredicateHarness() {
+      const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+      const grouped = useTableGroupedRows<Person>({
+        data: people,
+        groupBy: p => p.team,
+        collapsedGroups: collapsed,
+        onToggleGroup: k => setCollapsed(new Set([k])),
+        getRowKey: p => p.id,
+      });
+      calls.length = 0;
+      for (const row of grouped.data) {
+        calls.push({
+          key: grouped.idKey(row),
+          header: grouped.isGroupHeader(row),
+        });
+      }
+      return (
+        <Table
+          data={grouped.data}
+          columns={columns}
+          idKey={grouped.idKey}
+          plugins={{grouped: grouped.plugin}}
+        />
+      );
+    }
+    render(<PredicateHarness />);
+    expect(calls).toEqual([
+      {key: '__group_Core', header: true},
+      {key: 'a', header: false},
+      {key: 'b', header: false},
+      {key: '__group_Infra', header: true},
+      {key: 'c', header: false},
+    ]);
+  });
+
   it('keeps a group collapsed across a data change (state keyed by group)', () => {
     function ChangingHarness() {
       const [collapsed, setCollapsed] = useState<Set<string>>(
