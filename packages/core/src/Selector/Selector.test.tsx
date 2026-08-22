@@ -2484,6 +2484,29 @@ describe('Selector section headings', () => {
     // visible heading must not announce it a second time.
     expect(heading).toHaveAttribute('aria-hidden', 'true');
   });
+
+  it('renders a divider inside the listbox as presentation, not a separator', async () => {
+    // A role="separator" is not a permitted child of role="listbox" (axe
+    // aria-required-children, WCAG 1.3.1/4.1.2). A visual divider between
+    // options must stay out of the accessibility tree.
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={['Almond', {type: 'divider'}, 'Banana']}
+        value={undefined}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    const listbox = screen.getByRole('listbox', {hidden: true});
+    const dividerInListbox = [...listbox.children].find(el =>
+      el.className.includes('astryx-divider'),
+    );
+    expect(dividerInListbox).toBeTruthy();
+    expect(dividerInListbox).toHaveAttribute('role', 'presentation');
+  });
 });
 
 describe('Selector search focus ring', () => {

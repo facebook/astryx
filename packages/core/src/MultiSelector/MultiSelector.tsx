@@ -1420,8 +1420,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         // A standalone divider between groups would orphan itself once its
         // neighbors are filtered out, so skip it while searching.
         if (!isSearching) {
+          // A divider inside role="listbox" must not be a separator child:
+          // listbox only permits option/group children, so the visual divider
+          // is role="presentation" to stay out of the accessibility tree
+          // (axe aria-required-children, WCAG 1.3.1/4.1.2).
           elements.push(
-            <Divider key={`divider-${i}`} xstyle={styles.divider} />,
+            <Divider
+              key={`divider-${i}`}
+              role="presentation"
+              xstyle={styles.divider}
+            />,
           );
         }
       } else if (isSection(option)) {
