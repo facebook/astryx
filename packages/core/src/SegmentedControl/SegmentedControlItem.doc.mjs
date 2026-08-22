@@ -50,6 +50,16 @@ export const docs = {
       ],
     },
     {
+      name: 'count',
+      type: 'number',
+      description: 'How many items this segment holds, rendered after the label and shown even when isLabelHidden makes the segment icon-only. Hidden from assistive technology and folded into the accessible name instead (pair it with countLabel). Rendered as given, 0 included; pass undefined for no count.',
+    },
+    {
+      name: 'countLabel',
+      type: 'string',
+      description: 'What count counts, used to build the accessible name — "Inbox, 12 unread". Without it the name is just "Inbox, 12". Ignored when count is not set.',
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Whether this individual item is disabled.',
@@ -68,6 +78,8 @@ export const docsZh = {
     label: '该分段的无障碍标签。除非 isLabelHidden 为 true，否则渲染为可见文本。',
     isLabelHidden: '是否在视觉上隐藏标签。为 true 时仅显示图标，label 用作 aria-label。',
     icon: '显示在标签前的图标元素。',
+    count: '该分段包含的条目数，渲染在标签之后（即使 isLabelHidden 为 true 也会显示）。数字对辅助技术隐藏，改为并入无障碍名称，请搭配 countLabel 使用。',
+    countLabel: 'count 所计数的对象，用于构建无障碍名称，例如“收件箱，12 条未读”。',
     isDisabled: '是否禁用该单个项。',
   },
 };

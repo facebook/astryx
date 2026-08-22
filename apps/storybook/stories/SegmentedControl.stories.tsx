@@ -229,3 +229,132 @@ export const DisabledWithMessage: Story = {
     );
   },
 };
+
+// A tab strip whose counts are the point: the viewer scans them to decide where
+// to go. The number is aria-hidden and countLabel names it, so the segment
+// announces "Needs me, 12 sessions" rather than "Needs me 12".
+export const WithCounts: Story = {
+  args: {
+    size: 'md',
+    isDisabled: false,
+  },
+  render: args => {
+    const [value, setValue] = useState('needs-me');
+    return (
+      <SegmentedControl
+        value={value}
+        onChange={setValue}
+        label="Sessions"
+        size={args.size}
+        isDisabled={args.isDisabled}>
+        <SegmentedControlItem
+          value="needs-me"
+          label="Needs me"
+          count={12}
+          countLabel="sessions"
+        />
+        <SegmentedControlItem
+          value="running"
+          label="Running"
+          count={3}
+          countLabel="sessions"
+        />
+        <SegmentedControlItem
+          value="finished"
+          label="Recently finished"
+          count={148}
+          countLabel="sessions"
+        />
+        <SegmentedControlItem
+          value="archived"
+          label="Archived"
+          count={0}
+          countLabel="sessions"
+        />
+      </SegmentedControl>
+    );
+  },
+};
+
+// Counts survive an icon-only strip: the label hides, the count does not, and
+// the accessible name still carries both.
+export const IconOnlyWithCounts: Story = {
+  args: {
+    size: 'md',
+  },
+  render: args => {
+    const [value, setValue] = useState('grid');
+    return (
+      <SegmentedControl
+        value={value}
+        onChange={setValue}
+        label="View mode"
+        size={args.size}>
+        <SegmentedControlItem
+          value="grid"
+          label="Grid"
+          isLabelHidden
+          icon={<Icon icon={Squares2X2Icon} color="inherit" />}
+          count={24}
+          countLabel="items"
+        />
+        <SegmentedControlItem
+          value="list"
+          label="List"
+          isLabelHidden
+          icon={<Icon icon={ListBulletIcon} color="inherit" />}
+          count={8}
+          countLabel="items"
+        />
+        <SegmentedControlItem
+          value="table"
+          label="Table"
+          isLabelHidden
+          icon={<Icon icon={TableCellsIcon} color="inherit" />}
+          count={132}
+          countLabel="items"
+        />
+      </SegmentedControl>
+    );
+  },
+};
+
+// layout="fill" divides the width equally; counts must not break that or the
+// segments' alignment as the numbers change width.
+export const CountsFillLayout: Story = {
+  render: () => {
+    const [value, setValue] = useState('needs-me');
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+        {[520, 380, 280].map(width => (
+          <div key={width} style={{width}}>
+            <SegmentedControl
+              value={value}
+              onChange={setValue}
+              label="Sessions"
+              layout="fill">
+              <SegmentedControlItem
+                value="needs-me"
+                label="Needs me"
+                count={12}
+                countLabel="sessions"
+              />
+              <SegmentedControlItem
+                value="running"
+                label="Running"
+                count={3}
+                countLabel="sessions"
+              />
+              <SegmentedControlItem
+                value="finished"
+                label="Finished"
+                count={148}
+                countLabel="sessions"
+              />
+            </SegmentedControl>
+          </div>
+        ))}
+      </div>
+    );
+  },
+};
