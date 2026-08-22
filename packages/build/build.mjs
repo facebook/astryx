@@ -23,6 +23,7 @@ buildSync({
     'vite',
     '@stylexjs/babel-plugin',
     '@stylexjs/unplugin',
+    'postcss',
     'path',
     'url',
     'node:fs',
