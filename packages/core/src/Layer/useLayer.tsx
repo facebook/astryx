@@ -70,6 +70,13 @@ const styles = stylex.create({
     marginInlineStart: offset,
     marginInlineEnd: offset,
   }),
+  // Scoped to the open state on purpose: an inline `display` would beat the
+  // UA's `[popover]:not(:popover-open) {display: none}` and paint a closed
+  // layer.
+  clampColumn: {
+    display: {default: null, ':popover-open': 'flex'},
+    flexDirection: {default: null, ':popover-open': 'column'},
+  },
 });
 
 /**
@@ -83,6 +90,11 @@ export type LayerPlacement = 'above' | 'below' | 'start' | 'end';
  * Alignment along the placement axis
  */
 export type LayerAlignment = 'start' | 'center' | 'end';
+
+/**
+ * Axis a layer is held within the space its anchor leaves it.
+ */
+export type LayerClampAxis = 'block' | 'inline' | 'both';
 
 /**
  * Render props for context mode (anchor positioning)
@@ -128,6 +140,42 @@ export interface ContextRenderProps {
    * @default 0
    */
   offset?: number | string;
+  /**
+   * Hold the layer inside the space its anchor actually leaves it, on the
+   * given axis, instead of letting it run past the viewport edge.
+   *
+   * A layer that does not fit can only move today: `position-try-fallbacks`
+   * flips it to the opposite side or slides it along the alignment axis, and
+   * a layer taller than every option simply overflows. This sizes it to the
+   * space that is there.
+   *
+   * `position-area` already makes the anchor's cell the layer's containing
+   * block, so the clamp is `100%` along that axis — pure CSS, no measurement,
+   * resolved wherever the layer lands including after a flip. It is a maximum,
+   * so short content keeps its natural size. Like the rest of anchor
+   * positioning it resolves at layout time, not continuously: a layer left
+   * open while the page scrolls keeps the size it opened with, exactly as it
+   * keeps the side it opened on.
+   *
+   * The prop exists because the same three declarations written by hand get
+   * two things wrong. The fallbacks have to be ordered by size on the
+   * placement axis, or a layer that always fits stops flipping and keeps a
+   * cramped side; and the layer has to become a flex column, only while open,
+   * for content to size against the clamp. Give that content
+   * `maxBlockSize: '100%'` and its own `overflow` to scroll it:
+   *
+   * ```
+   * {layer.render(
+   *   <div style={{maxBlockSize: '100%', overflow: 'auto'}}>{items}</div>,
+   *   {placement: 'below', clampToAvailableSpace: 'block'},
+   * )}
+   * ```
+   *
+   * Ignored when `positioning` is `'custom'`: without a `position-area` there
+   * is no cell to measure against and the layer would size to the whole
+   * viewport.
+   */
+  clampToAvailableSpace?: LayerClampAxis;
   /**
    * ARIA role applied to the popover container (e.g. `'tooltip'`). Lets
    * consumers complete the ARIA pattern and gives test tooling a stable,
@@ -438,6 +486,57 @@ export function getPositionTryFallbacks(
 }
 
 /**
+ * Size styles that hold a layer inside the space its `position-area` cell has.
+ *
+ * That cell is the layer's containing block, so `100%` along an axis is the
+ * distance from the anchor to the viewport edge — the measurement a consumer
+ * would otherwise need a resize/scroll observer to obtain, done by the browser
+ * at layout time and re-done wherever a fallback moves the layer.
+ *
+ * `position-try-order` is the part that is easy to miss: a clamped layer always
+ * fits, so the browser stops flipping and keeps the first option however
+ * cramped — measured 172px of room taken below while 300px sat free above.
+ * Ordering the options by size picks the roomiest one along the axis the flip
+ * trades, which is the placement axis and no other.
+ *
+ * `offset` puts a margin on both edges of the placement axis, outside the
+ * clamped box, so it comes out of that axis's budget — otherwise the layer
+ * clears the viewport edge by exactly the offset.
+ *
+ * The flex column that makes content size against the clamp is `styles
+ * .clampColumn`, kept in StyleX so it can be scoped to the open state.
+ */
+export function getClampStyle(
+  axis: LayerClampAxis,
+  placement: LayerPlacement = 'above',
+  offset?: number | string,
+): React.CSSProperties {
+  const isBlockPlacement = placement === 'above' || placement === 'below';
+  // Only the placement axis carries the offset margins.
+  const offsetAxis = offset
+    ? `calc(100% - 2 * ${toCssLength(offset)})`
+    : '100%';
+  const clampBlock = axis === 'block' || axis === 'both';
+  const clampInline = axis === 'inline' || axis === 'both';
+
+  const style: React.CSSProperties = {};
+
+  if (clampBlock) {
+    style.maxBlockSize = isBlockPlacement ? offsetAxis : '100%';
+  }
+  if (clampInline) {
+    style.maxInlineSize = isBlockPlacement ? '100%' : offsetAxis;
+  }
+  if (isBlockPlacement ? clampBlock : clampInline) {
+    style.positionTryOrder = isBlockPlacement
+      ? 'most-block-size'
+      : 'most-inline-size';
+  }
+
+  return style;
+}
+
+/**
  * Core layer hook that handles popover behavior and positioning.
  *
  * Supports two positioning modes with type-safe render props:
@@ -740,6 +839,7 @@ export function useLayer(
         alignment = 'center',
         positioning = 'anchor',
         offset,
+        clampToAvailableSpace,
         role,
         'aria-label': ariaLabel,
         xstyle,
@@ -749,6 +849,9 @@ export function useLayer(
         onMouseEnter,
         onMouseLeave,
       } = props || {};
+
+      const clamp =
+        positioning === 'anchor' ? clampToAvailableSpace : undefined;
 
       // CSS anchor positioning (dynamic, not in StyleX)
       const anchorStyle: React.CSSProperties =
@@ -763,6 +866,7 @@ export function useLayer(
                 placement,
                 alignment,
               ),
+              ...(clamp ? getClampStyle(clamp, placement, offset) : null),
             };
 
       const offsetStyle =
@@ -776,6 +880,7 @@ export function useLayer(
         styles.base,
         overlayPaddingReset.reset,
         offsetStyle,
+        clamp === 'block' || clamp === 'both' ? styles.clampColumn : null,
         xstyle,
       );
       const combinedClassName = extraClassName

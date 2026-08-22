@@ -12,10 +12,11 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {useLayer, getPositionTryFallbacks} from './useLayer';
+import {useLayer, getPositionTryFallbacks, getClampStyle} from './useLayer';
 import type {
   LayerPlacement,
   LayerAlignment,
+  LayerClampAxis,
   ContextRenderProps,
 } from './useLayer';
 
@@ -847,6 +848,125 @@ describe('useLayer context positioning', () => {
           <OffsetHarness placement="below" offset={8} positioning="custom" />,
         ),
       ).toEqual(NONE);
+    });
+  });
+
+  describe('clampToAvailableSpace', () => {
+    function SpaceHarness({
+      placement,
+      clampToAvailableSpace,
+      offset,
+      positioning,
+    }: {
+      placement?: LayerPlacement;
+      clampToAvailableSpace?: LayerClampAxis;
+      offset?: number | string;
+      positioning?: 'anchor' | 'custom';
+    }) {
+      const layer = useLayer({mode: 'context'});
+      return (
+        <>
+          <button type="button" ref={layer.ref} onClick={layer.show}>
+            trigger
+          </button>
+          {layer.render(<span>content</span>, {
+            placement,
+            clampToAvailableSpace,
+            offset,
+            positioning,
+          })}
+        </>
+      );
+    }
+
+    async function openAndGetStyle(ui: React.ReactElement) {
+      const user = userEvent.setup();
+      const {container, getByRole} = render(ui);
+      await user.click(getByRole('button', {name: 'trigger'}));
+      return (container.querySelector('[popover]') as HTMLElement).style;
+    }
+
+    it('clamps the block axis to the cell', () => {
+      expect(getClampStyle('block', 'below')).toEqual({
+        maxBlockSize: '100%',
+        positionTryOrder: 'most-block-size',
+      });
+    });
+
+    it('clamps the inline axis without touching layout', () => {
+      expect(getClampStyle('inline', 'end')).toEqual({
+        maxInlineSize: '100%',
+        positionTryOrder: 'most-inline-size',
+      });
+    });
+
+    it('clamps both axes', () => {
+      const style = getClampStyle('both', 'below');
+      expect(style.maxBlockSize).toBe('100%');
+      expect(style.maxInlineSize).toBe('100%');
+    });
+
+    // The clamp makes every fallback fit, so "first that fits" degenerates to
+    // "never flip" and the layer keeps a cramped side. Ordering by size is
+    // what restores the flip, and only the placement axis is ever flipped.
+    it('orders the fallbacks by size on the placement axis only', () => {
+      expect(getClampStyle('block', 'below').positionTryOrder).toBe(
+        'most-block-size',
+      );
+      expect(getClampStyle('inline', 'below').positionTryOrder).toBe(undefined);
+      expect(getClampStyle('inline', 'start').positionTryOrder).toBe(
+        'most-inline-size',
+      );
+      expect(getClampStyle('block', 'start').positionTryOrder).toBe(undefined);
+    });
+
+    // The offset margins sit outside the clamped box, so a plain 100% clears
+    // the viewport edge by exactly the offset.
+    it('takes the offset out of the placement axis budget', () => {
+      expect(getClampStyle('both', 'below', 8)).toMatchObject({
+        maxBlockSize: 'calc(100% - 2 * 8px)',
+        maxInlineSize: '100%',
+      });
+      expect(getClampStyle('both', 'end', 'var(--spacing-1)')).toMatchObject({
+        maxBlockSize: '100%',
+        maxInlineSize: 'calc(100% - 2 * var(--spacing-1))',
+      });
+    });
+
+    it('applies the clamp to the rendered popover', async () => {
+      const style = await openAndGetStyle(
+        <SpaceHarness placement="below" clampToAvailableSpace="block" />,
+      );
+      expect(style.maxBlockSize).toBe('100%');
+      expect(style.positionTryOrder).toBe('most-block-size');
+    });
+
+    // An inline `display` beats `[popover]:not(:popover-open) {display: none}`
+    // and paints a closed layer, so the flex column has to stay in a rule that
+    // is scoped to the open state.
+    it('sets no inline display, which would show the layer while closed', async () => {
+      const style = await openAndGetStyle(
+        <SpaceHarness placement="below" clampToAvailableSpace="both" />,
+      );
+      expect(style.display ?? '').toBe('');
+      expect(style.flexDirection ?? '').toBe('');
+    });
+
+    it('leaves the layer unclamped when not asked', async () => {
+      const style = await openAndGetStyle(<SpaceHarness placement="below" />);
+      expect(style.maxBlockSize ?? '').toBeFalsy();
+      expect(style.positionTryOrder ?? '').toBeFalsy();
+    });
+
+    // No position-area means no cell to measure: 100% would be the whole
+    // viewport, which is not a clamp at all.
+    it('is ignored under custom positioning', async () => {
+      const style = await openAndGetStyle(
+        <SpaceHarness clampToAvailableSpace="both" positioning="custom" />,
+      );
+      expect(style.maxBlockSize ?? '').toBeFalsy();
+      expect(style.maxInlineSize ?? '').toBeFalsy();
+      expect(style.positionTryOrder ?? '').toBeFalsy();
     });
   });
 

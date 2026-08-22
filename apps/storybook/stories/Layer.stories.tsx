@@ -406,3 +406,96 @@ export const InlineTriggerHosting: Story = {
     },
   },
 };
+
+function AvailableSpaceDemo({
+  clampToAvailableSpace,
+}: {
+  clampToAvailableSpace?: 'block' | 'inline' | 'both';
+}) {
+  const layer = useLayer({mode: 'context'});
+  const [rows, setRows] = useState(40);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        paddingBlock: 160,
+        alignItems: 'flex-start',
+      }}>
+      <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
+        <Button
+          label={layer.isOpen ? 'Hide list' : 'Show list'}
+          ref={layer.ref}
+          onClick={layer.isOpen ? layer.hide : layer.show}
+        />
+        <Button
+          label="Fewer rows"
+          onClick={() => setRows(n => Math.max(2, n - 12))}
+        />
+        <Button label="More rows" onClick={() => setRows(n => n + 12)} />
+        <Text type="supporting">{rows} rows</Text>
+      </div>
+
+      {layer.render(
+        <div
+          data-testid="layer-content"
+          {...stylex.props(styles.popoverContent)}
+          style={{
+            maxBlockSize: clampToAvailableSpace ? '100%' : undefined,
+            overflow: 'auto',
+            padding: 0,
+          }}>
+          {Array.from({length: rows}, (_, i) => (
+            <div
+              key={i}
+              style={{
+                padding: '6px 12px',
+                borderBottom: '1px solid var(--color-border-default)',
+                whiteSpace: 'nowrap',
+              }}>
+              Row {i + 1} — an item whose label runs on for a while
+            </div>
+          ))}
+        </div>,
+        {
+          placement: 'below',
+          alignment: 'start',
+          offset: 8,
+          clampToAvailableSpace,
+        },
+      )}
+
+      <Text type="supporting">
+        Shrink the viewport until the list is taller than the space on both
+        sides of the trigger. Unclamped, the layer keeps its full height and
+        runs off the screen; clamped, it takes the roomier side and scrolls.
+      </Text>
+    </div>
+  );
+}
+
+export const AvailableSpaceUnclamped: Story = {
+  render: () => <AvailableSpaceDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The default. A layer that fits nowhere cannot be rescued by flipping, so it overflows the viewport at its full height.',
+      },
+    },
+  },
+};
+
+export const AvailableSpaceClamped: Story = {
+  render: () => <AvailableSpaceDemo clampToAvailableSpace="block" />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The same layer with `clampToAvailableSpace: 'block'`. It is capped to the room between its anchor and the viewport edge, picks whichever side has more of it, and stays its natural height when the list is short.",
+      },
+    },
+  },
+};
