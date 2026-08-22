@@ -28,6 +28,15 @@ export interface StatusDotVariantMap {
   error: true;
   accent: true;
   neutral: true;
+  blue: true;
+  cyan: true;
+  green: true;
+  orange: true;
+  pink: true;
+  purple: true;
+  red: true;
+  teal: true;
+  yellow: true;
 }
 
 export {StatusDot} from './StatusDot';

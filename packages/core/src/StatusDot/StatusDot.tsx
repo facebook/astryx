@@ -84,6 +84,16 @@ const styles = stylex.create({
  * colour: on-warning is a fixed dark ink, which keeps an icon legible on the
  * yellow plate (~9.6:1) where a light surface ink lands near 2:1. Neutral has
  * no `--color-on-*` token; its mid-grey plate takes the surface ink.
+ *
+ * The nine hues (Badge's non-semantic set) have no `--color-on-*` pairing
+ * either, so they take neutral's shape: a foreground-ramp plate with the
+ * surface as ink. `--color-text-<hue>` is the stop that flips polarity with
+ * the colour scheme, so both contrasts hold in light and dark — plate against
+ * the page ≥8.3:1, surface ink on the plate the same ≥8.3:1 (worst case
+ * purple, dark). The other two stops fail an 8px dot: the
+ * `--color-background-<hue>` wash Badge fills its pill with is 20% alpha and
+ * lands at 1.2–1.5:1 on the page, and mid-tone `--color-icon-<hue>` misses
+ * the 3:1 non-text bar in light mode for yellow (1.7:1) and cyan (2.7:1).
  */
 const variants = stylex.create({
   success: {
@@ -106,6 +116,42 @@ const variants = stylex.create({
     backgroundColor: colorVars['--color-icon-secondary'],
     color: colorVars['--color-background-surface'],
   },
+  blue: {
+    backgroundColor: colorVars['--color-text-blue'],
+    color: colorVars['--color-background-surface'],
+  },
+  cyan: {
+    backgroundColor: colorVars['--color-text-cyan'],
+    color: colorVars['--color-background-surface'],
+  },
+  green: {
+    backgroundColor: colorVars['--color-text-green'],
+    color: colorVars['--color-background-surface'],
+  },
+  orange: {
+    backgroundColor: colorVars['--color-text-orange'],
+    color: colorVars['--color-background-surface'],
+  },
+  pink: {
+    backgroundColor: colorVars['--color-text-pink'],
+    color: colorVars['--color-background-surface'],
+  },
+  purple: {
+    backgroundColor: colorVars['--color-text-purple'],
+    color: colorVars['--color-background-surface'],
+  },
+  red: {
+    backgroundColor: colorVars['--color-text-red'],
+    color: colorVars['--color-background-surface'],
+  },
+  teal: {
+    backgroundColor: colorVars['--color-text-teal'],
+    color: colorVars['--color-background-surface'],
+  },
+  yellow: {
+    backgroundColor: colorVars['--color-text-yellow'],
+    color: colorVars['--color-background-surface'],
+  },
 });
 
 /**
@@ -118,7 +164,10 @@ export interface StatusDotProps extends BaseProps<HTMLSpanElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLSpanElement>;
   /**
-   * The semantic color variant.
+   * The colour variant. Five are semantic (`success`, `warning`, `error`,
+   * `accent`, `neutral`); the nine hues (`blue`, `cyan`, `green`, `orange`,
+   * `pink`, `purple`, `red`, `teal`, `yellow`) carry no built-in meaning and
+   * are for categorising — the same set, under the same names, as `Badge`.
    */
   variant: StatusDotVariant;
   /**
@@ -177,6 +226,7 @@ export interface StatusDotProps extends BaseProps<HTMLSpanElement> {
  * <StatusDot variant="success" label="Live" isPulsing />
  * <StatusDot variant="success" label="Online" tooltip="Online" />
  * <StatusDot variant="success" label="Verified" icon={<CheckIcon />} />
+ * <StatusDot variant="purple" label="Design" />
  * ```
  */
 export function StatusDot({

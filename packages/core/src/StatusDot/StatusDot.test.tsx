@@ -6,6 +6,28 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {StatusDot} from './StatusDot';
 
+const SEMANTIC_VARIANTS = [
+  'success',
+  'warning',
+  'error',
+  'accent',
+  'neutral',
+] as const;
+
+const HUE_VARIANTS = [
+  'blue',
+  'cyan',
+  'green',
+  'orange',
+  'pink',
+  'purple',
+  'red',
+  'teal',
+  'yellow',
+] as const;
+
+const ALL_VARIANTS = [...SEMANTIC_VARIANTS, ...HUE_VARIANTS];
+
 /** Renders a StatusDot and returns its root element. */
 function renderDot(props: React.ComponentProps<typeof StatusDot>) {
   render(<StatusDot {...props} />);
@@ -26,15 +48,7 @@ describe('StatusDot', () => {
   });
 
   it('renders with all variant types', () => {
-    const variants = [
-      'success',
-      'warning',
-      'error',
-      'accent',
-      'neutral',
-    ] as const;
-
-    for (const variant of variants) {
+    for (const variant of ALL_VARIANTS) {
       const {unmount} = render(<StatusDot variant={variant} label={variant} />);
       expect(screen.getByRole('img', {name: variant})).toBeInTheDocument();
       unmount();
@@ -89,14 +103,7 @@ describe('StatusDot', () => {
     // per-variant glyph. Making the status accessible in context (label,
     // icon, or an accessible alternative) is the builder's responsibility;
     // see the usage guidance.
-    const variants = [
-      'success',
-      'warning',
-      'error',
-      'accent',
-      'neutral',
-    ] as const;
-    for (const variant of variants) {
+    for (const variant of ALL_VARIANTS) {
       const dot = renderDot({variant, label: `plain-${variant}`});
       expect(dot.childElementCount, variant).toBe(0);
     }
@@ -165,18 +172,71 @@ describe('StatusDot', () => {
         expect(dot.className).toContain(cls);
       }
     });
+
+    // StyleX resolves token keys at build time, so the expected pairing is
+    // spelled out per hue rather than indexed by name.
+    const huePlates = stylex.create({
+      blue: {
+        backgroundColor: colorVars['--color-text-blue'],
+        color: colorVars['--color-background-surface'],
+      },
+      cyan: {
+        backgroundColor: colorVars['--color-text-cyan'],
+        color: colorVars['--color-background-surface'],
+      },
+      green: {
+        backgroundColor: colorVars['--color-text-green'],
+        color: colorVars['--color-background-surface'],
+      },
+      orange: {
+        backgroundColor: colorVars['--color-text-orange'],
+        color: colorVars['--color-background-surface'],
+      },
+      pink: {
+        backgroundColor: colorVars['--color-text-pink'],
+        color: colorVars['--color-background-surface'],
+      },
+      purple: {
+        backgroundColor: colorVars['--color-text-purple'],
+        color: colorVars['--color-background-surface'],
+      },
+      red: {
+        backgroundColor: colorVars['--color-text-red'],
+        color: colorVars['--color-background-surface'],
+      },
+      teal: {
+        backgroundColor: colorVars['--color-text-teal'],
+        color: colorVars['--color-background-surface'],
+      },
+      yellow: {
+        backgroundColor: colorVars['--color-text-yellow'],
+        color: colorVars['--color-background-surface'],
+      },
+    });
+
+    it.each(HUE_VARIANTS)(
+      'paints the %s hue from its solid text stop, with the surface as ink',
+      hue => {
+        // The hues have no `--color-on-*` pairing, so they take neutral's
+        // shape. The regression this guards: Badge's `--color-background-*`
+        // wash is 20% alpha, which on an 8px dot lands at 1.2-1.5:1 against
+        // the page instead of the >=8.3:1 the solid stop holds in both
+        // schemes.
+        const dot = renderDot({variant: hue, label: hue});
+        const atomicClasses = (stylex.props(huePlates[hue]).className ?? '')
+          .split(' ')
+          .filter(cls => !cls.includes('__'));
+        expect(atomicClasses.length).toBeGreaterThan(0);
+        for (const cls of atomicClasses) {
+          expect(dot.className).toContain(cls);
+        }
+      },
+    );
   });
 
   describe('accessible name (label reaches AT without hover)', () => {
     it('exposes the status label as the accessible name for every variant, without a tooltip', () => {
-      const variants = [
-        'success',
-        'warning',
-        'error',
-        'accent',
-        'neutral',
-      ] as const;
-      for (const variant of variants) {
+      for (const variant of ALL_VARIANTS) {
         const {unmount} = render(
           <StatusDot variant={variant} label={`Status: ${variant}`} />,
         );

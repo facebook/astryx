@@ -10,8 +10,9 @@ export const docs = {
   props: [
     {
       name: 'variant',
-      type: "'success' | 'warning' | 'error' | 'accent' | 'neutral'",
-      description: 'Semantic color variant.',
+      type: "'success' | 'warning' | 'error' | 'accent' | 'neutral' | 'blue' | 'cyan' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
+      description:
+        'Color variant. Five semantic (success, warning, error, accent, neutral) plus nine non-semantic hues for categorization, the same set Badge exposes.',
       required: true,
     },
     {
@@ -53,7 +54,7 @@ export const docs = {
   },
   usage: {
     description:
-      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
+      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants, nine non-semantic hues for categorization, and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
       { guidance: true, description: 'Use StatusDot as a binary present/absent signal; avoid encoding many distinct states in a single dot, since color and size alone cannot reliably distinguish them.' },
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
@@ -61,6 +62,7 @@ export const docs = {
       { guidance: true, description: 'Pair the dot with an icon that carries the status as a distinct shape when it must stand on its own without adjacent text, so meaning survives without color.' },
       { guidance: true, description: 'If you can\'t add a label or an icon, make sure the status is conveyed elsewhere accessibly (e.g. adjacent text, a table column, or a live region).' },
       { guidance: false, description: 'Rely on color alone to communicate status; StatusDot is not fully accessible in isolation, so the builder must make the status distinguishable in context via a label, an icon, or an accessible alternative.' },
+      { guidance: true, description: 'Reach for a hue variant only when the dot categorizes (a project color, a legend key); keep the semantic variants for reporting health.' },
       { guidance: false, description: 'Use the pulse animation for purely decorative purposes; reserve it for states that require immediate attention.' },
     ],
   },
@@ -73,8 +75,9 @@ export const docsZh = {
   props: [
     {
       name: 'variant',
-      type: "'success' | 'warning' | 'error' | 'accent' | 'neutral'",
-      description: '语义颜色变体。',
+      type: "'success' | 'warning' | 'error' | 'accent' | 'neutral' | 'blue' | 'cyan' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
+      description:
+        '颜色变体。五个语义变体（success、warning、error、accent、neutral），外加九个用于分类的非语义色相，与 Badge 提供的集合相同。',
       required: true,
     },
     {
@@ -110,7 +113,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
+      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants, nine non-semantic hues for categorization, and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
       { guidance: true, description: 'Use StatusDot as a binary present/absent signal; avoid encoding many distinct states in a single dot, since color and size alone cannot reliably distinguish them.' },
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
@@ -118,6 +121,7 @@ export const docsZh = {
       { guidance: true, description: 'Pair the dot with an icon that carries the status as a distinct shape when it must stand on its own without adjacent text, so meaning survives without color.' },
       { guidance: true, description: 'If you can\'t add a label or an icon, make sure the status is conveyed elsewhere accessibly (e.g. adjacent text, a table column, or a live region).' },
       { guidance: false, description: 'Rely on color alone to communicate status; StatusDot is not fully accessible in isolation, so the builder must make the status distinguishable in context via a label, an icon, or an accessible alternative.' },
+      { guidance: true, description: 'Reach for a hue variant only when the dot categorizes (a project color, a legend key); keep the semantic variants for reporting health.' },
       { guidance: false, description: 'Use the pulse animation for purely decorative purposes; reserve it for states that require immediate attention.' },
     ],
   },
@@ -128,7 +132,7 @@ export const docsDense = {
   description: 'Small colored dot indicator for status display (online/offline, severity, etc).',
   usage: {
     description:
-      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
+      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants, nine non-semantic hues for categorization, and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
       { guidance: true, description: 'Use StatusDot as a binary present/absent signal; avoid encoding many distinct states in a single dot, since color and size alone cannot reliably distinguish them.' },
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
@@ -136,11 +140,12 @@ export const docsDense = {
       { guidance: true, description: 'Pair the dot with an icon that carries the status as a distinct shape when it must stand on its own without adjacent text, so meaning survives without color.' },
       { guidance: true, description: 'If you can\'t add a label or an icon, make sure the status is conveyed elsewhere accessibly (e.g. adjacent text, a table column, or a live region).' },
       { guidance: false, description: 'Rely on color alone to communicate status; StatusDot is not fully accessible in isolation, so the builder must make the status distinguishable in context via a label, an icon, or an accessible alternative.' },
+      { guidance: true, description: 'Reach for a hue variant only when the dot categorizes (a project color, a legend key); keep the semantic variants for reporting health.' },
       { guidance: false, description: 'Use the pulse animation for purely decorative purposes; reserve it for states that require immediate attention.' },
     ],
   },
   propDescriptions: {
-    variant: 'Semantic color variant.',
+    variant: 'Color variant: five semantic plus nine non-semantic hues (same set as Badge).',
     label: 'Accessible label via aria-label.',
     isPulsing: 'Pulse animation; respects prefers-reduced-motion: reduce.',
     tooltip: 'Tooltip text on hover to explain status meaning.',

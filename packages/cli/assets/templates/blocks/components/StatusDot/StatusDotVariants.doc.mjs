@@ -6,9 +6,10 @@ export const doc = {
   exampleFor: 'StatusDot',
   name: 'StatusDot — Variants',
   displayName: 'StatusDot — Variants',
-  description: 'All five semantic color variants displayed in a row.',
+  description:
+    'The five semantic color variants, with the nine non-semantic hues below them.',
   isReady: true,
   aspectRatio: 16 / 9,
   scale: 1,
-  componentsUsed: ['StatusDot', 'HStack'],
+  componentsUsed: ['StatusDot', 'HStack', 'VStack'],
 };
