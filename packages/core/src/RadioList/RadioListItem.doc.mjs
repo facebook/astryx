@@ -19,9 +19,16 @@ export const docs = {
   props: [
     {
       name: 'label',
-      type: 'string',
-      description: 'Label text for the radio item.',
+      type: 'ReactNode',
+      description:
+        'Primary label for the radio item. A rich (ReactNode) label still names the radio from its own text; pair it with aria-label when that text does not read well on its own.',
       required: true,
+    },
+    {
+      name: 'aria-label',
+      type: 'string',
+      description:
+        'Plain-text accessible name for the radio, applied to the control rather than the row. It overrides whatever the label element computes — a plain string label included — so reach for it when a rich label\u2019s own text is absent or reads badly.',
     },
     {
       name: 'value',
@@ -31,8 +38,9 @@ export const docs = {
     },
     {
       name: 'description',
-      type: 'string',
-      description: 'Description text displayed below the label.',
+      type: 'ReactNode',
+      description:
+        'Secondary content displayed below the label. Links and buttons keep their own click behaviour — the row only delegates clicks from its non-interactive surface to the radio.',
     },
     {
       name: 'isDisabled',
@@ -85,9 +93,16 @@ export const docsZh = {
   props: [
     {
       name: 'label',
-      type: 'string',
-      description: '单选选项的标签文本。',
+      type: 'ReactNode',
+      description:
+        '单选选项的主标签。富文本（ReactNode）标签仍会根据其自身文本为单选框命名；若该文本不适合单独朗读，请同时传入 aria-label。',
       required: true,
+    },
+    {
+      name: 'aria-label',
+      type: 'string',
+      description:
+        '单选框的纯文本无障碍名称，应用于控件本身而非整行。它会覆盖标签元素计算出的名称（包括纯字符串标签），因此仅在富文本标签自身缺少文本或朗读效果不佳时使用。',
     },
     {
       name: 'value',
@@ -97,8 +112,9 @@ export const docsZh = {
     },
     {
       name: 'description',
-      type: 'string',
-      description: '显示在标签下方的描述文本。',
+      type: 'ReactNode',
+      description:
+        '显示在标签下方的次要内容。链接和按钮保留自身的点击行为——整行仅将非交互区域的点击委派给单选框。',
     },
     {
       name: 'isDisabled',
@@ -125,9 +141,10 @@ export const docsDense = {
   displayName: 'Radio List Item',
   description: 'Individual radio item w/ label, description, content slots.',
   propDescriptions: {
-    label: 'Label text for radio item.',
+    label: 'Primary label for radio item. String or ReactNode.',
+    'aria-label': 'Plain-text radio name; overrides any label.',
     value: 'Value of this radio item.',
-    description: 'Description text below label.',
+    description: 'Secondary content below label. String or ReactNode.',
     isDisabled: 'Whether this individual radio item disabled.',
     startContent: 'Content rendered before radio circle.',
     endContent: 'Content rendered after label.',

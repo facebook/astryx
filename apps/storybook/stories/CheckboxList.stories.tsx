@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {CheckboxList, CheckboxListItem} from '@astryxdesign/core/CheckboxList';
 import {List} from '@astryxdesign/core/List';
 import {Card} from '@astryxdesign/core/Card';
+import {Link} from '@astryxdesign/core/Link';
 
 const meta: Meta<typeof CheckboxList> = {
   title: 'Core/CheckboxList',
@@ -93,6 +94,39 @@ export const WithDescriptions: Story = {
     label: 'Notification preferences',
     description: 'Choose how you would like to be notified',
     hasDividers: true,
+  },
+};
+
+export const RichDescriptions: Story = {
+  render: args => {
+    const [value, setValue] = useState<string[]>(args.value ?? ['analytics']);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <CheckboxList {...restArgs} value={value} onChange={setValue}>
+        <CheckboxListItem
+          label="Analytics"
+          value="analytics"
+          description={
+            <>
+              Usage data only. <Link href="#privacy">Read the policy</Link>
+            </>
+          }
+        />
+        <CheckboxListItem
+          label="Personalization"
+          value="personalization"
+          description={
+            <>
+              Tailors what you see. <Link href="#privacy">Learn more</Link>
+            </>
+          }
+        />
+      </CheckboxList>
+    );
+  },
+  args: {
+    label: 'Data sharing',
+    description: 'A description can carry links and other rich content.',
   },
 };
 

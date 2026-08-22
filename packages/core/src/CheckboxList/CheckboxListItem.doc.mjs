@@ -30,8 +30,8 @@ export const docs = {
     },
     {
       name: 'description',
-      type: 'string',
-      description: 'Secondary text below the label.',
+      type: 'ReactNode',
+      description: 'Secondary content below the label. String or ReactNode.',
     },
     {
       name: 'endContent',
@@ -115,8 +115,8 @@ export const docsZh = {
     },
     {
       name: 'description',
-      type: 'string',
-      description: '标签下方的辅助文本。',
+      type: 'ReactNode',
+      description: '标签下方的辅助内容。可为字符串或 ReactNode。',
     },
     {
       name: 'endContent',
@@ -160,7 +160,7 @@ export const docsDense = {
     'aria-label':
       'Plain-text checkbox name when label is a ReactNode. Without it, rich-label items all announce as "Checkbox".',
     value: 'Identity key (required inside CheckboxList).',
-    description: 'Secondary text below label.',
+    description: 'Secondary content below label. String or ReactNode.',
     endContent: 'Content rendered after label area.',
     isDisabled: 'Whether this individual item disabled.',
     isLoading:

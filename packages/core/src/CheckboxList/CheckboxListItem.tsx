@@ -76,9 +76,9 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    */
   value?: string;
   /**
-   * Secondary text below the label.
+   * Secondary content below the label. Accepts a plain string or a ReactNode.
    */
-  description?: string;
+  description?: ReactNode;
   /**
    * Content rendered after the label area.
    */

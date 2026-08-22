@@ -339,6 +339,25 @@ describe('CheckboxList', () => {
     expect(screen.getByText('This is option A')).toBeInTheDocument();
   });
 
+  it('renders a ReactNode description on items', () => {
+    render(
+      <CheckboxList label="Plans" value={[]} onChange={() => {}}>
+        <CheckboxListItem
+          label="Pro plan"
+          value="pro"
+          description={
+            <span>
+              See the <a href="/pricing">pricing page</a>
+            </span>
+          }
+        />
+      </CheckboxList>,
+    );
+    expect(
+      screen.getByRole('link', {name: 'pricing page'}),
+    ).toBeInTheDocument();
+  });
+
   it('renders description on the checkbox list group', () => {
     render(
       <CheckboxList
