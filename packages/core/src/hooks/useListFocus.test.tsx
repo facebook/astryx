@@ -579,10 +579,11 @@ describe('useListFocus Escape', () => {
     render(<EscapeHost onHostEscape={() => {}} />);
     screen.getByTestId('One').focus();
 
-    const notPrevented = fireEvent.keyDown(screen.getByRole('menu'), {
+    // fireEvent returns false when a handler cancelled the event.
+    const wasCancelled = !fireEvent.keyDown(screen.getByRole('menu'), {
       key: 'ArrowDown',
     });
-    expect(notPrevented).toBe(false);
+    expect(wasCancelled).toBe(true);
     expect(screen.getByTestId('Two')).toHaveFocus();
   });
 });
