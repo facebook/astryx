@@ -50,6 +50,7 @@ import {isRtlElement} from '../hooks/isRtlElement';
 import {Icon} from '../Icon';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
+import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
@@ -59,6 +60,10 @@ import {useTranslator} from '../i18n';
  * in DOM order. Disabled stops are filtered out by the handler.
  */
 const TAB_STOP_SELECTOR = '[data-tab-value],[data-tab-menu]';
+
+function preventFocus(e: React.MouseEvent) {
+  e.preventDefault();
+}
 
 /** Fraction of the visible strip an arrow press scrolls. */
 const SCROLL_PAGE_RATIO = 0.8;
@@ -353,32 +358,67 @@ export function TabList({
     [hasScroll, scrollRef],
   );
 
+  const revealTab = useCallback(
+    (tab: HTMLElement | null) => {
+      const strip = stripRef.current;
+      if (!hasScroll || !strip || !tab) {
+        return;
+      }
+      const stripBox = strip.getBoundingClientRect();
+      const tabBox = tab.getBoundingClientRect();
+      const inset = parseFloat(getComputedStyle(strip).scrollPaddingLeft) || 0;
+      const pastEnd = tabBox.right - (stripBox.right - inset);
+      const pastStart = tabBox.left - (stripBox.left + inset);
+      const delta = pastEnd > 0 ? pastEnd : pastStart < 0 ? pastStart : 0;
+      if (delta !== 0) {
+        // Not an animation: the strip has to arrive already showing the right
+        // tab, so this overrides the CSS smooth behaviour arrow presses use.
+        strip.scrollBy({left: delta, behavior: 'instant'});
+      }
+    },
+    [hasScroll],
+  );
+
+  const revealSelectedTab = useCallback(() => {
+    const strip = stripRef.current;
+    if (!strip) {
+      return;
+    }
+    revealTab(
+      Array.from(strip.querySelectorAll<HTMLElement>('[data-tab-value]')).find(
+        el => el.dataset.tabValue === value,
+      ) ?? null,
+    );
+  }, [revealTab, value]);
+
   // The tab you are on has to be visible. Selection can move without focus —
   // on mount, or when the host sets `value` itself — and neither scrolls the
   // strip the way clicking or arrowing to a tab does.
   useEffect(() => {
-    const strip = stripRef.current;
-    if (!hasScroll || !strip) {
+    revealSelectedTab();
+  }, [revealSelectedTab]);
+
+  // ...and it has to stay visible when the strip is what moved. A strip that
+  // fitted at one width can hide the selected tab at a narrower one, and no
+  // prop changes when that happens.
+  //
+  // The wrapper is observed rather than the strip because the shared observer
+  // keeps one callback per element and `useScrollOverflow` already holds the
+  // strip's.
+  const revealSelectedTabRef = useRef(revealSelectedTab);
+  useEffect(() => {
+    revealSelectedTabRef.current = revealSelectedTab;
+  }, [revealSelectedTab]);
+
+  useEffect(() => {
+    const root = listRef.current;
+    if (!hasScroll || !root) {
       return;
     }
-    const tab = Array.from(
-      strip.querySelectorAll<HTMLElement>('[data-tab-value]'),
-    ).find(el => el.dataset.tabValue === value);
-    if (!tab) {
-      return;
-    }
-    const stripBox = strip.getBoundingClientRect();
-    const tabBox = tab.getBoundingClientRect();
-    const inset = parseFloat(getComputedStyle(strip).scrollPaddingLeft) || 0;
-    const pastEnd = tabBox.right - (stripBox.right - inset);
-    const pastStart = tabBox.left - (stripBox.left + inset);
-    const delta = pastEnd > 0 ? pastEnd : pastStart < 0 ? pastStart : 0;
-    if (delta !== 0) {
-      // Not an animation: the strip has to arrive already showing the right
-      // tab, so this overrides the CSS smooth behaviour used for arrow presses.
-      strip.scrollBy({left: delta, behavior: 'instant'});
-    }
-  }, [value, hasScroll]);
+    const onResize = () => revealSelectedTabRef.current();
+    observeResize(root, onResize);
+    return () => unobserveResize(root);
+  }, [hasScroll, listRef]);
 
   const scrollByPage = useCallback((direction: -1 | 1) => {
     const strip = stripRef.current;
@@ -420,8 +460,12 @@ export function TabList({
       }
       onHintFocus(e);
       handleFocus(e);
+      // The browser scrolls a focused tab into view only when it is entirely
+      // outside the scrollport, so arrowing onto a half-visible tab leaves it
+      // cut off under the fade. Finish the job it started.
+      revealTab(e.target.closest('[data-tab-value]'));
     },
-    [onFocusProp, onHintFocus, handleFocus],
+    [onFocusProp, onHintFocus, handleFocus, revealTab],
   );
 
   const handleRootBlur = useCallback(
@@ -483,6 +527,9 @@ export function TabList({
             type="button"
             aria-hidden="true"
             tabIndex={-1}
+            // Nothing hidden from assistive technology should end up holding
+            // focus, and a click would put it here.
+            onMouseDown={preventFocus}
             onClick={scrollToStart}
             {...mergeProps(
               themeProps('tab-scroll-button'),
@@ -505,6 +552,7 @@ export function TabList({
             type="button"
             aria-hidden="true"
             tabIndex={-1}
+            onMouseDown={preventFocus}
             onClick={scrollToEnd}
             {...mergeProps(
               themeProps('tab-scroll-button'),
