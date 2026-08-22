@@ -192,7 +192,7 @@ const itemStyles = stylex.create({
     color: colorVars['--color-text-primary'],
   },
   supportingCurrent: {
-    color: colorVars['--color-text-primary'],
+    color: colorVars['--color-text-secondary'],
   },
   icon: {
     display: 'flex',

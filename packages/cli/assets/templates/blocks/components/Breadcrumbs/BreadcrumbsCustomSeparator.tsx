@@ -8,25 +8,27 @@ import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {rtlStyles} from '@astryxdesign/core/utils';
 
-// A chevron and an arrow point along the reading direction, so they have to
-// flip under RTL. A dot does not.
+// Only a glyph the bidi algorithm does not already flip needs rtlStyles.mirror.
+// U+203A has Unicode Bidi_Mirrored=Yes, so the browser mirrors it under RTL on
+// its own and a second flip would point it back the wrong way; U+2192 has
+// Bidi_Mirrored=No and stays pointing left-to-right unless we mirror it.
 const SEPARATORS = [
-  {char: '›', label: 'Chevron', isDirectional: true},
-  {char: '→', label: 'Arrow', isDirectional: true},
-  {char: '·', label: 'Dot', isDirectional: false},
+  {char: '›', label: 'Chevron', needsRtlMirror: false},
+  {char: '→', label: 'Arrow', needsRtlMirror: true},
+  {char: '·', label: 'Dot', needsRtlMirror: false},
 ];
 
 export default function BreadcrumbsCustomSeparator() {
   return (
     <Stack direction="vertical" gap={4}>
-      {SEPARATORS.map(({char, label, isDirectional}) => (
+      {SEPARATORS.map(({char, label, needsRtlMirror}) => (
         <Stack key={label} direction="vertical" gap={1}>
           <Text type="supporting" color="secondary">
             {label}
           </Text>
           <Breadcrumbs
             separator={
-              isDirectional ? (
+              needsRtlMirror ? (
                 <span {...stylex.props(rtlStyles.mirror)}>{char}</span>
               ) : (
                 char

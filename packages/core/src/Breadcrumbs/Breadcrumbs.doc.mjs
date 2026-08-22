@@ -21,7 +21,7 @@ export const docs = {
       {guidance: false, description: 'Use breadcrumbs as the primary navigation. They supplement a sidebar or top nav, not replace it.'},
       {guidance: false, description: 'Show breadcrumbs on top-level pages that have no parent; they add clutter without helping the user.'},
       {guidance: false, description: 'Let the trail grow beyond 5 levels. If you need more, consider simplifying the page hierarchy instead.'},
-      {guidance: false, description: 'Pass a directional separator such as a chevron or an arrow without mirroring it for right-to-left. Apply rtlStyles.mirror through xstyle on the Icon, or swap the glyph for its mirror, never both.'},
+      {guidance: false, description: 'Mirror a separator the bidi algorithm already mirrors. An angle-quote glyph such as › is Bidi_Mirrored, so it flips under RTL on its own and rtlStyles.mirror would flip it back. An arrow glyph such as → and any Icon separator are not, so those do need rtlStyles.mirror through xstyle.'},
     ],
     anatomy: [
       {name: 'Trail', required: true, description: 'The ordered list of links from root to current page.'},
@@ -161,7 +161,7 @@ export const docsZh = {
       {guidance: false, description: 'Use breadcrumbs as the primary navigation. They supplement a sidebar or top nav, not replace it.'},
       {guidance: false, description: 'Show breadcrumbs on top-level pages that have no parent; they add clutter without helping the user.'},
       {guidance: false, description: 'Let the trail grow beyond 5 levels. If you need more, consider simplifying the page hierarchy instead.'},
-      {guidance: false, description: 'Pass a directional separator such as a chevron or an arrow without mirroring it for right-to-left. Apply rtlStyles.mirror through xstyle on the Icon, or swap the glyph for its mirror, never both.'},
+      {guidance: false, description: 'Mirror a separator the bidi algorithm already mirrors. An angle-quote glyph such as › is Bidi_Mirrored, so it flips under RTL on its own and rtlStyles.mirror would flip it back. An arrow glyph such as → and any Icon separator are not, so those do need rtlStyles.mirror through xstyle.'},
     ],
   },
 };
@@ -182,7 +182,7 @@ export const docsDense = {
       {guidance: false, description: 'Use as primary navigation; breadcrumbs supplement, not replace, a main nav.'},
       {guidance: false, description: 'Show on top-level pages with no parent.'},
       {guidance: false, description: 'Let the trail exceed 5 levels; simplify the hierarchy instead.'},
-      {guidance: false, description: 'Use a directional separator (chevron, arrow) without mirroring it for RTL; apply rtlStyles.mirror via xstyle on the Icon, or swap the glyph, never both.'},
+      {guidance: false, description: 'Mirror a separator that already mirrors itself: › is Bidi_Mirrored and flips under RTL on its own. → and Icon separators are not, so those need rtlStyles.mirror via xstyle.'},
     ],
   },
 };

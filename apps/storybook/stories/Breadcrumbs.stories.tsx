@@ -9,7 +9,6 @@ import {
 import type {BreadcrumbMenuOption} from '@astryxdesign/core/Breadcrumbs';
 import {Icon} from '@astryxdesign/core/Icon';
 import {rtlStyles} from '@astryxdesign/core/utils';
-import * as stylex from '@stylexjs/stylex';
 import {HomeIcon, Cog6ToothIcon, FolderIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Breadcrumbs> = {
@@ -68,10 +67,9 @@ export const AutoDetectCurrent: Story = {
 
 export const CustomSeparator: Story = {
   render: () => (
-    // The chevron points along the reading direction, so it carries
-    // rtlStyles.mirror. A non-directional glyph would not need it.
-    <Breadcrumbs
-      separator={<span {...stylex.props(rtlStyles.mirror)}>{'›'}</span>}>
+    // No rtlStyles.mirror here: U+203A has Unicode Bidi_Mirrored=Yes, so the
+    // browser flips it under RTL already and an explicit mirror would undo that.
+    <Breadcrumbs separator={'›'}>
       <BreadcrumbItem href="/">Home</BreadcrumbItem>
       <BreadcrumbItem href="/docs">Docs</BreadcrumbItem>
       <BreadcrumbItem isCurrent>API Reference</BreadcrumbItem>
@@ -240,9 +238,10 @@ export const MenuCrumbComposed: Story = {
 };
 
 /**
- * A directional separator has to flip under RTL. Apply `rtlStyles.mirror`
- * through `xstyle` on the `Icon` rather than shipping a bare glyph, which
- * points against the reading direction in an RTL locale.
+ * An icon separator is an SVG, so the bidi algorithm never mirrors it the way it
+ * mirrors an angle-quote glyph such as `›`. A directional icon therefore needs
+ * `rtlStyles.mirror` through `xstyle`, or it points against the reading
+ * direction in an RTL locale.
  */
 export const MirroredIconSeparator: Story = {
   name: 'Mirrored Icon Separator',
