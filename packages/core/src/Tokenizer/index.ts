@@ -12,6 +12,12 @@
  */
 
 export {Tokenizer} from './Tokenizer';
+/**
+ * The touch surface with the pointer test skipped, so a story or a
+ * handset-only app can render it directly. `Tokenizer` is the one to use: it
+ * picks this surface itself wherever the primary pointer is a finger.
+ */
+export {TouchTokenizerField as TokenizerTouchSurface} from './TouchTokenizerField';
 export type {
   TokenizerProps,
   TokenizerSize,

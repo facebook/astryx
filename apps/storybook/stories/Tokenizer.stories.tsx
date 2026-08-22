@@ -1,10 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Tokenizer} from '@astryxdesign/core/Tokenizer';
+import {Tokenizer, TokenizerTouchSurface} from '@astryxdesign/core/Tokenizer';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
+import {Banner} from '@astryxdesign/core/Banner';
 import {Button} from '@astryxdesign/core/Button';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // Sample data
@@ -24,6 +27,41 @@ const userSource: SearchSource = {
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => users.slice(0, 5),
 };
+
+// A longer list for the touch stories, where the sheet shows the whole source
+// before anything is typed and a short one would not fill it.
+const skills: SearchableItem[] = [
+  {id: 'react', label: 'React'},
+  {id: 'typescript', label: 'TypeScript'},
+  {id: 'stylex', label: 'StyleX'},
+  {id: 'node', label: 'Node'},
+  {id: 'graphql', label: 'GraphQL'},
+  {id: 'rust', label: 'Rust'},
+  {id: 'go', label: 'Go'},
+  {id: 'python', label: 'Python'},
+  {id: 'swift', label: 'Swift'},
+  {id: 'kotlin', label: 'Kotlin'},
+  {id: 'figma', label: 'Figma'},
+  {id: 'docker', label: 'Docker'},
+];
+
+const skillSource: SearchSource = {
+  search: (query: string) =>
+    skills.filter(s => s.label.toLowerCase().includes(query.toLowerCase())),
+  bootstrap: () => skills,
+};
+
+const touchStyles = stylex.create({
+  // A handset's width, so the touch stories read at the size they were
+  // designed for even in a desktop browser.
+  phone: {
+    width: 390,
+    maxWidth: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+  },
+});
 
 const meta: Meta<typeof Tokenizer> = {
   title: 'Core/Tokenizer',
@@ -428,7 +466,8 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<SearchableItem[]>([]);
     const [b, setB] = useState<SearchableItem[]>([]);
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
         <Tokenizer
           label="Attached (default)"
           searchSource={userSource}
@@ -447,4 +486,274 @@ export const StatusVariantComparison: Story = {
       </div>
     );
   },
+};
+
+// ============================================================
+// TOUCH SURFACE
+//
+// Tokenizer fits the pointer it is used with. With a mouse it is everything
+// above: chips that wrap around an inline text input, suggestions in a
+// popover. Where the primary pointer is a finger (`pointer: coarse`) the same
+// component renders a surface built for one — chips on a single
+// sideways-scrolling line so the form never reflows, and an Add button that
+// opens a pinned-tall sheet whose search field sits above the keyboard.
+//
+// Same props, same values, no new import. `TouchResponsive` is the component
+// as you would actually use it; every story after it renders
+// `TokenizerTouchSurface`, the touch half with the pointer test skipped, so
+// they are reviewable on a laptop.
+// ============================================================
+
+export const TouchResponsive: Story = {
+  name: 'Touch: the surface for your pointer',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'On a desktop browser this is the pointer surface. Open it on a ' +
+          'phone, or in a device-emulated tab that reports a coarse pointer, ' +
+          'and the same markup becomes a scrolling chip row with an Add ' +
+          'button. Nothing at the call site changes.',
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<SearchableItem[]>([
+      skills[0],
+      skills[1],
+    ]);
+    // Report the surface actually on screen, rather than assuming a desktop.
+    const isTouch = useMediaQuery('(pointer: coarse)');
+    return (
+      <div {...stylex.props(touchStyles.phone)}>
+        <Banner
+          status={isTouch ? 'success' : 'info'}
+          title={
+            isTouch
+              ? 'Coarse pointer: the touch surface'
+              : 'Fine pointer: the pointer surface'
+          }
+        />
+        <Tokenizer
+          label="Skills"
+          searchSource={skillSource}
+          value={value}
+          onChange={items => setValue(items)}
+          placeholder="Search skills"
+          width="100%"
+        />
+      </div>
+    );
+  },
+};
+
+export const TouchDefault: Story = {
+  name: 'Touch: default',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Three chips and the Add button. Tap Add to open the suggestion ' +
+          'sheet; tapping a row adds that token and leaves the sheet up for ' +
+          'the next one.',
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<SearchableItem[]>([
+      skills[0],
+      skills[1],
+      skills[2],
+    ]);
+    return (
+      <div {...stylex.props(touchStyles.phone)}>
+        <TokenizerTouchSurface
+          label="Skills"
+          searchSource={skillSource}
+          value={value}
+          onChange={items => setValue(items)}
+          placeholder="Search skills"
+          width="100%"
+        />
+      </div>
+    );
+  },
+};
+
+export const TouchManyTokens: Story = {
+  name: 'Touch: more tokens than fit',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The chips scroll sideways within the field. The field stays ' +
+          'exactly one line tall however many there are, so adding and ' +
+          'removing never reflows the form below it, and Add stays put at ' +
+          'the trailing edge rather than scrolling away with the chips.',
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<SearchableItem[]>(skills.slice(0, 8));
+    return (
+      <div {...stylex.props(touchStyles.phone)}>
+        <TokenizerTouchSurface
+          label="Skills"
+          searchSource={skillSource}
+          value={value}
+          onChange={items => setValue(items)}
+          placeholder="Search skills"
+          hasClear
+          width="100%"
+        />
+      </div>
+    );
+  },
+};
+
+export const TouchEmpty: Story = {
+  name: 'Touch: nothing selected',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With no tokens the placeholder holds the line. It doubles as the ' +
+          "sheet's search placeholder, so write it as a search hint.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<SearchableItem[]>([]);
+    return (
+      <div {...stylex.props(touchStyles.phone)}>
+        <TokenizerTouchSurface
+          label="Skills"
+          searchSource={skillSource}
+          value={value}
+          onChange={items => setValue(items)}
+          placeholder="Search skills"
+          width="100%"
+        />
+      </div>
+    );
+  },
+};
+
+export const TouchCreatable: Story = {
+  name: 'Touch: free-text tags',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `hasCreate`, typing something the source does not have puts ' +
+          'a Create row at the end of the list. The keyboard\u2019s return ' +
+          'key commits it too.',
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<SearchableItem[]>([]);
+    return (
+      <div {...stylex.props(touchStyles.phone)}>
+        <TokenizerTouchSurface
+          label="Tags"
+          searchSource={skillSource}
+          value={value}
+          onChange={items => setValue(items)}
+          placeholder="Search or add a tag"
+          hasCreate
+          width="100%"
+        />
+      </div>
+    );
+  },
+};
+
+export const TouchBounded: Story = {
+  name: 'Touch: capped at maxEntries',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Add is disabled once the cap is reached, and the token that ' +
+          'reaches it closes the sheet: there is nothing left to offer.',
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<SearchableItem[]>([skills[0]]);
+    return (
+      <div {...stylex.props(touchStyles.phone)}>
+        <TokenizerTouchSurface
+          label="Skills"
+          description="Up to 3"
+          searchSource={skillSource}
+          value={value}
+          onChange={items => setValue(items)}
+          placeholder="Search skills"
+          maxEntries={3}
+          width="100%"
+        />
+      </div>
+    );
+  },
+};
+
+export const TouchStatus: Story = {
+  name: 'Touch: validation status',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Status, description, and required treatment come from the same ' +
+          'Field wrapper the pointer surface uses, so they look and behave ' +
+          'identically on both.',
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState<SearchableItem[]>([]);
+    return (
+      <div {...stylex.props(touchStyles.phone)}>
+        <TokenizerTouchSurface
+          label="Skills"
+          searchSource={skillSource}
+          value={value}
+          onChange={items => setValue(items)}
+          placeholder="Search skills"
+          isRequired
+          status={{type: 'error', message: 'Pick at least one skill'}}
+          width="100%"
+        />
+      </div>
+    );
+  },
+};
+
+export const TouchDisabled: Story = {
+  name: 'Touch: disabled, with a reason',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `disabledMessage` the Add button stays focusable under ' +
+          '`aria-disabled` so the reason is reachable by keyboard and by ' +
+          'tap, while the sheet stays shut.',
+      },
+    },
+  },
+  render: () => (
+    <div {...stylex.props(touchStyles.phone)}>
+      <TokenizerTouchSurface
+        label="Skills"
+        searchSource={skillSource}
+        value={[skills[0], skills[1]]}
+        onChange={() => {}}
+        placeholder="Search skills"
+        isDisabled
+        disabledMessage="Ask an admin to unlock this field"
+        width="100%"
+      />
+    </div>
+  ),
 };
