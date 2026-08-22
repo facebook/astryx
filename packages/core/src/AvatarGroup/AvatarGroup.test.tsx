@@ -118,6 +118,30 @@ describe('AvatarGroupOverflow', () => {
     expect(overflow).toHaveAttribute('data-size', 'lg');
   });
 
+  it('applies the group shape to the overflow chip, matching its avatars', () => {
+    render(
+      <AvatarGroup shape="square">
+        <Avatar name="Alice" />
+        <AvatarGroupOverflow count={5} />
+      </AvatarGroup>,
+    );
+
+    const overflow = screen.getByLabelText('5 more');
+    expect(overflow).toHaveAttribute('data-shape', 'square');
+  });
+
+  it('defaults the overflow chip to circle shape with no explicit AvatarGroup shape', () => {
+    render(
+      <AvatarGroup>
+        <Avatar name="Alice" />
+        <AvatarGroupOverflow count={5} />
+      </AvatarGroup>,
+    );
+
+    const overflow = screen.getByLabelText('5 more');
+    expect(overflow).toHaveAttribute('data-shape', 'circle');
+  });
+
   it('renders as button when onClick is provided', () => {
     render(
       <AvatarGroup>

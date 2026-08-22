@@ -26,7 +26,7 @@
 
 import {useId, useMemo, useState, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
-import {resolveSize, type AvatarSize} from '../Avatar';
+import {resolveSize, type AvatarShape, type AvatarSize} from '../Avatar';
 import * as stylex from '@stylexjs/stylex';
 import {mergeProps, mergeRefs} from '../utils';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
@@ -54,6 +54,13 @@ export interface AvatarGroupProps extends BaseProps<HTMLDivElement> {
    * @default 'md'
    */
   size?: AvatarSize;
+  /**
+   * Shape applied to all avatars via context, overriding each avatar's own
+   * `shape` prop so a group stays visually uniform. Also applied to the
+   * `AvatarGroupOverflow` "+N" indicator, so it matches the group.
+   * @default 'circle'
+   */
+  shape?: AvatarShape;
   /**
    * Test ID for integration testing.
    */
@@ -88,6 +95,7 @@ const styles = stylex.create({
 export function AvatarGroup({
   children,
   size = 'md',
+  shape = 'circle',
   'data-testid': testId,
   'aria-label': ariaLabelFromProps,
   'aria-describedby': ariaDescribedByFromProps,
@@ -105,8 +113,8 @@ export function AvatarGroup({
   const overlap = Math.round(numericSize * OVERLAP_RATIO);
 
   const contextValue = useMemo(
-    () => ({size, overlap, numericSize}),
-    [size, overlap, numericSize],
+    () => ({size, shape, overlap, numericSize}),
+    [size, shape, overlap, numericSize],
   );
 
   // The keyboard hint and roving tab stop only make sense once the group has
@@ -151,7 +159,7 @@ export function AvatarGroup({
         onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
         onFocus={composeEventHandlers(onFocus, handleFocus)}
         {...mergeProps(
-          themeProps('avatar-group', {size}),
+          themeProps('avatar-group', {size, shape}),
           stylex.props(styles.root, xstyle),
           className,
           style,

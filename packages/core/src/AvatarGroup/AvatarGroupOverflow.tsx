@@ -20,9 +20,9 @@ import {
   typographyVars,
   typeScaleVars,
   fontWeightVars,
-  radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
+import {shapeStyles} from '../Avatar';
 import {mergeProps} from '../utils';
 import {resolveSize} from '../Avatar';
 import {useAvatarGroup} from './AvatarGroupContext';
@@ -65,7 +65,10 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radiusVars['--radius-full'],
+    // Reads the shape variant's `--_avatar-radius` (set via `shapeStyles`,
+    // shared with Avatar) so the overflow indicator matches the group's
+    // shape instead of always staying a circle.
+    borderRadius: 'var(--_avatar-radius)',
     // Use opaque background to prevent avatar bleed-through
     backgroundColor: colorVars['--color-background-surface'],
     color: colorVars['--color-text-secondary'],
@@ -166,6 +169,7 @@ export function AvatarGroupOverflow({
   const t = useTranslator();
   const group = useAvatarGroup();
   const size = group?.size ?? 'md';
+  const shape = group?.shape ?? 'circle';
   const numericSize = group?.numericSize ?? resolveSize('md');
   const overlap = group?.overlap ?? 0;
 
@@ -186,7 +190,7 @@ export function AvatarGroupOverflow({
         aria-label={label}
         data-avatar-item=""
         {...mergeProps(
-          themeProps('avatar-group-overflow', {size}),
+          themeProps('avatar-group-overflow', {size, shape}),
           focusOutlineProps.focusVisible(
             styles.base,
             styles.button,
@@ -194,6 +198,7 @@ export function AvatarGroupOverflow({
             dynamicStyles.size(numericSize),
             dynamicStyles.fontSize(numericSize),
             dynamicStyles.overlap(-overlap),
+            shapeStyles[shape],
             xstyle,
           ),
           className,
@@ -210,13 +215,14 @@ export function AvatarGroupOverflow({
       {...rest}
       aria-label={label}
       {...mergeProps(
-        themeProps('avatar-group-overflow', {size}),
+        themeProps('avatar-group-overflow', {size, shape}),
         stylex.props(
           styles.base,
           styles.overlap,
           dynamicStyles.size(numericSize),
           dynamicStyles.fontSize(numericSize),
           dynamicStyles.overlap(-overlap),
+          shapeStyles[shape],
           xstyle,
         ),
         className,

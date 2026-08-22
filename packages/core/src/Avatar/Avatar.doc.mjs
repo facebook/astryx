@@ -19,7 +19,7 @@ export const docs = {
       {guidance: true, description: 'Give every interactive avatar (href or onClick) a name or alt. It is the control\'s accessible name, and it warns in development when it is missing.'},
       {guidance: false, description: 'Rely on a status label to name an interactive avatar. "Online" says nothing about where the link goes.'},
       {guidance: false, description: 'Use Avatar for logos, product images, or anything that isn\'t a person or team. Use an image or icon instead.'},
-      {guidance: false, description: 'Force a square or custom shape. Avatars are always circular to stay consistent across the system.'},
+      {guidance: false, description: 'Use xstyle or className to override shape. Use the shape prop instead so themes can control it globally.'},
     ],
     anatomy: [
       {name: 'Photo', required: false, description: 'The profile image, loaded from the src URL. Shown when available.'},
@@ -30,7 +30,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-avatar', visualProps: ['size']},
+      {className: 'astryx-avatar', visualProps: ['size', 'shape']},
       {className: 'astryx-avatar-fallback', visualProps: ['size']},
       {className: 'astryx-avatar-status-dot', visualProps: ['variant']},
       {className: 'astryx-avatar-status-dot-glyph', visualProps: ['shape']},
@@ -66,6 +66,12 @@ export const docs = {
       type: "'xsm' | 'sm' | 'md' | 'lg' | 'xl' | number",
       description: "Avatar size. Use a named size ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or a numeric pixel value. Avatar shares Icon's abbreviated scale, but its tiers are larger because avatars align with media rather than glyphs. Inside an AvatarGroup the group's size wins and this prop is ignored.",
       default: "'md'",
+    },
+    {
+      name: 'shape',
+      type: "'circle' | 'rounded' | 'square'",
+      description: "Shape variant of the avatar. 'circle' (default) stays fully round. 'rounded' uses the element radius token so it matches UI corner rounding and can be set globally via theme. 'square' has no radius. Status dot positioning adapts automatically: 4-o'clock on circle, bottom-right corner on rounded/square.",
+      default: "'circle'",
     },
     {
       name: 'status',
