@@ -21,23 +21,29 @@
  *    80  name Levenshtein distance 1
  *    70  keyword substring / distance 1
  *    60  name substring (>=4 chars, >=50% coverage)
- *    50  description / prose mentions the term
+ *    50  description mentions the term
+ *    45  usage guidance mentions the term
  *    40  name Levenshtein distance 2
  *    30  keyword Levenshtein distance 2
  *    20  name Levenshtein distance 3
  *
  * Name + keyword signals always outweigh description/prose, so an exact match
  * sorts above an incidental mention.
+ *
+ * Description and guidance are separate tiers on purpose. A component's own
+ * one-line description saying "notification" is a claim about what it IS; the
+ * same word inside another component's best-practice advice is a passing
+ * mention. Scored equally, `Toast` — "a brief, non-blocking notification" —
+ * ties with `Card`, `Dialog` and `Item`, which merely mention notifications in
+ * their guidance, and ties break alphabetically, so Toast falls off the end of
+ * its own best query.
  */
 
 import {pathToFileURL} from 'node:url';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
-import {
-  discoverComponents,
-  findComponentReadme,
-  resolveImportPath,
-} from '../../foundation/discovery/component-discovery.mjs';
+import {resolveImportPath} from '../../foundation/discovery/component-discovery.mjs';
 import {discoverHooks, findHookDoc} from '../../foundation/discovery/hook-discovery.mjs';
+import {Project} from '../../foundation/config/project.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {loadDocsCatalog, loadTopicDoc} from '../docs/_adapter.mjs';
@@ -54,6 +60,7 @@ import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
  * @property {string} [description]
  * @property {string[]} [prose]
  * @property {string} [_import]
+ * @property {string} [_package]
  * @property {string} [_title]
  * @property {string} [_displayName]
  * @property {'page'|'block'} [_kind]
@@ -173,10 +180,15 @@ export function tokenizeQuery(term) {
  */
 /**
  * Minimum per-token score (in the multi-word pass) to count as a real match.
- * 50 = a genuine name/keyword/description hit; below that is loose Levenshtein
- * fuzz that would otherwise turn gibberish queries into noise.
+ * 45 = a genuine name/keyword/description/guidance hit; below that is loose
+ * Levenshtein fuzz that would otherwise turn gibberish queries into noise.
+ *
+ * It sits at the guidance tier rather than above it because build() sends
+ * multi-word natural language almost exclusively, and guidance text is where
+ * the reader's vocabulary usually lives — a gate above 45 would index that
+ * text and then never count it.
  */
-const MIN_TOKEN_SCORE = 50;
+const MIN_TOKEN_SCORE = 45;
 
 /**
  * Best score for a token against a candidate, fanning out through synonyms
@@ -201,19 +213,38 @@ function bestForToken(tok, candidate) {
 }
 
 /**
+ * A scored hit, with how much of the query it actually covered. `matched` /
+ * `total` are what let a consumer tell a candidate that answered the whole
+ * question from one that caught a single incidental word.
+ * @typedef {object} ScoredHit
+ * @property {number} score
+ * @property {string} reason
+ * @property {number} matched query concepts this candidate hit
+ * @property {number} total query concepts in play
+ */
+
+/**
  * @param {string} term - Lowercased full query.
  * @param {string[]} tokens - Content tokens from tokenizeQuery(term).
  * @param {Candidate} candidate
- * @returns {{score: number, reason: string} | null}
+ * @returns {ScoredHit | null}
  */
 export function scoreQuery(term, tokens, candidate) {
-  const full = scoreCandidate(term, candidate);
+  const total = Math.max(tokens.length, 1);
+  /**
+   * A whole-phrase hit covers the whole query by definition — the entire term
+   * matched one signal — so it is stamped at full coverage.
+   * @param {{score: number, reason: string} | null} hit
+   */
+  const whole = hit => (hit ? {...hit, matched: total, total} : null);
+
+  const full = whole(scoreCandidate(term, candidate));
 
   // 0–1 content tokens: keep whole-phrase fuzzy matching (typo tolerance for
   // single words), but if stopwords left exactly one DIFFERENT token (e.g.
   // "pricing page" → "pricing"), score that token too and take the stronger.
   if (tokens.length <= 1) {
-    const single = tokens.length === 1 ? bestForToken(tokens[0], candidate) : null;
+    const single = tokens.length === 1 ? whole(bestForToken(tokens[0], candidate)) : null;
     if (full && (!single || full.score >= single.score)) return full;
     return single;
   }
@@ -247,6 +278,8 @@ export function scoreQuery(term, tokens, candidate) {
   return {
     score: tokenScore,
     reason: `matches ${matched}/${tokens.length} terms: ${hitTerms.join(', ')}`,
+    matched,
+    total: tokens.length,
   };
 }
 
@@ -315,18 +348,21 @@ export function scoreCandidate(term, {name, keywords = [], description = '', pro
   // ── Prose / description signals (stem-tolerant whole word) ──────
   // Match the term's stem as a whole word, tolerating plural/gerund suffixes
   // so "chart" matches "charts" and "filter" matches "filtering".
+  //
+  // Both tiers are considered; `consider` keeps the strongest. Guidance is
+  // checked even when the description already hit, because the two are
+  // separate claims and the description's higher tier wins on its own.
   if (term.length >= 3) {
     const root = stem(term);
     const escaped = root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const re = new RegExp(`\\b${escaped}(s|es|ing|ed|ies)?\\b`);
     if (description && re.test(description.toLowerCase())) {
       consider(50, `description mentions "${term}"`);
-    } else {
-      for (const blob of prose) {
-        if (blob && re.test(String(blob).toLowerCase())) {
-          consider(50, `docs mention "${term}"`);
-          break;
-        }
+    }
+    for (const blob of prose) {
+      if (blob && re.test(String(blob).toLowerCase())) {
+        consider(45, `guidance mentions "${term}"`);
+        break;
       }
     }
   }
@@ -350,34 +386,80 @@ async function loadModuleDoc(docPath, exportName = 'docs') {
 }
 
 /**
- * Build component candidates: name + keywords + usage/description from the
- * component's .doc.mjs.
- * @param {string} coreDir
+ * Build component candidates: name + keywords + usage/description + usage
+ * guidance, for Core AND every configured integration.
+ *
+ * Component records come from `Project`, which is what makes an integration's
+ * components searchable at all. `search` used to call `discoverComponents(coreDir)`
+ * directly, so a package listed in `astryx.config.mjs` was visible to
+ * `component` and `template` and invisible to the one command whose job is
+ * finding things — the CLI's own search command even loaded a Project already,
+ * purely to print integration warnings next to results that could not contain
+ * an integration's components.
+ *
+ * `prose` carries features and best-practice text. It is indexed because the
+ * reader's vocabulary usually lives there rather than in the one-line
+ * description — `Banner` calls itself "a persistent message" and only its
+ * guidance names "form errors, system updates, maintenance notices" — and it
+ * is scored below the description tier because a passing mention in advice is
+ * weaker evidence than a component's own summary.
+ *
+ * @param {Project | null} project
+ * @param {string | null} coreDir
  * @returns {Promise<Candidate[]>}
  */
-async function gatherComponents(coreDir) {
-  const grouped = discoverComponents(coreDir);
-  const names = Object.values(grouped).flat();
+async function gatherComponents(project, coreDir) {
+  /** @type {Array<{name: string, package: string, docPath: string|null}>} */
+  let records = [];
+  if (project) {
+    try {
+      records = await project.components();
+    } catch {
+      // A discovery failure contributes no components; `doctor` owns reporting.
+      return [];
+    }
+  }
+
   /** @type {Candidate[]} */
   const candidates = [];
-  for (const comp of names) {
-    const readme = findComponentReadme(coreDir, comp);
+  for (const record of records) {
     /** @type {string[]} */
     let keywords = [];
     let description = '';
-    if (readme && readme.endsWith('.doc.mjs')) {
-      const doc = await loadModuleDoc(readme);
+    /** @type {string[]} */
+    let prose = [];
+    /** @type {string | undefined} */
+    let importPath = undefined;
+
+    if (record.docPath) {
+      const doc = await loadModuleDoc(record.docPath);
       if (doc) {
         keywords = Array.isArray(doc.keywords) ? doc.keywords : [];
         description = doc.usage?.description || doc.description || '';
+        prose = [
+          ...(Array.isArray(doc.features) ? doc.features : []),
+          ...(Array.isArray(doc.usage?.bestPractices) ? doc.usage.bestPractices : []).map(
+            (/** @type {any} */ practice) =>
+              typeof practice === 'string' ? practice : (practice?.description ?? ''),
+          ),
+        ].filter(Boolean);
+        // An integration's doc declares its own import specifier; Core's is
+        // derived from the package layout.
+        if (typeof doc.import === 'string') importPath = doc.import;
       }
     }
+    if (importPath == null && coreDir) {
+      importPath = resolveImportPath(coreDir, record.name);
+    }
+
     candidates.push({
       domain: 'component',
-      name: comp,
+      name: record.name,
       keywords,
       description,
-      _import: resolveImportPath(coreDir, comp),
+      prose,
+      _import: importPath,
+      _package: record.package,
     });
   }
   return candidates;
@@ -399,12 +481,21 @@ async function gatherHooks(coreDir) {
     /** @type {string[]} */
     let keywords = [];
     let description = '';
+    /** @type {string[]} */
+    let prose = [];
     let importPath = '@astryxdesign/core/hooks';
     if (docPath) {
       const doc = await loadModuleDoc(docPath);
       if (doc) {
         keywords = Array.isArray(doc.keywords) ? doc.keywords : [];
         description = doc.usage?.description || doc.description || '';
+        prose = [
+          ...(Array.isArray(doc.features) ? doc.features : []),
+          ...(Array.isArray(doc.usage?.bestPractices) ? doc.usage.bestPractices : []).map(
+            (/** @type {any} */ practice) =>
+              typeof practice === 'string' ? practice : (practice?.description ?? ''),
+          ),
+        ].filter(Boolean);
         importPath = doc.importPath || importPath;
       }
     }
@@ -413,6 +504,7 @@ async function gatherHooks(coreDir) {
       name: hookName,
       keywords,
       description,
+      prose,
       _import: importPath,
     });
   }
@@ -427,16 +519,23 @@ async function gatherHooks(coreDir) {
  * built-in one — otherwise the replacement is served by `astryx docs` but
  * invisible to the command whose job is finding it.
  * @param {string} cwd
+ * @param {Project | null} [project] already-loaded project, to avoid re-walking integrations
  * @returns {Promise<Candidate[]>}
  */
-async function gatherDocs(cwd) {
+async function gatherDocs(cwd, project = null) {
   /** @type {Candidate[]} */
   const candidates = [];
   let entries;
   try {
-    entries = (await loadDocsCatalog(cwd)).entries();
+    entries = (await (project ? project.docs() : loadDocsCatalog(cwd))).entries();
   } catch {
-    return candidates;
+    // `loadDocsCatalog` falls back to the built-in topics when a project's
+    // catalog cannot be built; take the same path rather than indexing nothing.
+    try {
+      entries = (await loadDocsCatalog(cwd)).entries();
+    } catch {
+      return candidates;
+    }
   }
   for (const entry of entries) {
     let doc = null;
@@ -510,26 +609,32 @@ async function gatherTemplates(cwd) {
 
 /**
  * Map a scored candidate to its public, actionable result shape. Each result
- * carries enough to act on it: the domain, name, a one-line description, and
- * the follow-up command (and import path where relevant).
+ * carries enough to act on it: the domain, name, a one-line description, how
+ * much of the query it covered, and the follow-up command (and import path
+ * where relevant).
  *
  * @param {Candidate} c - candidate
- * @param {number} score
- * @param {string} reason
+ * @param {ScoredHit} hit
  */
-function toResult(c, score, reason) {
+function toResult(c, hit) {
   const base = {
     domain: c.domain,
     name: c.name,
-    score,
-    reason,
+    score: hit.score,
+    reason: hit.reason,
     description: c.description || '',
+    // Coverage, structured. The reason string has always said "matches 1/3
+    // terms"; a consumer deciding whether a hit is worth acting on should not
+    // have to parse English back out of it.
+    matchedTerms: hit.matched,
+    queryTerms: hit.total,
   };
   switch (c.domain) {
     case 'component':
       return {
         ...base,
         import: c._import,
+        package: c._package,
         command: `astryx component ${c.name}`,
       };
     case 'hook':
@@ -607,13 +712,25 @@ export async function search(query, options = {}) {
     throw new AstryxError('Could not find @astryxdesign/core package');
   }
 
+  // One Project for the whole search: it resolves the config and every
+  // integration package, and both the component and doc gatherers need it.
+  // Loading it per gatherer would repeat that walk on every query, which the
+  // latency-sensitive callers (build, and any server holding the API in
+  // process) pay for directly.
+  let project = null;
+  try {
+    project = await Project.load(cwd);
+  } catch {
+    // No config, or a config that will not load: Core-only search still works.
+  }
+
   // Gather candidates from each requested domain in parallel.
   /** @param {string} d */
   const wants = d => !type || type === d;
   const [components, hooks, docTopics, templates] = await Promise.all([
-    wants('component') ? gatherComponents(coreDir) : [],
+    wants('component') ? gatherComponents(project, coreDir) : [],
     wants('hook') ? gatherHooks(coreDir) : [],
-    wants('doc') ? gatherDocs(cwd) : [],
+    wants('doc') ? gatherDocs(cwd, project) : [],
     wants('template') ? gatherTemplates(cwd) : [],
   ]);
 
@@ -626,7 +743,7 @@ export async function search(query, options = {}) {
   const scored = [];
   for (const candidate of all) {
     const hit = scoreQuery(term, tokens, candidate);
-    if (hit) scored.push(toResult(candidate, hit.score, hit.reason));
+    if (hit) scored.push(toResult(candidate, hit));
   }
 
   // Sort by score desc, then domain (stable order), then name.

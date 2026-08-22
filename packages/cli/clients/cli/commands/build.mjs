@@ -104,7 +104,7 @@ export function registerBuild(program) {
 
       if (json) return jsonOut(result);
 
-      const {query: q, hasResults, directMatch, pages, blocks, domain, frame, foundation} =
+      const {query: q, hasResults, directMatch, pages, blocks, domain, frame, foundation, hint} =
         result.data;
 
       if (!hasResults) {
@@ -192,6 +192,10 @@ export function registerBuild(program) {
             'import "@astryxdesign/core/reset.css" + "astryx.css"; no <div>/style for layout — use Stack/Grid + tokens',
         }),
       );
+
+      // A thin kit is worth saying out loud. Left unsaid, it reads as "the
+      // package has nothing for this" rather than "these words missed".
+      if (hint) out.push(text(hint));
 
       emit(...out);
     },
