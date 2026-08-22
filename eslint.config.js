@@ -95,7 +95,10 @@ export default defineConfig(
       // purpose — other packages' .mjs stay unlinted (#2468).
       "**/*.mjs",
       "!packages/cli/api/**/*.mjs",
-      "!packages/cli/clients/cli/**/*.mjs",
+      // clients/**, not clients/cli/** — a second client (clients/mcp) would
+      // otherwise land outside every CLI rule block: unlinted, no copyright
+      // header, and no @astryx/no-raw-console-cli guarding its stdout.
+      "!packages/cli/clients/**/*.mjs",
       "!packages/cli/assets/codemods/**/*.mjs",
       "!packages/cli/authoring/**/*.mjs",
       "!packages/cli/lib/**/*.mjs",
@@ -397,7 +400,7 @@ export default defineConfig(
   {
     files: [
       "packages/cli/api/**/*.mjs",
-      "packages/cli/clients/cli/**/*.mjs",
+      "packages/cli/clients/**/*.mjs",
       "packages/cli/assets/codemods/**/*.mjs",
       "packages/cli/authoring/**/*.mjs",
       "packages/cli/lib/**/*.mjs",
@@ -452,7 +455,7 @@ export default defineConfig(
   {
     files: [
       "packages/cli/api/**/*.mjs",
-      "packages/cli/clients/cli/**/*.mjs",
+      "packages/cli/clients/**/*.mjs",
       "packages/cli/assets/codemods/**/*.mjs",
       "packages/cli/authoring/**/*.mjs",
       "packages/cli/lib/**/*.mjs",
