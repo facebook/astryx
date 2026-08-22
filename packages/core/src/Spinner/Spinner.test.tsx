@@ -12,6 +12,8 @@
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Spinner} from './Spinner';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
 describe('Spinner', () => {
   it('renders with default props', () => {
@@ -120,5 +122,186 @@ describe('Spinner', () => {
     render(<Spinner data-testid="spinner" />);
     const spinner = screen.getByTestId('spinner');
     expect(spinner.tagName.toLowerCase()).toBe('span');
+  });
+
+  // The ring is painted on a canvas, which jsdom does not implement (no 2d
+  // context, no layout, no CSS.registerProperty). What jsdom CAN see is the
+  // wiring these tests are about: which element declares each public var, and
+  // which default each named size and shade resolves to. The drawn result is
+  // covered in a browser — see the PR's Chromium run.
+  describe('themeable geometry and color', () => {
+    const sizes = ['sm', 'md', 'lg', 'xl'] as const;
+    const shades = ['default', 'onMedia', 'subtle', 'inherit'] as const;
+
+    const parts = (container: HTMLElement) => {
+      const canvas = container.querySelector('canvas') as HTMLCanvasElement;
+      return {canvas, box: canvas.parentElement as HTMLElement};
+    };
+
+    it.each([
+      ['sm', '10px', '2px'],
+      ['md', '14px', '3px'],
+      ['lg', '18px', '3px'],
+      ['xl', '28px', '4px'],
+    ])(
+      'resolves size %s to a %s ring with a %s rail',
+      (size, diameter, rail) => {
+        // These are the values a theme overrides. If a size stopped declaring
+        // them the ring would fall back to the built-in constant and a themed
+        // size would silently do nothing.
+        const {container} = render(
+          <Spinner size={size as (typeof sizes)[number]} />,
+        );
+        const {box} = parts(container);
+        const style = getComputedStyle(box);
+        expect(style.getPropertyValue('--spinner-diameter')).toBe(diameter);
+        expect(style.getPropertyValue('--spinner-rail-width')).toBe(rail);
+      },
+    );
+
+    it('sizes the box from the same vars the ring is drawn from', () => {
+      // The box being CSS-derived from the vars is what keeps it in step with
+      // the ring, and is what the ResizeObserver watches to catch a themed
+      // value changing after mount.
+      const {container} = render(<Spinner />);
+      expect(getComputedStyle(parts(container).box).width).toBe(
+        'calc(var(--spinner-diameter) + var(--spinner-rail-width) * 2)',
+      );
+    });
+
+    it('refuses to be shrunk by a flex host', () => {
+      // Several hosts paint a spinner inside a fixed-size control and are flex
+      // containers — a Switch thumb is 14px at the smallest size, exactly the
+      // default box. Under the default `flex-shrink: 1` the parent compresses
+      // the box while the canvas keeps drawing at the size the vars asked for,
+      // so a themed diameter paints the ring outside its own clipped box
+      // (measured in Chromium: a 24px themed diameter drew a 32px ring in a
+      // 14px box). Refusing to shrink keeps the two the same measurement.
+      const {container} = render(<Spinner />);
+      expect(getComputedStyle(parts(container).box).flexShrink).toBe('0');
+    });
+
+    it.each([
+      ['default', 'var(--color-accent)', 'var(--color-track)'],
+      ['subtle', 'var(--color-text-secondary)', 'var(--color-track)'],
+      ['onMedia', 'var(--color-on-dark)', 'var(--color-on-dark)'],
+      ['inherit', 'currentColor', 'currentColor'],
+    ])('resolves shade %s to %s over %s', (shade, arc, track) => {
+      // Each color rides a real `color` property — the canvas for the arc, the
+      // box for the track — so the browser resolves var()/color-mix()/
+      // currentColor before the canvas is asked to stroke with it. The theme
+      // var is the override and the shade's token is the fallback.
+      const {container} = render(
+        <Spinner shade={shade as (typeof shades)[number]} />,
+      );
+      const {canvas, box} = parts(container);
+      expect(getComputedStyle(canvas).color).toBe(
+        `var(--spinner-color,${arc})`,
+      );
+      expect(getComputedStyle(box).color).toBe(
+        `var(--spinner-track-color,${track})`,
+      );
+    });
+
+    it('keeps every public var free of the private prefix', () => {
+      // `astryx theme build` REFUSES a theme that sets a `--_*` var, so a
+      // themeable var has to be public to be reachable at all. This is the
+      // cheap half of that guard; build.public-component-vars.test.mjs runs
+      // the real validator over the documented snippet.
+      const {container} = render(<Spinner size="xl" />);
+      const {canvas, box} = parts(container);
+      const declared = [
+        getComputedStyle(box).cssText,
+        getComputedStyle(canvas).cssText,
+        getComputedStyle(box).color,
+        getComputedStyle(canvas).color,
+      ].join(' ');
+      expect(declared).not.toContain('--_spinner');
+    });
+
+    it('moves the geometry vars to the wrapper when labeled, keeping the colors inside', () => {
+      // With a label the theme target is the wrapping div, so the geometry
+      // defaults go there for a themed value to override; the two color
+      // channels stay on the box and canvas, which is what the draw reads.
+      render(
+        <Spinner
+          size="xl"
+          shade="subtle"
+          label="Loading"
+          data-testid="spinner"
+        />,
+      );
+      const root = screen.getByTestId('spinner');
+      expect(root.className).toContain('astryx-spinner');
+      expect(
+        getComputedStyle(root).getPropertyValue('--spinner-diameter'),
+      ).toBe('28px');
+
+      const canvas = root.querySelector('canvas') as HTMLCanvasElement;
+      expect(getComputedStyle(canvas).color).toBe(
+        'var(--spinner-color,var(--color-text-secondary))',
+      );
+      expect(getComputedStyle(canvas.parentElement as HTMLElement).color).toBe(
+        'var(--spinner-track-color,var(--color-track))',
+      );
+    });
+
+    it.each(sizes)(
+      'carries the size variant on the theme target (%s)',
+      size => {
+        render(<Spinner size={size} data-testid="spinner" />);
+        const spinner = screen.getByTestId('spinner');
+        expect(spinner.className).toContain('astryx-spinner');
+        expect(spinner).toHaveAttribute('data-size', size);
+      },
+    );
+
+    it.each(shades)(
+      'carries the shade variant on the theme target (%s)',
+      shade => {
+        render(<Spinner shade={shade} data-testid="spinner" />);
+        expect(screen.getByTestId('spinner')).toHaveAttribute(
+          'data-shade',
+          shade,
+        );
+      },
+    );
+  });
+
+  describe('a theme reaches the spinner through the public vars', () => {
+    // jsdom cannot resolve the cascade, so the generated CSS is the proof that
+    // a theme's override lands on the target the component reads from.
+    const cssFor = (
+      components: Parameters<typeof defineTheme>[0]['components'],
+    ) => {
+      const {prose, component} = generateThemeCSS(
+        defineTheme({name: 'spinner-theming-test', components}),
+      );
+      return [prose, component].filter(Boolean).join('\n\n');
+    };
+
+    it('routes a themed size onto the size variant', () => {
+      const css = cssFor({
+        spinner: {
+          'size:xl': {
+            '--spinner-diameter': '2.5rem',
+            '--spinner-rail-width': '0.375rem',
+          },
+        },
+      });
+      expect(css).toContain('--spinner-diameter: 2.5rem');
+      expect(css).toContain('--spinner-rail-width: 0.375rem');
+    });
+
+    it('routes a themed color onto the shade variant', () => {
+      const css = cssFor({
+        spinner: {
+          'shade:subtle': {'--spinner-track-color': 'transparent'},
+          base: {'--spinner-color': 'var(--color-brand)'},
+        },
+      });
+      expect(css).toContain('--spinner-track-color: transparent');
+      expect(css).toContain('--spinner-color: var(--color-brand)');
+    });
   });
 });
