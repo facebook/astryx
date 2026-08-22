@@ -334,6 +334,42 @@ describe('BottomSheet', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it('ignores Escape while an IME composition is active', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <BottomSheet isOpen onOpenChange={onOpenChange} label="Filters">
+        <input aria-label="Search" />
+      </BottomSheet>,
+    );
+    const dialog = screen.getByRole('dialog');
+
+    fireEvent.keyDown(dialog, {key: 'Escape', isComposing: true});
+    fireEvent.keyDown(dialog, {key: 'Escape', keyCode: 229});
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('claims the composing Escape so no native close request follows', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <BottomSheet isOpen onOpenChange={onOpenChange} label="Filters">
+        <input aria-label="Search" />
+      </BottomSheet>,
+    );
+    const dialog = screen.getByRole('dialog');
+
+    // An unclaimed Escape lets the browser raise its own close request, which
+    // arrives as `cancel` and dismisses the sheet on the same keypress. The
+    // guard has to swallow the composing Escape, not merely skip dismissal.
+    const wasNotClaimed = fireEvent.keyDown(dialog, {
+      key: 'Escape',
+      isComposing: true,
+    });
+
+    expect(wasNotClaimed).toBe(false);
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
   it('requests close when the scrim (dialog element itself) is clicked', () => {
     const onOpenChange = vi.fn();
     render(

@@ -37,7 +37,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {useDevWarning, useScrollLock} from '../hooks';
+import {isImeKeyEvent, useDevWarning, useScrollLock} from '../hooks';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,
@@ -298,6 +298,9 @@ function StandaloneBottomSheet({
 
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
+      // No IME guard here: `cancel` is a plain Event carrying no composition
+      // state, and handleKeyDown claims a composing Escape before the browser
+      // can raise the close request that would arrive here.
       event.preventDefault();
       dismissOnEscape();
     },
@@ -305,10 +308,20 @@ function StandaloneBottomSheet({
   );
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDialogElement>) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        dismissOnEscape();
+      if (event.key !== 'Escape') {
+        return;
       }
+      // Claim the key before reading it: an unclaimed Escape lets the browser
+      // raise its own close request, which lands on handleCancel and dismisses
+      // on the same keypress.
+      event.preventDefault();
+      // An IME fires this keydown to cancel an in-progress composition, ahead
+      // of compositionend. It is a composition cancel, not a dismissal command
+      // — see utils/ime; Dialog and BottomSheetSwitcher guard the same way.
+      if (isImeKeyEvent(event.nativeEvent)) {
+        return;
+      }
+      dismissOnEscape();
     },
     [dismissOnEscape],
   );
