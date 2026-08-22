@@ -4,20 +4,24 @@
 
 /**
  * @file Banner.tsx
- * @input Uses React useState/useRef/useId, Button, Icon (with registry string names), StyleX
+ * @input Uses React useState/useRef/useId, useCollapsible, Button, Icon (with registry string names), StyleX
  * @output Exports Banner component, BannerProps, BannerStatus, BannerContainer types
  * @position Core implementation; consumed by index.ts, tested by Banner.test.tsx
  *
  * Visual structure:
  * - Root container: layout-only wrapper (flex column), no visual styling, no theme target
  * - Header area (themeProps 'banner'): colored status background with icon, title, description, actions, dismiss
- * - Content area (themeProps 'banner-content'): collapsible card background for additional content (children)
+ * - Content area (themeProps 'banner-content'): card background for additional content (children)
  * - Status icon (themeProps 'banner-icon'): the target rides on the default
  *   <Icon> itself — the element that paints — so 'status:X' overrides reach
  *   the glyph (#4166); for a custom `icon` node it stays on the layout wrapper
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
- * - When children are provided, a collapse/expand toggle button appears in the end area
+ * - Children are collapsible by default: a toggle appears in the header end
+ *   area and the content starts closed. `collapsible={false}` opts out and
+ *   pins the content open with no toggle. The whole collapse axis (enabled /
+ *   default / controlled) lives on that one prop and is driven by the shared
+ *   `useCollapsible` hook rather than local state.
  *
  * A status added through `BannerStatusMap` augmentation has no entry in the
  * status lookups, so it renders with no status fill, no default glyph and the
@@ -55,6 +59,8 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
+import {useCollapsible} from '../Collapsible/useCollapsible';
+import type {CollapsibleConfig} from '../Collapsible/useCollapsible';
 import {composeEventHandlers, isRenderable, mergeProps} from '../utils';
 import type {Elevation} from '../utils/types';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
@@ -140,15 +146,29 @@ export interface BannerProps extends BaseProps<HTMLDivElement> {
    */
   elevation?: Elevation;
   /**
-   * Whether the content area (children) starts expanded.
-   * Only relevant when children are provided.
-   * @default false
+   * Whether the content area (children) sits behind an expand/collapse toggle
+   * in the header. On by default, so a banner with children behaves as it
+   * always has.
+   *
+   * - omitted / `true` — collapsible, starts collapsed
+   * - `{defaultIsOpen: true}` — collapsible, starts open
+   * - `{isOpen, onOpenChange}` — controlled by the consumer
+   * - `false` — not collapsible: children are always visible, with no toggle,
+   *   no `aria-expanded`, and a content region that stays mounted
+   *
+   * Takes the shared `CollapsibleConfig` so a banner's disclosure is
+   * configured exactly like `Collapsible`'s, rather than through a
+   * Banner-only vocabulary. Banner's default differs from the hook's on one
+   * point — it starts closed, not open — because a banner's message lives in
+   * its header and the content is supplementary.
+   *
+   * @default true
    */
-  defaultIsExpanded?: boolean;
+  collapsible?: boolean | CollapsibleConfig;
   /**
-   * Extra content rendered below the header in a collapsible card-background area.
+   * Extra content rendered below the header in a card-background area.
    * Use for rich content like lists, links, or detailed information.
-   * When provided, a collapse/expand toggle button appears in the header.
+   * Collapsed behind a toggle unless `collapsible={false}`.
    */
   children?: ReactNode;
 }
@@ -367,11 +387,12 @@ const elevationStyles = stylex.create({
  *
  * Two-part visual structure:
  * - Header: colored status background with icon, title, description, and actions
- * - Content (optional): collapsible card background area for additional rich content
+ * - Content (optional): card background area for additional rich content
  *
- * When children are provided, a collapse/expand chevron button appears in the
- * header end area (to the left of the dismiss button if present). Clicking it
- * toggles the visibility of the content area.
+ * When children are provided, a chevron toggle appears in the header end area
+ * (to the left of the dismiss button if present) and the content starts
+ * collapsed. Pass `collapsible={false}` for content that is always visible,
+ * or a config object to change the initial state or control it.
  *
  * Manages its own dismissed state internally — the banner hides on dismiss
  * even if `onDismiss` is not provided, so product teams don't need to wire
@@ -402,8 +423,13 @@ const elevationStyles = stylex.create({
  * <Banner
  *   status="warning"
  *   title="Configuration changes"
- *   defaultIsExpanded>
+ *   collapsible={{defaultIsOpen: true}}>
  *   <p>Details here...</p>
+ * </Banner>
+ * <Banner status="error" title="3 fields need attention" collapsible={false}>
+ *   <ul>
+ *     <li>Email address is invalid</li>
+ *   </ul>
  * </Banner>
  * ```
  */
@@ -417,7 +443,7 @@ export function Banner({
   endContent,
   container = 'card',
   elevation = 'none',
-  defaultIsExpanded = false,
+  collapsible = true,
   children,
   xstyle,
   className,
@@ -429,7 +455,25 @@ export function Banner({
 }: BannerProps) {
   const t = useTranslator();
   const [isDismissed, setIsDismissed] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
+  // The disclosure state machine is the shared one — Banner owns no collapse
+  // state of its own. `collapsible={false}` disables it, and that is what
+  // makes the content permanently visible.
+  //
+  // The one place Banner departs from the hook's defaults: `useCollapsible`
+  // opens by default, a banner starts closed. Its header already carries the
+  // message, so the content is supplementary — and this is the behaviour
+  // Banner has always had.
+  const collapsibleConfig = typeof collapsible === 'object' ? collapsible : {};
+  const {
+    isEnabled: isCollapsible,
+    isOpen: isExpanded,
+    toggle: handleToggleExpand,
+  } = useCollapsible({
+    isCollapsible: collapsible !== false && {
+      ...collapsibleConfig,
+      defaultIsOpen: collapsibleConfig.defaultIsOpen ?? false,
+    },
+  });
   // The element focus came from before it entered the banner. Dismissing
   // unmounts the whole banner, dismiss button included, so without a handoff
   // the browser drops focus to <body> and a keyboard user loses their place.
@@ -438,7 +482,8 @@ export function Banner({
   // Links the expand/collapse toggle to the content region it shows/hides so
   // assistive tech can move from the button to its controlled content
   // (disclosure pattern). The region is conditionally rendered, so aria-controls
-  // below is set only while it's mounted to avoid a dangling reference.
+  // below is set only while it's mounted to avoid a dangling reference. A
+  // non-collapsible banner has no toggle, so neither end of the link is used.
   const contentId = useId();
   const defaultIconName = defaultIconNames[status];
   const role = statusRole[status] ?? FALLBACK_ROLE;
@@ -482,18 +527,19 @@ export function Banner({
     }
   };
 
-  const handleToggleExpand = () => {
-    setIsExpanded(prev => !prev);
-  };
-
+  // The toggle exists only for a collapsible banner that actually has content
+  // to disclose.
+  const hasToggle = isCollapsible && hasChildren;
   // Show the end area if there are actions, dismiss, or a collapsible toggle
-  const showEndArea = isRenderable(endContent) || isDismissable || hasChildren;
+  const showEndArea = isRenderable(endContent) || isDismissable || hasToggle;
   // Center items vertically when there's only a title (no description)
   // and the banner has action buttons
   const hasActions = isRenderable(endContent) || isDismissable;
   const isSingleLine = !isRenderable(description) && hasActions;
 
-  const showContent = hasChildren && isExpanded;
+  // Non-collapsible children are always shown; collapsible ones follow the
+  // hook's open state.
+  const showContent = hasChildren && (!isCollapsible || isExpanded);
   const isCard = container === 'card';
 
   return (
@@ -575,7 +621,7 @@ export function Banner({
               edgeCompSlot.inset(spacingVars['--spacing-2']),
             )}>
             {endContent}
-            {hasChildren && (
+            {hasToggle && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -623,7 +669,7 @@ export function Banner({
       {/* Content area: collapsible card background — theme target ('banner-content') */}
       {showContent && (
         <div
-          id={contentId}
+          id={hasToggle ? contentId : undefined}
           {...mergeProps(
             themeProps('banner-content', {container, status}),
             stylex.props(styles.contentArea, isCard && styles.contentAreaCard),
