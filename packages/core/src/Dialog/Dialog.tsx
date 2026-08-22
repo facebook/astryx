@@ -22,6 +22,7 @@ import {
   useId,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import type {BaseProps} from '../BaseProps';
@@ -118,6 +119,25 @@ const enterDirectional = stylex.keyframes({
   to: {opacity: 1, transform: 'translate(0, 0) scale(1)'},
 });
 
+// The entrance run backwards, so the dialog retreats toward the element that
+// opened it (motion docs: "when you do animate exit, match the entrance").
+const exitDirectional = stylex.keyframes({
+  from: {opacity: 1, transform: 'translate(0, 0) scale(1)'},
+  to: {
+    opacity: 0,
+    transform:
+      'translate(var(--dialog-dir-x, 0px), var(--dialog-dir-y, 16px)) scale(0.95)',
+  },
+});
+
+// The scrim leaves on the same curve as the panel. Without this it stays
+// opaque for the whole exit and then snaps, which reads as a grey flash after
+// the dialog has already faded out.
+const exitBackdrop = stylex.keyframes({
+  from: {opacity: 1},
+  to: {opacity: 0},
+});
+
 /**
  * Dialog styles using native <dialog> element
  * Uses ::backdrop pseudo-element for overlay
@@ -153,6 +173,32 @@ const styles = stylex.create({
     animationName: {
       default: enterDirectional,
       '@media (prefers-reduced-motion: reduce)': 'none',
+    },
+  },
+  // Applied while the dialog is closing: `isOpen` has already gone false, so
+  // `open` is off and the element would otherwise be display:none in the same
+  // frame. Keeps it rendered for the length of the slide-out.
+  exiting: {
+    display: 'flex',
+    animationName: {
+      default: exitDirectional,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
+    // Read back by resolveExitDelay() to time dialog.close() to the end of the
+    // slide-out — a theme that retimes its motion scale retimes the close with
+    // it.
+    animationDuration: durationVars['--duration-medium-min'],
+    // `both`: hold the entrance's end state until the first frame runs, and
+    // the faded-out state after it, so neither edge flashes at full opacity.
+    animationFillMode: 'both' as const,
+    '::backdrop': {
+      animationName: {
+        default: exitBackdrop,
+        '@media (prefers-reduced-motion: reduce)': 'none',
+      },
+      animationDuration: durationVars['--duration-medium-min'],
+      animationTimingFunction: easeVars['--ease-standard'],
+      animationFillMode: 'both' as const,
     },
   },
   // Backdrop using ::backdrop pseudo-element
@@ -224,6 +270,58 @@ const dynamicStyles = stylex.create({
  */
 function formatPosition(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
+}
+
+// =============================================================================
+// Close timing
+// =============================================================================
+
+/** Longest the dialog stays modal after `isOpen` goes false, whatever the theme asks for. */
+const MAX_EXIT_DELAY_MS = 400;
+
+/**
+ * A CSS `<time>` in ms; null when the value isn't one.
+ *
+ * Browsers serialise computed times in seconds — an authored `310ms` reads
+ * back as `"0.31s"` — and a list gives one entry per animation. Outside a real
+ * browser there is no StyleX-authored CSS at all and the value is empty.
+ *
+ * @internal Exported for unit tests.
+ */
+export function parseExitDurationMs(value: string): number | null {
+  const trimmed = value.split(',')[0]?.trim() ?? '';
+  const ms = Number.parseFloat(trimmed);
+  if (!Number.isFinite(ms)) {
+    return null;
+  }
+  return trimmed.endsWith('ms') ? ms : trimmed.endsWith('s') ? ms * 1000 : null;
+}
+
+/**
+ * How long to hold the open `<dialog>` so the exit animation can play.
+ *
+ * Read off the dialog once the `exiting` style is on it, so the hold is
+ * whatever that animation actually runs for — including a theme that retimes
+ * the motion scale underneath it.
+ *
+ * Zero — close in the same tick, exactly as the dialog behaved before there
+ * was an exit animation — whenever there is no animation to wait for: reduced
+ * motion, a theme that zeroes the duration, or a context where the duration
+ * can't be read at all (jsdom, an unresolved `var()`). Degrading to the old
+ * instant close is always safe here; unlike MobileNav's `display` hold, an
+ * early close only costs the animation, it can't strand the page inert.
+ */
+function resolveExitDelay(dialog: HTMLDialogElement): number {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return 0;
+  }
+  const duration = parseExitDurationMs(
+    window.getComputedStyle(dialog).animationDuration,
+  );
+  if (duration === null || duration <= 0) {
+    return 0;
+  }
+  return Math.min(MAX_EXIT_DELAY_MS, duration);
 }
 
 /**
@@ -419,6 +517,18 @@ export function Dialog({
   // for directional animation origin and focus restoration on close.
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
+  // `isOpen` has gone false but the dialog is still on screen, playing its
+  // exit animation. Derived during render rather than in an effect: the exit
+  // style has to land in the same commit that drops `open`, or the dialog
+  // blinks out for a frame before it starts animating (measured: one frame at
+  // display:none, then the fade).
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  const [isExiting, setIsExiting] = useState(false);
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
+    setIsExiting(wasOpen);
+  }
+
   // Derive dismissal behavior from purpose
   const allowEscape = purpose !== 'required';
   const allowBackdropClick = purpose === 'info';
@@ -460,19 +570,72 @@ export function Dialog({
           autofocusTarget.focus();
         }
       }
-    } else {
-      if (dialog.open) {
-        dialog.close();
-      }
-      // Return focus to the element that opened the dialog
+    } else if (!dialog.open) {
+      // Never opened, or already closed by the exit effect below.
       triggerElementRef.current?.focus();
       triggerElementRef.current = null;
     }
   }, [isOpen, isInline]);
 
-  // Lock body scroll when dialog is open (iOS Safari workaround)
+  // Hold the open dialog while it animates out, then close. The hold is read
+  // from the dialog only once `exiting` is on it — that is what makes it the
+  // exit's duration and not the entrance's — so this is its own effect rather
+  // than a branch of the one above.
+  //
+  // Focus goes back to the trigger after close(), never before: an open modal
+  // makes the rest of the document inert, so focusing the trigger any earlier
+  // silently fails.
+  useEffect(() => {
+    if (isInline || !isExiting) {
+      return;
+    }
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return;
+    }
+    if (!dialog.open) {
+      // Nothing to animate out — the dialog was closed by something other than
+      // this effect (a native form submit, say). Retire the exit style, or it
+      // would keep a closed dialog displayed.
+      setIsExiting(false);
+      return;
+    }
+
+    const finishClose = () => {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the exit is over; this render is what retires the exit style
+      setIsExiting(false);
+      dialog.close();
+      triggerElementRef.current?.focus();
+      triggerElementRef.current = null;
+    };
+
+    const delay = resolveExitDelay(dialog);
+    if (delay <= 0) {
+      finishClose();
+      return;
+    }
+
+    const timeout = setTimeout(finishClose, delay);
+    return () => clearTimeout(timeout);
+  }, [isExiting, isInline]);
+
+  // Close the dialog if it unmounts mid-exit: the pending close() is cancelled
+  // with the effect above, and leaving the element `open` would skip
+  // showModal() on the next open (same failure MobileNav guards against).
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    return () => {
+      if (dialog?.open) {
+        dialog.close();
+      }
+    };
+  }, []);
+
+  // Lock body scroll while the dialog is up (iOS Safari workaround), including
+  // its exit animation — unpinning the body early would scroll the page back
+  // underneath a dialog that is still on screen.
   // Skip for inline rendering — no modal overlay to compensate for.
-  useScrollLock(isOpen && !isInline);
+  useScrollLock((isOpen || isExiting) && !isInline);
 
   // Handle Escape key — skip for inline rendering
   useEffect(() => {
@@ -640,6 +803,7 @@ export function Dialog({
           styles.dialog,
           overlayPaddingReset.reset,
           isOpen && styles.open,
+          isExiting && styles.exiting,
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
           hasPosition &&
