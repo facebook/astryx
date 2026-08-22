@@ -119,7 +119,7 @@ const sentimentStyles = stylex.create({
     color: colorVars['--color-success'],
   },
   negative: {
-    color: colorVars['--color-error'],
+    color: colorVars['--color-text-red'],
   },
   neutral: {
     color: colorVars['--color-text-secondary'],

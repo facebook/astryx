@@ -587,6 +587,86 @@ describe('expandColorScale WCAG contrast guarantees', () => {
   });
 });
 
+// =============================================================================
+// colorDefaults contrast — the fall-through pairs (#5019)
+// =============================================================================
+// The status colors are the documented exception to expandColorScale's
+// guarantee: they fall through to colorDefaults, so nothing generated holds
+// them to 4.5:1. Assert the shipped defaults directly — a theme that leaves
+// the status colors alone renders exactly these pairs.
+
+describe('colorDefaults WCAG contrast on the fall-through pairs (#5019)', () => {
+  const modes: [label: string, mode: Mode][] = [
+    ['light', 0],
+    ['dark', 1],
+  ];
+
+  const statusPairs: [on: string, fill: string][] = [
+    ['--color-on-error', '--color-error'],
+    ['--color-on-success', '--color-success'],
+    ['--color-on-warning', '--color-warning'],
+  ];
+
+  it.each(modes)(
+    'status label text meets 4.5:1 on its fill (%s)',
+    (_label, mode) => {
+      for (const [on, fill] of statusPairs) {
+        expect(
+          contrastRatio(
+            resolveToken(colorDefaults, on, mode),
+            resolveToken(colorDefaults, fill, mode),
+          ),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    },
+  );
+
+  it('keeps --color-on-accent readable on the default accent', () => {
+    // Light clears text AA outright. Dark is pinned at the WCAG 1.4.11
+    // floor, not 4.5: --color-accent also serves as the focus outline
+    // (focusDefaults) and as icon/border accent against dark surfaces, and
+    // a dark accent that clears 4.5:1 under white text lands at ~3.05:1
+    // against --color-background-surface — the ring would sit at the
+    // 1.4.11 floor with no margin. Deriving the pair inside the
+    // generator's guarantee is the durable fix, tracked with #5014.
+    expect(
+      contrastRatio(
+        resolveToken(colorDefaults, '--color-on-accent', 0),
+        resolveToken(colorDefaults, '--color-accent', 0),
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio(
+        resolveToken(colorDefaults, '--color-on-accent', 1),
+        resolveToken(colorDefaults, '--color-accent', 1),
+      ),
+    ).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(modes)(
+    'the destructive focus ring stays visible against the dark surfaces (%s)',
+    (_label, mode) => {
+      // Button's destructive variant re-colors the focus outline to
+      // --color-error, so the error fill is also a WCAG 1.4.11 boundary
+      // against every surface a button sits on. The dark popover pair
+      // currently clears the floor by only ~0.1 (3.09:1) — this pins it so
+      // a popover retone cannot cross 3:1 silently.
+      for (const surface of [
+        '--color-background-surface',
+        '--color-background-body',
+        '--color-background-popover',
+      ]) {
+        expect(
+          contrastRatio(
+            resolveToken(colorDefaults, '--color-error', mode),
+            resolveToken(colorDefaults, surface, mode),
+          ),
+        ).toBeGreaterThanOrEqual(3);
+      }
+    },
+  );
+});
+
 describe('ensureContrastTone', () => {
   it('returns the starting tone when it already meets the ratio', () => {
     // Tone 10 on a near-white background is far past 4.5:1 already.

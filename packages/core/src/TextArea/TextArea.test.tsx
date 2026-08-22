@@ -16,6 +16,7 @@ import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {TextArea} from './TextArea';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {colorVars} from '../theme/tokens.stylex';
 
 // FieldStatus announces status messages through the persistent useAnnounce
 // singletons; remove them between tests so role/aria-live queries in this
@@ -54,6 +55,29 @@ beforeEach(() => {
 // jsdom popover content is in the DOM but may not be "visible" in the
 // accessibility tree. Use hidden: true to find it.
 const h = {hidden: true} as const;
+
+// StyleX injects atomic rules into the document; scan them so we can assert
+// which token a class resolves to (see Switch.test.tsx RTL thumb travel).
+function injectedCss(): string {
+  let out = '';
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      for (const rule of Array.from(sheet.cssRules)) {
+        out += rule.cssText + '\n';
+      }
+    } catch {
+      // ignore cross-origin sheets
+    }
+  }
+  out += Array.from(document.querySelectorAll('style'))
+    .map(s => s.textContent || '')
+    .join('\n');
+  return out;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 describe('TextArea', () => {
   it('renders with label', () => {
@@ -656,6 +680,39 @@ describe('TextArea', () => {
       const counter = screen.getByText('55/50').closest('div');
       expect(counter?.querySelector('svg')).toBeInTheDocument();
       expect(container).toBeInTheDocument();
+    });
+
+    it('paints the over-limit counter with the error text token, not the fill token', () => {
+      // The over-limit count is TEXT on the field background, so it must use
+      // the dedicated error text token (--color-text-red), which FieldStatus
+      // and ChatComposer already pair with error surfaces. The error FILL
+      // token (--color-error) is tuned for solid fills under white foregrounds
+      // — after #5019 darkened its dark-mode value, it falls below WCAG AA as
+      // text.
+      render(
+        <TextArea
+          label="Description"
+          value={'x'.repeat(55)}
+          onChange={() => {}}
+          maxLength={50}
+        />,
+      );
+      const counter = screen.getByText('55/50').closest('div')!;
+      const css = injectedCss();
+      // StyleX emits one atomic class per property+value pair; find the class
+      // on the counter whose injected rule sets `color` to the text token's
+      // var() reference. The (?![a-zA-Z0-9_-]) boundary keeps a class name
+      // from matching rules for classes it merely prefixes.
+      const classes = counter.className.split(/\s+/).filter(Boolean);
+      const paintsTextRed = classes.some(c =>
+        new RegExp(
+          '\\.' +
+            escapeRegExp(c) +
+            '(?![a-zA-Z0-9_-])[^{]*\\{[^}]*color:\\s*' +
+            escapeRegExp(colorVars['--color-text-red']),
+        ).test(css),
+      );
+      expect(paintsTextRed).toBe(true);
     });
 
     it('does not show the over-limit indicator icon within the limit', () => {

@@ -2,7 +2,31 @@
 
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Stat} from './Stat';
+
+// StyleX injects atomic rules into the document; scan them so we can assert
+// which token a rendered element's color resolves from.
+function injectedCss(): string {
+  let out = '';
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      for (const rule of Array.from(sheet.cssRules)) {
+        out += rule.cssText + '\n';
+      }
+    } catch {
+      // ignore cross-origin sheets
+    }
+  }
+  out += Array.from(document.querySelectorAll('style'))
+    .map(s => s.textContent || '')
+    .join('\n');
+  return out;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 describe('Stat', () => {
   it('renders label and value', () => {
@@ -60,6 +84,37 @@ describe('Stat', () => {
     expect(screen.getByText('-4.1%').getAttribute('data-sentiment')).toBe(
       'negative',
     );
+  });
+
+  it('colors the negative delta with the error text token', () => {
+    // --color-error is a FILL token: #5019 tuned it for white-on-error
+    // surfaces, which dropped its dark-mode contrast as TEXT below AA.
+    // Delta text must use the dedicated --color-text-red TEXT token instead,
+    // the way FieldStatus and ChatComposer pair it with error surfaces.
+    render(
+      <Stat
+        label="Signups"
+        value="1,204"
+        delta={{value: '-4.1%', direction: 'down'}}
+      />,
+    );
+    const delta = screen.getByText('-4.1%');
+    const css = injectedCss();
+    // StyleX emits one atomic class per property+value pair; the delta must
+    // carry a class whose rule sets `color` to the text-red var() reference.
+    const hasTextRedColor = delta.className
+      .split(/\s+/)
+      .filter(Boolean)
+      .some(c =>
+        new RegExp(
+          '\\.' +
+            escapeRegExp(c) +
+            // boundary: class-name prefixes collide without it
+            '(?![a-zA-Z0-9_-])[^{]*\\{[^}]*color:\\s*' +
+            escapeRegExp(colorVars['--color-text-red']),
+        ).test(css),
+      );
+    expect(hasTextRedColor).toBe(true);
   });
 
   it('maps flat direction to neutral sentiment by default', () => {

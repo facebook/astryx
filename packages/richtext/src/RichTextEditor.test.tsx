@@ -39,6 +39,7 @@ import {
 } from './markdownSerializers';
 import {RichTextEditorToolbar} from './RichTextEditorToolbar';
 import {registerIcons, resetIcons} from '@astryxdesign/core/Icon';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   RichTextEditorAutoLinkPlugin,
   DEFAULT_LINK_MATCHERS,
@@ -237,6 +238,29 @@ function makeNestedBulletState(): string {
       version: 1,
     },
   });
+}
+
+// StyleX injects atomic rules into the document; scan them so we can assert
+// which token a class resolves to (see Switch.test.tsx RTL thumb travel).
+function injectedCss(): string {
+  let out = '';
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      for (const rule of Array.from(sheet.cssRules)) {
+        out += rule.cssText + '\n';
+      }
+    } catch {
+      // ignore cross-origin sheets
+    }
+  }
+  out += Array.from(document.querySelectorAll('style'))
+    .map(s => s.textContent || '')
+    .join('\n');
+  return out;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 const HELLO_STATE = JSON.stringify({
@@ -757,6 +781,34 @@ describe('RichTextEditor', () => {
     await waitFor(() => expect(screen.getByText('11/5')).toBeInTheDocument());
     // aria-live region announces the overflow for screen readers.
     expect(screen.getByText('6 characters over limit')).toBeInTheDocument();
+  });
+
+  it('paints the over-limit counter with the error text token, not the fill token', async () => {
+    // The over-limit count is TEXT on the field background, so it must use
+    // the dedicated error text token (--color-text-red), which FieldStatus
+    // and ChatComposer already pair with error surfaces. The error FILL
+    // token (--color-error) is tuned for solid fills under white foregrounds
+    // — after #5019 darkened its dark-mode value, it falls below WCAG AA as
+    // text. Same counter-over-limit pattern as TextArea.
+    render(
+      <RichTextEditor label="Notes" defaultValue={HELLO_STATE} maxLength={5} />,
+    );
+    const counter = await screen.findByText('11/5');
+    const css = injectedCss();
+    // StyleX emits one atomic class per property+value pair; find the class
+    // on the counter whose injected rule sets `color` to the text token's
+    // var() reference. The (?![a-zA-Z0-9_-]) boundary keeps a class name
+    // from matching rules for classes it merely prefixes.
+    const classes = counter.className.split(/\s+/).filter(Boolean);
+    const paintsTextRed = classes.some(c =>
+      new RegExp(
+        '\\.' +
+          escapeRegExp(c) +
+          '(?![a-zA-Z0-9_-])[^{]*\\{[^}]*color:\\s*' +
+          escapeRegExp(colorVars['--color-text-red']),
+      ).test(css),
+    );
+    expect(paintsTextRed).toBe(true);
   });
 
   it('associates the counter with the editor via aria-describedby', async () => {
