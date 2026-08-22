@@ -429,6 +429,25 @@ export type NumberInputProps =
  * Parse and validate a string input as a number.
  * Returns null if the input is not a valid number or fails validation.
  */
+/**
+ * Whether a raw string could still become a valid number as the user types.
+ *
+ * This is a *syntactic* gate, deliberately looser than {@link parseNumberInput}:
+ * it accepts in-progress states that aren't yet parseable on their own — an
+ * empty string, a lone `-`, a trailing decimal point (`1.`), a leading decimal
+ * (`.5`), and scientific-notation prefixes (`1e`, `1e-`). It rejects anything
+ * that can never resolve to a number, e.g. letters or stray symbols.
+ *
+ * Constraint checks (min/max/integer-only) are intentionally NOT applied here:
+ * a value that merely violates a constraint is still a *number* and is kept as
+ * pending input so the field can surface it as invalid. Only non-numeric text
+ * is blocked — restoring the guarantee the native `type="number"` input gave
+ * before this control moved to `type="text"` for formatted display.
+ */
+function isPartialNumber(input: string): boolean {
+  return /^[-+]?(\d*\.?\d*)(e[-+]?\d*)?$/i.test(input);
+}
+
 function parseNumberInput(
   input: string,
   options: {
@@ -690,6 +709,17 @@ export function NumberInput({
         return;
       }
       const newValue = e.target.value;
+
+      // Reject characters that can never form a number (letters, stray
+      // symbols). `type="text"` — adopted for formatted display — no longer
+      // does this for us the way `type="number"` did, so the field would
+      // otherwise visibly accept "abc". Values that are numeric but violate a
+      // constraint (min/max/integer-only) are NOT blocked here: they stay as
+      // pending input and surface as invalid, preserving that behavior.
+      if (!isPartialNumber(newValue)) {
+        return;
+      }
+
       setPendingInput(newValue);
 
       // If the input is valid, update immediately

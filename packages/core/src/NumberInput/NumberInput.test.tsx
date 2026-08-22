@@ -727,6 +727,72 @@ describe('NumberInput', () => {
     });
   });
 
+  describe('rejects non-numeric characters (type="text" guard)', () => {
+    it('ignores alphabetic input', () => {
+      const onChange = vi.fn();
+      render(<NumberInput label="Count" value={null} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+
+      fireEvent.change(input, {target: {value: 'abc'}});
+
+      // The letters never become the field's value, and no change fires.
+      expect(input).toHaveValue('');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('ignores stray symbols mixed with digits', () => {
+      const onChange = vi.fn();
+      render(<NumberInput label="Count" value={null} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+
+      fireEvent.change(input, {target: {value: '12a'}});
+      expect(input).toHaveValue('');
+
+      fireEvent.change(input, {target: {value: '1$2'}});
+      expect(input).toHaveValue('');
+    });
+
+    it('accepts a well-formed number', () => {
+      const onChange = vi.fn();
+      render(<NumberInput label="Count" value={null} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+
+      fireEvent.change(input, {target: {value: '42'}});
+      expect(input).toHaveValue('42');
+      expect(onChange).toHaveBeenCalledWith(42);
+    });
+
+    it('accepts valid in-progress states (-, 1., .5, 1e)', () => {
+      const onChange = vi.fn();
+      render(<NumberInput label="Count" value={null} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+
+      for (const partial of ['-', '1.', '.5', '1e', '1e-']) {
+        fireEvent.change(input, {target: {value: partial}});
+        expect(input).toHaveValue(partial);
+      }
+    });
+
+    it('keeps a constraint-violating but numeric value as pending (not blocked)', () => {
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={onChange}
+          isIntegerOnly
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+
+      // 3.5 is a number that violates isIntegerOnly — it must still be
+      // accepted as pending input and shown as invalid, not hard-blocked.
+      fireEvent.change(input, {target: {value: '3.5'}});
+      expect(input).toHaveValue('3.5');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
+  });
+
   it('renders tooltip info icon when labelTooltip is provided', () => {
     render(
       <NumberInput
