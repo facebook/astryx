@@ -56,6 +56,7 @@ import {
 } from './monthGeometry';
 import {SWIPE_DISTANCE} from './useOwnScrollGesture';
 import {DRAG_SLOP} from './usePointerDragScroll';
+import {SCROLL_QUIET_MS} from './useScrollSettle';
 
 // ---------------------------------------------------------------------------
 // jsdom scaffolding
@@ -995,6 +996,155 @@ describe('DateInput — calendar surface', () => {
     day.focus();
     fireEvent.keyDown(day, {key: 'ArrowDown'});
     expect(document.activeElement).toHaveAttribute('data-date', '2026-03-17');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Resting between two months — the iOS snap failure
+// ---------------------------------------------------------------------------
+
+/**
+ * `scroll-snap-type: mandatory` is supposed to make all of this unnecessary,
+ * and on a static list it does. This list is virtualized: seven panes exist
+ * out of twelve hundred, and THE PANES ARE THE SNAP AREAS — so every month
+ * the finger crosses mounts one and unmounts another, mid-fling.
+ *
+ * iOS scrolls off the main thread. It picks a landing place from the snap
+ * points it knows about at the time, and a React re-render that lands after
+ * that decision moves them; the scroller comes to rest where no snap point
+ * exists any more and nothing re-snaps it. Reported from a device as the
+ * calendar sitting between two months with the weekday header still square —
+ * which is exactly the shape of it: the grid is not skewed, the scrollport is
+ * parked a couple of columns into a pane, so the left of March and the right
+ * of April are on screen under one Sun-to-Sat header.
+ *
+ * Chrome never shows it, because it snaps again after the mutation. jsdom
+ * implements no snapping at all, which makes it a fine place to test the
+ * correction: the scroller can simply be PUT at a bad offset, exactly as iOS
+ * leaves it, and the settle has to fix it.
+ */
+describe('DateInput — a rest position between two months', () => {
+  /** The row March 2026 occupies in a range that opens in January 2024. */
+  const MARCH_2026_ROW = 26;
+  const FIVE_YEARS = {min: '2024-01-01', max: '2028-12-31'} as const;
+
+  /** A touchstart carrying the list a real one always has. */
+  const touchEvent = (type: string) => {
+    const event = new Event(type, {bubbles: true});
+    const point = {identifier: 1, clientX: 100, clientY: 100};
+    Object.defineProperties(event, {
+      touches: {value: type === 'touchend' ? [] : [point]},
+      targetTouches: {value: type === 'touchend' ? [] : [point]},
+      changedTouches: {value: [point]},
+    });
+    return event;
+  };
+
+  /** Drag, release, and let the quiet period elapse. */
+  const swipeTo = async (scroller: HTMLElement, offset: number) => {
+    scroller.dispatchEvent(touchEvent('touchstart'));
+    scroller.scrollLeft = offset;
+    fireEvent.scroll(scroller);
+    scroller.dispatchEvent(touchEvent('touchend'));
+  };
+
+  const openCalendar = () => {
+    render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+    fireEvent.click(screen.getByLabelText('Event date'));
+    const scroller = document.querySelector<HTMLElement>(
+      '[data-scroller="months"]',
+    )!;
+    const scrollTo = vi.mocked(Element.prototype.scrollTo);
+    scrollTo.mockClear();
+    return {scroller, scrollTo};
+  };
+
+  it('puts the calendar back on a pane once the swipe is over', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      // Two columns in — what the device screenshot showed.
+      const stray = Math.round((SCROLLPORT_WIDTH * 2) / 7);
+      await swipeTo(scroller, MARCH_2026_ROW * SCROLLPORT_WIDTH + stray);
+
+      await waitFor(() =>
+        expect(scrollTo).toHaveBeenCalledWith(
+          expect.objectContaining({left: MARCH_2026_ROW * SCROLLPORT_WIDTH}),
+        ),
+      );
+    });
+  });
+
+  it('goes to the nearer pane, not back the way it came', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      // Three quarters of the way to April: April is the honest answer, and a
+      // correction that always rounded down would drag the user backwards.
+      await swipeTo(
+        scroller,
+        MARCH_2026_ROW * SCROLLPORT_WIDTH + SCROLLPORT_WIDTH * 0.75,
+      );
+
+      await waitFor(() =>
+        expect(scrollTo).toHaveBeenCalledWith(
+          expect.objectContaining({
+            left: (MARCH_2026_ROW + 1) * SCROLLPORT_WIDTH,
+          }),
+        ),
+      );
+    });
+  });
+
+  /**
+   * A scroller the browser snapped for itself must be left alone. Correcting
+   * it anyway would mean every swipe on Chrome — where snapping works — ended
+   * with a second, pointless scroll.
+   */
+  it('leaves a scroller that snapped properly alone', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      await swipeTo(scroller, (MARCH_2026_ROW + 2) * SCROLLPORT_WIDTH);
+
+      // Long enough that the settle has certainly run.
+      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 2));
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * Sub-pixel drift is the browser's own rounding on a fractional viewport,
+   * not a failed snap. Correcting it would fire a scroll after every gesture
+   * on any device whose width is not a whole number of pixels.
+   */
+  it('ignores sub-pixel drift', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      await swipeTo(scroller, MARCH_2026_ROW * SCROLLPORT_WIDTH + 0.4);
+
+      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 2));
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * The correction waits for the finger. Firing it mid-drag would fight the
+   * hand that is still moving the scroller — the same mistake that made the
+   * wheels climb a month at a time on iOS, and the reason `useScrollSettle`
+   * waits for a release rather than for quiet alone.
+   */
+  it('does not correct while the finger is still down', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      scroller.dispatchEvent(touchEvent('touchstart'));
+      scroller.scrollLeft = MARCH_2026_ROW * SCROLLPORT_WIDTH + 120;
+      fireEvent.scroll(scroller);
+
+      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 2));
+      expect(scrollTo).not.toHaveBeenCalled();
+
+      // And on release it does the correction it was holding back.
+      scroller.dispatchEvent(touchEvent('touchend'));
+      await waitFor(() => expect(scrollTo).toHaveBeenCalled());
+    });
   });
 });
 

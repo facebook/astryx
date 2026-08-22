@@ -63,6 +63,7 @@ import {
 } from '../utils';
 import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
+import {useScrollSettle} from './useScrollSettle';
 import {
   fromMonthIndex,
   monthIndexOf,
@@ -424,6 +425,49 @@ export function MonthScroller({
   });
 
   useImperativeHandle(handleRef, () => ({scrollToMonth}), [scrollToMonth]);
+
+  /**
+   * Put the scroller back on a pane boundary once the gesture is over.
+   *
+   * `scroll-snap-type: mandatory` is supposed to make this unnecessary, and
+   * on a static list it does. This list is virtualized: seven panes exist out
+   * of twelve hundred, and the panes ARE the snap areas — so every month the
+   * finger crosses mounts one and unmounts another, mid-fling.
+   *
+   * iOS scrolls off the main thread. It picks a landing place from the snap
+   * points it knows about at the time, and a React re-render that lands after
+   * that decision moves them; the scroller then comes to rest where no snap
+   * point exists any more, and nothing re-snaps it. That is the calendar
+   * sitting between two months with the weekday header still square — the
+   * grid is not skewed, the scrollport is simply parked a couple of columns
+   * into a pane. Chrome hides it by snapping again after the mutation.
+   *
+   * So the rest position is corrected here rather than trusted. It waits for
+   * a true settle — touch released AND quiet, since iOS below 26 has no
+   * `scrollend` and its momentum outlasts any naive timer (see
+   * useScrollSettle) — and only moves when the offset is genuinely off, so a
+   * scroller the browser snapped for itself is left alone.
+   *
+   * The correction is at most half a pane by construction, and its own scroll
+   * settles onto the boundary it just aimed at, so it cannot oscillate.
+   */
+  useScrollSettle(scrollerRef, scroller => {
+    if (paneSize === 0) {
+      return;
+    }
+    const row = rowAtScrollOffset(
+      scroller.scrollLeft,
+      paneSize,
+      rowCount,
+      isRTL,
+    );
+    const target = scrollOffsetForRow(row, paneSize, isRTL);
+    // Sub-pixel drift is the browser's own rounding, not a failed snap.
+    if (Math.abs(scroller.scrollLeft - target) < 1) {
+      return;
+    }
+    scroller.scrollTo({left: target, behavior: 'smooth'});
+  });
 
   // Claim horizontal gestures, leave vertical ones to the sheet.
   //
