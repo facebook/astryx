@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Bottom Sheet: float the grab handle so content sits closer to the top
+[fix] Bottom Sheet: float the grab handle so content sits closer to the top (#5222)
 
 The drag area above the sheet's content was a 48px row in the sheet's flex
 column, pushing everything below it down by its full height and reading as an

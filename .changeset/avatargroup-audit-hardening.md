@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] AvatarGroup: four defects out of the component audit, three of them in `AvatarGroupOverflow`.
+[fix] AvatarGroup: four defects out of the component audit, three of them in `AvatarGroupOverflow` (#5055).
 
 The indicator was `display: flex` on a span, which is a block-level flex container, so the exported component rendered as a full-width bar instead of a circle anywhere outside an `AvatarGroup`: measured 1168px wide in a 1168px parent. It is `inline-flex` now; inside a group nothing changes, because a flex item is blockified either way.
 

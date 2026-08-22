@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] `Section`, `Stack` (with `HStack` / `VStack`) and `Center` accept a padding prop for each of the four edges — `paddingBlockStart`, `paddingBlockEnd`, `paddingInlineStart` and `paddingInlineEnd` — so an edge can take its own spacing step without an `xstyle` escape hatch. `Section` also gains the `paddingInline` axis prop it was missing, so all three components now expose the same seven-prop set.
+[feat] `Section`, `Stack` (with `HStack` / `VStack`) and `Center` accept a padding prop for each of the four edges — `paddingBlockStart`, `paddingBlockEnd`, `paddingInlineStart` and `paddingInlineEnd` — so an edge can take its own spacing step without an `xstyle` escape hatch. `Section` also gains the `paddingInline` axis prop it was missing, so all three components now expose the same seven-prop set (#5224).
 
 Each prop takes the same spacing scale as `padding`, and resolution is most-specific-wins, per edge:
 

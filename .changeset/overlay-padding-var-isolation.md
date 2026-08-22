@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Stop the container padding system at every overlay boundary. Follow-up to #5209, which zeroed `--container-padding-*` on four overlay roots and closed the visible overflow in #5208.
+[fix] Stop the container padding system at every overlay boundary. Follow-up to #5209, which zeroed `--container-padding-*` on four overlay roots and closed the visible overflow in #5208 (#5231).
 
 Two gaps remained. The variables descendants ADD (`--layout-padding-*`, and a Section's propagated padding) still crossed the boundary, so an unpadded `Section` inside an overlay took the page's padding instead of the theme default — 40px where 16px was meant. And `Lightbox`, `ContextMenu` and `HoverCard` were never covered.
 

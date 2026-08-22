@@ -3,7 +3,7 @@
 ---
 
 [feat] DateInput fits the pointer: a touch picker on a finger, the text field
-on a mouse
+on a mouse (#5243)
 
 `DateInput` has always been a control for a mouse — a field you type into with
 a calendar in a popover beside it. On a phone or a tablet that is the wrong

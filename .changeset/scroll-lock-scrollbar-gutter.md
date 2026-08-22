@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Opening a Dialog, BottomSheet, Lightbox, or MobileNav no longer shifts the page sideways when the browser has a classic scrollbar
+[fix] Opening a Dialog, BottomSheet, Lightbox, or MobileNav no longer shifts the page sideways when the browser has a classic scrollbar (#5219)
 
 @imdreamrunner
 

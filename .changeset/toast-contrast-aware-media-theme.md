@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] MediaTheme: add `mode="auto"` and `mode="off"`
+[feat] MediaTheme: add `mode="auto"` and `mode="off"` (#5299)
 
 A theme is free to define `--color-background-inverted` as something that is
 not inverted — and a component that hardcodes `mode="dark"` then paints white

@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] DateInput's touch calendar no longer rests between two months
+[fix] DateInput's touch calendar no longer rests between two months (#5319)
 
 Swiping the month calendar on iOS could leave it parked a couple of columns
 into a pane: the left of March and the right of April on screen at once, under

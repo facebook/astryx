@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Tooltip and HoverCard: tap to open where there is no hover
+[feat] Tooltip and HoverCard: tap to open where there is no hover (#5248)
 
 Hover is the one trigger a touch screen cannot express, and both components
 were answering that badly. `Tooltip` suppressed itself on any device reporting
@@ -38,4 +38,4 @@ button, so the `auto` rule would hand the tap to the control — but revealing
 the tooltip is that button's only purpose, and suppressing it left an
 InfoTip's content unreachable on a phone.
 
-@rubycheung
+@rubyycheung
