@@ -69,7 +69,7 @@ export const colorDefaults = {
 
   // Border
   '--color-border': 'light-dark(#05365919, #F2F4F619)',
-  '--color-border-emphasized': 'light-dark(#CCD3DB, #494D53)',
+  '--color-border-emphasized': 'light-dark(#898D93, #6E7276)',
 
   // Effects
   '--color-skeleton': 'light-dark(#CCD3DB, #5A5E66)',
