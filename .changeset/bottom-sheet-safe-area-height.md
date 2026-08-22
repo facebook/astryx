@@ -8,4 +8,6 @@ A named height budget now sizes the sheet's content. The device's bottom safe-ar
 
 A no-scrim (`hasScrim={false}`) sheet no longer lets the page show through iOS Safari's translucent address bar. The sheet was positioned against the dialog's own `100dvh` height, and that length goes stale while the address bar animates between its expanded and compact states, leaving the sheet a bar's height off the bottom of the screen. It is now pinned to the viewport directly, which the compositor resolves at paint time, so it stays flush in every bar state.
 
+The sheet also keeps a strip of its own surface below the viewport's bottom edge, so a fast flick — where iOS repositions `fixed` elements a frame or two late — no longer flashes a sliver of the page between the sheet and the bar.
+
 @imdreamrunner

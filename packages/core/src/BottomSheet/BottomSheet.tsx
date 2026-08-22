@@ -52,6 +52,16 @@ import {
 export type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
 import type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
 
+// SYNC: must match `maxWidth` on `sheet` in BottomSheetPanel.tsx -- the
+// overdraw strip below the sheet has to be exactly as wide as the sheet it
+// continues, or it shows as a wider band on a viewport past the cap.
+const SHEET_MAX_WIDTH = 640;
+// How far the sheet's surface continues below the viewport's bottom edge, on
+// top of the 48px the sheet's own negative margin already provides. Sized to
+// outlast a momentum-scroll lag (the tallest iOS address bar is ~84pt), not to
+// any layout: it is painted below the viewport and clipped there at rest.
+const OVERDRAW_HEIGHT = 200;
+
 const styles = stylex.create({
   dialog: {
     position: 'fixed',
@@ -128,6 +138,30 @@ const styles = stylex.create({
     display: 'flex',
     justifyContent: 'center',
     pointerEvents: 'none',
+    // Surface that continues below the viewport's bottom edge, so a sheet that
+    // lags behind a moving viewport still has something of its own under it.
+    //
+    // iOS repositions `fixed` elements a frame or two late during momentum
+    // scrolling, and the address bar resizing the viewport IS a scroll. The
+    // sheet already overdraws `OVERSCROLL_PADDING` (48px) past the bottom edge,
+    // which absorbs a small lag; a fast flick can outrun it, and the page shows
+    // in the sliver between the sheet and the bar until the next frame lands.
+    //
+    // This is a paint-only strip: `::after` takes no layout box in the flex
+    // row, so the sheet's measured height -- which the drag and snap maths read
+    // for its detents -- is untouched. At rest the strip is below the viewport,
+    // where nothing is painted at all, so it costs exactly nothing.
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      insetBlockStart: '100%',
+      insetInline: 0,
+      marginInline: 'auto',
+      maxWidth: SHEET_MAX_WIDTH,
+      height: OVERDRAW_HEIGHT,
+      backgroundColor: colorVars['--color-background-surface'],
+      pointerEvents: 'none',
+    },
   },
   positionerHidden: {
     display: 'none',
