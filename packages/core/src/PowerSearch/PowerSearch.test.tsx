@@ -103,10 +103,14 @@ const config: PowerSearchConfig = {
   ],
 };
 
-function PowerSearchWrapper(props: {config: PowerSearchConfig}) {
+function PowerSearchWrapper(props: {
+  config: PowerSearchConfig;
+  menuWidth?: number | string;
+}) {
   const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
   return (
     <PowerSearch
+      menuWidth={props.menuWidth}
       config={props.config}
       filters={filters}
       onChange={newFilters => {
@@ -490,5 +494,71 @@ describe('PowerSearch statusVariant forwarding', () => {
       'data-variant',
       'detached',
     );
+  });
+  describe('menuWidth', () => {
+    // The width lands as StyleX's dynamic-style custom property on the
+    // popover element; jsdom has no layout, so the clamp against the input
+    // (min-width: anchor-size(width), which CSS resolves in the browser) is
+    // covered by the browser measurements in the PR rather than here.
+    const widthVar = (el: Element | null | undefined) =>
+      (el as HTMLElement | undefined)?.style.getPropertyValue('--x-width') ??
+      null;
+
+    async function openFieldMenu(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('Ti');
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      return document
+        .querySelector('[role="listbox"]')
+        ?.closest('[popover]') as HTMLElement | null;
+    }
+
+    it('sizes the field-search menu from a pixel number', async () => {
+      const user = userEvent.setup();
+      render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          menuWidth={520}
+        />,
+      );
+      expect(widthVar(await openFieldMenu(user))).toBe('520px');
+    });
+
+    it('passes a string width through untouched', async () => {
+      const user = userEvent.setup();
+      render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          menuWidth="32rem"
+        />,
+      );
+      expect(widthVar(await openFieldMenu(user))).toBe('32rem');
+    });
+
+    it('leaves the menu content-sized when omitted', async () => {
+      const user = userEvent.setup();
+      render(<PowerSearch config={config} filters={[]} onChange={() => {}} />);
+      expect(widthVar(await openFieldMenu(user))).toBe('');
+    });
+
+    it('does not size the value popover that follows a field choice', async () => {
+      const user = userEvent.setup();
+      render(<PowerSearchWrapper config={config} menuWidth={520} />);
+      await openFieldMenu(user);
+      await user.click(screen.getAllByRole('option', {hidden: true})[0]);
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      const valuePopover = screen
+        .getByRole('button', {name: 'Apply', hidden: true})
+        .closest('[popover]');
+      expect(widthVar(valuePopover)).toBe('');
+    });
   });
 });

@@ -156,6 +156,13 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   hasEntriesOnFocus?: boolean;
   /** Max dropdown items. @default 10 */
   maxMenuItems?: number;
+  /**
+   * Width of the dropdown menu. Numbers are pixels, strings are used as-is
+   * (e.g. `'32rem'`). The menu never renders narrower than the field, so a
+   * value below the field's width has no effect. Omitted, the menu matches
+   * the field and grows with its content.
+   */
+  menuWidth?: number | string;
   /** Text shown when no results found. @default 'No results found' */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
@@ -393,6 +400,7 @@ export function Tokenizer<T extends SearchableItem>({
   placeholder,
   hasEntriesOnFocus,
   maxMenuItems,
+  menuWidth,
   emptySearchResultsText,
   isDisabled = false,
   htmlName,
@@ -778,6 +786,7 @@ export function Tokenizer<T extends SearchableItem>({
         placeholder={value.length === 0 ? placeholder : ''}
         hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
         maxMenuItems={maxMenuItems}
+        menuWidth={menuWidth}
         emptySearchResultsText={emptySearchResultsText}
         isDisabled={isDisabled}
         isFocusableDisabled={showsDisabledMessage}

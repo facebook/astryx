@@ -94,6 +94,14 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   maxMenuItems?: number;
 
   /**
+   * Width of the dropdown menu. Numbers are pixels, strings are used as-is
+   * (e.g. `'32rem'`). The menu never renders narrower than its anchor, so a
+   * value below the anchor's width has no effect. Omitted, the menu matches
+   * the anchor and grows with its content.
+   */
+  menuWidth?: number | string;
+
+  /**
    * Text shown when no results found.
    * @default 'No results found'
    */
@@ -226,6 +234,12 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
+  // Pairs with `popover` rather than replacing it: min-width beats width in
+  // CSS, so the anchor-size floor keeps a small menuWidth from rendering the
+  // menu narrower than the field it hangs off.
+  popoverCustomWidth: (width: number | string) => ({
+    width: typeof width === 'number' ? `${width}px` : width,
+  }),
   item: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -316,6 +330,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   placeholder: placeholderFromProps,
   hasEntriesOnFocus = false,
   maxMenuItems = 10,
+  menuWidth,
   emptySearchResultsText: emptySearchResultsTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
@@ -872,7 +887,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           placement: 'below',
           alignment: 'start',
           offset: spacingVars['--spacing-1'],
-          xstyle: styles.popover,
+          xstyle: [
+            styles.popover,
+            menuWidth != null && styles.popoverCustomWidth(menuWidth),
+          ] as StyleXStyles,
         },
       )}
     </>
