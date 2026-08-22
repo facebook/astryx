@@ -15,7 +15,7 @@
 import {describe, it, expect} from 'vitest';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {search, SEARCH_DOMAINS} from './search.mjs';
+import {search, scoreCandidate, SEARCH_DOMAINS} from './search.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const cwd = REPO;
@@ -91,4 +91,62 @@ describe('search leaf — limit validation (API matches the CLI contract)', () =
       code: 'ERR_INVALID_ARGUMENT',
     });
   }, SLOW);
+});
+
+/**
+ * A page template's keywords are auto-derived from the component names it
+ * renders. Scored at the same weight as an authored keyword, that signal
+ * drowns out intent: every page that renders a `<List>` anywhere claimed the
+ * same "list" match as the page that IS a list, so the ranking flattened into
+ * a tie and fell through to the alphabetical tiebreak.
+ */
+describe('search leaf — page ranking is not dominated by incidental renders', () => {
+  /**
+   * @param {Awaited<ReturnType<typeof search>>} r
+   * @returns {Array<{name: string, score: number, reason: string}>} pages, in rank order
+   */
+  const pagesOf = r => /** @type {any[]} */ (r.data.results).filter(x => x.kind === 'page');
+
+  it('ranks a table page top-3 for "customer list", not the pages that merely render a List', async () => {
+    const pages = pagesOf(await search('customer list', {cwd, type: 'template', limit: 400}));
+    const top = pages.slice(0, 3).map(p => p.name);
+    expect(top).toEqual(expect.arrayContaining([expect.stringMatching(/^table/)]));
+  }, SLOW);
+
+  it('keeps the widest-surface page off the top spot for a query it only brushes', async () => {
+    // theme-showcase renders ~51 components — 4x the median page — so it used
+    // to match more tokens of almost any query than the page actually about them.
+    const pages = pagesOf(await search('list of users', {cwd, type: 'template', limit: 400}));
+    expect(pages.length).toBeGreaterThan(0);
+    expect(pages[0].name).not.toBe('theme-showcase');
+  }, SLOW);
+
+  it('separates pages by score instead of collapsing into one alphabetical tie', async () => {
+    const pages = pagesOf(await search('customer list', {cwd, type: 'template', limit: 400}));
+    expect(pages.length).toBeGreaterThan(5);
+    expect(pages[0].score).toBeGreaterThan(pages[5].score);
+  }, SLOW);
+});
+
+describe('scoreCandidate() — derived vs authored keywords', () => {
+  it('scores an authored keyword above the same word derived from the source', () => {
+    const authored = scoreCandidate('list', {name: 'x', keywords: ['List']});
+    const derived = scoreCandidate('list', {name: 'x', derivedKeywords: ['List']});
+    expect(authored.score).toBeGreaterThan(derived.score);
+  });
+
+  it('scores a derived keyword lower as the page renders more components', () => {
+    const focused = scoreCandidate('list', {name: 'x', derivedKeywords: ['List', 'Card']});
+    const sprawling = scoreCandidate('list', {
+      name: 'x',
+      derivedKeywords: ['List', ...Array.from({length: 50}, (_, i) => `C${i}`)],
+    });
+    expect(focused.score).toBeGreaterThan(sprawling.score);
+  });
+
+  it('still reports a derived hit rather than dropping it', () => {
+    const hit = scoreCandidate('kanban', {name: 'x', derivedKeywords: ['Kanban', 'Card']});
+    expect(hit).not.toBeNull();
+    expect(hit.score).toBeGreaterThan(0);
+  });
 });
