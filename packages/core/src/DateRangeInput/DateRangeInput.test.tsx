@@ -27,6 +27,7 @@ import type {DateRange} from './DateRangeInput';
 import {Icon} from '../Icon';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {InternationalizationProvider} from '../i18n';
 
 describe('DateRangeInput', () => {
   it('renders with label', () => {
@@ -70,6 +71,29 @@ describe('DateRangeInput', () => {
     expect(trigger.textContent).toMatch(/Mar/);
     expect(trigger.textContent).toMatch(/15/);
     expect(trigger.textContent).toMatch(/22/);
+  });
+
+  it('updates the committed range display when provider locale changes', () => {
+    const range: DateRange = {
+      start: '2025-01-02',
+      end: '2025-01-05',
+    };
+    const renderDateRangeInput = (locale: 'en-US' | 'es-ES') => (
+      <InternationalizationProvider locale={locale}>
+        <DateRangeInput
+          label="Range"
+          value={range}
+          onChange={() => {}}
+          hasClear={false}
+        />
+      </InternationalizationProvider>
+    );
+    const {rerender} = render(renderDateRangeInput('en-US'));
+
+    expect(screen.getByText('Jan 2, 2025 – Jan 5, 2025')).toBeInTheDocument();
+
+    rerender(renderDateRangeInput('es-ES'));
+    expect(screen.getByText('2 ene 2025 – 5 ene 2025')).toBeInTheDocument();
   });
 
   it('forwards ref to trigger button', () => {
