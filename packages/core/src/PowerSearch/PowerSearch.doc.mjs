@@ -162,6 +162,13 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-power-search'},
+      // Same directory, same documented CSS surface: the touch variant's tap
+      // target is the class a theme reaches for on phone layouts.
+      {
+        className: 'astryx-power-search-mobile',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
     ],
   },
 };

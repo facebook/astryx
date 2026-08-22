@@ -791,6 +791,30 @@
     "defaultMessage": "Search…",
     "description": "Grey placeholder text inside the empty PowerSearch input. Imperative verb; trailing `…` is one character."
   },
+  "@astryx.powersearch.mobile.addFilter": {
+    "defaultMessage": "Add filter",
+    "description": "Label on the tap target that opens PowerSearchMobile's filter-builder sheet, and the title of that sheet. Imperative verb; \"filter\" is the noun (one search condition)."
+  },
+  "@astryx.powersearch.mobile.editFilter": {
+    "defaultMessage": "Edit filter",
+    "description": "Title of PowerSearchMobile's editor sheet when reopening a filter the user already added, as opposed to building a new one. Imperative verb."
+  },
+  "@astryx.powersearch.mobile.back": {
+    "defaultMessage": "Back",
+    "description": "Screen-reader-only label on the chevron button that returns to the previous step of PowerSearchMobile's filter-builder sheet. Navigation, not \"rear\"."
+  },
+  "@astryx.powersearch.mobile.searchFields": {
+    "defaultMessage": "Search filters",
+    "description": "Screen-reader-only label for the search box above the field list in PowerSearchMobile's sheet. It narrows the list of filters offered, not the underlying data."
+  },
+  "@astryx.powersearch.mobile.searchFieldsPlaceholder": {
+    "defaultMessage": "Search filters…",
+    "description": "Placeholder inside that same search box. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.powersearch.mobile.noFields": {
+    "defaultMessage": "No filters match your search",
+    "description": "Empty state shown in PowerSearchMobile's sheet when the typed query matches none of the available filters."
+  },
   "@astryx.resizable.collapsed": {
     "defaultMessage": "Collapsed",
     "description": "aria-valuetext for the Resizable drag handle (role=separator) while its panel is collapsed to zero size. Replaces the numeric value announcement, since the numeric value is clamped to the minimum while collapsed. Adjective describing the panel state, not a verb/command."
