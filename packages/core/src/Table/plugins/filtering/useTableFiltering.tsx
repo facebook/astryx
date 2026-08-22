@@ -9,8 +9,10 @@
  * @position Filtering plugin; consumed by Table via plugins prop
  *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Table/useTableFiltering.doc.mjs (props table)
  * - /packages/core/src/Table/Table.doc.mjs (filtering documentation)
  * - /packages/core/src/Table/index.ts (exports)
+ * - /apps/storybook/stories/TableFiltering.stories.tsx (variant coverage)
  */
 
 import {
@@ -25,7 +27,16 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
+import {Badge} from '../../../Badge';
 import {Button} from '../../../Button';
+import {BottomSheet} from '../../../BottomSheet';
+import {CheckboxList, CheckboxListItem} from '../../../CheckboxList';
+import {RadioList, RadioListItem} from '../../../RadioList';
+import {Heading} from '../../../Heading';
+import {HStack} from '../../../HStack';
+import {VStack} from '../../../VStack';
+import {Section} from '../../../Section';
+import {useMediaQuery} from '../../../hooks/useMediaQuery';
 import {Popover} from '../../../Popover';
 import {TextInput} from '../../../TextInput';
 import {NumberInput} from '../../../NumberInput';
@@ -272,8 +283,33 @@ export type TableFilterState = Record<string, TableFilterValue | undefined>;
  * - `'popover'` — filter icon in header; clicking opens a popover with the filter control
  * - `'inline'` — filter control rendered directly below header text inside the header cell
  * - `'inline-compact'` — same as inline but with compact-sized controls
+ * - `'sheet'` — every filter moves out of the header into a bottom sheet opened
+ *   from a single Filter button above the table. The touch presentation; the
+ *   other variants adopt it below {@link UseTableFilteringConfig.sheetBreakpoint}.
  */
-export type TableFilterVariant = 'popover' | 'inline' | 'inline-compact';
+export type TableFilterVariant =
+  'popover' | 'inline' | 'inline-compact' | 'sheet';
+
+/**
+ * Viewport width below which the filter controls collapse into a bottom sheet.
+ * Matches AppShell's breakpoint scale; `'none'` opts out of collapsing.
+ */
+export type TableFilterSheetBreakpoint = 'sm' | 'md' | 'lg' | 'none';
+
+const SHEET_BREAKPOINT_VALUES: Record<TableFilterSheetBreakpoint, number> = {
+  sm: 640,
+  md: 768,
+  lg: 1024,
+  none: 0,
+};
+
+/**
+ * Option count up to which the sheet renders an enum filter as a list of
+ * checkboxes / radios instead of a Selector. Above it, the Selector's own
+ * search and scrolling are worth the nested layer — the same threshold
+ * CheckboxList and RadioList give for choosing themselves over a Selector.
+ */
+const SHEET_LIST_MAX_OPTIONS = 7;
 
 // =============================================================================
 // Hook Config
@@ -301,9 +337,36 @@ export interface UseTableFilteringConfig {
   /**
    * Display variant for filter controls.
    *
+   * Below `sheetBreakpoint` every variant renders as `'sheet'`; set
+   * `'sheet'` to use it at every width.
+   *
    * @default 'popover'
    */
   variant?: TableFilterVariant;
+  /**
+   * Viewport width below which the filter controls leave the header and
+   * collapse into a bottom sheet, opened from a single Filter button above
+   * the table.
+   *
+   * A header cell is the wrong place for a filter on a phone: the column is
+   * too narrow to hold a control, and a popover anchored to it covers the
+   * rows the filter is meant to narrow. Set `'none'` to keep the header
+   * controls at every width.
+   *
+   * @default 'sm'
+   */
+  sheetBreakpoint?: TableFilterSheetBreakpoint;
+  /**
+   * SSR hint: whether the initial render should assume a narrow viewport.
+   * Seeds the breakpoint state so server-rendered HTML matches the client on
+   * phones, avoiding a flash of the header controls.
+   *
+   * Derive it from the User-Agent header or a device-detection cookie in a
+   * server component, then pass it down.
+   *
+   * @default false
+   */
+  defaultIsMobile?: boolean;
   /**
    * PowerSearch configuration that defines the available filter fields.
    * Columns reference fields by key; the plugin resolves the operator's
@@ -322,6 +385,12 @@ export interface UseTableFilteringConfig {
 
 interface FilterStore {
   getConfig: () => UseTableFilteringConfig;
+  /**
+   * The table's final column list, as the plugin pipeline saw it in
+   * `transformColumns`. The sheet needs every filterable column at once,
+   * where the header slots only ever see one at a time.
+   */
+  getColumns: () => ReadonlyArray<TableColumn<Record<string, unknown>>>;
 }
 
 const FilterStoreContext = createContext<FilterStore | null>(null);
@@ -405,11 +474,47 @@ const filterStyles = stylex.create({
   placeholderCompact: {
     height: '28px',
   },
+  sheetToolbar: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginBottom: spacingVars['--spacing-2'],
+  },
+  sheetTrigger: {
+    // The one filter affordance on a touch screen; no size token reaches the
+    // 44px target on every theme, so the floor is set here. Matches the
+    // header trigger above.
+    minHeight: {
+      default: null,
+      '@media (pointer: coarse)': '44px',
+    },
+  },
 });
 
 // =============================================================================
 // Filter Control Components
 // =============================================================================
+
+/**
+ * Label props for one filter control.
+ *
+ * In a header cell the column name is already on screen, so the control's own
+ * label is hidden and spells the column out for assistive tech ("Filter by
+ * Status"). In the sheet there is no header cell, so the column name becomes
+ * the control's visible label.
+ */
+function useFilterLabel(header: string): {
+  label: string;
+  isLabelHidden: boolean;
+} {
+  const t = useTranslator();
+  const variant = use(FilterVariantContext);
+  return variant === 'sheet'
+    ? {label: header, isLabelHidden: false}
+    : {
+        label: t('@astryx.tableFiltering.filterByColumn', {header}),
+        isLabelHidden: true,
+      };
+}
 
 function TextFilterControl({
   columnKey,
@@ -423,6 +528,7 @@ function TextFilterControl({
   hasClear?: boolean;
 }) {
   const t = useTranslator();
+  const labelProps = useFilterLabel(header);
   const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
@@ -430,8 +536,7 @@ function TextFilterControl({
 
   return (
     <TextInput
-      label={t('@astryx.tableFiltering.filterByColumn', {header})}
-      isLabelHidden
+      {...labelProps}
       value={strValue}
       onChange={(newValue: string) => {
         store
@@ -459,6 +564,7 @@ function NumberFilterControl({
   hasClear?: boolean;
 }) {
   const t = useTranslator();
+  const labelProps = useFilterLabel(header);
   const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
@@ -476,8 +582,7 @@ function NumberFilterControl({
   if (hasClear) {
     return (
       <NumberInput
-        label={t('@astryx.tableFiltering.filterByColumn', {header})}
-        isLabelHidden
+        {...labelProps}
         value={numValue}
         onChange={handleChange}
         placeholder={t('@astryx.tableFiltering.filterByColumn', {header})}
@@ -492,8 +597,7 @@ function NumberFilterControl({
 
   return (
     <NumberInput
-      label={t('@astryx.tableFiltering.filterByColumn', {header})}
-      isLabelHidden
+      {...labelProps}
       value={numValue}
       onChange={handleChange}
       placeholder={t('@astryx.tableFiltering.filterByColumn', {header})}
@@ -519,6 +623,7 @@ function SelectorFilterControl({
   hasClear?: boolean;
 }) {
   const t = useTranslator();
+  const labelProps = useFilterLabel(header);
   const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
@@ -544,8 +649,7 @@ function SelectorFilterControl({
   if (hasClear) {
     return (
       <Selector
-        label={t('@astryx.tableFiltering.filterByColumn', {header})}
-        isLabelHidden
+        {...labelProps}
         options={options}
         value={strValue || null}
         onChange={handleChange}
@@ -558,8 +662,7 @@ function SelectorFilterControl({
 
   return (
     <Selector
-      label={t('@astryx.tableFiltering.filterByColumn', {header})}
-      isLabelHidden
+      {...labelProps}
       options={options}
       value={strValue}
       onChange={handleChange}
@@ -583,6 +686,7 @@ function MultiSelectorFilterControl({
   hasClear?: boolean;
 }) {
   const t = useTranslator();
+  const labelProps = useFilterLabel(header);
   const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
@@ -595,8 +699,7 @@ function MultiSelectorFilterControl({
 
   return (
     <MultiSelector
-      label={t('@astryx.tableFiltering.filterByColumn', {header})}
-      isLabelHidden
+      {...labelProps}
       options={options}
       value={arrValue}
       onChange={(newValue: string[]) => {
@@ -624,14 +727,13 @@ function DateFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const t = useTranslator();
+  const labelProps = useFilterLabel(header);
   const store = useFilterStore();
   const value = store.getConfig().filters[columnKey] as string | undefined;
 
   return (
     <DateInput
-      label={t('@astryx.tableFiltering.filterByColumn', {header})}
-      isLabelHidden
+      {...labelProps}
       value={(value as ISODateString | undefined) ?? undefined}
       onChange={newValue => {
         store.getConfig().onFilterChange(columnKey, newValue ?? null);
@@ -653,14 +755,13 @@ function TimeFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const t = useTranslator();
+  const labelProps = useFilterLabel(header);
   const store = useFilterStore();
   const value = store.getConfig().filters[columnKey] as string | undefined;
 
   return (
     <TimeInput
-      label={t('@astryx.tableFiltering.filterByColumn', {header})}
-      isLabelHidden
+      {...labelProps}
       value={(value as ISOTimeString | undefined) ?? undefined}
       onChange={newValue => {
         store.getConfig().onFilterChange(columnKey, newValue ?? null);
@@ -684,7 +785,7 @@ function StringListFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const t = useTranslator();
+  const labelProps = useFilterLabel(header);
   const store = useFilterStore();
   const value =
     (store.getConfig().filters[columnKey] as string[] | undefined) ?? [];
@@ -704,8 +805,7 @@ function StringListFilterControl({
 
   return (
     <Tokenizer
-      label={t('@astryx.tableFiltering.filterByColumn', {header})}
-      isLabelHidden
+      {...labelProps}
       searchSource={searchSource}
       value={value.map(v => ({id: v, label: v}))}
       onChange={items => {
@@ -862,6 +962,7 @@ function PopoverFilterTrigger({
   // instead of the consumer's state.
   const draftStore = useMemo<FilterStore>(
     () => ({
+      ...store,
       getConfig() {
         return {
           ...store.getConfig(),
@@ -1013,6 +1114,280 @@ function InlineFilterSlot({
 }
 
 // =============================================================================
+// Sheet Variant
+//
+// A header cell is the wrong home for a filter on a phone: the column is too
+// narrow to hold a control, and a popover anchored to it covers the very rows
+// the filter is meant to narrow. The sheet variant takes every filter out of
+// the header and puts it behind one Filter button above the table, in a bottom
+// sheet with no scrim — so the rows stay visible and keep updating as filters
+// are toggled, which is the whole point of filtering on a small screen.
+// =============================================================================
+
+/** One filterable column, with its operator resolved to a control. */
+interface SheetFilterField {
+  columnKey: string;
+  header: string;
+  operatorValue: OperatorValue;
+}
+
+/** Whether a filter value narrows anything. */
+function isFilterActive(value: TableFilterValue | undefined): boolean {
+  if (value == null) {
+    return false;
+  }
+  if (typeof value === 'string') {
+    return value !== '';
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  return true;
+}
+
+/**
+ * The columns the sheet renders a control for, in table order. Read from the
+ * store rather than props: the header slots each see one column, only
+ * `transformColumns` sees them all.
+ */
+function resolveSheetFields(store: FilterStore): SheetFilterField[] {
+  const {searchConfig} = store.getConfig();
+  const fields: SheetFilterField[] = [];
+  for (const column of store.getColumns()) {
+    if (column.filter == null) {
+      continue;
+    }
+    const operatorValue = resolveFilterConfig(column.filter, searchConfig);
+    if (!operatorValue) {
+      continue;
+    }
+    fields.push({
+      columnKey: column.key,
+      header: getHeaderString(column),
+      operatorValue,
+    });
+  }
+  return fields;
+}
+
+/**
+ * Multi-select filter as a list of checkboxes. Every option is on screen and
+ * one tap wide, and nothing opens a second layer on top of the sheet.
+ */
+function SheetCheckboxFilter({
+  columnKey,
+  header,
+  operatorValue,
+}: {
+  columnKey: string;
+  header: string;
+  operatorValue: EnumListOperatorValue;
+}) {
+  const store = useFilterStore();
+  const value = store.getConfig().filters[columnKey];
+  const selected = Array.isArray(value) ? value : [];
+
+  return (
+    <CheckboxList
+      label={header}
+      value={selected}
+      onChange={(next: string[]) => {
+        store
+          .getConfig()
+          .onFilterChange(columnKey, next.length === 0 ? null : next);
+      }}
+      hasDividers>
+      {operatorValue.values.map(option => (
+        <CheckboxListItem
+          key={option.value}
+          label={option.label}
+          value={option.value}
+        />
+      ))}
+    </CheckboxList>
+  );
+}
+
+/**
+ * Single-select filter as a list of radios. The leading option clears the
+ * filter, standing in for the Selector's "All" placeholder.
+ */
+function SheetRadioFilter({
+  columnKey,
+  header,
+  operatorValue,
+}: {
+  columnKey: string;
+  header: string;
+  operatorValue: EnumOperatorValue;
+}) {
+  const t = useTranslator();
+  const store = useFilterStore();
+  const value = store.getConfig().filters[columnKey];
+  const selected = typeof value === 'string' ? value : '';
+
+  return (
+    <RadioList
+      label={header}
+      value={selected}
+      onChange={(next: string) => {
+        store.getConfig().onFilterChange(columnKey, next === '' ? null : next);
+      }}>
+      <RadioListItem
+        label={t('@astryx.table.filter.allPlaceholder')}
+        value=""
+      />
+      {operatorValue.values.map(option => (
+        <RadioListItem
+          key={option.value}
+          label={option.label}
+          value={option.value}
+        />
+      ))}
+    </RadioList>
+  );
+}
+
+/**
+ * One field in the sheet. A short enum becomes a list of checkboxes or radios;
+ * everything else keeps the control the header variants use, at full width
+ * with its column name as a visible label.
+ */
+function SheetField({field}: {field: SheetFilterField}) {
+  const {columnKey, header, operatorValue} = field;
+
+  if (
+    operatorValue.type === 'enum_list' &&
+    operatorValue.values.length <= SHEET_LIST_MAX_OPTIONS
+  ) {
+    return (
+      <SheetCheckboxFilter
+        columnKey={columnKey}
+        header={header}
+        operatorValue={operatorValue}
+      />
+    );
+  }
+
+  if (
+    operatorValue.type === 'enum' &&
+    operatorValue.values.length <= SHEET_LIST_MAX_OPTIONS
+  ) {
+    return (
+      <SheetRadioFilter
+        columnKey={columnKey}
+        header={header}
+        operatorValue={operatorValue}
+      />
+    );
+  }
+
+  return (
+    <FilterControl
+      columnKey={columnKey}
+      header={header}
+      operatorValue={operatorValue}
+      size="md"
+      hasClear
+    />
+  );
+}
+
+/**
+ * Sheet variant chrome — the Filter button above the table and the sheet it
+ * opens. Rendered once per table by `transformTableContext`, so it reads every
+ * filterable column from the store rather than taking props.
+ */
+function TableFilterSheet() {
+  const t = useTranslator();
+  const store = useFilterStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const fields = resolveSheetFields(store);
+  const {filters, onFilterChange} = store.getConfig();
+  const activeCount = fields.filter(field =>
+    isFilterActive(filters[field.columnKey]),
+  ).length;
+
+  // Nothing filterable — no button, no sheet.
+  if (fields.length === 0) {
+    return null;
+  }
+
+  const title = t('@astryx.table.filter.title');
+
+  return (
+    <>
+      <div {...stylex.props(filterStyles.sheetToolbar)}>
+        <Button
+          ref={triggerRef}
+          label={t('@astryx.table.filter.button')}
+          // The count reads as a bare number next to the label otherwise.
+          aria-label={
+            activeCount > 0
+              ? t('@astryx.table.filter.buttonWithCount', {count: activeCount})
+              : undefined
+          }
+          variant="secondary"
+          icon={<Icon icon="funnel" size="sm" />}
+          endContent={
+            activeCount > 0 ? (
+              <Badge label={activeCount} variant="info" />
+            ) : undefined
+          }
+          xstyle={filterStyles.sheetTrigger}
+          onClick={() => setIsOpen(true)}
+        />
+      </div>
+      <BottomSheet
+        isOpen={isOpen}
+        onOpenChange={open => {
+          setIsOpen(open);
+          // A scrim-less sheet never captured the trigger, so closing it would
+          // otherwise drop focus to the document.
+          if (!open) {
+            triggerRef.current?.focus();
+          }
+        }}
+        label={title}
+        height="hug"
+        // No scrim: the rows stay visible and keep updating underneath as
+        // filters are toggled, so the sheet shows its own effect.
+        hasScrim={false}>
+        <Section padding={4}>
+          <VStack gap={4}>
+            <HStack justify="between" align="center" gap={2}>
+              <Heading level={3}>{title}</Heading>
+              <Button
+                label={t('@astryx.table.filter.reset')}
+                variant="ghost"
+                size="sm"
+                isDisabled={activeCount === 0}
+                onClick={() => {
+                  for (const field of fields) {
+                    onFilterChange(field.columnKey, null);
+                  }
+                }}
+              />
+            </HStack>
+            {fields.map(field => (
+              <SheetField key={field.columnKey} field={field} />
+            ))}
+            <Button
+              label={t('@astryx.table.filter.done')}
+              variant="primary"
+              width="100%"
+              onClick={() => setIsOpen(false)}
+            />
+          </VStack>
+        </Section>
+      </BottomSheet>
+    </>
+  );
+}
+
+// =============================================================================
 // Hook
 // =============================================================================
 
@@ -1053,38 +1428,69 @@ export function useTableFiltering<T extends Record<string, unknown>>(
   const configRef = useRef(config);
   configRef.current = config;
 
+  // The columns the pipeline last rendered, captured in `transformColumns` so
+  // the sheet can render every filterable column at once. Read only by the
+  // sheet chrome, which renders after BaseTable's own render has filled it.
+  const columnsRef = useRef<
+    ReadonlyArray<TableColumn<Record<string, unknown>>>
+  >([]);
+
   const storeRef = useRef<FilterStore | null>(null);
   if (storeRef.current == null) {
     storeRef.current = {
       getConfig() {
         return configRef.current;
       },
+      getColumns() {
+        return columnsRef.current;
+      },
     };
   }
   const store = storeRef.current;
 
-  const variant = config.variant ?? 'popover';
+  const {
+    variant: variantProp = 'popover',
+    sheetBreakpoint = 'sm',
+    defaultIsMobile = false,
+  } = config;
+
+  const matchesNarrow = useMediaQuery(
+    `(max-width: ${SHEET_BREAKPOINT_VALUES[sheetBreakpoint]}px)`,
+    defaultIsMobile,
+  );
+  // A viewport narrower than the breakpoint gets the sheet whatever the
+  // configured variant is. `'none'` opts out entirely, including the SSR hint.
+  const isNarrow = sheetBreakpoint !== 'none' && matchesNarrow;
+  const variant: TableFilterVariant =
+    variantProp === 'sheet' || isNarrow ? 'sheet' : variantProp;
 
   return useMemo(
     (): TablePlugin<T> => ({
-      // For inline variants, upgrade columns with filters and no explicit width
-      // to proportional(1) so they get a default minWidth from the width resolver.
-      // Without this, inline filter inputs can collapse to unusable sizes.
-      transformColumns:
-        variant === 'inline' || variant === 'inline-compact'
-          ? (columns: TableColumn<T>[]) =>
-              columns.map(col => {
-                if (col.filter != null && col.width == null) {
-                  return {...col, width: proportional(1)};
-                }
-                return col;
-              })
-          : undefined,
+      transformColumns(columns: TableColumn<T>[]): TableColumn<T>[] {
+        columnsRef.current = columns as ReadonlyArray<
+          TableColumn<Record<string, unknown>>
+        >;
+
+        // For inline variants, upgrade columns with filters and no explicit
+        // width to proportional(1) so they get a default minWidth from the
+        // width resolver. Without this, inline filter inputs can collapse to
+        // unusable sizes.
+        if (variant !== 'inline' && variant !== 'inline-compact') {
+          return columns;
+        }
+        return columns.map(col => {
+          if (col.filter != null && col.width == null) {
+            return {...col, width: proportional(1)};
+          }
+          return col;
+        });
+      },
 
       transformTableContext(children: ReactNode) {
         return (
           <FilterStoreContext value={store}>
             <FilterVariantContext value={variant}>
+              {variant === 'sheet' && <TableFilterSheet />}
               {children}
             </FilterVariantContext>
           </FilterStoreContext>
@@ -1095,6 +1501,12 @@ export function useTableFiltering<T extends Record<string, unknown>>(
         props: HeaderCellRenderProps,
         column: TableColumn<T>,
       ): HeaderCellRenderProps {
+        // Sheet variant: every control lives in the sheet, so the header keeps
+        // nothing but its label.
+        if (variant === 'sheet') {
+          return props;
+        }
+
         const rawFilter = column.filter;
         const header = getHeaderString(
           column as TableColumn<Record<string, unknown>>,

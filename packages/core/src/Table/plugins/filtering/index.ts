@@ -7,6 +7,7 @@ export type {
   UseTableFilteringConfig,
   TableFilterState,
   TableFilterVariant,
+  TableFilterSheetBreakpoint,
   TableFilterValue,
   TableFilterFieldRef,
 } from './useTableFiltering';
