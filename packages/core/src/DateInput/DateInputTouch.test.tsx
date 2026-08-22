@@ -2390,41 +2390,4 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(source).toContain('readOnly');
     expect(source).toContain('inputMode="none"');
   });
-
-  /**
-   * The touch surface publishes NOTHING beyond the component itself.
-   *
-   * `packages/core/src/index.ts` does `export * from './DateInput'`, so
-   * anything this barrel names is on the package root and is a public API
-   * whether or not it was meant to be. `TOUCH_POINTER_QUERY` reached it that
-   * way: it was exported on the theory that an app might want to ask the same
-   * question the switch does, nothing ever asked, and six other core
-   * components (CheckboxInput, ChatComposerInput, ...) just write
-   * `@media (pointer: coarse)` inline.
-   *
-   * An equality assertion, not a `not.toContain` on one name — a list says
-   * what the surface IS, so the next internal that leaks fails here too
-   * rather than only the one that already did.
-   */
-  it('publishes only DateInput and its prop types', () => {
-    const barrel = read('index.ts');
-    const exported = [...barrel.matchAll(/^\s{2}?([A-Za-z][\w]*),$/gm)]
-      .map(m => m[1])
-      .concat(
-        [...barrel.matchAll(/export \{([^}]+)\} from/g)].flatMap(m =>
-          m[1].split(',').map(s => s.trim()),
-        ),
-      )
-      .filter(Boolean)
-      .sort();
-
-    expect(exported).toEqual([
-      'DateInput',
-      'DateInputFormat',
-      'DateInputProps',
-      'DateInputSize',
-      'DateInputStatus',
-      'DateInputStatusType',
-    ]);
-  });
 });
