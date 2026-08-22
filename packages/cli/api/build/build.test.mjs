@@ -108,3 +108,64 @@ describe('build API', () => {
     expect(r.data.domain).toHaveLength(0);
   });
 });
+
+describe('build kit — coverage gates the pages group', () => {
+  it('never offers a page that answered less than half the query', async () => {
+    const r = await build('actionable warning banner', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    for (const p of r.data.pages) {
+      expect(p.matchedTerms / p.queryTerms).toBeGreaterThanOrEqual(0.5);
+    }
+  });
+
+  it('does not call a one-word coincidence a direct match', async () => {
+    // A page's keywords include every component its source renders, so any
+    // page that happens to render a Banner keyword-matched "banner" at 90 —
+    // which, plus the coverage garnish, landed exactly on PAGE_DIRECT. Three
+    // pages that are not warnings were presented as a confident direct match.
+    const r = await build('actionable warning banner', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.directMatch).toBe(false);
+    for (const p of r.data.pages) {
+      expect(['login', 'contact-form', 'documentation-design']).not.toContain(p.name);
+    }
+  });
+
+  it('still reports a direct match when the page really does answer the query', async () => {
+    const r = await build('contact form', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.directMatch).toBe(true);
+    expect(r.data.pages[0].matchedTerms).toBe(r.data.pages[0].queryTerms);
+  });
+
+  it('leaves single-concept queries alone (nothing to cover)', async () => {
+    const r = await build('dashboard', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    for (const p of r.data.pages) expect(p.queryTerms).toBe(1);
+  });
+});
+
+describe('build kit — a thin kit says what to try next', () => {
+  it('hints when the kit comes back nearly empty', async () => {
+    // An agent reading an empty kit concludes the package has nothing and
+    // falls back on its own memory of it, which is the failure build exists
+    // to prevent.
+    const r = await build('quantum flux capacitor telemetry', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.pages.length + r.data.blocks.length + r.data.domain.length).toBeLessThan(3);
+    expect(r.data.hint).toMatch(/keyword search/i);
+    expect(r.data.hint).toMatch(/--list/);
+  });
+
+  it('carries no hint when the kit is healthy', async () => {
+    const r = await build('dashboard', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.hint).toBeUndefined();
+  });
+});

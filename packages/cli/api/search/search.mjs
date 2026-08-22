@@ -236,9 +236,21 @@ function bestForToken(tok, candidate) {
  * @param {string} term - Lowercased full query.
  * @param {string[]} tokens - Content tokens from tokenizeQuery(term).
  * @param {Candidate} candidate
- * @returns {{score: number, reason: string} | null}
+ * @returns {{score: number, reason: string, matched: number, total: number} | null}
+ *   `matched`/`total` are the query concepts this candidate answered, out of
+ *   the concepts the query had. Callers that must distinguish "matched one word
+ *   of three" from "matched all three" — `build`, which gates its pages group
+ *   on coverage — cannot recover that from the score, because a single strong
+ *   hit and a broad weak one land on the same number.
  */
 export function scoreQuery(term, tokens, candidate) {
+  const total = Math.max(tokens.length, 1);
+  // A whole-phrase hit answered the whole query by definition.
+  const asFull = (/** @type {{score: number, reason: string}} */ hit) => ({
+    ...hit,
+    matched: total,
+    total,
+  });
   const full = scoreCandidate(term, candidate);
 
   // 0–1 content tokens: keep whole-phrase fuzzy matching (typo tolerance for
@@ -246,8 +258,8 @@ export function scoreQuery(term, tokens, candidate) {
   // "pricing page" → "pricing"), score that token too and take the stronger.
   if (tokens.length <= 1) {
     const single = tokens.length === 1 ? bestForToken(tokens[0], candidate) : null;
-    if (full && (!single || full.score >= single.score)) return full;
-    return single;
+    if (full && (!single || full.score >= single.score)) return asFull(full);
+    return single ? asFull(single) : null;
   }
 
   // Multi-word natural language: score each content token, counting only
@@ -264,7 +276,7 @@ export function scoreQuery(term, tokens, candidate) {
       hitTerms.push(tok);
     }
   }
-  if (matched === 0) return full;
+  if (matched === 0) return full ? asFull(full) : null;
 
   // Base the score on the STRONGEST concept that matched, plus a bonus per
   // additional matched concept and a coverage term.
@@ -286,10 +298,12 @@ export function scoreQuery(term, tokens, candidate) {
   const coverage = matched / tokens.length;
   const tokenScore = Math.round(strongest + Math.min(matched - 1, 3) * 12 + coverage * 15);
 
-  if (full && full.score >= tokenScore) return full;
+  if (full && full.score >= tokenScore) return asFull(full);
   return {
     score: tokenScore,
     reason: `matches ${matched}/${tokens.length} terms: ${hitTerms.join(', ')}`,
+    matched,
+    total,
   };
 }
 
@@ -686,13 +700,17 @@ async function gatherTemplates(cwd) {
  * @param {Candidate} c - candidate
  * @param {number} score
  * @param {string} reason
+ * @param {number} matchedTerms - Query concepts this result answered.
+ * @param {number} queryTerms - Query concepts there were to answer.
  */
-function toResult(c, score, reason) {
+function toResult(c, score, reason, matchedTerms, queryTerms) {
   const base = {
     domain: c.domain,
     name: c.name,
     score,
     reason,
+    matchedTerms,
+    queryTerms,
     description: c.description || '',
   };
   switch (c.domain) {
@@ -796,7 +814,7 @@ export async function search(query, options = {}) {
   const scored = [];
   for (const candidate of all) {
     const hit = scoreQuery(term, tokens, candidate);
-    if (hit) scored.push(toResult(candidate, hit.score, hit.reason));
+    if (hit) scored.push(toResult(candidate, hit.score, hit.reason, hit.matched, hit.total));
   }
 
   // Sort by score desc, then domain (stable order), then name.

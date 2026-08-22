@@ -21,6 +21,22 @@ const PAGE_DIRECT = 95;
 const PAGE_FLOOR = 50;
 /** Below this a block/domain-component match is incidental noise. */
 const DOMAIN_FLOOR = 55;
+/**
+ * How much of a multi-word query a result must cover to be offered as a PAGE.
+ *
+ * Score alone cannot carry this. A page's keywords include every component its
+ * source renders, so `build "actionable warning banner"` scored `login`,
+ * `contact-form` and `documentation-design` at 95 apiece — an exact keyword hit
+ * (90) on "banner" alone, plus the coverage garnish, lands exactly on
+ * PAGE_DIRECT. Three pages that are not warnings, presented as a direct match,
+ * because each happens to render a Banner somewhere.
+ *
+ * Coverage has to gate rather than garnish: matching one of three concepts is
+ * not the same claim as matching three.
+ */
+const PAGE_COVERAGE = 0.5;
+/** Fewer results than this and the kit says how to look further. */
+const THIN_KIT = 3;
 
 /**
  * Always-surfaced primitives. Every page needs a shell + layout/typography/
@@ -63,10 +79,24 @@ export async function buildKit(query, options = {}) {
     );
   const results = result.data.results;
 
+  /**
+   * Did this result answer enough of the query to stand as a page?
+   * Single-concept queries have nothing to cover, so they always pass.
+   * @param {{matchedTerms?: number, queryTerms?: number}} r
+   */
+  const covers = r => {
+    const total = r.queryTerms ?? 1;
+    if (total <= 1) return true;
+    return (r.matchedTerms ?? 0) / total >= PAGE_COVERAGE;
+  };
+
   const pages = results
     .filter(
       r =>
-        r.domain === 'template' && r.kind !== 'block' && r.score >= PAGE_FLOOR,
+        r.domain === 'template' &&
+        r.kind !== 'block' &&
+        r.score >= PAGE_FLOOR &&
+        covers(r),
     )
     .slice(0, 3);
   const blocks = results
@@ -87,6 +117,17 @@ export async function buildKit(query, options = {}) {
     .slice(0, 6);
   const directMatch = pages.length > 0 && pages[0].score >= PAGE_DIRECT;
 
+  // What to try when the kit comes back thin. Keyword search over a design
+  // system misses in a predictable way — the reader's words and the package's
+  // often do not overlap — and an agent reading an empty kit concludes the
+  // package has nothing and falls back on its own memory of it, which is the
+  // failure this command exists to prevent. Say so, and name the way to browse.
+  const hint =
+    pages.length + blocks.length + domain.length < THIN_KIT
+      ? 'Few matches. This is keyword search, not semantic — try other wordings, ' +
+        'or browse with `astryx component --list` and `astryx template --list`.'
+      : undefined;
+
   return {
     type: 'build.kit',
     data: {
@@ -101,6 +142,7 @@ export async function buildKit(query, options = {}) {
       domain,
       frame: FRAME,
       foundation: FOUNDATION,
+      hint,
     },
   };
 }
