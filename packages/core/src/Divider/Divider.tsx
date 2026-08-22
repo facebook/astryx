@@ -150,6 +150,7 @@ export function Divider({
   ref,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
+  role = 'separator',
   ...props
 }: DividerProps) {
   const isHorizontal = orientation === 'horizontal';
@@ -166,7 +167,7 @@ export function Divider({
     <div
       ref={ref}
       {...props}
-      role="separator"
+      role={role}
       aria-orientation={orientation}
       aria-label={ariaLabel}
       aria-labelledby={resolvedLabelledBy}

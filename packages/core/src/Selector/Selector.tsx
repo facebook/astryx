@@ -1344,7 +1344,17 @@ export function Selector<T extends SelectorOptionType>(
         if (isSearching) {
           continue;
         }
-        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
+        // A divider inside role="listbox" must not be a separator child:
+        // listbox only permits option/group children, so the visual divider
+        // is role="presentation" to stay out of the accessibility tree
+        // (axe aria-required-children, WCAG 1.3.1/4.1.2).
+        elements.push(
+          <Divider
+            key={`divider-${i}`}
+            role="presentation"
+            xstyle={styles.divider}
+          />,
+        );
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
         for (const opt of option.options) {
