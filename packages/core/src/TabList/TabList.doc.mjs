@@ -16,6 +16,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-tab-list', visualProps: ['size']},
+      {className: 'astryx-tab-strip'},
+      {className: 'astryx-tab-scroll-button'},
       {className: 'astryx-tab', states: ['selected']},
       {className: 'astryx-tab-indicator', states: ['selected']},
       {className: 'astryx-tab-menu'},
@@ -59,6 +61,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'overflow',
+      type: "'auto' | 'scroll' | 'none'",
+      description: "What happens when the tabs are wider than the strip. 'auto' lets the component choose, which today always scrolls. 'scroll' scrolls the tabs horizontally, with edge fades and arrow affordances for pointers that can hover. 'none' turns overflow handling off and lets the tabs spill out of the strip. The selected tab is always scrolled back into view.",
+      default: "'auto'",
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: 'Tab and TabMenu items to render inside the nav.',
@@ -88,7 +96,7 @@ export const docs = {
       'TabList provides tab-style navigation for organizing content into categorized sections. Use it to let users switch between related views without leaving the page, with overflow items handled by a built-in "more" menu.',
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
-      { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
+      { guidance: true, description: 'Leave overflow handling on: a strip narrower than its tabs scrolls, and the selected tab is kept in view. Use TabMenu when you want a curated group of extra options rather than a scrolling strip.' },
       { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
@@ -109,7 +117,7 @@ export const docsZh = {
       'TabList provides tab-style navigation for organizing content into categorized sections. Use it to let users switch between related views without leaving the page, with overflow items handled by a built-in "more" menu.',
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
-      { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
+      { guidance: true, description: 'Leave overflow handling on: a strip narrower than its tabs scrolls, and the selected tab is kept in view. Use TabMenu when you want a curated group of extra options rather than a scrolling strip.' },
       { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
@@ -131,7 +139,7 @@ export const docsDense = {
       'TabList provides tab-style navigation for organizing content into categorized sections. Use it to let users switch between related views without leaving the page, with overflow items handled by a built-in "more" menu.',
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
-      { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
+      { guidance: true, description: 'Leave overflow handling on: a strip narrower than its tabs scrolls, and the selected tab is kept in view. Use TabMenu when you want a curated group of extra options rather than a scrolling strip.' },
       { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
