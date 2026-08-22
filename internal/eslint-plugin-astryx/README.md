@@ -512,6 +512,41 @@ Autofixable, and mirrored at runtime by `.github/scripts/disabled-hover-audit.js
 
 Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.
 
+### `@astryx/no-classname-clobber`
+
+Flags two things on one JSX element that each set `className`. React applies attributes left to right and does not merge them, so the later writer wins outright and everything the earlier one carried is gone.
+
+There are two ways to write it twice. The first is a literal `className=` or `style=` attribute beside a `{...stylex.props()}` spread. The second is **two spreads that each carry a className** — and that one hides, because every helper here returns a `{className, style}` object: `stylex.props()`, `themeProps()`, `focusOutlineProps.*()`, and `mergeProps()` when it merges any of those.
+
+Breadcrumbs shipped the second shape. Both halves read as correct in review, and `mergeProps` on the first line reads as if the merging is handled:
+
+**Bad:**
+
+```tsx
+<button
+  {...mergeProps(themeProps('breadcrumb-item-menu-trigger'), {...popover.triggerProps})}
+  {...stylex.props(itemStyles.link, itemStyles.buttonReset)}
+/>
+```
+
+**Good:**
+
+```tsx
+<button
+  {...popover.triggerProps}
+  {...mergeProps(
+    themeProps('breadcrumb-item-menu-trigger'),
+    stylex.props(itemStyles.link, itemStyles.buttonReset),
+  )}
+/>
+```
+
+The second spread replaced the className the first built, so `astryx-breadcrumb-item-menu-trigger` — documented, registered, part of the public theming surface — rendered on no element at all, and a theme targeting it silently did nothing. Nothing else caught it: `themingTargets.test.ts` asserts documented targets are a **subset** of what source registers, so a target that renders on zero elements passes.
+
+**Scope:** two or more spreads on one opening element whose expressions are statically recognizable className producers. A spread of anything else — `{...rest}`, `{...popover.triggerProps}`, an unknown call — is not a producer and does not count, so one producer beside any number of those is fine. `mergeProps()` is the sanctioned merge and concatenates class names, so anything already inside a single `mergeProps()` call is correct however many producers it takes; it only becomes a problem beside a **second** spread that produces a className of its own. A producer reached through a conditional (`{...(cond ? stylex.props(a) : {})}`) is out of scope: no call site writes one, and reading through the branches invites guesses the rule cannot verify.
+
+Ships as a **warning in both tiers** for now. The spread check has exactly one violation in the repo, in `BreadcrumbItem.tsx`, whose fix is open in [#5332](https://github.com/facebook/astryx/pull/5332); both tiers go back to `error` when that lands.
+
 ### `@astryx/disabled-cursor`
 
 Flags a `cursor` inside `stylex.create()` that does not give way to `not-allowed` on a disabled element. The cursor is the only affordance a pointer user gets **before** they commit to a click: `cursor: pointer` on a disabled control promises a click it will not honour, and `disabled`/`[aria-disabled]` do not change what the element's own declaration paints.

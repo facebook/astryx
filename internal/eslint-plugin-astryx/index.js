@@ -13,6 +13,7 @@
  * - no-nullish-jsx-guard: Flags `!= null` JSX render guards for rendered values (use isRenderable so false/''/true slots don't leak an empty element)
  * - no-raw-intl-locale: Forbids raw Intl formatting/comparison outside the approved i18n infrastructure boundary, and navigator.language(s) as a locale source
  * - no-unguarded-ime-keydown: Flags an onKeyDown on an editable surface that branches on command keys without an IME composition guard (isImeKeyEvent/isComposing)
+ * - no-classname-clobber: Flags two className sources on one JSX element — a literal className/style beside {...stylex.props()}, or two spreads that each carry a className (the later one silently wins)
  * - no-hover-on-disabled: Flags a :hover condition that can still match a disabled element (browsers suppress a disabled control's events, not its hover styling)
  * - disabled-cursor: Flags a cursor that promises an interaction without giving way to not-allowed on a disabled element
  *
@@ -296,7 +297,12 @@ plugin.configs.strict = {
     '@astryx/no-style-only-wrapper': 'warn',
     '@astryx/no-wrapper-transform': 'error',
     '@astryx/no-react-introspection': 'error',
-    '@astryx/no-classname-clobber': 'error',
+    // Widened to catch two spreads that each carry a className, which is how
+    // astryx-breadcrumb-item-menu-trigger came to render on no element at
+    // all. That one violation is the only one in the repo and its fix is
+    // open in PR #5332 — warn until that lands, then flip both tiers back
+    // to 'error'.
+    '@astryx/no-classname-clobber': 'warn',
     '@astryx/no-hardcoded-anchor': 'error',
     '@astryx/no-raw-paragraph': 'error',
     // Rolled out as a warning even in strict mode: core still has ~36 existing
@@ -351,7 +357,12 @@ plugin.configs.recommended = {
     '@astryx/no-style-only-wrapper': 'warn',
     '@astryx/no-wrapper-transform': 'error',
     '@astryx/no-react-introspection': 'error',
-    '@astryx/no-classname-clobber': 'error',
+    // Widened to catch two spreads that each carry a className, which is how
+    // astryx-breadcrumb-item-menu-trigger came to render on no element at
+    // all. That one violation is the only one in the repo and its fix is
+    // open in PR #5332 — warn until that lands, then flip both tiers back
+    // to 'error'.
+    '@astryx/no-classname-clobber': 'warn',
     '@astryx/no-hardcoded-anchor': 'warn',
     '@astryx/no-raw-paragraph': 'warn',
     '@astryx/no-nullish-jsx-guard': 'warn',
