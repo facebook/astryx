@@ -42,7 +42,7 @@ import {useState} from 'react';
 import type {ISODateString} from '../utils';
 import {InputGroup} from '../InputGroup';
 import {stableClassName} from '../naming';
-import {DateInput, TOUCH_POINTER_QUERY} from './DateInput';
+import {DateInput} from './DateInput';
 import {
   toMonthIndex,
   monthIndexOf,
@@ -79,11 +79,6 @@ const SCROLLPORT_WIDTH = 360;
 /** Matches the repo-wide setup polyfill, so hover-gated behavior still works. */
 const HOVER_CAPABLE = /\(\s*hover\s*:\s*hover\s*\)/;
 
-/**
- * Point the surface switch at a phone or at a desktop. Only
- * {@link TOUCH_POINTER_QUERY} is forced; every other query keeps the answer
- * the shared test setup gives it.
- */
 /**
  * Answer media queries the way a given device would.
  *
@@ -286,8 +281,7 @@ describe('DateInput — surface selection', () => {
     // typable field, and a narrowed desktop window is still a mouse. A width
     // bound would only re-exclude tablets — the clearest case for a thumb
     // picker there is — so there deliberately is not one.
-    expect(TOUCH_POINTER_QUERY).toBe('(pointer: coarse)');
-
+    //
     // An 1194px tablet in landscape: coarse pointer, far wider than any
     // handset breakpoint. It answers width queries honestly, so a width bound
     // creeping back in would fail here rather than pass silently.
@@ -2395,5 +2389,42 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     // readOnly alone still opens the keyboard on some Android browsers.
     expect(source).toContain('readOnly');
     expect(source).toContain('inputMode="none"');
+  });
+
+  /**
+   * The touch surface publishes NOTHING beyond the component itself.
+   *
+   * `packages/core/src/index.ts` does `export * from './DateInput'`, so
+   * anything this barrel names is on the package root and is a public API
+   * whether or not it was meant to be. `TOUCH_POINTER_QUERY` reached it that
+   * way: it was exported on the theory that an app might want to ask the same
+   * question the switch does, nothing ever asked, and six other core
+   * components (CheckboxInput, ChatComposerInput, ...) just write
+   * `@media (pointer: coarse)` inline.
+   *
+   * An equality assertion, not a `not.toContain` on one name — a list says
+   * what the surface IS, so the next internal that leaks fails here too
+   * rather than only the one that already did.
+   */
+  it('publishes only DateInput and its prop types', () => {
+    const barrel = read('index.ts');
+    const exported = [...barrel.matchAll(/^\s{2}?([A-Za-z][\w]*),$/gm)]
+      .map(m => m[1])
+      .concat(
+        [...barrel.matchAll(/export \{([^}]+)\} from/g)].flatMap(m =>
+          m[1].split(',').map(s => s.trim()),
+        ),
+      )
+      .filter(Boolean)
+      .sort();
+
+    expect(exported).toEqual([
+      'DateInput',
+      'DateInputFormat',
+      'DateInputProps',
+      'DateInputSize',
+      'DateInputStatus',
+      'DateInputStatusType',
+    ]);
   });
 });

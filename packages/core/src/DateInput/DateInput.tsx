@@ -368,8 +368,15 @@ export interface DateInputProps extends Omit<
  * because its keyboard is there. A tablet reports `coarse` and gets the
  * picker, at any width. There is deliberately no width bound: it would only
  * re-exclude the tablets, since a narrowed desktop window is still a mouse.
+ *
+ * Deliberately NOT exported. It was, briefly, on the theory that an app might
+ * want to ask the same question and lay out to match — but nothing asked, and
+ * six other core components (CheckboxInput, ChatComposerInput, ...) just
+ * write `@media (pointer: coarse)` inline rather than sharing a constant. An
+ * export is additive later and awkward to withdraw, so it waits for a real
+ * caller.
  */
-export const TOUCH_POINTER_QUERY = '(pointer: coarse)';
+const TOUCH_POINTER_QUERY = '(pointer: coarse)';
 
 /**
  * The pointer-driven field: a text input you can type into, with a calendar

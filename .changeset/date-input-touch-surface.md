@@ -38,20 +38,21 @@ typable field (its keyboard is right there), while a narrowed desktop window is
 still a mouse. Adding a width test would only re-exclude tablets, which are the
 clearest case for a thumb picker.
 
-The public surface barely moves. One new export — `TOUCH_POINTER_QUERY`, the
-media query the switch uses, so an app can ask the same question the component
-does and lay out to match — plus six `@astryx.dateInput.*` catalog keys for
-the picker's header and footer.
+The public surface barely moves: six `@astryx.dateInput.*` catalog keys for the
+picker's header and footer, and nothing else. No new props, no new exports —
+`DateInputProps` is byte-identical at 25.
 
 Nothing else is published, on purpose. There is no export that forces a
 surface: the touch picker is reachable by being on a touch device, which is
-the only place it is worth looking at. The picker's two sizes (the 44px day
-cell, the 28px wheel row) are compile-time constants rather than theme
-variables — the day size is an accessibility floor, and a variable a theme can
-quietly lower is not a floor. And the sheet's header button is addressed by a
-`data-` attribute rather than a theme target, because nothing has asked to
-restyle it. Each of those is additive later and awkward to withdraw once
-shipped.
+the only place it is worth looking at. The media query the switch runs on is
+an internal constant, not an export — six other core components write
+`@media (pointer: coarse)` inline rather than sharing one, and nothing has
+asked to ask the same question. The picker's two sizes (the 44px day cell, the
+28px wheel row) are compile-time constants rather than theme variables — the
+day size is an accessibility floor, and a variable a theme can quietly lower
+is not a floor. And the sheet's header button is addressed by a `data-`
+attribute rather than a theme target, because nothing has asked to restyle it.
+Each of those is additive later and awkward to withdraw once shipped.
 
 The wheels also answer a mouse now. A wheel is a scroll container, so a finger
 pans it for free; a mouse got nothing, because browsers do not drag-scroll an
