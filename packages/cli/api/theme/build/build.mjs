@@ -945,7 +945,9 @@ async function getKnownComponents() {
 
 /**
  * Validate component overrides in a theme definition.
- * Warns on unknown component names and unknown prop names.
+ * Warns on unknown component names and unknown prop names in `prop:value`
+ * rule keys. Bare state keys ('checked', 'selected', …) are part of the key
+ * grammar (see core's parseStyleKey) and are not validated.
  * Returns array of warning strings.
  * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
  * @returns {Promise<string[]>}
@@ -995,7 +997,14 @@ async function validateComponentOverrides(themeDef) {
       // Parse prop:value pairs (e.g. 'variant:secondary' or 'variant:destructive+size:sm')
       const pairs = key.split('+');
       for (const pair of pairs) {
-        const [prop] = pair.split(':');
+        const colonIdx = pair.indexOf(':');
+        // A colon-less segment is a bare state key ('checked', 'selected',
+        // 'disabled', …), not a prop:value pair — core's parseStyleKey emits
+        // it directly as a state class, and doc targets declare states
+        // separately from visualProps (ThemingTarget.states). Only prop:value
+        // pairs are checked against the target's documented visual props.
+        if (colonIdx === -1) continue;
+        const prop = pair.slice(0, colonIdx);
         if (prop && !knownProps.includes(prop)) {
           const hint =
             knownProps.length > 0

@@ -8,6 +8,12 @@
  * (generateThemeRules re-adds the `astryx-` prefix). The validator reads the
  * same documented theming targets that component docs expose, so the docs must
  * stay aligned with the classes components actually render.
+ *
+ * Theming targets live in the per-component doc AND in sub-component docs
+ * (`TopNav/TopNavHeading.doc.mjs`, `Avatar/AvatarStatusDot.doc.mjs`, …), so the
+ * doc scan below walks recursively: a scan that only reads `<Dir>/<Dir>.doc.mjs`
+ * leaves most of the documented surface — and the keys behind #4110's false
+ * "Unknown component" warnings — unchecked.
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
@@ -20,17 +26,33 @@ import {runCli} from '../../../test-utils/run-cli.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CORE_SRC = path.resolve(HERE, '../../../../core/src');
+
+/** Every `*.doc.mjs` file under core src, recursively. */
+function allDocFiles() {
+  const files = [];
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.name.endsWith('.doc.mjs')) {
+        files.push(full);
+      }
+    }
+  };
+  walk(CORE_SRC);
+  return files;
+}
+
 /**
- * The set of real override keys: every `theming.targets[].className` across the
- * component docs, with the `astryx-` prefix stripped. This is the canonical
- * source of truth for what selectors the theme build should emit.
+ * The set of real override keys: every `theming.targets[].className` across
+ * ALL component docs (including sub-component docs), with the `astryx-` prefix
+ * stripped. This is the canonical source of truth for what selectors the theme
+ * build should emit.
  */
 function realOverrideKeys() {
   const keys = new Set();
-  for (const dir of fs.readdirSync(CORE_SRC, {withFileTypes: true})) {
-    if (!dir.isDirectory()) continue;
-    const docFile = path.join(CORE_SRC, dir.name, `${dir.name}.doc.mjs`);
-    if (!fs.existsSync(docFile)) continue;
+  for (const docFile of allDocFiles()) {
     const text = fs.readFileSync(docFile, 'utf8');
     const themingIdx = text.indexOf('theming');
     if (themingIdx === -1) continue;
@@ -49,9 +71,9 @@ function realOverrideKeys() {
  * every `themeProps('<class>', …)` and `stableClassName('<class>')` call across
  * the core `.tsx` source (excluding tests). This is the truest source of truth
  * — the doc `theming.targets` are hand-authored metadata that can drift from
- * it, so both the registry and the targets are validated against these
- * literals. Every call site uses a plain string literal (no dynamic/
- * interpolated names), so this is fully static.
+ * it, so the targets are validated against these literals. Every call site uses
+ * a plain string literal (no dynamic/interpolated names), so this is fully
+ * static.
  */
 function renderedClassLiterals() {
   const classes = new Set();
@@ -110,6 +132,39 @@ describe('theme-build documented target validation', () => {
 
     const orphanTargets = [...targets].filter(k => !rendered.has(k));
     expect(orphanTargets).toEqual([]);
+  });
+});
+
+describe('shipped themes validate clean (#4110)', () => {
+  // The repo's own themes are the end-to-end fixture for override validation:
+  // they override documented, rendered targets (`top-nav-heading`,
+  // `progressbar-track`, `field-status`, …) and prop values the docs declare
+  // (`status:*` on inputs), plus a bare `selected` state key on `top-nav-item`.
+  // Building them must not emit a single "Unknown component" / "Unknown prop"
+  // warning.
+  let tmpDir;
+  let themeBuild;
+  beforeAll(async () => {
+    ensureCoreBuilt();
+    // Import AFTER core is guaranteed built: build.mjs captures core's
+    // generator in a top-level await at first import.
+    ({themeBuild} = await import('../../../api/theme/build/build.mjs'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-4110-'));
+  }, 200_000);
+
+  it.each([
+    ['butter', '../../../../themes/butter/src/butterTheme.ts'],
+    ['stone', '../../../../themes/stone/src/stoneTheme.ts'],
+  ])('the %s theme builds with zero validation warnings', async (name, rel) => {
+    const themeFile = path.resolve(HERE, rel);
+    const result = await themeBuild(
+      themeFile,
+      {out: path.join(tmpDir, `${name}.css`)},
+      {cwd: tmpDir},
+    );
+
+    expect(result?.type).toBe('theme.build');
+    expect(result?.data.warnings).toEqual([]);
   });
 });
 
