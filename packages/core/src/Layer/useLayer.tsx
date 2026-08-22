@@ -18,6 +18,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -27,6 +28,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {createPortal} from 'react-dom';
 import {addAnchorName, removeAnchorName} from './anchorName';
+import {currentGesture} from './gestureCounter';
 import {resolveLayerPortalTarget} from './layerHost';
 import {typeScaleVars, typographyVars} from '../theme/tokens.stylex';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
@@ -71,6 +73,18 @@ const styles = stylex.create({
     marginInlineEnd: offset,
   }),
 });
+
+/**
+ * Props for a control that sits on the trigger but must not dismiss the layer.
+ */
+export interface KeepLayerOpenProps {
+  onPointerDown: React.PointerEventHandler<HTMLElement>;
+  /**
+   * Capture phase, so spreading these props never collides with the control's
+   * own `onClick`.
+   */
+  onClickCapture: React.MouseEventHandler<HTMLElement>;
+}
 
 /**
  * Position placement relative to anchor.
@@ -279,6 +293,31 @@ export interface ContextLayerReturn {
   isOpen: boolean;
 
   /**
+   * Props for a control that lives on the trigger — a clear button, a status
+   * button — and must not dismiss this layer when pressed.
+   *
+   * Such a control sits OUTSIDE the popover, so the browser light-dismisses
+   * the layer as soon as it is pressed and the affordance is unusable while
+   * the layer it belongs to is open. Spreading these props names the control
+   * an invoker of this popover, which puts it inside the layer for that
+   * decision. Merge them with the control's own handlers.
+   */
+  keepOpenProps: KeepLayerOpenProps;
+
+  /**
+   * Whether the browser itself closed this layer — light dismiss, or popover
+   * stack eviction — during the gesture still in flight, rather than a call
+   * to `hide()`.
+   *
+   * A trigger checks this before acting on a click: a click from that same
+   * press is the tail of the dismissal, and toggling on it would reopen what
+   * the user just closed. The browser dismisses on pointerup and the click
+   * follows a beat later, so which one React sees first is a race that varies
+   * by engine and by load — this does not depend on winning it.
+   */
+  wasJustDismissed: () => boolean;
+
+  /**
    * Unique ID for aria-describedby
    */
   id: string;
@@ -313,6 +352,28 @@ export interface FixedLayerReturn {
    * Whether the layer is currently open
    */
   isOpen: boolean;
+
+  /**
+   * Props for a control that lives on the trigger — a clear button, a status
+   * button — and must not dismiss this layer when pressed.
+   *
+   * Such a control sits OUTSIDE the popover, so the browser light-dismisses
+   * the layer as soon as it is pressed and the affordance is unusable while
+   * the layer it belongs to is open. Spreading these props names the control
+   * an invoker of this popover, which puts it inside the layer for that
+   * decision. Merge them with the control's own handlers.
+   */
+  keepOpenProps: KeepLayerOpenProps;
+
+  /**
+   * Whether the browser itself just closed this layer — light dismiss or
+   * popover stack eviction — rather than a call to `hide()`.
+   *
+   * A trigger checks this before acting on a click: within the guard window
+   * the click belongs to the gesture that dismissed the layer, so toggling on
+   * it would reopen what the user just closed.
+   */
+  wasJustDismissed: () => boolean;
 
   /**
    * Unique ID for aria-describedby
@@ -485,6 +546,19 @@ export function useLayer(
   // stale-closure reads of the previous isOpen value.
   const isOpenRef = useRef(false);
 
+  // The gesture during which the browser last closed this layer on its own.
+  // Read through wasJustDismissed by triggers deciding whether a click is
+  // theirs to act on.
+  const dismissedByGestureRef = useRef<number | null>(null);
+  const forgetDismissalRef = useRef<(() => void) | null>(null);
+
+  const wasJustDismissed = useCallback(
+    () =>
+      dismissedByGestureRef.current !== null &&
+      dismissedByGestureRef.current === currentGesture(),
+    [],
+  );
+
   const showPopoverElement = useCallback((popover: HTMLElement) => {
     // Finding infra-4: the Popover API is unsupported on Safari <17 and
     // Firefox <125. On those browsers `showPopover` does not exist, so fall
@@ -548,6 +622,11 @@ export function useLayer(
   }, [mode, lazyMount]);
 
   const show = useCallback(() => {
+    // Every caller lands here, so this is where the dismissing press is
+    // absorbed: opening now would reopen the popup that same press closed.
+    if (wasJustDismissed()) {
+      return;
+    }
     // A context popover left over until React commits a previous hide must not
     // be reopened. The synchronous mount ref is the source of truth.
     const candidate = popoverRef.current;
@@ -569,12 +648,18 @@ export function useLayer(
     requestContextMount,
     showPopoverElement,
     isCurrentContextPopover,
+    wasJustDismissed,
   ]);
 
   const hide = useCallback(() => {
     pendingShowRef.current = false;
     if (isOpenRef.current) {
       const el = popoverRef.current;
+      // Clear the open state BEFORE hiding: hidePopover fires `toggle`, and
+      // the reconciler below reads this ref to tell the browser's own
+      // dismissals from ours.
+      openedPopoverRef.current = null;
+      isOpenRef.current = false;
       // See finding infra-4 note in `show`: mirror the same guard on hide so
       // unsupported browsers degrade gracefully instead of throwing.
       if (el) {
@@ -584,13 +669,48 @@ export function useLayer(
           el.style.display = 'none';
         }
       }
-      openedPopoverRef.current = null;
-      isOpenRef.current = false;
       setIsOpen(false);
       onHide?.();
     }
     clearContextMount();
   }, [onHide, clearContextMount]);
+
+  const keepOpenProps: KeepLayerOpenProps = useMemo(
+    () => ({
+      onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
+        if (!isOpenRef.current) {
+          return;
+        }
+        // The browser reads the invoker relationship twice — once when the
+        // press starts and once when it ends — and only then decides to
+        // light-dismiss, so the attribute has to span the whole gesture. It
+        // comes off afterwards because a permanent invoker reports itself as
+        // `expanded` to assistive tech, which a clear button is not.
+        const control = event.currentTarget;
+        control.setAttribute('popovertarget', id);
+        document.addEventListener(
+          'pointerup',
+          () => {
+            // A task, not a microtask: the dismissal runs as the pointerup
+            // default action, after this listener.
+            window.setTimeout(() => {
+              control.removeAttribute('popovertarget');
+            }, 0);
+          },
+          {once: true},
+        );
+      },
+      onClickCapture: (event: React.MouseEvent<HTMLElement>) => {
+        const control = event.currentTarget;
+        if (control.hasAttribute('popovertarget')) {
+          // Being an invoker would otherwise toggle the layer shut.
+          event.preventDefault();
+          control.removeAttribute('popovertarget');
+        }
+      },
+    }),
+    [id],
+  );
 
   // Ref for trigger element (context mode only)
   const ref: RefCallback<HTMLElement> | undefined =
@@ -610,6 +730,24 @@ export function useLayer(
         }
       : undefined;
 
+  // A dismissal is spent by the click that ends the press it came from. Left
+  // standing it would also swallow a click that arrives with no press of its
+  // own — AT activation, element.click() — which never advances the counter.
+  // Bubble phase on the document: every guard reading the dismissal has run.
+  const rememberDismissal = useCallback((doc: Document) => {
+    dismissedByGestureRef.current = currentGesture();
+    forgetDismissalRef.current?.();
+    const forget = () => {
+      dismissedByGestureRef.current = null;
+      doc.removeEventListener('click', forget);
+      forgetDismissalRef.current = null;
+    };
+    doc.addEventListener('click', forget);
+    forgetDismissalRef.current = forget;
+  }, []);
+
+  useEffect(() => () => forgetDismissalRef.current?.(), []);
+
   // Reconcile browser-initiated closes (light-dismiss, popover="auto" stack
   // eviction). These are the only cases where the DOM mutates without going
   // through our show/hide — we sync React state back to match.
@@ -626,12 +764,15 @@ export function useLayer(
       if (toggleEvent.newState === 'closed' && isOpenRef.current) {
         openedPopoverRef.current = null;
         isOpenRef.current = false;
+        rememberDismissal(
+          (e.currentTarget as HTMLElement | null)?.ownerDocument ?? document,
+        );
         setIsOpen(false);
         onHide?.();
         clearContextMount();
       }
     },
-    [onHide, clearContextMount],
+    [onHide, clearContextMount, rememberDismissal],
   );
 
   // Ref callback for popover element — sets up the `toggle` listener.
@@ -872,6 +1013,8 @@ export function useLayer(
       show,
       hide,
       isOpen,
+      keepOpenProps,
+      wasJustDismissed,
       id,
       render: renderContext,
     };
@@ -882,6 +1025,8 @@ export function useLayer(
     show,
     hide,
     isOpen,
+    keepOpenProps,
+    wasJustDismissed,
     id,
     render: renderFixed,
   };
