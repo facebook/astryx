@@ -218,6 +218,21 @@ export function scoreQuery(term, tokens, candidate) {
     return single;
   }
 
+  // The full (untokenized) query matching a candidate's name or a declared
+  // keyword VERBATIM — full.score 90 or 100, the only two scoreCandidate
+  // outcomes at or above that mark — is a deliberate, explicit label the
+  // author chose for exactly this multi-word concept. Promote it to a
+  // reserved top tier, safely above the token-sum path's ceiling below
+  // (~151: 100 avg + 36 bonus + 15 coverage), so it always outranks a
+  // candidate that merely happens to contain several of the query's
+  // individual words. Without this, "table of contents" never surfaces
+  // Outline (which declares that exact phrase as a keyword) because dozens
+  // of Table-related templates each match "table" and "contents" separately
+  // and accumulate a higher raw score (#5239).
+  if (full && full.score >= 90) {
+    return {score: full.score + 100, reason: full.reason};
+  }
+
   // Multi-word natural language: score each content token, counting only
   // strong hits, then reward coverage so candidates matching more terms win.
   let sum = 0;

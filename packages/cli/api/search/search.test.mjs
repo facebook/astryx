@@ -58,6 +58,27 @@ describe('search leaf — --type filter', () => {
   });
 });
 
+describe('search leaf — exact keyword phrase outranks incidental token matches (issue #5239)', () => {
+  it('surfaces Outline for its own declared keyword "table of contents", ranked first', async () => {
+    // Before the fix, "table" and "contents" each separately matched dozens
+    // of unrelated Table-related templates by coincidence, and their
+    // combined token-sum score outranked Outline's single exact match,
+    // pushing it out of the results entirely at the default limit.
+    const r = await search('table of contents', {cwd});
+    expect(r.data.results[0]?.name).toBe('Outline');
+  }, SLOW);
+
+  it('surfaces Outline for its own declared keyword "heading navigation", ranked first', async () => {
+    const r = await search('heading navigation', {cwd});
+    expect(r.data.results[0]?.name).toBe('Outline');
+  }, SLOW);
+
+  it('still returns no results for a nonsense query (the fix does not loosen matching)', async () => {
+    const r = await search('zzzzqqqx', {cwd});
+    expect(r.data.results).toEqual([]);
+  }, SLOW);
+});
+
 describe('search leaf — error paths (pinned)', () => {
   it('throws ERR_INVALID_ARGUMENT when the query is empty/whitespace', async () => {
     await expect(search('   ', {cwd})).rejects.toMatchObject({
