@@ -2213,128 +2213,93 @@ describe('DateInput — scroll CSS (definition-level)', () => {
   });
 
   /**
-   * The swap is a cover, not a cross-fade, and only one thing in it moves.
+   * The wheels are a layer that fades in and out on top; the calendar under
+   * them is covered and uncovered, and never seen to move.
    *
-   * It used to take turns: the outgoing surface faded out over a first leg,
-   * the incoming one waited and faded in over a second. That existed because
-   * the wheels' panel was transparent — overlapping them put the wheels'
+   * The swap used to take turns — the outgoing surface faded out over a first
+   * leg, the incoming one waited and faded in over a second — because the
+   * wheels' panel was transparent. Overlapping them put the wheels'
    * translucent selection band over the live calendar grid and tinted one
-   * band-shaped strip of it, which is what "the grey area animates
-   * differently from the content" was.
+   * band-shaped strip of it: "the grey area animates differently from the
+   * content".
    *
-   * An opaque plate removes the reason and then removes the cross-fade too:
-   * the plate covers the calendar on the first frame, and the month and year
-   * fade in against IT. Nothing of the calendar animates, and no frame ever
-   * shows a day number and a year sharing a pixel.
+   * An opaque plate INSIDE the fading layer fixes that at the root. The layer
+   * renders as one finished opaque image and the fade applies to the image,
+   * so the band crosses at the same rate as everything beside it. And once it
+   * is opaque, the calendar needs no fade of its own — animating it too would
+   * be animating the date picker rather than the thing arriving over it.
    *
-   * What this pins is the split, because it is the whole design: layers get
-   * `visibility` and no opacity, content gets opacity and no background.
+   * What this pins is that split: the layer above gets opacity and a
+   * background, the layer beneath gets visibility and nothing else.
    */
-  it('covers the calendar rather than fading it out', () => {
+  it('fades the wheels in and out over a calendar that does not animate', () => {
     const source = read('TouchDateField.tsx');
-    const layer = declarations(source, 'panelLayer');
-    const plate = declarations(source, 'panelPlate');
-    const content = declarations(source, 'overlayContent');
+    const overlay = declarations(source, 'panelOverlay');
+    const beneath = declarations(source, 'panelBeneath');
 
-    // A layer is shown or not shown. It never fades — fading the base layer
-    // is precisely "animating the date picker out".
-    expect(layer.some(d => d.startsWith('opacity'))).toBe(false);
-    expect(layer.some(d => d.startsWith('transition'))).toBe(false);
-    expect(declarations(source, 'panelLayerHidden')).toContain(
-      "visibility: 'hidden'",
-    );
+    // The layer fades, both directions — the transition is on the shown
+    // state, so entering and leaving it both animate.
+    expect(overlay).toContain("transitionProperty: 'opacity, visibility'");
+    expect(overlay).toContain('transitionDuration: SWAP_DURATION');
+    expect(declarations(source, 'panelOverlayHidden')).toContain('opacity: 0');
 
-    // The plate is opaque, in the token the sheet paints itself with, and
-    // carries no transition of its own.
-    expect(plate).toEqual([
+    // And it is opaque while it does, in the token the sheet paints itself
+    // with, so the fade is uniform across the band and the text alike.
+    expect(overlay).toContain(
       "backgroundColor: colorVars['--color-background-surface']",
-    ]);
-
-    // Only the content fades, and it has no background to fade with it.
-    expect(declarations(source, 'overlayContentShown')).toContain(
-      "transitionProperty: 'opacity'",
     );
-    expect(content.some(d => d.startsWith('backgroundColor'))).toBe(false);
 
-    // Both panels and both footer actions are layers; the plate and the
-    // fading content belong to the wheels' side of each pair.
+    // The layer beneath moves nothing that can be SEEN moving: visibility
+    // only, no opacity, so it is covered and uncovered rather than faded.
+    expect(beneath).toContain("transitionProperty: 'visibility'");
+    expect(beneath.some(d => d.startsWith('opacity'))).toBe(false);
+    expect(
+      declarations(source, 'panelBeneathHidden').some(d =>
+        d.startsWith('opacity'),
+      ),
+    ).toBe(false);
+
+    // Two of each, and never the same one twice: the calendar panel and the
+    // calendar's footer actions are beneath, the wheels and their Done above.
     const count = (name: string) =>
       source.match(new RegExp(`styles\\.${name},`, 'g'))?.length ?? 0;
-    expect(count('panelLayer')).toBe(4);
-    expect(count('panelPlate')).toBe(2);
-    expect(count('overlayContent')).toBe(2);
+    expect(count('panelBeneath')).toBe(2);
+    expect(count('panelOverlay')).toBe(2);
   });
 
   /**
-   * Each layer paints as a unit, which is what makes "opaque" mean "covers".
+   * The layer paints as a unit, which is what makes "opaque" mean "covers".
    *
    * Backgrounds and text paint in separate phases, so without a stacking
    * context a later sibling's background lands UNDER an earlier sibling's
    * text — the plate went in opaque and the calendar's day numbers showed
    * straight through it. Measured before and after: ink inside the grid's box
-   * 5% into the swap went from the calendar's full 2.5% of pixels to 0.0%.
+   * at full cover went from the calendar's 2.5% of pixels to the wheels' own.
    *
-   * It is easy to lose because the old panel animated `opacity`, and any
-   * opacity below 1 makes a stacking context by accident — the cover only
-   * broke when the fade moved off the panel and onto the content inside it.
+   * Easy to lose, because any opacity below 1 makes a stacking context by
+   * accident. It only breaks at the two ends of the fade, where opacity is
+   * exactly 1 — which is to say, whenever anyone is actually looking.
    */
-  it('paints each layer as a unit, so the plate really covers', () => {
-    expect(declarations(read('TouchDateField.tsx'), 'panelLayer')).toContain(
+  it('paints the layer as a unit, so the plate really covers', () => {
+    expect(declarations(read('TouchDateField.tsx'), 'panelOverlay')).toContain(
       "isolation: 'isolate'",
     );
   });
 
   /**
-   * The month and year fade IN and not out.
-   *
-   * The hidden state is the BASE and carries no transition; the transition
-   * rides on the shown state, and a transition is governed by the state being
-   * entered — so arriving animates and leaving does not. Doing it the other
-   * way round, with a `transition-duration: 0s` on the hidden state, both
-   * reads backwards and trips `build-css.test.mjs`, which reserves that
-   * declaration for inside a `prefers-reduced-motion` block.
-   *
-   * Leaving is instant on purpose: a fade out would put a wait between
-   * tapping Done and seeing the calendar it was tapped for — the wheels would
-   * dissolve to a blank plate first, and the calendar would still arrive in
-   * one frame at the end of it.
+   * The weekday row and the header arrows are the one part of the calendar
+   * the layer cannot cover — the plate starts below the header. They fade on
+   * the layer's own timing rather than clearing instantly, so the change
+   * reads as one motion instead of chrome blinking out a beat ahead of the
+   * grid being covered.
    */
-  it('fades the month and year in, and never out', () => {
+  it('fades the uncovered chrome on the same timing as the layer', () => {
     const source = read('TouchDateField.tsx');
-    const base = declarations(source, 'overlayContent');
-    const shown = declarations(source, 'overlayContentShown');
-
-    expect(base).toContain('opacity: 0');
-    expect(base.some(d => d.startsWith('transition'))).toBe(false);
-
-    expect(shown).toContain('opacity: 1');
-    expect(shown).toContain('transitionDuration: SWAP_DURATION');
-
-    // Applied on the way IN — `isWheelOpen &&`, not `!isWheelOpen &&`.
-    expect(
-      source.match(/isWheelOpen && styles\.overlayContentShown/g),
-    ).toHaveLength(2);
-  });
-
-  /**
-   * Nothing of the calendar animates — not the grid, and not the two pieces
-   * of chrome the plate cannot reach, since it begins below the header.
-   *
-   * They could have faded on their own, but then the calendar would leave in
-   * two parts at two speeds. Clearing them with the cover keeps it one
-   * surface that goes at once.
-   */
-  it('takes the calendar chrome with the grid, not on its own timing', () => {
-    const source = read('TouchDateField.tsx');
-    for (const name of ['weekdaysHidden', 'monthArrowsHidden']) {
-      const hidden = declarations(source, name);
-      expect(hidden).toContain("visibility: 'hidden'");
-      expect(hidden.some(d => d.startsWith('transition'))).toBe(false);
-    }
     for (const name of ['weekdays', 'monthArrows']) {
-      expect(
-        declarations(source, name).some(d => d.startsWith('transition')),
-      ).toBe(false);
+      expect(declarations(source, name)).toContain(
+        'transitionDuration: SWAP_DURATION',
+      );
+      expect(declarations(source, `${name}Hidden`)).toContain('opacity: 0');
     }
   });
 
@@ -2397,14 +2362,14 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(
       styles.match(/transitionTimingFunction: easeVars\['--ease-standard'\]/g),
     ).toHaveLength(1);
-    expect(styles.match(/transitionTimingFunction: 'linear'/g)).toHaveLength(1);
+    expect(styles.match(/transitionTimingFunction: 'linear'/g)).toHaveLength(3);
   });
 
   /**
-   * The two things that do move run for the same time, so they land
-   * together. The chevron included — it used to run `--duration-medium`
-   * against a 220ms swap and was still turning well after the wheels had
-   * settled.
+   * Everything in the swap runs for the same time, so it reads as one change
+   * rather than several. The chevron included — it used to run
+   * `--duration-medium` against a 220ms swap and was still turning well after
+   * the wheels had settled.
    *
    * A token rather than a literal, so a consumer's motion scale carries: the
    * Storybook theme resolves `--duration-fast` to 125ms, not the default
@@ -2415,8 +2380,9 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     const styles = source.slice(
       source.indexOf('const styles = stylex.create('),
     );
-    // The content's fade in, and the chevron's rotation.
-    expect(styles.match(/SWAP_DURATION/g)).toHaveLength(2);
+    // The arrows, the weekday row, the layer beneath, the layer above, and
+    // the chevron.
+    expect(styles.match(/transitionDuration: SWAP_DURATION/g)).toHaveLength(5);
     // And no leftover hand-rolled timing beside them.
     expect(styles).not.toContain('PANEL_FADE_MS');
     expect(source).toContain(

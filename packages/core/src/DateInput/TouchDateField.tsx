@@ -239,6 +239,16 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     // The pair is the trailing item; the title takes the space before it.
     marginInlineStart: 'auto',
+    // The plate starts below the header, so these two are the one part of the
+    // calendar the layer above cannot cover. They fade on its timing instead,
+    // both directions, so the change reads as one motion rather than chrome
+    // blinking out a beat before the grid is covered.
+    transitionProperty: 'opacity, visibility',
+    transitionDuration: SWAP_DURATION,
+    transitionTimingFunction: 'linear',
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
   },
   /**
    * Hidden while the wheels are up: they step the calendar, and the calendar
@@ -260,9 +270,6 @@ const styles = stylex.create({
     visibility: 'hidden',
   },
   monthArrowsHidden: {
-    // No transition: nothing belonging to the calendar animates. The plate
-    // covers the grid instantly and this clears with it, so the surface
-    // leaves in one piece rather than in two.
     visibility: 'hidden',
     opacity: 0,
     pointerEvents: 'none',
@@ -337,9 +344,14 @@ const styles = stylex.create({
     gridTemplateColumns: 'repeat(7, 1fr)',
     blockSize: sizeVars['--size-element-sm'],
     alignItems: 'center',
-    // Same as the arrows: it belongs to the calendar, and nothing belonging
-    // to the calendar animates. It clears the instant the plate covers the
-    // grid below it.
+    // Same as the arrows: above the plate's reach, so it fades on the layer's
+    // timing rather than clearing on its own.
+    transitionProperty: 'opacity, visibility',
+    transitionDuration: SWAP_DURATION,
+    transitionTimingFunction: 'linear',
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
   },
   weekdaysHidden: {
     // Hidden, not unmounted: the row still owes the surface its height, or
@@ -360,74 +372,70 @@ const styles = stylex.create({
   },
   /**
    * The two panels share one grid cell, and the wheels are the one on top.
-   *
-   * Neither panel fades. The wheels cover the calendar and uncover it; that
-   * is the whole of the swap, and the only thing that animates is the wheels'
-   * own content, one level in.
    */
   panel: {
     gridArea: '1 / 1',
     minWidth: 0,
   },
   /**
-   * A layer that is covered or uncovered rather than faded. Both panels take
-   * it, and both footer actions.
+   * The layer underneath — the calendar, and the calendar's footer actions.
    *
-   * Fading the calendar out WOULD be animating the picker out, and fading the
-   * wheels' plate in would let the calendar show through the month and year
-   * as they arrive — the double image that made the old swap look wrong. So
-   * neither one fades; `visibility` alone decides which is on show, and it
-   * flips on the same frame for both, so there is never a gap with nothing in
-   * the cell.
+   * It has no opacity and never fades. `visibility` is the only thing that
+   * moves, and giving it the layer's own duration is what times it: CSS
+   * interpolates `visibility` discretely, holding `visible` for the whole
+   * transition whenever either end is `visible` and taking the final value
+   * only at the finish. So it disappears exactly when the cover completes,
+   * and on the way back it is there from the first frame, revealed as the
+   * layer above fades off it. Nothing about it is ever seen changing.
+   *
+   * It is not merely decorative to hide it: `inert` keeps it off the tab
+   * order, but a layer that is only COVERED is still `visible` to a screen
+   * reader, so the two footer actions would both be announced.
    *
    * `visibility` (not `display`) also keeps the month scroller laid out while
    * the wheels are up, so its scroll offset survives the round trip and the
    * wheels can steer it before it is shown again.
    */
-  panelLayer: {
-    // Each layer paints as one thing, so the plate on top of the stack
-    // actually covers what is under it.
-    //
-    // Without this the swap silently half-works: backgrounds and text paint
-    // in separate phases, so a later sibling's background goes UNDER an
-    // earlier sibling's text however far down the stack it is. The plate went
-    // in opaque and the calendar's day numbers still showed straight through
-    // it. It never came up before because the old panel animated `opacity`,
-    // and any opacity below 1 makes a stacking context by accident — so the
-    // cover only broke once the fade moved off this element and onto the
-    // content inside it.
-    isolation: 'isolate',
+  panelBeneath: {
+    transitionProperty: 'visibility',
+    transitionDuration: SWAP_DURATION,
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
   },
-  panelLayerHidden: {
+  panelBeneathHidden: {
     visibility: 'hidden',
     pointerEvents: 'none',
   },
   /**
-   * What makes the layer above opaque, and so what lets it cover rather than
-   * blend. It is the token BottomSheet paints its own panel with, so the two
-   * agree by construction rather than by coincidence.
-   */
-  panelPlate: {
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-  /**
-   * The month and year themselves — the only thing in the swap that moves.
+   * The month and year, as one layer that fades in and out on top.
    *
-   * They fade against the plate behind them, never against the calendar,
-   * which is the point: at every frame this is wheel content over sheet
-   * colour, so no frame has a day number and a year sharing a pixel.
+   * The calendar underneath does not fade with it — this layer is opaque, so
+   * covering it is enough, and animating it too would be animating the date
+   * picker rather than the thing arriving over it.
    *
-   * IN ONLY, and the shape below is what makes it one-directional: the
-   * hidden state is the BASE and carries no transition at all, while the
-   * transition rides on the shown state. A transition is governed by the
-   * state being entered, so arriving animates and leaving does not — with no
-   * `transition-duration: 0s` anywhere, which `build-css.test.mjs` reserves
-   * for inside a `prefers-reduced-motion` block.
+   * Three properties carry the whole design:
    *
-   * Leaving is instant on purpose. A fade out would mean tapping Done and
-   * then watching the wheels dissolve to a blank plate before the calendar
-   * came back, which puts a wait between the tap and the thing it was for.
-   * Going back, everything uncovers on one frame and the calendar is there.
+   * `backgroundColor` is what makes the fade uniform. Without it the wheels
+   * are a translucent selection band and some text, each compositing against
+   * a live calendar grid on its own terms — so the band area faded unlike the
+   * rest and read as "the grey area animates differently from the content".
+   * With the plate inside the fading group, the group renders opaque first
+   * and the fade applies to the finished image, so every pixel of it crosses
+   * at the same rate.
+   *
+   * `isolation` is what makes the plate actually cover. Backgrounds and text
+   * paint in separate phases, so without a stacking context a later sibling's
+   * background lands UNDER an earlier sibling's text — the plate went in
+   * opaque and the calendar's day numbers showed straight through it. Easy to
+   * lose, because any opacity below 1 makes a stacking context anyway: the
+   * cover only breaks at the two ends of the fade, where opacity is exactly
+   * 1, which is to say whenever anyone is actually looking.
+   *
+   * `visibility` rides along with `opacity`, on the same rule as the layer
+   * beneath: it stays `visible` for the whole transition, so fading out is
+   * seen rather than cut on the first frame, and the layer still leaves the
+   * a11y tree and the hit testing at the end of it.
    *
    * Easing is `linear`, not `--ease-standard`. That token is
    * `cubic-bezier(0.24, 1, 0.4, 1)`, which is right for something travelling
@@ -437,18 +445,20 @@ const styles = stylex.create({
    * imperceptible tail rather than a slower fade. A fade has no distance to
    * cover, so its progress should be its progress.
    */
-  overlayContent: {
-    blockSize: '100%',
-    opacity: 0,
-  },
-  overlayContentShown: {
-    opacity: 1,
-    transitionProperty: 'opacity',
+  panelOverlay: {
+    backgroundColor: colorVars['--color-background-surface'],
+    isolation: 'isolate',
+    transitionProperty: 'opacity, visibility',
     transitionDuration: SWAP_DURATION,
     transitionTimingFunction: 'linear',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
     },
+  },
+  panelOverlayHidden: {
+    visibility: 'hidden',
+    opacity: 0,
+    pointerEvents: 'none',
   },
   footer: {
     paddingBlockStart: spacingVars['--spacing-2'],
@@ -460,10 +470,9 @@ const styles = stylex.create({
     gridTemplateColumns: '1fr',
   },
   /**
-   * One footer action. Both occupy the same cell, and they follow the panels
-   * above them exactly: the calendar's pair is the base layer and stays put,
-   * the wheels' single button is the overlay and fades in over it, opaque.
-   * The row never changes height either way.
+   * One footer action. Both occupy the same cell, and the wheels' one is a
+   * layer over the calendar's pair exactly as the panels above are. The row
+   * never changes height either way.
    */
   footerAction: {
     gridArea: '1 / 1',
@@ -472,15 +481,6 @@ const styles = stylex.create({
     // neither label's length decides how the row is divided.
     display: 'flex',
     gap: spacingVars['--spacing-2'],
-  },
-  /**
-   * The wheels' Done, inside its own plate. A wrapper because the plate must
-   * not fade and the button must, and it takes the row's flex behaviour so
-   * the extra element costs the layout nothing.
-   */
-  footerActionContent: {
-    display: 'flex',
-    flexGrow: 1,
   },
   sheetBody: {
     // One inset on every edge. The block-start is the exception and has to
@@ -963,13 +963,13 @@ export function TouchDateField({
           data-panel="calendar"
           // `inert` as well as the hidden styling: the panel keeps its layout
           // box (so the scroller holds its position and the wheels can steer
-          // it), which means without this it would still be tabbable and
-          // hit-testable behind the panel on top.
+          // it), which means without this it would still be tabbable behind
+          // the layer on top.
           inert={isWheelOpen ? true : undefined}
           {...stylex.props(
             styles.panel,
-            styles.panelLayer,
-            isWheelOpen && styles.panelLayerHidden,
+            styles.panelBeneath,
+            isWheelOpen && styles.panelBeneathHidden,
           )}>
           <MonthScroller
             key={`${minMonthIndex}:${maxMonthIndex}`}
@@ -990,28 +990,18 @@ export function TouchDateField({
           inert={isWheelOpen ? undefined : true}
           {...stylex.props(
             styles.panel,
-            styles.panelLayer,
-            styles.panelPlate,
-            !isWheelOpen && styles.panelLayerHidden,
+            styles.panelOverlay,
+            !isWheelOpen && styles.panelOverlayHidden,
           )}>
-          {/* The plate above is opaque from the first frame, so the calendar
-              is covered rather than blended with; this wrapper is what
-              actually fades, and it fades against the plate. */}
-          <div
-            {...stylex.props(
-              styles.overlayContent,
-              isWheelOpen && styles.overlayContentShown,
-            )}>
-            <MonthYearWheels
-              monthIndex={monthIndex}
-              minMonthIndex={minMonthIndex}
-              maxMonthIndex={maxMonthIndex}
-              onChange={handleWheelChange}
-              monthLabel={t('@astryx.dateInput.monthWheel')}
-              yearLabel={t('@astryx.dateInput.yearWheel')}
-              isActive={isWheelOpen}
-            />
-          </div>
+          <MonthYearWheels
+            monthIndex={monthIndex}
+            minMonthIndex={minMonthIndex}
+            maxMonthIndex={maxMonthIndex}
+            onChange={handleWheelChange}
+            monthLabel={t('@astryx.dateInput.monthWheel')}
+            yearLabel={t('@astryx.dateInput.yearWheel')}
+            isActive={isWheelOpen}
+          />
         </div>
       </div>
 
@@ -1041,8 +1031,8 @@ export function TouchDateField({
           inert={isWheelOpen ? true : undefined}
           {...stylex.props(
             styles.footerAction,
-            styles.panelLayer,
-            isWheelOpen && styles.panelLayerHidden,
+            styles.panelBeneath,
+            isWheelOpen && styles.panelBeneathHidden,
           )}>
           <Button
             variant="secondary"
@@ -1066,27 +1056,19 @@ export function TouchDateField({
           inert={isWheelOpen ? undefined : true}
           {...stylex.props(
             styles.footerAction,
-            styles.panelLayer,
-            styles.panelPlate,
-            !isWheelOpen && styles.panelLayerHidden,
+            styles.panelOverlay,
+            !isWheelOpen && styles.panelOverlayHidden,
           )}>
-          <div
-            {...stylex.props(
-              styles.footerActionContent,
-              styles.overlayContent,
-              isWheelOpen && styles.overlayContentShown,
-            )}>
-            <Button
-              // secondary, not primary: this one does not finish the task, it
-              // finishes a step. Giving both surfaces a primary button would
-              // say the wheels are somewhere you can complete from.
-              variant="secondary"
-              size="md"
-              width="100%"
-              label={t('@astryx.dateInput.doneChoosingMonth')}
-              onClick={() => setIsWheelOpen(false)}
-            />
-          </div>
+          <Button
+            // secondary, not primary: this one does not finish the task, it
+            // finishes a step. Giving both surfaces a primary button would
+            // say the wheels are somewhere you can complete from.
+            variant="secondary"
+            size="md"
+            width="100%"
+            label={t('@astryx.dateInput.doneChoosingMonth')}
+            onClick={() => setIsWheelOpen(false)}
+          />
         </div>
       </div>
     </div>
