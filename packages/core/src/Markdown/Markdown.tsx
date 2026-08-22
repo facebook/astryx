@@ -57,7 +57,13 @@ import {
   slugify,
   uniqueSlug,
 } from './parser';
-import type {BlockNode, InlineNode, IncrementalState} from './parser';
+import type {
+  BlockNode,
+  InlineNode,
+  IncrementalState,
+  ListItemNode,
+  MarkdownSourcePosition,
+} from './parser';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
@@ -126,6 +132,31 @@ export interface MarkdownComponents {
   hr?: React.ComponentType<object>;
 }
 
+/** The markdown construct a block came from — not a DOM tag name. */
+export type MarkdownBlockType = BlockNode['type'];
+
+/** What `renderBlock` is told about the block it is wrapping. */
+export interface MarkdownBlock {
+  type: MarkdownBlockType;
+  /** 1-based, inclusive range of source lines this block was parsed from. */
+  position: MarkdownSourcePosition;
+  /** 0 at the top level; 1+ for a block inside a blockquote or list item. */
+  depth: number;
+}
+
+/**
+ * Wraps one rendered block. Return `children` to leave it alone, or wrap it
+ * to attach a decoration keyed off the block's source lines.
+ *
+ * Nodes here are the synchronous subset of `ReactNode`: React 19 types admit
+ * a Promise, which would make every `=> children` implementation a function
+ * "returning a promise" and get it auto-fixed to `async` by lint.
+ */
+export type MarkdownBlockRenderer = (
+  block: MarkdownBlock,
+  children: SyncReactNode,
+) => SyncReactNode;
+
 export interface MarkdownProps extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLDivElement> | React.Ref<HTMLSpanElement>;
   children: string;
@@ -181,6 +212,31 @@ export interface MarkdownProps extends BaseProps<HTMLElement> {
    */
   contentAlign?: 'start' | 'center';
   components?: Partial<MarkdownComponents>;
+  /**
+   * Wrap every rendered block, given the source line range it came from.
+   * Runs for nested blocks too (a paragraph inside a list item reports its
+   * own lines), so `depth` distinguishes them.
+   *
+   * This is the hook for source-anchored decoration — diff and change
+   * indicators, review comments, blame — where the mapping has to be to
+   * source lines, since rendered text is not unique. Enabling it turns on
+   * position tracking in the parser; without it, parsing is unchanged.
+   *
+   * @example
+   * ```tsx
+   * <Markdown
+   *   renderBlock={(block, children) =>
+   *     changedLines.has(block.position.startLine) ? (
+   *       <div className="changed">{children}</div>
+   *     ) : (
+   *       children
+   *     )
+   *   }>
+   *   {source}
+   * </Markdown>
+   * ```
+   */
+  renderBlock?: MarkdownBlockRenderer;
   /**
    * Plugins that transform text patterns into custom React elements.
    * Applied to text nodes after parsing — code blocks and inline code
@@ -1041,6 +1097,20 @@ function computeTableColumnMinWidths(node: {
   });
 }
 
+/** The renderer plus the current nesting depth, threaded through recursion. */
+type BlockRenderContext = {render: MarkdownBlockRenderer; depth: number};
+
+function descend(
+  ctx: BlockRenderContext | undefined,
+): BlockRenderContext | undefined {
+  return ctx && {render: ctx.render, depth: ctx.depth + 1};
+}
+
+/**
+ * Renders one block, then hands it to the consumer's `renderBlock` (when
+ * there is one) with the block's source range. Wrapping happens here — the
+ * one place every block, nested ones included, passes through.
+ */
 function renderBlock(
   node: BlockNode,
   index: number,
@@ -1056,6 +1126,56 @@ function renderBlock(
   inlinePlugins: MarkdownInlinePlugin[] | undefined,
   components: Partial<MarkdownComponents> | undefined,
   t: TranslatorFn,
+  blockCtx: BlockRenderContext | undefined,
+  headingIdMap?: ReadonlyMap<BlockNode, string>,
+): SyncReactNode {
+  const element = renderBlockElement(
+    node,
+    index,
+    blockCount,
+    density,
+    headingLevelStart,
+    onLinkClick,
+    cursor,
+    citationCtx,
+    contentWidthValue,
+    contentAlign,
+    linkComponent,
+    inlinePlugins,
+    components,
+    t,
+    blockCtx,
+    headingIdMap,
+  );
+  if (blockCtx == null || node.position == null) {
+    return element;
+  }
+  return (
+    <Fragment key={index}>
+      {blockCtx.render(
+        {type: node.type, position: node.position, depth: blockCtx.depth},
+        element,
+      )}
+    </Fragment>
+  );
+}
+
+function renderBlockElement(
+  node: BlockNode,
+  index: number,
+  blockCount: number,
+  density: 'default' | 'compact',
+  headingLevelStart: 1 | 2 | 3 | 4 | 5 | 6,
+  onLinkClick: MarkdownProps['onLinkClick'] | undefined,
+  cursor: StreamingCursor,
+  citationCtx: CitationContext | null,
+  contentWidthValue: string | null,
+  contentAlign: 'start' | 'center',
+  linkComponent: LinkComponentType = 'a',
+  inlinePlugins: MarkdownInlinePlugin[] | undefined,
+  components: Partial<MarkdownComponents> | undefined,
+  t: TranslatorFn,
+  blockCtx: BlockRenderContext | undefined,
   headingIdMap?: ReadonlyMap<BlockNode, string>,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
@@ -1227,6 +1347,7 @@ function renderBlock(
             inlinePlugins,
             components,
             t,
+            descend(blockCtx),
           ),
         );
         return <BlockquoteComp key={index}>{bqC}</BlockquoteComp>;
@@ -1262,12 +1383,38 @@ function renderBlock(
               inlinePlugins,
               components,
               t,
+              descend(blockCtx),
             ),
           )}
         </Blockquote>
       );
     }
     case 'list': {
+      // A single-paragraph item renders as an inline label, so it never
+      // reaches renderBlock through the recursion — decorate it here, with
+      // the same shape a multi-block item's paragraph would report.
+      const decorateItemLabel = (
+        item: ListItemNode,
+        label: SyncReactNode,
+      ): SyncReactNode => {
+        const first = item.children[0];
+        if (blockCtx == null || first?.position == null) {
+          return label;
+        }
+        return (
+          <Fragment>
+            {blockCtx.render(
+              {
+                type: first.type,
+                position: first.position,
+                depth: blockCtx.depth + 1,
+              },
+              label,
+            )}
+          </Fragment>
+        );
+      };
+
       // Detect task lists: all items have a checked state
       const isTaskList =
         node.items.length > 0 && node.items.every(item => item.checked != null);
@@ -1336,6 +1483,7 @@ function renderBlock(
                         inlinePlugins,
                         components,
                         t,
+                        descend(blockCtx),
                       ),
                     )}
                   </>
@@ -1346,7 +1494,7 @@ function renderBlock(
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown task items are rendered from positional AST nodes
                     key={i}
                     value={`task-${i}`}
-                    label={label}
+                    label={decorateItemLabel(item, label)}
                   />
                 );
               })}
@@ -1418,6 +1566,7 @@ function renderBlock(
                       inlinePlugins,
                       components,
                       t,
+                      descend(blockCtx),
                     ),
                   )}
                 </>
@@ -1427,7 +1576,7 @@ function renderBlock(
                 <ListItem
                   // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown list items are rendered from positional AST nodes
                   key={i}
-                  label={label}
+                  label={decorateItemLabel(item, label)}
                 />
               );
             })}
@@ -1616,6 +1765,7 @@ export function Markdown({
   contentWidth = 680,
   contentAlign = 'start',
   components,
+  renderBlock: renderBlockProp,
   inlinePlugins,
   autolink,
   xstyle,
@@ -1632,9 +1782,13 @@ export function Markdown({
   );
 
   const parseOptions = useMemo(
-    () => ({sourceIds, autolink}),
-    [sourceIds, autolink],
+    () => ({sourceIds, autolink, trackPosition: renderBlockProp != null}),
+    [sourceIds, autolink, renderBlockProp],
   );
+
+  const blockCtx: BlockRenderContext | undefined = renderBlockProp
+    ? {render: renderBlockProp, depth: 0}
+    : undefined;
 
   // Smooth bursty streamed chunks into a steady character-by-character reveal.
   // When not streaming, the hook returns children unchanged (no-op).
@@ -1804,6 +1958,7 @@ export function Markdown({
           inlinePlugins,
           components,
           t,
+          blockCtx,
           headingIdMap,
         ),
       )}

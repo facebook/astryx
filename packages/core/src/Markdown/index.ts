@@ -14,6 +14,9 @@ export type {
   MarkdownSource,
   MarkdownComponents,
   MarkdownInlinePlugin,
+  MarkdownBlock,
+  MarkdownBlockType,
+  MarkdownBlockRenderer,
 } from './Markdown';
 
 export {
@@ -24,6 +27,7 @@ export {
 } from './parser';
 export type {
   BlockNode,
+  MarkdownSourcePosition,
   InlineNode,
   ListItemNode,
   TableCellNode,

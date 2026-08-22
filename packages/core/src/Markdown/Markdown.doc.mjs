@@ -97,6 +97,12 @@ export const docs = {
         "Opt-in autolinking of bare URLs and emails. 'gfm' applies GitHub-Flavored Markdown autolink-literal rules: bare https?://..., www...., <scheme:url>, <email>, and user@host all become links. Trailing sentence punctuation and unbalanced trailing close-parens are excluded; matches inside code spans, code blocks, existing links, and image alt text are skipped. Default behavior (option unset) is unchanged.",
     },
     {
+      name: 'renderBlock',
+      type: '(block: MarkdownBlock, children: ReactNode) => ReactNode',
+      description:
+        'Wraps every rendered block, given the source line range it came from ({type, position: {startLine, endLine}, depth}). Use for source-anchored decoration such as diff or change indicators, where rendered text is not a sound key. Runs for nested blocks too, so a changed list item can be marked on its own.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -192,6 +198,22 @@ import {Text} from '@astryxdesign/core/Text';
 <Markdown autolink="gfm">
   {'Visit https://example.com or email contact@example.com. ' +
     'You can also bracket links: <https://docs.example.com>.'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'Diff indicators',
+      code: `
+// changedLines comes from a line diff of the old and new source.
+<Markdown
+  renderBlock={(block, children) =>
+    changedLines.has(block.position.startLine) ? (
+      <div className="changed">{children}</div>
+    ) : (
+      children
+    )
+  }>
+  {source}
 </Markdown>;
 `,
     },
@@ -299,6 +321,12 @@ export const docsZh = {
       type: "'gfm'",
       description:
         "可选的裸 URL 和电子邮箱自动链接。设为 'gfm' 启用 GitHub Flavored Markdown 自动链接规则：裸 https?://、www.、<scheme:url>、<email> 以及 user@host 都会变成链接。末尾句末标点和不平衡的末尾右括号会被排除；代码块、现有链接和图片替代文本内部的匹配会被跳过。默认为关闭。",
+    },
+    {
+      name: 'renderBlock',
+      type: '(block: MarkdownBlock, children: ReactNode) => ReactNode',
+      description:
+        '包裹每个渲染的块，并提供它在源文本中的行范围（{type, position: {startLine, endLine}, depth}）。适用于基于源位置的标注，例如差异/变更指示器——渲染后的文本不足以作为可靠的匹配依据。嵌套块同样会调用，因此可以单独标记被修改的列表项。',
     },
     {
       name: 'xstyle',

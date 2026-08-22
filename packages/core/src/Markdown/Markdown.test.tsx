@@ -750,3 +750,127 @@ describe('inlinePlugins', () => {
     });
   });
 });
+
+describe('Markdown renderBlock', () => {
+  const DOC = [
+    '# Spec', // 1
+    '',
+    'Intro paragraph.', // 3
+    '',
+    '- unchanged bullet', // 5
+    '- rewritten bullet', // 6
+    '',
+    '```ts', // 8
+    'const answer = 42;', // 9
+    '```', // 10
+  ].join('\n');
+
+  it('renders identical markup when the renderer passes children through', () => {
+    // React's generated ids differ between the two renders; nothing else may.
+    const stripIds = (html: string) => html.replace(/_r_[0-9a-z]+_/g, '_id_');
+    const plain = render(<Markdown>{DOC}</Markdown>);
+    const wrapped = render(
+      <Markdown renderBlock={(_block, children) => children}>{DOC}</Markdown>,
+    );
+    expect(stripIds(wrapped.container.innerHTML)).toBe(
+      stripIds(plain.container.innerHTML),
+    );
+  });
+
+  it('reports the source range and depth of every block', () => {
+    const seen: string[] = [];
+    render(
+      <Markdown
+        renderBlock={(block, children) => {
+          seen.push(
+            `${block.type}:${block.position.startLine}-${block.position.endLine}@${block.depth}`,
+          );
+          return children;
+        }}>
+        {DOC}
+      </Markdown>,
+    );
+    expect(seen).toEqual([
+      'heading:1-1@0',
+      'paragraph:3-3@0',
+      'paragraph:5-5@1',
+      'paragraph:6-6@1',
+      'list:5-6@0',
+      'codeblock:8-10@0',
+    ]);
+  });
+
+  it('drives the diff-indicator use case end to end', () => {
+    // A diff gives changed SOURCE LINE numbers; the renderer marks the blocks
+    // those lines fall in. Here line 6 (a bullet) and line 9 (inside the code
+    // block) changed.
+    const changed = new Set([6, 9]);
+    const isChanged = (block: {
+      position: {startLine: number; endLine: number};
+    }) => {
+      for (
+        let line = block.position.startLine;
+        line <= block.position.endLine;
+        line++
+      ) {
+        if (changed.has(line)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    render(
+      <Markdown
+        renderBlock={(block, children) =>
+          // Mark the innermost changed block only: a changed bullet marks the
+          // bullet, not the whole list.
+          isChanged(block) ? (
+            <div data-changed={`${block.type}-${block.depth}`}>{children}</div>
+          ) : (
+            children
+          )
+        }>
+        {DOC}
+      </Markdown>,
+    );
+
+    const marked = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-changed]'),
+    );
+    // Document order: the list wrapper, then the changed bullet inside it,
+    // then the code block. The unchanged bullet carries no mark of its own.
+    expect(marked.map(el => [el.dataset.changed, el.textContent])).toEqual([
+      ['list-0', 'unchanged bulletrewritten bullet'],
+      ['paragraph-1', 'rewritten bullet'],
+      ['codeblock-0', expect.stringContaining('const answer = 42;')],
+    ]);
+    expect(screen.getByText('unchanged bullet').closest('[data-changed]')).toBe(
+      marked[0],
+    );
+    expect(screen.getByText('Intro paragraph.').closest('[data-changed]')).toBe(
+      null,
+    );
+  });
+
+  it('composes with component overrides rather than replacing them', () => {
+    render(
+      <Markdown
+        components={{
+          heading: ({children}) => <h2 data-custom-heading>{children}</h2>,
+        }}
+        renderBlock={(block, children) =>
+          block.type === 'heading' ? (
+            <section data-wrapped>{children}</section>
+          ) : (
+            children
+          )
+        }>
+        {DOC}
+      </Markdown>,
+    );
+    const heading = screen.getByText('Spec');
+    expect(heading).toHaveAttribute('data-custom-heading');
+    expect(heading.parentElement).toHaveAttribute('data-wrapped');
+  });
+});
