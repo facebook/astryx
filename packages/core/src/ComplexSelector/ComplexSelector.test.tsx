@@ -353,10 +353,16 @@ describe('ComplexSelector', () => {
       .closest('[popover]');
     expect(popover).not.toBeNull();
 
+    // The touch race #2186 defends against, in its real order: the tap's
+    // pointerdown light-dismisses the popup, then the tap finishes on the
+    // trigger and its click reaches it. It must not reopen what the tap just
+    // closed.
+    fireEvent.pointerDown(trigger);
     const closeEvent = new Event('toggle');
     Object.defineProperty(closeEvent, 'newState', {value: 'closed'});
     fireEvent(popover as HTMLElement, closeEvent);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.pointerUp(trigger);
 
     const showCallCount = vi.mocked(HTMLElement.prototype.showPopover).mock
       .calls.length;
@@ -364,6 +370,114 @@ describe('ComplexSelector', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(
       showCallCount,
     );
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+// The guard above is scoped to the pointer sequence that produced the dismiss.
+// Every other way of closing the popup leaves the trigger live, so the very
+// next click reopens it with no delay.
+describe('ComplexSelector reopen after dismiss', () => {
+  function renderSelector() {
+    render(
+      <ComplexSelector label="View options" value={[]}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    return screen.getByRole('button', {name: 'View options'});
+  }
+
+  function dismissFromBrowser() {
+    const popover = screen
+      .getByRole('dialog', {hidden: true})
+      .closest('[popover]') as HTMLElement;
+    const closeEvent = new Event('toggle');
+    Object.defineProperty(closeEvent, 'newState', {value: 'closed'});
+    fireEvent(popover, closeEvent);
+  }
+
+  it('reopens on the first trigger click after Escape', async () => {
+    const user = userEvent.setup();
+    const trigger = renderSelector();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('reopens on the first trigger click after a trigger-click dismiss', async () => {
+    const user = userEvent.setup();
+    const trigger = renderSelector();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('reopens on the first trigger click after an outside click', async () => {
+    const user = userEvent.setup();
+    const trigger = renderSelector();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // An outside click dismisses through the browser, with no pointer press on
+    // the trigger.
+    dismissFromBrowser();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('reopens on the first trigger click after a programmatic close', async () => {
+    const user = userEvent.setup();
+    const handleRef = React.createRef<ComplexSelectorHandle>();
+    render(
+      <ComplexSelector label="View options" value={[]} handleRef={handleRef}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('button', {name: 'View options'});
+
+    await user.click(trigger);
+    act(() => {
+      handleRef.current?.close();
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('reopens after a press that dismissed the popup and then released away from the trigger', async () => {
+    const user = userEvent.setup();
+    const trigger = renderSelector();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The press goes down on the trigger and light-dismisses, then the pointer
+    // leaves and releases elsewhere, so no click ever lands on the trigger.
+    fireEvent.pointerDown(trigger);
+    dismissFromBrowser();
+    fireEvent.pointerUp(document.body);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    // A click with no pointer press of its own — assistive-tech activation or
+    // automation.
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });
 
