@@ -21,21 +21,75 @@ export const docs = {
   ],
   usage: {
     description:
-      'AlertDialog asks the user to confirm a destructive or irreversible action before it happens. Use it for things like deleting content, revoking access, or discarding unsaved changes.\n\nIt implements the WAI-ARIA APG [Alert Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): `role="alertdialog"`, a title linked by `aria-labelledby`, a consequence description linked by `aria-describedby`, focus moved into the dialog on open and returned to the trigger on close, and no dismissal by clicking outside. Escape cancels.\n\nFor cases where you want to show an alert without managing open state, use the `useImperativeAlertDialog` hook: call `alert.show(options)` and render `alert.element` in your tree.',
+      'AlertDialog asks the user to confirm a destructive or irreversible action before it happens. Use it for things like deleting content, revoking access, or discarding unsaved changes.\n\nIt implements the WAI-ARIA APG [Alert Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): `role="alertdialog"`, a title linked by `aria-labelledby`, a consequence description linked by `aria-describedby`, focus moved into the dialog on open and returned to the trigger on close, and no dismissal by clicking outside. Escape cancels.\n\nThe surface is capped to the viewport and its body scrolls when block space is constrained. Actions wrap as needed and stack when the dialog itself is narrow, so complete decision labels remain visible without coupling the layout to touch input or a device category.\n\nFor cases where you want to show an alert without managing open state, use the `useImperativeAlertDialog` hook: call `alert.show(options)` and render `alert.element` in your tree.',
     bestPractices: [
-      {guidance: true, description: 'Make the action button label specific: "Delete project" is better than "OK" or "Confirm".'},
-      {guidance: true, description: 'Describe what will happen in the description so the user knows the consequences before confirming.'},
-      {guidance: true, description: 'Keep the cancel button first: it takes initial focus, so the least destructive choice is the one already selected when the dialog opens.'},
-      {guidance: false, description: 'Use AlertDialog for non-destructive actions; use a standard Dialog instead.'},
-      {guidance: false, description: 'Rely on color alone to signal danger; the action label itself should say what will happen.'},
-      {guidance: false, description: 'Close the dialog from onAction before the work finishes; hold it open with isActionLoading and call onOpenChange(false) when the action settles.'},
+      {
+        guidance: true,
+        description:
+          'Make the action button label specific: "Delete project" is better than "OK" or "Confirm".',
+      },
+      {
+        guidance: true,
+        description:
+          'Describe what will happen in the description so the user knows the consequences before confirming.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep the cancel button first: it takes initial focus, so the least destructive choice is the one already selected when the dialog opens.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use complete action labels. The footer wraps and stacks them when the dialog surface is narrow instead of truncating the decision.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use AlertDialog for non-destructive actions; use a standard Dialog instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Rely on color alone to signal danger; the action label itself should say what will happen.',
+      },
+      {
+        guidance: false,
+        description:
+          'Close the dialog from onAction before the work finishes; hold it open with isActionLoading and call onOpenChange(false) when the action settles.',
+      },
     ],
     anatomy: [
-      {name: 'Title', required: true, description: 'The question being asked. Renders as a level-2 heading and labels the dialog via aria-labelledby.'},
-      {name: 'Description', required: true, description: 'What will happen if the user confirms. Linked to the dialog via aria-describedby.'},
-      {name: 'Cancel button', required: true, description: 'Ghost button that dismisses without acting. Takes initial focus, and Escape does the same thing.'},
-      {name: 'Action button', required: true, description: 'The confirming action. Destructive by default; shows a spinner while isActionLoading is set.'},
-      {name: 'Backdrop', required: true, description: 'Overlay behind the dialog that blocks page interaction. Clicking it does not dismiss.'},
+      {
+        name: 'Title',
+        required: true,
+        description:
+          'The question being asked. Renders as a level-2 heading and labels the dialog via aria-labelledby.',
+      },
+      {
+        name: 'Description',
+        required: true,
+        description:
+          'What will happen if the user confirms. Linked to the dialog via aria-describedby.',
+      },
+      {
+        name: 'Cancel button',
+        required: true,
+        description:
+          'Ghost button that dismisses without acting. Takes initial focus, and Escape does the same thing.',
+      },
+      {
+        name: 'Action button',
+        required: true,
+        description:
+          'The confirming action. Destructive by default; shows a spinner while isActionLoading is set.',
+      },
+      {
+        name: 'Backdrop',
+        required: true,
+        description:
+          'Overlay behind the dialog that blocks page interaction. Clicking it does not dismiss.',
+      },
     ],
   },
   // Intentionally a contained isInline preview, not playground.overlay: the
@@ -48,11 +102,13 @@ export const docs = {
       isInline: true,
       onOpenChange: undefined,
       title: 'Delete item?',
-      description: 'This action cannot be undone. The item and all its data will be permanently removed.',
+      description:
+        'This action cannot be undone. The item and all its data will be permanently removed.',
       actionLabel: 'Delete',
     },
   },
-  description: 'A modal dialog that asks the user to confirm a destructive action.',
+  description:
+    'A modal dialog that asks the user to confirm a destructive action.',
   props: [
     {
       name: 'isOpen',
@@ -111,38 +167,66 @@ export const docs = {
       name: 'width',
       type: 'number | string',
       default: '400',
-      description: 'Dialog width.',
+      description:
+        'Requested dialog width. The rendered surface remains capped to 90% of the viewport width.',
     },
     {
       name: 'isInline',
       type: 'boolean',
       default: 'false',
-      description: 'Renders alert dialog content inline without modal behavior. For documentation previews and showcases only. Not being a modal, the inline path renders role="group" instead of role="alertdialog".',
+      description:
+        'Renders alert dialog content inline without modal behavior. For documentation previews and showcases only. Not being a modal, the inline path renders role="group" instead of role="alertdialog".',
     },
   ],
-  components: [
-    {name: 'useImperativeAlertDialog'},
-  ],
+  components: [{name: 'useImperativeAlertDialog'}],
   theming: {
-    targets: [
-      {className: 'astryx-alert-dialog'},
-    ],
+    targets: [{className: 'astryx-alert-dialog'}],
   },
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'Confirms destructive/irreversible action before it happens (delete, revoke access, discard unsaved changes).',
+  description:
+    'Confirms destructive/irreversible action before it happens (delete, revoke access, discard unsaved changes).',
   usage: {
     description:
-      'AlertDialog confirms destructive/irreversible action (delete, revoke access, discard changes). Implements WAI-ARIA APG Alert Dialog pattern (https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): role="alertdialog", aria-labelledby title, aria-describedby description, focus into dialog on open + back to trigger on close, no outside-click dismissal, Escape cancels. To show w/o managing open state, use useImperativeAlertDialog hook: call alert.show(options) + render alert.element in tree.',
+      'AlertDialog confirms destructive/irreversible action (delete, revoke access, discard changes). Implements WAI-ARIA APG Alert Dialog pattern (https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): role="alertdialog", aria-labelledby title, aria-describedby description, focus into dialog on open + back to trigger on close, no outside-click dismissal, Escape cancels. Surface caps to viewport; body scrolls when height is constrained; action labels wrap and stack based on dialog width. To show w/o managing open state, use useImperativeAlertDialog hook: call alert.show(options) + render alert.element in tree.',
     bestPractices: [
-      {guidance: true, description: 'Make action button label specific: "Delete project" > "OK"/"Confirm".'},
-      {guidance: true, description: 'Describe consequences in description so user knows outcome before confirming.'},
-      {guidance: true, description: 'Keep cancel first: it takes initial focus, so least destructive choice is preselected.'},
-      {guidance: false, description: 'Use AlertDialog for non-destructive actions; use standard Dialog instead.'},
-      {guidance: false, description: 'Rely on color alone for danger; the action label should say what happens.'},
-      {guidance: false, description: 'Close from onAction before work finishes; hold open w/ isActionLoading, call onOpenChange(false) when it settles.'},
+      {
+        guidance: true,
+        description:
+          'Make action button label specific: "Delete project" > "OK"/"Confirm".',
+      },
+      {
+        guidance: true,
+        description:
+          'Describe consequences in description so user knows outcome before confirming.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep cancel first: it takes initial focus, so least destructive choice is preselected.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use complete action labels; footer wraps and stacks them based on dialog width.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use AlertDialog for non-destructive actions; use standard Dialog instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Rely on color alone for danger; the action label should say what happens.',
+      },
+      {
+        guidance: false,
+        description:
+          'Close from onAction before work finishes; hold open w/ isActionLoading, call onOpenChange(false) when it settles.',
+      },
     ],
   },
 };
