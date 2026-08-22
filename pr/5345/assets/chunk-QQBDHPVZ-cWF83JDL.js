@@ -1,0 +1,1 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";var t,n,r=e((()=>{t=(e,t,n)=>{let r=e.replace(/\s+/g,`-`),i=[`control`];return n&&i.push(n),t&&i.push(t),i.push(r),i.join(`-`)},n=(e,t,n)=>{let r=e.replace(/\s+/g,`-`),i=[`set`];return n&&i.push(n),t&&i.push(t),i.push(r),i.join(`-`)}}));export{n,r,t};

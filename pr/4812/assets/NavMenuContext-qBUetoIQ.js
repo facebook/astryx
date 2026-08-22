@@ -1,0 +1,1 @@
+import{i as e,s as t}from"./preload-helper-CT_b8DTk.js";import{t as n}from"./react-B7Te67-h.js";function r(){return(0,a.use)(o)}function i(){return(0,a.use)(s)}var a,o,s,c=e((()=>{a=t(n(),1),o=(0,a.createContext)(null),o.displayName=`NavHeadingCloseContext`,s=(0,a.createContext)(null),s.displayName=`NavHeadingMenuContext`}));export{i as a,r as i,s as n,c as r,o as t};
