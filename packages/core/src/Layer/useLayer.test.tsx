@@ -1020,4 +1020,56 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
 
     expect(getByTestId('state')).toHaveTextContent('open');
   });
+
+  it('acts on a synthesized click with no press of its own', async () => {
+    const user = userEvent.setup();
+    const {container, getByRole, getByTestId} = render(
+      <GuardedTriggerHarness />,
+    );
+    const trigger = getByRole('button', {name: 'Trigger'});
+
+    await user.click(trigger);
+    lightDismiss(container);
+    fireEvent.click(trigger);
+    expect(getByTestId('state')).toHaveTextContent('closed');
+
+    // AT activation reaches the trigger as a bare click: no pointerdown, so
+    // the gesture counter still reads what it read at the dismissal.
+    act(() => {
+      trigger.click();
+    });
+
+    expect(getByTestId('state')).toHaveTextContent('open');
+  });
+
+  /** A trigger that calls show()/hide() directly, checking nothing. */
+  function PlainTriggerHarness() {
+    const layer = useLayer({mode: 'context'});
+    return (
+      <>
+        <button
+          type="button"
+          ref={layer.ref}
+          onClick={() => (layer.isOpen ? layer.hide() : layer.show())}>
+          Trigger
+        </button>
+        <span data-testid="state">{layer.isOpen ? 'open' : 'closed'}</span>
+        {layer.render(<span>Layer content</span>, {placement: 'below'})}
+      </>
+    );
+  }
+
+  it('absorbs the click for a trigger that never calls wasJustDismissed', async () => {
+    const user = userEvent.setup();
+    const {container, getByRole, getByTestId} = render(<PlainTriggerHarness />);
+    const trigger = getByRole('button', {name: 'Trigger'});
+
+    await user.click(trigger);
+    expect(getByTestId('state')).toHaveTextContent('open');
+
+    lightDismiss(container);
+    fireEvent.click(trigger);
+
+    expect(getByTestId('state')).toHaveTextContent('closed');
+  });
 });

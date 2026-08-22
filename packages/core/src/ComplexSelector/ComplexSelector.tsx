@@ -373,14 +373,12 @@ export function ComplexSelector<Value>({
       .join(' ') || undefined;
 
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const lastHideTimeRef = useRef(0);
 
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
 
   const handlePopoverHide = useCallback(() => {
-    lastHideTimeRef.current = Date.now();
     triggerRef.current?.focus();
   }, []);
 
@@ -395,7 +393,7 @@ export function ComplexSelector<Value>({
   const isOpen = popover.isOpen;
 
   const handleTriggerClick = useCallback(() => {
-    if (isDisabled || Date.now() - lastHideTimeRef.current < 50) {
+    if (isDisabled) {
       return;
     }
     if (popover.isOpen) {

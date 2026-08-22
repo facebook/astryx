@@ -3016,8 +3016,6 @@ describe('Selector popup theme target', () => {
     // that event lands before the click — WebKit, or any engine under load —
     // the click used to read a closed popup and reopen it.
     const popover = document.querySelector('[popover]') as HTMLElement;
-    // Back to back: the guard window is the length of one gesture, and in a
-    // browser the click lands a few milliseconds behind the dismissal.
     act(() => {
       popover.dispatchEvent(
         Object.assign(new Event('toggle'), {
@@ -3026,8 +3024,8 @@ describe('Selector popup theme target', () => {
         }),
       );
     });
-    // Synchronously, so the click still falls inside the one gesture the guard
-    // covers — in a browser it lands a few milliseconds behind the dismissal.
+    // Synchronously: the click falls inside the one gesture the guard covers,
+    // as it does in a browser a few milliseconds behind the dismissal.
     fireEvent.click(trigger);
 
     expect(trigger).toHaveAttribute('aria-expanded', 'false');

@@ -550,6 +550,14 @@ export function useLayer(
   // Read through wasJustDismissed by triggers deciding whether a click is
   // theirs to act on.
   const dismissedByGestureRef = useRef<number | null>(null);
+  const forgetDismissalRef = useRef<(() => void) | null>(null);
+
+  const wasJustDismissed = useCallback(
+    () =>
+      dismissedByGestureRef.current !== null &&
+      dismissedByGestureRef.current === currentGesture(),
+    [],
+  );
 
   const showPopoverElement = useCallback((popover: HTMLElement) => {
     // Finding infra-4: the Popover API is unsupported on Safari <17 and
@@ -614,6 +622,11 @@ export function useLayer(
   }, [mode, lazyMount]);
 
   const show = useCallback(() => {
+    // Every caller lands here, so this is where the dismissing press is
+    // absorbed: opening now would reopen the popup that same press closed.
+    if (wasJustDismissed()) {
+      return;
+    }
     // A context popover left over until React commits a previous hide must not
     // be reopened. The synchronous mount ref is the source of truth.
     const candidate = popoverRef.current;
@@ -635,12 +648,18 @@ export function useLayer(
     requestContextMount,
     showPopoverElement,
     isCurrentContextPopover,
+    wasJustDismissed,
   ]);
 
   const hide = useCallback(() => {
     pendingShowRef.current = false;
     if (isOpenRef.current) {
       const el = popoverRef.current;
+      // Clear the open state BEFORE hiding: hidePopover fires `toggle`, and
+      // the reconciler below reads this ref to tell the browser's own
+      // dismissals from ours.
+      openedPopoverRef.current = null;
+      isOpenRef.current = false;
       // See finding infra-4 note in `show`: mirror the same guard on hide so
       // unsupported browsers degrade gracefully instead of throwing.
       if (el) {
@@ -650,20 +669,11 @@ export function useLayer(
           el.style.display = 'none';
         }
       }
-      openedPopoverRef.current = null;
-      isOpenRef.current = false;
       setIsOpen(false);
       onHide?.();
     }
     clearContextMount();
   }, [onHide, clearContextMount]);
-
-  const wasJustDismissed = useCallback(
-    () =>
-      dismissedByGestureRef.current !== null &&
-      dismissedByGestureRef.current === currentGesture(),
-    [],
-  );
 
   const keepOpenProps: KeepLayerOpenProps = useMemo(
     () => ({
@@ -720,6 +730,24 @@ export function useLayer(
         }
       : undefined;
 
+  // A dismissal is spent by the click that ends the press it came from. Left
+  // standing it would also swallow a click that arrives with no press of its
+  // own — AT activation, element.click() — which never advances the counter.
+  // Bubble phase on the document: every guard reading the dismissal has run.
+  const rememberDismissal = useCallback((doc: Document) => {
+    dismissedByGestureRef.current = currentGesture();
+    forgetDismissalRef.current?.();
+    const forget = () => {
+      dismissedByGestureRef.current = null;
+      doc.removeEventListener('click', forget);
+      forgetDismissalRef.current = null;
+    };
+    doc.addEventListener('click', forget);
+    forgetDismissalRef.current = forget;
+  }, []);
+
+  useEffect(() => () => forgetDismissalRef.current?.(), []);
+
   // Reconcile browser-initiated closes (light-dismiss, popover="auto" stack
   // eviction). These are the only cases where the DOM mutates without going
   // through our show/hide — we sync React state back to match.
@@ -736,13 +764,15 @@ export function useLayer(
       if (toggleEvent.newState === 'closed' && isOpenRef.current) {
         openedPopoverRef.current = null;
         isOpenRef.current = false;
-        dismissedByGestureRef.current = currentGesture();
+        rememberDismissal(
+          (e.currentTarget as HTMLElement | null)?.ownerDocument ?? document,
+        );
         setIsOpen(false);
         onHide?.();
         clearContextMount();
       }
     },
-    [onHide, clearContextMount],
+    [onHide, clearContextMount, rememberDismissal],
   );
 
   // Ref callback for popover element — sets up the `toggle` listener.
