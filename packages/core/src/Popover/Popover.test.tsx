@@ -460,4 +460,23 @@ describe('Popover', () => {
       expect(trigger).toHaveFocus();
     });
   });
+
+  it('puts the astryx-popover theme target on the popup surface', () => {
+    render(
+      <Popover
+        isOpen
+        content={<span data-testid="content">Popover content</span>}
+        label="Test popover"
+        data-testid="popover">
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    const target = document.querySelector('.astryx-popover');
+    expect(target).not.toBeNull();
+    // The surface paints background, radius and elevation; a target on the
+    // content box inside it would style a box that paints nothing.
+    expect(target).toHaveClass('astryx-popover-surface');
+    expect(target).toContainElement(screen.getByTestId('content'));
+  });
 });
