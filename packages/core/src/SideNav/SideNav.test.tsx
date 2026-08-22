@@ -1012,9 +1012,9 @@ describe('SideNav resizable', () => {
     const hitArea = handle.firstElementChild as HTMLElement;
 
     act(() => {
-      fireEvent.pointerDown(hitArea, {clientX: 260});
-      fireEvent.pointerMove(document, {clientX: 310});
-      fireEvent.pointerUp(document, {clientX: 310});
+      fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 260});
+      fireEvent.pointerMove(hitArea, {pointerId: 1, clientX: 310});
+      fireEvent.pointerUp(hitArea, {pointerId: 1, clientX: 310});
     });
 
     expect(handleWidthChange).toHaveBeenCalledTimes(1);

@@ -21,6 +21,15 @@
  * While the panel is collapsed, aria-valuenow is clamped to aria-valuemin
  * (a value below the minimum is invalid per WCAG 4.1.2) and a localized
  * "Collapsed" aria-valuetext announces the real state.
+ *
+ * Dragging takes pointer capture on the grab zone, so the rest of the gesture
+ * is delivered to that element instead of being hit-tested against whatever
+ * the cursor happens to be over. A resizable region that contains an embedded
+ * frame otherwise loses the drag the moment the cursor crosses the frame: the
+ * events go to the guest document, and a listener on the host window never
+ * hears them again. Captured events are delivered to the capturing element,
+ * so the move/up/cancel handlers live on the grab zone (as in Slider), not on
+ * window.
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -82,6 +91,21 @@ function hitAreaBiasDir(
     return null;
   }
   return effectiveSide === 'start' ? -1 : 1;
+}
+
+/**
+ * Drag feedback lives on `<body>`, not on the handle: the pointer spends the
+ * drag off the handle, over whatever the panels contain, and the resize cursor
+ * has to hold there. Module scope so the writes stay outside the component.
+ */
+function applyBodyDragStyles(isHorizontal: boolean): void {
+  document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
+  document.body.style.userSelect = 'none';
+}
+
+function clearBodyDragStyles(): void {
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
 }
 
 const styles = stylex.create({
@@ -368,9 +392,14 @@ export function ResizeHandle({
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.resizable.handle.label');
   const handleRef = useRef<HTMLDivElement>(null);
-  // Removes the in-flight drag's window listeners (and resets body styles).
-  // Held in a ref so unmount can tear down a drag that never got a pointerup.
-  const dragCleanupRef = useRef<(() => void) | null>(null);
+  // The pointer that owns the in-flight drag, plus the values its deltas are
+  // measured against. A ref so moves don't re-render, and so unmount can tell
+  // a live drag from a finished one.
+  const dragRef = useRef<{
+    pointerId: number;
+    startPos: number;
+    rtl: number;
+  } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -397,50 +426,70 @@ export function ResizeHandle({
   const isInteracting = isHovered || isFocused;
 
   // --- Pointer drag ---
+  const clearDrag = useCallback(() => {
+    dragRef.current = null;
+    setIsDragging(false);
+    clearBodyDragStyles();
+  }, []);
+
   const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (isDisabled || !resizable) {
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (isDisabled || !resizable || dragRef.current) {
         return;
       }
       e.preventDefault();
       e.stopPropagation();
+      // Take the pointer for the whole gesture. Without capture the browser
+      // re-hit-tests every move, so a frame anywhere under the drag path
+      // swallows the rest of it into the guest document.
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      dragRef.current = {
+        pointerId: e.pointerId,
+        startPos: isHorizontal ? e.clientX : e.clientY,
+        rtl: isHorizontal ? getRTLMultiplier() : 1,
+      };
       setIsDragging(true);
       resizable._onResizeStart();
-      const startPos = isHorizontal ? e.clientX : e.clientY;
-      const rtl = isHorizontal ? getRTLMultiplier() : 1;
-      document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
-      document.body.style.userSelect = 'none';
-
-      const onMove = (ev: PointerEvent) => {
-        const currentPos = isHorizontal ? ev.clientX : ev.clientY;
-        const delta = (currentPos - startPos) * rtl * sign;
-        resizable._onResizeMove(delta);
-      };
-      const onUp = () => {
-        cleanup();
-        setIsDragging(false);
-        resizable._onResizeEnd();
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      };
-      const onCancel = () => {
-        cleanup();
-        setIsDragging(false);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      };
-      function cleanup() {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-        window.removeEventListener('pointercancel', onCancel);
-        dragCleanupRef.current = null;
-      }
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
-      window.addEventListener('pointercancel', onCancel);
-      dragCleanupRef.current = cleanup;
+      applyBodyDragStyles(isHorizontal);
     },
-    [isDisabled, resizable, isHorizontal, getRTLMultiplier, sign],
+    [isDisabled, resizable, isHorizontal, getRTLMultiplier],
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== e.pointerId || !resizable) {
+        return;
+      }
+      const currentPos = isHorizontal ? e.clientX : e.clientY;
+      resizable._onResizeMove((currentPos - drag.startPos) * drag.rtl * sign);
+    },
+    [resizable, isHorizontal, sign],
+  );
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (dragRef.current?.pointerId !== e.pointerId) {
+        return;
+      }
+      clearDrag();
+      resizable?._onResizeEnd();
+    },
+    [clearDrag, resizable],
+  );
+
+  // Serves pointercancel and lostpointercapture alike: an interrupted drag
+  // ends without signalling a resize end. lostpointercapture also fires on the
+  // implicit release after every pointerup/pointercancel, by which point the
+  // drag is already cleared and this is a no-op.
+  const cancelDrag = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (dragRef.current?.pointerId !== e.pointerId) {
+        return;
+      }
+      clearDrag();
+    },
+    [clearDrag],
   );
 
   // --- Keyboard ---
@@ -514,16 +563,16 @@ export function ResizeHandle({
   }, [isDisabled, resizable]);
 
   // --- Cleanup on unmount ---
-  // A drag in flight when the handle unmounts never gets its pointerup, so
-  // tear down the window listeners here too — otherwise every pointermove
-  // keeps driving the (still-mounted) region's resize state after the handle
-  // is gone, and the body cursor/user-select overrides stick.
+  // Removing the grab zone implicitly releases its captured pointer and takes
+  // its listeners with it, so an in-flight drag stops driving the region on
+  // its own. The body cursor/user-select overrides are not on the element,
+  // though, so they have to be released here or they stick after the handle
+  // is gone.
   useEffect(() => {
     return () => {
-      if (dragCleanupRef.current) {
-        dragCleanupRef.current();
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
+      if (dragRef.current) {
+        dragRef.current = null;
+        clearBodyDragStyles();
       }
     };
   }, []);
@@ -616,6 +665,10 @@ export function ResizeHandle({
           isDisabled && styles.disabled,
         )}
         onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={cancelDrag}
+        onLostPointerCapture={cancelDrag}
         onPointerEnter={() => setIsHovered(true)}
         onPointerLeave={() => {
           if (!isDragging) {
