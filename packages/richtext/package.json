@@ -112,6 +112,10 @@
   },
   "devDependencies": {
     "@astryxdesign/cli": "workspace:*",
+    "@babel/cli": "catalog:",
+    "@babel/core": "catalog:",
+    "@babel/preset-react": "catalog:",
+    "@babel/preset-typescript": "catalog:",
     "@lexical/code": "^0.46.0",
     "@lexical/headless": "^0.46.0",
     "@lexical/html": "^0.46.0",
@@ -122,6 +126,8 @@
     "@lexical/rich-text": "^0.46.0",
     "@lexical/selection": "^0.46.0",
     "@lexical/utils": "^0.46.0",
+    "@stylexjs/babel-plugin": "catalog:",
+    "@testing-library/react": "catalog:",
     "lexical": "^0.46.0",
     "rimraf": "^6.0.1"
   }

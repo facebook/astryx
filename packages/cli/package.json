@@ -126,6 +126,10 @@
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
     "@astryxdesign/theme-neutral": "*",
-    "gpt-tokenizer": "^3.4.0"
+    "@heroicons/react": "^2.2.0",
+    "@stylexjs/stylex": "catalog:",
+    "gpt-tokenizer": "^3.4.0",
+    "lucide-react": "^1.18.0",
+    "recharts": "^3.9.2"
   }
 }
