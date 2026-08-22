@@ -67,6 +67,12 @@ export const docs = {
         'Called when the dismiss button is clicked; banner hides itself regardless of whether this is provided.',
     },
     {
+      name: 'dismissLabel',
+      type: 'string',
+      description:
+        'Accessible name for the dismiss button (pass it already translated). Defaults to "Dismiss <title>" for a string title, so stacked banners are distinguishable; set it when the title is a ReactNode.',
+    },
+    {
       name: 'endContent',
       type: 'ReactNode',
       description:
@@ -240,6 +246,8 @@ export const docsDense = {
     icon: 'override default status icon',
     isDismissable: 'user can dismiss banner',
     onDismiss: 'dismiss callback; banner self-hides regardless',
+    dismissLabel:
+      'a11y name of the dismiss button; defaults to "Dismiss <title>"',
     endContent: 'end-aligned action in header, typically button/link; wraps to its own row when the header is too narrow',
     container: 'card=border-radius; section=full-width no radius for page-level',
     elevation: 'resting shadow depth: none|low|med|high; raise for a floating banner',
