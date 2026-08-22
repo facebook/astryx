@@ -15,9 +15,9 @@ export const doc = {
   displayName: 'themeTemplate()',
   summary: 'Write the annotated theme template into a project.',
   description:
-    'Writes theme.template.ts: the annotated reference for the whole theme surface — every ' +
+    'Writes theme.template.ts: the annotated reference for the whole theme surface (every ' +
     'defineTheme field, the token families, the component override syntax, and how a theme is ' +
-    'consumed — with the CLI command that prints the authoritative reference for each section. ' +
+    'consumed), with the CLI command that prints the authoritative reference for each section. ' +
     'Read it, copy what you need into your own theme file, delete it. Where `theme add` starts ' +
     'you from a theme we ship, this starts you from a blank one. Refuses to overwrite without ' +
     '`overwrite`, so it is safe to re-run.',
@@ -48,7 +48,7 @@ export const doc = {
     {
       type: 'theme.template',
       description:
-        'Receipt: the path (relative to cwd), whether it was written, and the reason it was not — `exists` when a file was already there, which is a success, not a failure.',
+        'Receipt: the path (relative to cwd), whether it was written, and the reason it was not: `exists` when a file was already there, which is a success, not a failure.',
     },
   ],
   throws: [{code: 'ERR_PATH_TRAVERSAL', when: 'the target path escapes cwd'}],

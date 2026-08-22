@@ -51,12 +51,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Astryx never loads font files. defineTheme and the built CSS only set font-family — naming a webfont (Fraunces, JetBrains Mono, …) makes every browser look for it, and quietly fall back when the app has not loaded it. `astryx theme build` warns when a theme names families that are neither CSS generics nor common system fonts and prints the snippet to add; loading the font is always the app\'s job.',
+          text: 'Astryx never loads font files. defineTheme and the built CSS only set font-family: naming a webfont (Fraunces, JetBrains Mono, ...) makes every browser look for it, and quietly fall back when the app has not loaded it. `astryx theme build` warns when a theme names families that are neither CSS generics nor common system fonts and prints the snippet to add; loading the font is always the app\'s job.',
         },
         {
           type: 'code',
           lang: 'html',
-          label: 'Google Fonts — add to your document <head>',
+          label: 'Google Fonts: add to your document <head>',
           code: `<link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
@@ -67,7 +67,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'css',
-          label: 'Self-hosted — one @font-face per family and weight',
+          label: 'Self-hosted: one @font-face per family and weight',
           code: `@font-face {
   font-family: 'Fraunces';
   src: url('/fonts/fraunces.woff2') format('woff2');
@@ -77,7 +77,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "Always pair a webfont with a real fallback stack — metric-similar system fonts plus a generic — so text stays readable before the font loads and wherever it never does: defineTheme({typography: {heading: {family: 'Fraunces', fallbacks: 'Georgia, serif'}}}).",
+          text: "Always pair a webfont with a real fallback stack (metric-similar system fonts plus a generic) so text stays readable before the font loads and wherever it never does: defineTheme({typography: {heading: {family: 'Fraunces', fallbacks: 'Georgia, serif'}}}).",
         },
       ],
     },

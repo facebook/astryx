@@ -24,7 +24,7 @@ export const docs = {
     {
       name: 'getContainerProps',
       type: '(options?: ContainerRevealOptions) => {className?: string; style?: CSSProperties}',
-      description: 'Spread onto the container whose hover/focus-within drives the reveal. Accepts hoverDelay (ms the pointer must dwell before the reveal starts — a hover-intent gate like Tooltip\'s and HoverCard\'s delay, so a cursor sweeping across a list leaves nothing painted behind it) and forceState ("active" | "inactive") to pin the trigger state when a caller owns it — a motion gate, a scroll, a row whose menu is open. "inactive" still yields to keyboard focus and coarse pointers.',
+      description: 'Spread onto the container whose hover/focus-within drives the reveal. Accepts hoverDelay (ms the pointer must dwell before the reveal starts, a hover-intent gate like Tooltip\'s and HoverCard\'s delay, so a cursor sweeping across a list leaves nothing painted behind it) and forceState ("active" | "inactive") to pin the trigger state when a caller owns it: a motion gate, a scroll, a row whose menu is open. "inactive" still yields to keyboard focus and coarse pointers.',
     },
     {
       name: 'getContentRevealProps',
@@ -61,7 +61,7 @@ export const docsDense = {
     'options.isEnabled': 'when false hook is inert: no container styles, content getters return no styles, content always shown. Read every render, so it can flip after mount.',
   },
   returnDescriptions: {
-    getContainerProps: 'spread onto container whose hover/focus-within drives reveal. Accepts hoverDelay (ms dwell before reveal starts — hover-intent gate like Tooltip / HoverCard delay) + forceState ("active" | "inactive") to pin trigger state when a caller owns it. "inactive" yields to keyboard focus + coarse pointers.',
+    getContainerProps: 'spread onto container whose hover/focus-within drives reveal. Accepts hoverDelay (ms dwell before reveal starts, hover-intent gate like Tooltip / HoverCard delay) + forceState ("active" | "inactive") to pin trigger state when a caller owns it. "inactive" yields to keyboard focus + coarse pointers.',
     getContentRevealProps: 'spread onto each revealed / concealed child. Accepts isRevealInverted (conceal-on-hover), isLayoutPreserved (reserve layout box while hidden) + forceVisibility ("shown" | "hidden") to pin this element regardless of container. "hidden" yields to focus.',
   },
   usage: {
