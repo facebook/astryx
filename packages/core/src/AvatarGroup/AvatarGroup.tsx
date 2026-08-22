@@ -48,7 +48,9 @@ export interface AvatarGroupProps extends BaseProps<HTMLDivElement> {
    */
   children: ReactNode;
   /**
-   * Size applied to all avatars via context.
+   * Size applied to all avatars via context. This wins over each child
+   * Avatar's own `size` prop, including when it is left at the default, so
+   * set the size here rather than on the children.
    * @default 'md'
    */
   size?: AvatarSize;

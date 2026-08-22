@@ -146,6 +146,9 @@ export const docs = {
       {className: 'astryx-codeblock-title', visualProps: ['size', 'language']},
       {className: 'astryx-codeblock-copy-button'},
     ],
+    vars: [
+      {name: '--_codeblock-gutter-width', description: 'Width of the line-number gutter, computed from the digit count of the last line so the code column starts at a stable offset.', default: '2ch', private: true},
+    ],
   },
   usage: {
     description: 'CodeBlock renders syntax-highlighted code with line numbers, a copy button, and optional collapsible sections. Use CodeBlock for multi-line snippets like source files, terminal commands, and configuration examples. Use Code for inline references to function names, variables, or CLI flags within body text.',

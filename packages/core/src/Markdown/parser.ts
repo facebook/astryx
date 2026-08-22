@@ -3,8 +3,10 @@
 /**
  * @file parser.ts
  * @input Markdown string
- * @output Array of MarkdownNode AST nodes
- * @position Core parser; consumed by Markdown.tsx
+ * @output Array of MarkdownNode AST nodes; heading slug helpers
+ *   (inlineText, slugify, uniqueSlug) shared by Markdown rendering and
+ *   Outline's parseOutlineFromMarkdown
+ * @position Core parser; consumed by Markdown.tsx and Outline
  */
 
 // ---------------------------------------------------------------------------
@@ -275,7 +277,7 @@ function matchReferenceLink(
       // matches nothing.
       const label = rawLabel === '' ? linkText : rawLabel;
       const href = linkDefs.get(normalizeLinkLabel(label));
-      if (href != null) {
+      if (href != null && isSafeUrl(href)) {
         return {
           node: {type: 'link', href, children: parseInlineImpl(linkText, opts)},
           end: labelClose + 1,
@@ -290,7 +292,7 @@ function matchReferenceLink(
     return null;
   }
   const href = linkDefs.get(normalizeLinkLabel(linkText));
-  if (href == null) {
+  if (href == null || !isSafeUrl(href)) {
     return null;
   }
   return {
@@ -357,6 +359,31 @@ function isWordChar(ch: string | undefined): boolean {
     return false;
   }
   return /\w/.test(ch);
+}
+
+// ---------------------------------------------------------------------------
+// URL scheme sanitization
+// ---------------------------------------------------------------------------
+
+/**
+ * Reject URLs with dangerous schemes (javascript:, vbscript:, data:) that
+ * could execute arbitrary code when rendered as link hrefs or image srcs.
+ * Returns true if the URL is safe to use, false otherwise.
+ */
+function isSafeUrl(url: string): boolean {
+  // Trim and collapse whitespace/control chars that browsers tolerate but
+  // could bypass a naive prefix check (e.g. "java\nscript:alert(1)").
+  // eslint-disable-next-line no-control-regex -- control chars are the bypass
+  const normalized = url.replace(/[\x00-\x1f\x7f]/g, '').trim();
+  const lower = normalized.toLowerCase();
+  if (
+    lower.startsWith('javascript:') ||
+    lower.startsWith('vbscript:') ||
+    lower.startsWith('data:text/html')
+  ) {
+    return false;
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -478,11 +505,17 @@ function parseInlineImpl(text: string, opts: ResolvedOptions): InlineNode[] {
       if (altClose !== -1 && text[altClose + 1] === '(') {
         const srcClose = findClosingParen(text, altClose + 2);
         if (srcClose !== -1) {
-          nodes.push({
-            type: 'image',
-            src: text.slice(altClose + 2, srcClose),
-            alt: text.slice(i + 2, altClose),
-          });
+          const src = text.slice(altClose + 2, srcClose);
+          if (!isSafeUrl(src)) {
+            // Dangerous scheme — emit as plain text.
+            nodes.push({type: 'text', content: text.slice(i, srcClose + 1)});
+          } else {
+            nodes.push({
+              type: 'image',
+              src,
+              alt: text.slice(i + 2, altClose),
+            });
+          }
           i = srcClose + 1;
           continue;
         }
@@ -515,11 +548,17 @@ function parseInlineImpl(text: string, opts: ResolvedOptions): InlineNode[] {
       if (textClose !== -1 && text[textClose + 1] === '(') {
         const urlClose = findClosingParen(text, textClose + 2);
         if (urlClose !== -1) {
-          nodes.push({
-            type: 'link',
-            href: text.slice(textClose + 2, urlClose),
-            children: parseInlineImpl(text.slice(i + 1, textClose), opts),
-          });
+          const href = text.slice(textClose + 2, urlClose);
+          if (!isSafeUrl(href)) {
+            // Dangerous scheme — emit as plain text instead of a link.
+            nodes.push({type: 'text', content: text.slice(i, urlClose + 1)});
+          } else {
+            nodes.push({
+              type: 'link',
+              href,
+              children: parseInlineImpl(text.slice(i + 1, textClose), opts),
+            });
+          }
           i = urlClose + 1;
           continue;
         }
@@ -780,6 +819,10 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
       const url = m[1];
+      // Skip dangerous URL schemes (javascript:, vbscript:, data:text/html)
+      if (!isSafeUrl(url)) {
+        continue;
+      }
       matches.push({
         start: m.index,
         end: m.index + m[0].length,
@@ -1773,4 +1816,60 @@ export function parseMarkdownIncremental(
   state.prevInput = input;
 
   return mergeSettledBlocks(settledBlocks, unsettledBlocks);
+}
+
+// ---------------------------------------------------------------------------
+// Heading slugs
+// ---------------------------------------------------------------------------
+// Single source of truth for the heading id contract: Markdown renders these
+// slugs as `id` attributes on h1–h6, and Outline's parseOutlineFromMarkdown
+// derives its item ids from the same functions, so outline hash links always
+// resolve to a rendered heading by construction.
+
+/** Flatten inline nodes into their plain text content. */
+export function inlineText(nodes: InlineNode[]): string {
+  return nodes
+    .map(node => {
+      switch (node.type) {
+        case 'text':
+        case 'code':
+          return node.content;
+        case 'bold':
+        case 'italic':
+        case 'strikethrough':
+        case 'link':
+          return inlineText(node.children);
+        case 'image':
+          return node.alt;
+        case 'citation':
+        case 'break':
+          return '';
+      }
+    })
+    .join('');
+}
+
+/** Turn heading text into a URL-safe slug (lowercase, hyphen-separated). */
+export function slugify(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Disambiguate repeated slugs with a numeric suffix (`setup`, `setup-1`, …).
+ * Empty slugs fall back to `section`. The caller owns the counts map so one
+ * document shares a single numbering sequence.
+ */
+export function uniqueSlug(
+  baseSlug: string,
+  counts: Map<string, number>,
+): string {
+  const fallbackSlug = baseSlug || 'section';
+  const count = counts.get(fallbackSlug) ?? 0;
+  counts.set(fallbackSlug, count + 1);
+  return count === 0 ? fallbackSlug : `${fallbackSlug}-${count}`;
 }

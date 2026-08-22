@@ -136,10 +136,9 @@ export const CollapsibleContent: Story = {
     children: (
       <div
         style={{
-          fontSize: '13px',
           padding: '40px',
           textAlign: 'center',
-          color: '#999',
+          color: 'var(--color-text-secondary)',
         }}>
         Flex Slot
       </div>
@@ -159,10 +158,9 @@ export const CollapsibleContentExpanded: Story = {
     children: (
       <div
         style={{
-          fontSize: '13px',
           padding: '40px',
           textAlign: 'center',
-          color: '#999',
+          color: 'var(--color-text-secondary)',
         }}>
         Flex Slot
       </div>
@@ -272,5 +270,70 @@ export const AllFeatures: Story = {
         container="section"
       />
     </div>
+  ),
+};
+
+export const LongText: Story = {
+  name: 'Overflow (long text and a long word)',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+      <Banner
+        status="error"
+        title="Your subscription payment could not be processed because the card on file has expired"
+        description="Update the payment method in billing settings to restore access to every workspace on this account before the grace period ends."
+        isDismissable
+      />
+      <Banner
+        status="warning"
+        title="Pneumonoultramicroscopicsilicovolcanoconiosisdiagnosisunavailable"
+        description="Verkehrsinfrastrukturfinanzierungsgesellschaftsvorstandsvorsitzender"
+        isDismissable
+      />
+    </div>
+  ),
+};
+
+export const NarrowContainer: Story = {
+  name: 'Narrow container (240px)',
+  render: () => (
+    <div style={{width: '240px'}}>
+      <Banner
+        status="info"
+        title="Storage almost full"
+        description="Free up space or upgrade your plan to keep syncing."
+        isDismissable
+      />
+    </div>
+  ),
+};
+
+export const EmptySlots: Story = {
+  name: 'Empty slots (falsy children and description)',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+      <Banner status="info" title="No expand affordance" description="">
+        {false}
+      </Banner>
+      <Banner status="success" title="Title only" />
+    </div>
+  ),
+};
+
+export const MultipleActionsNarrow: Story = {
+  name: 'Multiple actions (narrow viewport)',
+  render: () => (
+    <Banner
+      status="warning"
+      title="A compute node is required"
+      description="Attach one of the announcing compute nodes to continue this session."
+      endContent={
+        <>
+          <Button label="Attach od-1234" variant="secondary" size="sm" />
+          <Button label="Attach od-9999" variant="secondary" size="sm" />
+          <Button label="Provision new" variant="secondary" size="sm" />
+        </>
+      }
+      isDismissable
+    />
   ),
 };

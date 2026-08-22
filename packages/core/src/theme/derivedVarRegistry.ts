@@ -57,12 +57,20 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
     {property: 'borderRadius', vars: ['--_dialog-radius']},
     {property: 'padding', expand: 'container'},
   ],
+  'context-menu': [
+    {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
+    {property: 'padding', vars: ['--_dropdown-menu-padding']},
+  ],
   'dropdown-menu': [
     {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
     {property: 'padding', vars: ['--_dropdown-menu-padding']},
   ],
   field: [{property: 'borderRadius', vars: ['--_field-radius']}],
   hovercard: [{property: 'borderRadius', vars: ['--_hovercard-radius']}],
+  'number-input': [
+    {property: 'padding', expand: 'container'},
+    {property: 'borderRadius', vars: ['--_field-radius']},
+  ],
   popover: [{property: 'borderRadius', vars: ['--_popover-radius']}],
   'progressbar-mark': [
     {property: 'width', vars: ['--_progressbar-mark-width'], replaces: true},

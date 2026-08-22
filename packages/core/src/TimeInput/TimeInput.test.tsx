@@ -42,6 +42,29 @@ describe('TimeInput', () => {
     expect(screen.getByPlaceholderText('Pick a time')).toBeInTheDocument();
   });
 
+  it('does not step the time on a composing ArrowUp/ArrowDown (IME)', () => {
+    const onChange = vi.fn();
+    render(
+      <TimeInput
+        label="Time"
+        value={'14:30' as ISOTimeString}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText('Time');
+
+    // An IME candidate window navigates with the arrows; a composing keydown
+    // (isComposing / legacy keyCode 229) must not step the time value.
+    fireEvent.keyDown(input, {key: 'ArrowUp', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, {key: 'ArrowDown', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing ArrowUp still steps the time by one minute.
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalledWith('14:31');
+  });
+
   it('displays formatted time in 12h format', () => {
     render(
       <TimeInput

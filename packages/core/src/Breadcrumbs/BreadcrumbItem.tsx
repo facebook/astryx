@@ -158,11 +158,14 @@ const itemStyles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
     textDecoration: {
       default: 'none',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': 'underline',
       },
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
   },
   // Reset native button styles so onClick-only items match link appearance
   buttonReset: {

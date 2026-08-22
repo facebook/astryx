@@ -202,6 +202,24 @@ export default defineConfig(
       '@astryx/copyright-header': 'error',
     },
   },
+  // Locale-sensitive formatting in shipped packages must go through the
+  // provider-aware locale utilities, never raw Intl — see the rule's own doc
+  // comment and internal/eslint-plugin-astryx/README.md for the approved
+  // infrastructure boundary. Lab adopts this gate when a component graduates.
+  {
+    files: [
+      "packages/core/src/**/*.{ts,tsx}",
+      "packages/charts/src/**/*.{ts,tsx}",
+      "packages/richtext/src/**/*.{ts,tsx}",
+      "packages/vega/src/**/*.{ts,tsx}",
+    ],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-raw-intl-locale': 'error',
+    },
+  },
   // Astryx design token enforcement - applies to core package (excluding theme files)
   {
     files: ["packages/core/src/**/*.{ts,tsx}"],
@@ -220,14 +238,20 @@ export default defineConfig(
       }],
       // announce() live-region messages are user-facing text; the rule checks
       // them as call arguments (callees defaults to ['announce']).
-      // TEMPORARY allowlist: these exact strings predate the check and are
-      // being replaced with t(...) in the scan #3 i18n sweep PRs
-      // (CodeBlock 'Copied'; MultiSelector 'Selection cleared' /
-      // 'All selected'). Remove each entry as its fix merges; delete
-      // allowedCalleeStrings entirely once the sweep lands.
-      '@astryx/no-hardcoded-i18n-string': [isStrictMode ? 'error' : 'warn', {
-        allowedCalleeStrings: ['Copied', 'Selection cleared', 'All selected'],
-      }],
+      '@astryx/no-hardcoded-i18n-string': isStrictMode ? 'error' : 'warn',
+    },
+  },
+  // What a disabled control says to the pointer is a defect wherever it
+  // ships, so these two rules reach past core: lab components are consumed
+  // the same way, and lab is where the next core component comes from.
+  {
+    files: ["packages/lab/src/**/*.{ts,tsx}"],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-hover-on-disabled': 'error',
+      '@astryx/disabled-cursor': 'error',
     },
   },
   // The i18n runtime itself defines the message strings the rest of the

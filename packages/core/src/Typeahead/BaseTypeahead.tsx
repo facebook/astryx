@@ -30,7 +30,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
-import {isImeKeyEvent} from '../hooks/useFocusTrap';
+import {isImeKeyEvent} from '../utils/ime';
 import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
 import {
@@ -233,7 +233,10 @@ const styles = stylex.create({
     width: '100%',
     padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     outline: 'none',
     backgroundColor: 'transparent',
     border: 'none',
@@ -449,7 +452,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           announce(
             shown.length === 0
               ? emptySearchResultsText
-              : `${shown.length} ${shown.length === 1 ? 'result' : 'results'}`,
+              : t('@astryx.typeahead.resultCount', {count: shown.length}),
           );
         }
       } catch {
@@ -464,7 +467,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
       }
     },
-    [searchSource, maxMenuItems, showLayer, announce, emptySearchResultsText],
+    [
+      searchSource,
+      maxMenuItems,
+      showLayer,
+      announce,
+      emptySearchResultsText,
+      t,
+    ],
   );
 
   // Perform bootstrap

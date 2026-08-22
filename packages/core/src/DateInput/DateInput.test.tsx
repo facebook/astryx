@@ -536,6 +536,27 @@ describe('DateInput', () => {
     expect(onChange).toHaveBeenCalledWith('2026-03-15');
   });
 
+  it('does not commit on a composing Enter (IME)', () => {
+    const onChange = vi.fn();
+    render(<DateInput label="Date" onChange={onChange} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+    onChange.mockClear();
+
+    // The composing keydown (isComposing / legacy keyCode 229) that commits an
+    // IME candidate fires before compositionend; it must not be read as
+    // "commit the typed date".
+    fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, {key: 'Enter', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing Enter still commits.
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith('2026-03-15');
+  });
+
   // --- Arrow-down opens calendar popover ---
 
   // Note: Tests involving popover rendering (show/hide with calendar)
@@ -896,6 +917,22 @@ describe('DateInput', () => {
       expect(screen.getByDisplayValue('Jan 25, 2026')).toBeInTheDocument();
     });
 
+    it('follows the InternationalizationProvider locale (#5074)', () => {
+      render(
+        <InternationalizationProvider locale="es-ES">
+          <DateInput
+            label="Date"
+            value="2026-01-25"
+            onChange={() => {}}
+            format="date_long"
+          />
+        </InternationalizationProvider>,
+      );
+      expect(
+        screen.getByDisplayValue('25 de enero de 2026'),
+      ).toBeInTheDocument();
+    });
+
     it('renders the ISO shape for format="system_date"', () => {
       render(
         <DateInput
@@ -1165,7 +1202,7 @@ describe('DateInput clear icon theme target', () => {
     expect(css).toContain('.astryx-date-input-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-date-input-clear-icon:hover {');
+    expect(css).toContain('.astryx-date-input-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });

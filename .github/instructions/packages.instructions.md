@@ -52,8 +52,12 @@ Triage sets depth; those two set content.
   unrelated tests/examples/call sites had to be edited — see the silent-breaking
   rule in Judgment.) A real breaking change must be **intentional and signalled
   with a `[breaking]` changeset category**, and for a removed/renamed/changed
-  public API, a **codemod** under `astryx upgrade`. Flag a breaking change with
-  no `[breaking]` changeset (and no codemod where one is warranted) as blocking.
+  public API in a **published** package, a **codemod** under `astryx upgrade`.
+  Flag a breaking change with no `[breaking]` changeset (and no codemod where one
+  is warranted) as blocking. **`lab` is exempt**: it is private and never
+  published, so it has no consumers to migrate and is allowed to break freely —
+  never ask for a codemod for a lab-only change, and promoting a component out of
+  lab into core is additive from the published side.
 - **What's the blast radius?** A core primitive many components build on, or a
   shared type/context, is higher-stakes than a leaf component or a docsite tweak.
 

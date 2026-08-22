@@ -12,13 +12,11 @@
 
 import type {OperatorValue, FilterValue, EnumItem} from './types';
 import type {InternalConfig} from './useInternalConfig';
-import type {TranslatorFn} from '../i18n';
+import type {Locale, TranslatorFn} from '../i18n';
+import {truncateCharacters} from '../utils/characters';
 
 function truncate(str: string, maxLength: number): string {
-  if (str.length <= maxLength) {
-    return str;
-  }
-  return str.slice(0, maxLength - 1) + '\u2026';
+  return truncateCharacters(str, maxLength);
 }
 
 function formatEnumLabel(
@@ -29,12 +27,16 @@ function formatEnumLabel(
   return item?.label ?? value;
 }
 
-function formatNumber(value: number, units?: string): string {
-  const formatted = new Intl.NumberFormat().format(value);
+function formatNumber(value: number, locale: Locale, units?: string): string {
+  const formatted = new Intl.NumberFormat(locale).format(value);
   return units ? `${formatted} ${units}` : formatted;
 }
 
-function formatDateAbsolute(unixSeconds: number, timezoneID?: string): string {
+export function formatDateAbsolute(
+  unixSeconds: number,
+  locale: Locale,
+  timezoneID?: string,
+): string {
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
@@ -43,7 +45,25 @@ function formatDateAbsolute(unixSeconds: number, timezoneID?: string): string {
     minute: '2-digit',
     ...(timezoneID ? {timeZone: timezoneID} : {}),
   };
-  return new Intl.DateTimeFormat(undefined, options).format(unixSeconds * 1000);
+  return new Intl.DateTimeFormat(locale, options).format(unixSeconds * 1000);
+}
+
+/**
+ * Compact date-only rendering (no time-of-day) for the token pill's inline
+ * value display, which has less room than the editor's full summary. Kept
+ * separate from {@link formatDateAbsolute} rather than reusing it with
+ * different options threaded through a param, since the two callers want
+ * genuinely different shapes, not a parameterization of the same one.
+ */
+export function formatDateAbsoluteCompact(
+  unixSeconds: number,
+  locale: Locale,
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(unixSeconds * 1000);
 }
 
 function formatRelativeDate(value: string): string {
@@ -64,6 +84,7 @@ export function formatFilterValue(
   filterValue: FilterValue,
   maxLength: number,
   t: TranslatorFn,
+  locale: Locale,
   timezoneID?: string,
 ): string {
   switch (filterValue.type) {
@@ -76,12 +97,14 @@ export function formatFilterValue(
     case 'integer':
       return formatNumber(
         filterValue.value,
+        locale,
         operatorValue.type === 'integer' ? operatorValue.units : undefined,
       );
 
     case 'float':
       return formatNumber(
         filterValue.value,
+        locale,
         operatorValue.type === 'float' ? operatorValue.units : undefined,
       );
 
@@ -159,7 +182,7 @@ export function formatFilterValue(
 
     case 'date_absolute':
       return truncate(
-        formatDateAbsolute(filterValue.unixSeconds, timezoneID),
+        formatDateAbsolute(filterValue.unixSeconds, locale, timezoneID),
         maxLength,
       );
 

@@ -68,6 +68,18 @@ export interface ReferenceDoc {
   description: string;
   /** Navigation category: 'guide' or 'foundations'. */
   category?: string;
+  /** Name of an existing topic this doc takes the place of. Authored by an
+   *  integration whose guide should be served instead of the built-in one —
+   *  `replaces: 'getting-started'` on a doc named `getting-started` swaps the
+   *  content, and on a doc named something else swaps it and leaves the old
+   *  name as an alias, so `astryx docs getting-started` still resolves.
+   *  Ignored on a built-in topic (there is nothing above it to replace). */
+  replaces?: string;
+  /** Name of an existing topic this doc merges onto, section by section: a
+   *  section whose title matches one in the base replaces it, and a section
+   *  the base does not have is appended. For correcting or adding to a topic
+   *  rather than owning it — `replaces` and `extends` are exclusive. */
+  extends?: string;
   /** Ordered sections that make up the doc. */
   sections: ReferenceSection[];
   /** Token category for foundational docs that map to a token section.

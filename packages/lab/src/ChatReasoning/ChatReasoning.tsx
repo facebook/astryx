@@ -74,7 +74,10 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1-5'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     userSelect: 'none',
     minHeight: '24px',
     paddingBlock: spacingVars['--spacing-0-5'],

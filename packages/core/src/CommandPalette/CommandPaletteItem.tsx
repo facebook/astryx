@@ -43,13 +43,16 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     textAlign: 'start' as const,
     outline: 'none',
     userSelect: 'none',
   },
   itemHover: {
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       [HOVER_HOVER]: {
         backgroundColor: colorVars['--color-overlay-hover'],
       },

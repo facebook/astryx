@@ -47,11 +47,29 @@ function componentClassSelector(component: string, suffix: string): string {
 }
 
 /**
+ * Guard appended to a themed `:hover` rule so it cannot match a disabled
+ * element.
+ *
+ * A theme authoring `':hover': {backgroundColor: …}` is describing the
+ * enabled control; `:hover` on its own would paint that background on a
+ * disabled one too, because browsers suppress a disabled control's events,
+ * not its hover styling. `:where()` contributes no specificity, so a themed
+ * hover rule still weighs exactly what it weighed before.
+ *
+ * Mirrors the `@astryx/no-hover-on-disabled` lint rule, which enforces the
+ * same guard on the components' own StyleX styles.
+ */
+const HOVER_DISABLED_GUARD = ':where(:not(:disabled,[aria-disabled="true"]))';
+
+/**
  * Append a pseudo-class to every selector in a comma-separated selector list.
  *
  * Selector helpers may emit comma-separated lists. CSS does not distribute a
  * trailing pseudo over selector lists, so `${list}:hover` would only target the
  * final selector. Rewrite each item so the pseudo applies to all of them.
+ *
+ * A `:hover` pseudo also picks up the disabled guard. A pseudo-ELEMENT has to
+ * end the selector, so the guard is spliced in before it.
  */
 function appendPseudoToSelectorList(selector: string, pseudo: string): string {
   const parts: string[] = [];
@@ -71,7 +89,22 @@ function appendPseudoToSelectorList(selector: string, pseudo: string): string {
   }
   parts.push(selector.slice(start).trim());
 
-  return parts.map(part => `${part}${pseudo}`).join(', ');
+  const guarded = guardHoverPseudo(pseudo);
+
+  return parts.map(part => `${part}${guarded}`).join(', ');
+}
+
+/** Insert the disabled guard into a `:hover` pseudo, keeping any pseudo-element last. */
+function guardHoverPseudo(pseudo: string): string {
+  if (!/^:hover(?![-\w])/.test(pseudo) || pseudo.includes('[aria-disabled')) {
+    return pseudo;
+  }
+  const pseudoElement = pseudo.indexOf('::');
+  return pseudoElement === -1
+    ? pseudo + HOVER_DISABLED_GUARD
+    : pseudo.slice(0, pseudoElement) +
+        HOVER_DISABLED_GUARD +
+        pseudo.slice(pseudoElement);
 }
 
 // =============================================================================
@@ -128,6 +161,34 @@ const PADDING_PROPS = new Set([
   'paddingInlineEnd',
 ]);
 
+/**
+ * Physical block-axis longhands, and the logical longhand each one *is* in
+ * every horizontal writing mode. Normalizing them costs no direction
+ * assumption, which is why they can join the container expansion.
+ *
+ * `paddingLeft`/`paddingRight` are deliberately absent. They are
+ * direction-relative — left is inline-start in LTR and inline-end in RTL — and
+ * the expansion's tokens are consumed by logical properties, so mapping them
+ * would put the padding on the opposite edge in RTL. They keep their physical
+ * meaning and land on the element as `padding-left`/`padding-right`; the cost
+ * is that a component's internals cannot see them.
+ */
+const PHYSICAL_BLOCK_PADDING_PROPS: Record<string, string> = {
+  paddingTop: 'paddingBlockStart',
+  paddingBottom: 'paddingBlockEnd',
+};
+
+/**
+ * Every padding spelling the container expansion consumes. Kept separate from
+ * PADDING_PROPS, which also routes longhands to `vars`-style derived entries —
+ * those carry one value for the whole box, so a single physical edge must not
+ * reach them.
+ */
+const CONTAINER_PADDING_PROPS = new Set([
+  ...PADDING_PROPS,
+  ...Object.keys(PHYSICAL_BLOCK_PADDING_PROPS),
+]);
+
 interface ParsedPadding {
   blockStart?: string;
   blockEnd?: string;
@@ -138,12 +199,14 @@ interface ParsedPadding {
 
 /**
  * Parse CSS padding shorthand/longhand into block/inline values.
- * Supports 1-3 value shorthands and logical properties.
+ * Supports 1-3 value shorthands, logical properties, and the physical block
+ * longhands normalized by PHYSICAL_BLOCK_PADDING_PROPS.
  */
 function parsePadding(props: [string, string][]): ParsedPadding {
   const result: ParsedPadding = {};
 
-  for (const [prop, value] of props) {
+  for (const [rawProp, value] of props) {
+    const prop = PHYSICAL_BLOCK_PADDING_PROPS[rawProp] ?? rawProp;
     switch (prop) {
       case 'padding': {
         const parts = value.trim().split(/\s+/);
@@ -377,13 +440,28 @@ function generateComponentRules(
             }
           }
         }
+        // A physical block longhand reaches the container expansion only. It
+        // names one edge, so it must not feed a `vars` entry above, which
+        // carries the padding for the whole box.
+        if (
+          prop in PHYSICAL_BLOCK_PADDING_PROPS &&
+          getDerivedVars(component, 'padding').some(
+            e => e.expand === 'container',
+          )
+        ) {
+          containerExpanded = true;
+        }
       }
 
       // Container padding expansion: replace padding props with
       // component-scoped container tokens for layout integration.
       if (containerExpanded) {
-        const paddingProps = props.filter(([p]) => PADDING_PROPS.has(p));
-        const nonPaddingProps = props.filter(([p]) => !PADDING_PROPS.has(p));
+        const paddingProps = props.filter(([p]) =>
+          CONTAINER_PADDING_PROPS.has(p),
+        );
+        const nonPaddingProps = props.filter(
+          ([p]) => !CONTAINER_PADDING_PROPS.has(p),
+        );
         const parsed = parsePadding(paddingProps);
         const containerTokens = expandContainerPadding(component, parsed);
         finalProps = [...nonPaddingProps, ...containerTokens];

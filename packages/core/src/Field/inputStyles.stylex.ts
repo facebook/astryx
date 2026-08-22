@@ -56,9 +56,10 @@ export const inputWrapperStyles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': `inset 0px 0px 0px 2px color-mix(in srgb, ${colorVars['--color-border-emphasized']} 30%, transparent)`,
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': `inset 0px 0px 0px 2px color-mix(in srgb, ${colorVars['--color-border-emphasized']} 30%, transparent)`,
+        },
       ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
     },
     outline: 'none',
@@ -96,25 +97,28 @@ export const inputStatusHoverShadowStyles = stylex.create({
   warning: {
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': shadowVars['--shadow-inset-warning'],
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': shadowVars['--shadow-inset-warning'],
+        },
     },
   },
   error: {
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': shadowVars['--shadow-inset-error'],
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': shadowVars['--shadow-inset-error'],
+        },
     },
   },
   success: {
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': shadowVars['--shadow-inset-success'],
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': shadowVars['--shadow-inset-success'],
+        },
     },
   },
 });

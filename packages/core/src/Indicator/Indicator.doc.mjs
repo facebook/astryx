@@ -52,7 +52,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description:
-            'Rendered inside the chrome INSTEAD of the state mark. CheckboxInput passes its loading Spinner through this while a change action is pending, so a replacement indicator must render children when they will actually draw something — `isRenderable(children)`, never `children ?? mark`, because a host writes `children={isBusy && <Spinner/>}` and `false` slips straight past a nullish check and deletes the mark.',
+            'Rendered inside the chrome INSTEAD of the state mark. CheckboxInput passes its loading Spinner through this while a change action is pending, so a replacement indicator must render children when they will actually draw something: use `isRenderable(children)`, never `children ?? mark`, because a host writes `children={isBusy && <Spinner/>}` and `false` slips straight past a nullish check and deletes the mark.',
         },
       ],
     },

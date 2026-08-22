@@ -29,6 +29,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useSideNavCollapse} from './SideNavCollapseContext';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {themeProps} from '../utils/themeProps';
 // =============================================================================
 // Styles
@@ -46,7 +47,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
-    cursor: 'default',
+    cursor: {
+      default: 'default',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     userSelect: 'none',
   },
 
@@ -167,20 +171,6 @@ export function SideNavSection({
 
   const shouldHideHeader = isHeaderHidden || isCollapsed;
 
-  const visuallyHiddenStyle: React.CSSProperties = shouldHideHeader
-    ? {
-        position: 'absolute',
-        width: 1,
-        height: 1,
-        padding: 0,
-        margin: -1,
-        overflow: 'hidden',
-        clip: 'rect(0, 0, 0, 0)',
-        whiteSpace: 'nowrap',
-        borderWidth: 0,
-      }
-    : {};
-
   return (
     <div
       ref={ref}
@@ -194,12 +184,11 @@ export function SideNavSection({
       role="group"
       aria-labelledby={titleId}
       data-testid={testId}>
-      <div
-        {...mergeProps(stylex.props(styles.header), {
-          style: shouldHideHeader ? visuallyHiddenStyle : undefined,
-        })}>
-        {headerContent}
-      </div>
+      {shouldHideHeader ? (
+        <VisuallyHidden as="div">{headerContent}</VisuallyHidden>
+      ) : (
+        <div {...stylex.props(styles.header)}>{headerContent}</div>
+      )}
       <div {...stylex.props(styles.items)}>{children}</div>
     </div>
   );

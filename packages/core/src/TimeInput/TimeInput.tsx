@@ -55,6 +55,7 @@ import {
   formatDisplayTime24h,
   formatISOTime,
   adjustTime,
+  isImeKeyEvent,
   isTimeInRange,
   mergeProps,
   mergeRefs,
@@ -66,6 +67,7 @@ import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
@@ -346,6 +348,7 @@ export function TimeInput({
   ref,
 }: TimeInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -530,6 +533,13 @@ export function TimeInput({
   // Handle keyboard navigation on input
   const handleInputKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // ArrowUp/ArrowDown step the time and preventDefault; an IME candidate
+      // window uses those same arrows to navigate candidates, so guard the
+      // composing keydown (fires before compositionend) to avoid stealing them
+      // mid-composition. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       // Arrow-key adjustment mutates the value; block it while showing a
       // disabled reason (the input keeps focusability via aria-disabled).
       if (isDisabled) {
@@ -656,7 +666,7 @@ export function TimeInput({
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         aria-describedby={ariaDescribedBy}
-        aria-required={isRequired === true ? 'true' : undefined}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }

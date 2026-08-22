@@ -116,7 +116,7 @@ export const docs = {
       name: 'searchPlaceholder',
       type: 'string',
       description: 'Placeholder shown in the shared search field.',
-      default: "'Search\u2026'",
+      default: "'Search...'",
     },
     {
       name: 'isReorderable',
@@ -187,7 +187,7 @@ export const docs = {
       name: 'width',
       type: 'SizeValue',
       description:
-        'Width of the field and its popup — both track this one value.',
+        'Width of the field and its popup; both track this one value.',
       default: "'min(41rem, calc(100vw - 32px))'",
     },
     {
@@ -332,7 +332,7 @@ export const docs = {
           name: 'searchPlaceholder',
           type: 'string',
           description: 'Placeholder shown in the shared search field.',
-          default: "'Search\u2026'",
+          default: "'Search...'",
         },
         {
           name: 'isReorderable',
@@ -479,6 +479,29 @@ export const docs = {
         required: true,
         description:
           'Reports add, remove, bulk, and reorder results without relying on visual position alone.',
+      },
+    ],
+  },
+  // Mirrors the themeProps() calls in TransferList.tsx. `astryx theme build`
+  // reads this inventory to learn which visual props a target can vary on, so
+  // a target missing here cannot be themed even though it carries the class.
+  theming: {
+    targets: [
+      {
+        className: 'astryx-transfer-list',
+        visualProps: [],
+      },
+      {
+        className: 'astryx-transfer-list-collection',
+        visualProps: [],
+      },
+      {
+        className: 'astryx-transfer-list-panel',
+        visualProps: ['side'],
+      },
+      {
+        className: 'astryx-transfer-list-item',
+        visualProps: ['side', 'state'],
       },
     ],
   },

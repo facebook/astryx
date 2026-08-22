@@ -63,7 +63,7 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, isImeKeyEvent} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
@@ -334,7 +334,9 @@ export function ContextMenu({
       if (e.key !== 'Escape') {
         return;
       }
-      if (e.isComposing || e.keyCode === 229) {
+      if (isImeKeyEvent(e)) {
+        // Ignore Escape that is committing/cancelling an IME composition;
+        // see utils/ime.ts for why.
         return;
       }
       e.preventDefault();

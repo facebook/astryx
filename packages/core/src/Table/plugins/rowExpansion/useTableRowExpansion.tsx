@@ -23,6 +23,7 @@ import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator} from '../../../i18n';
+import {rtlStyles} from '../../../utils';
 import type {
   TablePlugin,
   TableColumn,
@@ -76,7 +77,10 @@ const expansionStyles = stylex.create({
     background: 'transparent',
     border: 'none',
     borderRadius: radiusVars['--radius-inner'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     color: colorVars['--color-icon-secondary'],
     transitionProperty: 'transform, color',
     transitionDuration: '150ms',
@@ -84,16 +88,28 @@ const expansionStyles = stylex.create({
     // Match IconButton ghost hover: subtle overlay background.
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
     },
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       color: colorVars['--color-icon-primary'],
     },
   },
+  // The RTL mirror is folded into each state's transform rather than living
+  // on a parent span, matching TreeListItem's chevron (both are `transform`,
+  // so on one element the later value would win).
   chevronExpanded: {
-    transform: 'rotate(90deg)',
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
+  },
+  chevronCollapsed: {
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
   },
   expandedRow: {
     backgroundColor: colorVars['--color-background-muted'],
@@ -121,7 +137,9 @@ function ExpansionChevron({
       type="button"
       {...stylex.props(
         expansionStyles.chevronButton,
-        isExpanded && expansionStyles.chevronExpanded,
+        isExpanded
+          ? expansionStyles.chevronExpanded
+          : expansionStyles.chevronCollapsed,
       )}
       onClick={e => {
         e.stopPropagation();
@@ -249,6 +267,9 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                   icon={isExpanded ? 'chevronDown' : 'chevronRight'}
                   size="xsm"
                   aria-hidden
+                  // chevronDown needs no mirroring; chevronRight (collapsed,
+                  // pointing toward the reveal direction) does.
+                  xstyle={!isExpanded && rtlStyles.mirror}
                 />
               ),
               onSelect: () => onToggle(key),

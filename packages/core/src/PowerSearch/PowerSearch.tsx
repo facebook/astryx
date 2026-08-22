@@ -50,11 +50,17 @@ import {mergeRefs} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
-import {formatFilterValue} from './formatFilterValue';
+import {
+  formatFilterValue,
+  formatDateAbsoluteCompact,
+} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
+import {truncateCharacters} from '../utils/characters';
 import {useTranslator} from '../i18n';
+import {useLocale} from '../i18n/useLocale';
+import type {Locale} from '../i18n/types';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -117,7 +123,9 @@ const resultCountStyles = stylex.create({
 });
 
 function truncateString(value: string, limit: number): string {
-  return value.length > limit + 3 ? value.slice(0, limit) + '...' : value;
+  // Same semantics as before — strings within limit + 3 pass through, longer
+  // ones cut to limit + '...' — but counted in characters, not code units.
+  return truncateCharacters(value, limit + 3, '...');
 }
 
 function getEnumLabel(values: ReadonlyArray<EnumItem>, value: string): string {
@@ -128,10 +136,12 @@ function PowerSearchTokenValue({
   operatorValue,
   filterValue,
   maxLength,
+  locale,
 }: {
   operatorValue: OperatorValue;
   filterValue: FilterValue;
   maxLength: number;
+  locale: Locale;
 }) {
   switch (filterValue.type) {
     case 'empty':
@@ -273,12 +283,10 @@ function PowerSearchTokenValue({
       );
 
     case 'date_absolute': {
-      const date = new Date(filterValue.unixSeconds * 1000);
-      const formatted = new Intl.DateTimeFormat(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }).format(date);
+      const formatted = formatDateAbsoluteCompact(
+        filterValue.unixSeconds,
+        locale,
+      );
       return (
         <span {...stylex.props(tokenValueStyles.value)}>
           {truncateString(formatted, maxLength)}
@@ -553,6 +561,7 @@ export function PowerSearch({
   const config = useInternalConfig(configProp);
   const searchSource = usePowerSearchSource(config);
   const t = useTranslator();
+  const locale = useLocale();
   const label = labelFromProps ?? t('@astryx.powersearch.label');
   const placeholder =
     placeholderFromProps ?? t('@astryx.powersearch.placeholder');
@@ -622,6 +631,7 @@ export function PowerSearch({
             filter.value,
             maxTokenLength,
             t,
+            locale,
             timezoneID,
           )
         : '';
@@ -641,7 +651,7 @@ export function PowerSearch({
         },
       };
     });
-  }, [filters, config, maxTokenLength, timezoneID, t]);
+  }, [filters, config, maxTokenLength, timezoneID, t, locale]);
 
   // Handle tokenizer onChange (field selected from typeahead)
   const handleTokenizerChange = useCallback(
@@ -817,6 +827,7 @@ export function PowerSearch({
             operatorValue={operator.value}
             filterValue={filter.value}
             maxLength={adjustedMaxLength}
+            locale={locale}
           />
         ) : undefined;
 
@@ -855,6 +866,7 @@ export function PowerSearch({
       config,
       configProp,
       maxTokenLength,
+      locale,
       size,
       isReadOnly,
       isDisabled,

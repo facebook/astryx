@@ -27,7 +27,8 @@ import {
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
-import {hasActiveFocusTrapEscape, isImeKeyEvent} from '../hooks/useFocusTrap';
+import {hasActiveFocusTrapEscape} from '../hooks/useFocusTrap';
+import {isImeKeyEvent} from '../utils/ime';
 import {
   colorVars,
   radiusVars,
@@ -43,6 +44,7 @@ import {
   containerPaddingBlockStartVarStyles,
   containerPaddingBlockEndVarStyles,
   spacingStepToToken,
+  overlayPaddingReset,
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
 import {mergeProps, mergeRefs} from '../utils';
@@ -609,6 +611,7 @@ export function Dialog({
           themeProps('dialog', {variant}),
           stylex.props(
             styles.inlineWrapper,
+            overlayPaddingReset.reset,
             !isFullscreen && dynamicStyles.sizing(width, maxHeight),
             isFullscreen && styles.fullscreen,
             xstyle,
@@ -635,6 +638,7 @@ export function Dialog({
         themeProps('dialog', {variant}),
         focusOutlineProps.focusVisible(
           styles.dialog,
+          overlayPaddingReset.reset,
           isOpen && styles.open,
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),

@@ -21,7 +21,7 @@ export const docs = {
   ],
   playground: {
     defaults: {
-      mode: 'dark',
+      mode: 'auto',
       children: {
         __element: 'Section',
         props: {
@@ -68,6 +68,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Prefer mode="auto" when the surface color comes from a theme token. A token named "inverted" is not guaranteed to be inverted, and auto measures what was actually painted instead of trusting the name — including deciding that a surface needs no media context at all.',
+      },
+      {
+        guidance: true,
+        description:
           'Pair with a background color: MediaTheme flips the token context but does not add a background. Set backgroundColor on the parent element.',
       },
       {
@@ -85,10 +90,17 @@ export const docs = {
   props: [
     {
       name: 'mode',
-      type: "'dark' | 'light'",
+      type: "'dark' | 'light' | 'auto' | 'off'",
       required: true,
       description:
-        'Surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions).',
+        'Surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions), auto to decide from the painted surface — no media context when the ambient text already reads on the surface (3:1), otherwise the side that reads better — and off to turn it off explicitly. The element renders either way, so a surface can switch contexts without remounting children.',
+    },
+    {
+      name: 'fallback',
+      type: "'dark' | 'light'",
+      default: "'dark'",
+      description:
+        'Which side auto uses when the surface cannot be measured: during SSR, on the first client frame, and whenever the backdrop is not knowable from CSS — most often a background-image, whose pixels need sampling (useImageMode) rather than a computed style. Ignored unless mode is auto.',
     },
     {
       name: 'children',
@@ -114,6 +126,11 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'Prefer mode="auto" when surface color comes from a theme token — a token named "inverted" is not guaranteed to be; auto measures what was painted.',
+      },
+      {
+        guidance: true,
+        description:
           'Pair w/ background color: MediaTheme flips token context but does NOT add background. Set backgroundColor on parent element.',
       },
       {
@@ -129,6 +146,8 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    mode: 'surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions)',
+    mode: 'surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions), auto to decide from painted surface (none if ambient text already reads at 3:1, else better-reading side), off to turn off explicitly (element still renders, so children never remount)',
+    fallback:
+      'side auto uses when surface is unmeasurable (SSR, first frame, background-image — those need useImageMode sampling); ignored unless mode is auto',
   },
 };

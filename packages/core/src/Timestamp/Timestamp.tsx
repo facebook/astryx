@@ -23,6 +23,7 @@ import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useTranslator} from '../i18n';
+import {useLocale} from '../i18n/useLocale';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {formatInstant} from './formatInstant';
@@ -419,6 +420,7 @@ export function Timestamp({
   'data-testid': testId,
 }: TimestampProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const timeRef = useRef<HTMLTimeElement>(null);
   const [now, setNow] = useState(() => new Date());
 
@@ -448,16 +450,18 @@ export function Timestamp({
       : effectiveFormat === 'relative_short'
         ? getRelativeTimeShortString(date, now)
         : isAbsoluteFormat(effectiveFormat)
-          ? formatInstant(date, effectiveFormat, {isTimezoneShown})
+          ? formatInstant(date, effectiveFormat, locale, {isTimezoneShown})
           : '';
 
   // Full absolute text for the tooltip (visible — keeps the compact timezone
   // abbreviation) and for the AT-facing aria-label, which spells the timezone
   // out in full: abbreviations like "PST" or "GMT+2" are unexpanded
   // abbreviations to a screen-reader user (WCAG 3.1.4).
-  const fullAbsoluteText = isValidDate ? formatInstant(date, 'full') : '';
+  const fullAbsoluteText = isValidDate
+    ? formatInstant(date, 'full', locale)
+    : '';
   const ariaLabelText = isValidDate
-    ? formatInstant(date, 'full', {timeZoneNameStyle: 'long'})
+    ? formatInstant(date, 'full', locale, {timeZoneNameStyle: 'long'})
     : '';
 
   // Live updates
@@ -506,7 +510,7 @@ export function Timestamp({
   const lines: ReadonlyArray<TimestampTooltipLine> =
     entries === undefined
       ? [{value: fullAbsoluteText, isCopyable: true}]
-      : formatTooltipLines(date, entries);
+      : formatTooltipLines(date, entries, locale);
 
   const timestampProps = mergeProps(
     themeProps('timestamp', {format: effectiveFormat}),

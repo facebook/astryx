@@ -28,6 +28,12 @@
  *   <App />
  * </Theme>
  * ```
+ *
+ * SYNC: `DefineThemeInput` is the theme surface. Adding, removing, or renaming
+ * a field means updating:
+ * - /packages/cli/assets/theme.template.ts (documents every field; the
+ *   drift guard is scripts/check-theme-template.test.mjs)
+ * - /packages/cli/assets/docs/theme.doc.mjs (`astryx docs theme`)
  */
 
 import type {IconRegistry} from '../Icon/globalIconRegistry';
@@ -42,6 +48,7 @@ import {
   colorDefaults,
   spacingDefaults,
   sizeDefaults,
+  borderDefaults,
   focusDefaults,
   radiusDefaults,
   shadowDefaults,
@@ -65,6 +72,7 @@ import type {DomainTokenName} from './domainTokens';
 import {domainTokenDefaults} from './domainTokens';
 import type {SyntaxThemeDefinition} from './syntax';
 import {registerTheme} from './themeRegistry';
+import {deepMergeComponents} from './mergeComponents';
 
 // =============================================================================
 // Types
@@ -75,6 +83,7 @@ export type CoreTokenName =
   | keyof typeof colorDefaults
   | keyof typeof spacingDefaults
   | keyof typeof sizeDefaults
+  | keyof typeof borderDefaults
   | keyof typeof focusDefaults
   | keyof typeof radiusDefaults
   | keyof typeof shadowDefaults
@@ -103,6 +112,11 @@ export type TokenValue = string | [light: string, dark: string];
  * Pseudo-class keys generate separate CSS rules with the pseudo appended
  * to the component selector. Supported pseudo-classes include `:hover`,
  * `:focus-visible`, `:active`, `:checked`, `:disabled`, etc.
+ *
+ * A `:hover` override describes the ENABLED control: it is emitted with a
+ * guard that keeps it off disabled and `aria-disabled` elements, which
+ * `:hover` would otherwise still match. Style the disabled state through
+ * `:disabled` instead.
  *
  * @example
  * ```ts
@@ -157,9 +171,14 @@ export interface DefineThemeInput {
   name: string;
 
   /**
-   * Base theme to extend. When provided, the new theme starts with the
-   * base theme's tokens, components, and fonts, then applies overrides
-   * from this input on top. The base theme's values have lowest precedence.
+   * Base theme to extend. When provided, the new theme starts with everything
+   * the base resolved to — tokens, component overrides, icons, indicators, and
+   * its `onDark`/`onLight` surfaces — then applies this input on top. The base
+   * theme's values have lowest precedence.
+   *
+   * The result is flat: an extended theme carries its inheritance in its own
+   * resolved output, so `astryx theme build` emits one self-contained
+   * stylesheet and the base's CSS does not need to be loaded alongside it.
    *
    * Use this to create variant themes that customize only a few aspects
    * (e.g. icons, accent color) without re-specifying the full theme.
@@ -234,19 +253,37 @@ export interface DefineThemeInput {
    */
   radius?: RadiusScaleConfig;
   /**
-   * Color scale configuration. Generates color token overrides from a
-   * single accent color using the HCT perceptual color model.
+   * Color scale configuration. Generates color token overrides from an
+   * accent seed using the HCT perceptual color model.
    *
    * Only generates tokens derivable from the accent — status colors,
    * categorical hues, and fixed tokens (on-dark/on-light) use defaults.
-   * Explicit `tokens` entries always take precedence.
+   *
+   * `accent` accepts a single hex (same seed for both color schemes) or a
+   * `[light, dark]` tuple, matching `TokenValue`. With a tuple, the light
+   * scheme's full palette derives from the light seed and the dark
+   * scheme's from the dark seed.
    *
    * `accent` is optional — omit it for a neutral-only theme, which keeps
    * the default accent tokens and only themes the neutrals.
    *
+   * Precedence vs `tokens`: explicit `tokens` entries win over generated
+   * values, token by token. Because `--color-accent-muted`,
+   * `--color-text-accent` and `--color-icon-accent` are generated as
+   * `var(--color-accent)` references, a `tokens['--color-accent']`
+   * override re-points them at runtime. `--color-on-accent` does NOT
+   * follow: it is baked from the `color.accent` seed (a contrast
+   * computation CSS cannot express), so overriding the accent through
+   * `tokens` without also overriding `--color-on-accent` leaves the two
+   * out of sync. To re-seat the whole palette per scheme, prefer a tuple
+   * `color.accent` over the `tokens['--color-accent']` workaround.
+   *
    * @example
-   * ```tsx
+   * ```
    * color: { accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard' }
+   *
+   * // Per-scheme accents — light palette from the first seed, dark from the second
+   * color: { accent: ['#0064E0', '#48CAE4'] }
    *
    * // Neutral-only — accent tokens stay at their defaults
    * color: { neutralStyle: 'warm' }
@@ -379,6 +416,7 @@ export const tokenDefaults: Record<string, string> = {
   ...colorDefaults,
   ...spacingDefaults,
   ...sizeDefaults,
+  ...borderDefaults,
   ...focusDefaults,
   ...radiusDefaults,
   ...shadowDefaults,
@@ -405,49 +443,6 @@ function resolveTokenValue(value: TokenValue): string {
     return `light-dark(${value[0]}, ${value[1]})`;
   }
   return value;
-}
-
-/**
- * Deep-merge two component style maps.
- * Properties in `overrides` take precedence over `base`.
- * This allows typeScale-generated rules to be overridden by explicit components.
- */
-function deepMergeComponents(
-  base?: ComponentStyleMap,
-  overrides?: ComponentStyleMap,
-): ComponentStyleMap | undefined {
-  if (!base && !overrides) {
-    return undefined;
-  }
-  if (!base) {
-    return overrides;
-  }
-  if (!overrides) {
-    return base;
-  }
-
-  const result: ComponentStyleMap = {};
-
-  // Start with all base entries
-  for (const [component, rules] of Object.entries(base)) {
-    result[component] = {...rules};
-  }
-
-  // Merge overrides on top
-  for (const [component, rules] of Object.entries(overrides)) {
-    if (!result[component]) {
-      result[component] = {...rules};
-    } else {
-      for (const [key, styles] of Object.entries(rules)) {
-        result[component][key] = {
-          ...result[component][key],
-          ...styles,
-        };
-      }
-    }
-  }
-
-  return result;
 }
 
 /**
@@ -483,6 +478,24 @@ function buildFontFamily(
 }
 
 /**
+ * Describe a rejected `extends` value for the error message — enough to tell a
+ * missed import (`undefined`) from a module namespace or a plain object.
+ */
+function describeBadBase(value: unknown): string {
+  if (value === undefined) {
+    return 'undefined';
+  }
+  if (value === null) {
+    return 'null';
+  }
+  if (typeof value !== 'object') {
+    return typeof value;
+  }
+  const keys = Object.keys(value);
+  return `an object with keys [${keys.slice(0, 4).join(', ')}${keys.length > 4 ? ', …' : ''}]`;
+}
+
+/**
  * Create an Astryx theme.
  *
  * Pass only the tokens you want to override — everything else
@@ -495,7 +508,19 @@ function buildFontFamily(
 export function defineTheme(input: DefineThemeInput): DefinedTheme {
   const tokens: Record<string, string> = {};
 
-  // 0. Pre-seed from base theme when `extends` is provided (lowest precedence)
+  // 0. Pre-seed from base theme when `extends` is provided (lowest precedence).
+  // A base that is not a theme is refused rather than ignored: `extends` used
+  // to inherit nothing when its value was undefined, which is what a named
+  // import silently resolving to the wrong module hands over, and the theme
+  // then built into a plausible-looking stylesheet missing everything it was
+  // supposed to inherit.
+  if ('extends' in input && !isDefinedTheme(input.extends)) {
+    throw new Error(
+      `defineTheme("${input.name}"): \`extends\` must be a theme from defineTheme(), got ${describeBadBase(input.extends)}. ` +
+        `Check that the import naming your base theme resolves to its source and exports that name — ` +
+        `a generated \`<theme>.js\` artifact sitting next to the source exports \`<name>Theme\`, not the source's own export.`,
+    );
+  }
   const base = input.extends;
   if (base) {
     for (const [key, value] of Object.entries(base.tokens)) {
@@ -631,9 +656,10 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
     components = deepMergeComponents(base.components, components);
   }
 
-  // 4. Resolve on-media token overrides (defaults + user overrides)
-  const __onDark = resolveOnMedia('dark', input.onDark);
-  const __onLight = resolveOnMedia('light', input.onLight);
+  // 4. Resolve on-media token overrides (base's resolved surface, then
+  // defaults, then this theme's own overrides)
+  const __onDark = resolveOnMedia('dark', input.onDark, base?.__onDark);
+  const __onLight = resolveOnMedia('light', input.onLight, base?.__onLight);
 
   // 5. Merge icons — input icons override base icons
   const icons =
@@ -654,7 +680,10 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
     components,
     icons,
     indicators,
-    __inputTokens: input.tokens,
+    __inputTokens:
+      base?.__inputTokens || input.tokens
+        ? {...base?.__inputTokens, ...input.tokens}
+        : undefined,
     __onDark,
     __onLight,
   };
