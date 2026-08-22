@@ -65,7 +65,10 @@ export const navItemStyles = stylex.create({
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],

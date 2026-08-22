@@ -63,7 +63,10 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     borderRadius: radiusVars['--radius-full'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     color: {
       default: colorVars['--color-icon-secondary'],
       ':hover:where(:not(:disabled,[aria-disabled="true"]))': {

@@ -241,9 +241,9 @@ export default defineConfig(
       '@astryx/no-hardcoded-i18n-string': isStrictMode ? 'error' : 'warn',
     },
   },
-  // A hover state on a disabled control is a defect wherever it ships, so
-  // this one rule reaches past core: lab components are consumed the same
-  // way, and lab is where the next core component comes from.
+  // What a disabled control says to the pointer is a defect wherever it
+  // ships, so these two rules reach past core: lab components are consumed
+  // the same way, and lab is where the next core component comes from.
   {
     files: ["packages/lab/src/**/*.{ts,tsx}"],
     plugins: {
@@ -251,6 +251,7 @@ export default defineConfig(
     },
     rules: {
       '@astryx/no-hover-on-disabled': 'error',
+      '@astryx/disabled-cursor': 'error',
     },
   },
   // The i18n runtime itself defines the message strings the rest of the

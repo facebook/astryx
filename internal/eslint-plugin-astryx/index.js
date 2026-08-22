@@ -14,6 +14,7 @@
  * - no-raw-intl-locale: Forbids raw Intl formatting/comparison outside the approved i18n infrastructure boundary, and navigator.language(s) as a locale source
  * - no-unguarded-ime-keydown: Flags an onKeyDown on an editable surface that branches on command keys without an IME composition guard (isImeKeyEvent/isComposing)
  * - no-hover-on-disabled: Flags a :hover condition that can still match a disabled element (browsers suppress a disabled control's events, not its hover styling)
+ * - disabled-cursor: Flags a cursor that promises an interaction without giving way to not-allowed on a disabled element
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -38,6 +39,7 @@ import noPhysicalPropertiesRule from './no-physical-properties.js';
 import focusOutlineKeyboardOnlyRule from './focus-outline-keyboard-only.js';
 import focusOutlineSharedRule from './focus-outline-shared.js';
 import noHoverOnDisabledRule from './no-hover-on-disabled.js';
+import disabledCursorRule from './disabled-cursor.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
@@ -263,6 +265,7 @@ const plugin = {
     'focus-outline-keyboard-only': focusOutlineKeyboardOnlyRule,
     'focus-outline-shared': focusOutlineSharedRule,
     'no-hover-on-disabled': noHoverOnDisabledRule,
+    'disabled-cursor': disabledCursorRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
@@ -321,6 +324,10 @@ plugin.configs.strict = {
     // engine. Error in both tiers: core and lab are clean, and the fix is
     // autofixable.
     '@astryx/no-hover-on-disabled': 'error',
+    // The cursor is the affordance a pointer user reads before they click; a
+    // disabled control answering with `pointer` promises a click it will not
+    // honour. Error in both tiers, and autofixable.
+    '@astryx/disabled-cursor': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
@@ -366,6 +373,10 @@ plugin.configs.recommended = {
     // engine. Error in both tiers: core and lab are clean, and the fix is
     // autofixable.
     '@astryx/no-hover-on-disabled': 'error',
+    // The cursor is the affordance a pointer user reads before they click; a
+    // disabled control answering with `pointer` promises a click it will not
+    // honour. Error in both tiers, and autofixable.
+    '@astryx/disabled-cursor': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',

@@ -48,7 +48,10 @@ const styles = stylex.create({
       },
     },
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     textAlign: 'start',
     outline: 'none',
     textDecoration: 'none',

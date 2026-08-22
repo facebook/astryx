@@ -82,7 +82,10 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     whiteSpace: 'nowrap',
     transitionProperty: 'color, background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
@@ -121,7 +124,7 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-low'],
   },
   disabled: {
-    cursor: 'default',
+    cursor: 'not-allowed',
     color: colorVars['--color-text-disabled'],
   },
   fill: {

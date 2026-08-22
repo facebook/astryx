@@ -216,7 +216,10 @@ const styles = stylex.create({
     alignItems: 'flex-start',
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -243,7 +246,10 @@ const styles = stylex.create({
   },
   invisibleButton: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     font: 'inherit',
     color: 'inherit',
     display: 'flex',
@@ -255,7 +261,10 @@ const styles = stylex.create({
   },
   invisibleAnchor: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     font: 'inherit',
     color: 'inherit',
     display: 'flex',

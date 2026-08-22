@@ -423,7 +423,10 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     width: '100%',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',
     transitionDuration: {
@@ -467,7 +470,10 @@ const styles = stylex.create({
     // start so vertical labels/descriptions read left-aligned. Horizontal
     // labels re-center via otLabelWrapH (a deeper element).
     textAlign: 'start',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',
     transitionDuration: {

@@ -46,7 +46,10 @@ const styles = stylex.create({
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     outline: 'none',
   },
   disabled: {

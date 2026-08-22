@@ -31,6 +31,7 @@
     "lab:readiness:check": "node internal/lab-readiness/audit.mjs --check",
     "guard:modal-close": "node .github/scripts/modal-close-visibility.js",
     "guard:disabled-hover": "node .github/scripts/disabled-hover-audit.js",
+    "guard:disabled-cursor": "node .github/scripts/disabled-cursor-audit.js",
     "storybook": "pnpm -F @astryxdesign/storybook dev",
     "storybook:build": "pnpm -F @astryxdesign/storybook build",
     "docsite": "pnpm -F @astryxdesign/docsite dev",

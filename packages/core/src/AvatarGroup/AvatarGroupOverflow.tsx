@@ -86,7 +86,10 @@ const styles = stylex.create({
     backgroundImage: `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
   },
   button: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     // Reset the UA button's block padding only; the inline padding from `base`
     // provides the pill's breathing room and must be preserved.
     paddingBlock: 0,

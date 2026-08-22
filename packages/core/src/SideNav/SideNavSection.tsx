@@ -47,7 +47,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
-    cursor: 'default',
+    cursor: {
+      default: 'default',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     userSelect: 'none',
   },
 

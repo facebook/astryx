@@ -60,10 +60,16 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     textDecoration: 'none',
     color: colorVars['--color-text-primary'],
-    cursor: 'default',
+    cursor: {
+      default: 'default',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -79,7 +85,10 @@ const styles = stylex.create({
     },
   },
   menuTrigger: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -190,7 +199,10 @@ const styles = stylex.create({
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-2'],
     marginInline: spacingVars['--spacing-1'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
   },
   // Composes over `chevron` — the flipped popover copy differs only by the
   // rotation, so it carries just that.

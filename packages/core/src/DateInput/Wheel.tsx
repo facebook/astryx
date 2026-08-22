@@ -128,7 +128,10 @@ const styles = stylex.create({
     // container, and `view()` binds to the subject's nearest ancestor scroll
     // container — the falloff would measure the row against itself and sit
     // frozen at 50% forever. Clipping belongs on the inner element.
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     userSelect: 'none',
     transitionProperty: 'color, font-weight',
     transitionDuration: durationVars['--duration-fast'],

@@ -162,7 +162,10 @@ const itemStyles = stylex.create({
         '@media (hover: hover)': 'underline',
       },
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
   },
   // Reset native button styles so onClick-only items match link appearance
   buttonReset: {

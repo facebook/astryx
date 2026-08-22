@@ -198,7 +198,10 @@ export const dayCellStyles = stylex.create({
     borderRadius: '50%',
     borderWidth: 0,
     borderStyle: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-body-size'],
     padding: 0,

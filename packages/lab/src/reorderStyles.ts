@@ -66,11 +66,17 @@ export const reorderStyles = stylex.create({
     },
   },
   handle: {
-    cursor: 'grab',
+    cursor: {
+      default: 'grab',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     touchAction: 'none',
   },
   handleActive: {
-    cursor: 'grabbing',
+    cursor: {
+      default: 'grabbing',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     touchAction: 'none',
   },
 });

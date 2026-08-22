@@ -176,7 +176,10 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     borderRadius: radiusVars['--radius-element'],
   },
   iconButtonDisabled: {
@@ -202,7 +205,10 @@ const styles = stylex.create({
     outline: 'none',
     // It opens a picker; it does not take text. The caret would say otherwise.
     caretColor: 'transparent',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     userSelect: 'none',
     '::placeholder': {
       color: colorVars['--color-text-secondary'],
@@ -320,7 +326,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     whiteSpace: 'nowrap',
   },
   titleChevron: {

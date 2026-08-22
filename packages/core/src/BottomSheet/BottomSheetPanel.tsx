@@ -177,7 +177,10 @@ const styles = stylex.create({
     // content emerging below has no visible cut line.
     backgroundImage: `linear-gradient(to bottom, ${colorVars['--color-background-surface']} 60%, transparent)`,
     touchAction: 'none',
-    cursor: 'grab',
+    cursor: {
+      default: 'grab',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
   },
   handlePill: {
     width: sizeVars['--size-element-lg'],

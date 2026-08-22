@@ -262,10 +262,14 @@
   }
 
   /*
-   * Default cursor for disabled elements.
+   * Disabled elements answer the pointer with the disabled cursor, so a
+   * control that will not respond says so before it is clicked. Covers
+   * [aria-disabled] too: astryx keeps a disabled control focusable that way
+   * wherever its reason must stay discoverable (Button with a tooltip,
+   * Selector's trigger, SideNavItem).
    */
-  :where(:disabled) {
-    cursor: default;
+  :where(:disabled, [aria-disabled='true']) {
+    cursor: not-allowed;
   }
 
   /*

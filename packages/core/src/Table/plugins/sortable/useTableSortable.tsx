@@ -125,7 +125,10 @@ const sortStyles = stylex.create({
     border: 'none',
     padding: 0,
     margin: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     font: 'inherit',
     color: 'inherit',
     width: '100%',

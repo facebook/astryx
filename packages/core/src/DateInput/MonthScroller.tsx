@@ -149,7 +149,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-body-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     // A tap on a 44px target should not also select the number inside it.
     userSelect: 'none',
     WebkitTapHighlightColor: 'transparent',

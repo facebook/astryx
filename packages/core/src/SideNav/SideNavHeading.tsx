@@ -66,14 +66,20 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     textDecoration: 'none',
     color: 'inherit',
-    cursor: 'default',
+    cursor: {
+      default: 'default',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
   },
   rootCollapsed: {
     justifyContent: 'center',
     paddingInline: 0,
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -91,7 +97,10 @@ const styles = stylex.create({
   // Menu trigger: like interactive but no hover background.
   // Only cursor:pointer signals interactivity; the popover provides context.
   menuTrigger: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -212,7 +221,10 @@ const styles = stylex.create({
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-2'],
     marginInline: spacingVars['--spacing-1'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
   },
   // Chevron inside the popover heading — same as chevron but rotated up
   popoverChevron: {

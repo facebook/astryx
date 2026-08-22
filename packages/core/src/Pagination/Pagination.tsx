@@ -214,7 +214,10 @@ const styles = stylex.create({
     padding: 0,
     borderRadius: '50%',
     backgroundColor: colorVars['--color-neutral'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],

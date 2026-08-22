@@ -184,7 +184,10 @@ const styles = stylex.create({
       '@media (pointer: coarse)': '24px',
     },
     width: '100%',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
   },
   trackContainerVertical: {
     width: THUMB_SIZE,
@@ -201,7 +204,10 @@ const styles = stylex.create({
     },
     flexDirection: 'column',
     justifyContent: 'center',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
   },
   trackContainerDisabled: {
     opacity: 0.5,
@@ -251,7 +257,10 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: 'none',
-    cursor: 'grab',
+    cursor: {
+      default: 'grab',
+      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+    },
     zIndex: 1,
   },
   thumbHorizontal: {
