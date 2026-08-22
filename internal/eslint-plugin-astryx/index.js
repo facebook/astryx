@@ -46,6 +46,7 @@ import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
 import requireBasePropsRule from './require-base-props.js';
 import requireRefPropRule from './require-ref-prop.js';
+import requireBasePropsPassthroughRule from './require-baseprops-passthrough.js';
 import noHardcodedI18nStringRule from './no-hardcoded-i18n-string.js';
 import i18nKeyFormatRule from './i18n-key-format.js';
 
@@ -270,6 +271,7 @@ const plugin = {
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
+    'require-baseprops-passthrough': requireBasePropsPassthroughRule,
     'copyright-header': copyrightHeaderRule,
     'no-raw-console-cli': noRawConsoleCliRule,
     'no-hardcoded-i18n-string': noHardcodedI18nStringRule,
@@ -337,6 +339,10 @@ plugin.configs.strict = {
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
+    // Warn, not error, in strict too: 15 outstanding violations across 6 core
+    // components, so erroring here would land main red. Flip to 'error' with
+    // the PR that fixes them.
+    '@astryx/require-baseprops-passthrough': 'warn',
     '@astryx/copyright-header': 'error',
     '@astryx/no-hardcoded-i18n-string': 'error',
     '@astryx/i18n-key-format': 'error',
@@ -391,6 +397,7 @@ plugin.configs.recommended = {
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',
+    '@astryx/require-baseprops-passthrough': 'warn',
     '@astryx/copyright-header': 'error',
     '@astryx/no-hardcoded-i18n-string': 'warn',
     '@astryx/i18n-key-format': 'warn',
