@@ -5,7 +5,6 @@ import {describe, it, expect} from 'vitest';
 import {docs as ChatReasoningDocs} from '../ChatReasoning/ChatReasoning.doc.mjs';
 import {docs as CodeEditorDocs} from '../CodeEditor/CodeEditor.doc.mjs';
 import {docs as LogStreamDocs} from '../LogStream/LogStream.doc.mjs';
-import {docs as StepperDocs} from '../Stepper/Stepper.doc.mjs';
 
 function getProps(docs: Record<string, unknown>): Array<{name: string}> {
   return (
@@ -48,10 +47,5 @@ describe('Lab API Contract Drift (#4163)', () => {
     expect(props).toContain('maxHeight');
     expect(props).toContain('hasTimestamps');
     expect(props).toContain('renderEntry');
-  });
-
-  it('documents Stepper indicatorPosition prop', () => {
-    const props = getProps(StepperDocs).map(p => p.name);
-    expect(props).toContain('indicatorPosition');
   });
 });

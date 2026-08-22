@@ -8,21 +8,27 @@
  * @output Exports Stepper component and StepperProps
  * @position Core container component; consumed by index.ts
  *
+ * Besides the props it is given, this component tracks the `activeStep` it
+ * last rendered with and publishes it on the context. Steps need the distance
+ * and direction of a change to choreograph their connector fill; see the
+ * CONNECTOR FILL block in Step.tsx.
+ *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
- * - /packages/lab/src/Stepper/Stepper.test.tsx (tests for new/changed behavior)
- * - /packages/lab/src/Stepper/index.ts (exports if types change)
+ * - /packages/core/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
+ * - /packages/core/src/Stepper/Stepper.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Stepper/index.ts (exports if types change)
  * - /apps/storybook/stories/Stepper.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
-import {useMemo, type ReactNode} from 'react';
+import {useCallback, useMemo, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
-import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps} from '@astryxdesign/core/utils';
-import type {BaseProps} from '@astryxdesign/core';
-import {themeProps} from '@astryxdesign/core/utils';
+import {spacingVars} from '../theme/tokens.stylex';
+import {mergeProps} from '../utils';
+import type {BaseProps} from '../BaseProps';
+import {themeProps} from '../utils';
+import {useTranslator} from '../i18n';
 import {
   StepperContext,
   type StepperOrientation,
@@ -52,8 +58,8 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    */
   onStepClick?: (index: number) => void;
   /**
-   * Accessible label describing the set of steps.
-   * @default 'Progress'
+   * Accessible label describing the set of steps. Defaults to a translated
+   * "Progress" when unset.
    */
   label?: string;
   /**
@@ -70,16 +76,6 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * @default 'separated'
    */
   indicatorPosition?: StepperIndicatorPosition;
-  /**
-   * Horizontal only. When the stepper gets too narrow to fit every label,
-   * collapse the labels of non-current steps so the track can shrink — only
-   * the current step keeps its visible label (the rest stay reachable via
-   * `aria-current` and the accessible names). Uses a container query, so it
-   * responds to the stepper's own width, not the viewport. No effect in the
-   * vertical orientation, where width is not the constraint.
-   * @default false
-   */
-  hasCollapsibleLabels?: boolean;
 }
 
 const styles = stylex.create({
@@ -109,13 +105,6 @@ const styles = stylex.create({
   verticalOnTrack: {
     flexDirection: 'column',
     gap: 0,
-  },
-  // Establishes the stepper as an inline-size container so each step's label
-  // can collapse via a container query when the stepper (not the viewport) is
-  // too narrow. Named so the child @container rules target this element only.
-  labelCollapseContainer: {
-    containerType: 'inline-size',
-    containerName: 'astryx-stepper',
   },
 });
 
@@ -150,33 +139,89 @@ export function Stepper({
   children,
   orientation = 'horizontal',
   onStepClick,
-  label = 'Progress',
+  label: labelFromProps,
   density = 'balanced',
   indicatorPosition = 'separated',
-  hasCollapsibleLabels = false,
   xstyle,
   className,
   style,
   ref,
   ...rest
 }: StepperProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.stepper.label');
+
+  // Dev-mode duplicate step index detection. Steps register on mount and
+  // deregister on unmount; a Map tracks count per index so we can warn when
+  // two Steps share the same `step` value (which breaks aria-current).
+  const stepCountsRef = useRef<Map<number, number>>(new Map());
+  const registerStep = useCallback((index: number) => {
+    const counts = stepCountsRef.current;
+    const prev = counts.get(index) ?? 0;
+    counts.set(index, prev + 1);
+    if (process.env.NODE_ENV !== 'production' && prev + 1 > 1) {
+      console.warn(
+        `[Stepper] Duplicate step index ${index}: two <Step> elements share the same \`step\` value. ` +
+          `This breaks \`aria-current="step"\` and causes both to show as active simultaneously.`,
+      );
+    }
+    return () => {
+      const cur = counts.get(index) ?? 1;
+      if (cur <= 1) {
+        counts.delete(index);
+      } else {
+        counts.set(index, cur - 1);
+      }
+    };
+  }, []);
+
+  // The step we came *from*. Steps need it to stagger their connector fill:
+  // the distance and direction of the change decide which segment moves first
+  // and how long the whole sweep may take (see Step.tsx's CONNECTOR FILL).
+  //
+  // Derived during render from state rather than written in an effect. An
+  // effect runs after paint, so the browser would already have committed the
+  // new fill states with last render's delays — the first frame of the sweep
+  // would be wrong, and on a jump of one that is the entire animation. React
+  // discards and re-runs a render that sets its own state before committing,
+  // so this costs a re-render but never a wrong frame.
+  //
+  // Seeding both halves from the current `activeStep` is what suppresses the
+  // cascade on mount: a stepper that opens on step 3 has no previous step to
+  // have travelled from, so its completed segments paint filled at once. That
+  // also makes the first render pure and identical on the server, so there is
+  // nothing for hydration to disagree about. Storing the pair in one state
+  // object keeps the update idempotent under StrictMode's double render — both
+  // invocations read the same `seen` and queue the same successor.
+  const [seen, setSeen] = useState(() => ({
+    current: activeStep,
+    previous: activeStep,
+  }));
+  if (seen.current !== activeStep) {
+    setSeen({current: activeStep, previous: seen.current});
+  }
+  const previousActiveStep =
+    seen.current === activeStep ? seen.previous : seen.current;
+
   const ctxValue = useMemo<StepperContextValue>(
     () => ({
       activeStep,
+      previousActiveStep,
       orientation,
       isNonLinear: onStepClick != null,
       onStepClick: onStepClick ?? null,
       density,
       indicatorPosition,
-      hasCollapsibleLabels,
+      registerStep,
     }),
     [
       activeStep,
+      previousActiveStep,
       orientation,
       onStepClick,
       density,
       indicatorPosition,
-      hasCollapsibleLabels,
+      registerStep,
     ],
   );
 
@@ -190,10 +235,6 @@ export function Stepper({
         ? styles.verticalOnTrack
         : styles.vertical;
 
-  // Label collapse is a width constraint, so it only applies to the horizontal
-  // orientation; vertical steppers are never width-limited this way.
-  const isLabelCollapse = hasCollapsibleLabels && orientation === 'horizontal';
-
   return (
     <StepperContext value={ctxValue}>
       <ol
@@ -202,12 +243,7 @@ export function Stepper({
         {...rest}
         {...mergeProps(
           themeProps('stepper', {orientation, indicatorPosition}),
-          stylex.props(
-            styles.root,
-            orientationStyle,
-            isLabelCollapse && styles.labelCollapseContainer,
-            xstyle,
-          ),
+          stylex.props(styles.root, orientationStyle, xstyle),
           className,
           style,
         )}>
