@@ -29,7 +29,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
-import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {
+  getCliInvocation,
+  detectPackageManager,
+  isCliOneOff,
+  CLI_BIN,
+  CLI_PACKAGE,
+} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {emit, section, text, list, code} from '../formatters/index.mjs';
 import {logger} from '../../../api/logger.mjs';
@@ -435,6 +441,14 @@ export function registerTheme(program) {
 
       // theme.add — print where files landed + how to use the theme.
       const {displayName, outputDir, entry, exportName, files} = result.data;
+      const themeEntryPath = path.join(outputDir, entry);
+      // `pnpm x` / `npm run x` / `yarn x` / `bun run x` — hardcoding one of
+      // these hands npm and yarn users a script that only works under pnpm.
+      const pm = detectPackageManager(process.cwd());
+      const runScript =
+        pm === 'pnpm' ? 'pnpm' : pm === 'yarn' ? 'yarn' : pm === 'bun' ? 'bun run' : 'npm run';
+      const addDep =
+        pm === 'pnpm' ? 'pnpm add' : pm === 'yarn' ? 'yarn add' : pm === 'bun' ? 'bun add' : 'npm install';
       const entryModule = importSpecifier(
         outputDir,
         entry.replace(/\.tsx?$/, ''),
@@ -451,6 +465,37 @@ export function registerTheme(program) {
         ),
         text(
           `This is your copy of the ${displayName} theme — edit ${entry} to make it your own.`,
+        ),
+        // Without this, editing the theme and never rebuilding is silent: a
+        // stale built artifact still reports __built, so the runtime skips
+        // injection and the app renders the previous theme with no warning.
+        // Recommend script wiring rather than a manual command — remembering
+        // to rebuild by hand is exactly the step that gets skipped.
+        text(
+          `Edits do not apply until the theme is rebuilt. Wire it into your scripts so it cannot be forgotten:`,
+        ),
+        code(
+          `"scripts": {\n` +
+            `  "build:theme": "${CLI_BIN} theme build ${themeEntryPath}",\n` +
+            `  "predev": "${runScript} build:theme",\n` +
+            `  "prebuild": "${runScript} build:theme"\n` +
+            `}`,
+        ),
+        // A bare `astryx` in a script only resolves once the CLI is a
+        // dependency; a one-off runner leaves node_modules/.bin empty, so the
+        // wiring above would silently never run — the exact failure this is
+        // meant to close.
+        ...(isCliOneOff()
+          ? [
+              text(
+                `That script needs the CLI installed locally — add it first: ` +
+                  `\`${addDep} -D ${CLI_PACKAGE}\`.`,
+              ),
+            ]
+          : []),
+        text(
+          `Or run it directly: \`${getCliInvocation(process.cwd())} theme build ${themeEntryPath}\` ` +
+            `(-w rebuilds on save, -c fails when the committed output is stale).`,
         ),
       );
     },

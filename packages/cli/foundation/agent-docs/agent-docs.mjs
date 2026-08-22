@@ -354,6 +354,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   lines.push('RULES:');
   lines.push('- No <div> — components do all layout/spacing, page frame included.');
   lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.');
+  lines.push('- Theme first: read `astryx docs theme` before changing brand color, radius, or type scale, or before restyling the same component twice — defineTheme, component overrides, custom variants, and why `astryx theme build` is required.');
   lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
@@ -401,6 +402,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   if (resolvedTopics.length > 0) {
     lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
   }
+  lines.push('  theme add|build    scaffold a theme, then compile it — edits to a theme do nothing until rebuilt');
   lines.push('  swizzle <Name>     eject component source for deep customization');
   lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
   lines.push(MARKER_END);
