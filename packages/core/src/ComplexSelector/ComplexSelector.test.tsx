@@ -14,6 +14,9 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ComplexSelector, type ComplexSelectorHandle} from './ComplexSelector';
+import {Menu} from '../DropdownMenu/Menu';
+import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
+import {DropdownMenuSubMenu} from '../DropdownMenu/DropdownMenuSubMenu';
 
 const originalMatches = HTMLElement.prototype.matches;
 
@@ -416,5 +419,267 @@ describe('ComplexSelector popup theme target', () => {
     expect(
       document.querySelector('.astryx-complex-selector-popup'),
     ).not.toBeNull();
+  });
+});
+
+describe('ComplexSelector popupRole', () => {
+  it('defaults to a dialog popup and aria-haspopup="dialog"', async () => {
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
+        {() => <button type="button">Done</button>}
+      </ComplexSelector>,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Fruit blend'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(trigger);
+    expect(screen.getByRole('dialog', h)).toBeInTheDocument();
+  });
+
+  it('drops the dialog wrapper when popupRole is none', async () => {
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector
+        label="Model"
+        value="GPT-4"
+        triggerLabel="GPT-4"
+        popupRole="none">
+        {() => (
+          <div role="menu" aria-label="Model">
+            <div role="menuitem">GPT-4</div>
+          </div>
+        )}
+      </ComplexSelector>,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Model'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'true');
+    await user.click(trigger);
+    expect(screen.queryByRole('dialog', h)).not.toBeInTheDocument();
+    expect(screen.getByRole('menu', {name: 'Model', ...h})).toBeInTheDocument();
+  });
+
+  it('hosts a Menu + DropdownMenuSubMenu flyout without a wrapping dialog', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <ComplexSelector
+        label="Model"
+        value="GPT-4"
+        onChange={onChange}
+        triggerLabel="GPT-4"
+        popupRole="none">
+        {(_value, commit, close, state) => (
+          <Menu label="Model" onClose={close} isOpen={state.isOpen}>
+            <DropdownMenuItem
+              label="GPT-4"
+              onClick={() => {
+                commit('GPT-4');
+              }}
+            />
+            <DropdownMenuSubMenu label="More models">
+              <DropdownMenuItem
+                label="Fable 5"
+                onClick={() => {
+                  commit('Fable 5');
+                }}
+              />
+            </DropdownMenuSubMenu>
+          </Menu>
+        )}
+      </ComplexSelector>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Model'}));
+    expect(screen.queryByRole('dialog', h)).not.toBeInTheDocument();
+    expect(screen.getByRole('menu', {name: 'Model', ...h})).toBeInTheDocument();
+
+    await user.click(screen.getByRole('menuitem', {name: /More models/, ...h}));
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menuitem', {name: /More models/, ...h}),
+      ).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    const flyoutItem = screen.getByRole('menuitem', {
+      name: 'Fable 5',
+      ...h,
+    });
+    expect(flyoutItem.closest('[popover]')).toHaveAttribute(
+      'popover',
+      'manual',
+    );
+  });
+});
+
+// #4985: the point of hosting Menu here is that ComplexSelector keeps owning
+// the focus contract — move focus in, keep it in, hand it back — instead of
+// every consumer hand-rolling a role="dialog" that does none of that.
+describe('ComplexSelector + Menu focus contract', () => {
+  function Composed({onChange}: {onChange?: (value: string) => void}) {
+    return (
+      <ComplexSelector
+        label="Model"
+        value="GPT-4"
+        onChange={onChange}
+        triggerLabel="GPT-4"
+        popupRole="none">
+        {(_value, commit, close, state) => (
+          <Menu label="Model" onClose={close} isOpen={state.isOpen}>
+            <DropdownMenuItem
+              label="GPT-4"
+              onClick={() => {
+                commit('GPT-4');
+              }}
+            />
+            <DropdownMenuSubMenu label="More models">
+              <DropdownMenuItem
+                label="Fable 5"
+                onClick={() => {
+                  commit('Fable 5');
+                }}
+              />
+            </DropdownMenuSubMenu>
+          </Menu>
+        )}
+      </ComplexSelector>
+    );
+  }
+
+  it('moves focus to the first menu item when the popup opens', async () => {
+    const user = userEvent.setup();
+    render(<Composed />);
+
+    await user.click(screen.getByRole('button', {name: 'Model'}));
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', {name: 'GPT-4', ...h})).toHaveFocus(),
+    );
+  });
+
+  it('Escape closes the popup and hands focus back to the trigger', async () => {
+    const user = userEvent.setup();
+    render(<Composed />);
+
+    const trigger = screen.getByRole('button', {name: 'Model'});
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', {name: 'GPT-4', ...h})).toHaveFocus(),
+    );
+
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+    expect(trigger).toHaveFocus();
+  });
+
+  it('Tab closes the popup and hands focus back to the trigger', async () => {
+    // APG menu-button: Tab closes. Menu items are tabIndex=-1, so without this
+    // Tab would leak into the page while the popup stayed open.
+    const user = userEvent.setup();
+    render(<Composed />);
+
+    const trigger = screen.getByRole('button', {name: 'Model'});
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', {name: 'GPT-4', ...h})).toHaveFocus(),
+    );
+
+    await user.keyboard('{Tab}');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+    expect(trigger).toHaveFocus();
+  });
+
+  it('Escape in an open flyout collapses only that level', async () => {
+    const user = userEvent.setup();
+    render(<Composed />);
+
+    const trigger = screen.getByRole('button', {name: 'Model'});
+    await user.click(trigger);
+    const submenu = await screen.findByRole('menuitem', {
+      name: /More models/,
+      ...h,
+    });
+    await user.click(submenu);
+    await waitFor(() =>
+      expect(submenu).toHaveAttribute('aria-expanded', 'true'),
+    );
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() =>
+      expect(submenu).toHaveAttribute('aria-expanded', 'false'),
+    );
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('a flyout leaf commits, dismisses the whole stack, and restores focus', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<Composed onChange={onChange} />);
+
+    const trigger = screen.getByRole('button', {name: 'Model'});
+    await user.click(trigger);
+    await user.click(
+      await screen.findByRole('menuitem', {name: /More models/, ...h}),
+    );
+    await user.click(
+      await screen.findByRole('menuitem', {name: 'Fable 5', ...h}),
+    );
+
+    expect(onChange).toHaveBeenCalledWith('Fable 5');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+    expect(trigger).toHaveFocus();
+  });
+
+  it('re-focuses the first item when the popup is reopened', async () => {
+    const user = userEvent.setup();
+    render(<Composed />);
+
+    const trigger = screen.getByRole('button', {name: 'Model'});
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', {name: 'GPT-4', ...h})).toHaveFocus(),
+    );
+
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+
+    // The trigger click is debounced for 50ms after a hide so the click that
+    // follows a light dismiss cannot re-open in the same tap.
+    await new Promise(resolve => {
+      setTimeout(resolve, 80);
+    });
+    await user.click(trigger);
+
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', {name: 'GPT-4', ...h})).toHaveFocus(),
+    );
+  });
+
+  it('ArrowDown on the trigger opens the popup onto the first item', async () => {
+    const user = userEvent.setup();
+    render(<Composed />);
+
+    const trigger = screen.getByRole('button', {name: 'Model'});
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', {name: 'GPT-4', ...h})).toHaveFocus(),
+    );
   });
 });

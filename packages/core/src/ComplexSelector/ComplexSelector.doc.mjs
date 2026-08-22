@@ -146,7 +146,15 @@ export const docs = {
         {
           name: 'contentXstyle',
           type: 'StyleXStyles',
-          description: 'StyleX styles for the popup content container.',
+          description:
+            'StyleX styles for the popup content container. The container scrolls (overflow: auto, max-height 480px), which clips absolutely positioned descendants. Nested flyouts must use Menu + DropdownMenuSubMenu (their own top-layer element). To opt the box itself out of scrolling, override overflow here.',
+        },
+        {
+          name: 'popupRole',
+          type: "'dialog' | 'none'",
+          default: "'dialog'",
+          description:
+            'ARIA role on the popup surface. dialog (default) for custom selector content. none when the content provides its own role — required when composing Menu, so a role="menu" is not wrapped in a role="dialog".',
         },
       ],
     },
@@ -184,6 +192,11 @@ export const docs = {
         guidance: true,
         description:
           'Use Astryx focus hooks for custom content: useGridFocus for two-dimensional grids, useTreeFocus through TreeList for hierarchies, and useListFocus for custom linear collections.',
+      },
+      {
+        guidance: true,
+        description:
+          'For a nested flyout (a "More…" panel hanging off a row), set popupRole="none" and compose Menu + DropdownMenuSubMenu inside the render prop. Pass isOpen={state.isOpen} so the menu is not left unfocusable. The submenu flyout is its own top-layer element and is not clipped by the scrolling content box. Do not absolutely position a panel inside the popup — overflow: auto will clip it and add a scrollbar.',
       },
       {
         guidance: true,
@@ -248,6 +261,11 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'For a nested flyout, set popupRole="none" and compose Menu + DropdownMenuSubMenu. Pass isOpen={state.isOpen}. Do not absolutely position a panel inside the popup — overflow: auto clips it.',
+      },
+      {
+        guidance: true,
+        description:
           'Evaluate custom content against WCAG 2.2: keyboard operation, focus visible/not obscured, names and roles, labels/instructions, target size, and contrast.',
       },
       {
@@ -274,6 +292,10 @@ export const docsDense = {
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
     handleRef: 'Imperative open/close/toggle handle.',
+    contentXstyle:
+      'Popup content styles. Overflow auto clips absolute descendants; use Menu + DropdownMenuSubMenu for nested flyouts.',
+    popupRole:
+      'dialog (default) or none when content provides its own role (compose Menu).',
     accessibility:
       'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },

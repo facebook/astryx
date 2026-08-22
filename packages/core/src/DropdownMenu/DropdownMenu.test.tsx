@@ -1494,3 +1494,93 @@ describe('DropdownMenu data/compound parity', () => {
     expect(item).toHaveAccessibleName('Rename');
   });
 });
+
+// The popup body is now the shared `Menu` component (#4985). DropdownMenu is
+// trigger + layer + Menu, and still drives initial focus itself (Menu is passed
+// focusOnOpen="none") so the modality rules stay the single source of truth.
+// These guard the seams that refactor introduced.
+describe('DropdownMenu over the extracted Menu body', () => {
+  it('falls back to the menu container when every item is disabled', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {label: 'Edit', isDisabled: true},
+          {label: 'Delete', isDisabled: true},
+        ]}
+      />,
+    );
+
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{Enter}');
+
+    // No enabled item to land on, so the container takes focus and keeps
+    // arrows / typeahead / Escape / Tab inside the menu.
+    await waitFor(() =>
+      expect(screen.getByRole('menu', {hidden: true})).toHaveFocus(),
+    );
+  });
+
+  it('falls back to the menu container on a pointer open with every item disabled', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', isDisabled: true}]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    await waitFor(() =>
+      expect(screen.getByRole('menu', {hidden: true})).toHaveFocus(),
+    );
+  });
+
+  it('keeps the dropdown-menu theme target on the menu container', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Edit'}]} />,
+    );
+
+    expect(screen.getByRole('menu', {hidden: true}).className).toContain(
+      'astryx-dropdown-menu',
+    );
+  });
+
+  it('forwards rest props through to the menu container', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit'}]}
+        aria-describedby="hint"
+      />,
+    );
+
+    expect(screen.getByRole('menu', {hidden: true})).toHaveAttribute(
+      'aria-describedby',
+      'hint',
+    );
+  });
+
+  it('names the menu from a string trigger label', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Edit'}]} />,
+    );
+
+    expect(
+      screen.getByRole('menu', {name: 'Actions', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('names the menu with the i18n default when no trigger label is given', () => {
+    render(<DropdownMenu items={[{label: 'Edit'}]} />);
+
+    // No `button` prop, so the trigger takes the translated default and the
+    // menu is named from it — never left unnamed (menus-13).
+    expect(screen.getByRole('menu', {hidden: true})).toHaveAttribute(
+      'aria-label',
+      'Menu',
+    );
+  });
+});

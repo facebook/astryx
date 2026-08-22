@@ -27,6 +27,11 @@ import {Token} from '@astryxdesign/core/Token';
 import {TreeList, type TreeListItemData} from '@astryxdesign/core/TreeList';
 import {useGridFocus} from '@astryxdesign/core/hooks';
 import {
+  Menu,
+  DropdownMenuItem,
+  DropdownMenuSubMenu,
+} from '@astryxdesign/core/DropdownMenu';
+import {
   borderVars,
   colorVars,
   durationVars,
@@ -819,6 +824,59 @@ export const ControlledToolbarTrigger: Story = {
       description: {
         story:
           'A compact toolbar composition using the ghost trigger, a leading icon, end-aligned content, and an external control that opens the selector imperatively through its handleRef. The selector still owns its own visibility, focus restoration, and light dismiss.',
+      },
+    },
+  },
+};
+
+export const NestedFlyout: Story = {
+  render: () => {
+    const [model, setModel] = useState('GPT-4');
+    return (
+      <ComplexSelector
+        label="Model"
+        value={model}
+        onChange={setModel}
+        triggerLabel={model}
+        popupRole="none">
+        {(_value, commit, close, state) => (
+          <Menu label="Model" onClose={close} isOpen={state.isOpen}>
+            <DropdownMenuItem
+              label="GPT-4"
+              onClick={() => {
+                commit('GPT-4');
+              }}
+            />
+            <DropdownMenuItem
+              label="Claude"
+              onClick={() => {
+                commit('Claude');
+              }}
+            />
+            <DropdownMenuSubMenu label="More models">
+              <DropdownMenuItem
+                label="Fable 5"
+                onClick={() => {
+                  commit('Fable 5');
+                }}
+              />
+              <DropdownMenuItem
+                label="Llama"
+                onClick={() => {
+                  commit('Llama');
+                }}
+              />
+            </DropdownMenuSubMenu>
+          </Menu>
+        )}
+      </ComplexSelector>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A nested flyout inside ComplexSelector. popupRole="none" lets Menu own the accessible role. DropdownMenuSubMenu opens as its own top-layer element, so the panel is not clipped by the selector\'s scrolling content box.',
       },
     },
   },

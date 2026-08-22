@@ -4,7 +4,7 @@
 
 /**
  * @file DropdownMenu.tsx
- * @input Uses React, StyleX, usePopover, Button, Icon, useListFocus
+ * @input Uses React, StyleX, usePopover, Button, Icon, Menu
  * @output Exports DropdownMenu component
  * @position Core implementation; consumed by index.ts
  *
@@ -12,7 +12,7 @@
  * - **Data-driven**: pass `items` array (converted to components internally)
  * - **Compound-component**: pass JSX children directly
  *
- * Both modes use useListFocus for DOM-based keyboard navigation.
+ * Both modes render the same Menu body (roving focus, typeahead, Tab-closes).
  *
  * Initial focus on open follows the input modality: a keyboard open
  * (Enter / Space / ArrowDown on the trigger) focuses the first enabled item
@@ -22,6 +22,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
  * - /packages/core/src/DropdownMenu/DropdownMenu.test.tsx
+ * - /packages/core/src/DropdownMenu/Menu.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/DropdownMenu/ (showcase blocks)
@@ -31,7 +32,6 @@ import React, {
   useCallback,
   useEffect,
   useId,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -43,47 +43,15 @@ import {Icon} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
 import type {DropdownMenuItemProps} from './DropdownMenuItem';
-import {
-  MENU_ITEM_ROLES,
-  MENU_ITEM_SELECTOR,
-  MENU_BOUNDARY_SELECTOR,
-} from './menuItemRoles';
-import {
-  DropdownMenuContext,
-  type DropdownMenuContextValue,
-} from './DropdownMenuContext';
-import {useListFocus} from '../hooks/useListFocus';
-import {useTypeahead} from '../hooks/useTypeahead';
+import {Menu} from './Menu';
+import {MENU_ITEM_SELECTOR} from './menuItemRoles';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
-import {
-  spacingVars,
-  radiusVars,
-  durationVars,
-  easeVars,
-} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
-  dropdown: {
-    boxSizing: 'border-box',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
-    maxHeight: '300px',
-    overflowY: 'auto',
-    '--_dropdown-menu-radius': radiusVars['--radius-container'],
-    '--_dropdown-menu-padding': spacingVars['--spacing-1'],
-    padding: spacingVars['--spacing-1'],
-    borderRadius: 'var(--_dropdown-menu-radius)',
-    opacity: 1,
-    transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
   popover: {
     minWidth: 'anchor-size(width)',
   },
@@ -279,6 +247,7 @@ export function DropdownMenu({
   // Defer item focus until the layer has committed open, so focus restore
   // captures the trigger instead of the first menu item.
   const shouldFocusOnOpenRef = useRef(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // How the next open was initiated. Keyboard (and programmatic) opens focus
   // the first enabled item per the APG menu-button pattern; pointer opens
@@ -309,37 +278,6 @@ export function DropdownMenu({
     popover.hide();
   }, [popover]);
 
-  // Single keyboard navigation path for both modes.
-  // The selector matches plain items plus selectable items
-  // (menuitemradio/menuitemcheckbox) so lab checkbox/radio rows are reachable
-  // and roved to alongside plain items — not just role="menuitem".
-  const {
-    listRef,
-    handleKeyDown: listNavKeyDown,
-    focusFirst,
-    focusItem,
-    ownsEvent,
-    getItems: getMenuItems,
-  } = useListFocus<HTMLDivElement>({
-    itemSelector: MENU_ITEM_SELECTOR,
-    boundarySelector: MENU_BOUNDARY_SELECTOR,
-    wrap: false,
-    onEscape: closeMenu,
-  });
-
-  // First-character typeahead over the (enabled) menu items — jump to the next
-  // item whose label starts with the typed text (menus-11). Reuses the hook's
-  // scoped item collection so an inline submenu flyout's items aren't swept in.
-  const typeahead = useTypeahead({
-    getItemLabels: () => getMenuItems().map(el => el.textContent),
-    onMatch: focusItem,
-    getCurrentIndex: () =>
-      getMenuItems().findIndex(
-        el =>
-          el === document.activeElement || el.contains(document.activeElement),
-      ),
-  });
-
   // Sync controlled open state → popover.
   useEffect(() => {
     if (isControlled) {
@@ -353,63 +291,29 @@ export function DropdownMenu({
   }, [controlledIsOpen, isControlled, popover]);
 
   // Move focus into the menu only after the layer has committed open,
-  // honoring the input modality: keyboard (and programmatic) opens land on
-  // the first enabled item per the APG menu-button pattern; pointer opens
-  // focus the menu container itself (tabIndex={-1}) so no item is
-  // highlighted as if pre-selected (#4477). Container focus keeps arrows,
-  // typeahead, Escape and Tab in the menu's onKeyDown, and is also the
-  // fallback when no item is focusable (e.g. all disabled), mirroring the
-  // submenu flyout fallback.
+  // honoring the input modality. Menu itself is told focusOnOpen="none"
+  // so this one-shot ref stays the single source of truth — a second
+  // auto-focus inside Menu would steal focus back from the trigger on
+  // light-dismiss.
   useEffect(() => {
     if (!popover.isOpen || !shouldFocusOnOpenRef.current) {
       return;
     }
     shouldFocusOnOpenRef.current = false;
     requestAnimationFrame(() => {
-      if (openModalityRef.current === 'pointer' || !focusFirst()) {
-        listRef.current?.focus();
+      const menu = menuRef.current;
+      if (menu == null) {
+        return;
+      }
+      if (openModalityRef.current === 'pointer') {
+        menu.focus();
+      } else {
+        const first = menu.querySelector(MENU_ITEM_SELECTOR);
+        (first instanceof HTMLElement ? first : menu).focus();
       }
       openModalityRef.current = 'keyboard';
     });
-  }, [popover.isOpen, focusFirst, listRef]);
-
-  // Extend useListFocus with Enter/Space activation + typeahead
-  const listKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      // A submenu flyout renders inline inside this menu; its key events bubble
-      // up here. Let that level own them — only handle events from this level.
-      if (!ownsEvent(e)) {
-        return;
-      }
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        const focused = document.activeElement as HTMLElement | null;
-        if (
-          focused &&
-          MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
-        ) {
-          focused.click();
-        }
-        return;
-      }
-      // APG menu-button pattern: Tab closes the menu. Menu items are
-      // tabIndex={-1} so the focus trap has nothing trappable and Tab would
-      // otherwise leak into the page while the menu stayed open (menus-5).
-      // Do NOT preventDefault — closing restores focus to the trigger, and the
-      // browser's default Tab then continues from there to the next element.
-      if (e.key === 'Tab') {
-        closeMenu();
-        return;
-      }
-      // Type-to-focus next; if it consumed a printable key, stop here.
-      if (typeahead.onKeyDown(e)) {
-        e.preventDefault();
-        return;
-      }
-      listNavKeyDown(e);
-    },
-    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
-  );
+  }, [popover.isOpen]);
 
   const openAndFocus = useCallback(
     (modality: 'keyboard' | 'pointer' = 'keyboard') => {
@@ -465,7 +369,7 @@ export function DropdownMenu({
           openAndFocus();
         }
       }
-      // When open, key events go to the menu container via useListFocus
+      // When open, key events go to the Menu container
     },
     [popover.isOpen, openAndFocus],
   );
@@ -481,15 +385,15 @@ export function DropdownMenu({
   const popoverXstyle = menuWidth
     ? styles.popoverCustomWidth(menuWidth)
     : styles.popover;
-  // Context for compound items
-  const contextValue = useMemo<DropdownMenuContextValue>(
-    () => ({closeMenu, menuSize}),
-    [closeMenu, menuSize],
-  );
 
   // Resolve menu content: data-driven items become components
   const menuContent =
     props.items !== undefined ? renderDropdownItems(items) : children;
+
+  // `ButtonProps['label']` is a string, and `button` already falls back to the
+  // translated default above, so the trigger's label is always a usable
+  // accessible name for the menu (menus-13).
+  const menuLabel = button.label;
 
   return (
     <>
@@ -518,31 +422,20 @@ export function DropdownMenu({
       />
 
       {popover.render(
-        <div
+        <Menu
           {...rest}
-          ref={listRef}
+          ref={menuRef}
+          label={menuLabel}
+          onClose={closeMenu}
+          isOpen={popover.isOpen}
+          focusOnOpen="none"
+          size={menuSize}
           id={menuId}
-          role="menu"
-          // Focus target for pointer opens (not in the Tab order): holding
-          // focus on the container keeps key events (arrows, typeahead,
-          // Escape, Tab) inside the menu without highlighting any item.
-          // Mirrors the DropdownMenuSubMenu flyout container.
-          tabIndex={-1}
-          // Give the menu an accessible name from its trigger's label, so
-          // screen readers announce e.g. "Actions menu" rather than an unnamed
-          // menu (menus-13).
-          aria-label={button.label}
-          onKeyDown={listKeyDown}
-          {...mergeProps(
-            themeProps('dropdown-menu'),
-            stylex.props(styles.dropdown, xstyle),
-            className,
-            style,
-          )}>
-          <DropdownMenuContext value={contextValue}>
-            {menuContent}
-          </DropdownMenuContext>
-        </div>,
+          xstyle={xstyle}
+          className={className}
+          style={style}>
+          {menuContent}
+        </Menu>,
         {
           placement,
           alignment,

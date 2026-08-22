@@ -8,7 +8,7 @@
  *   useTypeahead, Item, Icon, Spinner, DropdownMenu context + item roles.
  * @output Exports DropdownMenuSubMenu — a single menu row that reveals a nested
  *   flyout menu of its own children/items.
- * @position Sub-component; place inside a DropdownMenu (or ContextMenu)
+ * @position Sub-component; place inside a DropdownMenu, ContextMenu, or Menu
  *   alongside plain items.
  *
  * One component, not three. The row itself adopts DropdownMenuItem semantics
@@ -204,8 +204,9 @@ export interface DropdownMenuSubMenuProps extends DropdownMenuSubMenuBaseProps {
 /**
  * A single menu row that reveals a nested flyout of its own items. The row
  * adopts DropdownMenuItem semantics (label / icon / description / isDisabled);
- * its `children` become the flyout content. Place inside a DropdownMenu (or
- * ContextMenu) alongside plain items.
+ * its `children` become the flyout content. Place inside a DropdownMenu,
+ * ContextMenu, or standalone Menu alongside plain items. The flyout is its
+ * own top-layer element, so it is not clipped by a scrolling ancestor.
  *
  * For data-driven menus, don't use this directly — give a menu item a nested
  * `items` array and DropdownMenu/ContextMenu renders the submenu for you.
