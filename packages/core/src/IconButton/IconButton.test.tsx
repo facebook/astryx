@@ -78,7 +78,9 @@ describe('IconButton', () => {
   it('shows loading state', () => {
     render(<IconButton label="Save" icon={<span>💾</span>} isLoading />);
     const button = screen.getByRole('button');
-    expect(button).toBeDisabled();
+    // Busy is aria-only so the button keeps focus (#4871)
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-busy', 'true');
   });
 
   it('forwards ref correctly', () => {
