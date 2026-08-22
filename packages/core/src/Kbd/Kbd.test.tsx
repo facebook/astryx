@@ -23,6 +23,7 @@ describe('Kbd', () => {
       value: originalPlatform,
       configurable: true,
     });
+    delete (navigator as {userAgentData?: unknown}).userAgentData;
   });
 
   it('renders a single key', () => {
@@ -52,6 +53,22 @@ describe('Kbd', () => {
 
     render(<Kbd keys="mod" />);
     expect(screen.getByText('\u2318')).toBeInTheDocument(); // \u2318
+  });
+
+  it('reads a blank userAgentData.platform as unknown, not as non-Mac', () => {
+    // Builds that rewrite their client-hints identity expose the key with an
+    // empty value; navigator.platform is the only surface left that answers.
+    Object.defineProperty(navigator, 'userAgentData', {
+      value: {platform: ''},
+      configurable: true,
+    });
+    Object.defineProperty(navigator, 'platform', {
+      value: 'MacIntel',
+      configurable: true,
+    });
+
+    render(<Kbd keys="mod" />);
+    expect(screen.getByText('\u2318')).toBeInTheDocument();
   });
 
   it('maps modifier keys to symbols', () => {
