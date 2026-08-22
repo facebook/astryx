@@ -1138,6 +1138,32 @@ describe('TabList overflow (scroll)', () => {
     expect(scrollBy).not.toHaveBeenCalled();
   });
 
+  it('finishes the job on focus: a tab only half in view is scrolled clear', () => {
+    const {strip} = renderStrip({value: 'a'});
+    const scrollBy = vi.fn();
+    strip.scrollBy = scrollBy;
+    // The browser scrolls a focused tab into view only when it is entirely
+    // outside the box, so this one — straddling the end edge — stays cut off.
+    fakeGeometry(strip, 'c', {stripWidth: 300, tabLeft: 260, tabRight: 340});
+
+    const tab = strip.querySelector<HTMLElement>('[data-tab-value="c"]');
+    fireEvent.focus(tab!, {bubbles: true});
+
+    expect(scrollBy).toHaveBeenCalledTimes(1);
+    expect(scrollBy.mock.calls[0][0].left).toBeCloseTo(40);
+  });
+
+  it('does not hand focus to an arrow, which is hidden from assistive tech', () => {
+    const {container, strip} = renderStrip();
+    fakeScrollBox(strip, {scrollWidth: 600, clientWidth: 300});
+    strip.scrollBy = vi.fn();
+    fireEvent.scroll(strip);
+
+    const arrow = container.querySelector<HTMLElement>(ARROW);
+    const prevented = !fireEvent.mouseDown(arrow!);
+    expect(prevented).toBe(true);
+  });
+
   it('overflow="none" scrolls nothing and offers no arrows', () => {
     const {container, strip, rerender} = renderStrip({
       value: 'a',
