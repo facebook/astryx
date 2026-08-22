@@ -22,6 +22,7 @@ export {
   defineTheme,
   generateThemeCSS,
   generateOnMediaCSS,
+  generateConditionalCSS,
   generateThemeRules,
   generateThemeRulesSplit,
   type ThemeCSSOutput,
@@ -44,6 +45,16 @@ export type {
   ComponentStyleMap,
   StyleOverrides,
 } from './defineTheme';
+
+// Conditional theme layers (mobile)
+export {DEFAULT_MOBILE_BREAKPOINT, mobileMediaQuery} from './conditionalTheme';
+export type {
+  ConditionalThemeOverrides,
+  ConditionalTypeScale,
+  ConditionalTypographyConfig,
+  ResolvedConditionalTheme,
+  ThemeBreakpoints,
+} from './conditionalTheme';
 
 export type {
   SyntaxTokenName,
@@ -73,7 +84,12 @@ export {SyntaxTheme, useSyntaxTheme} from './syntax';
 export type {UseSyntaxThemeReturn} from './syntax';
 
 export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
-export type {TypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
+export type {
+  TypeScaleConfig,
+  TypeScaleTokens,
+  TypeScalePinAnchor,
+} from './expandTypeScale';
+export {recommendedPinAnchor} from './expandTypeScale';
 
 export {expandRadiusScale} from './expandRadiusScale';
 export type {RadiusScaleConfig, RadiusScaleTokens} from './expandRadiusScale';

@@ -223,6 +223,92 @@ const myTheme = defineTheme({
       ],
     },
     {
+      title: 'Conditional Theming',
+  category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'A theme can vary by named condition. `mobile` means narrow AND touch — it compiles to `@media (max-width: 756px) and (pointer: coarse)`, so a desktop user dragging their window narrow does not get mobile values. Set `breakpoints.mobile` to move the width; the coarse-pointer requirement always applies.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'A mobile condition',
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+
+const myTheme = defineTheme({
+  name: 'my-theme',
+  typography: { scale: { base: 14, ratio: 1.2 } },
+  breakpoints: { mobile: 640 },   // optional; defaults to 756
+  mobile: {
+    // A partial theme: same axes as the top level, each one independent.
+    // The scale's fields are optional — anything omitted follows the
+    // theme's own scale, so this floors body to 16 and keeps ratio 1.2.
+    typography: { scale: { base: 16 } },
+    tokens: { '--spacing-4': '12px' },
+    components: { button: { base: { minHeight: '44px' } } },
+  },
+});`,
+        },
+        {
+          type: 'prose',
+          text: "Raising `base` on its own raises every role by the same factor: a Display 1 that reads well at 42px on a desktop becomes 48px on the device with the least room for it. `pin` holds one role at the size it has in your desktop scale and re-derives the ratio around it, so the top of the ramp stays put while the roles below it rise to meet the new base. `'auto'` picks the anchor from your ratio — Display 1 up to 1.25, Heading 2 below 1.414, Heading 3 at 1.414 and above.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Pinning a role instead of lifting everything',
+          code: `typography: { scale: { base: 14, ratio: 1.2 } },
+mobile: {
+  // Body 14 -> 16, and Display 1 holds its desktop 42px.
+  // Without the pin it would be 48px.
+  typography: { scale: { base: 16, pin: 'display-1' } },
+},
+
+// Same thing, letting the ratio choose the anchor:
+// typography: { scale: { base: 16, pin: 'auto' } },`,
+        },
+        {
+          type: 'table',
+          headers: ['Rule', 'Behavior'],
+          rows: [
+            [
+              'Opt-in',
+              'Omit `mobile` (or pass null) and no conditional CSS is emitted at all — no empty media block, no default mobile treatment.',
+            ],
+            [
+              'Axes are independent',
+              'Only the axes you set generate CSS. Setting just `tokens` emits token declarations and nothing else.',
+            ],
+            [
+              'Precedence',
+              'Where the condition matches, its values win over the base theme; where it does not, the base theme is untouched. Inside the block, explicit `tokens` beat scale-generated values.',
+            ],
+            [
+              'Both modes',
+              'Runtime `<Theme>` injection and `astryx theme build` emit the same conditional CSS.',
+            ],
+            [
+              'Scale inheritance',
+              "A condition's `scale` fields are all optional: an omitted `base` or `ratio` follows the theme's own scale, so a condition states only what differs.",
+            ],
+            [
+              'Inheritance',
+              "A conditional layer is inherited through `extends` like every other axis: a child that declares no `mobile` keeps its parent's, and one that declares its own merges over it per token. The scale, the breakpoint and a `pin` anchor all resolve against the EFFECTIVE theme, so a child that inherits its type scale pins against the scale it actually has.",
+            ],
+            [
+              'Axis merging',
+              "Each scale axis inside a condition is merged over the theme's own config before it is expanded, so `mobile: {color: {contrast: 'high'}}` keeps your accent and `mobile: {radius: {base: 3}}` keeps your multiplier.",
+            ],
+            [
+              'Pinning',
+              "`pin: 'display-1' | 'display-2' | 'display-3' | 'heading-1' | 'heading-2' | 'heading-3' | 'auto'` holds that role at its desktop size and derives the ratio from it. Takes precedence over `ratio`. Unset means no pin — the desktop ratio is kept and the whole ladder lifts with the base.",
+            ],
+          ],
+        },
+      ],
+    },
+    {
       title: 'Extending a Theme',
   category: 'guide',
       content: [

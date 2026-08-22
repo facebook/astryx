@@ -58,12 +58,14 @@ import {
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
+/** @type {any} */ let _generateConditionalCSS = null;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
+  _generateConditionalCSS = coreTheme.generateConditionalCSS;
 } catch (e) {
   // Capture the reason so the theme action can surface a precise, actionable
   // error. We don't throw here: this module is imported eagerly by the CLI
@@ -822,10 +824,19 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
     return `  ${field}: ${body},\n`;
   };
 
+  // Everything a theme that `extends` this artifact has to be able to read
+  // back. The conditional layer and the axis configs behind it belong here for
+  // the same reason `__onDark` does: without them a child of a built theme
+  // silently loses its mobile block, and a conditional scale re-derives
+  // against the built-in defaults instead of this theme's.
   const inheritableFields =
     serializeField('components', themeDef.components) +
     serializeField('__onDark', themeDef.__onDark) +
-    serializeField('__onLight', themeDef.__onLight);
+    serializeField('__onLight', themeDef.__onLight) +
+    serializeField('__conditional', themeDef.__conditional) +
+    serializeField('__typeScale', themeDef.__typeScale) +
+    serializeField('__breakpoints', themeDef.__breakpoints) +
+    serializeField('__axisConfigs', themeDef.__axisConfigs);
 
   return `${iconImport}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
@@ -1169,6 +1180,8 @@ export async function themeBuild(
       'syntax',
       'onDark',
       'onLight',
+      'mobile',
+      'breakpoints',
     ];
     const needsResolution = INPUT_ONLY_FIELDS.some(
       field => themeDef[field] !== undefined,
@@ -1193,16 +1206,37 @@ export async function themeBuild(
         `@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`,
       );
     }
-    if (component.length > 0) {
-      const componentInner = component.join('\n\n');
-      const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
-      // #3658: also emit attribute-specific rules so <Theme mode> can override color-scheme
-      const colorSchemeDecl = componentScope.includes('light-dark(')
-        ? '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n'
+    // Conditional layers (mobile) are generated up front but emitted last:
+    // their text also decides whether the color-scheme guard is needed, since
+    // a theme may use light-dark() only inside a condition.
+    const conditional = _generateConditionalCSS
+      ? _generateConditionalCSS(resolvedTheme)
+      : {prose: '', component: ''};
+
+    const componentInner = component.join('\n\n');
+    const componentScope =
+      component.length > 0
+        ? `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`
         : '';
+    // #3658: also emit attribute-specific rules so <Theme mode> can override
+    // color-scheme. light-dark() resolves against color-scheme wherever it is
+    // written, so a theme that only uses it inside a conditional block needs
+    // the guard just as much as one that uses it in the base rules — check
+    // both, or the built CSS silently loses light-dark() on that path.
+    const usesLightDark =
+      componentScope.includes('light-dark(') ||
+      conditional.component.includes('light-dark(') ||
+      conditional.prose.includes('light-dark(');
+    const colorSchemeDecl = usesLightDark
+      ? '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n'
+      : '';
+    if (componentScope) {
       cssParts.push(
         `@layer astryx-theme {\n${colorSchemeDecl}${componentScope}\n}`,
       );
+    } else if (colorSchemeDecl) {
+      // No base component rules, but a condition needs the guard.
+      cssParts.push(`@layer astryx-theme {\n${colorSchemeDecl.trimEnd()}\n}`);
     }
     // On-media rules (MediaTheme dark/light surface overrides)
     if (_generateOnMediaCSS) {
@@ -1210,6 +1244,15 @@ export async function themeBuild(
       if (onMediaCss) {
         cssParts.push(`@layer astryx-theme {\n${onMediaCss}\n}`);
       }
+    }
+    // Conditional layers (mobile). Emitted last within each layer so a
+    // matching condition wins on source order — a media query adds no
+    // specificity. Nothing is emitted when the theme declares no conditions.
+    if (conditional.prose) {
+      cssParts.push(`@layer reset {\n${conditional.prose}\n}`);
+    }
+    if (conditional.component) {
+      cssParts.push(`@layer astryx-theme {\n${conditional.component}\n}`);
     }
     if (cssParts.length === 0) {
       logger.log('No overrides found — nothing to build.');

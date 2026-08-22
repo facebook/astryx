@@ -178,6 +178,47 @@ export const myTheme = defineTheme({
    */
   motion: {fast: 175, medium: 410, slow: 975, ratio: 0.75},
 
+  /**
+   * Width below which the `mobile` condition can match, in px. Defaults to
+   * 756. The condition also requires a coarse pointer, so this is a ceiling on
+   * an already-touch device, never a desktop breakpoint.
+   */
+  breakpoints: {mobile: 756},
+
+  /**
+   * Values that apply only on mobile — which here means narrow AND touch:
+   * `@media (max-width: <breakpoints.mobile>px) and (pointer: coarse)`. A
+   * desktop window dragged narrow keeps the desktop theme; only the layout
+   * reflows.
+   *
+   * The value is a partial theme — the same axes as above, each independent,
+   * so only what you set generates CSS. Omit the key entirely and no mobile
+   * CSS is emitted at all: there is no default mobile treatment.
+   *
+   * The type scale INHERITS: `base` and `ratio` both fall back to your own
+   * scale, so state only what differs. `pin` holds one role at the size it has
+   * in your desktop scale and re-derives the ratio around it — without it,
+   * raising `base` raises every role by the same factor, so a 42px Display 1
+   * becomes 48px on a phone. Anchors: display-1…3, heading-1…3, or 'auto' to
+   * pick by ratio (Display 1 up to 1.25, Heading 2 below 1.414, Heading 3
+   * above). `pin` beats `ratio`.
+   *
+   * Where the condition matches its values win; where it does not, the base
+   * theme is untouched.
+   *
+   * Reference: `astryx docs theme`, "Conditional Theming".
+   */
+  mobile: {
+    // The scale above is already base 16, so it needs no floor here — a theme
+    // on a smaller base wants one, because iOS Safari zooms an input whose
+    // text is under 16px. Written as `{base: 16}` alone the whole ladder
+    // lifts with it (a 42px Display 1 becomes 48px); `pin` holds one role at
+    // its desktop size instead:
+    //   typography: {scale: {base: 16, pin: 'display-1'}},
+    tokens: {'--spacing-4': '12px'},
+    components: {button: {base: {minBlockSize: '44px'}}},
+  },
+
   // ───────────────────────────────────────────────────────────────────────
   // tokens — explicit overrides, which beat anything the scales generated.
   // A string applies to both colour modes; a [light, dark] tuple compiles to

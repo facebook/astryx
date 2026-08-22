@@ -127,6 +127,124 @@ export interface TypeScaleConfig {
  */
 export type TypeScaleTokens = Record<string, string>;
 
+/**
+ * A role a conditional type scale can pin to its base-theme size.
+ *
+ * Only roles ABOVE the base anchor can be pinned: the pin re-derives the
+ * ratio, and roles at (`body`, `label`, `code`, heading 4) or below the anchor
+ * either divide by a zero step or invert the ladder. Body is already fixed by
+ * the scale's own `base`, so pinning it would be a no-op anyway.
+ */
+export type TypeScalePinAnchor =
+  | 'display-1'
+  | 'display-2'
+  | 'display-3'
+  | 'heading-1'
+  | 'heading-2'
+  | 'heading-3';
+
+/** Pin anchor → step offset from the base anchor. Mirrors TEXT/HEADING_STEPS. */
+export const PIN_ANCHOR_STEPS: Record<TypeScalePinAnchor, number> = {
+  'display-1': 6,
+  'display-2': 5,
+  'display-3': 4,
+  'heading-1': 3,
+  'heading-2': 2,
+  'heading-3': 1,
+};
+
+/**
+ * The built-in type scale, used as the desktop reference when a theme declares
+ * no `typography.scale` of its own.
+ *
+ * SYNC: must match the values `textSizeDefaults` in tokens.stylex.ts is
+ * generated from.
+ */
+export const DEFAULT_TYPE_SCALE = {base: 14, ratio: 1.2} as const;
+
+/**
+ * The anchor to pin when a conditional scale asks for `pin: 'auto'`.
+ *
+ * Gentler scales can afford to pin high — the whole ladder sits close
+ * together, so pinning Display 1 barely tames anything and mostly lifts the
+ * middle. More dramatic scales need a lower anchor, or the display tier towers
+ * over 16px body text on a phone.
+ *
+ * - up to Major Third (≤ 1.25): Display 1
+ * - Perfect Fourth (< 1.414): Heading 2
+ * - Augmented Fourth and above (≥ 1.414): Heading 3
+ */
+export function recommendedPinAnchor(ratio: number): TypeScalePinAnchor {
+  if (ratio <= 1.25) {
+    return 'display-1';
+  }
+  if (ratio < 1.414) {
+    return 'heading-2';
+  }
+  return 'heading-3';
+}
+
+/**
+ * Re-derive a ratio so `anchor` lands back on the size it has in the desktop
+ * scale, with the ladder rebuilt from a different base.
+ *
+ * This is what makes a floored mobile base ("body must be at least 16px")
+ * something other than a blanket enlargement. Keeping the desktop ratio lifts
+ * every role by the same factor, so a 42px Display 1 becomes 48px on the
+ * device with the least room for it. Pinning solves for the ratio that puts
+ * one chosen role back where it was, and lets the rest of the ladder fall
+ * where that ratio puts them:
+ *
+ *     size(role) = base × ratio^step        (the progression, unchanged)
+ *     ratio      = (anchorSize / base)^(1/anchorStep)
+ *
+ * The target is the anchor's ROUNDED desktop size, so the pinned role matches
+ * its desktop token exactly rather than to within a rounding.
+ *
+ * Returns `desktopRatio` unchanged when the base does not move — a theme whose
+ * base already clears the floor has nothing to re-derive, and returning the
+ * ratio untouched keeps its output byte-identical — and when the solve would
+ * produce a ratio at or below 1, which happens once `base` reaches the
+ * anchor's own desktop size. A ratio of 1 flattens the ladder and anything
+ * below it inverts the hierarchy outright (Display 1 smaller than body), so
+ * the pin is refused rather than honoured into nonsense. The condition is on
+ * the numbers, not the anchor, so no type can catch it.
+ */
+export function derivePinnedRatio(params: {
+  /** Base of the desktop scale being pinned against. */
+  desktopBase: number;
+  /** Ratio of the desktop scale being pinned against. */
+  desktopRatio: number;
+  /** Base the re-derived ladder is rebuilt from. */
+  base: number;
+  /** Role held at its desktop size. */
+  anchor: TypeScalePinAnchor;
+}): number {
+  const {desktopBase, desktopRatio, base, anchor} = params;
+  if (base === desktopBase) {
+    return desktopRatio;
+  }
+  const step = PIN_ANCHOR_STEPS[anchor];
+  const anchorSize = Math.round(desktopBase * Math.pow(desktopRatio, step));
+  if (!(anchorSize > 0) || !(base > 0)) {
+    return desktopRatio;
+  }
+  const derived = Math.pow(anchorSize / base, 1 / step);
+  if (!(derived > 1)) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(
+        `[astryx] A conditional type scale pins '${anchor}' at ${anchorSize}px ` +
+          `but sets base ${base}px, which is not smaller — the ratio that ` +
+          `satisfies both is ${derived.toFixed(3)}, flattening or inverting the ` +
+          `scale. Keeping the base ratio (${desktopRatio}) instead. Pin a role ` +
+          `above the new base, or lower the base.`,
+      );
+    }
+    return desktopRatio;
+  }
+  return derived;
+}
+
 // =============================================================================
 // Constants
 // =============================================================================

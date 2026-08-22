@@ -759,6 +759,114 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
 }
 
 /**
+ * Prefix of the tokens whose values prose rules bake in (`--text-*`).
+ *
+ * Prose rules resolve these at generation time — a type scale's line-heights
+ * land as literals — so a conditional layer that moves one has to re-emit
+ * prose. Tokens they reference with `var()` (`--font-size-*`,
+ * `--font-family-*`, `--color-*`) resolve at use time and need no re-emission.
+ */
+const PROSE_INLINED_TOKEN_PREFIX = '--text-';
+
+/**
+ * Wrap generated rules in `@media <query> { @scope (...) to (...) { ... } }`.
+ *
+ * The media query goes outside the scope so a single query brackets every rule
+ * the condition contributes.
+ */
+function wrapConditional(
+  query: string,
+  scopeSelector: string,
+  parts: string[],
+): string {
+  const inner = parts.join('\n\n');
+  return `@media ${query} {\n@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}\n}`;
+}
+
+/**
+ * Generate CSS for a theme's conditional layers (currently `mobile`).
+ *
+ * Each resolved layer becomes one `@media` block holding the tokens and
+ * component rules it sets — nothing else. A theme with no conditional layers
+ * produces two empty strings, so nothing is emitted and its output is
+ * byte-identical to a theme defined before conditions existed.
+ *
+ * **Precedence.** Callers place these blocks in the same CSS layers as the
+ * base rules and *after* them. A media query adds no specificity, so inside a
+ * matching condition the conditional declaration wins on source order, and
+ * outside it the base theme is untouched.
+ *
+ * Prose element defaults are re-emitted for a layer only when it changes a
+ * token those rules bake in (`--text-*`) — a type scale's line-heights land as
+ * literals, so prose would otherwise keep the base rhythm while every themed
+ * component moved.
+ */
+export function generateConditionalCSS(theme: DefinedTheme): ThemeCSSOutput {
+  const layers = theme.__conditional;
+  if (!layers || layers.length === 0) {
+    return {prose: '', component: ''};
+  }
+
+  const scopeSelector = themeScopeStart(theme.name);
+  const proseBlocks: string[] = [];
+  const componentBlocks: string[] = [];
+
+  for (const layer of layers) {
+    const parts: string[] = [];
+
+    // Token block — only the tokens this condition sets
+    const tokenEntries = Object.entries(layer.tokens);
+    if (tokenEntries.length > 0) {
+      const declarations = tokenEntries
+        .map(([prop, value]) => `    ${prop}: ${value};`)
+        .join('\n');
+      parts.push(`  :scope {\n${declarations}\n  }`);
+    }
+
+    // Component overrides. The prop-level colour and size rules the base
+    // theme emits alongside them are deliberately NOT re-emitted here: they
+    // are `var()` references only (`font-size: var(--font-size-2xl)`), so they
+    // resolve to the conditional value through the token block above and a
+    // copy inside the media query is byte-identical to the base rule it
+    // shadows — dead weight in every built stylesheet.
+    if (layer.components) {
+      generateComponentRules(layer.components, parts);
+    }
+
+    if (parts.length > 0) {
+      componentBlocks.push(wrapConditional(layer.query, scopeSelector, parts));
+    }
+
+    // Prose defaults — only when this condition moves a token they inline.
+    const touchesProse = Object.keys(layer.tokens).some(key =>
+      key.startsWith(PROSE_INLINED_TOKEN_PREFIX),
+    );
+    if (touchesProse) {
+      const merged = {...theme.tokens, ...layer.tokens};
+      const baseVal = (key: string): string =>
+        theme.tokens[key] || `var(${key})`;
+      const val = (key: string): string => merged[key] || `var(${key})`;
+      // Only the rules whose text actually changed: prose bakes line-heights
+      // in as literals, but most of each block is `var()` references that
+      // resolve to the conditional value on their own.
+      const baseParts: string[] = [];
+      generateProseRules(baseVal, baseParts);
+      const proseParts: string[] = [];
+      generateProseRules(val, proseParts);
+      const changed = proseParts.filter((rule, i) => rule !== baseParts[i]);
+      if (changed.length > 0) {
+        proseBlocks.push(wrapConditional(layer.query, scopeSelector, changed));
+      }
+    }
+  }
+
+  return {
+    prose: proseBlocks.join('\n\n'),
+    component: componentBlocks.join('\n\n'),
+  };
+}
+
+/**
  * Generate layered CSS for a theme — runtime path.
  *
  * Returns two CSS blocks for injection into different layers:
@@ -793,6 +901,21 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
     componentCss = componentCss
       ? `${componentCss}\n\n${onMediaCss}`
       : onMediaCss;
+  }
+
+  // Conditional layers (mobile) come last within each block: a media query
+  // adds no specificity, so source order is what makes a matching condition
+  // win over the base theme.
+  const conditional = generateConditionalCSS(theme);
+  if (conditional.prose) {
+    proseCss = proseCss
+      ? `${proseCss}\n\n${conditional.prose}`
+      : conditional.prose;
+  }
+  if (conditional.component) {
+    componentCss = componentCss
+      ? `${componentCss}\n\n${conditional.component}`
+      : conditional.component;
   }
 
   return {prose: proseCss, component: componentCss};

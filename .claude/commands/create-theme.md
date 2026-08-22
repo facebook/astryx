@@ -153,6 +153,34 @@ Component overrides generate scoped CSS:
 - **Unbuilt**: `Theme` generates CSS and injects `<style>` at runtime
 - **Built**: `astryx theme build` pre-compiles to a CSS file
 
+### Mobile (conditional theming)
+
+`mobile` holds values that apply only on a narrow AND touch device —
+`@media (max-width: <breakpoints.mobile ?? 756>px) and (pointer: coarse)`. A
+desktop window dragged narrow keeps the desktop theme; only the layout reflows.
+It is opt-in: omit the key and no conditional CSS is emitted at all.
+
+```tsx
+export const brandTheme = defineTheme({
+  name: 'brand',
+  typography: {scale: {base: 14, ratio: 1.2}},
+  breakpoints: {mobile: 640}, // optional; defaults to 756
+  mobile: {
+    // Body floors to 16px (under that, iOS Safari zooms on input focus) and
+    // Display 1 holds its desktop size instead of growing with the base.
+    typography: {scale: {base: 16, pin: 'display-1'}},
+    tokens: {'--spacing-4': '12px'},
+  },
+});
+```
+
+The value is a partial theme — the same axes as the top level, each
+independent. Scale axes inherit: an omitted field follows the theme's own, so
+`{color: {contrast: 'high'}}` keeps your accent. `pin` (`display-1`…`heading-3`,
+or `'auto'` to pick by ratio) holds one role at its desktop size and re-derives
+the ratio around it; without it, raising `base` raises every role by the same
+factor.
+
 ## Extending an Existing Theme
 
 Use `extends` to derive from another theme — inherits tokens, components, icons, fonts. Only specify overrides.
@@ -172,6 +200,8 @@ export const brandTheme = defineTheme({
 ```
 
 Child values win. Tokens and components are deep-merged; scale configs (typography, motion, radius) replace entirely.
+
+A `mobile` layer is inherited too: a child that declares none keeps its parent's, and one that declares its own merges over it per token. A conditional scale resolves against the effective (post-`extends`) scale, so a child that inherits its typography pins against the scale it actually has.
 
 ## Reference
 

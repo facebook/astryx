@@ -38,12 +38,20 @@
 
 import type {IconRegistry} from '../Icon/globalIconRegistry';
 import type {IndicatorRegistry} from '../Indicator/types';
-import type {TypographyConfig, FontWeight} from './types';
+import type {TypographyConfig} from './types';
 import {
   resolveOnMedia,
   type OnMediaOverrides,
   type ResolvedOnMedia,
 } from './onMediaTokens';
+import {
+  resolveConditionalThemes,
+  type ConditionalThemeOverrides,
+  type ResolvedConditionalTheme,
+  type ThemeAxisConfigs,
+  type ThemeBreakpoints,
+} from './conditionalTheme';
+import {buildFontFamilyTokens, buildTypeScaleConfig} from './themeAxes';
 import {
   colorDefaults,
   spacingDefaults,
@@ -370,6 +378,61 @@ export interface DefineThemeInput {
    * but for the inverse case (e.g. dark-mode page with a light popover).
    */
   onLight?: OnMediaOverrides;
+  /**
+   * Breakpoints for the named conditions (see `mobile`).
+   *
+   * `mobile` defaults to **756px**; set it here to move the cutoff. The width
+   * is only half of the `mobile` condition — a coarse pointer is always
+   * required as well, so a narrow desktop window never matches regardless of
+   * the number.
+   *
+   * @example
+   * ```
+   * defineTheme({
+   *   name: 'acme',
+   *   breakpoints: {mobile: 640},
+   *   mobile: {tokens: {'--spacing-4': '12px'}},
+   * });
+   * ```
+   */
+  breakpoints?: ThemeBreakpoints;
+  /**
+   * Overrides that apply only on **mobile** — narrow *and* touch. Compiles to
+   * `@media (max-width: <breakpoints.mobile ?? 756>px) and (pointer: coarse)`,
+   * so a desktop user dragging their window narrow does not get them.
+   *
+   * The value is a partial theme: the same axes as the top-level input
+   * (`typography`, `color`, `radius`, `motion`, `tokens`, `components`). Each
+   * axis is independent — only the axes you set generate CSS.
+   *
+   * **The type scale inherits.** A condition's `scale` fields are all
+   * optional: an omitted `base` or `ratio` follows the theme's own scale, so a
+   * condition states only what differs. `scale.pin` holds one role at its
+   * desktop size and re-derives the ratio around it, instead of lifting the
+   * whole ladder with the base.
+   *
+   * **Opt-in.** Omit it (or pass `null`) and no mobile CSS is generated at
+   * all: no empty media block, no default mobile treatment.
+   *
+   * **Precedence.** Where the condition matches, its values win over the base
+   * theme's for the same token or component rule; where it does not match, the
+   * base theme is untouched. Within the block the same order as the base theme
+   * applies: explicit `tokens` beat values generated from a scale.
+   *
+   * @example
+   * ```
+   * defineTheme({
+   *   name: 'acme',
+   *   typography: {scale: {base: 14, ratio: 1.2}},
+   *   mobile: {
+   *     // Body floors to 16px; Display 1 holds its desktop 42px.
+   *     typography: {scale: {base: 16, pin: 'display-1'}},
+   *     tokens: {'--spacing-4': '12px'},
+   *   },
+   * });
+   * ```
+   */
+  mobile?: ConditionalThemeOverrides | null;
 }
 
 /** A defined theme — ready to pass to <Theme> */
@@ -405,6 +468,38 @@ export interface DefinedTheme {
    * @internal
    */
   __onLight?: ResolvedOnMedia;
+  /**
+   * Resolved conditional theme layers (currently `mobile`), each carrying the
+   * media query it compiles to plus the tokens and component overrides that
+   * apply inside it. Absent when the theme declares no conditions — that
+   * absence is what keeps the feature opt-in.
+   * @internal
+   */
+  __conditional?: ResolvedConditionalTheme[];
+  /**
+   * The type scale this theme resolved to — its own, or the one it inherited
+   * through `extends`, or the built-in default.
+   *
+   * A resolved theme otherwise stores only *results* (a flat token map), which
+   * a child cannot read a base and ratio back out of. A conditional layer
+   * needs those instructions: its scale inherits, and `pin` has to know what
+   * size the anchor holds at.
+   * @internal
+   */
+  __typeScale?: {base: number; ratio: number};
+  /**
+   * The breakpoints this theme resolved to, inherited through `extends` like
+   * every other axis, so a theme family agrees on where mobile begins.
+   * @internal
+   */
+  __breakpoints?: ThemeBreakpoints;
+  /**
+   * The color/radius/motion configs this theme resolved to, kept for the same
+   * reason as `__typeScale`: a conditional layer merges over them so it can
+   * state one field of an axis without re-expanding the rest from defaults.
+   * @internal
+   */
+  __axisConfigs?: ThemeAxisConfigs;
 }
 
 // =============================================================================
@@ -446,36 +541,9 @@ function resolveTokenValue(value: TokenValue): string {
 }
 
 /**
- * Resolve a FontWeight name to a var() reference.
- * Named weights map to var(--font-weight-*); raw values pass through.
+ * Deep-merge helpers, font resolution, and type-scale config construction are
+ * shared with the conditional theme layer — see ./themeAxes.ts.
  */
-function resolveFontWeight(weight: FontWeight): string {
-  const named: Record<string, string> = {
-    normal: 'var(--font-weight-normal)',
-    medium: 'var(--font-weight-medium)',
-    semibold: 'var(--font-weight-semibold)',
-    bold: 'var(--font-weight-bold)',
-  };
-  return named[weight] ?? weight;
-}
-
-/**
- * Build the full CSS font-family value from family + fallbacks.
- * Quotes the family name if it contains spaces.
- */
-function buildFontFamily(
-  family?: string,
-  fallbacks?: string,
-): string | undefined {
-  if (!family) {
-    return undefined;
-  }
-  const quoted = family.includes(' ') ? `"${family}"` : family;
-  if (fallbacks) {
-    return `${quoted}, ${fallbacks}`;
-  }
-  return quoted;
-}
 
 /**
  * Describe a rejected `extends` value for the error message — enough to tell a
@@ -530,51 +598,9 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
 
   // Build typeScale config from typography if present
   const typo = input.typography;
-  let typeScaleConfig: TypeScaleConfig | undefined;
-  if (typo?.scale) {
-    // Collect weight overrides from typography roles
-    const headingWeights: Partial<Record<1 | 2 | 3 | 4 | 5 | 6, string>> = {};
-    const headingRole = typo.heading;
-    if (headingRole?.weights) {
-      for (const [level, w] of Object.entries(headingRole.weights)) {
-        if (w) {
-          headingWeights[Number(level) as 1 | 2 | 3 | 4 | 5 | 6] =
-            resolveFontWeight(w);
-        }
-      }
-    }
-    // Default heading weight from role
-    const defaultHeadingWeight = headingRole?.weight
-      ? resolveFontWeight(headingRole.weight)
-      : undefined;
-    if (defaultHeadingWeight) {
-      for (let i = 1; i <= 6; i++) {
-        if (!(i in headingWeights)) {
-          headingWeights[i as 1 | 2 | 3 | 4 | 5 | 6] = defaultHeadingWeight;
-        }
-      }
-    }
-
-    // Text weight overrides from roles
-    const textWeights: Partial<Record<string, string>> = {};
-    if (typo.body?.weight) {
-      textWeights.body = resolveFontWeight(typo.body.weight);
-    }
-    if (typo.code?.weight) {
-      textWeights.code = resolveFontWeight(typo.code.weight);
-    }
-
-    typeScaleConfig = {
-      base: typo.scale.base,
-      ratio: typo.scale.ratio,
-      weights: {
-        ...(Object.keys(headingWeights).length > 0
-          ? {heading: headingWeights}
-          : {}),
-        ...(Object.keys(textWeights).length > 0 ? {text: textWeights} : {}),
-      },
-    };
-  }
+  const typeScaleConfig: TypeScaleConfig | undefined = typo
+    ? buildTypeScaleConfig(typo)
+    : undefined;
 
   // 1. Apply color-generated tokens (lowest precedence for colors)
   if (input.color) {
@@ -610,22 +636,7 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
 
   // 1d. Apply typography font family tokens
   if (typo) {
-    // Heading inherits from body if not specified
-    const bodyFamily = buildFontFamily(typo.body?.family, typo.body?.fallbacks);
-    const headingFamily =
-      buildFontFamily(typo.heading?.family, typo.heading?.fallbacks) ??
-      bodyFamily;
-    const codeFamily = buildFontFamily(typo.code?.family, typo.code?.fallbacks);
-
-    if (bodyFamily) {
-      tokens['--font-family-body'] = bodyFamily;
-    }
-    if (headingFamily) {
-      tokens['--font-family-heading'] = headingFamily;
-    }
-    if (codeFamily) {
-      tokens['--font-family-code'] = codeFamily;
-    }
+    Object.assign(tokens, buildFontFamilyTokens(typo));
   }
 
   // 1e. Apply syntax theme tokens (before explicit overrides)
@@ -661,6 +672,30 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
   const __onDark = resolveOnMedia('dark', input.onDark, base?.__onDark);
   const __onLight = resolveOnMedia('light', input.onLight, base?.__onLight);
 
+  // 4a. Resolve conditional layers (mobile), inherited from the base like
+  // every other axis. Undefined when neither declares one, so a theme that
+  // does not opt in carries no conditional data at all.
+  const __conditional = resolveConditionalThemes(input, base);
+
+  // The axis CONFIGS a conditional layer resolves against — a resolved theme
+  // otherwise keeps only the flat token map its scales produced, which a child
+  // cannot read a base, ratio or accent back out of.
+  const __typeScale = typeScaleConfig
+    ? {base: typeScaleConfig.base, ratio: typeScaleConfig.ratio}
+    : base?.__typeScale;
+  const __breakpoints =
+    input.breakpoints || base?.__breakpoints
+      ? {...base?.__breakpoints, ...input.breakpoints}
+      : undefined;
+  const __axisConfigs =
+    input.color || input.radius || input.motion || base?.__axisConfigs
+      ? {
+          color: input.color ?? base?.__axisConfigs?.color,
+          radius: input.radius ?? base?.__axisConfigs?.radius,
+          motion: input.motion ?? base?.__axisConfigs?.motion,
+        }
+      : undefined;
+
   // 5. Merge icons — input icons override base icons
   const icons =
     input.icons && base?.icons
@@ -686,6 +721,12 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
         : undefined,
     __onDark,
     __onLight,
+    // Spread rather than assign so a theme without conditions has no
+    // `__conditional` key at all, not a key holding undefined.
+    ...(__conditional ? {__conditional} : {}),
+    ...(__typeScale ? {__typeScale} : {}),
+    ...(__breakpoints ? {__breakpoints} : {}),
+    ...(__axisConfigs ? {__axisConfigs} : {}),
   };
 
   registerTheme(theme);
@@ -700,10 +741,20 @@ export {
   generateThemeRules,
   generateThemeRulesSplit,
   generateOnMediaCSS,
+  generateConditionalCSS,
   generateThemeCSS,
   type ThemeRulesSplit,
   type ThemeCSSOutput,
 } from './generateThemeRules';
+
+export {
+  DEFAULT_MOBILE_BREAKPOINT,
+  mobileMediaQuery,
+  type ConditionalThemeOverrides,
+  type ResolvedConditionalTheme,
+  type ThemeAxisConfigs,
+  type ThemeBreakpoints,
+} from './conditionalTheme';
 
 // =============================================================================
 // Type guard
