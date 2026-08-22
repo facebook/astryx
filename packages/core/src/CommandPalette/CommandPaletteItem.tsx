@@ -45,7 +45,7 @@ const styles = stylex.create({
     border: 'none',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     textAlign: 'start' as const,
     outline: 'none',
@@ -66,7 +66,7 @@ const styles = stylex.create({
   },
   itemDisabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   itemSelected: {
     backgroundColor: colorVars['--color-accent-muted'],

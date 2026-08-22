@@ -24,7 +24,7 @@ ruleTester.run('disabled-cursor', rule, {
         import * as stylex from '@stylexjs/stylex';
         const styles = stylex.create({
           trigger: {
-            cursor: {default: 'pointer', '${GUARD}': 'not-allowed'},
+            cursor: {default: 'pointer', '${GUARD}': 'default'},
           },
         });
       `,
@@ -35,7 +35,7 @@ ruleTester.run('disabled-cursor', rule, {
         import * as stylex from '@stylexjs/stylex';
         const styles = stylex.create({
           trigger: {
-            cursor: {default: 'grab', ':disabled': 'not-allowed'},
+            cursor: {default: 'grab', ':disabled': 'default'},
           },
         });
       `,
@@ -45,7 +45,7 @@ ruleTester.run('disabled-cursor', rule, {
       code: `
         import * as stylex from '@stylexjs/stylex';
         const styles = stylex.create({
-          disabled: {cursor: 'not-allowed'},
+          disabled: {cursor: 'default'},
         });
       `,
     },
@@ -75,7 +75,7 @@ ruleTester.run('disabled-cursor', rule, {
       output: `
         import * as stylex from '@stylexjs/stylex';
         const styles = stylex.create({
-          trigger: {cursor: {default: 'pointer', '${GUARD}': 'not-allowed'}},
+          trigger: {cursor: {default: 'pointer', '${GUARD}': 'default'}},
         });
       `,
       errors: [{messageId: 'unguardedCursor'}],
@@ -99,7 +99,7 @@ ruleTester.run('disabled-cursor', rule, {
           handle: {
             cursor: {
               default: 'col-resize',
-              ':active': 'grabbing', '${GUARD}': 'not-allowed',
+              ':active': 'grabbing', '${GUARD}': 'default',
             },
           },
         });
@@ -107,18 +107,19 @@ ruleTester.run('disabled-cursor', rule, {
       errors: [{messageId: 'unguardedCursor'}],
     },
     // A flat value in a `disabled` style is the shape that defeats a guard
-    // written on the base: StyleX replaces the whole property on merge.
+    // written on the base: StyleX replaces the whole property on merge, so
+    // even a `disabled` style has to spell the condition out.
     {
       code: `
         import * as stylex from '@stylexjs/stylex';
         const styles = stylex.create({
-          disabled: {cursor: 'default'},
+          disabled: {cursor: 'inherit'},
         });
       `,
       output: `
         import * as stylex from '@stylexjs/stylex';
         const styles = stylex.create({
-          disabled: {cursor: {default: 'default', '${GUARD}': 'not-allowed'}},
+          disabled: {cursor: {default: 'inherit', '${GUARD}': 'default'}},
         });
       `,
       errors: [{messageId: 'unguardedCursor'}],
@@ -134,7 +135,7 @@ ruleTester.run('disabled-cursor', rule, {
       output: `
         import * as stylex from '@stylexjs/stylex';
         const styles = stylex.create({
-          field: {cursor: {default: 'text', '${GUARD}': 'not-allowed'}},
+          field: {cursor: {default: 'text', '${GUARD}': 'default'}},
         });
       `,
       errors: [{messageId: 'unguardedCursor'}],
@@ -158,7 +159,7 @@ ruleTester.run('disabled-cursor', rule, {
           item: {
             cursor: {
               default: 'pointer',
-              ':hover:where(:not(:disabled,[aria-disabled="true"]))': 'pointer', '${GUARD}': 'not-allowed',
+              ':hover:where(:not(:disabled,[aria-disabled="true"]))': 'pointer', '${GUARD}': 'default',
             },
           },
         });

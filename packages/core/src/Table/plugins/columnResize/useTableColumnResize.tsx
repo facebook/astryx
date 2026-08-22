@@ -209,7 +209,7 @@ const handleStyles = stylex.create({
     width: '8px',
     cursor: {
       default: 'ew-resize',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     zIndex: 1,
     touchAction: 'none',

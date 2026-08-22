@@ -200,7 +200,7 @@ export const dayCellStyles = stylex.create({
     borderStyle: 'none',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-body-size'],
@@ -232,7 +232,7 @@ export const dayCellStyles = stylex.create({
   dayTodayInRange: {},
   daySelected: {},
   dayDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 

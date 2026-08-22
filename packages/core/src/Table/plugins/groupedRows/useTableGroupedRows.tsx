@@ -115,7 +115,7 @@ const styles = stylex.create({
   headerRow: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     userSelect: 'none',
     backgroundColor: colorVars['--color-background-muted'],
@@ -150,7 +150,7 @@ const styles = stylex.create({
     border: 'none',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     color: {
       default: colorVars['--color-icon-secondary'],

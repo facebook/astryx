@@ -147,7 +147,7 @@ const styles = stylex.create({
     },
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     fontSize: 18,
     lineHeight: typeScaleVars['--text-body-leading'],

@@ -127,7 +127,7 @@ const sortStyles = stylex.create({
     margin: 0,
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     font: 'inherit',
     color: 'inherit',

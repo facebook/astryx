@@ -169,7 +169,7 @@ const styles = stylex.create({
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
     cursor: {
       default: 'text',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   token: {

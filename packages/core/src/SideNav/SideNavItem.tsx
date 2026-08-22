@@ -147,7 +147,7 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     borderRadius: radiusVars['--radius-element'],
     ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
@@ -186,7 +186,7 @@ const styles = stylex.create({
     textAlign: 'start',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   // No border and no background: `usePopover` paints the panel this renders

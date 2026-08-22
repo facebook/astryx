@@ -108,7 +108,7 @@ const styles = stylex.create({
     outline: 'none',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     textAlign: 'start',
     whiteSpace: 'nowrap',
@@ -119,7 +119,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   triggerDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   iconButton: {
     display: 'flex',
@@ -132,12 +132,12 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     borderRadius: radiusVars['--radius-element'],
   },
   iconButtonDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   popoverLayout: {
     display: 'flex',
@@ -172,7 +172,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     textAlign: 'start',
   },
@@ -182,7 +182,7 @@ const styles = stylex.create({
   },
   presetButtonDisabled: {
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
     backgroundColor: 'transparent',
   },
 });

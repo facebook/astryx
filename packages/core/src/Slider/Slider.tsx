@@ -186,7 +186,7 @@ const styles = stylex.create({
     width: '100%',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   trackContainerVertical: {
@@ -206,12 +206,12 @@ const styles = stylex.create({
     justifyContent: 'center',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   trackContainerDisabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   track: {
     position: 'absolute',
@@ -259,7 +259,7 @@ const styles = stylex.create({
     outline: 'none',
     cursor: {
       default: 'grab',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     zIndex: 1,
   },
@@ -284,7 +284,7 @@ const styles = stylex.create({
   },
   thumbDisabled: {
     backgroundColor: colorVars['--color-background-muted'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   textValue: {
     fontFamily: typographyVars['--font-family-body'],

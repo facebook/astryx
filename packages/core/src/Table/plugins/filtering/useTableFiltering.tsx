@@ -364,7 +364,7 @@ const filterStyles = stylex.create({
     border: 'none',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     display: 'inline-flex',
     alignItems: 'center',

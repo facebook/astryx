@@ -2,14 +2,20 @@
 
 /**
  * @file disabled-cursor.js
- * @description A `cursor` must give way to `not-allowed` on a disabled
- * element.
+ * @description A `cursor` must give way to `default` on a disabled element.
  *
  * The cursor is the only affordance a pointer user gets before they commit to
  * a click. `cursor: pointer` on a disabled control promises a click the
  * control will not honour, and nothing takes that promise away for you:
  * `disabled` and `[aria-disabled]` do not change what the element's own
  * `cursor` declaration paints.
+ *
+ * `default` and not `not-allowed`: a disabled control sealed behind
+ * `pointer-events: none` is never hit-tested, so it shows whatever its
+ * ancestor shows, and no declaration on it can change that. One cursor
+ * everywhere beats a stronger one we can only paint on some of them — and the
+ * disabled state already carries its own visual treatment. This also matches
+ * the internal XDS convention.
  *
  * A component's separate `disabled` style object is not the answer either. It
  * only helps where the author remembered to write one, on the element the
@@ -22,7 +28,7 @@
  *   BAD   cursor: 'pointer'
  *   GOOD  cursor: {
  *           default: 'pointer',
- *           ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+ *           ':is(:disabled,[aria-disabled="true"])': 'default',
  *         }
  *
  * The guarded condition outranks the default in StyleX's own ordering, so it
@@ -38,7 +44,7 @@
  * with a plain arrow. So the guard belongs on whichever declaration lands
  * last, and the rule cannot know which one that is.
  *
- * `not-allowed` itself needs no guard, and a cursor whose value is computed
+ * `default` itself needs no guard, and a cursor whose value is computed
  * rather than written (`interactive ? 'grab' : undefined`) is left alone — the
  * rule cannot know what it resolves to. The Chromium sweep in
  * `.github/scripts/disabled-cursor-audit.js` measures the rendered result for
@@ -47,14 +53,14 @@
 
 /** The condition a disabled element matches, and what it must get. */
 const DISABLED_CONDITION = ':is(:disabled,[aria-disabled="true"])';
-const DISABLED_CURSOR = 'not-allowed';
+const DISABLED_CURSOR = 'default';
 
 /**
  * Cursors that need the guard: everything except the disabled cursor itself.
  *
- * `default` and `auto` are on the list because a disabled control saying
- * nothing is still saying the wrong thing, and because a flat `default` in a
- * `disabled` style is exactly what defeats a guard written elsewhere.
+ * `inherit` and `auto` are on the list rather than waved through — a control
+ * inheriting `pointer` from an interactive ancestor promises exactly what the
+ * guard exists to take back.
  */
 function needsGuard(value) {
   return typeof value === 'string' && value !== DISABLED_CURSOR;
@@ -107,7 +113,7 @@ const rule = {
     fixable: 'code',
     docs: {
       description:
-        'A cursor must give way to not-allowed on a disabled element',
+        'A cursor must give way to default on a disabled element',
       category: 'Accessibility',
       recommended: true,
     },
@@ -115,14 +121,14 @@ const rule = {
       unguardedCursor:
         "cursor: '{{value}}' is what a disabled element gets too. " +
         `Add '${DISABLED_CONDITION}': '${DISABLED_CURSOR}' to the declaration ` +
-        'so the pointer says what the control will actually do.',
+        'so the pointer stops promising an interaction the control refuses.',
     },
     schema: [],
   },
   create(context) {
     const source = context.sourceCode ?? context.getSourceCode();
 
-    /** `':is(...)': 'not-allowed'`, quoted the way the file already quotes. */
+    /** `':is(...)': 'default'`, quoted the way the file already quotes. */
     const guardEntry = `'${DISABLED_CONDITION}': '${DISABLED_CURSOR}'`;
 
     return {

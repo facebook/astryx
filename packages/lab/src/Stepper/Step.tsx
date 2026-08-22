@@ -425,7 +425,7 @@ const styles = stylex.create({
     width: '100%',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',
@@ -472,7 +472,7 @@ const styles = stylex.create({
     textAlign: 'start',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',

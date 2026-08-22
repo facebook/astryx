@@ -514,7 +514,7 @@ Ships as an **error in both tiers**: core and lab are clean, and this keeps them
 
 ### `@astryx/disabled-cursor`
 
-Flags a `cursor` inside `stylex.create()` that does not give way to `not-allowed` on a disabled element. The cursor is the only affordance a pointer user gets **before** they commit to a click: `cursor: pointer` on a disabled control promises a click it will not honour, and `disabled`/`[aria-disabled]` do not change what the element's own declaration paints.
+Flags a `cursor` inside `stylex.create()` that does not give way to `default` on a disabled element. The cursor is the only affordance a pointer user gets **before** they commit to a click: `cursor: pointer` on a disabled control promises a click it will not honour, and `disabled`/`[aria-disabled]` do not change what the element's own declaration paints.
 
 A component's separate `disabled` style object is not the answer either — it only helps where the author remembered to write one, on the element the author had in mind: the inner input, not the label wrapping it; the trigger, not the icon inside it.
 
@@ -533,7 +533,7 @@ const styles = stylex.create({
   trigger: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
 });
@@ -541,9 +541,11 @@ const styles = stylex.create({
 
 The guarded condition outranks the default in StyleX's own ordering, so it wins the moment the element is disabled; on an element that can never be disabled it is a no-op.
 
-**Scope:** every `cursor` a component writes, whatever the value — `not-allowed` itself is the only exemption. That breadth is not tidiness: StyleX merges `props()` one **property** at a time, so a later style setting `cursor` at all replaces the earlier declaration's conditions along with its value. SegmentedControlItem shipped exactly that — a guarded `cursor: pointer` on the base and `disabled: {cursor: 'default'}` applied after it, which threw the guard away and left a disabled segment answering with a plain arrow. A computed value (`interactive ? 'grab' : undefined`) is left alone because the rule cannot know what it resolves to.
+**Why `default` and not `not-allowed`.** A disabled control sealed behind `pointer-events: none` is never hit-tested, so it shows whatever its ancestor shows and no declaration on it can change that — 75 of the 635 disabled elements in the story set are sealed that way. One cursor everywhere beats a stronger one only half the library can paint, the disabled state already carries its own visual treatment, and this matches the internal XDS convention.
 
-Autofixable, and mirrored at runtime by `.github/scripts/disabled-cursor-audit.js`, which hit-tests every disabled element in every story in Chromium and fails on any cursor other than `not-allowed`. That sweep is what covers the two cases the lint rule cannot see: a computed value, and a disabled element whose cursor comes from somewhere other than its own declaration.
+**Scope:** every `cursor` a component writes, whatever the value — `default` itself is the only exemption. That breadth is not tidiness: StyleX merges `props()` one **property** at a time, so a later style setting `cursor` at all replaces the earlier declaration's conditions along with its value. SegmentedControlItem shipped exactly that — a guarded `cursor: pointer` on the base and a flat `cursor` in its `disabled` style applied after it, which threw the guard away. A computed value (`interactive ? 'grab' : undefined`) is left alone because the rule cannot know what it resolves to.
+
+Autofixable, and mirrored at runtime by `.github/scripts/disabled-cursor-audit.js`, which hit-tests every disabled element in every story in Chromium and fails on any other cursor. That sweep is what covers the two cases the lint rule cannot see: a computed value, and a disabled element whose cursor comes from somewhere other than its own declaration.
 
 Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.
 

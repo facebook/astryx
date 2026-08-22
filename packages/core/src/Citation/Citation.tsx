@@ -101,7 +101,7 @@ const styles = stylex.create({
   labelInteractive: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   labelHover: {
@@ -142,7 +142,7 @@ const styles = stylex.create({
   numberInteractive: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   numberHover: {

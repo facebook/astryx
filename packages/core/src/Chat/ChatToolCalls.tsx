@@ -107,7 +107,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1-5'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     userSelect: 'none',
     minHeight: '24px',
@@ -197,7 +197,7 @@ const styles = stylex.create({
   callRowClickable: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     borderRadius: radiusVars['--radius-element'],
     paddingInline: spacingVars['--spacing-1'],
@@ -211,7 +211,7 @@ const styles = stylex.create({
   callRowToggle: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   statusIcon: {

@@ -115,7 +115,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
@@ -168,13 +168,13 @@ const styles = stylex.create({
     },
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     outline: 'none',
   },
   numberStepperButtonDisabled: {
     color: colorVars['--color-icon-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
     backgroundImage: 'none',
   },
   decrementButton: {

@@ -76,7 +76,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1-5'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     userSelect: 'none',
     minHeight: '24px',

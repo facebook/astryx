@@ -59,9 +59,8 @@ describe('reset.css accessibility invariants', () => {
   });
 
   /**
-   * A disabled control must answer the pointer with the disabled cursor: the
-   * cursor is the only affordance a pointer user gets before they commit to a
-   * click. The reset is the floor for any element that declares no cursor of
+   * A disabled control must not answer the pointer with an interactive
+   * cursor. The reset is the floor for any element that declares no cursor of
    * its own — components declare theirs under the `disabled-cursor` lint
    * rule, and the Chromium sweep measures the rendered result.
    */
@@ -72,9 +71,7 @@ describe('reset.css accessibility invariants', () => {
     );
     expect(disabledBlocks.length).toBeGreaterThan(0);
     for (const {selector, body} of disabledBlocks) {
-      expect(body, `disabled rule "${selector}"`).toMatch(
-        /cursor:\s*not-allowed/,
-      );
+      expect(body, `disabled rule "${selector}"`).toMatch(/cursor:\s*default/);
     }
     // aria-disabled is how astryx keeps a disabled control focusable, so the
     // reset has to cover it alongside the native state.

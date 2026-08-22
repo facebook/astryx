@@ -47,12 +47,12 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   srOnly: {
     borderStyle: 'none',
@@ -87,7 +87,7 @@ const styles = stylex.create({
   descriptionClickable: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
 });

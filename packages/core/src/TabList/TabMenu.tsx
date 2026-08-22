@@ -89,7 +89,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     textDecoration: 'none',
     transitionProperty: 'color',
@@ -190,7 +190,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],

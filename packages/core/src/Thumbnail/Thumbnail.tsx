@@ -161,7 +161,7 @@ const styles = stylex.create({
   interactive: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   // Hover/pressed overlay — the exact same treatment as ClickableCard and
@@ -195,7 +195,7 @@ const styles = stylex.create({
     all: 'unset',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     display: 'block',
     width: '100%',

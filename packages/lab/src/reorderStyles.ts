@@ -68,14 +68,14 @@ export const reorderStyles = stylex.create({
   handle: {
     cursor: {
       default: 'grab',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     touchAction: 'none',
   },
   handleActive: {
     cursor: {
       default: 'grabbing',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     touchAction: 'none',
   },

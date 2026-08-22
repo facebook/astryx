@@ -119,7 +119,7 @@ const styles = stylex.create({
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     userSelect: 'none',
   },

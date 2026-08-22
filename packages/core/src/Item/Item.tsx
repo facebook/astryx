@@ -218,7 +218,7 @@ const styles = stylex.create({
   interactive: {
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast-min'],
@@ -238,7 +238,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     pointerEvents: 'none' as const,
   },
   disabledContent: {
@@ -248,7 +248,7 @@ const styles = stylex.create({
     all: 'unset',
     cursor: {
       default: 'inherit',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     font: 'inherit',
     color: 'inherit',
@@ -263,7 +263,7 @@ const styles = stylex.create({
     all: 'unset',
     cursor: {
       default: 'inherit',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     font: 'inherit',
     color: 'inherit',

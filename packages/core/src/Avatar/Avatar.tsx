@@ -177,7 +177,7 @@ const styles = stylex.create({
     textDecoration: 'none',
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     // Match the avatar's circular shape so the focus ring hugs it.
     borderRadius: radiusVars['--radius-full'],

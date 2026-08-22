@@ -65,7 +65,7 @@ export const inputWrapperStyles = stylex.create({
     outline: 'none',
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     borderColor: colorVars['--color-border-emphasized'],
     // Suppress the base hover ring — a disabled control must not react to hover.

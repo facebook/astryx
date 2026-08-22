@@ -154,7 +154,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     outline: 'none',
   },
@@ -171,7 +171,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
   },
   dropzoneDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     borderColor: colorVars['--color-border-emphasized'],
   },
@@ -207,13 +207,13 @@ const styles = stylex.create({
     },
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     height: sizeVars['--size-element-md'],
     outline: 'none',
   },
   compactDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     borderColor: colorVars['--color-border-emphasized'],
   },

@@ -3,11 +3,11 @@
 
 
 /**
- * @description Asserts every disabled element answers the pointer with `not-allowed`
+ * @description Asserts no disabled element answers the pointer with an interactive cursor
  * @input --storybook-dir <path> [--components <csv>] [--output <file>]
  *   [--concurrency <n>] [--port <n>]
  * @output JSON report of violations; exit 1 if any disabled element shows a
- *   cursor other than `not-allowed`
+ *   cursor other than `default`
  *
  * The cursor is the only affordance a pointer user gets before they commit to
  * a click. A disabled control that answers with `pointer` promises a click it
@@ -23,7 +23,14 @@
  * its own wins under the pointer, and a subtree behind `pointer-events: none`
  * hands the question to an ancestor.
  *
- * The gate is zero-tolerance and has no baseline: `not-allowed` on a disabled
+ * The expected cursor is `default`, not `not-allowed`. A disabled control
+ * sealed behind `pointer-events: none` is never hit-tested, so it shows
+ * whatever its ancestor shows and no declaration on it can change that — 75
+ * of the 635 disabled elements in the story set are sealed that way. One
+ * cursor everywhere beats a stronger one only half the library can paint, and
+ * the disabled state already carries its own visual treatment.
+ *
+ * The gate is zero-tolerance and has no baseline: `default` on a disabled
  * control is never wrong, so there is nothing to grandfather. What it does
  * skip is an element nothing can point at — no box, or covered by something
  * else at every sample point — because a cursor nobody can reach is not a
@@ -43,7 +50,7 @@ const http = require('node:http');
 // ---------------------------------------------------------------------------
 
 /** The one cursor a disabled control may answer with. */
-const DISABLED_CURSOR = 'not-allowed';
+const DISABLED_CURSOR = 'default';
 
 /**
  * What counts as disabled — the same pair the hover sweep uses.

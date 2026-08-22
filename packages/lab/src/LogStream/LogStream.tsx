@@ -192,7 +192,7 @@ const styles = stylex.create({
     fontSize: textSizeVars['--font-size-sm'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     backgroundColor: {
       default: 'transparent',
@@ -301,7 +301,7 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     boxShadow: shadowVars['--shadow-med'],
   },

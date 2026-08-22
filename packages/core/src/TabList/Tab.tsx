@@ -103,7 +103,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     textDecoration: 'none',
     whiteSpace: 'nowrap',

@@ -151,7 +151,7 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-normal'],
     cursor: {
       default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'not-allowed',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     // A tap on a 44px target should not also select the number inside it.
     userSelect: 'none',
@@ -249,7 +249,7 @@ const styles = stylex.create({
     // five levels apart, which is no difference at all. That is the whole
     // reason the two were hard to tell apart.
     opacity: 0.3,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 
