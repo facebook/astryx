@@ -112,6 +112,12 @@ export const docs = {
         "Extra heights the sheet can rest at when dragged; its own height is always the tallest stop, and omitting this gives a sheet that only opens and closes. Each stop is the sheet's visible height: a number is a viewport fraction (0.5 is half the screen), '50%' the same in CSS, '320px' an absolute length. A stop of a quarter of the sheet or less is a peek: it slides away instead of reflowing, and thins the scrim.",
     },
     {
+      name: 'dragSource',
+      type: 'SheetDragSource',
+      description:
+        "EXPLORATION, not a settled API. A drag recognized somewhere else on the page, which presents this closed sheet mid-touch and pulls it up on the same finger; released short of open, it falls back closed and the sheet is never reported open at all. Build one with useSheetOpenGesture() from @astryxdesign/lab, or any recognizer publishing to createSheetDragSource(). The gesture is an accelerator, never the only way in: a drag-only reveal is invisible to a screen reader, undiscoverable by sight, and fails WCAG 2.5.7 Dragging Movements, so keep a button as well. Standalone sheets only; a BottomSheetSwitcher owns its items' presentation.",
+    },
+    {
       name: 'hasScrim',
       type: 'boolean',
       description:
@@ -269,7 +275,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, opt-in transform-based drag-to-resize snap points (snapPoints: viewport fraction, percent or px length), scrolling area resizes to the snapped visible height on release (a peek stop, a quarter of the sheet or less, keeps the full height and slides instead), Dialog-aligned dismissal purpose (info/form/required), purpose-gated swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
+    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, opt-in transform-based drag-to-resize snap points (snapPoints: viewport fraction, percent or px length), scrolling area resizes to the snapped visible height on release (a peek stop, a quarter of the sheet or less, keeps the full height and slides instead), Dialog-aligned dismissal purpose (info/form/required), purpose-gated swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation, EXPLORATION drag-to-open from a page gesture (dragSource + lab useSheetOpenGesture)',
   usage: {
     description:
       'Mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for multi-step flows.',

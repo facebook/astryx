@@ -258,3 +258,6 @@ export {
 // into its own canary-only package, @astryxdesign/richtext, so it can be canaried
 // independently (e.g. into EPS/Nest). Import it from there:
 //   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';
+
+// SheetOpenGesture — EXPLORATION: drag up from the page to open a BottomSheet
+export * from './SheetOpenGesture';

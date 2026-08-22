@@ -15,6 +15,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
+ * - /packages/core/src/BottomSheet/sheetDragSource.ts
  * - /packages/core/src/BottomSheet/BottomSheetPanel.test.tsx
  * - /packages/core/src/BottomSheet/snapOffsets.ts
  * - /packages/core/src/BottomSheet/useMobileKeyboard.ts
@@ -50,6 +51,7 @@ import {
   resolveSnapPoints,
   type BottomSheetSnapPoint,
 } from './snapOffsets';
+import type {SheetDragSource} from './sheetDragSource';
 import {useMobileKeyboard} from './useMobileKeyboard';
 import {useSheetGestures} from './useSheetGestures';
 
@@ -233,6 +235,11 @@ export type BottomSheetPanelMotion =
 
 export type BottomSheetPanelState =
   | {kind: 'hidden'}
+  // EXPLORATION: on screen, but placed by a finger rather than by an entry
+  // animation — the sheet a drag-to-open gesture is currently pulling up. It
+  // is presented and interactive, and its position belongs to the gesture, so
+  // the CSS entrance must stay out of the way.
+  | {kind: 'opening'}
   | {kind: 'open'; entering: boolean}
   | {
       kind: 'retained';
@@ -251,7 +258,11 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   isSwipeDismissAllowed?: boolean;
   /** Whether the host has locked page scrolling (a modal, scrim-backed sheet). */
   isPageScrollLocked?: boolean;
+  /** EXPLORATION: an outside recognizer driving this sheet open. */
+  dragSource?: SheetDragSource;
   onDismiss: () => void;
+  /** EXPLORATION: a drag-to-open gesture settled on a detent instead of falling back closed. */
+  onGestureOpened?: () => void;
   onScrimOpacity: (opacity: number) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
   onMotionStart?: (motion: BottomSheetPanelMotion) => void;
@@ -380,7 +391,9 @@ export function BottomSheetPanel({
   xstyle,
   isSwipeDismissAllowed = true,
   isPageScrollLocked = false,
+  dragSource,
   onDismiss,
+  onGestureOpened,
   onScrimOpacity,
   onElementChange,
   onMotionStart,
@@ -410,7 +423,8 @@ export function BottomSheetPanel({
     onMotionCompleteRef.current = onMotionComplete;
   }, [onMotionComplete, onMotionStart, state]);
 
-  const isInteractive = state.kind === 'open';
+  const isOpening = state.kind === 'opening';
+  const isInteractive = state.kind === 'open' || isOpening;
   const isPresented = state.kind !== 'hidden';
   const isRetained = state.kind === 'retained';
   const isInactive = isRetained || state.kind === 'exiting';
@@ -464,10 +478,16 @@ export function BottomSheetPanel({
     completeScrollAreaSettle,
   } = useSheetGestures({
     isOpen: isInteractive,
-    canDismiss: isSwipeDismissAllowed,
+    // A gesture that is still pulling the sheet ONTO the screen must always be
+    // able to put it back, whatever the sheet's dismissal purpose says about
+    // swiping an open one away. `purpose` governs abandoning a sheet the user
+    // has arrived at; it cannot strand them inside one they never opened.
+    canDismiss: isSwipeDismissAllowed || isOpening,
     offscreenBlockEndInset: OVERSCROLL_PADDING,
+    dragSource,
     onDismiss,
     snapHeights,
+    onSnap: isOpening ? onGestureOpened : undefined,
     onScrimOpacity,
   });
 
@@ -486,7 +506,9 @@ export function BottomSheetPanel({
     isFullyExpanded: settledOffset === 0,
     isPageScrollLocked,
     isSheetTraveling: isDragging && dragOffset !== settledOffset,
-    isOpen: isInteractive,
+    // Not `isInteractive`: a sheet still being pulled open has no settled
+    // height for the keyboard to accommodate, and nothing in it is focused yet.
+    isOpen: state.kind === 'open',
     isPresented,
     sheetRef: elementRef,
   });

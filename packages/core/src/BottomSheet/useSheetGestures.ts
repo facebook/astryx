@@ -48,8 +48,15 @@
  * happens inside handlers. Respects prefers-reduced-motion by skipping the
  * settle transition.
  *
+ * EXPLORATION: a drag can also arrive from OUTSIDE the sheet, through the
+ * `dragSource` option — the one gesture the sheet cannot host itself, because
+ * it is the gesture that puts the sheet on screen. It is fed through the same
+ * synthetic-pointer path as the touch handoff, anchored a full sheet-height
+ * below open, so it settles through this same machinery.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/useSheetGestures.test.ts
+ * - /packages/core/src/BottomSheet/sheetDragSource.ts
  */
 
 import {
@@ -66,6 +73,11 @@ import {
   type UIEvent as ReactUIEvent,
 } from 'react';
 import {useMediaQuery} from '../hooks';
+import type {
+  SheetDragEvent,
+  SheetDragPoint,
+  SheetDragSource,
+} from './sheetDragSource';
 import {
   computeDetentOffsets,
   peekOffsetFor,
@@ -113,6 +125,9 @@ const OVERSCROLL_RESISTANCE = 0.35;
 // bottom padding the lift reveals). Kept as a local const rather than a shared
 // import so it can be used inside stylex.create there.
 const OVERSCROLL_MAX = 48;
+// Pointer id for a drag published by an external recognizer. Negative so it
+// can never collide with a `Touch.identifier`, which is always >= 0.
+const EXTERNAL_DRAG_POINTER_ID = -1;
 // Travel past the point where a scrolling gesture ran out of content before it
 // hands the sheet the rest of the pull. Small enough to feel continuous with
 // the scroll, large enough that a swipe merely coming to rest on the last pixel
@@ -223,6 +238,17 @@ export interface UseSheetGesturesOptions {
   snapHeights?: () => number[];
   /** Notified when the settled visible detent height (px) changes. */
   onSnap?: (heightPx: number) => void;
+  /**
+   * EXPLORATION. A gesture recognized OUTSIDE the sheet, driving it from
+   * closed. Every other drag begins on the sheet's own handle or body, which
+   * needs the sheet to already be on screen; this is the one that opens it.
+   *
+   * Only pass a source while the sheet is closed. The drag it publishes is
+   * anchored a full sheet-height below open, so the release runs through the
+   * same settle the sheet's own drags use: pulled far enough and it lands on
+   * a detent, short of that and it falls back closed.
+   */
+  dragSource?: SheetDragSource;
   /**
    * Called with the scrim opacity the sheet should show (1 = fully visible,
    * 0 = hidden) as the drag moves and on settle. Full while the sheet is at
@@ -345,6 +371,7 @@ export function useSheetGestures({
   snapHeights,
   onSnap,
   onScrimOpacity,
+  dragSource,
 }: UseSheetGesturesOptions): UseSheetGesturesResult {
   const [dragOffset, setDragOffset] = useState(0);
   const [settledOffset, setSettledOffset] = useState(0);
@@ -914,7 +941,15 @@ export function useSheetGestures({
   );
 
   const beginDrag = useCallback(
-    (event: ReactPointerEvent, sheetHeight: number, startCoord?: number) => {
+    (
+      event: ReactPointerEvent,
+      sheetHeight: number,
+      startCoord?: number,
+      // Where the sheet is when the finger lands, overriding the resting
+      // detent. A drag from OUTSIDE a closed sheet starts a full height below
+      // open — the sheet is not resting anywhere, it is off screen.
+      baseOffsetOverride?: number,
+    ) => {
       const target = event.currentTarget as HTMLElement;
       const syntheticTouch = isSyntheticTouch(event);
       // Never capture for a touch drag. The id came from `Touch.identifier`,
@@ -932,6 +967,7 @@ export function useSheetGestures({
       const start = startCoord ?? event.clientY;
       const naturalEndGap = naturalEndGapFor(bodyNodeRef.current);
       const baseLayoutOffset = settledLayoutOffsetRef.current;
+      const baseOffset = baseOffsetOverride ?? settledOffset;
       dragStateRef.current = {
         syntheticTouch,
         pointerId: event.pointerId,
@@ -940,9 +976,9 @@ export function useSheetGestures({
         lastTime: event.timeStamp,
         velocity: 0,
         height: sheetHeight,
-        baseOffset: settledOffset,
+        baseOffset,
         baseLayoutOffset,
-        renderedOffset: settledOffset,
+        renderedOffset: baseOffset,
         layoutOffset: baseLayoutOffset,
         naturalEndGap,
       };
@@ -953,9 +989,9 @@ export function useSheetGestures({
           naturalEndGap,
         ),
       );
-      // Seed dragOffset at the resting detent so flipping isDragging doesn't
-      // jump the sheet to fully-open for one frame.
-      setDragOffset(settledOffset);
+      // Seed dragOffset where the sheet actually is so flipping isDragging
+      // doesn't jump it to fully-open for one frame.
+      setDragOffset(baseOffset);
       setIsDragging(true);
     },
     [settledOffset, updateScrollPreservationInset],
@@ -1388,6 +1424,100 @@ export function useSheetGestures({
       previousTouchHandlersRef.current = null;
     }
   }, []);
+
+  // EXPLORATION: a drag recognized outside the sheet, driving it from closed.
+  //
+  // A LAYOUT effect, unusually for a subscription, because the very first
+  // gesture-driven frame is the one that matters: this hook is mounting
+  // BECAUSE a finger is already pulling, and a passive effect would run after
+  // the browser had painted one frame of a sheet sitting at its open position.
+  // Beginning the drag before that paint puts the sheet where the finger is.
+  //
+  // The published coordinates are fed through the SAME synthetic-pointer path
+  // the touch handoff uses, so a gesture that started on the page lands in the
+  // one settle implementation: flick, magnet, detents, scrim, haptics. The only
+  // difference is where the drag is anchored — a full sheet-height below open,
+  // because the sheet is off screen rather than resting on a detent.
+  useLayoutEffect(() => {
+    if (dragSource == null) {
+      return;
+    }
+
+    const asPointer = (point: SheetDragPoint) =>
+      ({
+        // The sheet's own guards read this to tell a finger-driven drag from a
+        // real PointerEvent; an external drag is finger-driven by definition.
+        syntheticTouch: true,
+        pointerId: EXTERNAL_DRAG_POINTER_ID,
+        clientY: point.y,
+        timeStamp: point.timeStamp,
+        currentTarget: sheetElRef.current,
+        setPointerCapture: () => {},
+        releasePointerCapture: () => {},
+      }) as unknown as ReactPointerEvent;
+
+    const begin = (startY: number, point: SheetDragPoint) => {
+      if (dragStateRef.current != null) {
+        return;
+      }
+      // Measured fully-open, not remembered: this is usually the sheet's first
+      // frame, so the ResizeObserver has not reported and there is no stored
+      // height to read — and any inline height already on the element belongs
+      // to a previous life of the sheet, not to the one being pulled open now.
+      // The stored height is the fallback for the reverse case, an environment
+      // where the live measure reads 0 (an unlaid-out element, jsdom).
+      const height = measureFullyOpenHeight() || measureHeightRef.current();
+      if (height <= 0) {
+        return;
+      }
+      beginDragRef.current(asPointer(point), height, startY, height);
+      pointerMoveRef.current(asPointer(point));
+    };
+
+    const listener = (event: SheetDragEvent) => {
+      switch (event.type) {
+        case 'start':
+          begin(event.y, event);
+          return;
+        case 'move':
+          if (dragStateRef.current == null) {
+            // The drag has not started yet — presenting the sheet took a
+            // render, and this is a move that landed in the gap. Anchor it at
+            // the gesture's own start, never at where the finger happens to be
+            // now, or the sheet permanently trails the pull by however long
+            // the mount took.
+            begin(dragSource.getSnapshot()?.startY ?? event.y, event);
+            return;
+          }
+          pointerMoveRef.current(asPointer(event));
+          return;
+        case 'end':
+          if (dragStateRef.current == null) {
+            return;
+          }
+          endDragRef.current(asPointer(event));
+          return;
+        case 'cancel':
+          cancelDragRef.current(sheetElRef.current ?? undefined);
+      }
+    };
+
+    const unsubscribe = dragSource.subscribe(listener);
+    // The drag that mounted this hook already happened: presenting the sheet is
+    // what put the hook on the page, so its `start` event was published before
+    // there was anything here to hear it. Read it back out instead.
+    const inFlight = dragSource.getSnapshot();
+    if (inFlight != null) {
+      begin(inFlight.startY, inFlight);
+    }
+    return () => {
+      unsubscribe();
+      cancelDragRef.current(sheetElRef.current ?? undefined);
+    };
+    // Every handler above is reached through a ref on purpose: resubscribing
+    // on each render would tear down the subscription mid-gesture, and the
+    // cleanup would cancel the drag it is in the middle of.
+  }, [dragSource, measureFullyOpenHeight]);
 
   // Subscribed, not memoized: the preference can change while a sheet is open,
   // and this branch decides whether the settle runs as a transition at all.
