@@ -16,7 +16,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'An integration is an npm package that contributes components, templates, and/or upgrade codemods to a consumer\'s design-system workflow. Consumers install the package and add it to their `astryx.config`; from then on the integration\'s contributions show up alongside core\'s in the same CLI commands.',
+          text: 'An integration is an npm package that contributes components, templates, doc topics, and/or upgrade codemods to a consumer\'s design-system workflow. Consumers install the package and add it to their `astryx.config`; from then on the integration\'s contributions show up alongside core\'s in the same CLI commands.',
         },
         {
           type: 'prose',
@@ -48,12 +48,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'To register your package as an integration, add an `astryx.integration.{ts,mjs,js}` file as a sibling of your `package.json`. It tells the CLI where to find your components, templates, and codemods. Identity (name, version) comes from your `package.json`, not this file.',
+          text: 'To register your package as an integration, add an `astryx.integration.{ts,mjs,js}` file as a sibling of your `package.json`. It tells the CLI where to find your components, templates, doc topics, and codemods. Identity (name, version) comes from your `package.json`, not this file.',
         },
         {
           type: 'code',
           lang: 'typescript',
-          code: "// astryx.integration.ts\nexport default {\n  components: './components',\n  templates: './templates',\n  codemods: './codemods',\n  issuesUrl: 'https://github.com/acme/widgets/issues',\n};",
+          code: "// astryx.integration.ts\nexport default {\n  components: './components',\n  templates: './templates',\n  codemods: './codemods',\n  docs: './docs',\n  issuesUrl: 'https://github.com/acme/widgets/issues',\n};",
         },
         {
           type: 'prose',
@@ -106,6 +106,44 @@ export const docs = {
           type: 'code',
           lang: 'typescript',
           code: "import('@acme/astryx-widgets/templates/AcmeLandingPage.tsx');",
+        },
+      ],
+    },
+    {
+      title: 'Docs',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: "Point the integration file's `docs` field at a directory of reference docs and every `{topic}.doc.{ts,mjs,js}` under it becomes a topic the CLI serves — `astryx docs` lists it, `astryx docs <topic>` prints it, `astryx search` indexes it, and `astryx init` names it in the agent block. A topic is a plain object stamped `type: 'generic'`, the same shape core's own topics use.",
+        },
+        {
+          type: 'code',
+          lang: 'typescript',
+          code: "// docs/deploying.doc.ts\nexport default {\n  type: 'generic',\n  name: 'deploying',\n  title: 'Deploying',\n  description: 'Ship an app built with Acme widgets.',\n  category: 'guide',\n  sections: [\n    {title: 'Overview', content: [{type: 'prose', text: '...'}]},\n  ],\n};",
+        },
+        {
+          type: 'prose',
+          text: "A topic can also speak about one that already exists. `replaces: 'x'` takes over topic x — core's, or another integration's — so a package whose consumers install it differently can serve its own Getting Started instead of the built-in one. Give the replacement a different `name` and the old name keeps resolving to it, so a link or an agent that learned the old topic still lands in the right place.",
+        },
+        {
+          type: 'code',
+          lang: 'typescript',
+          code: "export default {\n  type: 'generic',\n  name: 'getting-started',\n  replaces: 'getting-started',\n  title: 'Getting started',\n  description: 'Install Acme widgets and use your first component.',\n  sections: [/* ... */],\n};",
+        },
+        {
+          type: 'prose',
+          text: "`extends: 'x'` merges onto a topic instead of owning it: a section whose title matches one in the base replaces that section, and a section the base does not have is appended. Reach for it to correct or add to a topic you do not want to fork — a fork of someone else's guide stops receiving their fixes the day you write it.",
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'A topic name is a CLI argument and a docsite path, so it may hold only letters, digits, `_` and `-`.',
+            "A name that collides with an existing topic and declares neither `replaces` nor `extends` is an error, not a silent override — the CLI will not guess which one you meant.",
+            '`replaces` and `extends` are exclusive: a topic either takes another\'s place or merges onto it.',
+            'Two integrations replacing one topic is a warning, and the one configured later in `astryx.config` wins.',
+          ],
         },
       ],
     },
