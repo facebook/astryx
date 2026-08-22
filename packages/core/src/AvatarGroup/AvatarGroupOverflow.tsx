@@ -68,7 +68,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     // Use opaque background to prevent avatar bleed-through
     backgroundColor: colorVars['--color-background-surface'],
-    color: colorVars['--color-text-secondary'],
+    color: `light-dark(${colorVars['--color-text-secondary']}, ${colorVars['--color-text-primary']})`,
     fontFamily: typographyVars['--font-family-body'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     userSelect: 'none',
