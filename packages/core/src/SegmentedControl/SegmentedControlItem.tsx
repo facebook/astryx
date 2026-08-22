@@ -15,7 +15,7 @@
  * - /packages/cli/assets/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
-import React, {type ReactNode} from 'react';
+import React, {useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -29,10 +29,12 @@ import {
 } from '../theme/tokens.stylex';
 import {useSegmentedControlContext} from './SegmentedControlContext';
 import type {SegmentedControlSize} from './SegmentedControlContext';
-import {mergeProps, composeEventHandlers} from '../utils';
+import {mergeProps, composeEventHandlers, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {Tooltip} from '../Tooltip';
+import {useDevWarning} from '../hooks/useDevWarning';
 
 export interface SegmentedControlItemProps extends BaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
@@ -194,6 +196,18 @@ export function SegmentedControlItem({
   ...rest
 }: SegmentedControlItemProps) {
   const ctx = useSegmentedControlContext();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // A group collapse only has somewhere to go on an item that has an icon; an
+  // item without one keeps its label rather than rendering an empty segment.
+  const isCollapsedByGroup = !!ctx.areLabelsCollapsed && icon != null;
+  const isLabelVisuallyHidden = isLabelHidden || isCollapsedByGroup;
+
+  useDevWarning(
+    'SegmentedControlItem',
+    `"${label}" has no icon, so it keeps its visible label while the group collapses to icons. Give every item an icon when using collapsibleLabels.`,
+    !!ctx.areLabelsCollapsed && icon == null,
+  );
 
   const isSelected = ctx.value === value;
   const isItemDisabled = isDisabled || ctx.isDisabled;
@@ -219,45 +233,51 @@ export function SegmentedControlItem({
   ) : null;
 
   return (
-    <button
-      ref={ref}
-      {...rest}
-      type="button"
-      role="radio"
-      aria-checked={isSelected}
-      aria-disabled={isItemDisabled || undefined}
-      aria-label={isLabelHidden ? label : undefined}
-      data-value={value}
-      // Disabled items (including when the whole group is disabled) are not tab
-      // stops — otherwise the selected segment stays keyboard-focusable but is
-      // silently dead (arrows and activation are no-ops) (navigation-13). The
-      // exception is a whole-group disabledMessage, where the selected segment
-      // stays focusable so the reason tooltip is keyboard-discoverable.
-      tabIndex={
-        (isSelected && !isItemDisabled) || keepsSelectedFocusable ? 0 : -1
-      }
-      onClick={handleClick}
-      {...mergeProps(
-        themeProps('segmented-control-item', {
-          size,
-          selected: isSelected ? 'selected' : null,
-          disabled: isItemDisabled ? 'disabled' : null,
-        }),
-        focusOutlineProps.focusVisible(
-          styles.base,
-          sizeStyles[size],
-          isFill && styles.fill,
-          isSelected && styles.selected,
-          !isSelected && !isItemDisabled && styles.hover,
-          isItemDisabled && styles.disabled,
-          xstyle,
-        ),
-      )}>
-      {iconElement}
-      {!isLabelHidden && (
-        <span {...stylex.props(styles.labelText)}>{label}</span>
-      )}
-    </button>
+    <>
+      <button
+        ref={mergeRefs(ref, buttonRef)}
+        {...rest}
+        type="button"
+        role="radio"
+        aria-checked={isSelected}
+        aria-disabled={isItemDisabled || undefined}
+        aria-label={isLabelVisuallyHidden ? label : undefined}
+        data-value={value}
+        // Disabled items (including when the whole group is disabled) are not tab
+        // stops — otherwise the selected segment stays keyboard-focusable but is
+        // silently dead (arrows and activation are no-ops) (navigation-13). The
+        // exception is a whole-group disabledMessage, where the selected segment
+        // stays focusable so the reason tooltip is keyboard-discoverable.
+        tabIndex={
+          (isSelected && !isItemDisabled) || keepsSelectedFocusable ? 0 : -1
+        }
+        onClick={handleClick}
+        {...mergeProps(
+          themeProps('segmented-control-item', {
+            size,
+            selected: isSelected ? 'selected' : null,
+            disabled: isItemDisabled ? 'disabled' : null,
+          }),
+          focusOutlineProps.focusVisible(
+            styles.base,
+            sizeStyles[size],
+            isFill && styles.fill,
+            isSelected && styles.selected,
+            !isSelected && !isItemDisabled && styles.hover,
+            isItemDisabled && styles.disabled,
+            xstyle,
+          ),
+        )}>
+        {iconElement}
+        {!isLabelVisuallyHidden && (
+          <span {...stylex.props(styles.labelText)}>{label}</span>
+        )}
+      </button>
+      {/* When the *component* takes the label away, it owes the reader a way to
+          get it back. A caller-set isLabelHidden is the caller's decision and
+          keeps today's behavior: no tooltip unless they add one. */}
+      {isCollapsedByGroup && <Tooltip content={label} anchorRef={buttonRef} />}
+    </>
   );
 }
 

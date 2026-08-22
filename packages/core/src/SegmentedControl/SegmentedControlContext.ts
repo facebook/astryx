@@ -29,6 +29,12 @@ export interface SegmentedControlContextValue {
    * tooltip is keyboard-discoverable; selection is still blocked.
    */
   hasDisabledMessage?: boolean;
+  /**
+   * True while the group has collapsed its items to icons (`collapsibleLabels`).
+   * Items keep their label as the accessible name and gain a tooltip; an item
+   * with no icon keeps its visible label, since it would otherwise render empty.
+   */
+  areLabelsCollapsed?: boolean;
 }
 
 export const SegmentedControlContext =
