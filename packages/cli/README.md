@@ -585,6 +585,7 @@ export default {
 | `components` | `string` | Directory holding the package's components and their `.doc.*` files.  |
 | `templates`  | `string` | Directory holding the package's page/block templates.                 |
 | `codemods`   | `string` | Directory holding upgrade codemods run by `astryx upgrade`.           |
+| `docs`       | `string` | Directory of reference docs; each `{topic}.doc.*` becomes a topic the CLI serves. |
 | `issuesUrl`  | `string` | Where "report an issue" links for this package's contributions point. |
 
 Every field is optional; declare only the roots the package ships. There is no
