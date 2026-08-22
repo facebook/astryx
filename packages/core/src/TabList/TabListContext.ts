@@ -5,7 +5,7 @@
 /**
  * @file TabListContext.ts
  * @input React createContext, use
- * @output Exports TabListContext, useTabListContext
+ * @output Exports TabListContext, useTabListContext, TabListMode
  * @position Context provider; consumed by Tab.tsx, TabMenu.tsx
  *
  * SYNC: When modified, update /packages/core/src/TabList/TabList.doc.mjs
@@ -27,13 +27,24 @@ export type TabListSize = 'sm' | 'md' | 'lg';
 export type TabListLayout = 'hug' | 'fill';
 
 /**
- * Context for communicating value/onChange/size/layout from TabList to children.
+ * Role vocabulary the strip speaks.
+ * - `'nav'`: a `<nav>` of links or buttons, current item marked with
+ *   `aria-current`.
+ * - `'tablist'`: the WAI-ARIA tabs pattern — `role="tablist"` / `role="tab"`,
+ *   `aria-selected`, and `aria-controls` for the panel each tab owns.
+ */
+export type TabListMode = 'nav' | 'tablist';
+
+/**
+ * Context for communicating value/onChange/size/layout/mode from TabList to
+ * children.
  */
 export interface TabListContextValue {
   value: string;
   onChange: (value: string) => void;
   size: TabListSize;
   layout: TabListLayout;
+  mode: TabListMode;
 }
 
 export const TabListContext = createContext<TabListContextValue | null>(null);

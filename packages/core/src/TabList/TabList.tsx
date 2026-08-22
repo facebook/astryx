@@ -40,7 +40,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {TabListContext} from './TabListContext';
-import type {TabListSize} from './TabListContext';
+import type {TabListMode, TabListSize} from './TabListContext';
 import {useSize} from '../SizeContext/SizeContext';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import {useListFocus} from '../hooks/useListFocus';
@@ -51,6 +51,7 @@ import {Icon} from '../Icon';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {devWarn} from '../utils/devWarning';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
@@ -107,6 +108,21 @@ export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
    * @default false
    */
   hasDivider?: boolean;
+  /**
+   * Which ARIA pattern the strip implements.
+   *
+   * `'nav'` (the default) is a navigation landmark whose current item is
+   * marked with `aria-current` — unchanged, and right for a strip of links or
+   * of buttons that swap a view.
+   *
+   * `'tablist'` is the WAI-ARIA tabs pattern: `role="tablist"` / `role="tab"`
+   * and `aria-selected`, with each tab pointing at the panel it controls via
+   * its `panelId`. Choose it when the strip has real panels below it. Only
+   * tabs may live in a tablist strip, and a tab does not navigate — an `href`
+   * is ignored there.
+   * @default 'nav'
+   */
+  mode?: TabListMode;
   /**
    * What happens when the tabs are wider than the strip.
    *
@@ -302,6 +318,7 @@ export function TabList({
   size: sizeProp,
   layout = 'hug',
   hasDivider = false,
+  mode = 'nav',
   overflow = 'auto',
   xstyle,
   className,
@@ -311,6 +328,7 @@ export function TabList({
   onFocus: onFocusProp,
   onBlur: onBlurProp,
   'aria-label': ariaLabelFromProps,
+  'aria-labelledby': ariaLabelledBy,
   'aria-orientation': _ariaOrientation,
   [EDGE_COMP_ATTR]: _edgeCompAttr,
   ...restProps
@@ -319,13 +337,16 @@ export function TabList({
   const ariaLabel = ariaLabelFromProps ?? t('@astryx.tabList.label');
   const size = useSize(sizeProp, 'md');
   const hasScroll = overflow !== 'none';
+  const isTabList = mode === 'tablist';
 
   // Roving-tabindex keyboard navigation across the tab strip via the shared
-  // hook. `orientation: 'both'` accepts both arrow axes per the WAI-ARIA APG
-  // allowance for tab strips (ArrowRight/ArrowDown advance, ArrowLeft/ArrowUp
-  // retreat). We do not set `aria-orientation` on the `<nav>`: that attribute
-  // is invalid on the navigation role and triggers an axe `aria-allowed-attr`
-  // violation.
+  // hook. In `nav` mode `orientation: 'both'` accepts both arrow axes per the
+  // WAI-ARIA APG allowance for tab strips (ArrowRight/ArrowDown advance,
+  // ArrowLeft/ArrowUp retreat). A tablist reports itself as horizontal, so
+  // there the strip takes only the horizontal arrows and leaves ArrowUp and
+  // ArrowDown to scroll the page. We do not set `aria-orientation` on the
+  // `<nav>`: that attribute is invalid on the navigation role and triggers an
+  // axe `aria-allowed-attr` violation.
   //
   // `hasRovingTabIndex` makes the hook own the single tab stop: it stamps
   // tabindex 0/-1, repairs the stop on mount and as stops mount/unmount or
@@ -336,7 +357,7 @@ export function TabList({
   // the first enabled stop when none is tabbable.
   const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLElement>({
     itemSelector: TAB_STOP_SELECTOR,
-    orientation: 'both',
+    orientation: isTabList ? 'horizontal' : 'both',
     hasRovingTabIndex: true,
   });
 
@@ -436,8 +457,8 @@ export function TabList({
   const scrollToEnd = useCallback(() => scrollByPage(1), [scrollByPage]);
 
   const contextValue = useMemo(
-    () => ({value, onChange, size, layout}),
-    [value, onChange, size, layout],
+    () => ({value, onChange, size, layout, mode}),
+    [value, onChange, size, layout, mode],
   );
 
   const handleRootKeyDown = useCallback(
@@ -479,6 +500,37 @@ export function TabList({
     [onBlurProp, onHintBlur],
   );
 
+  // `role="tablist"` owns only tabs, so anything else in the strip is invalid
+  // markup. Read from the rendered DOM rather than from `children`: a menu
+  // behind a conditional, inside a `.map`, or wrapped in a consumer's own
+  // component is invisible to introspection, and a missed check here ships
+  // the invalid markup in silence.
+  const hasWarnedContentRef = useRef(false);
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (
+      process.env.NODE_ENV === 'production' ||
+      !isTabList ||
+      !strip ||
+      hasWarnedContentRef.current
+    ) {
+      return;
+    }
+    const stranger = Array.from(strip.children).find(
+      child => child.getAttribute('role') !== 'tab',
+    );
+    if (stranger) {
+      hasWarnedContentRef.current = true;
+      devWarn(
+        'TabList',
+        `mode="tablist" owns only tabs, but the strip contains a <${stranger.tagName.toLowerCase()}> that is not one. ` +
+          'Render menus and other controls outside the strip, or use mode="nav".',
+      );
+    }
+    // No dependency list: the check is on rendered DOM, which can change
+    // without any prop this component could watch.
+  });
+
   const fadeStyle = !hasScroll
     ? null
     : overflowStart && overflowEnd
@@ -489,12 +541,17 @@ export function TabList({
           ? styles.fadeEnd
           : null;
 
+  // A tablist is not a navigation landmark, so the wrapper drops to a plain
+  // element and the label moves onto the tablist itself.
+  const Root = isTabList ? 'div' : 'nav';
+
   return (
     <TabListContext value={contextValue}>
-      <nav
+      <Root
         ref={mergeRefs(ref, listRef)}
         {...restProps}
-        aria-label={ariaLabel}
+        aria-label={isTabList ? undefined : ariaLabel}
+        aria-labelledby={isTabList ? undefined : ariaLabelledBy}
         onKeyDown={handleRootKeyDown}
         onFocus={handleRootFocus}
         onBlur={handleRootBlur}
@@ -512,6 +569,10 @@ export function TabList({
         )}>
         <div
           ref={attachStrip}
+          role={isTabList ? 'tablist' : undefined}
+          aria-label={isTabList ? ariaLabel : undefined}
+          // The name belongs to whichever element carries the widget role.
+          aria-labelledby={isTabList ? ariaLabelledBy : undefined}
           {...mergeProps(
             themeProps('tab-strip'),
             stylex.props(
@@ -571,7 +632,7 @@ export function TabList({
           </button>
         )}
         {hintElement}
-      </nav>
+      </Root>
     </TabListContext>
   );
 }

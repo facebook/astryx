@@ -1187,3 +1187,166 @@ describe('TabList overflow (scroll)', () => {
     expect(scrollBy).not.toHaveBeenCalled();
   });
 });
+
+describe('TabList mode="tablist"', () => {
+  function warnSpy() {
+    return vi.spyOn(console, 'warn').mockImplementation(() => {});
+  }
+
+  it('speaks the tabs pattern: a labelled tablist of tabs with aria-selected', () => {
+    render(
+      <TabList value="b" onChange={() => {}} mode="tablist" aria-label="Views">
+        <Tab value="a" label="Alpha" panelId="panel-a" />
+        <Tab value="b" label="Beta" panelId="panel-b" />
+      </TabList>,
+    );
+
+    const tablist = screen.getByRole('tablist', {name: 'Views'});
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(2);
+    expect(tabs.every(tab => tablist.contains(tab))).toBe(true);
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'false');
+    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[1]).toHaveAttribute('aria-controls', 'panel-b');
+  });
+
+  it('lets the consumer name the tablist from another element', () => {
+    render(
+      <>
+        <h2 id="views-heading">Project views</h2>
+        <TabList
+          value="a"
+          onChange={() => {}}
+          mode="tablist"
+          aria-labelledby="views-heading">
+          <Tab value="a" label="Alpha" panelId="panel-a" />
+        </TabList>
+      </>,
+    );
+
+    expect(screen.getByRole('tablist', {name: 'Project views'})).not.toBeNull();
+  });
+
+  it('is not a navigation landmark, and marks the selection with aria-selected rather than aria-current', () => {
+    const {container} = render(
+      <TabList value="a" onChange={() => {}} mode="tablist">
+        <Tab value="a" label="Alpha" panelId="panel-a" />
+      </TabList>,
+    );
+
+    expect(container.querySelector('nav')).toBeNull();
+    expect(screen.queryByRole('navigation')).toBeNull();
+    expect(screen.getByRole('tab')).not.toHaveAttribute('aria-current');
+  });
+
+  it('leaves nav mode exactly as it was', () => {
+    const {container} = render(
+      <TabList value="a" onChange={() => {}}>
+        <Tab value="a" label="Alpha" />
+      </TabList>,
+    );
+
+    expect(container.querySelector('nav')).not.toBeNull();
+    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(screen.getByRole('button', {name: 'Alpha'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+  });
+
+  it('omits aria-controls when a tab has no panel, and says so once', () => {
+    const warn = warnSpy();
+    render(
+      <TabList value="a" onChange={() => {}} mode="tablist">
+        <Tab value="a" label="Alpha" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('tab')).not.toHaveAttribute('aria-controls');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Tab: a tab in a tablist-mode TabList controls nothing',
+      ),
+    );
+    warn.mockRestore();
+  });
+
+  it('leaves a hand-wired aria-controls alone, and does not ask for a panelId it already has', () => {
+    const warn = warnSpy();
+    render(
+      <TabList value="a" onChange={() => {}} mode="tablist">
+        <Tab value="a" label="Alpha" aria-controls="panel-written-by-hand" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('tab')).toHaveAttribute(
+      'aria-controls',
+      'panel-written-by-hand',
+    );
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('ignores href in tablist mode: the tab is a button, and the caller is told', () => {
+    const warn = warnSpy();
+    render(
+      <TabList value="a" onChange={() => {}} mode="tablist">
+        <Tab value="a" label="Alpha" panelId="panel-a" href="/alpha" />
+      </TabList>,
+    );
+
+    const tab = screen.getByRole('tab');
+    expect(tab.tagName).toBe('BUTTON');
+    expect(tab).not.toHaveAttribute('href');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Tab: href is ignored in a tablist-mode TabList'),
+    );
+    warn.mockRestore();
+  });
+
+  it('still renders an anchor for an href in nav mode', () => {
+    render(
+      <TabList value="a" onChange={() => {}}>
+        <Tab value="a" label="Alpha" href="/alpha" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('link', {name: 'Alpha'})).toHaveAttribute(
+      'href',
+      '/alpha',
+    );
+  });
+
+  it('warns about anything in the strip that is not a tab, however it got there', () => {
+    const warn = warnSpy();
+    const showMenu = true;
+    render(
+      <TabList value="a" onChange={() => {}} mode="tablist">
+        <Tab value="a" label="Alpha" panelId="panel-a" />
+        {showMenu ? (
+          <div>
+            <TabMenu label="More" options={[{value: 'b', label: 'Beta'}]} />
+          </div>
+        ) : null}
+      </TabList>,
+    );
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('TabList: mode="tablist" owns only tabs'),
+    );
+    warn.mockRestore();
+  });
+
+  it('says nothing when the strip holds only tabs', () => {
+    const warn = warnSpy();
+    render(
+      <TabList value="a" onChange={() => {}} mode="tablist">
+        <Tab value="a" label="Alpha" panelId="panel-a" />
+        <Tab value="b" label="Beta" panelId="panel-b" />
+      </TabList>,
+    );
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
