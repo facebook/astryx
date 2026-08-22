@@ -68,13 +68,13 @@ export const docs = {
         {
           name: 'minSizePx',
           type: 'number',
-          description: 'Minimum size in pixels.',
+          description: 'Minimum size in pixels. Raising it above the current size grows the region to match.',
           default: '50',
         },
         {
           name: 'maxSizePx',
           type: 'number',
-          description: 'Maximum size in pixels.',
+          description: 'Maximum size in pixels. Lowering it below the current size shrinks the region to match; raising it again leaves the size where it is.',
           default: 'Infinity',
         },
         {
@@ -206,8 +206,8 @@ export const docsDense = {
       description: 'Hook managing resize state for one or more panel regions. Returns size, isCollapsed, collapse/expand/resize methods, + props to pass to handles.',
       propDescriptions: {
         defaultSize: 'initial size in px or % string (e.g. "20%")',
-        minSizePx: 'minimum size in px',
-        maxSizePx: 'maximum size in px',
+        minSizePx: 'minimum size in px; raising above current size grows region to match',
+        maxSizePx: 'maximum size in px; lowering below current size shrinks region to match, raising again leaves size where it is',
         collapsible: 'region can collapse to size 0?',
         collapsedSize: 'px threshold triggering collapse during drag',
         snaps: 'px values to snap to during resize',

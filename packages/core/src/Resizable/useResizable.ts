@@ -7,6 +7,13 @@
  * @input Resize configuration (defaultSize, minSizePx, maxSizePx, collapsible, snaps)
  * @output Hook return: size, isCollapsed, collapse/expand/resize methods, props for handle
  * @position Public hook; consumed by layout components via `resizable` prop
+ *
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Resizable/useResizable.doc.mjs
+ * - /packages/core/src/Resizable/useResizable.test.tsx
+ * - /packages/core/src/Resizable/Resizable.doc.mjs
+ * - /packages/core/src/Resizable/index.ts
+ * - /apps/storybook/stories/useResizable.stories.tsx
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -46,14 +53,14 @@ export interface ResizableConfig {
   maxWidth?: number;
   /** localStorage key for persisting width. */
   autoSaveId?: string;
-  /** Called when the width changes (on drag end). */
+  /** Called whenever the width changes, including when a narrowing maximum forces it down. */
   onWidthChange?: (width: number) => void;
 }
 
 export interface UseResizableSingleConfig extends ResizableRegionConfig {
   /** Unique key for localStorage persistence. */
   autoSaveId?: string;
-  /** Called when size changes during drag. */
+  /** Called whenever the size changes, including when a narrowing band forces it. */
   onSizeChange?: (size: number) => void;
   /** Called when collapse state changes (via drag or programmatic). */
   onCollapseChange?: (isCollapsed: boolean) => void;
@@ -213,6 +220,45 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   );
   const preCollapseSizeRef = useRef(size);
   const dragStartSizeRef = useRef(size);
+
+  // The band can move under a size the viewer already chose: a container that
+  // narrows lowers maxSizePx. Only the illegal direction is corrected — a band
+  // that widens again leaves the size alone, or the region rubber-bands as a
+  // window is resized. Correcting during render rather than in an effect keeps
+  // the out-of-band size from ever being committed; a collapsed region keeps
+  // its zero, and expand() applies the current band when it restores.
+  const [lastBounds, setLastBounds] = useState(() => ({
+    min: minSizePx,
+    max: maxSizePx,
+    clampedTo: null as number | null,
+  }));
+  if (lastBounds.min !== minSizePx || lastBounds.max !== maxSizePx) {
+    const legal = isCollapsed
+      ? size
+      : clampSize(size, minSizePx, maxSizePx, snaps);
+    const hasMoved = legal !== size;
+    setLastBounds({
+      min: minSizePx,
+      max: maxSizePx,
+      clampedTo: hasMoved ? legal : null,
+    });
+    if (hasMoved) {
+      setSize(legal);
+    }
+  }
+
+  // An involuntary clamp is still a size change: a consumer mirroring `size`
+  // has to hear about it, or it renders a size the region does not have.
+  const notifiedBoundsRef = useRef(lastBounds);
+  useEffect(() => {
+    if (notifiedBoundsRef.current === lastBounds) {
+      return;
+    }
+    notifiedBoundsRef.current = lastBounds;
+    if (lastBounds.clampedTo != null) {
+      onSizeChange?.(lastBounds.clampedTo);
+    }
+  }, [lastBounds, onSizeChange]);
 
   useEffect(() => {
     if (autoSaveId) {
