@@ -304,6 +304,12 @@ export function detectStylingSystem(targetDir) {
  * in front of the agent by name; without it the block falls back to the CLI's
  * own topics, because resolving a project's catalog is async and this is not.
  *
+ * Either way the list now includes the hyphenated topics. The fallback scan
+ * matched `\w+`, which does not match `-`, so five real topics were missing
+ * from every block ever written — `getting-started` and `cli-integrations`
+ * among them. An agent cannot ask for a topic it was never told about, and
+ * `getting-started` is the one it should reach for first.
+ *
  * @param {string} version
  * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[]}} [options]
  * @returns {string}
@@ -387,7 +393,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
     (fs.existsSync(docsDir)
       ? fs
           .readdirSync(docsDir)
-          .map(f => f.match(/^(\w+)\.doc\.mjs$/))
+          .map(f => f.match(/^([\w-]+)\.doc\.mjs$/))
           .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
           .map(m => m[1])
           .sort()
