@@ -22,6 +22,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
  * - /packages/core/src/BottomSheet/index.ts
@@ -51,6 +52,7 @@ import {
   useScrollLock,
 } from '../hooks';
 import {composeEventHandlers, mergeProps, mergeRefs} from '../utils';
+import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -620,6 +622,8 @@ export function BottomSheetSwitcher({
           ? {role: 'alertdialog'}
           : undefined)}>
         {children}
+        {/* A modal flow's ::backdrop already answers Safari's edge sampler. */}
+        {hasScrim ? null : <BottomSheetEdgeTint />}
       </dialog>
     </BottomSheetSwitcherContext>
   );
