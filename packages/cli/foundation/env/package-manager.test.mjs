@@ -55,6 +55,52 @@ describe('detectPackageManager', () => {
     expect(detectPackageManager(dir)).toBe('bun');
   });
 
+  it('prefers a stray lockfile no more than the committed one: asks who is running', () => {
+    // One `yarn install` inside a pnpm project leaves a yarn.lock next to the
+    // committed pnpm-lock.yaml. Answering "yarn" from array order makes every
+    // command the CLI prints wrong for the rest of the project's life.
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    process.env.npm_config_user_agent = 'pnpm/11.10.0 npm/? node/v22.0.0';
+    expect(detectPackageManager(dir)).toBe('pnpm');
+  });
+
+  it('resolves several lockfiles the other way when yarn is the one running', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    process.env.npm_config_user_agent = 'yarn/1.22.21 npm/? node/v22.0.0';
+    expect(detectPackageManager(dir)).toBe('yarn');
+  });
+
+  it('falls back to a fixed order when several lockfiles and no runner', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    expect(detectPackageManager(dir)).toBe('yarn');
+  });
+
+  it('lets the packageManager field break a multi-lockfile tie', () => {
+    // A single lockfile still outranks the field (asserted above). This is only
+    // about the case where the filesystem is self-contradictory.
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@11.10.0'}),
+    );
+    expect(detectPackageManager(dir)).toBe('pnpm');
+  });
+
+  it('ignores a runner that has no lockfile in the directory', () => {
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    process.env.npm_config_user_agent = 'yarn/1.22.21 npm/? node/v22.0.0';
+    expect(detectPackageManager(dir)).toBe('pnpm');
+  });
+
   it('detects from packageManager field in package.json (no lockfile)', () => {
     const dir = makeTmpDir();
     fs.writeFileSync(

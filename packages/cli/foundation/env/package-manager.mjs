@@ -27,6 +27,18 @@ import * as path from 'node:path';
 const KNOWN_PMS = ['yarn', 'pnpm', 'bun', 'npm'];
 
 /**
+ * Lockfile names by package manager. Order is the tiebreak of LAST resort —
+ * see {@link detectPackageManager} for why it should rarely decide anything.
+ * @type {readonly [PackageManager, readonly string[]][]}
+ */
+const LOCKFILES = [
+  ['yarn', ['yarn.lock']],
+  ['pnpm', ['pnpm-lock.yaml']],
+  ['bun', ['bun.lockb', 'bun.lock']],
+  ['npm', ['package-lock.json']],
+];
+
+/**
  * Narrow an arbitrary string to a known {@link PackageManager}.
  * @param {string} name
  * @returns {name is PackageManager}
@@ -36,8 +48,63 @@ function isKnownPackageManager(name) {
 }
 
 /**
+ * The `packageManager` field of a directory's package.json, if it names one we
+ * know. This is the declarative answer (corepack's field), so it outranks any
+ * lockfile sitting next to it.
+ * @param {string} dir
+ * @returns {PackageManager | null}
+ */
+function declaredPackageManager(dir) {
+  const pkgPath = path.join(dir, 'package.json');
+  if (!fs.existsSync(pkgPath)) return null;
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    const name = String(pkg.packageManager ?? '').split('@')[0];
+    return isKnownPackageManager(name) ? name : null;
+  } catch {
+    // Best-effort: unreadable/invalid package.json.
+    return null;
+  }
+}
+
+/**
+ * The package manager currently running us, from the user agent every PM sets
+ * on the scripts and binaries it spawns.
+ * @returns {PackageManager | null}
+ */
+function runningPackageManager() {
+  const name = String(process.env.npm_config_user_agent ?? '').split('/')[0];
+  return isKnownPackageManager(name) ? name : null;
+}
+
+/**
+ * Every package manager with a lockfile in this directory.
+ * @param {string} dir
+ * @returns {PackageManager[]}
+ */
+function lockfilesIn(dir) {
+  return LOCKFILES.filter(([, names]) =>
+    names.some(name => fs.existsSync(path.join(dir, name))),
+  ).map(([pm]) => pm);
+}
+
+/**
  * Detect the package manager used in a project directory.
- * Walks up from targetDir looking for lockfiles.
+ * Walks up from targetDir, taking the first directory that answers.
+ *
+ * A single lockfile still wins over everything else in its directory, which is
+ * the long-standing behaviour. What changes here is the case of SEVERAL
+ * lockfiles in one directory, which the fixed array order used to resolve
+ * silently and often wrongly.
+ *
+ * That case is not hypothetical. One `yarn install` inside a pnpm project
+ * leaves a `yarn.lock` beside the committed `pnpm-lock.yaml` forever, and
+ * `fbsource/nest` ships both at its root deliberately. Answering "yarn" from
+ * array order then makes every command the CLI prints wrong for that project —
+ * including the invocation line written into agent docs, which agents copy.
+ *
+ * So ambiguity now consults, in order: the declared `packageManager` field,
+ * then whoever is running us (`npm_config_user_agent`), then the fixed order.
  *
  * Returns `'npx'` when nothing can be detected — see {@link DetectedPackageManager}.
  *
@@ -47,39 +114,32 @@ function isKnownPackageManager(name) {
 export function detectPackageManager(targetDir = process.cwd()) {
   let dir = path.resolve(targetDir);
   const root = path.parse(dir).root;
+  const running = runningPackageManager();
 
   while (dir !== root) {
-    // 1. Lockfiles (highest priority)
-    if (fs.existsSync(path.join(dir, 'yarn.lock'))) return 'yarn';
-    if (fs.existsSync(path.join(dir, 'pnpm-lock.yaml'))) return 'pnpm';
-    if (fs.existsSync(path.join(dir, 'bun.lockb')) || fs.existsSync(path.join(dir, 'bun.lock'))) return 'bun';
-    if (fs.existsSync(path.join(dir, 'package-lock.json'))) return 'npm';
+    const locks = lockfilesIn(dir);
 
-    // 2. packageManager field in package.json
-    const pkgPath = path.join(dir, 'package.json');
-    if (fs.existsSync(pkgPath)) {
-      try {
-        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-        if (pkg.packageManager) {
-          const name = pkg.packageManager.split('@')[0];
-          if (isKnownPackageManager(name)) return name;
-        }
-      } catch {
-        // Best-effort: unreadable/invalid package.json — keep walking up.
-      }
+    // 1. One lockfile is unambiguous, and outranks the field as it always has.
+    if (locks.length === 1) return locks[0];
+
+    // 2. Several lockfiles: the filesystem cannot say. Ask for a declaration,
+    //    then ask who is running us, and only then fall back to array order.
+    if (locks.length > 1) {
+      const declared = declaredPackageManager(dir);
+      if (declared && locks.includes(declared)) return declared;
+      if (running && locks.includes(running)) return running;
+      return locks[0];
     }
+
+    // 3. No lockfile here: the field, if this directory declares one.
+    const declared = declaredPackageManager(dir);
+    if (declared) return declared;
 
     dir = path.dirname(dir);
   }
 
-  // 3. npm_config_user_agent env var (set by all PMs when running scripts)
-  const ua = process.env.npm_config_user_agent;
-  if (ua) {
-    const name = ua.split('/')[0];
-    if (isKnownPackageManager(name)) return name;
-  }
-
-  return 'npx';
+  // 4. Nothing on disk said anything — fall back to whoever invoked us.
+  return running ?? 'npx';
 }
 
 /**
