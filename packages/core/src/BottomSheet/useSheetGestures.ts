@@ -118,6 +118,20 @@ const OVERSCROLL_MAX = 48;
 // the scroll, large enough that a swipe merely coming to rest on the last pixel
 // doesn't start a drag on jitter.
 const CONTENT_END_HANDOFF_SLOP = 4;
+// How far a finger resting on the body must travel before the pull becomes a
+// sheet drag rather than a tap.
+//
+// This used to be zero: any downward movement promoted. A finger is never
+// still, so tapping a control inside the sheet drifted a pixel or two and
+// started a drag -- which suppresses the panel's transition, correctly, for as
+// long as the sheet is tracking the finger. The close that the tap triggered
+// then landed inside that window and cut instead of animating. A deliberate
+// pull was unaffected; only a tap, and only a tap inside the sheet, since the
+// scrim is outside the body and arms nothing.
+//
+// 8px is the conventional tap slop, a shade over iOS's own recognizer, and
+// well under what a real pull covers in its first frames.
+const DRAG_PROMOTION_SLOP = 8;
 
 // Short haptic tick on detent settle where supported. iOS Safari doesn't
 // expose navigator.vibrate, so this is a no-op there; skipped under
@@ -1140,7 +1154,7 @@ export function useSheetGestures({
         return;
       }
       const delta = event.clientY - armed.startCoord;
-      if (delta > 0 && armed.scroller.scrollTop <= 0) {
+      if (delta > DRAG_PROMOTION_SLOP && armed.scroller.scrollTop <= 0) {
         // Downward pull at the top: promote to a sheet drag, anchored at the
         // original pointer-down position so the pull distance carries over.
         armedBodyRef.current = null;
@@ -1302,8 +1316,10 @@ export function useSheetGestures({
       // no longer scroll that way: at the top, a downward pull (delta > 0)
       // collapses; at the bottom, an upward pull (delta < 0) expands. The
       // opposite direction is a real scroll, so disarm and let it through.
-      const pullDownAtTop = armed.top && delta > 0 && atTop(scroller);
-      const pullUpAtBottom = armed.bottom && delta < 0 && atBottom(scroller);
+      const pullDownAtTop =
+        armed.top && delta > DRAG_PROMOTION_SLOP && atTop(scroller);
+      const pullUpAtBottom =
+        armed.bottom && delta < -DRAG_PROMOTION_SLOP && atBottom(scroller);
       if (pullDownAtTop || pullUpAtBottom) {
         event.preventDefault();
         touchDragRef.current = null;
@@ -1433,15 +1449,19 @@ export function useSheetGestures({
       style: {
         transform:
           activeOffset !== 0 ? `translateY(${activeOffset}px)` : undefined,
+        // Gated on the sheet being up: suppression must not outlive the sheet
+        // it was suppressing for. The host swaps the panel to its closing
+        // state in whatever frame the dismissal lands, and a stale `none`
+        // would apply to that transform too, cutting the exit.
         transition:
-          isDragging || isScrollAreaReconciling || reducedMotion
+          isOpen && (isDragging || isScrollAreaReconciling || reducedMotion)
             ? 'none'
             : undefined,
         touchAction: 'none',
         overscrollBehavior: 'contain',
       },
     }),
-    [activeOffset, isDragging, isScrollAreaReconciling, reducedMotion],
+    [activeOffset, isDragging, isOpen, isScrollAreaReconciling, reducedMotion],
   );
 
   const handleProps = useMemo<SheetHandleProps>(
