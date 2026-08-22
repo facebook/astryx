@@ -3,7 +3,9 @@
 /**
  * @file globalIconRegistry.tsx
  * @input None (pure module-level state)
- * @output Exports registerIcons, getIconRegistry, getIcon, resetIcons, IconName, IconRegistry
+ * @output Exports registerIcons, getIconRegistry, getIcon, getExtendedIcon,
+ *   resetIcons, IconName, ExtendedIconName, IconRegistry, ExtendedIconRegistry,
+ *   IconRegistrySource
  * @position Global and theme-scoped icon registry; works in server and client environments
  *
  * This module has NO 'use client' directive — it's importable from RSC.
@@ -73,6 +75,18 @@ export type ExtendedIconName = IconName | (string & {});
  */
 export type IconRegistry = Record<IconName, ReactNode>;
 
+/**
+ * Icon registry that also accepts extension keys. Themes may override
+ * library-contributed icons, not just the built-in {@link IconName}s, so
+ * `defineTheme({icons})` is typed over this shape. Extension keys are
+ * colon-namespaced by convention (`'richtext:bold'`); constraining the extra
+ * keys to that shape keeps typo checking for bare built-in names (a
+ * misspelled `'chevrondown'` still fails to compile).
+ */
+export type ExtendedIconRegistry = Partial<
+  Record<IconName | `${string}:${string}`, ReactNode>
+>;
+
 export type IconRegistrySource = DefinedTheme | string | null | undefined;
 
 // =============================================================================
@@ -81,9 +95,29 @@ export type IconRegistrySource = DefinedTheme | string | null | undefined;
 
 let globalRegistry: Record<string, ReactNode> = {};
 
+/**
+ * Own-property icon lookup. Names reach this module as plain strings —
+ * extension keys, theme JSON, tooling — so a bare `registry[name]` would
+ * resolve inherited `Object.prototype` members: `getIcon('constructor')`
+ * would hand back the `Object` constructor, and the icon slot would then try
+ * to render that function as a component.
+ */
+function ownIcon(
+  registry: Record<string, ReactNode> | ExtendedIconRegistry | null | undefined,
+  name: string,
+): ReactNode {
+  if (
+    registry == null ||
+    !Object.prototype.hasOwnProperty.call(registry, name)
+  ) {
+    return undefined;
+  }
+  return (registry as Record<string, ReactNode>)[name];
+}
+
 function getThemeIconOverrides(
   source: IconRegistrySource,
-): Partial<IconRegistry> | null {
+): ExtendedIconRegistry | null {
   if (source == null) {
     return null;
   }
@@ -146,12 +180,19 @@ export function getIconRegistry(
   // libraries are resolved via getIcon/getExtendedIcon and intentionally kept
   // out of the typed IconRegistry snapshot.
   for (const name of Object.keys(defaultIcons) as IconName[]) {
-    registry[name] = globalRegistry[name] ?? defaultIcons[name];
+    registry[name] = ownIcon(globalRegistry, name) ?? defaultIcons[name];
   }
 
   const themeIcons = getThemeIconOverrides(source);
   if (themeIcons != null) {
     for (const name of Object.keys(themeIcons) as IconName[]) {
+      // Theme registries may carry extension keys (e.g. 'richtext:bold');
+      // per the contract above, only built-in names enter the typed snapshot.
+      // Own-property check, not `in`: `in` walks the prototype chain, so a
+      // key like 'toString' would pass and poison the snapshot.
+      if (!Object.prototype.hasOwnProperty.call(defaultIcons, name)) {
+        continue;
+      }
       registry[name] = themeIcons[name] ?? registry[name];
     }
   }
@@ -176,9 +217,9 @@ export function getIcon(
 ): ReactNode {
   const themeIcons = getThemeIconOverrides(source);
   return (
-    themeIcons?.[name as IconName] ??
-    globalRegistry[name] ??
-    defaultIcons[name as IconName]
+    ownIcon(themeIcons, name) ??
+    ownIcon(globalRegistry, name) ??
+    ownIcon(defaultIcons, name)
   );
 }
 
@@ -205,9 +246,9 @@ export function getExtendedIcon(
 ): ReactNode {
   const themeIcons = getThemeIconOverrides(source);
   return (
-    themeIcons?.[name as IconName] ??
-    globalRegistry[name] ??
-    defaultIcons[name as IconName] ??
+    ownIcon(themeIcons, name) ??
+    ownIcon(globalRegistry, name) ??
+    ownIcon(defaultIcons, name) ??
     fallback
   );
 }

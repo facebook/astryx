@@ -57,13 +57,15 @@ export const docs = {
     {
       name: 'isReadOnly',
       type: 'boolean',
-      description: 'Whether the editor is read-only (non-editable).',
+      description:
+        'Whether the editor is read-only (non-editable). Content stays keyboard-reachable at full opacity and is announced as read-only.',
       default: 'false',
     },
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Whether the editor is disabled (non-editable, dimmed).',
+      description:
+        'Whether the editor is disabled: non-editable, dimmed, out of the tab order, and announced as disabled.',
       default: 'false',
     },
     {
@@ -127,14 +129,14 @@ export const docs = {
       name: 'tabEscapeHint',
       type: 'string',
       description:
-        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Override to localize; pass "" to omit.',
-      default: "'Press Escape then Tab to move focus out of the editor.'",
+        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Defaults to the localized "Press Escape then Tab to move focus out of the editor." — override to customize; pass "" to omit.',
+      default: 'localized hint',
     },
     {
       name: 'maxLength',
       type: 'number',
       description:
-        'Maximum number of characters. When set, a character counter (current/max) is displayed below the editor. Like TextArea, does not enforce the limit natively; the counter shows error styling when the plain-text length exceeds the limit.',
+        'Maximum number of characters. When set, a character counter (current/max) is displayed below the editor. Like TextArea, does not enforce the limit natively; the counter shows error styling when the plain-text content exceeds the limit. Counted in characters, not UTF-16 code units, so an emoji counts as one.',
     },
     {
       name: 'width',
@@ -155,9 +157,21 @@ export const docs = {
       description:
         'StyleX styles for layout customization. Must be a stylex.create() value, not an inline style object.',
     },
+    {
+      name: 'ref',
+      type: 'Ref<RichTextEditorRef>',
+      description:
+        'Imperative handle exposing focus(), clear(), getEditorState(), getMarkdown(), getHTML(), and getEditor(). A first-class prop (React 19), not forwardRef.',
+    },
   ],
   theming: {
-    targets: [{className: 'astryx-rich-text-editor', visualProps: []}],
+    targets: [
+      {
+        className: 'astryx-rich-text-editor',
+        visualProps: ['size'],
+        states: ['status'],
+      },
+    ],
   },
   usage: {
     description:
@@ -171,7 +185,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Persist content by serializing editorState.toJSON() in onChange; rehydrate via defaultValue / RichTextView value.',
+          'Persist content by serializing editorState.toJSON() in onChange; rehydrate via defaultValue / RichTextView value. Always pass RichTextView a label — it renders a keyboard-reachable role="textbox" surface, and without an accessible name it fails axe aria-input-field-name (the component dev-warns when label is omitted or blank).',
       },
       {
         guidance: true,
@@ -196,7 +210,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Links: the toolbar Link button (on by default; disable with hasLink={false}) and Cmd/Ctrl+K open an Astryx Dialog. The form preserves the Lexical selection while focus moves into the URL input and supports add, update, remove, Escape, and focus return. Pass promptForUrl only when integrating an existing synchronous URL flow. Entered URLs are sanitized (only http/https/mailto/tel are written; javascript:/data: are rejected). Links open in a new tab by default: target=_blank and rel=noopener noreferrer are written into the link node data; set linkOpensInNewTab={false} for same-tab links.',
+          'Links: the toolbar Link button (on by default; disable with hasLink={false}) and Cmd/Ctrl+K open an Astryx Dialog. The form preserves the Lexical selection while focus moves into the URL input and supports add, update, remove, Escape, and focus return. Pass promptForUrl only when integrating an existing synchronous URL flow. Entered URLs are sanitized (only http/https/mailto/tel are written; javascript:/data: are rejected). Links open in a new tab by default: target=_blank and rel=noopener noreferrer are written into the link node data; set hasNewTabLinks={false} for same-tab links.',
       },
       {
         guidance: true,
@@ -206,7 +220,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme can restyle any glyph without forking the toolbar: registerIcons({'richtext:bold': <MyBoldIcon />}) from @astryxdesign/core/Icon. registerIcons now accepts arbitrary extension keys, and getExtendedIcon(key, fallback) resolves them; the same pattern any library can use to make its own icons theme-overridable.",
+          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG, and the resolution is theme-scoped. A theme restyles any glyph without forking the toolbar: defineTheme({icons: {'richtext:bold': <MyBoldIcon />}}) — extension keys are accepted without casts. The global registerIcons({'richtext:bold': ...}) escape hatch also works but applies across every theme and warns in dev. getExtendedIcon(key, fallback, themeName) is the same pattern any library can use to make its own icons theme-overridable.",
       },
       {
         guidance: false,

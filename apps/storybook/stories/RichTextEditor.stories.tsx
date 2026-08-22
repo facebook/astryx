@@ -272,7 +272,10 @@ export const ControlledPersistence = {
           <div style={{fontWeight: 600, marginBottom: 8}}>
             RichTextView (read-only render of the same content)
           </div>
-          <RichTextView value={json} />
+          <RichTextView
+            value={json}
+            label="Read-only rendering of the editor state"
+          />
         </div>
       </div>
     );
@@ -396,6 +399,7 @@ export const MarkdownSerializers = {
             1. Input Markdown (edit me)
           </div>
           <textarea
+            aria-label="Input Markdown"
             value={markdown}
             onChange={e => setMarkdown(e.target.value)}
             rows={10}
@@ -429,7 +433,10 @@ export const MarkdownSerializers = {
           <div style={{fontWeight: 600, marginBottom: 8}}>
             3. Same JSON rendered read-only via RichTextView
           </div>
-          <RichTextView value={json} />
+          <RichTextView
+            value={json}
+            label="Read-only rendering of the editor state"
+          />
         </div>
 
         <div>

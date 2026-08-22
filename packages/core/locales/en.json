@@ -1214,5 +1214,129 @@
   "@astryx.lightbox.mediaPosition": {
     "defaultMessage": "{alt}, {index, number} of {total, number}",
     "description": "Polite screen-reader announcement when a Lightbox moves to a media item that has alt text, composing that alt with the item's position. Live-region text, never shown on screen; example: `Sunset over the bay, 3 of 12`."
+  },
+  "@astryx.richTextEditor.toolbarLabel": {
+    "defaultMessage": "Text formatting",
+    "description": "Accessible name of the RichTextEditor's formatting toolbar (role=toolbar). Announced when a screen-reader user enters the toolbar. Short noun phrase."
+  },
+  "@astryx.richTextEditor.formattingActions": {
+    "defaultMessage": "Formatting actions",
+    "description": "Accessible name of the group wrapping the toolbar's formatting controls inside the RichTextEditor toolbar. Short noun phrase."
+  },
+  "@astryx.richTextEditor.undo": {
+    "defaultMessage": "Undo",
+    "description": "Label and tooltip of the RichTextEditor toolbar's undo button. Imperative verb; reverts the last edit."
+  },
+  "@astryx.richTextEditor.redo": {
+    "defaultMessage": "Redo",
+    "description": "Label and tooltip of the RichTextEditor toolbar's redo button. Imperative verb; re-applies the last undone edit."
+  },
+  "@astryx.richTextEditor.historyAndBlockFormats": {
+    "defaultMessage": "History and block formats",
+    "description": "Accessible name of the divider separating the undo/redo group from the block-format selector in the RichTextEditor toolbar. Describes the boundary between the two groups."
+  },
+  "@astryx.richTextEditor.blockAndInlineFormats": {
+    "defaultMessage": "Block and inline formats",
+    "description": "Accessible name of the divider separating the block-format selector from the inline formatting buttons in the RichTextEditor toolbar. Describes the boundary between the two groups."
+  },
+  "@astryx.richTextEditor.blockFormat": {
+    "defaultMessage": "Block format",
+    "description": "Visually hidden accessible name of the RichTextEditor toolbar's block-format selector (paragraph/headings/lists/quote). Short noun phrase."
+  },
+  "@astryx.richTextEditor.paragraph": {
+    "defaultMessage": "Paragraph",
+    "description": "Option label in the RichTextEditor block-format selector for plain paragraph text."
+  },
+  "@astryx.richTextEditor.heading1": {
+    "defaultMessage": "Heading 1",
+    "description": "Option label in the RichTextEditor block-format selector for a level-1 heading. `1` is the heading level, part of the name."
+  },
+  "@astryx.richTextEditor.heading2": {
+    "defaultMessage": "Heading 2",
+    "description": "Option label in the RichTextEditor block-format selector for a level-2 heading. `2` is the heading level, part of the name."
+  },
+  "@astryx.richTextEditor.heading3": {
+    "defaultMessage": "Heading 3",
+    "description": "Option label in the RichTextEditor block-format selector for a level-3 heading. `3` is the heading level, part of the name."
+  },
+  "@astryx.richTextEditor.bulletedList": {
+    "defaultMessage": "Bulleted list",
+    "description": "Option label in the RichTextEditor block-format selector for an unordered (bulleted) list."
+  },
+  "@astryx.richTextEditor.numberedList": {
+    "defaultMessage": "Numbered list",
+    "description": "Option label in the RichTextEditor block-format selector for an ordered (numbered) list."
+  },
+  "@astryx.richTextEditor.blockQuote": {
+    "defaultMessage": "Block quote",
+    "description": "Option label in the RichTextEditor block-format selector for a block quotation."
+  },
+  "@astryx.richTextEditor.bold": {
+    "defaultMessage": "Bold",
+    "description": "Label of the RichTextEditor toolbar's bold toggle button. Adjective naming the text style."
+  },
+  "@astryx.richTextEditor.italic": {
+    "defaultMessage": "Italic",
+    "description": "Label of the RichTextEditor toolbar's italic toggle button. Adjective naming the text style."
+  },
+  "@astryx.richTextEditor.underline": {
+    "defaultMessage": "Underline",
+    "description": "Label of the RichTextEditor toolbar's underline toggle button. Names the text style."
+  },
+  "@astryx.richTextEditor.strikethrough": {
+    "defaultMessage": "Strikethrough",
+    "description": "Label of the RichTextEditor toolbar's strikethrough toggle button. Names the text style."
+  },
+  "@astryx.richTextEditor.inlineCode": {
+    "defaultMessage": "Inline code",
+    "description": "Label of the RichTextEditor toolbar's inline-code toggle button (monospace code span within a sentence)."
+  },
+  "@astryx.richTextEditor.link": {
+    "defaultMessage": "Link",
+    "description": "Label of the RichTextEditor toolbar's link toggle button; opens the insert/edit-link dialog. Noun."
+  },
+  "@astryx.richTextEditor.insertLink": {
+    "defaultMessage": "Insert link",
+    "description": "Title of the RichTextEditor link dialog when creating a new link. Imperative verb phrase. Pairs with `richTextEditor.editLink`."
+  },
+  "@astryx.richTextEditor.editLink": {
+    "defaultMessage": "Edit link",
+    "description": "Title of the RichTextEditor link dialog when editing an existing link. Imperative verb phrase. Pairs with `richTextEditor.insertLink`."
+  },
+  "@astryx.richTextEditor.url": {
+    "defaultMessage": "URL",
+    "description": "Label of the URL text input inside the RichTextEditor link dialog. Keep as the technical abbreviation where customary."
+  },
+  "@astryx.richTextEditor.removeLink": {
+    "defaultMessage": "Remove link",
+    "description": "Label of the destructive button in the RichTextEditor link dialog that removes the existing link (the text stays). Imperative verb phrase."
+  },
+  "@astryx.richTextEditor.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Label of the button that closes the RichTextEditor link dialog without applying changes. Imperative verb."
+  },
+  "@astryx.richTextEditor.updateLink": {
+    "defaultMessage": "Update link",
+    "description": "Label of the confirm button in the RichTextEditor link dialog when editing an existing link. Imperative verb phrase. Pairs with `richTextEditor.addLink`."
+  },
+  "@astryx.richTextEditor.addLink": {
+    "defaultMessage": "Add link",
+    "description": "Label of the confirm button in the RichTextEditor link dialog when creating a new link. Imperative verb phrase. Pairs with `richTextEditor.updateLink`."
+  },
+  "@astryx.richTextEditor.invalidUrl": {
+    "defaultMessage": "Enter a valid http, https, mailto, or tel URL.",
+    "description": "Error message shown under the URL input in the RichTextEditor link dialog when the entered URL uses a disallowed scheme. `http`, `https`, `mailto`, `tel` are protocol names \u2014 do not translate them."
+  },
+  "@astryx.richTextEditor.tabEscapeHint": {
+    "defaultMessage": "Press Escape then Tab to move focus out of the editor.",
+    "description": "Visually hidden screen-reader hint describing how to move focus out of the RichTextEditor (Tab indents inside it). `Escape` and `Tab` are keyboard key names."
+  },
+  "@astryx.richTextEditor.charactersRemaining": {
+    "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} remaining",
+    "description": "Polite live-region announcement under a RichTextEditor with a character limit, once typing nears the limit. `count` is how many characters may still be typed. Mirrors `textArea.charactersRemaining`."
+  },
+  "@astryx.richTextEditor.charactersOverLimit": {
+    "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} over limit",
+    "description": "Polite live-region announcement under a RichTextEditor with a character limit, once the content exceeds it. `count` is how many characters past the limit the content is."
   }
 }

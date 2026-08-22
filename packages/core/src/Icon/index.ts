@@ -27,5 +27,6 @@ export type {
   IconName,
   ExtendedIconName,
   IconRegistry,
+  ExtendedIconRegistry,
   IconRegistrySource,
 } from './globalIconRegistry';

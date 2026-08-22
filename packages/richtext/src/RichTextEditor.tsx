@@ -5,7 +5,8 @@
 /**
  * @file RichTextEditor.tsx
  * @input Uses React, useId, Lexical (lexical + @lexical/react), Field,
- *   VisuallyHidden, useInputStatusIcon, mergeProps, design tokens
+ *   VisuallyHidden, useInputStatusIcon, characterCount, mergeProps/themeProps,
+ *   useTranslator (i18n), design tokens
  * @output Exports an accessibly labelled RichTextEditor component with a flush
  *   top toolbar slot and configurable editable-surface minimum height, RichTextEditorProps,
  *   RichTextEditorStatus, RichTextEditorStatusType, RichTextEditorSize
@@ -32,7 +33,6 @@ import {
   useMemo,
   useRef,
   useState,
-  forwardRef,
   type ReactNode,
   type Ref,
 } from 'react';
@@ -55,8 +55,14 @@ import {
 import type {BaseProps} from '@astryxdesign/core';
 import {useInputStatusIcon} from '@astryxdesign/core/hooks';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
-import {mergeProps, themeProps, type SizeValue} from '@astryxdesign/core/utils';
+import {
+  characterCount,
+  mergeProps,
+  themeProps,
+  type SizeValue,
+} from '@astryxdesign/core/utils';
 import {useSize} from '@astryxdesign/core/SizeContext';
+import {useTranslator} from '@astryxdesign/core/i18n';
 
 import {
   LexicalComposer,
@@ -227,13 +233,6 @@ const editorBodySizeStyles = stylex.create({
 });
 
 /**
- * Default screen-reader hint advertising the Tab escape. Overridable (or
- * suppressible) via the `tabEscapeHint` prop for localization.
- */
-const DEFAULT_TAB_ESCAPE_HINT =
-  'Press Escape then Tab to move focus out of the editor.';
-
-/**
  * Fraction of `maxLength` at which the character counter begins announcing
  * remaining/over-limit characters to screen readers. Matches TextArea.
  */
@@ -325,12 +324,15 @@ export interface RichTextEditorProps extends Omit<
   /** Placeholder text shown when the editor is empty. */
   placeholder?: string;
   /**
-   * Whether the editor is read-only (non-editable).
+   * Whether the editor is read-only (non-editable). The content stays
+   * keyboard-reachable at full opacity and is announced as read-only, so
+   * users can still read and copy it.
    * @default false
    */
   isReadOnly?: boolean;
   /**
-   * Whether the editor is disabled (non-editable, dimmed).
+   * Whether the editor is disabled (non-editable, dimmed, out of the tab
+   * order, announced as disabled).
    * @default false
    */
   isDisabled?: boolean;
@@ -416,10 +418,10 @@ export interface RichTextEditorProps extends Omit<
   /**
    * Screen-reader hint describing how to move focus out of the editor, since
    * Tab is bound to indentation (press Escape, then Tab). Rendered visually
-   * hidden and referenced from the editor's `aria-describedby`. Override it
-   * to localize the text, or pass an empty string to omit the hint entirely
-   * (e.g. when the host app provides its own instructions).
-   * @default 'Press Escape then Tab to move focus out of the editor.'
+   * hidden and referenced from the editor's `aria-describedby`. Defaults to
+   * the localized "Press Escape then Tab to move focus out of the editor."
+   * Override it to customize the text, or pass an empty string to omit the
+   * hint entirely (e.g. when the host app provides its own instructions).
    */
   tabEscapeHint?: string;
   /**
@@ -435,6 +437,11 @@ export interface RichTextEditorProps extends Omit<
    * @default 'astryx-editor'
    */
   namespace?: string;
+  /**
+   * Imperative handle exposing `focus()`, `clear()`, serialization helpers,
+   * and the underlying Lexical editor. See {@link RichTextEditorRef}.
+   */
+  ref?: Ref<RichTextEditorRef>;
 }
 
 /**
@@ -447,7 +454,8 @@ export interface RichTextEditorProps extends Omit<
  * and `plugins` to layer richer behaviour (formatting, mentions, hover cards)
  * on top without forking.
  *
- * The forwarded `RichTextEditorRef` exposes imperative `focus()` and `clear()`
+ * The `RichTextEditorRef` handle (via the `ref` prop) exposes imperative
+ * `focus()` and `clear()`
  * methods for callers that manage the editor from outside.
  *
  * @example
@@ -462,43 +470,39 @@ export interface RichTextEditorProps extends Omit<
  * />
  * ```
  */
-export const RichTextEditor = forwardRef<
-  RichTextEditorRef,
-  RichTextEditorProps
->(function RichTextEditor(
-  {
-    label,
-    isLabelHidden = false,
-    description,
-    isOptional = false,
-    isRequired = false,
-    defaultValue,
-    onChange,
-    placeholder,
-    isReadOnly = false,
-    isDisabled = false,
-    status,
-    statusVariant = 'attached',
-    width,
-    minHeight = '4.5rem',
-    labelTooltip,
-    size: sizeProp,
-    nodes,
-    toolbar,
-    plugins,
-    hasMarkdownShortcuts = true,
-    transformers = TRANSFORMERS,
-    hasAutoFocus = false,
-    tabEscapeHint = DEFAULT_TAB_ESCAPE_HINT,
-    maxLength,
-    namespace = 'astryx-editor',
-    xstyle,
-    className,
-    style,
-    ...rest
-  }: RichTextEditorProps,
-  ref: Ref<RichTextEditorRef>,
-) {
+export function RichTextEditor({
+  label,
+  isLabelHidden = false,
+  description,
+  isOptional = false,
+  isRequired = false,
+  defaultValue,
+  onChange,
+  placeholder,
+  isReadOnly = false,
+  isDisabled = false,
+  status,
+  statusVariant = 'attached',
+  width,
+  minHeight = '4.5rem',
+  labelTooltip,
+  size: sizeProp,
+  nodes,
+  toolbar,
+  plugins,
+  hasMarkdownShortcuts = true,
+  transformers = TRANSFORMERS,
+  hasAutoFocus = false,
+  tabEscapeHint,
+  maxLength,
+  namespace = 'astryx-editor',
+  xstyle,
+  className,
+  style,
+  ref,
+  ...rest
+}: RichTextEditorProps) {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const inputID = useId();
   const labelID = useId();
@@ -538,7 +542,9 @@ export const RichTextEditor = forwardRef<
     },
   };
 
-  const hasTabEscapeHint = editable && tabEscapeHint !== '';
+  const resolvedTabEscapeHint =
+    tabEscapeHint ?? t('@astryx.richTextEditor.tabEscapeHint');
+  const hasTabEscapeHint = editable && resolvedTabEscapeHint !== '';
   const hasToolbar = toolbar != null && typeof toolbar !== 'boolean';
 
   const {statusIcon, describedBy: statusTooltipDescribedBy} =
@@ -555,7 +561,9 @@ export const RichTextEditor = forwardRef<
       // tooltip layer so assistive technology still receives the message.
       statusTooltipDescribedBy,
       placeholder ? placeholderID : null,
-      maxLength != null ? counterID : null,
+      // Must match the two render guards below: a non-number maxLength
+      // renders no counter, so referencing its id would dangle.
+      typeof maxLength === 'number' ? counterID : null,
       hasTabEscapeHint ? tabEscapeHintID : null,
     ]
       .filter(Boolean)
@@ -593,7 +601,9 @@ export const RichTextEditor = forwardRef<
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
-            (isDisabled || isReadOnly) && inputWrapperStyles.disabled,
+            // Only disabled gets the dimmed treatment; a read-only editor
+            // keeps full-opacity text and stays keyboard-reachable.
+            isDisabled && inputWrapperStyles.disabled,
             isDisabled && styles.disabled,
             status && inputStatusBorderStyles[status.type],
             status &&
@@ -625,6 +635,8 @@ export const RichTextEditor = forwardRef<
                     ariaDescribedBy={ariaDescribedBy}
                     ariaRequired={isRequired && !isOptional}
                     ariaInvalid={status?.type === 'error'}
+                    isReadOnly={isReadOnly}
+                    isDisabled={isDisabled}
                     placeholderText={placeholder}
                     placeholderID={placeholderID}
                     minHeight={minHeight}
@@ -656,7 +668,7 @@ export const RichTextEditor = forwardRef<
                 editable={editable}
                 transformers={markdownTransformers}
               />
-              {maxLength != null && (
+              {typeof maxLength === 'number' && (
                 <CharCountPlugin onCountChange={setCharCount} />
               )}
             </div>
@@ -666,10 +678,12 @@ export const RichTextEditor = forwardRef<
           </div>
         </LexicalComposer>
         {hasTabEscapeHint && (
-          <VisuallyHidden id={tabEscapeHintID}>{tabEscapeHint}</VisuallyHidden>
+          <VisuallyHidden id={tabEscapeHintID}>
+            {resolvedTabEscapeHint}
+          </VisuallyHidden>
         )}
       </div>
-      {maxLength != null && (
+      {typeof maxLength === 'number' && (
         <div
           id={counterID}
           {...stylex.props(
@@ -680,15 +694,19 @@ export const RichTextEditor = forwardRef<
           <VisuallyHidden aria-live="polite">
             {charCount >= maxLength * COUNTER_WARNING_THRESHOLD
               ? charCount > maxLength
-                ? `${charCount - maxLength} characters over limit`
-                : `${maxLength - charCount} characters remaining`
+                ? t('@astryx.richTextEditor.charactersOverLimit', {
+                    count: charCount - maxLength,
+                  })
+                : t('@astryx.richTextEditor.charactersRemaining', {
+                    count: maxLength - charCount,
+                  })
               : ''}
           </VisuallyHidden>
         </div>
       )}
     </Field>
   );
-});
+}
 
 RichTextEditor.displayName = 'RichTextEditor';
 
@@ -805,11 +823,20 @@ function EditorRefBridge({
   editable,
   transformers,
 }: {
-  editorRef: Ref<RichTextEditorRef>;
+  editorRef: Ref<RichTextEditorRef> | undefined;
   editable: boolean;
-  transformers: Array<Transformer>;
+  transformers: Transformer[];
 }): null {
   const [editor] = useLexicalComposerContext();
+
+  // `initialConfig.editable` is only read once, on composer init — a later
+  // isReadOnly/isDisabled prop change would otherwise leave contenteditable
+  // frozen at its mount value while the wrapper styling and ARIA follow the
+  // props. Keep the actual Lexical editable state in sync.
+  useEffect(() => {
+    editor.setEditable(editable);
+  }, [editor, editable]);
+
   useImperativeHandle(
     editorRef,
     () => ({
@@ -873,9 +900,11 @@ function CharCountPlugin({
     // build it forces Babel to transpile lexical's raw `src/*.ts` (which uses
     // `declare` class fields) and fails. Both APIs used here are methods on the
     // editor instance, so no top-level `lexical` value import is needed.
-    onCountChange(editor.getRootElement()?.textContent?.length ?? 0);
+    // Counted in characters, not UTF-16 code units, so one emoji counts as
+    // one — the same `characterCount` TextArea's counter uses.
+    onCountChange(characterCount(editor.getRootElement()?.textContent ?? ''));
     return editor.registerTextContentListener(textContent => {
-      onCountChange(textContent.length);
+      onCountChange(characterCount(textContent));
     });
   }, [editor, onCountChange]);
   return null;
@@ -893,6 +922,8 @@ function EditorContentEditable({
   ariaDescribedBy,
   ariaRequired,
   ariaInvalid,
+  isReadOnly,
+  isDisabled,
   placeholderText,
   placeholderID,
   minHeight,
@@ -904,25 +935,54 @@ function EditorContentEditable({
   ariaDescribedBy?: string;
   ariaRequired: boolean;
   ariaInvalid: boolean;
+  isReadOnly: boolean;
+  isDisabled: boolean;
   placeholderText?: string;
   placeholderID: string;
   minHeight: SizeValue;
   rest: Record<string, unknown>;
 }) {
+  // A consumer's own `aria-describedby` must ADD to the ids this component
+  // computes (status, placeholder, counter, tab-escape hint), never replace
+  // them — a bare override silently strips the editor's own description.
+  const consumerDescribedBy = rest['aria-describedby'];
+  const mergedDescribedBy =
+    [
+      ariaDescribedBy,
+      typeof consumerDescribedBy === 'string' ? consumerDescribedBy : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+  // `rest` leads the object so no consumer prop can clobber the textbox's own
+  // semantics (id, role, aria-multiline, the read-only/disabled split).
   const shared = {
+    ...rest,
     id,
     role: 'textbox' as const,
     'aria-multiline': 'true' as const,
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
-    'aria-describedby': ariaDescribedBy,
+    'aria-describedby': mergedDescribedBy,
     'aria-required': ariaRequired ? ('true' as const) : undefined,
     'aria-invalid': ariaInvalid ? ('true' as const) : undefined,
+    // Lexical announces every non-editable surface as aria-readonly and
+    // leaves it out of the tab order. Split the two states: read-only stays
+    // reachable (tabIndex 0) and announced read-only; disabled is announced
+    // disabled instead. The keys land after Lexical's computed attributes,
+    // so the disabled branch's explicit `undefined` removes the wrong
+    // read-only announcement. When neither prop is set, no keys are passed
+    // at all — a consumer plugin may drive editor.setEditable directly, and
+    // Lexical's own state-derived aria-readonly must survive.
+    ...(isDisabled
+      ? {'aria-disabled': 'true' as const, 'aria-readonly': undefined}
+      : isReadOnly
+        ? {tabIndex: 0, 'aria-readonly': 'true' as const}
+        : null),
     ...stylex.props(
       styles.contentEditable,
       dynamicStyles.contentEditableMinHeight(minHeight),
     ),
-    ...rest,
   };
   if (placeholderText) {
     return (

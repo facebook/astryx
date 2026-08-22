@@ -31,21 +31,23 @@ const editorTheme = stylex.create({
     marginBlockStart: spacingVars['--spacing-0'],
     marginBlockEnd: spacingVars['--spacing-1'],
   },
+  // Heading sizes come from the shared heading scale so themes can retune
+  // them. (h3 moves from a raw 18px to the 17px --text-heading-3-size step.)
   h1: {
     fontFamily: typographyVars['--font-family-heading'],
-    fontSize: '1.5rem',
+    fontSize: typeScaleVars['--text-heading-1-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     marginBlock: spacingVars['--spacing-2'],
   },
   h2: {
     fontFamily: typographyVars['--font-family-heading'],
-    fontSize: '1.25rem',
+    fontSize: typeScaleVars['--text-heading-2-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     marginBlock: spacingVars['--spacing-2'],
   },
   h3: {
     fontFamily: typographyVars['--font-family-heading'],
-    fontSize: '1.125rem',
+    fontSize: typeScaleVars['--text-heading-3-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     marginBlock: spacingVars['--spacing-1'],
   },
@@ -118,6 +120,10 @@ const editorTheme = stylex.create({
     paddingInline: spacingVars['--spacing-1'],
     paddingBlock: spacingVars['--spacing-0-5'],
     borderRadius: radiusVars['--radius-inner'],
+    // Inline code must scale with its surrounding text (code inside a heading
+    // stays proportional), so this is em-relative by design — a rem token
+    // would pin it to one size everywhere.
+    // eslint-disable-next-line @astryx/no-hardcoded-styles
     fontSize: '0.9em',
   },
   code: {
