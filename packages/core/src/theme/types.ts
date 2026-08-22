@@ -129,6 +129,35 @@ export interface CustomTextTypes {}
 export type TextType = BuiltinTextType | (keyof CustomTextTypes & string);
 
 /**
+ * App-owned semantic tokens for `defineTheme`.
+ *
+ * Astryx's own token names are a closed union so that a typo in a theme is a
+ * compile error rather than a silently dead CSS variable. An app that needs a
+ * token Astryx does not ship declares it here instead — the union stays closed
+ * for every name nobody declared:
+ * ```ts
+ * declare module '@astryxdesign/core/theme' {
+ *   interface CustomTokens {
+ *     '--color-layer-border': true;
+ *   }
+ * }
+ * ```
+ *
+ * Keys must be CSS custom property names — they are emitted verbatim into the
+ * theme's CSS. A key that does not start with `--` is ignored, so the token it
+ * names keeps failing typecheck.
+ *
+ * Unlike the `*VariantMap` axes, `astryx theme build` cannot generate this
+ * augmentation: the file that needs the declaration is the theme source the
+ * build reads, so the declaration has to exist before the build runs.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface CustomTokens {}
+
+/** Token names an app declared through `CustomTokens`. */
+export type CustomTokenName = keyof CustomTokens & `--${string}`;
+
+/**
  * Text size scale for Text size prop override
  * Maps to --text-* tokens
  */
