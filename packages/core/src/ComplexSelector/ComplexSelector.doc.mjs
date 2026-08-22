@@ -121,6 +121,13 @@ export const docs = {
           description: 'Icon displayed at the start of the trigger.',
         },
         {
+          name: 'hasChevron',
+          type: 'boolean',
+          description:
+            'Shows the chevron at the end of the trigger. Set false when the trigger content already reads as "this opens something", or when the composed content supplies its own end affordance. The chevron is decorative (aria-hidden) and sits outside the trigger button, so the accessible name, focus order, and keyboard behaviour are unchanged.',
+          default: 'true',
+        },
+        {
           name: 'width',
           type: 'SizeValue',
           description: 'Width of the field.',
@@ -202,6 +209,28 @@ export const docs = {
       },
     ],
   },
+  examples: [
+    {
+      label: 'Trigger without the chevron',
+      code: `
+// ComplexSelector has no built-in clear button, so the end slot holds only
+// the chevron. Drop it when the composed content puts its own affordance
+// there, or when the trigger already reads as openable on its own.
+<ComplexSelector
+  label="Date range"
+  value={range}
+  onChange={setRange}
+  triggerLabel={formatRange(range)}
+  variant="ghost"
+  startIcon="calendar"
+  hasChevron={false}>
+  {(value, onChange, close) => (
+    <RangeCalendar value={value} onChange={onChange} onDone={close} />
+  )}
+</ComplexSelector>
+`,
+    },
+  ],
 };
 
 export const docsDense = {
@@ -271,6 +300,8 @@ export const docsDense = {
     triggerLabel: 'Closed trigger label/content.',
     variant: 'input for forms; ghost for toolbar triggers.',
     startIcon: 'Leading trigger icon.',
+    hasChevron:
+      'false => drop the trigger chevron when the trigger supplies its own end affordance. Chevron is aria-hidden and outside the button, so name/focus/keyboard are unchanged. Defaults to true.',
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
     handleRef: 'Imperative open/close/toggle handle.',

@@ -418,3 +418,97 @@ describe('ComplexSelector popup theme target', () => {
     ).not.toBeNull();
   });
 });
+
+describe('ComplexSelector hasChevron', () => {
+  const chevron = (container: HTMLElement) =>
+    container.querySelector('.astryx-complex-selector-indicator-icon');
+
+  it('renders the chevron by default', () => {
+    const {container} = render(
+      <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+    expect(chevron(container)).not.toBeNull();
+  });
+
+  it('drops the chevron when hasChevron is false', () => {
+    const {container} = render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        hasChevron={false}>
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+    expect(chevron(container)).toBeNull();
+  });
+
+  it('keeps the trigger accessible name and the tab stop unchanged', async () => {
+    const user = userEvent.setup();
+
+    const {unmount} = render(
+      <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+    const before = screen.getByRole('button', {name: 'Fruit blend'});
+    expect(before).toHaveAccessibleName('Fruit blend');
+    const beforeText = before.textContent;
+    unmount();
+
+    const {container} = render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        hasChevron={false}>
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+    expect(chevron(container)).toBeNull();
+    const trigger = screen.getByRole('button', {name: 'Fruit blend'});
+    expect(trigger).toHaveAccessibleName('Fruit blend');
+    expect(trigger.textContent).toBe(beforeText);
+
+    // The chevron was never a tab stop — it is a decorative sibling of the
+    // button, not a control — so the trigger is still the single stop.
+    await user.tab();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('is decorative — the chevron is aria-hidden and outside the trigger button', () => {
+    const {container} = render(
+      <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
+        {() => <div>Options</div>}
+      </ComplexSelector>,
+    );
+    const icon = chevron(container);
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
+    expect(
+      screen.getByRole('button', {name: 'Fruit blend'}).contains(icon),
+    ).toBe(false);
+  });
+
+  it('still opens the popup with the chevron off', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        hasChevron={false}>
+        {() => <button type="button">Done</button>}
+      </ComplexSelector>,
+    );
+    expect(chevron(container)).toBeNull();
+    const trigger = screen.getByRole('button', {name: 'Fruit blend'});
+    await user.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      screen.getByRole('button', {name: 'Done', ...h}),
+    ).toBeInTheDocument();
+  });
+});

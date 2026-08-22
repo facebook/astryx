@@ -2449,6 +2449,143 @@ describe('Selector indicator (chevron) icon theme target', () => {
   });
 });
 
+describe('Selector hasChevron', () => {
+  const chevron = (container: HTMLElement) =>
+    container.querySelector('.astryx-selector-indicator-icon');
+
+  it('renders the chevron by default', () => {
+    const {container} = render(
+      <Selector label="Fruit" options={OPTIONS} onChange={() => {}} />,
+    );
+    expect(chevron(container)).not.toBeNull();
+  });
+
+  it('drops the chevron when hasChevron is false', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        hasChevron={false}
+      />,
+    );
+    expect(chevron(container)).toBeNull();
+  });
+
+  it('leaves the clear button alone in the end slot', () => {
+    // The motivating case: with hasClear a selected Selector shows both a ×
+    // and a chevron. Turning the chevron off leaves the × as the only glyph
+    // there, and it still works.
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        hasClear
+        hasChevron={false}
+      />,
+    );
+    expect(chevron(container)).toBeNull();
+    expect(
+      screen.getByRole('button', {name: 'Clear Fruit'}),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the trigger accessible name and the tab stops unchanged', async () => {
+    const user = userEvent.setup();
+    const props = {
+      label: 'Fruit',
+      options: OPTIONS,
+      value: 'Banana',
+      onChange: () => {},
+      hasClear: true,
+    } as const;
+
+    const {unmount} = render(<Selector {...props} />);
+    const before = screen.getByRole('combobox');
+    expect(before).toHaveAccessibleName('Fruit');
+    const beforeText = before.textContent;
+    unmount();
+
+    const {container} = render(<Selector {...props} hasChevron={false} />);
+    expect(chevron(container)).toBeNull();
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveAccessibleName('Fruit');
+    expect(trigger.textContent).toBe(beforeText);
+
+    // Focus order is unchanged: the trigger is still first and the clear
+    // button still follows it. The chevron was never a tab stop — it is a
+    // decorative sibling of the button, not a control.
+    await user.tab();
+    expect(trigger).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Clear Fruit'})).toHaveFocus();
+  });
+
+  it('is decorative — the chevron is aria-hidden and outside the trigger button', () => {
+    // Why dropping it cannot touch the accessible name, asserted rather than
+    // assumed: it is hidden from the a11y tree AND it is not a descendant of
+    // the button whose name would be computed from its contents.
+    const {container} = render(
+      <Selector label="Fruit" options={OPTIONS} onChange={() => {}} />,
+    );
+    const icon = chevron(container);
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByRole('combobox').contains(icon)).toBe(false);
+  });
+
+  it('keeps the status glyph, which shares the slot but is not the chevron', () => {
+    // hasChevron gates the chevron arm only. A status glyph reports on the
+    // value; suppressing it would hide information, not an affordance. With
+    // an attached status the chevron arm never runs, so the flag is a no-op
+    // there — the same single glyph either way.
+    const iconCount = (hasChevron: boolean) => {
+      const {container, unmount} = render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          onChange={() => {}}
+          status={{type: 'error', message: 'Required'}}
+          hasChevron={hasChevron}
+          data-testid="field"
+        />,
+      );
+      const field = container.querySelector(
+        '[data-testid="field"]',
+      ) as HTMLElement;
+      const count = field.querySelectorAll('.astryx-icon').length;
+      expect(chevron(container)).toBeNull();
+      unmount();
+      return count;
+    };
+
+    expect(iconCount(false)).toBe(1);
+    expect(iconCount(false)).toBe(iconCount(true));
+  });
+
+  it('still opens the popup with the chevron off', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        hasChevron={false}
+      />,
+    );
+    expect(chevron(container)).toBeNull();
+    await user.click(screen.getByRole('combobox'));
+    // `hidden: true` matches the house convention here: the panel is a native
+    // popover, which jsdom reports as hidden.
+    expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+});
+
 describe('Selector section headings', () => {
   it('renders a section title as a plain heading inside the group, not a divider', async () => {
     const user = userEvent.setup();

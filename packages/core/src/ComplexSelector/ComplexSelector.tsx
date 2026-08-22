@@ -274,6 +274,18 @@ export interface ComplexSelectorProps<Value> extends Omit<
   variant?: ComplexSelectorVariant;
   /** Icon displayed at the start of the trigger. */
   startIcon?: ReactNode | IconType;
+  /**
+   * Whether to show the chevron at the end of the trigger. Set false when the
+   * trigger's own content already reads as "this opens something" — an
+   * affordance the product supplies itself, for instance.
+   *
+   * The chevron is decorative (`aria-hidden`) and sits outside the trigger
+   * button, so dropping it leaves the accessible name, the focus order, and
+   * the keyboard behaviour untouched.
+   *
+   * @default true
+   */
+  hasChevron?: boolean;
   /** Width of the field. */
   width?: SizeValue;
   /** Popup placement. */
@@ -339,6 +351,7 @@ export function ComplexSelector<Value>({
   size = 'md',
   variant = 'input',
   startIcon,
+  hasChevron = true,
   width,
   placement = 'below',
   alignment = 'start',
@@ -520,23 +533,25 @@ export function ComplexSelector<Value>({
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
         {isBusy && <Spinner size="sm" />}
-        <Icon
-          icon="chevronDown"
-          size="sm"
-          color="secondary"
-          // No wrapper: Icon's own span already provides the 16px box (`sm`)
-          // and the secondary icon color the wrapper used to set, so the glyph
-          // IS the trigger's icon element — one node carrying the box, the
-          // color, the rotation, and the theme target.
-          xstyle={[
-            styles.triggerIcon,
-            styles.triggerIconRotation,
-            isOpen && styles.triggerIconOpen,
-          ]}
-          {...themeProps('complex-selector-indicator-icon', {
-            state: isOpen ? 'expanded' : 'collapsed',
-          })}
-        />
+        {hasChevron && (
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="secondary"
+            // No wrapper: Icon's own span already provides the 16px box (`sm`)
+            // and the secondary icon color the wrapper used to set, so the glyph
+            // IS the trigger's icon element — one node carrying the box, the
+            // color, the rotation, and the theme target.
+            xstyle={[
+              styles.triggerIcon,
+              styles.triggerIconRotation,
+              isOpen && styles.triggerIconOpen,
+            ]}
+            {...themeProps('complex-selector-indicator-icon', {
+              state: isOpen ? 'expanded' : 'collapsed',
+            })}
+          />
+        )}
       </div>
 
       {popover.render(content, {

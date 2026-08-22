@@ -1918,6 +1918,163 @@ describe('MultiSelector indicator (chevron) icon theme target', () => {
   });
 });
 
+describe('MultiSelector hasChevron', () => {
+  const CHEVRON_OPTIONS = ['Apple', 'Banana', 'Orange'];
+  const SELECTED = ['Apple'];
+
+  const chevron = (container: HTMLElement) =>
+    container.querySelector('.astryx-multi-selector-indicator-icon');
+
+  it('renders the chevron by default', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={CHEVRON_OPTIONS}
+        value={EMPTY_VALUE}
+        onChange={() => {}}
+      />,
+    );
+    expect(chevron(container)).not.toBeNull();
+  });
+
+  it('drops the chevron when hasChevron is false', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={CHEVRON_OPTIONS}
+        value={EMPTY_VALUE}
+        onChange={() => {}}
+        hasChevron={false}
+      />,
+    );
+    expect(chevron(container)).toBeNull();
+  });
+
+  it('leaves the clear button alone in the end slot', () => {
+    // The motivating case: with hasClear a MultiSelector that has values
+    // shows both a × and a chevron. Turning the chevron off leaves the × as
+    // the only glyph there, and it still works.
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={CHEVRON_OPTIONS}
+        value={SELECTED}
+        onChange={() => {}}
+        hasClear
+        hasChevron={false}
+      />,
+    );
+    expect(chevron(container)).toBeNull();
+    expect(
+      screen.getByRole('button', {name: 'Clear all Fruit'}),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the trigger accessible name and the tab stops unchanged', async () => {
+    const user = userEvent.setup();
+
+    const {unmount} = render(
+      <MultiSelector
+        label="Fruit"
+        options={CHEVRON_OPTIONS}
+        value={SELECTED}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    const before = screen.getByRole('combobox');
+    expect(before).toHaveAccessibleName('Fruit');
+    const beforeText = before.textContent;
+    unmount();
+
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={CHEVRON_OPTIONS}
+        value={SELECTED}
+        onChange={() => {}}
+        hasClear
+        hasChevron={false}
+      />,
+    );
+    expect(chevron(container)).toBeNull();
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveAccessibleName('Fruit');
+    expect(trigger.textContent).toBe(beforeText);
+
+    // Focus order is unchanged: the trigger is still first and the clear
+    // button still follows it. The chevron was never a tab stop — it is a
+    // decorative sibling of the button, not a control.
+    await user.tab();
+    expect(trigger).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Clear all Fruit'})).toHaveFocus();
+  });
+
+  it('is decorative — the chevron is aria-hidden and outside the trigger button', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={CHEVRON_OPTIONS}
+        value={EMPTY_VALUE}
+        onChange={() => {}}
+      />,
+    );
+    const icon = chevron(container);
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByRole('combobox').contains(icon)).toBe(false);
+  });
+
+  it('keeps the status glyph, which shares the slot but is not the chevron', () => {
+    // hasChevron gates the chevron arm only. With an attached status the
+    // chevron arm never runs, so the flag is a no-op there — the same single
+    // glyph either way.
+    const iconCount = (hasChevron: boolean) => {
+      const {container, unmount} = render(
+        <MultiSelector
+          label="Fruit"
+          options={CHEVRON_OPTIONS}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          status={{type: 'error', message: 'Required'}}
+          hasChevron={hasChevron}
+          data-testid="field"
+        />,
+      );
+      const field = container.querySelector(
+        '[data-testid="field"]',
+      ) as HTMLElement;
+      const count = field.querySelectorAll('.astryx-icon').length;
+      expect(chevron(container)).toBeNull();
+      unmount();
+      return count;
+    };
+
+    expect(iconCount(false)).toBe(1);
+    expect(iconCount(false)).toBe(iconCount(true));
+  });
+
+  it('still opens the popup with the chevron off', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={CHEVRON_OPTIONS}
+        value={EMPTY_VALUE}
+        onChange={() => {}}
+        hasChevron={false}
+      />,
+    );
+    expect(chevron(container)).toBeNull();
+    await user.click(screen.getByRole('combobox'));
+    expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+});
+
 describe('MultiSelector list structure', () => {
   it('does not draw a divider under select-all', async () => {
     const user = userEvent.setup();

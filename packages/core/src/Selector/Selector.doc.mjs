@@ -84,6 +84,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'hasChevron',
+      type: 'boolean',
+      description:
+        'Shows the chevron at the end of the trigger. Set false to let the clear button stand alone in that slot — with hasClear, a selector that has a value otherwise shows both a × and a chevron. Only the chevron is dropped: a status glyph shares the slot and still appears, and since the chevron is decorative (aria-hidden) and sits outside the trigger button, the accessible name, focus order, and keyboard behaviour are unchanged.',
+      default: 'true',
+    },
+    {
       name: 'searchPlaceholder',
       type: 'string',
       description: 'Placeholder text for the search input.',
@@ -292,6 +299,24 @@ export const docs = {
       },
     ],
   },
+  examples: [
+    {
+      label: 'Let the clear button replace the chevron',
+      code: `
+// With hasClear alone, a selector that has a value shows both a × and a
+// chevron in the end slot. hasChevron={false} leaves the × on its own, so
+// the one affordance in that slot is the one the user can act on.
+<Selector
+  label="Country"
+  options={countries}
+  value={country}
+  onChange={setCountry}
+  hasClear
+  hasChevron={false}
+/>
+`,
+    },
+  ],
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */

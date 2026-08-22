@@ -25,7 +25,10 @@ export const docs = {
         visualProps: ['variant', 'size', 'status'],
         states: ['disabled'],
       },
-      {className: 'astryx-multi-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {
+        className: 'astryx-multi-selector-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
       {className: 'astryx-multi-selector-empty-state'},
       {className: 'astryx-multi-selector-search'},
       {className: 'astryx-multi-selector-section-heading'},
@@ -126,6 +129,13 @@ export const docs = {
           type: 'boolean',
           description:
             'Whether to show a search input for filtering options. As the user types, the match count (or "No results found") is announced to screen readers via a polite live region. The search field has built-in affordances: a leading magnifier icon and, once a query is typed, a trailing clear (✕) button that resets the query and returns focus to the input.',
+        },
+        {
+          name: 'hasChevron',
+          type: 'boolean',
+          description:
+            'Shows the chevron at the end of the trigger. Set false to let the clear button stand alone in that slot — with hasClear, a selector that has values otherwise shows both a × and a chevron. Only the chevron is dropped: a status glyph shares the slot and still appears, and since the chevron is decorative (aria-hidden) and sits outside the trigger button, the accessible name, focus order, and keyboard behaviour are unchanged.',
+          default: 'true',
         },
         {
           name: 'searchPlaceholder',
@@ -265,6 +275,24 @@ export const docs = {
       },
     ],
   },
+  examples: [
+    {
+      label: 'Let the clear button replace the chevron',
+      code: `
+// With hasClear alone, a selector that has values shows both a × and a
+// chevron in the end slot. hasChevron={false} leaves the × on its own, so
+// the one affordance in that slot is the one the user can act on.
+<MultiSelector
+  label="Tags"
+  options={tags}
+  value={selectedTags}
+  onChange={setSelectedTags}
+  hasClear
+  hasChevron={false}
+/>
+`,
+    },
+  ],
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
@@ -289,6 +317,8 @@ export const docsZh = {
         hasSelectAll: '是否显示全选复选框。',
         selectAllLabel: '全选复选框的标签。',
         hasSearch: '是否显示用于过滤选项的搜索输入。',
+        hasChevron:
+          '是否在触发器末尾显示折叠箭头。设为 false 可让清除按钮独占该位置——配合 hasClear 时，已有选中值的选择器否则会同时显示 × 和箭头。仅去掉箭头：状态图标共用该位置且不受影响；箭头是装饰性的（aria-hidden）且位于触发按钮之外，因此无障碍名称、焦点顺序与键盘行为均不变。',
         searchPlaceholder: '搜索输入的占位文本。',
         isDisabled: '禁用选择器。',
         htmlName:
@@ -424,6 +454,8 @@ export const docsDense = {
         hasSelectAll: 'show select-all checkbox',
         selectAllLabel: 'select-all label',
         hasSearch: 'show search input',
+        hasChevron:
+          "false => drop the trigger chevron so hasClear's × owns the end slot alone. Status glyph unaffected; chevron is aria-hidden and outside the button, so name/focus/keyboard are unchanged. Defaults to true.",
         searchPlaceholder: 'search placeholder',
         isDisabled: 'disables selector',
         htmlName: 'HTML name attr; one hidden input per selected value.',
