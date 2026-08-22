@@ -3,6 +3,7 @@
 'use client';
 
 import {useState} from 'react';
+import {useSearchParams} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {Text, Heading} from '@astryxdesign/core/Text';
@@ -16,6 +17,7 @@ import {
   linkifyPRs,
   linkifyContributors,
   linkifyComponents,
+  addEmptyReleasePlaceholders,
   stripTitle,
 } from './changelogLinkify';
 
@@ -27,7 +29,11 @@ interface ChangelogEntry {
 interface ChangelogViewProps {
   changelogs: ChangelogEntry[];
   componentNames: string[];
+  initialPackage?: string;
 }
+
+const DEFAULT_PACKAGE = '@astryxdesign/core';
+const THEME_PACKAGE_PREFIX = '@astryxdesign/theme-';
 
 const styles = stylex.create({
   section: {
@@ -42,12 +48,35 @@ const styles = stylex.create({
   },
 });
 
+export function UrlChangelogView(props: ChangelogViewProps) {
+  const requestedPackage = useSearchParams().get('package') ?? undefined;
+  return <ChangelogView {...props} initialPackage={requestedPackage} />;
+}
+
 export function ChangelogView({
   changelogs,
   componentNames,
+  initialPackage,
 }: ChangelogViewProps) {
-  const [activeTab, setActiveTab] = useState(changelogs[0]?.pkg ?? '');
-  const active = changelogs.find(c => c.pkg === activeTab);
+  const displayedChangelogs = changelogs.filter(
+    changelog => !changelog.pkg.startsWith(THEME_PACKAGE_PREFIX),
+  );
+  const [activeTab, setActiveTab] = useState(
+    displayedChangelogs.find(changelog => changelog.pkg === initialPackage)
+      ?.pkg ??
+      displayedChangelogs.find(changelog => changelog.pkg === DEFAULT_PACKAGE)
+        ?.pkg ??
+      displayedChangelogs[0]?.pkg ??
+      '',
+  );
+  const active = displayedChangelogs.find(c => c.pkg === activeTab);
+
+  const handleTabChange = (pkg: string) => {
+    setActiveTab(pkg);
+    const url = new URL(window.location.href);
+    url.searchParams.set('package', pkg);
+    window.history.replaceState(window.history.state, '', url);
+  };
 
   return (
     <Section
@@ -64,11 +93,11 @@ export function ChangelogView({
           </Text>
         </VStack>
 
-        {changelogs.length > 0 ? (
+        {displayedChangelogs.length > 0 ? (
           <>
-            <TabList value={activeTab} onChange={setActiveTab} hasDivider>
+            <TabList value={activeTab} onChange={handleTabChange} hasDivider>
               <Carousel gap={0.5} hasSnap={false}>
-                {changelogs.map(c => (
+                {displayedChangelogs.map(c => (
                   <Tab key={c.pkg} value={c.pkg} label={c.pkg} />
                 ))}
               </Carousel>
@@ -77,7 +106,11 @@ export function ChangelogView({
             {active != null && (
               <Markdown headingLevelStart={2}>
                 {linkifyComponents(
-                  linkifyContributors(linkifyPRs(stripTitle(active.content))),
+                  linkifyContributors(
+                    linkifyPRs(
+                      addEmptyReleasePlaceholders(stripTitle(active.content)),
+                    ),
+                  ),
                   componentNames,
                 )}
               </Markdown>
