@@ -263,6 +263,58 @@ describe('Calendar', () => {
     expect(day15).not.toBeDisabled();
   });
 
+  // ─── Initial Visible Month ───────────────────────────────────
+
+  describe('opens on a month inside the min/max window', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({toFake: ['Date']});
+      vi.setSystemTime(new Date(2026, 7, 21, 12, 0, 0));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('opens on today when today is inside the window', () => {
+      render(<Calendar min="2026-01-01" max="2026-12-31" />);
+
+      expect(screen.getByText('August 2026')).toBeInTheDocument();
+    });
+
+    it('opens on min when the window is entirely in the future', () => {
+      render(<Calendar min="2027-03-04" max="2027-06-30" />);
+
+      expect(screen.getByText('March 2027')).toBeInTheDocument();
+      expect(getDayButton(4, 'March', 2027)).not.toBeDisabled();
+    });
+
+    it('opens on max when the window is entirely in the past', () => {
+      render(<Calendar min="2019-01-01" max="2019-04-30" />);
+
+      expect(screen.getByText('April 2019')).toBeInTheDocument();
+      expect(getDayButton(30, 'April', 2019)).not.toBeDisabled();
+    });
+
+    it('keeps max in the last pane in the two-month layout', () => {
+      render(<Calendar numberOfMonths={2} min="2019-01-01" max="2019-04-30" />);
+
+      expect(screen.getByText('March 2019 – April 2019')).toBeInTheDocument();
+    });
+
+    it('still honors an explicit focusDate outside the window', () => {
+      render(
+        <Calendar focusDate="2026-01-01" min="2027-03-04" max="2027-06-30" />,
+      );
+
+      expect(screen.getByText('January 2026')).toBeInTheDocument();
+    });
+
+    it('still opens on the selected value outside the window', () => {
+      render(<Calendar defaultValue="2031-07-04" min="2019-01-01" />);
+
+      expect(screen.getByText('July 2031')).toBeInTheDocument();
+    });
+  });
+
   it('respects custom dateConstraints', () => {
     // Only allow weekdays
     const isWeekday = (date: Date) => {

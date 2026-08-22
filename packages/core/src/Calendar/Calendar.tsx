@@ -11,6 +11,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Calendar/Calendar.doc.mjs (props table, features, implementation notes)
+ * - /packages/core/src/Calendar/getInitialFocusDate.ts (which month the calendar opens on)
  * - /packages/core/src/Calendar/Calendar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Calendar/index.ts (exports if types change)
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
@@ -60,6 +61,7 @@ import {
 } from '../utils/plainDate';
 import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {getInitialFocusDate} from './getInitialFocusDate';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -142,7 +144,9 @@ interface CalendarBaseProps extends Omit<
 
   /**
    * Controlled focus date (which month is visible).
-   * If not provided, defaults to selected date or today.
+   * If not provided, defaults to the selected date, else today clamped into
+   * the `min`/`max` window (so a window that excludes today opens on the
+   * bound nearest to it, not on an all-disabled month).
    */
   focusDate?: ISODateString;
 
@@ -277,20 +281,19 @@ export function Calendar({ref, ...props}: CalendarProps) {
   // Determine effective value
   const effectiveValue = value !== undefined ? value : internalValue;
 
-  // Focus date state (which month is visible)
-  const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() => {
-    if (focusDateProp) {
-      return plainDateFromISO(focusDateProp);
-    }
-    if (effectiveValue) {
-      if (typeof effectiveValue === 'string') {
-        return plainDateFromISO(effectiveValue);
-      } else {
-        return plainDateFromISO(effectiveValue.start);
-      }
-    }
-    return plainDateToday();
-  });
+  // Focus date state (which month is visible). Falls back to today, clamped
+  // into the min/max window so a window that doesn't contain today doesn't
+  // open on an all-disabled month.
+  const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() =>
+    getInitialFocusDate({
+      focusDate: focusDateProp,
+      value: effectiveValue,
+      min,
+      max,
+      numberOfMonths,
+      today,
+    }),
+  );
 
   // Use controlled focusDate if callback is provided, otherwise use internal state
   const isControlledFocus =
