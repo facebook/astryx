@@ -873,3 +873,63 @@ describe('useLayer context positioning', () => {
     expect(style).not.toContain('position-anchor');
   });
 });
+
+// A browser fires `toggle` in response to hidePopover(), so every hide has two
+// possible reporters: hide() itself and the toggle handler that reconciles
+// browser-initiated closes. The consumer must hear about the close once.
+describe('useLayer onHide', () => {
+  const originalHidePopover = HTMLElement.prototype.hidePopover;
+  const originalShowPopover = HTMLElement.prototype.showPopover;
+
+  afterEach(() => {
+    HTMLElement.prototype.hidePopover = originalHidePopover;
+    HTMLElement.prototype.showPopover = originalShowPopover;
+  });
+
+  function HideHarness({onHide}: {onHide: () => void}) {
+    const layer = useLayer({mode: 'context', onHide});
+    return (
+      <>
+        <button type="button" ref={layer.ref} onClick={layer.show}>
+          Trigger
+        </button>
+        <button type="button" onClick={layer.hide}>
+          Hide
+        </button>
+        {layer.render(<span>Layer content</span>)}
+      </>
+    );
+  }
+
+  it('reports a hide() close once, even when toggle lands synchronously', async () => {
+    HTMLElement.prototype.showPopover = vi.fn();
+    HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+      const event = new Event('toggle');
+      Object.defineProperty(event, 'newState', {value: 'closed'});
+      this.dispatchEvent(event);
+    });
+    const onHide = vi.fn();
+    const user = userEvent.setup();
+    const {getByRole} = render(<HideHarness onHide={onHide} />);
+
+    await user.click(getByRole('button', {name: 'Trigger'}));
+    await user.click(getByRole('button', {name: 'Hide'}));
+
+    expect(onHide).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a browser-initiated close once', async () => {
+    HTMLElement.prototype.showPopover = vi.fn();
+    HTMLElement.prototype.hidePopover = vi.fn();
+    const onHide = vi.fn();
+    const user = userEvent.setup();
+    const {container, getByRole} = render(<HideHarness onHide={onHide} />);
+
+    await user.click(getByRole('button', {name: 'Trigger'}));
+    const closeEvent = new Event('toggle');
+    Object.defineProperty(closeEvent, 'newState', {value: 'closed'});
+    fireEvent(container.querySelector('[popover]') as HTMLElement, closeEvent);
+
+    expect(onHide).toHaveBeenCalledTimes(1);
+  });
+});

@@ -575,6 +575,10 @@ export function useLayer(
     pendingShowRef.current = false;
     if (isOpenRef.current) {
       const el = popoverRef.current;
+      // Reconcile BEFORE hidePopover(): it fires `toggle`, and the handler
+      // below reports a close of its own unless this one is already recorded.
+      openedPopoverRef.current = null;
+      isOpenRef.current = false;
       // See finding infra-4 note in `show`: mirror the same guard on hide so
       // unsupported browsers degrade gracefully instead of throwing.
       if (el) {
@@ -584,8 +588,6 @@ export function useLayer(
           el.style.display = 'none';
         }
       }
-      openedPopoverRef.current = null;
-      isOpenRef.current = false;
       setIsOpen(false);
       onHide?.();
     }
