@@ -20,7 +20,7 @@ import {
   fontWeightVars,
 } from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
-import type {TablePlugin} from '../../types';
+import type {TableColumn, TablePlugin} from '../../types';
 import {useTranslator} from '../../../i18n';
 
 // A synthetic group-header row injected into the flattened data. Real rows
@@ -41,8 +41,10 @@ function isGroupHeader(item: unknown): item is GroupHeader {
   );
 }
 
-// Proxy handler: any field access beyond the marker fields resolves to `''`
-// so user cell renderers (`item.name.toUpperCase()`) never throw on a header.
+// Proxy handler: any field access beyond the marker fields resolves to `''`,
+// which keeps the default cell renderer (`String(item[key])`) harmless on a
+// header row. It is only a backstop — `transformColumns` below stops user
+// `renderCell` functions from seeing a header row at all.
 const HEADER_PROXY_HANDLER: ProxyHandler<Record<string | symbol, unknown>> = {
   // eslint-disable-next-line @typescript-eslint/promise-function-async -- Proxy get trap, not a promise-returning fn
   get(t: Record<string | symbol, unknown>, prop: string | symbol): unknown {
@@ -54,12 +56,15 @@ const HEADER_PROXY_HANDLER: ProxyHandler<Record<string | symbol, unknown>> = {
 };
 
 /**
- * Build a synthetic header row wrapped in a Proxy so arbitrary field access
- * from user cell renderers (e.g. `item.name.toUpperCase()`) resolves to `''`
- * instead of throwing — BaseTable evaluates `col.renderCell(item)` on every
- * row (including synthetic headers) before `transformBodyRow` can replace the
- * row's cells. `transformBodyRow` then discards those cells and renders a
- * single full-width header cell.
+ * Build a synthetic header row wrapped in a Proxy so the default cell renderer
+ * (`String(item[key])`) reads `''` on a header instead of `undefined`.
+ *
+ * The Proxy alone is not enough to protect user code: it rescues a renderer
+ * that *prints* a field, but not the far more common one that *keys off* it
+ * (`STATUS_META[item.status].dot` throws on `''` just as it would on
+ * `undefined`). `transformColumns` therefore skips `renderCell` entirely for
+ * header rows, and `transformBodyRow` replaces the row's cells with a single
+ * full-width header cell.
  */
 function makeHeader<T extends Record<string, unknown>>(
   groupKey: string,
@@ -71,6 +76,37 @@ function makeHeader<T extends Record<string, unknown>>(
     count,
   };
   return new Proxy(target, HEADER_PROXY_HANDLER) as unknown as T;
+}
+
+// Wrapping a column allocates a new object, and BaseTable decides whether
+// every row must re-render by comparing the resolved column array element by
+// element. Cache the wrapper against its source column so a stable `columns`
+// prop keeps yielding the very same objects and that check keeps passing.
+const headerSafeColumns = new WeakMap<object, unknown>();
+
+/**
+ * A column whose `renderCell` skips synthetic group-header rows. Columns
+ * without one are returned untouched: the default renderer reads `item[key]`,
+ * which the header Proxy already answers with `''`.
+ */
+function headerSafeColumn<T extends Record<string, unknown>>(
+  column: TableColumn<T>,
+): TableColumn<T> {
+  const {renderCell} = column;
+  if (!renderCell) {
+    return column;
+  }
+  const cached = headerSafeColumns.get(column);
+  if (cached) {
+    return cached as TableColumn<T>;
+  }
+  const wrapped: TableColumn<T> = {
+    ...column,
+    renderCell: (item: T): ReactNode =>
+      isGroupHeader(item) ? null : renderCell(item),
+  };
+  headerSafeColumns.set(column, wrapped);
+  return wrapped;
 }
 
 /** Configuration for {@link useTableGroupedRows}. */
@@ -109,6 +145,19 @@ export interface UseTableGroupedRowsResult<T extends Record<string, unknown>> {
    * `<Table idKey={grouped.idKey} />`.
    */
   idKey: (item: T) => string;
+  /**
+   * True when the row is a synthetic group header rather than one of your own
+   * rows. Row-level plugins and handlers see both, so guard anything that
+   * assumes a real row — click-to-open-detail, row links, per-row menus:
+   *
+   * ```
+   * transformBodyRow(props, item) {
+   *   if (grouped.isGroupHeader(item)) return props;
+   *   return {...props, htmlProps: {...props.htmlProps, onClick: () => open(item)}};
+   * }
+   * ```
+   */
+  isGroupHeader: (item: T) => boolean;
 }
 
 const styles = stylex.create({
@@ -295,6 +344,14 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
 
   const plugin = useMemo(
     (): TablePlugin<T> => ({
+      // BaseTable evaluates every column's `renderCell` against every row
+      // before `transformBodyRow` gets to discard a header's cells. A header
+      // is not one of the caller's rows, so running their renderer against it
+      // can only fail — the cells produced here are thrown away moments later
+      // regardless. Skip the call and hand back the empty cell directly.
+      transformColumns(columns) {
+        return columns.map(headerSafeColumn);
+      },
       // Replace a header row's pre-rendered cells with one full-width cell.
       transformBodyRow(props, item) {
         if (!isGroupHeader(item)) {
@@ -371,5 +428,5 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
     [collapsedGroups, onToggleGroup, renderGroupHeader, t],
   );
 
-  return {plugin, data: flattened, idKey};
+  return {plugin, data: flattened, idKey, isGroupHeader};
 }
