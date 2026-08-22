@@ -448,25 +448,72 @@ export function MonthScroller({
    * useScrollSettle) — and only moves when the offset is genuinely off, so a
    * scroller the browser snapped for itself is left alone.
    *
+   * ## Why it re-checks that the scroller is still
+   *
+   * A quiet period is not proof of rest, and getting that wrong here does not
+   * merely fail to fix the bug — it REVERSES the user's swipe. iOS runs its
+   * own snap animation for ~150-300ms after the finger lifts, and the scroll
+   * events it fires during that animation arrive irregularly; a gap longer
+   * than the quiet period is routine in the slow tail. The settle then lands
+   * mid-animation, reads a scrollLeft still travelling toward April, rounds
+   * THAT to the nearest pane — which is still March, because the animation is
+   * not yet halfway — and drags the calendar back where it came from. Swipe
+   * forward, get pulled backward, which is what this looked like on a device.
+   *
+   * Two samples a frame apart settle it: if the offset moved, the scroller is
+   * still going somewhere and its destination is not ours to guess. Skipping
+   * costs nothing, because the animation's own scroll events re-arm the
+   * settle, and the last of them gets a quiet period that ends at true rest.
+   *
+   * The threshold is a subpixel rather than exact equality. A scroller at rest
+   * on a fractional-density viewport can report an offset that wobbles in the
+   * last decimal place, and exact equality would read that as travel and never
+   * correct at all — the failure mode being silent, which is the worst kind.
+   * A tail crawling slower than half a pixel a frame has effectively arrived,
+   * so treating it as arrived is right anyway.
+   *
    * The correction is at most half a pane by construction, and its own scroll
    * settles onto the boundary it just aimed at, so it cannot oscillate.
    */
+  const settleFrameRef = useRef<number | undefined>(undefined);
+  useEffect(
+    () => () => {
+      if (settleFrameRef.current != null) {
+        cancelAnimationFrame(settleFrameRef.current);
+      }
+    },
+    [],
+  );
+
   useScrollSettle(scrollerRef, scroller => {
     if (paneSize === 0) {
       return;
     }
-    const row = rowAtScrollOffset(
-      scroller.scrollLeft,
-      paneSize,
-      rowCount,
-      isRTL,
-    );
-    const target = scrollOffsetForRow(row, paneSize, isRTL);
-    // Sub-pixel drift is the browser's own rounding, not a failed snap.
-    if (Math.abs(scroller.scrollLeft - target) < 1) {
-      return;
+    const offsetBefore = scroller.scrollLeft;
+    if (settleFrameRef.current != null) {
+      cancelAnimationFrame(settleFrameRef.current);
     }
-    scroller.scrollTo({left: target, behavior: 'smooth'});
+    settleFrameRef.current = requestAnimationFrame(() => {
+      settleFrameRef.current = undefined;
+      // Still travelling — including a snap animation iOS has not finished.
+      // Correcting toward the nearest pane from a position mid-flight would
+      // undo the swipe rather than complete it.
+      if (Math.abs(scroller.scrollLeft - offsetBefore) >= 0.5) {
+        return;
+      }
+      const row = rowAtScrollOffset(
+        scroller.scrollLeft,
+        paneSize,
+        rowCount,
+        isRTL,
+      );
+      const target = scrollOffsetForRow(row, paneSize, isRTL);
+      // Sub-pixel drift is the browser's own rounding, not a failed snap.
+      if (Math.abs(scroller.scrollLeft - target) < 1) {
+        return;
+      }
+      scroller.scrollTo({left: target, behavior: 'smooth'});
+    });
   });
 
   // Claim horizontal gestures, leave vertical ones to the sheet.

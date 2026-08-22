@@ -1146,6 +1146,45 @@ describe('DateInput — a rest position between two months', () => {
       await waitFor(() => expect(scrollTo).toHaveBeenCalled());
     });
   });
+
+  /**
+   * The one that actually reverses a swipe, and the reason the correction
+   * re-checks stillness rather than trusting the quiet period.
+   *
+   * iOS runs its own snap animation for ~150-300ms after the finger lifts,
+   * and fires scroll events irregularly while it does — a gap longer than the
+   * quiet period is routine in the slow tail. The settle lands mid-animation,
+   * reads an offset still travelling toward April, rounds THAT to the nearest
+   * pane (still March, since the animation is not yet halfway), and drags the
+   * calendar back where it came from. Swipe forward, get pulled backward.
+   *
+   * Simulated by moving the scroller between the two samples, which is what
+   * an animation in flight looks like from here.
+   */
+  it('does not correct a scroller that is still travelling', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      // A quarter of the way to April, and still going.
+      let offset = MARCH_2026_ROW * SCROLLPORT_WIDTH + SCROLLPORT_WIDTH * 0.25;
+      Object.defineProperty(scroller, 'scrollLeft', {
+        configurable: true,
+        get: () => {
+          // Every read advances it, the way an in-flight animation does.
+          offset += 8;
+          return offset;
+        },
+        set: (value: number) => {
+          offset = value;
+        },
+      });
+
+      await swipeTo(scroller, offset);
+      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 3));
+      // Nothing. Correcting here would have sent it back to March, undoing a
+      // swipe the browser was already completing.
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

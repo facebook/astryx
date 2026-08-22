@@ -19,11 +19,17 @@ moves them. The scroller stops where a snap point used to be and nothing
 re-snaps it. Chrome never showed it because it snaps again after the mutation.
 
 The rest position is now corrected rather than trusted: once the gesture is
-genuinely over — touch released and the scroller quiet, which is the only
-sound "stopped" signal on an iOS that has no `scrollend` and whose momentum
-outlasts any naive timer — a scroller that is off a pane boundary is moved to
+genuinely over — touch released, the scroller quiet, AND its offset confirmed
+unchanged across a frame — a scroller that is off a pane boundary is moved to
 the nearest one. A scroller the browser snapped for itself is left alone, so
 nothing extra happens on Chrome, and sub-pixel drift on a fractional viewport
 is ignored.
+
+That last condition is what keeps the fix from becoming a worse bug than the
+one it fixes. A quiet period is not proof of rest: iOS runs its own snap
+animation for a few hundred milliseconds after the finger lifts and fires
+scroll events irregularly while it does, so a correction that trusts quiet
+alone can land mid-animation, round an offset still travelling toward next
+month back to the month it came from, and reverse the swipe.
 
 @imdreamrunner
