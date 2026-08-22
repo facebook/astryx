@@ -49,6 +49,12 @@ export const docs = {
         'Render function for the overflow indicator. Receives the list of hidden items (each with child and index). Only called when items are overflowing.',
     },
     {
+      name: 'onOverflowChange',
+      type: '(overflowItems: OverflowItem[]) => void',
+      description:
+        'Called whenever the collapsed set changes: with the collapsed items once something collapses, and with an empty array once the row widens back out. Silent while nothing overflows, including on mount. Use it to feed a menu the surrounding UI already renders instead of letting the list mount an indicator of its own.',
+    },
+    {
       name: 'gap',
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
@@ -105,6 +111,7 @@ export const docs = {
       'A horizontal list that automatically hides items when they exceed the available width. Use OverflowList for breadcrumbs, toolbars, tag lists, or any row that needs to collapse gracefully at smaller sizes.',
     bestPractices: [
       { guidance: true, description: 'Provide a meaningful overflowRenderer: a "+N more" badge, a dropdown, or a count indicator.' },
+      { guidance: true, description: 'When the row already has its own menu, use onOverflowChange to feed the collapsed items into it instead of adding a second anchor with overflowRenderer.' },
       { guidance: true, description: 'Set minVisibleItems to keep key items visible, and maxVisibleItems to cap the row at a fixed count regardless of available width.' },
       { guidance: true, description: 'Use maxRows to let items wrap onto a bounded number of rows (e.g. a two-row tag cloud) before collapsing the rest into the indicator.' },
       { guidance: false, description: 'Use OverflowList for a vertical stack; horizontal multi-row wrap is supported via maxRows, but items still flow left-to-right, not top-to-bottom.' },
@@ -128,6 +135,12 @@ export const docsZh = {
       type: '(overflowItems: OverflowItem[]) => ReactNode',
       description:
         '溢出指示器的渲染函数。接收隐藏项目列表（每项包含 child 和 index）。仅在有溢出项时调用。',
+    },
+    {
+      name: 'onOverflowChange',
+      type: '(overflowItems: OverflowItem[]) => void',
+      description:
+        '折叠项集合变化时调用：发生折叠时传入折叠项，行重新变宽、全部放得下时传入空数组。没有溢出时（包括挂载时）不会调用。用于将折叠项交给周围界面已有的菜单，避免列表再挂载一个自己的指示器。',
     },
     {
       name: 'gap',
@@ -181,6 +194,7 @@ export const docsZh = {
       'A horizontal list that automatically hides items when they exceed the available width. Use OverflowList for breadcrumbs, toolbars, tag lists, or any row that needs to collapse gracefully at smaller sizes.',
     bestPractices: [
       { guidance: true, description: 'Provide a meaningful overflowRenderer: a "+N more" badge, a dropdown, or a count indicator.' },
+      { guidance: true, description: 'When the row already has its own menu, use onOverflowChange to feed the collapsed items into it instead of adding a second anchor with overflowRenderer.' },
       { guidance: true, description: 'Set minVisibleItems to keep key items visible, and maxVisibleItems to cap the row at a fixed count regardless of available width.' },
       { guidance: true, description: 'Use maxRows to let items wrap onto a bounded number of rows (e.g. a two-row tag cloud) before collapsing the rest into the indicator.' },
       { guidance: false, description: 'Use OverflowList for a vertical stack; horizontal multi-row wrap is supported via maxRows, but items still flow left-to-right, not top-to-bottom.' },
@@ -196,6 +210,7 @@ export const docsDense = {
       'A horizontal list that automatically hides items when they exceed the available width. Use OverflowList for breadcrumbs, toolbars, tag lists, or any row that needs to collapse gracefully at smaller sizes.',
     bestPractices: [
       { guidance: true, description: 'Provide a meaningful overflowRenderer: a "+N more" badge, a dropdown, or a count indicator.' },
+      { guidance: true, description: 'When the row already has its own menu, use onOverflowChange to feed the collapsed items into it instead of adding a second anchor with overflowRenderer.' },
       { guidance: true, description: 'Set minVisibleItems to keep key items visible, and maxVisibleItems to cap the row at a fixed count regardless of available width.' },
       { guidance: true, description: 'Use maxRows to let items wrap onto a bounded number of rows (e.g. a two-row tag cloud) before collapsing the rest into the indicator.' },
       { guidance: false, description: 'Use OverflowList for a vertical stack; horizontal multi-row wrap is supported via maxRows, but items still flow left-to-right, not top-to-bottom.' },
@@ -204,6 +219,7 @@ export const docsDense = {
   propDescriptions: {
     children: 'items to render, each child should be a single element',
     overflowRenderer: 'renders overflow indicator, receives hidden items w/ index',
+    onOverflowChange: 'fires w/ collapsed items whenever that set changes (empty once the row fits again); silent while nothing overflows, incl. on mount; feed a menu you already render',
     gap: 'item gap as spacing step',
     minVisibleItems: 'min items always shown even when overflowing',
     maxVisibleItems: 'max items ever shown (cap); extra items collapse to indicator; min wins if smaller',
