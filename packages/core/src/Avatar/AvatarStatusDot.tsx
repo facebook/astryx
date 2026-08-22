@@ -313,14 +313,22 @@ export function AvatarStatusDot({
   ...props
 }: AvatarStatusDotProps) {
   const avatarSize = use(AvatarSizeContext);
-  const reportStatusLabel = use(AvatarStatusLabelContext);
-  // Report the label from a ref callback rather than an Effect: the ref runs
-  // in the commit phase, so the avatar's accessible name is composed before
-  // paint.
+  const statusLabelRef = use(AvatarStatusLabelContext);
+  // Report the label through the avatar's ref from a callback ref rather than
+  // an Effect: the ref runs in the commit phase, so the avatar's accessible
+  // name is composed before paint, and a ref write costs no render.
   const reportRef = useCallback(() => {
-    reportStatusLabel?.(label);
-    return () => reportStatusLabel?.(undefined);
-  }, [reportStatusLabel, label]);
+    const target = statusLabelRef?.current;
+    if (target == null) {
+      return;
+    }
+    target.label = label;
+    target.update?.();
+    return () => {
+      target.label = undefined;
+      target.update?.();
+    };
+  }, [statusLabelRef, label]);
   // Memoized so React only detaches and reattaches when the reported label
   // actually changes; an inline merge would withdraw and re-report on every
   // render of the avatar.

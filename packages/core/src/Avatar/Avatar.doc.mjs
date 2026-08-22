@@ -16,7 +16,7 @@ export const docs = {
       {guidance: true, description: 'Pick a size that matches the context: xsm or sm for inline mentions, md or lg for lists and cards, xl for profile headers.'},
       {guidance: true, description: 'Add a status dot when knowing someone\'s availability matters, like in chat or team views.'},
       {guidance: true, description: 'When wrapping an Avatar in your own Tooltip or HoverCard, set tooltip={false} so the built-in name tooltip does not overlap yours.'},
-      {guidance: true, description: 'Give every interactive avatar (href or onClick) a name or alt. It is the control\'s accessible name, and the types require it.'},
+      {guidance: true, description: 'Give every interactive avatar (href or onClick) a name or alt. It is the control\'s accessible name, and it warns in development when it is missing.'},
       {guidance: false, description: 'Rely on a status label to name an interactive avatar. "Online" says nothing about where the link goes.'},
       {guidance: false, description: 'Use Avatar for logos, product images, or anything that isn\'t a person or team. Use an image or icon instead.'},
       {guidance: false, description: 'Force a square or custom shape. Avatars are always circular to stay consistent across the system.'},
@@ -92,7 +92,7 @@ export const docs = {
       name: 'href',
       type: 'string',
       description:
-        'When set, the avatar renders as an interactive link (`<a>` or a custom link component) pointing here. This follows the same element-swap rule as Button. Requires a meaningful accessible name via `alt` or `name`: an interactive avatar without one does not compile. Inside an AvatarGroup, interactive avatars share a single Tab stop and are reached with arrow keys.',
+        'When set, the avatar renders as an interactive link (`<a>` or a custom link component) pointing here. This follows the same element-swap rule as Button. Requires a meaningful accessible name via `alt` or `name`: an interactive avatar without one warns in development. Inside an AvatarGroup, interactive avatars share a single Tab stop and are reached with arrow keys.',
     },
     {
       name: 'as',
@@ -114,7 +114,7 @@ export const docs = {
       name: 'onClick',
       type: '(e: MouseEvent) => void',
       description:
-        'Click handler. When set without `href`, the avatar renders as a focusable `<button type="button">`. Requires a meaningful accessible name via `alt` or `name`: an interactive avatar without one does not compile.',
+        'Click handler. When set without `href`, the avatar renders as a focusable `<button type="button">`. Requires a meaningful accessible name via `alt` or `name`: an interactive avatar without one warns in development.',
     },
   ],
   components: [
@@ -130,7 +130,7 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Always provide a name prop so the component can generate meaningful initials and alt text when the image fails to load.'},
       {guidance: true, description: 'Use the status slot with AvatarStatusDot to indicate online presence or availability when relevant to the context.'},
-      {guidance: true, description: 'Give every interactive avatar (href or onClick) a name or alt. It is the control\'s accessible name, and the types require it.'},
+      {guidance: true, description: 'Give every interactive avatar (href or onClick) a name or alt. It is the control\'s accessible name, and it warns in development when it is missing.'},
       {guidance: false, description: 'Use Avatar for decorative images or logos that aren\'t representing a person or entity. Use an image or icon component instead.'},
       {guidance: false, description: 'Override the circular shape. Avatars are always round to maintain visual consistency across the system.'},
     ],
@@ -148,7 +148,7 @@ export const docsDense = {
       {guidance: true, description: 'Match size to context: xsm/sm inline, md/lg in lists, xl for profiles.'},
       {guidance: true, description: 'Add a status dot in chat or team views where availability matters.'},
       {guidance: true, description: 'When wrapping Avatar in your own Tooltip or HoverCard, set tooltip={false} so the built-in name tooltip does not overlap yours.'},
-      {guidance: true, description: 'Interactive avatars (href/onClick) need name or alt; the types require it. A status label is not a name.'},
+      {guidance: true, description: 'Interactive avatars (href/onClick) need name or alt; without one they warn in development. A status label is not a name.'},
       {guidance: false, description: 'Use for logos or product images. Use an image or icon instead.'},
       {guidance: false, description: 'Force a square or custom shape. Avatars are always circular.'},
     ],
@@ -167,7 +167,7 @@ export const docsDense = {
     as: 'custom link component for href (e.g. Next Link). Only with href.',
     target: 'link target. Only with href.',
     rel: 'link rel. Only with href.',
-    onClick: 'click handler → renders <button> when no href. Needs alt/name (enforced by the types).',
+    onClick: 'click handler → renders <button> when no href. Needs alt/name; warns in development without one.',
   },
   components: [
     {name: 'AvatarStatusDot', description: 'size-aware status indicator rendered in the Avatar corner'},

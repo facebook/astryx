@@ -4,7 +4,7 @@
 
 /**
  * @file Avatar.tsx
- * @input Uses React, HTMLAttributes, ReactNode, useState; useTooltip
+ * @input Uses React, HTMLAttributes, ReactNode, useState, useRef; useTooltip
  *   (Tooltip hook) for the optional name-on-hover tooltip; useTranslator (i18n)
  * @output Exports Avatar component, AvatarProps, AvatarSize types
  * @position Core implementation; consumed by index.ts
@@ -12,14 +12,14 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Avatar/Avatar.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Avatar/index.ts (exports if types change)
- * - /packages/core/src/Avatar/AvatarStatusLabelContext.ts (status label reporting)
+ * - /packages/core/src/Avatar/AvatarStatusLabelContext.ts (the status label ref)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
  *
  * Last synced props: alt, fallbackSrc, name, size, src, status, href, as, target, rel, onClick
  */
 
-import {isValidElement, useMemo, useState, type ReactNode} from 'react';
+import {isValidElement, useMemo, useRef, useState, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -29,7 +29,10 @@ import {
   radiusVars,
 } from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
-import {AvatarStatusLabelContext} from './AvatarStatusLabelContext';
+import {
+  AvatarStatusLabelContext,
+  type AvatarStatusLabelTarget,
+} from './AvatarStatusLabelContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
@@ -38,7 +41,7 @@ import {useTooltip} from '../Tooltip/useTooltip';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {useTranslator} from '../i18n';
+import {useTranslator, type TranslatorFn} from '../i18n';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -413,6 +416,38 @@ function getAvatarA11yProps(
 }
 
 /**
+ * The avatar's accessible name: its own name, the status label, or the two
+ * composed ("Jane Doe, Online"). Used both by render and by the commit-phase
+ * update, so the two can never compose differently.
+ */
+function composeAccessibleName(
+  t: TranslatorFn,
+  nameLabel: string | undefined,
+  statusLabel: string | undefined,
+): string | undefined {
+  if (nameLabel && statusLabel) {
+    return t('@astryx.avatar.nameWithStatus', {
+      name: nameLabel,
+      status: statusLabel,
+    });
+  }
+  return nameLabel || statusLabel;
+}
+
+/** Sets an attribute, or removes it when the value is absent. */
+function setAttributeOrRemove(
+  element: HTMLElement,
+  name: string,
+  value: string | undefined,
+): void {
+  if (value == null) {
+    element.removeAttribute(name);
+  } else {
+    element.setAttribute(name, value);
+  }
+}
+
+/**
  * Default person icon SVG for when no image or name is provided
  */
 function DefaultIcon({size}: {size: number}) {
@@ -493,22 +528,14 @@ export function Avatar({
   // generic "Avatar" (obs-9).
   const t = useTranslator();
   const nameLabel = meaningfulAlt || meaningfulName;
-  // The status element reports its own label through context — the only route
-  // that survives a consumer's own wrapper around the dot. A report lands in
-  // the commit phase, so introspection still answers the first render, where
-  // nothing has reported yet.
-  const [reportedStatusLabel, setReportedStatusLabel] = useState<
-    string | undefined
-  >();
-  const resolvedStatusLabel =
-    meaningful(reportedStatusLabel) ?? getStatusLabel(status);
-  const accessibleName =
-    nameLabel && resolvedStatusLabel
-      ? t('@astryx.avatar.nameWithStatus', {
-          name: nameLabel,
-          status: resolvedStatusLabel,
-        })
-      : nameLabel || resolvedStatusLabel;
+  // This render can only see a label introspected off a directly-passed
+  // element. A status inside a consumer's own wrapper reports through the ref
+  // below, in the commit phase, and lands on the root element from there.
+  const accessibleName = composeAccessibleName(
+    t,
+    nameLabel,
+    getStatusLabel(status),
+  );
   const a11yProps = getAvatarA11yProps(accessibleName);
   // An `<a>`/`<button>` root carries its own role and must not be hidden, so
   // only the name transfers. Spread before `{...props}` for the same
@@ -552,8 +579,8 @@ export function Avatar({
     isEnabled: showTooltip,
   });
   // The tooltip ref attaches to whichever root element renders (static or
-  // interactive), so the tooltip works for link/button avatars too.
-  const rootRef = mergeRefs(ref, showTooltip ? tooltipHook.ref : undefined);
+  // interactive), so the tooltip works for link/button avatars too. The root
+  // ref itself is assembled below, once the element swap is resolved.
   const describedByProp =
     showTooltip && isCustomTooltip
       ? {
@@ -585,6 +612,61 @@ export function Avatar({
     'an interactive avatar (with `href` or `onClick`) needs a meaningful ' +
       'accessible name. Pass `alt` or `name`.',
     isInteractive && !nameLabel && consumerName == null,
+  );
+
+  // A status inside a consumer's own wrapper is invisible to render: the dot
+  // writes its label into this ref from its own callback ref, in the commit
+  // phase. A ref write cannot re-render, so the composed name is written
+  // straight onto the root element instead — still before paint, and with no
+  // second render.
+  const statusLabelRef = useRef<AvatarStatusLabelTarget>({
+    label: undefined,
+    update: null,
+  });
+  // A fresh callback ref every render, so React reattaches it on every commit
+  // and the name is recomposed after React has written this render's props.
+  // `update` covers the other direction: a label that changes while the avatar
+  // itself does not re-render.
+  const nameRef = (element: HTMLElement | null) => {
+    if (element == null) {
+      return;
+    }
+    const target = statusLabelRef.current;
+    target.update = () => {
+      const composed = composeAccessibleName(
+        t,
+        nameLabel,
+        meaningful(target.label) ?? getStatusLabel(status),
+      );
+      // A consumer's own ARIA wins here exactly as it does in render, where
+      // the derived props spread before `{...props}`.
+      if (props['aria-label'] == null) {
+        setAttributeOrRemove(element, 'aria-label', composed);
+      }
+      // An `<a>`/`<button>` root carries its own role and must not be hidden,
+      // so only the name transfers there.
+      if (!isInteractive) {
+        if (props.role == null) {
+          element.setAttribute('role', composed ? 'img' : 'presentation');
+        }
+        if (props['aria-hidden'] == null) {
+          setAttributeOrRemove(
+            element,
+            'aria-hidden',
+            composed ? undefined : 'true',
+          );
+        }
+      }
+    };
+    target.update();
+    return () => {
+      target.update = null;
+    };
+  };
+  const rootRef = mergeRefs(
+    ref,
+    showTooltip ? tooltipHook.ref : undefined,
+    nameRef,
   );
 
   // The inner visuals are identical across the static and interactive variants.
@@ -724,7 +806,7 @@ export function Avatar({
 
   const avatarElement = (
     <AvatarSizeContext value={numericSize}>
-      <AvatarStatusLabelContext value={setReportedStatusLabel}>
+      <AvatarStatusLabelContext value={statusLabelRef}>
         {rootElement}
       </AvatarStatusLabelContext>
     </AvatarSizeContext>

@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {Profiler} from 'react';
+import {Profiler, useState} from 'react';
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {act, render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Avatar} from './Avatar';
 import {AvatarStatusDot} from './AvatarStatusDot';
@@ -291,30 +291,36 @@ describe('Avatar', () => {
       ).toBeInTheDocument();
     });
 
-    it('costs one extra commit and does not loop', () => {
-      // A report lands in the commit phase, so a wrapped label the avatar
-      // could not see during render arrives one commit late. Two commits is
-      // the whole cost; anything more means the report is feeding itself.
-      const commits: number[] = [];
-      render(
-        <Profiler id="avatar" onRender={() => commits.push(1)}>
-          <Avatar name="Ada Lovelace" status={<PresenceDot />} />
-        </Profiler>,
-      );
-      expect(
-        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
-      ).toBeInTheDocument();
-      expect(commits).toHaveLength(2);
-    });
-
-    it('names a directly-passed dot on the first render, before any report', () => {
-      // Introspection answers render one; the dot's report then arrives and
-      // costs the same single extra commit, with the same resolved name.
+    it('costs no extra render and does not loop', () => {
+      // The label arrives in the commit phase, after this render composed the
+      // name. It lands on the root element directly, so a wrapped status is
+      // named without a second render. `tooltip={false}` keeps the tooltip's
+      // own mount commit out of the count.
       const commits: number[] = [];
       render(
         <Profiler id="avatar" onRender={() => commits.push(1)}>
           <Avatar
             name="Ada Lovelace"
+            tooltip={false}
+            status={<PresenceDot />}
+          />
+        </Profiler>,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+      expect(commits).toHaveLength(1);
+    });
+
+    it('names a directly-passed dot on the first render, before any report', () => {
+      // Introspection answers render one; the dot's report then lands on the
+      // same name, still without a second render.
+      const commits: number[] = [];
+      render(
+        <Profiler id="avatar" onRender={() => commits.push(1)}>
+          <Avatar
+            name="Ada Lovelace"
+            tooltip={false}
             status={<AvatarStatusDot label="Online" />}
           />
         </Profiler>,
@@ -322,7 +328,42 @@ describe('Avatar', () => {
       expect(
         screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
       ).toBeInTheDocument();
-      expect(commits).toHaveLength(2);
+      expect(commits).toHaveLength(1);
+    });
+
+    it('follows a label that changes without re-rendering the avatar', () => {
+      // State inside the consumer's wrapper: the dot re-renders alone, so the
+      // avatar never gets the chance to recompose during render.
+      let setPresence: (presence: string) => void = () => {};
+      function SelfUpdatingDot() {
+        const [presence, setter] = useState('Online');
+        setPresence = setter;
+        return <AvatarStatusDot label={presence} />;
+      }
+      render(<Avatar name="Ada Lovelace" status={<SelfUpdatingDot />} />);
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+
+      act(() => setPresence('Busy'));
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Busy'}),
+      ).toBeInTheDocument();
+    });
+
+    it('leaves a consumer aria-label alone when a wrapped status reports', () => {
+      render(
+        <Avatar
+          name="Ada Lovelace"
+          aria-label="Ada Lovelace, first programmer"
+          data-testid="a"
+          status={<PresenceDot />}
+        />,
+      );
+      expect(screen.getByTestId('a')).toHaveAttribute(
+        'aria-label',
+        'Ada Lovelace, first programmer',
+      );
     });
   });
 
