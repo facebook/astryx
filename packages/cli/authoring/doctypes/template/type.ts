@@ -152,6 +152,13 @@ export type TemplateCategory =
   | 'AI Chat - Conversation'
   | 'AI Chat - Landing'
   | 'AI Chat - Artifact Page'
+  // Marketing
+  | 'Marketing - Landing'
+  | 'Marketing - Pricing'
+  | 'Marketing - Feature Sections'
+  | 'Marketing - Footer'
+  | 'Marketing - Testimonials'
+  | 'Marketing - FAQ'
   // Gallery
   | 'Gallery - Hero'
   | 'Gallery - Basic'

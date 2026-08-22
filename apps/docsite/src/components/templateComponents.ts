@@ -162,6 +162,22 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-page/page'),
   ),
+  'marketing-feature-sections': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/marketing-feature-sections/page'),
+  ),
+  'marketing-footer': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/marketing-footer/page'),
+  ),
+  'marketing-landing': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/marketing-landing/page'),
+  ),
+  'marketing-pricing': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/marketing-pricing/page'),
+  ),
 };
 
 /** Resolve a template's lazy component by slug, or `undefined` if unknown. */
