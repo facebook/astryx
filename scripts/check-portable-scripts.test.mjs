@@ -118,14 +118,44 @@ describe('the repo itself (#3637)', () => {
     expect(files.every(file => !file.includes('node_modules/'))).toBe(true);
   });
 
-  it.each(['packages/lab', 'packages/charts'])(
-    '%s builds with the same portable invocation as packages/core',
+  /**
+   * Packages whose build writes into a `dist` it must clear first. The themes
+   * are discovered rather than listed, so a new one cannot land without the
+   * cleanup (#5125); lab and charts are the two that regressed in #3637.
+   */
+  const cleansDist = () => [
+    'packages/lab',
+    'packages/charts',
+    ...trackedPackageJsonFiles()
+      .filter(file => /^packages\/themes\/[^/]+\/package\.json$/.test(file))
+      .map(file => path.posix.dirname(file)),
+  ];
+
+  it('discovers the theme packages it guards', () => {
+    // A discovery that silently returned nothing would make the `it.each`
+    // below expand to zero tests and pass vacuously, so it is asserted here.
+    expect(cleansDist()).toContain('packages/themes/neutral');
+  });
+
+  it.each(cleansDist())(
+    '%s clears dist with the same portable rimraf as packages/core',
     dir => {
-      const {scripts, devDependencies} = read(`${dir}/package.json`);
+      // Default the block: a package with no devDependencies should fail this
+      // assertion by name, not throw on a property of undefined.
+      const {scripts, devDependencies = {}} = read(`${dir}/package.json`);
       const core = read('packages/core/package.json');
 
-      expect(scripts.build.startsWith('rimraf dist &&')).toBe(true);
+      expect(scripts.build).toMatch(/^rimraf dist && /);
       expect(devDependencies.rimraf).toBe(core.devDependencies.rimraf);
+    },
+  );
+
+  it.each(['packages/lab', 'packages/charts'])(
+    '%s runs babel with the same flags and quoting as packages/core',
+    dir => {
+      const {scripts} = read(`${dir}/package.json`);
+      const core = read('packages/core/package.json');
+
       // Same flags, same quoting as core — only the babel config file differs
       // (lab/charts author theirs in .js, core in .json).
       for (const name of ['build:esm', 'dev']) {

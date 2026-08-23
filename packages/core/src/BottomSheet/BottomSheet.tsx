@@ -16,6 +16,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheet.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheet.test.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.tsx
@@ -43,14 +44,15 @@ import {
   type BottomSheetPanelMotion,
   type BottomSheetPanelState,
 } from './BottomSheetPanel';
+import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
   type BottomSheetSwitcherPhase,
 } from './BottomSheetSwitcherContext';
 
-export type {BottomSheetHeight} from './BottomSheetPanel';
-import type {BottomSheetHeight} from './BottomSheetPanel';
+export type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
+import type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
 
 const styles = stylex.create({
   dialog: {
@@ -93,6 +95,20 @@ const styles = stylex.create({
       },
     },
   },
+  /**
+   * The dim leaves with the sheet, on a curve that matches.
+   *
+   * A fade covers no distance, so the decelerate token front-loads its
+   * progress and simply ends it early: `--ease-standard` puts the scrim at 90%
+   * faded in 163ms of a 410ms close, leaving an undimmed page under a sheet
+   * that is still sliding across it. `linear` spends the duration it is given.
+   * Same reasoning the touch date picker's surface swap already carries.
+   */
+  scrimClosing: {
+    '::backdrop': {
+      transitionTimingFunction: 'linear',
+    },
+  },
   positioner: {
     position: 'absolute',
     insetInline: 0,
@@ -121,6 +137,16 @@ interface BottomSheetSharedProps extends BaseProps<HTMLDivElement> {
 
   /** Height budget or custom CSS length. Only fully expanded Tall is keyboard-aware. @default 'capped' */
   height?: BottomSheetHeight | number | string;
+
+  /**
+   * Extra heights the sheet can rest at when dragged; its own height is always
+   * the tallest stop, and omitting this gives a sheet that only opens and
+   * closes. Each stop is the sheet's visible height: a number is a viewport
+   * fraction (`0.5` is half the screen), `'50%'` the same in CSS, `'320px'` an
+   * absolute length. A stop of a quarter of the sheet or less is a peek — it
+   * slides away instead of reflowing, and thins the scrim.
+   */
+  snapPoints?: ReadonlyArray<BottomSheetSnapPoint>;
 
   /**
    * Configures implicit dismissal behavior, matching Dialog.
@@ -193,6 +219,7 @@ function StandaloneBottomSheet({
   label,
   children,
   height = 'capped',
+  snapPoints,
   hasScrim = true,
   purpose = 'info',
   xstyle,
@@ -316,6 +343,7 @@ function StandaloneBottomSheet({
         styles.dialog,
         shouldPresent && styles.dialogOpen,
         hasScrim && styles.scrim,
+        hasScrim && !isOpen && isPresented && styles.scrimClosing,
         !hasScrim && styles.dialogNonModal,
       )}
       ref={dialogRef}
@@ -333,6 +361,7 @@ function StandaloneBottomSheet({
           ref={ref}
           state={panelState}
           height={height}
+          snapPoints={snapPoints}
           isSwipeDismissAllowed={purpose === 'info'}
           isPageScrollLocked={shouldPresent && hasScrim}
           xstyle={xstyle}
@@ -343,6 +372,8 @@ function StandaloneBottomSheet({
           {children}
         </BottomSheetPanel>
       </div>
+      {/* A modal sheet's ::backdrop already answers Safari's edge sampler. */}
+      {hasScrim ? null : <BottomSheetEdgeTint />}
     </dialog>
   );
 }
@@ -358,6 +389,7 @@ function SwitcherBottomSheetItem({
   label,
   children,
   height = 'capped',
+  snapPoints,
   purpose = 'info',
   xstyle,
   ...props
@@ -488,6 +520,7 @@ function SwitcherBottomSheetItem({
         ref={ref}
         state={panelState}
         height={height}
+        snapPoints={snapPoints}
         isSwipeDismissAllowed={purpose === 'info'}
         isPageScrollLocked={hasScrim}
         xstyle={xstyle}

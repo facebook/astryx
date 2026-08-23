@@ -423,7 +423,10 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     width: '100%',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',
     transitionDuration: {
@@ -433,7 +436,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
       ':active': colorVars['--color-overlay-pressed'],
@@ -467,7 +470,10 @@ const styles = stylex.create({
     // start so vertical labels/descriptions read left-aligned. Horizontal
     // labels re-center via otLabelWrapH (a deeper element).
     textAlign: 'start',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',
     transitionDuration: {
@@ -477,7 +483,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
       ':active': colorVars['--color-overlay-pressed'],

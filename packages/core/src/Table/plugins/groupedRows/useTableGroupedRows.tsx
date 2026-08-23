@@ -113,7 +113,10 @@ export interface UseTableGroupedRowsResult<T extends Record<string, unknown>> {
 
 const styles = stylex.create({
   headerRow: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
     backgroundColor: colorVars['--color-background-muted'],
     // Divider beneath each group header row (Ernest review #2).
@@ -145,10 +148,14 @@ const styles = stylex.create({
     margin: 0,
     background: 'transparent',
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: {
       default: colorVars['--color-icon-secondary'],
-      ':hover': colorVars['--color-icon-primary'],
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+        colorVars['--color-icon-primary'],
     },
   },
   chevronIcon: {

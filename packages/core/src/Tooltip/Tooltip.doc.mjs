@@ -67,6 +67,13 @@ export const docs = {
           default: "'auto'",
         },
         {
+          name: 'touchTrigger',
+          type: "'auto' | 'tap' | 'none'",
+          description:
+            'What a tap does where there is no hover. auto opens on tap unless the trigger performs an action of its own (a button, link, or form control), whose tap belongs to the control. tap always opens; use it for an info icon rendered as a button, whose only job is to reveal the tooltip. none never opens on touch.',
+          default: "'auto'",
+        },
+        {
           name: 'isEnabled',
           type: 'boolean',
           description: 'Enables or disables the tooltip triggers.',
@@ -103,6 +110,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Keep tooltip content concise: aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
+      {guidance: true, description: 'Set touchTrigger to tap when the trigger is a button whose only job is revealing the tooltip, such as an info icon: touch has no hover, and auto keeps the tap for triggers that perform an action.'},
       {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip; use HoverCard or Popover instead.'},
       {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
@@ -166,6 +174,13 @@ export const docsZh = {
           default: "'auto'",
         },
         {
+          name: 'touchTrigger',
+          type: "'auto' | 'tap' | 'none'",
+          description:
+            '在没有悬停的触摸设备上，轻点的行为。auto：轻点即打开，除非触发元素本身会执行操作（按钮、链接、表单控件），此时轻点归该控件所有。tap：始终轻点打开——适用于以按钮形式呈现、唯一作用就是显示工具提示的信息图标。none：触摸永不打开。',
+          default: "'auto'",
+        },
+        {
           name: 'isEnabled',
           type: 'boolean',
           description: '启用或禁用工具提示触发器。',
@@ -202,6 +217,7 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Keep tooltip content concise: aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
+      {guidance: true, description: 'Set touchTrigger to tap when the trigger is a button whose only job is revealing the tooltip, such as an info icon: touch has no hover, and auto keeps the tap for triggers that perform an action.'},
       {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip; use HoverCard or Popover instead.'},
       {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
@@ -217,6 +233,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Keep tooltip content concise: aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
+      {guidance: true, description: 'Set touchTrigger to tap when the trigger is a button whose only job is revealing the tooltip, such as an info icon: touch has no hover, and auto keeps the tap for triggers that perform an action.'},
       {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip; use HoverCard or Popover instead.'},
       {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
@@ -235,6 +252,7 @@ export const docsDense = {
         delay: 'Show delay in ms.',
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger tooltip.',
+        touchTrigger: 'Tap behavior where there is no hover. auto = tap opens unless the trigger acts (button/link/control); tap = always opens (info icon rendered as a button); none = never on touch.',
         isEnabled: 'Enables/disables tooltip triggers.',
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',

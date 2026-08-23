@@ -224,7 +224,10 @@ const styles = stylex.create({
     position: 'relative',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
-    cursor: 'text',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     height: 'auto',
   },
   wrapperWithTokens: {

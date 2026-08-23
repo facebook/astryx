@@ -28,8 +28,10 @@
  * }
  * ```
  *
- * Internal variables (`--layout-padding-inner-x`, `--container-padding-*`)
- * are implementation details and must not be referenced by themes.
+ * Internal variables (`--layout-padding-inner-x`, `--container-padding-*`,
+ * `--_section-padding-propagated`) are implementation details and must not be
+ * referenced by themes. They also do not cross an overlay boundary — see
+ * `overlayPaddingReset` in padding.stylex.ts.
  *
  * SYNC: When modified, update /packages/core/src/Layout/Layout.doc.mjs
  */
@@ -105,7 +107,13 @@ const cardBlockEnd = `var(--astryx-card-padding-block-end, ${cardShorthand})`;
 // Section padding chains: --astryx-* then the next specificity level, terminating
 // at --spacing-4. Built as chained const strings (no function calls) so StyleX
 // can statically analyze them; see naming.ts for the prefix policy.
-const sectionShorthand = `var(--astryx-section-padding, ${SP4})`;
+// `--_section-padding-propagated` (set by an ancestor Section with explicit
+// padding) is read AHEAD of the public theme token, so a propagated value
+// still wins over the theme for nested sections. Splitting the two names is
+// what lets an overlay drop the inherited value at its boundary while keeping
+// the theme's — see `overlayPaddingReset` in padding.stylex.ts.
+const sectionThemeShorthand = `var(--astryx-section-padding, ${SP4})`;
+const sectionShorthand = `var(--_section-padding-propagated, ${sectionThemeShorthand})`;
 const sectionInline = `var(--astryx-section-padding-inline, ${sectionShorthand})`;
 const sectionInlineStart = `var(--astryx-section-padding-inline-start, ${sectionInline})`;
 const sectionInlineEnd = `var(--astryx-section-padding-inline-end, ${sectionInline})`;

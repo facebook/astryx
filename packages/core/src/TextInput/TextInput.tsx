@@ -71,7 +71,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 
@@ -101,6 +101,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -301,6 +302,7 @@ export function TextInput({
   ...rest
 }: TextInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const size = useSize(sizeProp, 'md');
 
   const id = useId();
@@ -445,7 +447,7 @@ export function TextInput({
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         aria-describedby={ariaDescribedBy}
-        aria-required={isRequired === true ? 'true' : undefined}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         aria-busy={isBusy || undefined}
         aria-labelledby={ariaLabelledBy}

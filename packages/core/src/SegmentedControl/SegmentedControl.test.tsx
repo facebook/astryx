@@ -199,6 +199,37 @@ describe('SegmentedControl', () => {
     expect(screen.queryByText('Grid view')).not.toBeInTheDocument();
   });
 
+  it('fill items can shrink and truncate long labels', () => {
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={() => {}}
+        label="View mode"
+        layout="fill">
+        <SegmentedControlItem
+          value="grid"
+          label="A very long segment label that should truncate"
+        />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem value="table" label="Table" />
+      </SegmentedControl>,
+    );
+
+    const button = screen.getByRole('radio', {name: /very long/});
+    const label = screen.getByText(
+      'A very long segment label that should truncate',
+    );
+
+    // The button (flex child) must allow shrinking below content size
+    const buttonStyle = getComputedStyle(button);
+    expect(buttonStyle.minWidth).toBe('0');
+
+    // The label span must set up text truncation
+    const labelStyle = getComputedStyle(label);
+    expect(labelStyle.overflow).toBe('hidden');
+    expect(labelStyle.textOverflow).toBe('ellipsis');
+  });
+
   it('uses roving tabindex — selected item has tabIndex 0, others -1', () => {
     render(
       <SegmentedControl value="list" onChange={() => {}} label="View mode">

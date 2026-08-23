@@ -20,6 +20,7 @@ import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
 import {PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {installAgentDocs} from '../../../foundation/agent-docs/agent-docs.mjs';
+import {loadDocsCatalog} from '../../docs/_adapter.mjs';
 import {themeTemplate} from '../../theme/template/template.mjs';
 import {listTemplates} from '../../template/template.mjs';
 import {AstryxError} from '../../error.mjs';
@@ -71,7 +72,7 @@ export function getNextSteps(invocation) {
  * @param {string} invocation
  * @param {import('../init.type.mjs').InitRunData} data
  */
-function applyAgents(cwd, options, invocation, data) {
+async function applyAgents(cwd, options, invocation, data) {
   // Validate --agent up front (a hard error, not a swallowed install failure).
   // ERR_UNKNOWN_AGENT was defined but never wired — a typo like `--agent claud`
   // otherwise silently fell back to writing AGENTS.md. Mirrors --features.
@@ -88,7 +89,11 @@ function applyAgents(cwd, options, invocation, data) {
         ? options.agentDocsPath
         : [options.agentDocsPath]
       : undefined;
-    const written = installAgentDocs(cwd, {agent: options.agent, paths});
+    // The block names the topics the agent can read, and an integration's
+    // topics are part of that set — resolved here rather than inside
+    // installAgentDocs, which is sync and cannot load a project.
+    const topics = (await loadDocsCatalog(cwd)).names();
+    const written = installAgentDocs(cwd, {agent: options.agent, paths, topics});
     data.docsWritten = written;
     logger.log(`✓ AI agent docs installed → ${written.join(', ')}`);
   } catch (err) {
@@ -248,7 +253,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       nextSteps: false,
     };
     for (const feature of features) {
-      if (feature === 'agents') applyAgents(cwd, options, invocation, data);
+      if (feature === 'agents') await applyAgents(cwd, options, invocation, data);
       if (feature === 'theme') applyTheme(cwd, invocation, data);
       if (feature === 'template') {
         applyTemplate(cwd, {templateName: options.templateName}, invocation, data);
@@ -272,7 +277,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     templatePath: null,
     nextSteps: true,
   };
-  applyAgents(cwd, options, invocation, data);
+  await applyAgents(cwd, options, invocation, data);
   logger.log('');
   logger.log(
     `  Tip: \`${invocation} init --all\` also points you to the theme and page-building workflows.`,

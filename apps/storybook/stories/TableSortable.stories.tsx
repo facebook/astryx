@@ -10,6 +10,7 @@ import {
   useTableSelectionState,
 } from '@astryxdesign/core/Table';
 import type {TableColumn, TableSortState} from '@astryxdesign/core/Table';
+import {useCollator} from '@astryxdesign/core';
 
 // =============================================================================
 // Sample Data
@@ -141,6 +142,7 @@ export const MultiSort: Story = {
 
 export const CustomSortKey: Story = {
   render: () => {
+    const collator = useCollator();
     const customColumns: TableColumn<Employee>[] = [
       {key: 'name', header: 'Name', sortable: true},
       {key: 'email', header: 'Email', sortable: {sortKey: 'emailSort'}},
@@ -153,7 +155,7 @@ export const CustomSortKey: Story = {
       defaultSort: [{sortKey: 'yearsOld', direction: 'ascending'}],
       comparators: {
         yearsOld: (a, b) => a.age - b.age,
-        emailSort: (a, b) => a.email.localeCompare(b.email),
+        emailSort: (a, b) => collator.compare(a.email, b.email),
       },
     });
 

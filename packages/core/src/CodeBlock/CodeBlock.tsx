@@ -215,7 +215,10 @@ const styles = stylex.create({
     transform: 'rotate(90deg)',
   },
   headerCollapsible: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
     // Restore a keyboard-only focus ring with the standard token/offset so this
     // disclosure control matches the rest of the system (Collapsible, TabMenu);

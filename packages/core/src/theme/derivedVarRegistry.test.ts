@@ -85,6 +85,9 @@ const STRUCTURAL_VARS = new Set([
   '--table-row-overlay',
   '--separator-display',
   '--astryx-section-padding',
+  // Private counterpart of the public token above: one ancestor Section's
+  // padding, propagated down the tree. Structural, never authored by a theme.
+  '--_section-padding-propagated',
 ]);
 
 /**
@@ -164,9 +167,6 @@ function discoverComponents(): ComponentInfo[] {
         allVars.add(v);
       }
     }
-    if (allVars.size === 0) {
-      continue;
-    }
 
     // Only check component directories (those with a doc file named after the
     // directory). Match against the on-disk listing rather than existsSync so
@@ -186,6 +186,16 @@ function discoverComponents(): ComponentInfo[] {
       docDerived = mod.docs?.theming?.derived || [];
     } catch {
       /* skip */
+    }
+
+    // A directory earns a check by declaring a var OR by documenting a
+    // derived[] entry. Bailing on the var count alone (as this did) hid every
+    // component that is themeable purely through an expansion strategy —
+    // `{property: 'padding', expand: 'container'}` names no var, so such a
+    // component declares nothing and its registry↔doc consistency check
+    // silently never ran.
+    if (allVars.size === 0 && docDerived.length === 0) {
+      continue;
     }
 
     results.push({
@@ -212,6 +222,7 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
   HoverCard: 'hovercard',
+  NumberInput: 'number-input',
   Popover: 'popover',
   ProgressBar: 'progressbar-mark',
   Section: 'section',
@@ -262,9 +273,12 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--_avatar-group-overlap',
   '--_codeblock-gutter-width',
   '--_tab-indicator-bottom',
-  // Hit-area outset on a ::after overlay — `inset` on a pseudo-element is not
-  // a property a theme author sets on the component.
+  // Hit-area outset on a ::after overlay, and whether that overlay is
+  // generated at all — `inset` and `content` on a pseudo-element are not
+  // properties a theme author sets on the component.
   '--_thumbnail-hit-inset',
+  '--_input-clear-hit-inset',
+  '--_input-clear-hit-content',
   // Indentation and row-spacing metrics: --tree-list-indent is the authorable
   // step, --_tree-indent the per-row distance TreeListItem computes from it.
   // --tree-list-row-gap is applied as half a padding-block on each row wrapper,

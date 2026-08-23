@@ -323,6 +323,10 @@
     "defaultMessage": "Selected range: {start} to {end}.",
     "description": "Screen-reader announcement after the second pick completes a Calendar range selection. `{start}` and `{end}` are localized full dates in chronological order."
   },
+  "@astryx.calendar.rangeClearedAnnounce": {
+    "defaultMessage": "Cleared start date {date}. Select a start date.",
+    "description": "Screen-reader announcement when the user clicks the in-progress range start again, which clears it instead of completing a zero-length range. `{date}` is the localized full date."
+  },
   "@astryx.carousel.label": {
     "defaultMessage": "Carousel",
     "description": "Screen-reader-only fallback name for a horizontally-scrolling row of items. If \"carousel\" is unfamiliar in your locale, prefer the standard term (e.g. \"slider\")."
@@ -434,6 +438,10 @@
   "@astryx.listInput.removeItem": {
     "defaultMessage": "Remove {itemName} {position, number}",
     "description": "Accessible label and tooltip on the button that deletes one record from a lab ListInput. `{itemName}` is the consumer's singular noun for one record; `{position}` is its 1-based row number (e.g. \"Remove guest 2\")."
+  },
+  "@astryx.listInput.removeUnavailable": {
+    "defaultMessage": "Remove is unavailable while the list is disabled",
+    "description": "Tooltip shown on the Remove button when the ListInput is disabled or loading, explaining why the action cannot be performed."
   },
   "@astryx.listInput.reorderItem": {
     "defaultMessage": "Reorder {itemName} {position, number}",
@@ -702,6 +710,30 @@
   "@astryx.dateInput.invalidDate": {
     "defaultMessage": "Invalid date",
     "description": "Screen-reader-only live-region alert in DateInput / DateTimeInput when the typed date cannot be parsed. The field silently reverts on blur, so this is the only rejection feedback a screen-reader user gets."
+  },
+  "@astryx.dateInput.resetPicking": {
+    "defaultMessage": "Reset",
+    "description": "Secondary button in the mobile date picker's footer, beside Save. Removes the chosen date AND returns the calendar to the current month — it undoes the picking done so far and puts the picker back to how it opens, so prefer a word covering both, not one that only means emptying a field. Not cancel: the picker stays open afterwards and nothing is dismissed."
+  },
+  "@astryx.dateInput.savePicking": {
+    "defaultMessage": "Save",
+    "description": "Full-width primary button that closes the mobile date picker, on the calendar. The date is already committed by the tap that chose it, so this only dismisses — but it is worded as saving because that is how the action reads to someone finishing a form. Use the word your platform uses for accepting and closing a sheet."
+  },
+  "@astryx.dateInput.doneChoosingMonth": {
+    "defaultMessage": "Done",
+    "description": "Full-width button under the month and year wheels in the mobile date picker. It does NOT close the picker — it returns to the calendar, having set the month. Word it as finishing this step, not as finishing the whole task; the calendar's own button is the one that closes."
+  },
+  "@astryx.dateInput.chooseMonthYear": {
+    "defaultMessage": "{monthYear}, Choose month and year",
+    "description": "Accessible name for the mobile date picker's header button, which swaps the calendar for month and year wheels. {monthYear} is the currently shown month and year, already localized (e.g. \"March 2026\"). The whole label is one string so the separator and word order can change per locale."
+  },
+  "@astryx.dateInput.monthWheel": {
+    "defaultMessage": "Month",
+    "description": "Accessible name for the scrollable month column in the mobile date picker. Single word; a calendar month, not a duration."
+  },
+  "@astryx.dateInput.yearWheel": {
+    "defaultMessage": "Year",
+    "description": "Accessible name for the scrollable year column in the mobile date picker. Single word; a calendar year, not a duration."
   },
   "@astryx.dateTimeInput.timeHint12h": {
     "defaultMessage": "e.g., 2:30 PM",

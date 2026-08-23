@@ -35,6 +35,7 @@ import {useTranslator} from '../i18n';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {usePopover} from '../Popover/usePopover';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {
   colorVars,
   durationVars,
@@ -69,7 +70,10 @@ const styles = stylex.create({
     },
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   trigger: {
     display: 'flex',
@@ -89,7 +93,10 @@ const styles = stylex.create({
     fontSize: 'inherit',
     lineHeight: 'inherit',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
     borderRadius: radiusVars['--radius-element'],
   },
@@ -110,16 +117,17 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': 'none',
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
       ':focus-within': 'none',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -176,7 +184,7 @@ const styles = stylex.create({
     height: sizeVars['--size-element-lg'],
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 
@@ -344,6 +352,7 @@ export function ComplexSelector<Value>({
   ...props
 }: ComplexSelectorProps<Value>) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const effectiveStatusVariant =
     variant === 'ghost' && statusVariant === 'attached'
@@ -497,7 +506,7 @@ export function ComplexSelector<Value>({
           aria-controls={contentId}
           aria-describedby={ariaDescribedBy}
           aria-labelledby={labelId}
-          aria-required={isRequired ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           disabled={isDisabled}

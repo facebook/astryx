@@ -53,6 +53,9 @@ import {
   parseMarkdownIncremental,
   createIncrementalState,
   trimStreamingArtifacts,
+  inlineText,
+  slugify,
+  uniqueSlug,
 } from './parser';
 import type {BlockNode, InlineNode, IncrementalState} from './parser';
 import {themeProps} from '../utils/themeProps';
@@ -108,6 +111,14 @@ export interface MarkdownComponents {
   heading?: React.ComponentType<{
     level: 1 | 2 | 3 | 4 | 5 | 6;
     children: React.ReactNode;
+    /**
+     * Generated slug for this heading, matching the ids produced by
+     * useOutlineFromMarkdown / parseOutlineFromMarkdown. Render it as the
+     * element's `id` to keep Outline hash navigation working. Undefined for
+     * headings nested inside blockquotes or list items (the outline only
+     * lists top-level headings).
+     */
+    id?: string;
   }>;
   paragraph?: React.ComponentType<{children: React.ReactNode}>;
   image?: React.ComponentType<{src: string; alt: string}>;
@@ -1045,6 +1056,7 @@ function renderBlock(
   inlinePlugins: MarkdownInlinePlugin[] | undefined,
   components: Partial<MarkdownComponents> | undefined,
   t: TranslatorFn,
+  headingIdMap?: ReadonlyMap<BlockNode, string>,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1071,10 +1083,15 @@ function renderBlock(
           components,
         ),
       );
+      // Only top-level headings get an id: the map is built from the same
+      // traversal parseOutlineFromMarkdown uses (which skips headings nested
+      // in blockquotes / list items), so rendered ids and outline ids stay
+      // identical — including duplicate-slug numbering.
+      const headingId = headingIdMap?.get(node);
       const HeadingComp = components?.heading;
       if (HeadingComp) {
         return (
-          <HeadingComp key={index} level={level}>
+          <HeadingComp key={index} level={level} id={headingId}>
             {headingChildren}
           </HeadingComp>
         );
@@ -1083,6 +1100,7 @@ function renderBlock(
       return (
         <Tag
           key={index}
+          id={headingId}
           {...mergeProps(
             themeProps('markdown-heading', {density, level}),
             stylex.props(
@@ -1652,6 +1670,27 @@ export function Markdown({
     return parseMarkdown(children, parseOptions);
   }, [display, smoothedText, children, isStreaming, parseOptions]);
 
+  // Assign each top-level heading the slug that parseOutlineFromMarkdown
+  // would derive for it, so Outline hash links built from the same source
+  // always find a matching DOM id. Mirrors that function's traversal exactly:
+  // top-level blocks only, one shared duplicate-numbering sequence.
+  // NOTE: must stay above the `display === 'inline'` early return below —
+  // hooks cannot be conditional.
+  const headingIdMap = useMemo(() => {
+    if (display === 'inline' || blocks.length === 0) {
+      return undefined;
+    }
+    const map = new Map<BlockNode, string>();
+    const counts = new Map<string, number>();
+    for (const block of blocks) {
+      if (block.type === 'heading') {
+        const label = inlineText(block.children).trim();
+        map.set(block, uniqueSlug(slugify(label), counts));
+      }
+    }
+    return map;
+  }, [display, blocks]);
+
   const inlineNodes = useMemo(() => {
     if (display !== 'inline') {
       return [];
@@ -1765,6 +1804,7 @@ export function Markdown({
           inlinePlugins,
           components,
           t,
+          headingIdMap,
         ),
       )}
     </div>

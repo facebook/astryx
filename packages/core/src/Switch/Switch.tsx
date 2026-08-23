@@ -47,6 +47,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 
 const wrapperSizeStyles = stylex.create({
   sm: {
@@ -160,7 +161,10 @@ const styles = stylex.create({
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
     minInlineSize: {
       default: null,
@@ -184,7 +188,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputBusy: {
     pointerEvents: 'none',
@@ -503,6 +507,10 @@ export function Switch({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  // Announce the effective required state (form default included) while the
+  // native `required` stays bound to the explicit `isRequired` so a layout
+  // default never switches on browser validation.
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -559,6 +567,7 @@ export function Switch({
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
         form={showsDisabledMessage ? '' : undefined}
         required={isRequired}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         onChange={e => {
           if (isDisabled || isBusy) {
             return;

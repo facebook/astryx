@@ -36,6 +36,7 @@ import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {useTranslator} from '../i18n';
 
 /**
@@ -157,13 +158,20 @@ const styles = stylex.create({
     cursor: {
       default: 'zoom-in',
       '@media (hover: hover)': 'zoom-in',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   imageWrapperZoomed: {
-    cursor: 'grab',
+    cursor: {
+      default: 'grab',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   imageWrapperDragging: {
-    cursor: 'grabbing',
+    cursor: {
+      default: 'grabbing',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   image: {
     maxWidth: '100%',
@@ -588,7 +596,7 @@ export function Lightbox({
       aria-label={currentItem.alt || t('@astryx.lightbox.mediaViewer')}
       {...mergeProps(
         themeProps('lightbox'),
-        stylex.props(styles.dialog, xstyle),
+        stylex.props(styles.dialog, overlayPaddingReset.reset, xstyle),
         className,
         style,
       )}

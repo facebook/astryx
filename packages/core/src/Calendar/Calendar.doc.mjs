@@ -69,6 +69,18 @@ export const docs = {
       description: 'Custom constraint functions.',
     },
     {
+      name: 'maxRangeSpan',
+      type: 'number',
+      description:
+        'Range mode: max days a range may span, both endpoints counted (7 = a 7-day window). Caps the window from the picked start; before a start is picked every day stays selectable.',
+    },
+    {
+      name: 'minRangeSpan',
+      type: 'number',
+      description:
+        'Range mode: min days a range must span, both endpoints counted (2 forbids a single-day range). Default 1.',
+    },
+    {
       name: 'focusDate',
       type: 'ISODateString',
       description: 'Controlled visible month.',
@@ -142,6 +154,8 @@ export const docsZh = {
     {name: 'min', type: 'ISODateString', description: '可选择的最早日期。'},
     {name: 'max', type: 'ISODateString', description: '可选择的最晚日期。'},
     {name: 'dateConstraints', type: 'Array<(date: Date) => boolean>', description: '自定义约束函数。'},
+    {name: 'maxRangeSpan', type: 'number', description: '范围模式：范围最多可跨越的天数，含首尾两端（7 = 7 天窗口）。选定起始日后限制窗口大小。'},
+    {name: 'minRangeSpan', type: 'number', description: '范围模式：范围最少需跨越的天数，含首尾两端（2 表示禁止单日范围）。默认为 1。'},
     {name: 'focusDate', type: 'ISODateString', description: '受控可见月份。'},
     {name: 'onFocusDateChange', type: '(focusDate: ISODateString) => void', description: '导航回调函数。'},
     {name: 'handleRef', type: 'React.Ref<CalendarHandle>', description: '日历导航的命令式句柄，包括 navigateTo()。'},
@@ -205,6 +219,8 @@ export const docsDense = {
     min: 'minimum selectable date',
     max: 'maximum selectable date',
     dateConstraints: 'custom constraint fns',
+    maxRangeSpan: 'range mode: max days a range may span, both ends counted (7 = 7-day window)',
+    minRangeSpan: 'range mode: min days a range must span, both ends counted (default 1)',
     focusDate: 'controlled visible month',
     onFocusDateChange: 'navigation callback',
     handleRef: 'imperative navigation handle',
