@@ -131,12 +131,26 @@ export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
  * outside its own box: the focus ring (offset + width) and the selected
  * indicator, which `--_tab-indicator-bottom` pushes further down when a
  * divider rail is reserved. The strip pads by that much and takes the padding
- * straight back off with a negative margin, so nothing is clipped and the
- * strip occupies exactly the space it did before.
+ * straight back off with a negative margin, so nothing is clipped and the tabs
+ * stay exactly where they were.
+ *
+ * A bleed is not free, though. The padding is real geometry: the strip's
+ * border box sticks out of the TabList's, and any ancestor that scrolls counts
+ * that as something to scroll to. So the ring's share of the bleed is taken
+ * only while a ring is actually drawn inside the strip -- the same
+ * `:has(:focus-visible)` condition that draws it -- and at rest the strip is
+ * exactly as wide and as tall as the TabList, as it was before the strip could
+ * scroll. The indicator's share is always taken, because the indicator is
+ * always drawn.
+ *
+ * Turning the bleed on moves nothing: padding and negative margin cancel, so
+ * the border box grows outwards and the content stays put.
  */
 const RING_BLEED = `calc(${focusVars['--focus-outline-width']} + ${focusVars['--focus-outline-offset']})`;
+const BLEED_VAR = '--_tab-strip-bleed';
+const BLEED = `var(${BLEED_VAR})`;
 const INDICATOR_BLEED = 'calc(-1 * var(--_tab-indicator-bottom, -1px))';
-const BLOCK_END_BLEED = `max(${RING_BLEED}, ${INDICATOR_BLEED})`;
+const BLOCK_END_BLEED = `max(${BLEED}, ${INDICATOR_BLEED})`;
 
 /** How far the edge fade runs; wide enough to sit under an arrow. */
 const FADE_WIDTH = spacingVars['--spacing-8'];
@@ -148,18 +162,17 @@ const FADE_WIDTH = spacingVars['--spacing-8'];
  * back from the computed style so the arithmetic below has one source of
  * truth with the CSS.
  */
-const SCROLL_EDGE_INSET = `calc(${RING_BLEED} + ${FADE_WIDTH})`;
+const SCROLL_EDGE_INSET = `calc(${BLEED} + ${FADE_WIDTH})`;
 
 /**
  * The fade reaches transparent at the strip's *own* edge, not at the bleed
- * edge — otherwise the scroll container paints tabs `RING_BLEED` past the
- * TabList's box, past a divider rail, and past the scroll arrow that caps
- * that edge. Masking the bleed costs nothing: only a faded edge is masked,
- * and a stop at a faded edge never holds focus, so the bleed is still there
- * when the ring needs it.
+ * edge — otherwise the scroll container paints tabs past the TabList's box,
+ * past a divider rail, and past the scroll arrow that caps that edge. Masking
+ * the bleed costs nothing: only a faded edge is masked, and a stop at a faded
+ * edge never holds focus, so the bleed is still there when the ring needs it.
  */
-const FADE_FROM_START = `linear-gradient(to right, transparent ${RING_BLEED}, black ${SCROLL_EDGE_INSET})`;
-const FADE_FROM_END = `linear-gradient(to left, transparent ${RING_BLEED}, black ${SCROLL_EDGE_INSET})`;
+const FADE_FROM_START = `linear-gradient(to right, transparent ${BLEED}, black ${SCROLL_EDGE_INSET})`;
+const FADE_FROM_END = `linear-gradient(to left, transparent ${BLEED}, black ${SCROLL_EDGE_INSET})`;
 
 const styles = stylex.create({
   nav: {
@@ -210,12 +223,16 @@ const styles = stylex.create({
       default: 'smooth',
       '@media (prefers-reduced-motion: reduce)': 'auto',
     },
-    paddingBlockStart: RING_BLEED,
-    marginBlockStart: `calc(-1 * (${RING_BLEED}))`,
+    [BLEED_VAR]: {
+      default: '0px',
+      ':has(:focus-visible)': RING_BLEED,
+    },
+    paddingBlockStart: BLEED,
+    marginBlockStart: `calc(-1 * (${BLEED}))`,
     paddingBlockEnd: BLOCK_END_BLEED,
     marginBlockEnd: `calc(-1 * (${BLOCK_END_BLEED}))`,
-    paddingInline: RING_BLEED,
-    marginInline: `calc(-1 * (${RING_BLEED}))`,
+    paddingInline: BLEED,
+    marginInline: `calc(-1 * (${BLEED}))`,
     maskImage: 'none',
     transitionProperty: 'mask-image',
     transitionDuration: {
@@ -237,7 +254,7 @@ const styles = stylex.create({
     },
   },
   fadeBoth: {
-    maskImage: `linear-gradient(to right, transparent ${RING_BLEED}, black ${SCROLL_EDGE_INSET}, black calc(100% - ${SCROLL_EDGE_INSET}), transparent calc(100% - ${RING_BLEED}))`,
+    maskImage: `linear-gradient(to right, transparent ${BLEED}, black ${SCROLL_EDGE_INSET}, black calc(100% - ${SCROLL_EDGE_INSET}), transparent calc(100% - ${BLEED}))`,
   },
   arrow: {
     position: 'absolute',

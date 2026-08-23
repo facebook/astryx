@@ -1183,11 +1183,10 @@ describe('TabList overflow (scroll)', () => {
   });
 
   it('fades out at the strip’s own edge, not at the bleed edge', () => {
-    // The scroll box is a ring-bleed wider than the TabList on each side, so a
-    // fade that ran to the box edge would paint tabs outside the component and
-    // past the arrow that caps that edge.
-    const bleed =
-      'calc(var(--focus-outline-width) + var(--focus-outline-offset))';
+    // The scroll box is a ring-bleed wider than the TabList on each side while
+    // it holds focus, so a fade that ran to the box edge would paint tabs
+    // outside the component and past the arrow that caps that edge.
+    const bleed = 'var(--_tab-strip-bleed)';
     const {strip} = renderStrip();
     strip.scrollBy = vi.fn();
 
@@ -1200,6 +1199,22 @@ describe('TabList overflow (scroll)', () => {
     expect(getComputedStyle(strip).maskImage).toContain(
       `transparent calc(100% - ${bleed})`,
     );
+  });
+
+  it('is no wider than the TabList until the strip holds focus', () => {
+    // The bleed is real geometry: while the strip carries it, its border box
+    // sticks out of the TabList's and every ancestor that scrolls counts it.
+    // jsdom has no layout, so the box is read off the declarations: padding
+    // and its cancelling margin are both the bleed, and the bleed is zero
+    // until a ring needs keeping whole. `:has(:focus-visible)` flips it --
+    // covered in a browser, since jsdom does not recompute style on a focus
+    // change.
+    const {strip} = renderStrip();
+    const cs = getComputedStyle(strip);
+
+    expect(cs.getPropertyValue('--_tab-strip-bleed')).toBe('0px');
+    expect(cs.paddingInline).toBe('var(--_tab-strip-bleed)');
+    expect(cs.marginInline).toBe('calc(-1 * (var(--_tab-strip-bleed)))');
   });
 
   it('does not hand focus to an arrow, which is hidden from assistive tech', () => {
