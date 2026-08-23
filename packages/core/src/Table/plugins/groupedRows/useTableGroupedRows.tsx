@@ -21,6 +21,7 @@ import {
 } from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import type {TablePlugin} from '../../types';
+import {useTranslator} from '../../../i18n';
 
 // A synthetic group-header row injected into the flattened data. Real rows
 // never carry this marker.
@@ -40,8 +41,11 @@ function isGroupHeader(item: unknown): item is GroupHeader {
   );
 }
 
-// Proxy handler: any field access beyond the marker fields resolves to `''`
-// so user cell renderers (`item.name.toUpperCase()`) never throw on a header.
+// Proxy handler: any field access beyond the marker fields resolves to `''`,
+// which keeps anything that reads a header's data — the sortable and filtering
+// plugins, a consumer's own row handler — off `undefined`. Cell renderers are
+// handled at render time instead (see `transformBodyCell` below); the Proxy
+// never protected them, because `''` fails a lookup exactly as `undefined` does.
 const HEADER_PROXY_HANDLER: ProxyHandler<Record<string | symbol, unknown>> = {
   // eslint-disable-next-line @typescript-eslint/promise-function-async -- Proxy get trap, not a promise-returning fn
   get(t: Record<string | symbol, unknown>, prop: string | symbol): unknown {
@@ -53,12 +57,9 @@ const HEADER_PROXY_HANDLER: ProxyHandler<Record<string | symbol, unknown>> = {
 };
 
 /**
- * Build a synthetic header row wrapped in a Proxy so arbitrary field access
- * from user cell renderers (e.g. `item.name.toUpperCase()`) resolves to `''`
- * instead of throwing — BaseTable evaluates `col.renderCell(item)` on every
- * row (including synthetic headers) before `transformBodyRow` can replace the
- * row's cells. `transformBodyRow` then discards those cells and renders a
- * single full-width header cell.
+ * Build a synthetic header row wrapped in a Proxy so field access resolves to
+ * `''` instead of `undefined`. `transformBodyRow` then discards the row's
+ * cells and renders a single full-width header cell.
  */
 function makeHeader<T extends Record<string, unknown>>(
   groupKey: string,
@@ -112,7 +113,10 @@ export interface UseTableGroupedRowsResult<T extends Record<string, unknown>> {
 
 const styles = stylex.create({
   headerRow: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
     backgroundColor: colorVars['--color-background-muted'],
     // Divider beneath each group header row (Ernest review #2).
@@ -144,19 +148,36 @@ const styles = stylex.create({
     margin: 0,
     background: 'transparent',
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: {
       default: colorVars['--color-icon-secondary'],
-      ':hover': colorVars['--color-icon-primary'],
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+        colorVars['--color-icon-primary'],
     },
   },
   chevronIcon: {
-    display: 'inline-flex',
     transitionProperty: 'transform',
     transitionDuration: '150ms',
   },
-  chevronExpanded: {
-    transform: 'rotate(90deg)',
+  // The RTL mirror is folded into each state's transform rather than living on
+  // a parent span. Both are `transform`, so on one element the later value
+  // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
+  // exactly as the nested elements did, while leaving a single element to
+  // carry the glyph's theme target.
+  chevronIconCollapsed: {
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
+  },
+  chevronIconExpanded: {
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
   },
   // Emphasized body text — same size as body, heavier weight (Ernest #3).
   label: {
@@ -175,12 +196,12 @@ const styles = stylex.create({
  * toggle, the group label, and a member count; collapsing hides that group's
  * data rows while keeping the header visible.
  *
- * Mirrors {@link useTableRowExpansionState}: the consumer owns the
- * `collapsedGroups` set and this hook returns `{data, plugin, idKey}` —
+ * Mirrors other controlled Table state helpers: the consumer owns the
+ * `collapsedGroups` set and this hook returns `{data, plugin, idKey}`:
  * pass all three to `<Table>`.
  *
  * @example
- * ```tsx
+ * ```
  * const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
  * const grouped = useTableGroupedRows({
  *   data: rows,
@@ -205,6 +226,7 @@ const styles = stylex.create({
 export function useTableGroupedRows<T extends Record<string, unknown>>(
   config: UseTableGroupedRowsConfig<T>,
 ): UseTableGroupedRowsResult<T> {
+  const t = useTranslator();
   const {
     data,
     groupBy,
@@ -279,6 +301,15 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
 
   const plugin = useMemo(
     (): TablePlugin<T> => ({
+      // A header row is not one of the caller's rows, so running a cell
+      // renderer against it can only misread it or throw — and the cells are
+      // discarded by `transformBodyRow` below regardless.
+      transformBodyCell(props, _column, item) {
+        if (!isGroupHeader(item)) {
+          return props;
+        }
+        return {...props, isContentSuppressed: true};
+      },
       // Replace a header row's pre-rendered cells with one full-width cell.
       transformBodyRow(props, item) {
         if (!isGroupHeader(item)) {
@@ -305,7 +336,7 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             onClick: toggle,
             'aria-expanded': !collapsed,
           },
-          styles: [...props.styles, styles.headerRow],
+          xstyle: [...props.xstyle, styles.headerRow],
           children: (
             // colSpan larger than the column count is clamped by the browser
             // to the actual number of columns, so the header always spans the
@@ -323,17 +354,27 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
                   }}
                   aria-label={
                     collapsed
-                      ? `Expand group ${header.groupKey}`
-                      : `Collapse group ${header.groupKey}`
+                      ? t('@astryx.tableGroupedRows.expandGroup', {
+                          groupKey: header.groupKey,
+                        })
+                      : t('@astryx.tableGroupedRows.collapseGroup', {
+                          groupKey: header.groupKey,
+                        })
                   }
                   aria-expanded={!collapsed}>
-                  <span
-                    {...stylex.props(
+                  <Icon
+                    icon="chevronRight"
+                    size="xsm"
+                    // The rotation rides on the glyph rather than a wrapper
+                    // span so the theme target below reaches both the mark and
+                    // its open/closed transform.
+                    xstyle={[
                       styles.chevronIcon,
-                      !collapsed && styles.chevronExpanded,
-                    )}>
-                    <Icon icon="chevronRight" size="xsm" />
-                  </span>
+                      collapsed
+                        ? styles.chevronIconCollapsed
+                        : styles.chevronIconExpanded,
+                    ]}
+                  />
                 </button>
                 {content}
               </span>
@@ -342,7 +383,7 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
         };
       },
     }),
-    [collapsedGroups, onToggleGroup, renderGroupHeader],
+    [collapsedGroups, onToggleGroup, renderGroupHeader, t],
   );
 
   return {plugin, data: flattened, idKey};

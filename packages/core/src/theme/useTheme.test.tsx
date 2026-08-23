@@ -5,6 +5,7 @@ import {render, renderHook, act, waitFor} from '@testing-library/react';
 import React from 'react';
 import {Theme} from './Theme';
 import {defineTheme} from './defineTheme';
+import {resetThemes} from './themeRegistry';
 import {useTheme} from './useTheme';
 import {resolveThemeTokens} from './tokens';
 
@@ -79,6 +80,24 @@ describe('useTheme', () => {
     });
     // --spacing-1 is not overridden — should be the default '4px'
     expect(result.current.token('--spacing-1')).toBe('4px');
+    expect(result.current.token('--border-width')).toBe('1px');
+  });
+
+  it('resolves --border-width override when defined in theme', () => {
+    const arcadeTheme = defineTheme({
+      name: 'arcade',
+      tokens: {
+        '--border-width': '2px',
+      },
+    });
+    const {result} = renderHook(() => useTheme(), {
+      wrapper: ({children}) => (
+        <Theme theme={arcadeTheme} mode="light">
+          {children}
+        </Theme>
+      ),
+    });
+    expect(result.current.token('--border-width')).toBe('2px');
   });
 
   it('resolves default light-dark() string tokens for the mode', () => {
@@ -152,6 +171,8 @@ describe('useTheme', () => {
 // straight to OS preference (see Theme.tsx's useRootThemeSync).
 describe('useTheme mode resolution without a ThemeContext ancestor', () => {
   afterEach(async () => {
+    resetThemes();
+    document.documentElement.removeAttribute('data-astryx-theme');
     // The hook from each `it` below is still mounted and subscribed to the
     // shared MutationObserver when this runs (RTL's own cleanup — which
     // unmounts it — is registered after this file's afterEach), so removing
@@ -184,6 +205,46 @@ describe('useTheme mode resolution without a ThemeContext ancestor', () => {
 
     await waitFor(() => expect(result.current.mode).toBe('dark'));
   });
+
+  it('resolves registered theme tokens from <html data-astryx-theme> when set', () => {
+    defineTheme({
+      name: 'root-brand',
+      tokens: {'--color-accent': ['#010203', '#AABBCC']},
+    });
+    document.documentElement.setAttribute('data-astryx-theme', 'root-brand');
+    document.documentElement.setAttribute('data-theme', 'dark');
+
+    const {result} = renderHook(() => useTheme());
+
+    expect(result.current.name).toBe('root-brand');
+    expect(result.current.token('--color-accent')).toBe('#AABBCC');
+  });
+
+  it('stays live when <html data-astryx-theme> changes after mount', async () => {
+    defineTheme({
+      name: 'first-brand',
+      tokens: {'--color-accent': '#111111'},
+    });
+    defineTheme({
+      name: 'second-brand',
+      tokens: {'--color-accent': '#222222'},
+    });
+    document.documentElement.setAttribute('data-astryx-theme', 'first-brand');
+
+    const {result} = renderHook(() => useTheme());
+    expect(result.current.name).toBe('first-brand');
+    expect(result.current.token('--color-accent')).toBe('#111111');
+
+    act(() => {
+      document.documentElement.setAttribute(
+        'data-astryx-theme',
+        'second-brand',
+      );
+    });
+
+    await waitFor(() => expect(result.current.name).toBe('second-brand'));
+    expect(result.current.token('--color-accent')).toBe('#222222');
+  });
 });
 
 // Covers the singleton MutationObserver + no-op gating in useRootThemeModeAttr:
@@ -193,7 +254,9 @@ describe('useTheme mode resolution without a ThemeContext ancestor', () => {
 // zero as they unmount.
 describe('useTheme root-attribute observer lifecycle', () => {
   afterEach(() => {
+    resetThemes();
     document.documentElement.removeAttribute('data-theme');
+    document.documentElement.removeAttribute('data-astryx-theme');
     // vi.stubGlobal'd MutationObserver stubs below are torn down here even if
     // a test fails partway through, instead of relying on a manual restore
     // line at the end of each test that a mid-test throw would skip.
@@ -237,13 +300,13 @@ describe('useTheme root-attribute observer lifecycle', () => {
     const first = renderHook(() => useTheme());
     const second = renderHook(() => useTheme());
 
-    expect(ObserverSpy).toHaveBeenCalledTimes(1);
-    expect(observe).toHaveBeenCalledTimes(1);
+    expect(ObserverSpy).toHaveBeenCalledTimes(2);
+    expect(observe).toHaveBeenCalledTimes(2);
 
     first.unmount();
     expect(disconnect).not.toHaveBeenCalled();
 
     second.unmount();
-    expect(disconnect).toHaveBeenCalledTimes(1);
+    expect(disconnect).toHaveBeenCalledTimes(2);
   });
 });

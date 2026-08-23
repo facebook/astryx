@@ -62,7 +62,7 @@ const styles = stylex.create({
  * so it reflects the current sort / filter / pagination view.
  *
  * @example
- * ```tsx
+ * ```
  * const rowIndex = useTableRowIndex({data});
  * <Table data={data} columns={columns} idKey="id" plugins={{rowIndex}} />;
  * ```

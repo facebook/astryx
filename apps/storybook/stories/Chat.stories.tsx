@@ -9,6 +9,8 @@ import {
   ChatSystemMessage,
 } from '@astryxdesign/core/Chat';
 import {Avatar} from '@astryxdesign/core/Avatar';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {Text} from '@astryxdesign/core/Text';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {Token} from '@astryxdesign/core/Token';
 import {HStack} from '@astryxdesign/core/Stack';
@@ -54,9 +56,7 @@ For **server state**, use a library like **TanStack Query** or **SWR** — they 
 
 Avoid global state managers unless you have a genuine need for cross-cutting state. Most apps are over-engineered in this area.`}</Markdown>
           <ChatMessageMetadata
-            timestamp={
-              <Timestamp value="2026-03-15T14:30:30" format="time" />
-            }
+            timestamp={<Timestamp value="2026-03-15T14:30:30" format="time" />}
             footer={
               <>
                 <span>Claude Opus 4.6</span>
@@ -130,9 +130,7 @@ const [state, dispatch] = useReducer(reducer, initialState);`}
 | \`useSyncExternalStore\` | External stores | On snapshot change | High | Redux, Zustand, signals |
 | \`useRef\` | Mutable values | Never | Low | DOM refs, timers, previous values |`}</Markdown>
           <ChatMessageMetadata
-            timestamp={
-              <Timestamp value="2026-03-15T14:31:30" format="time" />
-            }
+            timestamp={<Timestamp value="2026-03-15T14:31:30" format="time" />}
             footer={
               <>
                 <span>Claude Opus 4.6</span>
@@ -239,6 +237,49 @@ export function Button({ label, variant = 'primary' }) {
   ),
 };
 
+export const CustomContent: StoryObj = {
+  name: 'Custom Content',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column'}}>
+      <ChatMessageList style={{maxWidth: 520}}>
+        <ChatMessage sender="user">
+          <ChatMessageBubble>Can you pull up the Q3 report?</ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble name="Navi">
+            Sure, here is the artifact from last quarter.
+          </ChatMessageBubble>
+          {/* A ghost bubble insets custom content to the bubble's text
+              column; width="100%" spans the full message column instead
+              of the default bubble width cap (#2574). */}
+          <ChatMessageBubble
+            variant="ghost"
+            width="100%"
+            metadata={
+              <ChatMessageMetadata
+                timestamp={
+                  <Timestamp value="2026-03-15T14:32:00" format="time" />
+                }
+                footer={<span>Claude Opus 4.6</span>}
+              />
+            }>
+            <ClickableCard
+              label="Open Q3 performance report"
+              onClick={() => {}}>
+              <Text type="body" weight="semibold" display="block">
+                Q3 Performance Report
+              </Text>
+              <Text type="supporting" color="secondary" display="block">
+                12 pages · updated 2 days ago
+              </Text>
+            </ClickableCard>
+          </ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>
+    </div>
+  ),
+};
+
 export const ChatConversation: StoryObj = {
   name: 'Chat Conversation',
   render: () => {
@@ -254,7 +295,7 @@ export const ChatConversation: StoryObj = {
           <ChatSystemMessage variant="divider">Today</ChatSystemMessage>
           <ChatMessage
             sender="assistant"
-            avatar={<Avatar name="Navi" size="small" />}>
+            avatar={<Avatar name="Navi" size="md" />}>
             <ChatMessageBubble
               name={<span style={nameStyle}>Navi</span>}
               metadata={
@@ -269,9 +310,7 @@ export const ChatConversation: StoryObj = {
             </ChatMessageBubble>
           </ChatMessage>
 
-          <ChatMessage
-            sender="user"
-            avatar={<Avatar name="Cindy" size="small" />}>
+          <ChatMessage sender="user" avatar={<Avatar name="Cindy" size="md" />}>
             <ChatMessageBubble
               group="first"
               name={<span style={nameStyle}>Cindy</span>}>
@@ -293,7 +332,7 @@ export const ChatConversation: StoryObj = {
 
           <ChatMessage
             sender="assistant"
-            avatar={<Avatar name="Navi" size="small" />}>
+            avatar={<Avatar name="Navi" size="md" />}>
             <ChatMessageBubble
               name={<span style={nameStyle}>Navi</span>}
               metadata={
@@ -308,9 +347,7 @@ export const ChatConversation: StoryObj = {
             </ChatMessageBubble>
           </ChatMessage>
 
-          <ChatMessage
-            sender="user"
-            avatar={<Avatar name="Cindy" size="small" />}>
+          <ChatMessage sender="user" avatar={<Avatar name="Cindy" size="md" />}>
             <ChatMessageBubble
               name={<span style={nameStyle}>Cindy</span>}
               metadata={
@@ -336,9 +373,9 @@ export const DensityComparison: StoryObj = {
   name: 'Density Comparison',
   render: () => {
     const avatarSize = {
-      compact: 'xsmall' as const,
-      balanced: 'small' as const,
-      spacious: 'small' as const,
+      compact: 'sm' as const,
+      balanced: 'md' as const,
+      spacious: 'md' as const,
     };
     const messages = (density: 'compact' | 'balanced' | 'spacious') => (
       <div
@@ -425,8 +462,7 @@ export const GapOverride: StoryObj = {
           </ChatMessageBubble>
         </ChatMessage>
         <ChatMessage sender="assistant">
-          <ChatMessageBubble
-            metadata={<ChatMessageMetadata footer="Done" />}>
+          <ChatMessageBubble metadata={<ChatMessageMetadata footer="Done" />}>
             The patch is ready for review.
           </ChatMessageBubble>
         </ChatMessage>
@@ -439,12 +475,10 @@ export const SystemMessages: StoryObj = {
   render: () => (
     <div style={{height: 400, display: 'flex', flexDirection: 'column'}}>
       <ChatMessageList>
-        <ChatSystemMessage variant="divider">
-          March 15, 2026
-        </ChatSystemMessage>
+        <ChatSystemMessage variant="divider">March 15, 2026</ChatSystemMessage>
         <ChatMessage
           sender="assistant"
-          avatar={<Avatar name="Navi" size="small" />}>
+          avatar={<Avatar name="Navi" size="md" />}>
           <Markdown density="compact">Good morning!</Markdown>
         </ChatMessage>
         <ChatSystemMessage>Conversation started</ChatSystemMessage>
@@ -469,8 +503,7 @@ export const MessageStatus: StoryObj = {
           </ChatMessageBubble>
         </ChatMessage>
         <ChatMessage sender="user">
-          <ChatMessageBubble
-            metadata={<ChatMessageMetadata status="sent" />}>
+          <ChatMessageBubble metadata={<ChatMessageMetadata status="sent" />}>
             Sent
           </ChatMessageBubble>
         </ChatMessage>
@@ -481,14 +514,12 @@ export const MessageStatus: StoryObj = {
           </ChatMessageBubble>
         </ChatMessage>
         <ChatMessage sender="user">
-          <ChatMessageBubble
-            metadata={<ChatMessageMetadata status="read" />}>
+          <ChatMessageBubble metadata={<ChatMessageMetadata status="read" />}>
             Read
           </ChatMessageBubble>
         </ChatMessage>
         <ChatMessage sender="user">
-          <ChatMessageBubble
-            metadata={<ChatMessageMetadata status="error" />}>
+          <ChatMessageBubble metadata={<ChatMessageMetadata status="error" />}>
             Failed to send
           </ChatMessageBubble>
         </ChatMessage>
@@ -523,7 +554,7 @@ export const MultiBubble: StoryObj = {
         </ChatMessage>
         <ChatMessage
           sender="assistant"
-          avatar={<Avatar name="Navi" size="small" />}>
+          avatar={<Avatar name="Navi" size="md" />}>
           <ChatMessageBubble group="first">
             Sure, looking at it now!
           </ChatMessageBubble>

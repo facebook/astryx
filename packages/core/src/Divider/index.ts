@@ -11,9 +11,23 @@
  * SYNC: When modified, update /packages/core/src/Divider/Divider.doc.mjs
  */
 
+/**
+ * Extensible variant map for Divider.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@astryxdesign/core/Divider' {
+ *   interface DividerVariantMap {
+ *     'accent': true;
+ *   }
+ * }
+ * ```
+ */
+export interface DividerVariantMap {
+  subtle: true;
+  strong: true;
+}
+
 export {Divider} from './Divider';
-export type {
-  DividerProps,
-  DividerVariant,
-  DividerVariantMap,
-} from './Divider';
+export type {DividerProps, DividerVariant} from './Divider';

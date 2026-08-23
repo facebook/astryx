@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Banner',
@@ -17,11 +17,13 @@ export const docs = {
       {guidance: true, description: 'Keep titles short and scannable: "Payment failed" not "There was a problem processing your most recent payment."'},
       {guidance: false, description: 'Use Banner for short-lived messages that disappear on their own; use Toast instead.'},
       {guidance: false, description: 'Stack multiple banners with the same status; combine related messages into one banner.'},
+      {guidance: true, description: 'Error and warning banners render as role="alert"; info and success render as role="status". Mount an alert banner in response to an event rather than on first paint, so assistive tech has a change to report.'},
+      {guidance: false, description: 'Rely on the status color or icon alone to carry meaning; say which status it is in the title text, because the icon is decorative to a screen reader.'},
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
-      {name: 'Title', required: false, description: 'The main message. Required if no description is provided.'},
-      {name: 'Description', required: false, description: 'Additional detail below the title. Required if no title is provided.'},
+      {name: 'Title', required: true, description: 'The main message. Always required.'},
+      {name: 'Description', required: false, description: 'Additional detail below the title.'},
       {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
       {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
       {name: 'Collapsible content', required: false, description: 'Extra detail that expands below the banner header, like a list of errors.'},
@@ -68,7 +70,7 @@ export const docs = {
       name: 'endContent',
       type: 'ReactNode',
       description:
-        'Action content rendered in the header area, end-aligned. Typically a button or link.',
+        'Action content rendered in the header area, end-aligned. Wraps to its own row below the text when the header is too narrow to hold both.',
       slotElements: [
         {__element: 'Icon', props: {icon: 'chevronDown', size: 'sm'}},
         {__element: 'Badge', props: {label: '3'}},
@@ -80,6 +82,13 @@ export const docs = {
       description:
         'Container type: card has border-radius; section is full-width with no border-radius for page-level use.',
       default: "'card'",
+    },
+    {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth. Use for a floating banner that hovers above content; `none` is the default inline banner. A `card`-container banner rounds its shadow to match.',
+      default: "'none'",
     },
     {
       name: 'children',
@@ -116,7 +125,7 @@ export const docs = {
       {className: 'astryx-banner-content', visualProps: ['container', 'status']},
     ],
     vars: [
-      {name: '--_banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)', private: true},
+      {name: '--_banner-radius', description: 'Border radius of the card container (header, content area and the elevated root silhouette)', default: 'var(--radius-container)', private: true},
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_banner-radius']},
@@ -124,7 +133,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Banner',
   displayName: 'Banner',
@@ -141,8 +150,8 @@ export const docsZh = {
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
-      {name: 'Title', required: false, description: 'The main message. Required if no description is provided.'},
-      {name: 'Description', required: false, description: 'Additional detail below the title. Required if no title is provided.'},
+      {name: 'Title', required: true, description: 'The main message. Always required.'},
+      {name: 'Description', required: false, description: 'Additional detail below the title.'},
       {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
       {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
       {name: 'Collapsible content', required: false, description: 'Extra detail that expands below the banner header, like a list of errors.'},
@@ -155,8 +164,9 @@ export const docsZh = {
     {name: 'icon', type: 'ReactNode', description: '覆盖默认的状态图标。'},
     {name: 'isDismissable', type: 'boolean', description: '横幅是否可被用户关闭。', default: 'false'},
     {name: 'onDismiss', type: '() => void', description: '点击关闭按钮时调用；无论是否提供此回调，横幅都会自动隐藏。'},
-    {name: 'endContent', type: 'ReactNode', description: '渲染在头部区域末端对齐的操作内容，通常是按钮或链接。'},
+    {name: 'endContent', type: 'ReactNode', description: '渲染在头部区域末端对齐的操作内容，通常是按钮或链接。头部过窄时会整体换行到文本下方，自成一行。'},
     {name: 'container', type: "'card' | 'section'", description: '视觉变体：card 带圆角；section 无圆角全宽，适用于页面级场景。', default: "'card'"},
+    {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: '静止阴影深度。用于悬浮于内容之上的浮动横幅；none 为默认内联横幅。', default: "'none'"},
     {name: 'children', type: 'ReactNode', description: '渲染在彩色头部下方卡片背景区域的内容。'},
     {name: 'defaultIsExpanded', type: 'boolean', description: '内容区域（children）是否初始展开。仅在提供 children 时相关。', default: 'false'},
     {
@@ -190,7 +200,7 @@ export const docsZh = {
       },
     ],
     vars: [
-      {name: '--_banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)', private: true},
+      {name: '--_banner-radius', description: 'Border radius of the card container (header, content area and the elevated root silhouette)', default: 'var(--radius-container)', private: true},
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_banner-radius']},
@@ -198,7 +208,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'persistent message for errors, updates, warnings, or confirmations',
   usage: {
@@ -211,10 +221,12 @@ export const docsDense = {
       {guidance: true, description: 'Keep titles short: "Payment failed" not "There was a problem processing your payment."'},
       {guidance: false, description: 'Use for auto-dismissing messages; use Toast instead.'},
       {guidance: false, description: 'Stack multiple banners of the same status; combine into one.'},
+      {guidance: true, description: 'Error/warning render role="alert", info/success role="status"; mount an alert banner on an event, not first paint, so assistive tech announces it.'},
+      {guidance: false, description: 'Rely on status color or icon alone; state the status in the title text, since the icon is decorative to a screen reader.'},
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Set automatically from status.'},
-      {name: 'Title', required: false, description: 'Main message text.'},
+      {name: 'Title', required: true, description: 'Main message text.'},
       {name: 'Description', required: false, description: 'Detail below title.'},
       {name: 'Action button', required: false, description: 'CTA like Review or Retry.'},
       {name: 'Dismiss button', required: false, description: 'Close button via isDismissable.'},
@@ -228,8 +240,9 @@ export const docsDense = {
     icon: 'override default status icon',
     isDismissable: 'user can dismiss banner',
     onDismiss: 'dismiss callback; banner self-hides regardless',
-    endContent: 'end-aligned action in header, typically button/link',
+    endContent: 'end-aligned action in header, typically button/link; wraps to its own row when the header is too narrow',
     container: 'card=border-radius; section=full-width no radius for page-level',
+    elevation: 'resting shadow depth: none|low|med|high; raise for a floating banner',
     children: 'content in card-bg area below colored header',
     xstyle: 'StyleX layout customization via stylex.create()',
   },

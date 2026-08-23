@@ -77,22 +77,10 @@ describe('TabList', () => {
 
   it('does not set aria-orientation on the nav (invalid for role navigation)', () => {
     // Regression: aria-orientation is not an allowed attribute on the
-    // navigation role and produces an axe aria-allowed-attr violation. The
-    // `orientation` prop must drive keyboard/hint behavior without emitting
-    // this attribute, regardless of the value passed.
-    const {rerender} = render(
+    // navigation role and produces an axe aria-allowed-attr violation.
+    // TabList deliberately never sets this attribute.
+    render(
       <TabList value="home" onChange={() => {}}>
-        <Tab value="home" label="Home" />
-        <Tab value="settings" label="Settings" />
-      </TabList>,
-    );
-
-    expect(screen.getByRole('navigation')).not.toHaveAttribute(
-      'aria-orientation',
-    );
-
-    rerender(
-      <TabList value="home" onChange={() => {}} orientation="vertical">
         <Tab value="home" label="Home" />
         <Tab value="settings" label="Settings" />
       </TabList>,
@@ -118,7 +106,7 @@ describe('TabList', () => {
     );
   });
 
-  it('marks selected tab with aria-current', () => {
+  it('marks selected tab with a generic aria-current, not "page"', () => {
     render(
       <TabList value="home" onChange={() => {}}>
         <Tab value="home" label="Home" />
@@ -128,9 +116,26 @@ describe('TabList', () => {
 
     expect(screen.getByRole('button', {name: 'Home'})).toHaveAttribute(
       'aria-current',
-      'page',
+      'true',
     );
     expect(screen.getByRole('button', {name: 'Settings'})).not.toHaveAttribute(
+      'aria-current',
+    );
+  });
+
+  it('marks a selected link tab with the same generic aria-current', () => {
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" href="/home" />
+        <Tab value="settings" label="Settings" href="/settings" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('link', {name: 'Home'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    expect(screen.getByRole('link', {name: 'Settings'})).not.toHaveAttribute(
       'aria-current',
     );
   });
@@ -160,7 +165,7 @@ describe('TabList', () => {
 
     expect(screen.getByRole('button', {name: 'Home'})).toHaveAttribute(
       'aria-current',
-      'page',
+      'true',
     );
 
     rerender(
@@ -175,7 +180,7 @@ describe('TabList', () => {
     );
     expect(screen.getByRole('button', {name: 'Settings'})).toHaveAttribute(
       'aria-current',
-      'page',
+      'true',
     );
   });
 
@@ -320,6 +325,72 @@ describe('TabList', () => {
     );
 
     expect(screen.getByTestId('dot')).toBeInTheDocument();
+  });
+});
+
+describe('TabList divider gap', () => {
+  // The divider adds the reserved gap + indicator offset via a single class
+  // (StyleX applies deterministic classes in the test env). Capture that
+  // class set once so the assertions describe intent, not opaque hashes.
+  function navClasses(hasDivider: boolean): Set<string> {
+    const {unmount} = render(
+      <TabList value="home" onChange={() => {}} hasDivider={hasDivider}>
+        <Tab value="home" label="Home" />
+      </TabList>,
+    );
+    const nav = screen.getByRole('navigation');
+    const classes = new Set(nav.className.split(/\s+/).filter(Boolean));
+    unmount();
+    return classes;
+  }
+
+  it('adds divider-only styling classes when hasDivider is set', () => {
+    const withDivider = navClasses(true);
+    const withoutDivider = navClasses(false);
+
+    // Every class the plain nav has must still be present when divided: the
+    // divider only adds styling (border + reserved gap + indicator offset),
+    // it never removes the base nav styles.
+    for (const cls of withoutDivider) {
+      expect(withDivider.has(cls)).toBe(true);
+    }
+
+    // And it must add at least one class the undivided nav does not have.
+    const added = [...withDivider].filter(c => !withoutDivider.has(c));
+    expect(added.length).toBeGreaterThan(0);
+  });
+
+  it('does not add divider styling to an undivided tab list (default)', () => {
+    // Default (no hasDivider) and explicit hasDivider={false} are identical:
+    // the non-divided path is untouched by the divider gap change.
+    expect(navClasses(false)).toEqual(
+      (() => {
+        const {unmount} = render(
+          <TabList value="home" onChange={() => {}}>
+            <Tab value="home" label="Home" />
+          </TabList>,
+        );
+        const nav = screen.getByRole('navigation');
+        const classes = new Set(nav.className.split(/\s+/).filter(Boolean));
+        unmount();
+        return classes;
+      })(),
+    );
+  });
+
+  it('keeps the selected indicator rendered under a divider', () => {
+    render(
+      <TabList value="home" onChange={() => {}} hasDivider>
+        <Tab value="home" label="Home" />
+        <Tab value="away" label="Away" />
+      </TabList>,
+    );
+    const selected = screen.getByRole('button', {name: 'Home'});
+    // The indicator span carries the selected marker; the divider must not
+    // drop it (it is repositioned onto the rail, not removed).
+    expect(
+      selected.querySelector('[data-selected="selected"]'),
+    ).toBeInTheDocument();
   });
 });
 
@@ -633,10 +704,10 @@ describe('TabMenu', () => {
 
     // Menu items are rendered in DOM (popover controls visibility, hidden from a11y tree)
     expect(
-      screen.getByRole('menuitem', {name: 'Analytics', hidden: true}),
+      screen.getByRole('menuitemradio', {name: 'Analytics', hidden: true}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('menuitem', {name: 'Reports', hidden: true}),
+      screen.getByRole('menuitemradio', {name: 'Reports', hidden: true}),
     ).toBeInTheDocument();
   });
 
@@ -672,7 +743,7 @@ describe('TabMenu', () => {
     await user.click(screen.getByRole('button', {name: /More/}));
 
     // Click the menu item (popover content, hidden from a11y tree in jsdom)
-    const menuItem = screen.getByRole('menuitem', {
+    const menuItem = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
@@ -680,7 +751,7 @@ describe('TabMenu', () => {
     expect(handleChange).toHaveBeenCalledWith('analytics');
   });
 
-  it('marks menu item as selected with aria-current', () => {
+  it('exposes options as menuitemradio and marks the selected tab aria-checked', () => {
     render(
       <TabList value="analytics" onChange={() => {}}>
         <Tab value="home" label="Home" />
@@ -688,18 +759,21 @@ describe('TabMenu', () => {
       </TabList>,
     );
 
-    // Menu items are in DOM (popover content, hidden from a11y tree in jsdom)
-    const analyticsItem = screen.getByRole('menuitem', {
+    // Menu items are in DOM (popover content, hidden from a11y tree in jsdom).
+    // Single-select menu options carry radio semantics (APG menu-button):
+    // role="menuitemradio" + aria-checked, not menuitem + aria-current.
+    const analyticsItem = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
-    expect(analyticsItem).toHaveAttribute('aria-current', 'true');
+    expect(analyticsItem).toHaveAttribute('aria-checked', 'true');
+    expect(analyticsItem).not.toHaveAttribute('aria-current');
 
-    const reportsItem = screen.getByRole('menuitem', {
+    const reportsItem = screen.getByRole('menuitemradio', {
       name: 'Reports',
       hidden: true,
     });
-    expect(reportsItem).not.toHaveAttribute('aria-current');
+    expect(reportsItem).toHaveAttribute('aria-checked', 'false');
   });
 });
 
@@ -720,11 +794,11 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
 
     await user.click(screen.getByRole('button', {name: /More/}));
 
-    const analytics = screen.getByRole('menuitem', {
+    const analytics = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
-    const reports = screen.getByRole('menuitem', {
+    const reports = screen.getByRole('menuitemradio', {
       name: 'Reports',
       hidden: true,
     });
@@ -750,11 +824,11 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
 
     await user.click(screen.getByRole('button', {name: /More/}));
     const menu = screen.getByRole('menu', {hidden: true});
-    const analytics = screen.getByRole('menuitem', {
+    const analytics = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
-    const reports = screen.getByRole('menuitem', {
+    const reports = screen.getByRole('menuitemradio', {
       name: 'Reports',
       hidden: true,
     });
@@ -780,11 +854,11 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
 
     await user.click(screen.getByRole('button', {name: /More/}));
     const menu = screen.getByRole('menu', {hidden: true});
-    const analytics = screen.getByRole('menuitem', {
+    const analytics = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
-    const reports = screen.getByRole('menuitem', {
+    const reports = screen.getByRole('menuitemradio', {
       name: 'Reports',
       hidden: true,
     });
@@ -813,11 +887,11 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
 
     await user.click(screen.getByRole('button', {name: /More/}));
     const menu = screen.getByRole('menu', {hidden: true});
-    const analytics = screen.getByRole('menuitem', {
+    const analytics = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
-    const exports = screen.getByRole('menuitem', {
+    const exports = screen.getByRole('menuitemradio', {
       name: 'Exports',
       hidden: true,
     });
@@ -840,7 +914,7 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /More/}));
-    const analytics = screen.getByRole('menuitem', {
+    const analytics = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });

@@ -30,9 +30,8 @@ import type {HeroThemeContent} from './heroThemeContent';
 
 // One recurring member across every theme slide (the per-theme `member` copy is
 // intentionally not used here).
-const CDN = 'https://lookaside.facebook.com/assets/astryx';
 const REWARD_MEMBER_NAME = 'Ami Pena';
-const REWARD_MEMBER_AVATAR = `${CDN}/DATA-Ami-Pena.png`;
+const REWARD_MEMBER_AVATAR = '/images/avatars/DATA-Ami-Pena.png';
 
 const styles = stylex.create({
   // Desktop overlap stage: fixed, viewport-centered 1200px box (shared with the
@@ -493,7 +492,7 @@ export function HeroFloatingCards({
             <Avatar
               src={REWARD_MEMBER_AVATAR}
               name={REWARD_MEMBER_NAME}
-              size="xsmall"
+              size="sm"
             />
             <Text type="supporting" color="secondary">
               {REWARD_MEMBER_NAME}

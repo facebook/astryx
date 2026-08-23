@@ -4,16 +4,22 @@
 
 /**
  * @file useListFocus.ts
- * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect
+ * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect,
+ *   isRtlElement
  * @output Exports useListFocus hook for linear list keyboard navigation
  * @position Core hook; used by TabMenu for dropdown menu navigation, Toolbar
  *   for roving tabindex, ButtonGroup, ContextMenu, NavHeadingMenu, and more.
+ *   Auto-detects RTL from the container's computed direction so horizontal
+ *   arrow keys follow visual direction (WCAG 1.3.2).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
+ * - /packages/core/src/hooks/useListFocus.doc.mjs
+ * - /packages/core/src/hooks/useListFocus.test.tsx
  */
 
 import {useCallback, useRef} from 'react';
+import {isRtlElement} from './isRtlElement';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
 /**
@@ -35,13 +41,34 @@ export interface UseListFocusOptions {
   itemSelector?: string;
 
   /**
+   * Selector identifying a list boundary — used to scope a list that contains
+   * *nested* lists of the same kind (e.g. a menu with submenu flyouts).
+   *
+   * Overlays like submenu flyouts render inline (native popover, not a
+   * portal), so a nested list's items are DOM descendants of the parent list.
+   * Without scoping, the parent's `querySelectorAll` sweeps the nested items
+   * into its roving order (leaving hidden items `.focus()` can't land on), and
+   * key events from the nested list bubble into the parent's handler (moving
+   * focus twice). When set, `useListFocus`:
+   *   - counts an item as its own only when the item's nearest
+   *     `boundarySelector` ancestor is this list's container, and
+   *   - ignores key events whose nearest `boundarySelector` ancestor is not
+   *     this list's container (i.e. they originated in a nested list).
+   *
+   * Typically `'[role="menu"]'` for menus. Omit for flat lists.
+   */
+  boundarySelector?: string;
+
+  /**
    * Whether arrow navigation wraps around at the ends.
    * @default true
    */
   wrap?: boolean;
 
   /**
-   * Callback when Escape key is pressed.
+   * Callback when Escape key is pressed. Supplying it also makes the list
+   * consume the key (`preventDefault`); without it Escape passes through to
+   * the surrounding layer.
    */
   onEscape?: () => void;
 
@@ -59,10 +86,16 @@ export interface UseListFocusOptions {
   hasHomeEnd?: boolean;
 
   /**
-   * Whether the list is in a right-to-left context. When true, ArrowLeft and
-   * ArrowRight are swapped so horizontal navigation follows visual direction.
-   * Only affects horizontal (`'horizontal'`/`'both'`) navigation.
-   * @default false
+   * @deprecated Direction is auto-detected from the container's computed
+   * `direction` — omit this. The explicit override is redundant (there's no
+   * valid reason to force RTL arrows in an LTR context) and will be removed in
+   * an upcoming major.
+   *
+   * When set, forces whether the list is right-to-left: ArrowLeft/ArrowRight
+   * are swapped so horizontal navigation follows visual direction. When
+   * omitted (preferred), the direction is auto-detected from the container's
+   * computed `direction` (read lazily on keydown, horizontal arrows only).
+   * @default undefined (auto-detect from the container)
    */
   isRtl?: boolean;
 
@@ -128,6 +161,23 @@ export interface UseListFocusReturn<T extends HTMLElement = HTMLElement> {
    * Focus the last enabled item. Returns true when an item was focused.
    */
   focusLast: () => boolean;
+
+  /**
+   * Whether a key event belongs to this list level (vs. a nested list that
+   * shares the same `boundarySelector`). Useful when a consumer wraps
+   * `handleKeyDown` with extra behavior (Enter/Space activation, typeahead)
+   * and must apply it only to events this level owns. Always true when no
+   * `boundarySelector` is configured.
+   */
+  ownsEvent: (e: React.KeyboardEvent) => boolean;
+
+  /**
+   * The current, in-DOM-order list of this level's focusable items (already
+   * scoped by `boundarySelector`). Exposed so consumers can build typeahead
+   * targets from the same source of truth as roving focus, rather than
+   * re-querying and re-filtering.
+   */
+  getItems: () => HTMLElement[];
 }
 
 // Text-editing inputs whose caret must not be hijacked by arrow navigation.
@@ -231,7 +281,8 @@ function shouldDeferToCaret(target: EventTarget | null, key: string): boolean {
  * - ArrowUp/ArrowLeft: Move to previous item (wraps to last)
  * - Home: Move to first item
  * - End: Move to last item
- * - Escape: Custom callback (e.g., close menu)
+ * - Escape: runs `onEscape` and consumes the key. With no `onEscape` the key
+ *   is left alone, so a surrounding layer can still dismiss on it.
  *
  * By default the hook only *moves* focus and leaves `tabindex` management to
  * the caller. Opt into {@link UseListFocusOptions.hasRovingTabIndex} for a hook
@@ -271,11 +322,12 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
 ): UseListFocusReturn<T> {
   const {
     itemSelector = '[role="menuitem"]',
+    boundarySelector,
     wrap = true,
     onEscape,
     orientation = 'vertical',
     hasHomeEnd = true,
-    isRtl = false,
+    isRtl,
     hasRovingTabIndex = false,
     hasCaretGuard = false,
   } = options;
@@ -299,13 +351,43 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
    * Get all focusable items in the list.
    */
   const getItems = useCallback((): HTMLElement[] => {
-    if (!listRef.current) {
+    const listEl = listRef.current;
+    if (!listEl) {
       return [];
     }
-    return Array.from(
-      listRef.current.querySelectorAll<HTMLElement>(itemSelector),
+    const matched = Array.from(
+      listEl.querySelectorAll<HTMLElement>(itemSelector),
     );
-  }, [itemSelector]);
+    // When a boundary is set, keep only items that belong to THIS list level —
+    // i.e. whose nearest boundary ancestor is our own container. This excludes
+    // items inside nested lists (e.g. inline submenu flyouts) that would
+    // otherwise be swept in by querySelectorAll.
+    if (!boundarySelector) {
+      return matched;
+    }
+    return matched.filter(el => el.closest(boundarySelector) === listEl);
+  }, [itemSelector, boundarySelector]);
+
+  /**
+   * Whether a key event belongs to this list level rather than a nested list.
+   * With a boundary set, an event that originated inside a nested boundary
+   * (e.g. a submenu flyout) has bubbled up to us and must be ignored so we
+   * don't double-handle navigation. Without a boundary, every event is ours.
+   */
+  const ownsEvent = useCallback(
+    (e: React.KeyboardEvent): boolean => {
+      const listEl = listRef.current;
+      if (!listEl || !boundarySelector) {
+        return true;
+      }
+      const target = e.target as HTMLElement | null;
+      if (!target) {
+        return true;
+      }
+      return target.closest(boundarySelector) === listEl;
+    },
+    [boundarySelector],
+  );
 
   /**
    * Find the next enabled item index from `start`, moving by `step`, optionally
@@ -473,12 +555,22 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
         return;
       }
 
-      // Escape is handled regardless of orientation. Preserve the historical
-      // behavior of always consuming Escape here (preventDefault) so consumers
-      // that relied on it are unaffected.
+      // Ignore events that bubbled up from a nested list (e.g. a submenu
+      // flyout, which renders inline inside this container). That level owns
+      // and already handled them; re-handling here would move focus twice.
+      if (!ownsEvent(e)) {
+        return;
+      }
+
+      // Escape is handled regardless of orientation, but only *consumed* when
+      // a handler asked for it: a list with no dismissal to perform must leave
+      // the key to whatever host layer does have one, and those defer to
+      // `defaultPrevented` (see `useFocusTrap`) or to the native popover.
       if (e.key === 'Escape') {
-        e.preventDefault();
-        onEscape?.();
+        if (onEscape) {
+          e.preventDefault();
+          onEscape();
+        }
         return;
       }
 
@@ -486,11 +578,18 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       const vertical = orientation === 'vertical' || orientation === 'both';
 
       // Resolve which keys advance vs retreat, honoring RTL for horizontal.
+      // Direction is resolved lazily — getComputedStyle runs only when a
+      // horizontal arrow key is actually pressed (SSR-safe, no layout thrash
+      // on unrelated keys) — and an explicit `isRtl` always wins.
       const nextKeys: string[] = [];
       const prevKeys: string[] = [];
       if (horizontal) {
-        nextKeys.push(isRtl ? 'ArrowLeft' : 'ArrowRight');
-        prevKeys.push(isRtl ? 'ArrowRight' : 'ArrowLeft');
+        const rtl =
+          e.key === 'ArrowLeft' || e.key === 'ArrowRight'
+            ? (isRtl ?? isRtlElement(listRef.current))
+            : false;
+        nextKeys.push(rtl ? 'ArrowLeft' : 'ArrowRight');
+        prevKeys.push(rtl ? 'ArrowRight' : 'ArrowLeft');
       }
       if (vertical) {
         nextKeys.push('ArrowDown');
@@ -553,6 +652,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       focusFirst,
       focusLast,
       onEscape,
+      ownsEvent,
     ],
   );
 
@@ -563,5 +663,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     focusItem,
     focusFirst,
     focusLast,
+    ownsEvent,
+    getItems,
   };
 }
