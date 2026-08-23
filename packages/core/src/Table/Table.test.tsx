@@ -602,7 +602,7 @@ describe('BaseTable', () => {
       expect(calls[0]).toEqual({col: 'name', name: 'Alice'});
     });
 
-    it('skipContent renders an empty cell and skips the column renderer', () => {
+    it('isContentSuppressed renders an empty cell and never calls the column renderer', () => {
       const rendered: string[] = [];
       const withRenderer: TableColumn<User>[] = [
         {
@@ -616,7 +616,7 @@ describe('BaseTable', () => {
       ];
       const plugin: TablePlugin<User> = {
         transformBodyCell: (props, _column, item) =>
-          item.name === 'Bob' ? {...props, skipContent: true} : props,
+          item.name === 'Bob' ? {...props, isContentSuppressed: true} : props,
       };
       render(
         <BaseTable data={users} columns={withRenderer} plugins={[plugin]} />,
@@ -627,9 +627,9 @@ describe('BaseTable', () => {
       expect(cells[0]).toHaveTextContent('Alice');
     });
 
-    it('skipContent also suppresses the default renderer', () => {
+    it('isContentSuppressed also suppresses the default renderer', () => {
       const plugin: TablePlugin<User> = {
-        transformBodyCell: props => ({...props, skipContent: true}),
+        transformBodyCell: props => ({...props, isContentSuppressed: true}),
       };
       render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
       for (const cell of screen.getAllByRole('cell')) {

@@ -334,7 +334,7 @@ export interface BodyCellRenderProps {
    * column list, so it covers columns other plugins contributed regardless of
    * where in the pipeline this plugin sits.
    */
-  skipContent?: boolean;
+  isContentSuppressed?: boolean;
 }
 
 /**

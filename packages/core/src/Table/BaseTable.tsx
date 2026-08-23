@@ -184,7 +184,7 @@ function TableRowInner<T extends Record<string, unknown>>({
 
     const isDefaultRenderer = !col.renderCell;
     let rawContent: ReactNode = null;
-    if (!cellRenderProps.skipContent) {
+    if (!cellRenderProps.isContentSuppressed) {
       rawContent = isDefaultRenderer
         ? defaultCellRenderer(item, col.key)
         : (col.renderCell?.(item) ?? null);

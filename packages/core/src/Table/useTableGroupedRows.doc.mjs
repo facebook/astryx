@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableGroupedRows',
   description:
-    'Hook that groups a flat data array into collapsible section rows. Each distinct groupBy value becomes a full-width section-header row with a chevron toggle, the group label, and a member count; collapsing hides that group\'s data rows while keeping the header visible. Mirrors useTableTreeState: the consumer owns the collapsedGroups set and the hook returns {data, plugin, idKey}: pass all three to Table (data, plugins, and idKey respectively).',
+    "Hook that groups a flat data array into collapsible section rows. Each distinct groupBy value becomes a full-width section-header row with a chevron toggle, the group label, and a member count; collapsing hides that group's data rows while keeping the header visible. Mirrors useTableTreeState: the consumer owns the collapsedGroups set and the hook returns {data, plugin, idKey, isGroupHeader}: pass the first three to Table (data, plugins, and idKey respectively), and use isGroupHeader to guard any row-level plugin or handler of your own that would otherwise treat a synthetic header row as a real row.",
   props: [
     {
       name: 'data',
@@ -58,13 +58,14 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Groups a flat data array into collapsible section rows. Each groupBy value becomes a full-width header (chevron + label + count); collapsing hides its rows. Returns {data, plugin, idKey}: pass to Table data / plugins / idKey. Consumer owns the collapsedGroups set.',
+    'Groups a flat data array into collapsible section rows. Each groupBy value becomes a full-width header (chevron + label + count); collapsing hides its rows. Returns {data, plugin, idKey, isGroupHeader}: pass the first three to Table data / plugins / idKey; use isGroupHeader to guard your own row-level plugins. Consumer owns the collapsedGroups set.',
   propDescriptions: {
     data: 'The flat data to group.',
-    groupBy: 'Derive a row\'s group key. Same key = same section.',
+    groupBy: "Derive a row's group key. Same key = same section.",
     collapsedGroups: 'Set of currently-collapsed group keys.',
     onToggleGroup: 'Called with the group key when a header is toggled.',
-    renderGroupHeader: "Custom header content (right of chevron). Default '<key> (<count>)'.",
+    renderGroupHeader:
+      "Custom header content (right of chevron). Default '<key> (<count>)'.",
     getRowKey: 'Stable key for a real row; positional fallback when omitted.',
     groupOrder: 'Pin these group keys first; others keep first-seen order.',
   },

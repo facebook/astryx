@@ -321,7 +321,7 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
         if (!isGroupHeader(item)) {
           return props;
         }
-        return {...props, skipContent: true};
+        return {...props, isContentSuppressed: true};
       },
       // Replace a header row's pre-rendered cells with one full-width cell.
       transformBodyRow(props, item) {
