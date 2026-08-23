@@ -1153,6 +1153,35 @@ describe('TabList overflow (scroll)', () => {
     expect(scrollBy.mock.calls[0][0].left).toBeCloseTo(40);
   });
 
+  it('reveals a half-visible overflow menu trigger too, not just tabs', () => {
+    const {container} = render(
+      <TabList value="a" onChange={() => {}}>
+        <Tab value="a" label="Alpha" />
+        <Tab value="b" label="Beta" />
+        <TabMenu label="More" options={[{value: 'c', label: 'Gamma'}]} />
+      </TabList>,
+    );
+    const strip = container.querySelector<HTMLElement>(STRIP);
+    if (!strip) {
+      throw new Error('no tab strip');
+    }
+    const scrollBy = vi.fn();
+    strip.scrollBy = scrollBy;
+    strip.getBoundingClientRect = () =>
+      ({left: 0, right: 300, width: 300}) as DOMRect;
+    const trigger = strip.querySelector<HTMLElement>('[data-tab-menu]');
+    if (!trigger) {
+      throw new Error('no menu trigger');
+    }
+    trigger.getBoundingClientRect = () =>
+      ({left: 260, right: 340, width: 80}) as DOMRect;
+
+    fireEvent.focus(trigger, {bubbles: true});
+
+    expect(scrollBy).toHaveBeenCalledTimes(1);
+    expect(scrollBy.mock.calls[0][0].left).toBeCloseTo(40);
+  });
+
   it('does not hand focus to an arrow, which is hidden from assistive tech', () => {
     const {container, strip} = renderStrip();
     fakeScrollBox(strip, {scrollWidth: 600, clientWidth: 300});

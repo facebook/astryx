@@ -359,14 +359,14 @@ export function TabList({
     [hasScroll, scrollRef],
   );
 
-  const revealTab = useCallback(
-    (tab: HTMLElement | null) => {
+  const revealStop = useCallback(
+    (stop: HTMLElement | null) => {
       const strip = stripRef.current;
-      if (!hasScroll || !strip || !tab) {
+      if (!hasScroll || !strip || !stop) {
         return;
       }
       const stripBox = strip.getBoundingClientRect();
-      const tabBox = tab.getBoundingClientRect();
+      const tabBox = stop.getBoundingClientRect();
       const inset = parseFloat(getComputedStyle(strip).scrollPaddingLeft) || 0;
       const pastEnd = tabBox.right - (stripBox.right - inset);
       const pastStart = tabBox.left - (stripBox.left + inset);
@@ -385,12 +385,12 @@ export function TabList({
     if (!strip) {
       return;
     }
-    revealTab(
+    revealStop(
       Array.from(strip.querySelectorAll<HTMLElement>('[data-tab-value]')).find(
         el => el.dataset.tabValue === value,
       ) ?? null,
     );
-  }, [revealTab, value]);
+  }, [revealStop, value]);
 
   // The tab you are on has to be visible. Selection can move without focus —
   // on mount, or when the host sets `value` itself — and neither scrolls the
@@ -461,12 +461,12 @@ export function TabList({
       }
       onHintFocus(e);
       handleFocus(e);
-      // The browser scrolls a focused tab into view only when it is entirely
-      // outside the scrollport, so arrowing onto a half-visible tab leaves it
-      // cut off under the fade. Finish the job it started.
-      revealTab(e.target.closest('[data-tab-value]'));
+      // The browser scrolls a focused element into view only when it is
+      // entirely outside the scrollport, so arrowing onto a half-visible stop
+      // leaves it cut off under the fade. Finish the job it started.
+      revealStop(e.target.closest(TAB_STOP_SELECTOR));
     },
-    [onFocusProp, onHintFocus, handleFocus, revealTab],
+    [onFocusProp, onHintFocus, handleFocus, revealStop],
   );
 
   const handleRootBlur = useCallback(
