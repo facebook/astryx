@@ -1216,12 +1216,20 @@ describe('link reference definitions', () => {
 });
 
 describe('sourceRanges', () => {
-  const slice = (source: string, block: {range?: readonly [number, number]}) =>
-    block.range == null ? null : source.slice(block.range[0], block.range[1]);
+  const slice = (source: string, block: BlockNode) =>
+    block.range == null
+      ? null
+      : source.slice(block.range.start, block.range.end);
 
   it('is off by default', () => {
     const [block] = parseMarkdown('# Title');
     expect(block.range).toBeUndefined();
+  });
+
+  it('addresses a block with named start and end offsets', () => {
+    const source = 'One.\n\nTwo.';
+    const [, second] = parseMarkdown(source, {sourceRanges: true});
+    expect(second.range).toEqual({start: 6, end: 10});
   });
 
   it('gives every top-level block the source it came from', () => {
@@ -1324,7 +1332,11 @@ describe('sourceRanges', () => {
     const with_ = parseMarkdownIncremental(source, state, {
       sourceRanges: true,
     });
-    expect(with_.map(b => slice(source, b))).toEqual(['One.', 'Two.', 'Three.']);
+    expect(with_.map(b => slice(source, b))).toEqual([
+      'One.',
+      'Two.',
+      'Three.',
+    ]);
     const back = parseMarkdownIncremental(source, state);
     expect(back.every(b => b.range == null)).toBe(true);
   });

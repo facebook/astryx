@@ -5,9 +5,10 @@
 [feat] Markdown: opt-in source ranges on parsed blocks
 
 `parseMarkdown(source, {sourceRanges: true})` now gives every top-level block a
-`range` — the `[start, end)` offsets it occupies in the source that was passed
-in — so a consumer holding that source can slice the original markdown for a
-block instead of reconstructing it from the node (or from the rendered DOM).
+`range` — `{start, end}`, the character offsets it occupies in the source that
+was passed in, with `end` exclusive — so a consumer holding that source can
+`source.slice(range.start, range.end)` for a block instead of reconstructing it
+from the node (or from the rendered DOM).
 Reconstruction is lossy in ways slicing is not: escapes, the exact emphasis and
 fence characters, heading depth beyond the clamp, and alignment all survive a
 slice unchanged.
