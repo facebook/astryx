@@ -642,8 +642,9 @@ export const ThreeDeep: Story = {render: () => <ThreeDeepExample />};
  * still takes the next Escape, and a flip to `required` must not let the older
  * dialog start swallowing presses meant for the newer one.
  *
- * Open the first modal, open the second, flip the first to required, then
- * press Escape — the second closes, as it would have without the flip.
+ * Open the first modal, open the second from inside it, flip the first to
+ * required, then press Escape — the second closes, as it would have without
+ * the flip.
  */
 function PurposeFlipsWhileOpenExample() {
   const [isFirstOpen, setIsFirstOpen] = useState(false);
@@ -652,65 +653,70 @@ function PurposeFlipsWhileOpenExample() {
 
   return (
     <>
-      <HStack gap={2}>
-        <Button
-          label="Open first modal"
-          variant="secondary"
-          onClick={() => setIsFirstOpen(true)}
-        />
-        <Button
-          label="Open second modal"
-          variant="secondary"
-          onClick={() => setIsSecondOpen(true)}
-        />
-        <Button
-          label="Make first required"
-          variant="secondary"
-          onClick={() => setIsFirstRequired(true)}
-        />
-      </HStack>
+      <Button
+        label="Open first modal"
+        variant="secondary"
+        onClick={() => setIsFirstOpen(true)}
+      />
       <Dialog
         isOpen={isFirstOpen}
         onOpenChange={setIsFirstOpen}
         purpose={isFirstRequired ? 'required' : undefined}
-        width={460}
+        width={480}
         aria-label="First modal">
         <Layout
           header={<DialogHeader title="First modal" />}
           content={
             <LayoutContent>
-              <Text type="body">
-                Opened first. Flipping this to required re-registers it and must
-                not promote it above the modal opened after it.
-              </Text>
+              <VStack gap={3}>
+                <Text type="body">
+                  Open the second modal, then flip this one to required. This
+                  one re-registers, and must not overtake the modal opened after
+                  it — Escape should still close the second.
+                </Text>
+                <Button
+                  label="Open second modal"
+                  variant="primary"
+                  onClick={() => setIsSecondOpen(true)}
+                />
+                <Button
+                  label="Make first required"
+                  variant="secondary"
+                  onClick={() => setIsFirstRequired(true)}
+                />
+              </VStack>
+
+              <Dialog
+                isOpen={isSecondOpen}
+                onOpenChange={setIsSecondOpen}
+                width={380}
+                aria-label="Second modal">
+                <Layout
+                  header={
+                    <DialogHeader
+                      title="Second modal"
+                      onOpenChange={setIsSecondOpen}
+                    />
+                  }
+                  content={
+                    <LayoutContent>
+                      <Text type="body">Escape closes this one.</Text>
+                    </LayoutContent>
+                  }
+                />
+              </Dialog>
             </LayoutContent>
           }
           footer={
             <LayoutFooter>
               <HStack gap={2} hAlign="end">
                 <Button
-                  label="Close"
+                  label="Done"
                   variant="secondary"
                   onClick={() => setIsFirstOpen(false)}
                 />
               </HStack>
             </LayoutFooter>
-          }
-        />
-      </Dialog>
-      <Dialog
-        isOpen={isSecondOpen}
-        onOpenChange={setIsSecondOpen}
-        width={380}
-        aria-label="Second modal">
-        <Layout
-          header={
-            <DialogHeader title="Second modal" onOpenChange={setIsSecondOpen} />
-          }
-          content={
-            <LayoutContent>
-              <Text type="body">Escape closes this one.</Text>
-            </LayoutContent>
           }
         />
       </Dialog>
