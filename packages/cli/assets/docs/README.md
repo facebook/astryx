@@ -2,7 +2,9 @@
 
 Reference topics for people **building with** Astryx. Not docs about building Astryx itself.
 
-One `{topic}.doc.mjs` per topic, plus optional `{topic}.doc.dense.mjs` / `{topic}.doc.zh.mjs` prose overlays. `foundation/discovery/docs-discovery.mjs` picks up any `{topic}.doc.mjs` in this directory with no registration, and `api/docs/_adapter.mjs` merges the overlays. What you add here reaches `astryx docs <topic>`, `astryx search`, the `--json` API, the agent-docs block, and the doc site — and ships on npm.
+One `{topic}.doc.mjs` per topic, plus optional `{topic}.doc.dense.mjs` / `{topic}.doc.zh.mjs` prose overlays. `foundation/discovery/docs-discovery.mjs` picks up any `{topic}.doc.mjs` here with no registration; `api/docs/_adapter.mjs` merges the overlays.
+
+What you add reaches `astryx docs <topic>`, `astryx search`, the `--json` API, the agent-docs block and the doc site — and ships on npm.
 
 ## Who you are writing for
 
@@ -21,14 +23,14 @@ Someone building a product with Astryx. Their questions:
 - second person aimed at the wrong reader — "reviewers should…", "before promoting a component…", "attach evidence for…"
 - **rubric, readiness, gate, audit, checklist, sign-off, promotion, evidence** as things the reader must produce
 - a table of things to verify rather than things to use
-- anything about lab → core, which is our lifecycle and not theirs
+- anything about lab → core, which is our lifecycle, not theirs
 - Storybook, Playwright, CI or the Simulator named as tools the reader runs
 
 One subtlety: a statement about the **system's behavior** is caller-facing even when it sounds like process. "A component's theme targets are stable once published" tells a caller what they can rely on; "reviewers must check that theme targets are stable" is ours. Same fact, different reader — **rewrite it rather than move it**.
 
 ## Where the rest goes
 
-The material is usually good; the finding is placement, not quality. It goes in the [wiki](https://github.com/facebook/astryx/wiki) — **as a section on the page that already covers it, not a new page.** The wiki is at 58 pages with several overlapping because every stray section got its own.
+The material is usually good; the finding is placement, not quality. It goes in the [wiki](https://github.com/facebook/astryx/wiki) — **as a section on the page that already covers it, not a new page.** The wiki is at nearly 60 pages, several of them overlapping, because every stray section got its own.
 
 | what you wrote                                      | where it goes                                                                                                                                                                                |
 | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -41,7 +43,7 @@ The material is usually good; the finding is placement, not quality. It goes in 
 | API naming and shape decisions                      | [API-Conventions](https://github.com/facebook/astryx/wiki/API-Conventions), [API-Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)                                       |
 | contributor workflow, PR process                    | [Contributing](https://github.com/facebook/astryx/wiki/Contributing), [Contributing-with-AI-Assistants](https://github.com/facebook/astryx/wiki/Contributing-with-AI-Assistants)             |
 | release mechanics                                   | [Release-Process](https://github.com/facebook/astryx/wiki/Release-Process)                                                                                                                   |
-| what a nightly agent role does                      | the [Night-Watch-Overview](https://github.com/facebook/astryx/wiki/Night-Watch-Overview) pages                                                                                               |
+| what a nightly agent role does                      | the Night-Watch pages, from [Night-Watch-Overview](https://github.com/facebook/astryx/wiki/Night-Watch-Overview)                                                                             |
 
 **Fits no row?** It is still not caller-facing. Default it to [Contributing](https://github.com/facebook/astryx/wiki/Contributing), or `CONTRIBUTING.md` when it is a step someone follows with the repo cloned. Never default it back to this directory.
 
