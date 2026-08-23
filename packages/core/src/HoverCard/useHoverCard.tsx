@@ -447,6 +447,12 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       clearTimeouts();
       touch.clearTapOpen();
       layer.hide();
+      // The card content used to run this itself on keydown, behind a
+      // stopPropagation() that kept the press from the dialog's listener but
+      // not from the browser's close watcher — so one press closed the card
+      // and the dialog behind it. Refocusing here keeps a card the user had
+      // tabbed into from dropping focus to the body.
+      triggerRef.current?.focus();
     },
   });
 
@@ -597,20 +603,6 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
             }
             isHoveringContentRef.current = false;
             scheduleHide();
-          }}
-          onKeyDown={e => {
-            if (e.key === 'Escape') {
-              // Stop propagation so parent components don't react to the same Escape
-              e.stopPropagation();
-              // Set flag to prevent re-show when we refocus trigger
-              isEscapeDismissingRef.current = true;
-              // Hide immediately
-              clearTimeouts();
-              touch.clearTapOpen();
-              layer.hide();
-              // Refocus the trigger
-              triggerRef.current?.focus();
-            }
           }}
           onBlur={e => {
             // Check if focus is moving back to the trigger or staying within content

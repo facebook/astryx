@@ -18,6 +18,7 @@ import {
   Button,
   Dialog,
   DialogHeader,
+  HoverCard,
   HStack,
   Layout,
   LayoutContent,
@@ -776,3 +777,59 @@ function InfoTipInModalExample() {
 }
 
 export const InfoTipInModal: Story = {render: () => <InfoTipInModalExample />};
+
+/**
+ * A HoverCard with focusable content, inside a modal, with focus tabbed INTO
+ * the card. One Escape hides the card and returns focus to its trigger; the
+ * modal stays open.
+ *
+ * The card content used to claim the press itself with `stopPropagation()`,
+ * which kept it from the dialog's own listener but not from the browser's
+ * close watcher — so one press took the card and the modal with it. The card
+ * is on the stack, so `onDismiss` does the work and the stack claims the press.
+ */
+function HoverCardInModalExample() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        label="Open modal"
+        variant="secondary"
+        onClick={() => setIsOpen(true)}
+      />
+      <Dialog
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        width={520}
+        aria-label="Modal with a hover card">
+        <Layout
+          header={
+            <DialogHeader
+              title="Modal with a hover card"
+              subtitle="Hover the trigger, Tab into the card, then press Escape once"
+              onOpenChange={setIsOpen}
+            />
+          }
+          content={
+            <LayoutContent>
+              <HoverCard
+                content={
+                  <VStack gap={2}>
+                    <Text type="body">Card body</Text>
+                    <Button label="Card action" variant="secondary" />
+                  </VStack>
+                }>
+                <Button label="Hover me" variant="secondary" />
+              </HoverCard>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    </>
+  );
+}
+
+export const HoverCardInModal: Story = {
+  render: () => <HoverCardInModalExample />,
+};
