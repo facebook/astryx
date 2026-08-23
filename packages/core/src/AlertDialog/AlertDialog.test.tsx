@@ -9,14 +9,64 @@
  * SYNC: When AlertDialog.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {readFileSync} from 'node:fs';
-import {join} from 'node:path';
-import ts from 'typescript';
 import {AlertDialog} from './AlertDialog';
 import {useImperativeAlertDialog} from './useImperativeAlertDialog';
+
+function stubAlertDialogMedia({
+  smallScreen,
+  coarsePointer,
+  noHover,
+  reduceMotion = false,
+}: {
+  smallScreen: boolean;
+  coarsePointer: boolean;
+  noHover: boolean;
+  reduceMotion?: boolean;
+}): void {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => {
+      let matches = false;
+      if (query.includes('max-width: 640px')) {
+        matches = smallScreen;
+      } else if (query.includes('pointer: coarse')) {
+        matches = coarsePointer;
+      } else if (query.includes('pointer: fine')) {
+        matches = !coarsePointer;
+      } else if (query.includes('hover: none')) {
+        matches = noHover;
+      } else if (query.includes('hover: hover')) {
+        matches = !noHover;
+      } else if (query.includes('prefers-reduced-motion: reduce')) {
+        matches = reduceMotion;
+      } else if (query.includes('prefers-reduced-motion: no-preference')) {
+        matches = !reduceMotion;
+      } else if (query.includes('prefers-reduced-motion')) {
+        matches = reduceMotion;
+      }
+
+      return {
+        matches,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      };
+    }),
+  );
+}
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -29,64 +79,9 @@ beforeEach(() => {
   });
 });
 
-const SOURCE = readFileSync(join(__dirname, 'AlertDialog.tsx'), 'utf8');
-const SOURCE_FILE = ts.createSourceFile(
-  'AlertDialog.tsx',
-  SOURCE,
-  ts.ScriptTarget.Latest,
-  true,
-  ts.ScriptKind.TSX,
-);
-
-function styleDefinition(name: string): ts.ObjectLiteralExpression {
-  let stylesObject: ts.ObjectLiteralExpression | undefined;
-
-  const visit = (node: ts.Node) => {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.name.text === 'styles' &&
-      node.initializer != null &&
-      ts.isCallExpression(node.initializer) &&
-      node.initializer.arguments[0] != null &&
-      ts.isObjectLiteralExpression(node.initializer.arguments[0])
-    ) {
-      stylesObject = node.initializer.arguments[0];
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(SOURCE_FILE);
-
-  const style = stylesObject?.properties.find(
-    property =>
-      ts.isPropertyAssignment(property) &&
-      ts.isIdentifier(property.name) &&
-      property.name.text === name &&
-      ts.isObjectLiteralExpression(property.initializer),
-  );
-  if (style == null || !ts.isPropertyAssignment(style)) {
-    throw new Error(`No AlertDialog style named "${name}"`);
-  }
-  return style.initializer as ts.ObjectLiteralExpression;
-}
-
-function styleProperty(
-  style: ts.ObjectLiteralExpression,
-  name: string,
-): ts.PropertyAssignment {
-  const property = style.properties.find(
-    candidate =>
-      ts.isPropertyAssignment(candidate) &&
-      (ts.isIdentifier(candidate.name) ||
-        ts.isStringLiteral(candidate.name) ||
-        ts.isComputedPropertyName(candidate.name)) &&
-      candidate.name.getText(SOURCE_FILE).replace(/^\[|\]$/g, '') === name,
-  );
-  if (property == null || !ts.isPropertyAssignment(property)) {
-    throw new Error(`No AlertDialog style property named "${name}"`);
-  }
-  return property;
-}
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('AlertDialog', () => {
   const defaultProps = {
@@ -172,35 +167,85 @@ describe('AlertDialog', () => {
   });
 
   describe('responsive actions', () => {
-    it('queries the dialog layout rather than the viewport', () => {
-      const layout = styleDefinition('layout');
-      expect(styleProperty(layout, 'containerType').initializer.getText()).toBe(
-        "'inline-size'",
-      );
-      expect(styleProperty(layout, 'containerName').initializer.getText()).toBe(
-        'ALERT_DIALOG_CONTAINER',
-      );
-      expect(styleProperty(layout, 'width').initializer.getText()).toBe(
-        "'100%'",
-      );
+    it('preserves the desktop fine-pointer layout above the small breakpoint', () => {
+      stubAlertDialogMedia({
+        smallScreen: false,
+        coarsePointer: false,
+        noHover: false,
+      });
+      render(<AlertDialog {...defaultProps} />);
+
+      expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
+      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
+      expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
+      const dialog = screen.getByRole('alertdialog');
+      const buttons = within(dialog).getAllByRole('button');
+      expect(dialog.getAttribute('style')).toContain('--x-width: 400px');
+      expect(buttons.map(button => button.textContent)).toEqual([
+        'Cancel',
+        'Delete',
+      ]);
+      expect(getComputedStyle(buttons[0]).whiteSpace).toBe('nowrap');
     });
 
-    it('wraps actions and stacks them when the dialog surface is narrow', () => {
-      const actions = styleDefinition('actions').getText(SOURCE_FILE);
-      expect(actions).toContain("flexWrap: 'wrap'");
-      expect(actions).toContain('[STACKED_ACTIONS_QUERY]');
-      expect(actions).toContain("flexDirection: 'column'");
-      expect(actions).toContain("alignItems: 'stretch'");
+    it('stacks destructive above cancel on a narrow fine-pointer screen', () => {
+      stubAlertDialogMedia({
+        smallScreen: true,
+        coarsePointer: false,
+        noHover: false,
+      });
+      render(
+        <AlertDialog
+          {...defaultProps}
+          cancelLabel="Keep this workspace"
+          actionLabel="Permanently delete workspace"
+        />,
+      );
+
+      expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
+      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
+      expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
+      const dialog = screen.getByRole('alertdialog');
+      const buttons = within(dialog).getAllByRole('button');
+      expect(dialog.getAttribute('style')).toContain('100dvw');
+      expect(buttons.map(button => button.textContent)).toEqual([
+        'Permanently delete workspace',
+        'Keep this workspace',
+      ]);
+      expect(getComputedStyle(buttons[0]).whiteSpace).toBe('normal');
+      expect(getComputedStyle(buttons[0]).width).toBe('100%');
+      expect(getComputedStyle(buttons[1]).whiteSpace).toBe('normal');
+      expect(getComputedStyle(buttons[1]).width).toBe('100%');
     });
 
-    it('keeps complete action labels instead of truncating them', () => {
-      const action = styleDefinition('action').getText(SOURCE_FILE);
-      expect(action).toContain("maxWidth: '100%'");
-      expect(action).toContain("height: 'auto'");
-      expect(action).toContain("minHeight: sizeVars['--size-element-md']");
-      expect(action).toContain("whiteSpace: 'normal'");
-      expect(action).toContain('[STACKED_ACTIONS_QUERY]');
-      expect(action).toContain("width: '100%'");
+    it('uses the same stacked layout on a mobile touch screen', () => {
+      stubAlertDialogMedia({
+        smallScreen: true,
+        coarsePointer: true,
+        noHover: true,
+      });
+      render(
+        <AlertDialog
+          {...defaultProps}
+          cancelLabel="Keep this workspace"
+          actionLabel="Permanently delete workspace"
+        />,
+      );
+
+      expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 640px)');
+      expect(window.matchMedia).not.toHaveBeenCalledWith('(pointer: coarse)');
+      expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
+      const dialog = screen.getByRole('alertdialog');
+      const buttons = within(dialog).getAllByRole('button');
+      expect(dialog.getAttribute('style')).toContain('100dvw');
+      expect(buttons.map(button => button.textContent)).toEqual([
+        'Permanently delete workspace',
+        'Keep this workspace',
+      ]);
+      expect(getComputedStyle(buttons[0]).whiteSpace).toBe('normal');
+      expect(getComputedStyle(buttons[0]).width).toBe('100%');
+      expect(getComputedStyle(buttons[1]).whiteSpace).toBe('normal');
+      expect(getComputedStyle(buttons[1]).width).toBe('100%');
     });
   });
 

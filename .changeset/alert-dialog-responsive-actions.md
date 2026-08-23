@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] AlertDialog action labels now wrap, and the action row stacks based on the dialog's own width so destructive decisions remain fully readable on narrow surfaces and at increased zoom.
+[fix] AlertDialog preserves its >640px centered layout and, at 640px and below, fills available width with token gutters, stacks the destructive action above Cancel, and wraps complete decision labels regardless of pointer type.
 
 @rubycheung

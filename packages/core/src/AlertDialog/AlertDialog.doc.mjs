@@ -21,7 +21,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'AlertDialog asks the user to confirm a destructive or irreversible action before it happens. Use it for things like deleting content, revoking access, or discarding unsaved changes.\n\nIt implements the WAI-ARIA APG [Alert Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): `role="alertdialog"`, a title linked by `aria-labelledby`, a consequence description linked by `aria-describedby`, focus moved into the dialog on open and returned to the trigger on close, and no dismissal by clicking outside. Escape cancels.\n\nThe surface is capped to the viewport and its body scrolls when block space is constrained. Actions wrap as needed and stack when the dialog itself is narrow, so complete decision labels remain visible without coupling the layout to touch input or a device category.\n\nFor cases where you want to show an alert without managing open state, use the `useImperativeAlertDialog` hook: call `alert.show(options)` and render `alert.element` in your tree.',
+      'AlertDialog asks the user to confirm a destructive or irreversible action before it happens. Use it for things like deleting content, revoking access, or discarding unsaved changes.\n\nIt implements the WAI-ARIA APG [Alert Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): `role="alertdialog"`, a title linked by `aria-labelledby`, a consequence description linked by `aria-describedby`, focus moved into the dialog on open and returned to the trigger on close, and no dismissal by clicking outside. Escape cancels.\n\nAt widths above 640px, AlertDialog keeps its requested width and horizontal Cancel/destructive actions. At 640px and below, the surface fills the viewport with token gutters, the destructive action appears above Cancel, and complete labels wrap. Geometry follows available width, not pointer or hover capability. The body scrolls when block space is constrained.\n\nFor cases where you want to show an alert without managing open state, use the `useImperativeAlertDialog` hook: call `alert.show(options)` and render `alert.element` in your tree.',
     bestPractices: [
       {
         guidance: true,
@@ -41,7 +41,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use complete action labels. The footer wraps and stacks them when the dialog surface is narrow instead of truncating the decision.',
+          'Use complete action labels. At 640px and below, the destructive action appears above Cancel and both labels wrap instead of truncating, regardless of pointer type.',
       },
       {
         guidance: false,
@@ -168,7 +168,7 @@ export const docs = {
       type: 'number | string',
       default: '400',
       description:
-        'Requested dialog width. The rendered surface remains capped to 90% of the viewport width.',
+        'Requested dialog width above 640px. At 640px and below, the dialog fills available width with token gutters regardless of pointer type.',
     },
     {
       name: 'isInline',
@@ -190,7 +190,7 @@ export const docsDense = {
     'Confirms destructive/irreversible action before it happens (delete, revoke access, discard unsaved changes).',
   usage: {
     description:
-      'AlertDialog confirms destructive/irreversible action (delete, revoke access, discard changes). Implements WAI-ARIA APG Alert Dialog pattern (https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): role="alertdialog", aria-labelledby title, aria-describedby description, focus into dialog on open + back to trigger on close, no outside-click dismissal, Escape cancels. Surface caps to viewport; body scrolls when height is constrained; action labels wrap and stack based on dialog width. To show w/o managing open state, use useImperativeAlertDialog hook: call alert.show(options) + render alert.element in tree.',
+      'AlertDialog confirms destructive/irreversible action (delete, revoke access, discard changes). Implements WAI-ARIA APG Alert Dialog pattern (https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): role="alertdialog", aria-labelledby title, aria-describedby description, focus into dialog on open + back to trigger on close, no outside-click dismissal, Escape cancels. >640px keeps requested width + horizontal actions. <=640px fills w/ token gutters, puts destructive action above Cancel, and wraps labels regardless of pointer/hover capability. Body scrolls when height constrained. To show w/o managing open state, use useImperativeAlertDialog hook: call alert.show(options) + render alert.element in tree.',
     bestPractices: [
       {
         guidance: true,
@@ -210,7 +210,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use complete action labels; footer wraps and stacks them based on dialog width.',
+          'Use complete action labels; <=640px puts the destructive action above Cancel and allows wrapping regardless of pointer type.',
       },
       {
         guidance: false,

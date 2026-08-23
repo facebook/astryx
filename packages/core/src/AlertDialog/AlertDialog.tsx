@@ -22,7 +22,7 @@ import {Dialog} from '../Dialog';
 import {Layout} from '../Layout/Layout';
 import {LayoutContent} from '../Layout/LayoutContent';
 import {LayoutFooter} from '../Layout/LayoutFooter';
-import {HStack} from '../Stack';
+import {Stack} from '../Stack';
 import {Heading} from '../Heading/Heading';
 import {Text} from '../Text/Text';
 import {Button, type ButtonVariant} from '../Button';
@@ -30,36 +30,25 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {sizeVars} from '../theme/tokens.stylex';
+import {useMediaQuery} from '../hooks';
+import {sizeVars, spacingVars} from '../theme/tokens.stylex';
 
-const ALERT_DIALOG_CONTAINER = 'astryx-alert-dialog';
-const STACKED_ACTIONS_QUERY = `@container ${ALERT_DIALOG_CONTAINER} (max-width: 20rem)`;
+const SMALL_SCREEN_QUERY = '(max-width: 640px)';
+const SMALL_SCREEN_DIALOG_WIDTH = `calc(100dvw - ${spacingVars['--spacing-4']} - ${spacingVars['--spacing-4']})`;
 
 const styles = stylex.create({
-  layout: {
-    containerType: 'inline-size',
-    containerName: ALERT_DIALOG_CONTAINER,
-    width: '100%',
+  smallScreenSurface: {
+    maxWidth: SMALL_SCREEN_DIALOG_WIDTH,
   },
-  actions: {
-    width: '100%',
-    flexWrap: 'wrap',
-    [STACKED_ACTIONS_QUERY]: {
-      flexDirection: 'column',
-      alignItems: 'stretch',
-    },
-  },
-  action: {
+  smallScreenAction: {
     // AlertDialog labels communicate the decision and must remain complete.
-    // The shared Button stays compact; only this decision surface opts into
-    // wrapping and lets its height grow when localization or zoom needs it.
+    // Only the small-screen state opts into wrapping and flexible height;
+    // the standard wider Button stays on its shared defaults.
+    width: '100%',
     maxWidth: '100%',
     height: 'auto',
     minHeight: sizeVars['--size-element-md'],
     whiteSpace: 'normal',
-    [STACKED_ACTIONS_QUERY]: {
-      width: '100%',
-    },
   },
 });
 
@@ -180,10 +169,39 @@ export function AlertDialog({
   const cancelLabel = cancelLabelFromProps ?? t('@astryx.alertDialog.cancel');
   const titleId = useId();
   const descriptionId = useId();
+  const isSmallScreen = useMediaQuery(SMALL_SCREEN_QUERY);
 
   const handleCancel = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
+
+  const smallScreenActionStyle = isSmallScreen
+    ? styles.smallScreenAction
+    : undefined;
+  const cancelButton = (
+    <Button
+      key="cancel"
+      variant="ghost"
+      label={cancelLabel}
+      onClick={handleCancel}
+      xstyle={smallScreenActionStyle}
+      // Dialog focuses [data-autofocus] itself after showModal(), because
+      // React's autoFocus runs during commit while the dialog is invisible.
+      // Cancel is least destructive, so it remains the autofocus target even
+      // when small-screen visual order places the destructive action above it.
+      data-autofocus
+    />
+  );
+  const actionButton = (
+    <Button
+      key="action"
+      variant={actionVariant}
+      label={actionLabel}
+      onClick={onAction}
+      isLoading={isActionLoading}
+      xstyle={smallScreenActionStyle}
+    />
+  );
 
   return (
     <Dialog
@@ -192,7 +210,7 @@ export function AlertDialog({
       isOpen={isOpen}
       isInline={isInline}
       onOpenChange={onOpenChange}
-      width={width}
+      width={isSmallScreen ? SMALL_SCREEN_DIALOG_WIDTH : width}
       purpose="form"
       // `alertdialog` is a modal role: it promises an interruption the user
       // has to deal with, a focus trap, and an inert page behind it. The
@@ -203,10 +221,9 @@ export function AlertDialog({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       {...mergeProps(themeProps('alert-dialog'), {className, style})}
-      xstyle={xstyle}
+      xstyle={isSmallScreen ? [styles.smallScreenSurface, xstyle] : xstyle}
       data-testid={testId}>
       <Layout
-        xstyle={styles.layout}
         content={
           <LayoutContent>
             <Heading level={2} id={titleId}>
@@ -219,26 +236,14 @@ export function AlertDialog({
         }
         footer={
           <LayoutFooter>
-            <HStack gap={2} hAlign="end" wrap="wrap" xstyle={styles.actions}>
-              <Button
-                variant="ghost"
-                label={cancelLabel}
-                onClick={handleCancel}
-                xstyle={styles.action}
-                // Dialog focuses [data-autofocus] itself after showModal(),
-                // because React's autoFocus runs during commit while the
-                // dialog is still invisible. Cancel is the least destructive
-                // choice, so it is the one that should be preselected.
-                data-autofocus
-              />
-              <Button
-                variant={actionVariant}
-                label={actionLabel}
-                onClick={onAction}
-                isLoading={isActionLoading}
-                xstyle={styles.action}
-              />
-            </HStack>
+            <Stack
+              direction={isSmallScreen ? 'vertical' : 'horizontal'}
+              gap={2}
+              hAlign={isSmallScreen ? 'stretch' : 'end'}>
+              {isSmallScreen
+                ? [actionButton, cancelButton]
+                : [cancelButton, actionButton]}
+            </Stack>
           </LayoutFooter>
         }
       />

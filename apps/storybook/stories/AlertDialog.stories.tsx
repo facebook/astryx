@@ -86,15 +86,29 @@ export const Async: Story = {
 };
 
 /**
- * Narrow surface with long decision labels. The dialog itself is the responsive
- * container: actions stack and labels wrap without treating narrow width as a
- * proxy for touch input.
+ * Desktop fine-pointer reference. Above 640px the dialog keeps the pre-existing
+ * 400px centered surface and horizontal Cancel/destructive action row.
  */
-export const NarrowLongActions: Story = {
+export const DesktopFinePointer: Story = {
   args: {
     isOpen: true,
-    isInline: true,
-    width: 280,
+    title: 'Delete item?',
+    description:
+      'This action cannot be undone. The item and all its data will be permanently removed.',
+    actionLabel: 'Delete',
+    onOpenChange: () => {},
+    onAction: () => {},
+  },
+};
+
+/**
+ * Narrow fine-pointer reference. At 640px and below, available width determines
+ * layout: the surface uses token gutters, destructive appears above Cancel, and
+ * labels wrap even when the pointer can hover.
+ */
+export const NarrowFinePointer: Story = {
+  args: {
+    isOpen: true,
     title: 'Permanently delete this workspace?',
     description:
       'Everyone will lose access to its dashboards, saved queries, and sharing links. This cannot be undone.',
@@ -103,6 +117,15 @@ export const NarrowLongActions: Story = {
     onOpenChange: () => {},
     onAction: () => {},
   },
+};
+
+/**
+ * Mobile touch reference. A <=640px coarse-pointer/no-hover viewport uses the
+ * same narrow stacked layout as NarrowFinePointer; pointer type does not decide
+ * geometry.
+ */
+export const MobileTouch: Story = {
+  args: NarrowFinePointer.args,
 };
 
 /**
