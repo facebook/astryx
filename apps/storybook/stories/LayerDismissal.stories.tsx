@@ -833,3 +833,52 @@ function HoverCardInModalExample() {
 export const HoverCardInModal: Story = {
   render: () => <HoverCardInModalExample />,
 };
+
+/**
+ * A hover card pinned open by the consumer (`isOpen`), inside a modal. One
+ * Escape closes the MODAL and leaves the card, because the card's visibility
+ * is the consumer's state and the stack cannot dismiss it.
+ *
+ * A controlled hover layer therefore opts out of the stack entirely. When it
+ * did not, it consumed a press it could not act on and the modal underneath
+ * could not be closed from the keyboard at all.
+ */
+function PinnedHoverCardInModalExample() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        label="Open modal"
+        variant="secondary"
+        onClick={() => setIsOpen(true)}
+      />
+      <Dialog
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        width={520}
+        aria-label="Modal with a pinned hover card">
+        <Layout
+          header={
+            <DialogHeader
+              title="Modal with a pinned hover card"
+              subtitle="The card is pinned open by the app — Escape closes the modal"
+              onOpenChange={setIsOpen}
+            />
+          }
+          content={
+            <LayoutContent>
+              <HoverCard isOpen content={<Text type="body">Pinned card</Text>}>
+                <Button label="Card trigger" variant="secondary" />
+              </HoverCard>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    </>
+  );
+}
+
+export const PinnedHoverCardInModal: Story = {
+  render: () => <PinnedHoverCardInModalExample />,
+};

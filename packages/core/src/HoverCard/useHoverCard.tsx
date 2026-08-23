@@ -418,6 +418,10 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
   // card or not — so focusing a HoverCard trigger inside a Dialog silently ate
   // the press that should have closed the Dialog. Presence is now answered from
   // the DOM, so a closed card never claims a press.
+  // A controlled hover card opts out of the stack entirely, the same way a
+  // controlled Tooltip does: its visibility is the consumer's state, so the
+  // stack cannot dismiss it — and a layer that consumes a press it cannot act
+  // on leaves the dialog behind it keyboard-unclosable.
   useLayerDismissal({
     // Registered for the hook's lifetime rather than gated on `layer.isOpen`:
     // that state can lag a frame behind the DOM, so a press arriving right after
@@ -442,6 +446,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         return layer.isOpen;
       }
     },
+    isEnabled: isOpen === undefined,
     onDismiss: () => {
       clearTimeouts();
       touch.clearTapOpen();
