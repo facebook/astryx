@@ -10,11 +10,11 @@ packages:
   - 'packages/themes/*'
   - 'internal/*'
 
-# Migrated from .npmrc: pnpm 11 reads these hoisting/linker settings from
-# pnpm-workspace.yaml, not .npmrc. Keeps the flat, Yarn-1-style node_modules
-# layout that build tools (and some phantom test imports) rely on.
-nodeLinker: hoisted
-shamefullyHoist: true
+# linkWorkspacePackages is the one setting still carried over from the old
+# .npmrc: 64 internal deps are declared as bare "*", and pnpm >= 10 defaults
+# this to false, which resolves them from the registry instead of local source.
+# Hoisting is deliberately not configured — every package declares what it
+# imports, so the default isolated linker resolves it.
 linkWorkspacePackages: true
 
 minimumReleaseAge: 10080
@@ -29,15 +29,25 @@ minimumReleaseAgeExclude:
 # bump them together. The standalone example apps and the vibe-tests
 # preview app pin their own vite; keep them on the same major by hand.
 #
-# StyleX, prettier, and esbuild are workspace-wide tool pins (formerly pnpm
-# overrides) — every consumer declares them as "catalog:" so a bump lands
-# here once. Peer ranges in packages/* stay loose on purpose; those are
-# consumer contracts, not workspace pins.
+# StyleX, prettier, esbuild, the Babel build toolchain, and Testing Library
+# are workspace-wide tool pins (formerly pnpm overrides) — every consumer
+# declares them as "catalog:" so a bump lands here once. The Babel and
+# Testing Library entries are each duplicated across 4-6 packages that must
+# stay in lockstep: the four component packages compile with the same
+# babel + presets, and the same test suite runs across all of them. Peer
+# ranges in packages/* stay loose on purpose; those are consumer contracts,
+# not workspace pins.
 catalog:
   vite: ^8.1.3
   '@stylexjs/stylex': ^0.19.0
   '@stylexjs/babel-plugin': ^0.19.0
   '@stylexjs/postcss-plugin': ^0.19.0
+  '@babel/cli': ^8.0.4
+  '@babel/core': ^7.29.7
+  '@babel/preset-react': ^8.0.1
+  '@babel/preset-typescript': ^7.29.7
+  '@testing-library/react': ^16.3.2
+  '@testing-library/jest-dom': ^6.6.0
   prettier: ^3.9.3
   esbuild: ^0.28.1
 

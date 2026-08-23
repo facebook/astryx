@@ -40,8 +40,9 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@babel/preset-react": "^8.0.1",
-    "@babel/preset-typescript": "^7.29.7",
+    "@babel/parser": "^7.29.7",
+    "@babel/preset-react": "catalog:",
+    "@babel/preset-typescript": "catalog:",
     "@stylexjs/babel-plugin": "catalog:",
     "@stylexjs/postcss-plugin": "catalog:",
     "@types/lz-string": "^1.5.0",

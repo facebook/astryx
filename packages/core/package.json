@@ -671,14 +671,15 @@
   },
   "devDependencies": {
     "@astryxdesign/cli": "workspace:*",
-    "@babel/cli": "^8.0.4",
-    "@babel/core": "^7.29.7",
-    "@babel/preset-react": "^8.0.1",
-    "@babel/preset-typescript": "^7.29.7",
+    "@babel/cli": "catalog:",
+    "@babel/core": "catalog:",
+    "@babel/preset-react": "catalog:",
+    "@babel/preset-typescript": "catalog:",
     "@stylexjs/babel-plugin": "catalog:",
     "@testing-library/dom": "^10.0.0",
-    "@testing-library/jest-dom": "^6.6.0",
-    "@testing-library/react": "^16.3.2",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/babel__core": "^7.20.5",
     "rimraf": "^6.0.1"
   },
   "dependencies": {
