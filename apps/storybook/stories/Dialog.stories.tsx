@@ -35,7 +35,7 @@ const meta: Meta<typeof Dialog> = {
     },
     maxHeight: {
       control: 'text',
-      description: 'Maximum height of the dialog (default: 75vh)',
+      description: 'Maximum height of the dialog (default: 75dvh)',
     },
     variant: {
       control: 'select',
@@ -866,4 +866,86 @@ function NestedDialogsExample() {
 
 export const NestedDialogs: Story = {
   render: () => <NestedDialogsExample />,
+};
+
+type ReadinessReferenceProps = {
+  frameWidth: number;
+  summary: string;
+  title: string;
+};
+
+function ReadinessReference({
+  frameWidth,
+  summary,
+  title,
+}: ReadinessReferenceProps) {
+  return (
+    <div style={{width: frameWidth, maxWidth: '100%'}}>
+      <Text type="supporting" color="secondary">
+        {summary}
+      </Text>
+      <Dialog isOpen isInline onOpenChange={() => {}} width={400}>
+        <Layout
+          header={<DialogHeader title={title} onOpenChange={() => {}} />}
+          content={
+            <LayoutContent>
+              <Text type="body">
+                This dialog keeps long content inside the surface. Resize or
+                compare the frame to confirm text wraps instead of forcing
+                horizontal overflow.
+              </Text>
+            </LayoutContent>
+          }
+          footer={
+            <LayoutFooter>
+              <HStack gap={2} hAlign="end" wrap="wrap">
+                <Button label="Cancel" variant="secondary" />
+                <Button label="Save changes" variant="primary" />
+              </HStack>
+            </LayoutFooter>
+          }
+        />
+      </Dialog>
+    </div>
+  );
+}
+
+/** Responsive and Interaction Readiness visual reference for wide viewport layout. */
+export const ReadinessWideViewport: Story = {
+  name: 'Readiness / wide viewport',
+  render: () => (
+    <ReadinessReference
+      frameWidth={720}
+      title="Wide viewport dialog"
+      summary="Wide viewport reference: the requested 400px surface is preserved."
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Visual evidence for the wide viewport layout scenario. Storybook does not emulate pointer or hover capability here; pointer/hover independence is covered by implementation tests and audit notes.',
+      },
+    },
+  },
+};
+
+/** Responsive and Interaction Readiness visual reference for narrow viewport layout. */
+export const ReadinessNarrowViewport: Story = {
+  name: 'Readiness / narrow viewport',
+  render: () => (
+    <ReadinessReference
+      frameWidth={320}
+      title="Narrow viewport dialog"
+      summary="Narrow viewport reference: the surface clamps to the frame and wraps labels/content."
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Visual evidence for the narrow viewport layout scenario using a constrained review frame. Storybook does not emulate coarse pointer or no-hover capability here.',
+      },
+    },
+  },
 };

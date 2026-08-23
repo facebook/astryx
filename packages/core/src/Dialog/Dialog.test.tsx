@@ -184,6 +184,47 @@ describe('Dialog', () => {
     });
   });
 
+  describe('responsive sizing', () => {
+    it('keeps the requested width but clamps standard dialogs to container and dynamic viewport gutters', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          width={600}
+          maxHeight="70dvh"
+          aria-label="Sized dialog">
+          Content
+        </Dialog>,
+      );
+
+      const dialog = screen.getByRole('dialog');
+      const inlineStyle = dialog.getAttribute('style') ?? '';
+      expect(inlineStyle).toContain('--x-width: 600px');
+      expect(inlineStyle).toContain(
+        '--x-maxWidth: min(100%, calc(100dvw - var(--spacing-4) - var(--spacing-4)))',
+      );
+      expect(inlineStyle).toContain('--x-maxHeight: 70dvh');
+    });
+
+    it('protects fullscreen content with safe-area padding', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          variant="fullscreen"
+          aria-label="Fullscreen dialog">
+          <div data-testid="child">Content</div>
+        </Dialog>,
+      );
+
+      const wrapper = screen.getByTestId('child').parentElement!;
+      const computed = window.getComputedStyle(wrapper);
+      expect(computed.paddingInlineStart).toContain('safe-area-inset-left');
+      expect(computed.paddingInlineEnd).toContain('safe-area-inset-right');
+      expect(wrapper.parentElement!.tagName).toBe('DIALOG');
+    });
+  });
+
   describe('position prop', () => {
     it('accepts position configuration', () => {
       render(

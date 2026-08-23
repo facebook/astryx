@@ -62,14 +62,14 @@ export const docs = {
     {
       name: 'width',
       type: 'number | string',
-      description: 'Width of the dialog in pixels or any CSS value.',
+      description: 'Preferred width of the dialog in pixels or any CSS value. Standard dialogs clamp to their container and the dynamic viewport with spacing-token gutters so narrow viewports keep content on screen.',
       default: '400',
     },
     {
       name: 'maxHeight',
       type: 'number | string',
-      description: 'Maximum height of the dialog.',
-      default: "'75vh'",
+      description: 'Maximum height of the dialog. Defaults to a dynamic viewport value so browser UI changes are reflected where supported.',
+      default: "'75dvh'",
     },
     {
       name: 'position',
