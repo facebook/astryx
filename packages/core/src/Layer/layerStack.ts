@@ -195,15 +195,6 @@ function topPresentEntry(): LayerStackEntry | null {
 }
 
 /**
- * Whether any layer is currently registered and on screen. An overlay that
- * manages its own dismissal but is not on the stack can consult this to defer
- * to a layer above it; registered layers should prefer their own `isTopmost()`.
- */
-export function hasOpenLayer(): boolean {
-  return topPresentEntry() != null;
-}
-
-/**
  * Whether `token` identifies the top-most layer. Overlays that still own a
  * dismissal channel the stack does not model yet (outside-press, swipe) can
  * gate on this so every channel agrees on who is on top.
