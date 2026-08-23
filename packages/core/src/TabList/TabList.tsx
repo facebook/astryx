@@ -75,10 +75,10 @@ const SCROLL_PAGE_RATIO = 0.8;
  * - `'auto'` — the component picks the strategy. Today that is always
  *   `'scroll'`.
  * - `'scroll'` — the tabs scroll horizontally. Every tab stays a tab.
- * - `'none'` — no overflow handling: tabs keep their intrinsic widths and
+ * - `'visible'` — no overflow handling: tabs keep their intrinsic widths and
  *   spill out of the strip, as they did before overflow existed.
  */
-export type TabListOverflow = 'auto' | 'scroll' | 'none';
+export type TabListOverflow = 'auto' | 'scroll' | 'visible';
 
 export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
   ref?: React.Ref<HTMLElement>;
@@ -113,7 +113,7 @@ export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
    *
    * `'auto'` lets the component choose; today it always scrolls. `'scroll'`
    * scrolls the tabs horizontally, with edge fades and — for pointers that
-   * can hover — arrow affordances. `'none'` turns overflow handling off and
+   * can hover — arrow affordances. `'visible'` turns overflow handling off and
    * lets the tabs spill out of the strip.
    *
    * The selected tab is always scrolled back into view.
@@ -348,7 +348,7 @@ export function TabList({
   const t = useTranslator();
   const ariaLabel = ariaLabelFromProps ?? t('@astryx.tabList.label');
   const size = useSize(sizeProp, 'md');
-  const hasScroll = overflow !== 'none';
+  const hasScroll = overflow !== 'visible';
 
   // Roving-tabindex keyboard navigation across the tab strip via the shared
   // hook. `orientation: 'both'` accepts both arrow axes per the WAI-ARIA APG

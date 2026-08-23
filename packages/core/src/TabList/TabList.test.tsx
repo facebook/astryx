@@ -1228,10 +1228,10 @@ describe('TabList overflow (scroll)', () => {
     expect(prevented).toBe(true);
   });
 
-  it('overflow="none" scrolls nothing and offers no arrows', () => {
+  it('overflow="visible" scrolls nothing and offers no arrows', () => {
     const {container, strip, rerender} = renderStrip({
       value: 'a',
-      overflow: 'none',
+      overflow: 'visible',
     });
     const scrollBy = vi.fn();
     strip.scrollBy = scrollBy;
@@ -1240,7 +1240,7 @@ describe('TabList overflow (scroll)', () => {
     fireEvent.scroll(strip);
 
     rerender(
-      <TabList value="c" onChange={() => {}} overflow="none">
+      <TabList value="c" onChange={() => {}} overflow="visible">
         <Tab value="a" label="Alpha" />
         <Tab value="b" label="Beta" />
         <Tab value="c" label="Gamma" />

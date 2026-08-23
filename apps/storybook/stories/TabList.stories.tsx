@@ -390,15 +390,15 @@ export const OverflowSelectedOffscreen: Story = {
 };
 
 /**
- * `overflow="none"` opts out: the tabs keep their intrinsic widths and spill
+ * `overflow="visible"` opts out: the tabs keep their intrinsic widths and spill
  * out of the strip, for a host that handles overflow itself.
  */
-export const OverflowNone: Story = {
+export const OverflowVisible: Story = {
   render: () => {
     const [value, setValue] = useState('overview');
     return (
       <div style={{maxWidth: '400px', border: '1px dashed #ccc'}}>
-        <TabList value={value} onChange={setValue} overflow="none">
+        <TabList value={value} onChange={setValue} overflow="visible">
           <Tab value="overview" label="Overview" />
           <Tab value="activity" label="Activity" />
           <Tab value="members" label="Members" />
