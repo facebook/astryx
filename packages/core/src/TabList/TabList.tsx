@@ -421,25 +421,36 @@ export function TabList({
     );
   }, [revealStop, value]);
 
-  // The tab you are on has to be visible. Selection can move without focus —
-  // on mount, or when the host sets `value` itself — and neither scrolls the
-  // strip the way clicking or arrowing to a tab does.
-  useEffect(() => {
-    revealSelectedTab();
-  }, [revealSelectedTab]);
-
-  // ...and it has to stay visible when the strip is what moved. A strip that
-  // fitted at one width can hide the selected tab at a narrower one, and no
-  // prop changes when that happens.
-  //
-  // The wrapper is observed rather than the strip because the shared observer
-  // keeps one callback per element and `useScrollOverflow` already holds the
-  // strip's.
+  // Both reveals below reach the callback through a ref instead of depending
+  // on it: its identity also changes with `overflow`, and that is not a reason
+  // to scroll anything.
   const revealSelectedTabRef = useRef(revealSelectedTab);
   useEffect(() => {
     revealSelectedTabRef.current = revealSelectedTab;
   }, [revealSelectedTab]);
 
+  // The tab you are on has to be visible. Selection can move without focus —
+  // on mount, or when the host sets `value` itself — and neither scrolls the
+  // strip the way clicking or arrowing to a tab does. The check is what makes
+  // a selection change the trigger, rather than the effect happening to run.
+  const revealedValueRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (revealedValueRef.current === value) {
+      return;
+    }
+    revealedValueRef.current = value;
+    revealSelectedTabRef.current();
+  }, [value]);
+
+  // ...and it has to stay visible when the strip is what moved. A strip that
+  // fitted at one width can hide the selected tab at a narrower one, and no
+  // prop changes when that happens. This one re-reveals the same selection by
+  // design, which is why the check above sits in the effect rather than in
+  // `revealSelectedTab`.
+  //
+  // The wrapper is observed rather than the strip because the shared observer
+  // keeps one callback per element and `useScrollOverflow` already holds the
+  // strip's.
   useEffect(() => {
     const root = listRef.current;
     if (!hasScroll || !root) {

@@ -1138,6 +1138,37 @@ describe('TabList overflow (scroll)', () => {
     expect(scrollBy).not.toHaveBeenCalled();
   });
 
+  it('reveals on a selection change, not on an unrelated overflow change', () => {
+    const {strip, rerender} = renderStrip({value: 'c', overflow: 'visible'});
+    const scrollBy = vi.fn();
+    strip.scrollBy = scrollBy;
+    fakeGeometry(strip, 'c', {stripWidth: 300, tabLeft: 420, tabRight: 500});
+
+    // Turning scrolling on re-measures the strip, and that one reveal is the
+    // resize path's. The selection has not moved, so nothing may add a second.
+    rerender(
+      <TabList value="c" onChange={() => {}} overflow="scroll">
+        <Tab value="a" label="Alpha" />
+        <Tab value="b" label="Beta" />
+        <Tab value="c" label="Gamma" />
+      </TabList>,
+    );
+
+    expect(scrollBy).toHaveBeenCalledTimes(1);
+
+    fakeGeometry(strip, 'a', {stripWidth: 300, tabLeft: -200, tabRight: -120});
+    rerender(
+      <TabList value="a" onChange={() => {}} overflow="scroll">
+        <Tab value="a" label="Alpha" />
+        <Tab value="b" label="Beta" />
+        <Tab value="c" label="Gamma" />
+      </TabList>,
+    );
+
+    expect(scrollBy).toHaveBeenCalledTimes(2);
+    expect(scrollBy.mock.calls[1][0].left).toBeLessThan(0);
+  });
+
   it('finishes the job on focus: a tab only half in view is scrolled clear', () => {
     const {strip} = renderStrip({value: 'a'});
     const scrollBy = vi.fn();
