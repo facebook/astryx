@@ -92,10 +92,16 @@ export interface UseLayerDismissalReturn {
  *
  * The layer does NOT attach a key listener — the stack owns one listener and
  * routes each Escape press to the top-most REGISTERED layer, so one press
- * dismisses exactly one of them. Dialog (and what is built on it), focus-
- * trapped layers (Popover, menus, Bottom Sheet), Tooltip, HoverCard, Lightbox
- * and MobileNav register today; InfoTip does not, so a press over one of those
- * can still dismiss a registered layer underneath.
+ * dismisses exactly one of them. Dialog (and what is built on it), Popover and
+ * the menus built on it, `BottomSheetSwitcher`, Tooltip, HoverCard, Lightbox
+ * and MobileNav register today.
+ *
+ * `BottomSheet`, `CommandPalette`, `ContextMenu`, `DropdownMenuSubMenu`,
+ * `PowerSearchEditPopover` and lab's `Drawer` still run their own Escape
+ * listener. They stay safe next to the stack only because each claims the press
+ * at element level, and the stack stands down on an already-`defaultPrevented`
+ * press — but a registered layer opened INSIDE one of them does not get the
+ * press: the host takes it and closes instead. Migrating them is the fix.
  *
  * Wrap the layer's own content in `LayerDepthProvider` so anything opened from
  * inside it registers as nested.
