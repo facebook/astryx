@@ -73,8 +73,9 @@ const KEY_ALIASES: Record<string, string> = {
 
 /**
  * Detects whether the current platform is macOS/iOS.
- * Prefers the User-Agent Client Hints API when available (modern Chrome/Edge),
- * falls back to navigator.platform (deprecated but universally supported).
+ * Prefers the User-Agent Client Hints API when it names a platform (modern
+ * Chrome/Edge), falls back to navigator.platform (deprecated but universally
+ * supported) when it is absent or blank.
  * Mirrors the detection used by Kbd so displayed and handled shortcuts agree.
  */
 function isApplePlatform(): boolean {
@@ -83,7 +84,13 @@ function isApplePlatform(): boolean {
   }
   const uaData = 'userAgentData' in navigator ? navigator.userAgentData : null;
   if (uaData && typeof uaData === 'object' && 'platform' in uaData) {
-    return /mac/i.test((uaData as {platform: string}).platform ?? '');
+    const uaPlatform = (uaData as {platform?: unknown}).platform;
+    // A blank platform is no answer, not a negative one. Builds that rewrite
+    // their client-hints identity ship '', so fall through rather than
+    // reading it as "not Apple".
+    if (typeof uaPlatform === 'string' && uaPlatform.trim() !== '') {
+      return /mac/i.test(uaPlatform);
+    }
   }
   return /Mac|iPhone|iPad|iPod/.test(navigator.platform ?? '');
 }
@@ -154,6 +161,15 @@ function matchesCombo(
  * A single keydown listener is attached per hook instance; the hotkey
  * definitions live in a ref, so re-renders update behavior without
  * re-subscribing. First matching hotkey wins per event.
+ *
+ * Accessibility (WCAG 2.1.4 — Character Key Shortcuts): a shortcut whose
+ * combo is a single unmodified character (letter, digit, punctuation or
+ * symbol — e.g. 'c' or '/') is easily triggered by accident by speech-input
+ * users and keyboard users with motor impairments. If you register one, you
+ * MUST also provide at least one of: (a) a way to turn the shortcut off,
+ * (b) a way to remap it to include a modifier, or (c) scope it so it is only
+ * active while the relevant component has focus. Prefer `mod`-based combos
+ * where possible; the `isDisabled` flag can back a user-facing off switch.
  *
  * @param hotkeys - Shortcut registrations to listen for.
  *

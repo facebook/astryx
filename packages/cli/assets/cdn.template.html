@@ -1,0 +1,124 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+<!doctype html>
+<!--
+  Astryx from a CDN — no build step, no bundler, no install.
+
+  Open this file in a browser (double-click works) or serve it from anywhere.
+  Everything is pinned to the Astryx version you had installed when this was
+  written; nothing here resolves to "latest", because an unpinned CDN URL
+  silently changes under you.
+
+  React 19 removed its UMD builds, so there is no global-script path any more:
+  an import map plus `type="module"` is how you load Astryx without a bundler.
+
+  Two things worth doing next:
+    - `astryx theme template` writes an annotated theme you can point this page
+      at. Its `color` scale generates a whole ramp from one seed colour and
+      guarantees >= 4.5:1 for the text it generates against its surface.
+    - `astryx component <Name>` prints any component's real prop surface.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      The theme names a font family; it never loads one. Without this link the
+      whole page silently falls back to the next family in the stack, which is
+      not the design you chose. `neutral` asks for Figtree — swap this for
+      whatever your theme names, or self-host with @font-face.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" />
+    <!-- reset.css and astryx.css are the component styles; theme.css is the
+         theme. Note /dist/theme.css — the package root has no theme.css. -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@__ASTRYX_VERSION__/src/reset.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@__ASTRYX_VERSION__/dist/astryx.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@__ASTRYX_VERSION__/dist/theme.css" />
+    <!--
+      react/jsx-runtime is not decoration: the published bundle imports it, and
+      leaving it out fails the page with "Failed to resolve module specifier".
+
+      ?external=react,react-dom makes esm.sh reuse the React above instead of
+      bundling its own. Two React copies means every hook throws
+      "Cannot read properties of null (reading 'useState')".
+
+      htm is optional — delete it and the `h` binding below if you would rather
+      call createElement directly. It costs ~1KB and buys JSX-shaped markup,
+      which is worth it as soon as the tree is more than a few levels deep.
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@19.2.0",
+          "react/jsx-runtime": "https://esm.sh/react@19.2.0/jsx-runtime",
+          "react-dom": "https://esm.sh/react-dom@19.2.0",
+          "react-dom/client": "https://esm.sh/react-dom@19.2.0/client",
+          "htm": "https://esm.sh/htm@3.1.1",
+          "@astryxdesign/core": "https://esm.sh/@astryxdesign/core@__ASTRYX_VERSION__?external=react,react-dom",
+          "@astryxdesign/theme-neutral": "https://esm.sh/@astryxdesign/theme-neutral@__ASTRYX_VERSION__?external=react,react-dom"
+        }
+      }
+    </script>
+    <!-- Nothing in the stylesheets sets a document font: the theme styles
+         prose elements and each component styles itself, and Button is
+         `font: inherit` by design. Without this line its label falls back to
+         the browser default (Times). -->
+    <style>
+      body {
+        font-family: var(--font-family-body);
+      }
+      /* Modules load over the network, so the page is empty for a moment.
+         Say so, rather than showing a blank screen that reads as broken. */
+      #root:empty::after {
+        content: 'Loading…';
+        display: block;
+        padding: 2rem;
+        color: var(--color-text-secondary);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import * as React from 'react';
+      import {createRoot} from 'react-dom/client';
+      import htm from 'htm';
+      import {Theme, Card, Stack, Heading, Text, Button} from '@astryxdesign/core';
+      import {neutralTheme} from '@astryxdesign/theme-neutral';
+
+      // Nothing is compiling this file, so there is no JSX. htm gives the same
+      // shape from a tagged template; `React.createElement` directly is the
+      // dependency-free alternative.
+      const h = htm.bind(React.createElement);
+
+      // Passing the theme OBJECT is what makes `mode` work: 'system' follows
+      // the OS, and light/dark switch at runtime. The `data-astryx-theme`
+      // attribute alone only scopes the stylesheet — it cannot switch modes.
+      createRoot(document.getElementById('root')).render(h`
+        <${Theme} theme=${neutralTheme} mode="system">
+          <${Stack} padding=${6} align="start">
+            <${Card} maxWidth=${480} elevation="low">
+              <${Stack} gap=${3} align="start">
+                <${Heading} level=${1}>Hello from a CDN</${Heading}>
+                <${Text}>No bundler, no install, no build step.</${Text}>
+                <!-- Button's text comes from \`label\`, which is required — it is
+                     the accessible name. Children are optional and only change
+                     the visible text; the accessible name stays \`label\`. -->
+                <${Button} variant="primary" label="Try me" />
+              </${Stack}>
+            </${Card}>
+          </${Stack}>
+        </${Theme}>
+      `);
+    </script>
+  </body>
+</html>

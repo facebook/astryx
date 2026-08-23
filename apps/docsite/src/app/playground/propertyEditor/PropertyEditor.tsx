@@ -34,7 +34,6 @@ import {
   coerceDefault,
   coerceEnumOption,
   parsePropType,
-  type PropControlDescriptor,
 } from '../../../components/component-detail/parsePropType';
 import type {PropDoc} from '../../../generated/componentRegistry';
 import {
@@ -42,9 +41,9 @@ import {
   formatAttr,
   removeAttribute,
   setAttribute,
-  type AttrInfo,
   type InstanceInfo,
 } from './componentInstances';
+import {isEditable, isSupportedProp} from './isSupportedProp';
 import {getComponentByModule} from './componentLookup';
 
 const NUMERIC_RE = /^-?\d+(\.\d+)?$/;
@@ -66,35 +65,6 @@ const s = stylex.create({
     padding: 'var(--spacing-6)',
   },
 });
-
-function isEditable(control: PropControlDescriptor, attr?: AttrInfo): boolean {
-  if (attr?.valueKind === 'expression') {
-    return false;
-  }
-  return (
-    control.kind === 'boolean' ||
-    control.kind === 'enum' ||
-    control.kind === 'string' ||
-    control.kind === 'number'
-  );
-}
-
-// Prop types that have no inline control in the popover and so are
-// hidden entirely (ReactNode parses to a string control but isn't meaningfully
-// editable here; StyleXStyles/AriaRole have no control at all).
-const UNSUPPORTED_PROP_TYPES = new Set([
-  'ReactNode',
-  'StyleXStyles',
-  'AriaRole',
-]);
-
-/** Whether a prop can be edited through the editor (and should be shown). */
-function isSupportedProp(prop: PropDoc): boolean {
-  if (UNSUPPORTED_PROP_TYPES.has(prop.type.trim())) {
-    return false;
-  }
-  return isEditable(parsePropType(prop.type, prop.name, prop.slotElements));
-}
 
 interface PropRowProps {
   prop: PropDoc;

@@ -11,7 +11,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
- * - /packages/cli/templates/blocks/components/PowerSearch/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/PowerSearch/ (showcase blocks)
  */
 
 import React, {
@@ -37,7 +37,7 @@ import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {Icon} from '../Icon';
 import type {IconType} from '../Icon';
 import type {IconName} from '../Icon/globalIconRegistry';
-import type {InputStatus} from '../Field';
+import type {InputStatus, FieldStatusVariant} from '../Field';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {
@@ -50,9 +50,17 @@ import {mergeRefs} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
-import {formatFilterValue} from './formatFilterValue';
+import {
+  formatFilterValue,
+  formatDateAbsoluteCompact,
+} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
+import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
+import {truncateCharacters} from '../utils/characters';
+import {useTranslator} from '../i18n';
+import {useLocale} from '../i18n/useLocale';
+import type {Locale} from '../i18n/types';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -102,7 +110,6 @@ const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
     minWidth: 400,
-    marginTop: spacingVars['--spacing-1'],
   },
 });
 
@@ -116,7 +123,9 @@ const resultCountStyles = stylex.create({
 });
 
 function truncateString(value: string, limit: number): string {
-  return value.length > limit + 3 ? value.slice(0, limit) + '...' : value;
+  // Same semantics as before — strings within limit + 3 pass through, longer
+  // ones cut to limit + '...' — but counted in characters, not code units.
+  return truncateCharacters(value, limit + 3, '...');
 }
 
 function getEnumLabel(values: ReadonlyArray<EnumItem>, value: string): string {
@@ -127,10 +136,12 @@ function PowerSearchTokenValue({
   operatorValue,
   filterValue,
   maxLength,
+  locale,
 }: {
   operatorValue: OperatorValue;
   filterValue: FilterValue;
   maxLength: number;
+  locale: Locale;
 }) {
   switch (filterValue.type) {
     case 'empty':
@@ -272,12 +283,10 @@ function PowerSearchTokenValue({
       );
 
     case 'date_absolute': {
-      const date = new Date(filterValue.unixSeconds * 1000);
-      const formatted = new Intl.DateTimeFormat(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }).format(date);
+      const formatted = formatDateAbsoluteCompact(
+        filterValue.unixSeconds,
+        locale,
+      );
       return (
         <span {...stylex.props(tokenValueStyles.value)}>
           {truncateString(formatted, maxLength)}
@@ -381,6 +390,13 @@ export interface PowerSearchProps extends Omit<
   onBlur?: (e: React.FocusEvent) => void;
   /** Validation status. */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
   /** Max width for dropdown menu. */
   menuWidth?: number;
   /** Max display length for filter token values. @default 40 */
@@ -513,9 +529,9 @@ export function PowerSearch({
   config: configProp,
   filters,
   onChange,
-  label = 'Search',
+  label: labelFromProps,
   isLabelHidden = true,
-  placeholder = 'Search...',
+  placeholder: placeholderFromProps,
   hasAutoFocus = false,
   hasClear = true,
   isReadOnly = false,
@@ -525,8 +541,9 @@ export function PowerSearch({
   onFocus,
   onBlur,
   status,
+  statusVariant = 'attached',
   maxTokenLength = 40,
-  popoverSaveButtonLabel = 'Apply',
+  popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
   timezoneID,
   tokenOverflowBehavior,
   endContent,
@@ -543,6 +560,13 @@ export function PowerSearch({
   const size = useSize(sizeProp, 'md');
   const config = useInternalConfig(configProp);
   const searchSource = usePowerSearchSource(config);
+  const t = useTranslator();
+  const locale = useLocale();
+  const label = labelFromProps ?? t('@astryx.powersearch.label');
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.powersearch.placeholder');
+  const popoverSaveButtonLabel =
+    popoverSaveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const tokenizerRef = useRef<TokenizerHandle>(null);
 
   const [popoverState, setPopoverStateRaw] = useState<PopoverState>({
@@ -598,13 +622,16 @@ export function PowerSearch({
     return filters.map((filter, index) => {
       const field = config.getField(filter.field);
       const operator = config.getOperator(filter.field, filter.operator);
-      const operatorLabel = operator?.label ? `: ${operator.label}` : '';
+      const resolvedOp = operator ? resolveOperatorLabel(operator, t) : '';
+      const operatorLabel = resolvedOp ? `: ${resolvedOp}` : '';
       const valueStr = operator
         ? formatFilterValue(
             config,
             operator.value,
             filter.value,
             maxTokenLength,
+            t,
+            locale,
             timezoneID,
           )
         : '';
@@ -624,7 +651,7 @@ export function PowerSearch({
         },
       };
     });
-  }, [filters, config, maxTokenLength, timezoneID]);
+  }, [filters, config, maxTokenLength, timezoneID, t, locale]);
 
   // Handle tokenizer onChange (field selected from typeahead)
   const handleTokenizerChange = useCallback(
@@ -787,7 +814,7 @@ export function PowerSearch({
 
       // Default token rendering
       const fieldLabel = field?.label ?? '';
-      const operatorLabel = operator?.label ?? '';
+      const operatorLabel = operator ? resolveOperatorLabel(operator, t) : '';
       const tokenLabel = `${fieldLabel}: ${operatorLabel}`.trim();
       const adjustedMaxLength = Math.max(
         maxTokenLength - fieldLabel.length - operatorLabel.length,
@@ -800,6 +827,7 @@ export function PowerSearch({
             operatorValue={operator.value}
             filterValue={filter.value}
             maxLength={adjustedMaxLength}
+            locale={locale}
           />
         ) : undefined;
 
@@ -838,11 +866,13 @@ export function PowerSearch({
       config,
       configProp,
       maxTokenLength,
+      locale,
       size,
       isReadOnly,
       isDisabled,
       handleTokenClick,
       componentOverrides,
+      t,
     ],
   );
 
@@ -948,17 +978,18 @@ export function PowerSearch({
   ]);
 
   // Plain-text form of the result count, shared by the visible label and the
-  // screen-reader announcement so the two never drift.
+  // screen-reader announcement so the two never drift. The ICU plural handles
+  // the number formatting + `result` vs `results` in one message so translators
+  // can match the locale's plural rules.
   const resultCountText = useMemo((): string | null => {
     if (resultCount == null) {
       return null;
     }
     if (typeof resultCount === 'number') {
-      const formatted = new Intl.NumberFormat().format(resultCount);
-      return `${formatted} ${resultCount === 1 ? 'result' : 'results'}`;
+      return t('@astryx.powersearch.resultCount', {count: resultCount});
     }
     return resultCount;
-  }, [resultCount]);
+  }, [resultCount, t]);
 
   // Announce result-count changes to screen readers through a polite live
   // region, mirroring the way Typeahead announces its dropdown result count.
@@ -1021,6 +1052,7 @@ export function PowerSearch({
           hasEntriesOnFocus
           debounceMs={0}
           status={status}
+          statusVariant={statusVariant}
           onFocus={onFocus}
           onBlur={onBlur}
           xstyle={xstyle}
@@ -1032,6 +1064,7 @@ export function PowerSearch({
       {popover.render(popoverContent, {
         placement: 'below',
         alignment: 'start',
+        offset: spacingVars['--spacing-1'],
         xstyle: [popoverLayerStyles.layer, layerAnimations.below],
       })}
     </>

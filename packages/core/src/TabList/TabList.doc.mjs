@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TabList',
@@ -21,6 +21,9 @@ export const docs = {
       {className: 'astryx-tab-menu'},
       {className: 'astryx-tab-menu-dropdown'},
       {className: 'astryx-tab-menu-item'},
+    ],
+    vars: [
+      {name: '--_tab-indicator-bottom', description: 'Vertical offset of the selected-tab indicator from the tab bottom edge. A host that draws its own bottom divider (Toolbar) sets this so the indicator sits on the divider instead of above it.', default: '-1px', private: true},
     ],
   },
   description: 'Nav wrapper that provides TabListContext (value, onChange, size) to Tab and TabMenu children.',
@@ -56,12 +59,6 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'orientation',
-      type: "'horizontal' | 'vertical'",
-      description: "Orientation of the tab strip, controlling which arrow keys move focus between tabs and the reported aria-orientation. 'horizontal': ArrowLeft/ArrowRight. 'vertical': ArrowUp/ArrowDown. Both axes' arrows are accepted regardless.",
-      default: "'horizontal'",
-    },
-    {
       name: 'children',
       type: 'ReactNode',
       description: 'Tab and TabMenu items to render inside the nav.',
@@ -92,7 +89,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
-      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, use a smaller button size (sm) so the actions don\'t overpower the tab row.' },
+      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
       { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
@@ -105,7 +102,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -113,7 +110,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
-      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, use a smaller button size (sm) so the actions don\'t overpower the tab row.' },
+      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
       { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
@@ -126,7 +123,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Tab navigation w/ overflow menu support; semantic nav landmark w/ button or anchor tab items.',
   usage: {
@@ -135,7 +132,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
-      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, use a smaller button size (sm) so the actions don\'t overpower the tab row.' },
+      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
       { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },

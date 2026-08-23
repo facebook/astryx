@@ -277,6 +277,26 @@ describe('parseDateInput', () => {
     });
   });
 
+  describe('ambiguous numeric formats follow the passed locale (#5074)', () => {
+    // Both numbers are <= 12, so the day/month order is genuinely ambiguous
+    // and resolved by isLocaleDayFirst(locale) rather than the host locale.
+    it('reads month-first for en-US', () => {
+      expect(parseDateInput('3/4/2026', 'en-US')).toEqual({
+        year: 2026,
+        month: 3,
+        day: 4,
+      });
+    });
+
+    it('reads day-first for es-ES', () => {
+      expect(parseDateInput('3/4/2026', 'es-ES')).toEqual({
+        year: 2026,
+        month: 4,
+        day: 3,
+      });
+    });
+  });
+
   describe('edge cases', () => {
     it('returns null for empty string', () => {
       expect(parseDateInput('')).toBeNull();

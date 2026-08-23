@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'useTableFiltering',
@@ -23,7 +23,7 @@ export const docs = {
     },
     {
       name: 'variant',
-      type: "'popover' | 'inline'",
+      type: "'popover' | 'inline' | 'inline-compact'",
       description: 'Display variant for filter controls.',
       default: "'popover'",
     },
@@ -50,7 +50,7 @@ export const docsZh = {
     },
     {
       name: 'variant',
-      type: "'popover' | 'inline'",
+      type: "'popover' | 'inline' | 'inline-compact'",
       description: '筛选控件的显示变体。',
       default: "'popover'",
     },

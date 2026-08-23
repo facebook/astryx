@@ -65,18 +65,12 @@ export const calendarStyles = stylex.create({
     borderWidth: 0,
   },
   /**
-   * Wrapper for the month nav chevrons. In RTL the flex header already
-   * swaps the buttons' visual sides; the glyphs must mirror with them so
-   * "Previous month" points outward (visually right) instead of inward.
-   * Keyed on the dir attribute (dir="rtl"), same as MobileNav's drawer
-   * transform — bare CSS `direction: rtl` alone won't trigger it.
+   * Wrapper for the month nav chevrons. RTL mirroring is applied by
+   * composing the shared `rtlStyles.mirror` transform onto this wrapper
+   * at the call site (see Calendar.tsx).
    */
   navIcon: {
     display: 'inline-flex',
-    transform: {
-      default: null,
-      ':is([dir="rtl"] *)': 'scaleX(-1)',
-    },
   },
 });
 
@@ -145,24 +139,24 @@ export const dayCellStyles = stylex.create({
     position: 'absolute',
     top: '2px',
     bottom: '2px',
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
   },
-  rangeBgRadiusLeft: {
-    left: '2px',
-    borderTopLeftRadius: radiusVars['--radius-full'],
-    borderBottomLeftRadius: radiusVars['--radius-full'],
+  rangeBgRadiusStart: {
+    insetInlineStart: '2px',
+    borderStartStartRadius: radiusVars['--radius-full'],
+    borderEndStartRadius: radiusVars['--radius-full'],
   },
-  rangeBgRadiusRight: {
-    right: '2px',
-    borderTopRightRadius: radiusVars['--radius-full'],
-    borderBottomRightRadius: radiusVars['--radius-full'],
+  rangeBgRadiusEnd: {
+    insetInlineEnd: '2px',
+    borderStartEndRadius: radiusVars['--radius-full'],
+    borderEndEndRadius: radiusVars['--radius-full'],
   },
-  rangeInsetLeft: {
-    left: '2px',
+  rangeInsetStart: {
+    insetInlineStart: '2px',
   },
-  rangeInsetRight: {
-    right: '2px',
+  rangeInsetEnd: {
+    insetInlineEnd: '2px',
   },
 
   // Preview background - structural positioning
@@ -170,28 +164,28 @@ export const dayCellStyles = stylex.create({
     position: 'absolute',
     top: '2px',
     bottom: '2px',
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
   },
-  previewBgRadiusLeft: {
-    left: '2px',
-    borderTopLeftRadius: radiusVars['--radius-full'],
-    borderBottomLeftRadius: radiusVars['--radius-full'],
+  previewBgRadiusStart: {
+    insetInlineStart: '2px',
+    borderStartStartRadius: radiusVars['--radius-full'],
+    borderEndStartRadius: radiusVars['--radius-full'],
   },
-  previewBgRadiusRight: {
-    right: '2px',
-    borderTopRightRadius: radiusVars['--radius-full'],
-    borderBottomRightRadius: radiusVars['--radius-full'],
+  previewBgRadiusEnd: {
+    insetInlineEnd: '2px',
+    borderStartEndRadius: radiusVars['--radius-full'],
+    borderEndEndRadius: radiusVars['--radius-full'],
   },
   previewStart: {
-    left: '2px',
-    borderTopLeftRadius: radiusVars['--radius-full'],
-    borderBottomLeftRadius: radiusVars['--radius-full'],
+    insetInlineStart: '2px',
+    borderStartStartRadius: radiusVars['--radius-full'],
+    borderEndStartRadius: radiusVars['--radius-full'],
   },
   previewEnd: {
-    right: '2px',
-    borderTopRightRadius: radiusVars['--radius-full'],
-    borderBottomRightRadius: radiusVars['--radius-full'],
+    insetInlineEnd: '2px',
+    borderStartEndRadius: radiusVars['--radius-full'],
+    borderEndEndRadius: radiusVars['--radius-full'],
   },
 
   // Day button - structural
@@ -204,7 +198,10 @@ export const dayCellStyles = stylex.create({
     borderRadius: '50%',
     borderWidth: 0,
     borderStyle: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-body-size'],
     padding: 0,
@@ -221,9 +218,9 @@ export const dayCellStyles = stylex.create({
       content: '""',
       position: 'absolute',
       top: '-2px',
-      right: '-2px',
+      insetInlineEnd: '-2px',
       bottom: '-2px',
-      left: '-2px',
+      insetInlineStart: '-2px',
     },
   },
 
@@ -235,7 +232,7 @@ export const dayCellStyles = stylex.create({
   dayTodayInRange: {},
   daySelected: {},
   dayDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 
@@ -260,17 +257,9 @@ export const dayCellTheme = stylex.create({
     backgroundColor: 'transparent',
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
     },
   },
 
@@ -295,7 +284,7 @@ export const dayCellTheme = stylex.create({
     color: colorVars['--color-on-accent'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
     },
@@ -306,7 +295,7 @@ export const dayCellTheme = stylex.create({
     opacity: 0.3,
     backgroundImage: {
       default: 'none',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': 'none',
       },
     },

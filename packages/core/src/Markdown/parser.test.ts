@@ -1,8 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {parseMarkdown, parseInline} from './parser';
-import type {InlineNode} from './parser';
+import {
+  createIncrementalState,
+  parseInline,
+  parseMarkdown,
+  parseMarkdownIncremental,
+} from './parser';
+import type {BlockNode, InlineNode} from './parser';
 
 describe('parseInline', () => {
   it('parses plain text', () => {
@@ -49,6 +54,48 @@ describe('parseInline', () => {
   it('parses images', () => {
     const result = parseInline('![alt](img.png)');
     expect(result).toEqual([{type: 'image', src: 'img.png', alt: 'alt'}]);
+  });
+
+  it('rejects javascript: links as plain text (XSS prevention)', () => {
+    const result = parseInline('[click](javascript:alert(1))');
+    // Should be emitted as plain text, NOT as a link node
+    expect(result).toEqual([
+      {type: 'text', content: '[click](javascript:alert(1))'},
+    ]);
+  });
+
+  it('rejects javascript: with mixed case and whitespace (XSS prevention)', () => {
+    const result = parseInline('[click](JaVaScRiPt:alert(1))');
+    expect(result).toEqual([
+      {type: 'text', content: '[click](JaVaScRiPt:alert(1))'},
+    ]);
+  });
+
+  it('rejects vbscript: links (XSS prevention)', () => {
+    const result = parseInline('[click](vbscript:MsgBox(1))');
+    expect(result).toEqual([
+      {type: 'text', content: '[click](vbscript:MsgBox(1))'},
+    ]);
+  });
+
+  it('rejects data:text/html image src (XSS prevention)', () => {
+    const result = parseInline(
+      '![xss](data:text/html,<script>alert(1)</script>)',
+    );
+    expect(result).toEqual([
+      {
+        type: 'text',
+        content: '![xss](data:text/html,<script>alert(1)</script>)',
+      },
+    ]);
+  });
+
+  it('allows normal http/https links', () => {
+    const result = parseInline('[safe](https://example.com)');
+    expect(result[0].type).toBe('link');
+    if (result[0].type === 'link') {
+      expect(result[0].href).toBe('https://example.com');
+    }
   });
 
   it('parses strikethrough', () => {
@@ -727,6 +774,17 @@ describe('citation parsing', () => {
       });
     });
 
+    it('rejects <javascript:...> angle-bracket autolinks (XSS prevention)', () => {
+      const result = parseInline('see <javascript:alert(1)> ok', {
+        autolink: 'gfm',
+      });
+      // Should NOT produce a link node with javascript: href
+      const linkNodes = result.filter(
+        (n): n is Extract<typeof n, {type: 'link'}> => n.type === 'link',
+      );
+      expect(linkNodes).toHaveLength(0);
+    });
+
     it('parses <email> angle-bracket autolinks', () => {
       const result = parseInline('mail <user@example.com> please', {
         autolink: 'gfm',
@@ -1154,5 +1212,131 @@ describe('link reference definitions', () => {
     const {links, blocks} = paragraphLinks('an array like [1, 2, 3] here');
     expect(links).toEqual([]);
     expect(blocks[0].type).toBe('paragraph');
+  });
+});
+
+describe('sourceRanges', () => {
+  const slice = (source: string, block: {range?: readonly [number, number]}) =>
+    block.range == null ? null : source.slice(block.range[0], block.range[1]);
+
+  it('is off by default', () => {
+    const [block] = parseMarkdown('# Title');
+    expect(block.range).toBeUndefined();
+  });
+
+  it('gives every top-level block the source it came from', () => {
+    const source = [
+      '# Title',
+      '',
+      'A paragraph that',
+      'wraps onto two lines.',
+      '',
+      '- one',
+      '- two',
+      '',
+      '```js',
+      'const x = 1;',
+      '```',
+      '',
+      '| a | b |',
+      '| --- | --- |',
+      '| 1 | 2 |',
+      '',
+      '> quoted',
+      '',
+      '---',
+    ].join('\n');
+    const blocks = parseMarkdown(source, {sourceRanges: true});
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      '# Title',
+      'A paragraph that\nwraps onto two lines.',
+      '- one\n- two',
+      '```js\nconst x = 1;\n```',
+      '| a | b |\n| --- | --- |\n| 1 | 2 |',
+      '> quoted',
+      '---',
+    ]);
+  });
+
+  it('reports offsets into the input, not into the link-definition-stripped text', () => {
+    // The definition lines are removed before the block loop runs, so a naive
+    // offset would drift by their length for everything after them.
+    const source = [
+      '[ref]: https://example.com',
+      '',
+      'See [the docs][ref].',
+      '',
+      'Another paragraph.',
+    ].join('\n');
+    const blocks = parseMarkdown(source, {sourceRanges: true});
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      'See [the docs][ref].',
+      'Another paragraph.',
+    ]);
+  });
+
+  it('reports absolute offsets when the document is parsed incrementally', () => {
+    const source = ['# Title', '', 'One.', '', 'Two.', '', 'Three.'].join('\n');
+    const state = createIncrementalState();
+    let blocks: BlockNode[] = [];
+    for (let end = 1; end <= source.length; end++) {
+      blocks = parseMarkdownIncremental(source.slice(0, end), state, {
+        sourceRanges: true,
+      });
+    }
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      '# Title',
+      'One.',
+      'Two.',
+      'Three.',
+    ]);
+  });
+
+  it('keeps the blank lines an unterminated fence owns', () => {
+    // Mid-stream the closing fence has not arrived, and the blank lines are
+    // part of the code, not spacing between blocks.
+    const source = '```\ncode\n\n';
+    const [block] = parseMarkdown(source, {sourceRanges: true});
+    // The whole thing: the fence consumed those lines as code.
+    expect(slice(source, block)).toBe(source);
+  });
+
+  it('slices to something that re-parses to the same block', () => {
+    // The property a consumer actually needs, and the one that says the
+    // offsets are right: what the range points at is the block.
+    const check = (source: string) => {
+      for (const block of parseMarkdown(source, {sourceRanges: true})) {
+        const {range: _range, ...node} = block;
+        expect(parseMarkdown(slice(source, block)!)).toEqual([node]);
+      }
+    };
+    check('# Title\n\nA paragraph.\n\n- one\n- two\n\n> quoted');
+    // CRLF: the parser keeps the `\r` in its own content, so the range does
+    // too rather than slicing to text that parses differently.
+    check('# Title\r\n\r\nA paragraph.\r\n');
+  });
+
+  it('re-parses when the caller flips the option on an existing state', () => {
+    const source = 'One.\n\nTwo.\n\nThree.';
+    const state = createIncrementalState();
+    const without = parseMarkdownIncremental(source, state);
+    expect(without.every(b => b.range == null)).toBe(true);
+    const with_ = parseMarkdownIncremental(source, state, {
+      sourceRanges: true,
+    });
+    expect(with_.map(b => slice(source, b))).toEqual(['One.', 'Two.', 'Three.']);
+    const back = parseMarkdownIncremental(source, state);
+    expect(back.every(b => b.range == null)).toBe(true);
+  });
+
+  it('spans both halves of a list the incremental parser merged', () => {
+    const source = '1. one\n\n1. two';
+    const state = createIncrementalState();
+    parseMarkdownIncremental('1. one\n\n', state, {sourceRanges: true});
+    const blocks = parseMarkdownIncremental(source, state, {
+      sourceRanges: true,
+    });
+    expect(blocks).toHaveLength(1);
+    expect(slice(source, blocks[0])).toBe(source);
   });
 });

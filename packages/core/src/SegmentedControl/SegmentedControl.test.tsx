@@ -14,6 +14,10 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {SegmentedControl} from './SegmentedControl';
 import {SegmentedControlItem} from './SegmentedControlItem';
+import {
+  getAllInjectedCss,
+  getForcedColorsRules,
+} from '../__tests__/forcedColors';
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -193,6 +197,37 @@ describe('SegmentedControl', () => {
     expect(radio).toHaveAttribute('aria-label', 'Grid view');
     // Label text should not be visible
     expect(screen.queryByText('Grid view')).not.toBeInTheDocument();
+  });
+
+  it('fill items can shrink and truncate long labels', () => {
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={() => {}}
+        label="View mode"
+        layout="fill">
+        <SegmentedControlItem
+          value="grid"
+          label="A very long segment label that should truncate"
+        />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem value="table" label="Table" />
+      </SegmentedControl>,
+    );
+
+    const button = screen.getByRole('radio', {name: /very long/});
+    const label = screen.getByText(
+      'A very long segment label that should truncate',
+    );
+
+    // The button (flex child) must allow shrinking below content size
+    const buttonStyle = getComputedStyle(button);
+    expect(buttonStyle.minWidth).toBe('0');
+
+    // The label span must set up text truncation
+    const labelStyle = getComputedStyle(label);
+    expect(labelStyle.overflow).toBe('hidden');
+    expect(labelStyle.textOverflow).toBe('ellipsis');
   });
 
   it('uses roving tabindex — selected item has tabIndex 0, others -1', () => {
@@ -778,5 +813,29 @@ describe('SegmentedControl container handler forwarding', () => {
     await user.keyboard('{ArrowRight}');
 
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so these assert that the
+// compiled output includes the forced-colors rules; visual behavior needs
+// manual verification under Windows High Contrast.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles forced-colors overrides so the selected segment survives Windows High Contrast', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+    const css = getForcedColorsRules();
+    // The painted surface fill and shadow are stripped; Highlight/
+    // HighlightText marks the selected segment.
+    expect(css).toContain('background-color: highlight;');
+    expect(css).toContain('color: highlighttext;');
+    // The segment is a <button>; without opting out of UA remapping it keeps
+    // the native ButtonFace surface and ignores the Highlight fill, leaving
+    // HighlightText text on a white surface. forced-color-adjust: none makes
+    // both render as authored.
+    expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
   });
 });

@@ -17,7 +17,7 @@
  * - /packages/core/src/TopNav/TopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import {useMemo, useRef, type ReactNode} from 'react';
@@ -31,7 +31,7 @@ import {
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
 import {Link} from '../Link';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Icon} from '../Icon';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {mergeProps, mergeRefs} from '../utils';
@@ -39,6 +39,7 @@ import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -62,7 +63,10 @@ const styles = stylex.create({
     cursor: 'default',
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -71,14 +75,17 @@ const styles = stylex.create({
     fontSize: 'inherit',
     fontWeight: fontWeightVars['--font-weight-normal'],
     textAlign: 'start',
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
   menuTrigger: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -148,6 +155,16 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-7'],
     color: colorVars['--color-icon-secondary'],
   },
+  // The registry chevron is a 1em SVG, so it has always rendered at the
+  // heading's inherited font size. Icon's size box would repin it to a fixed
+  // rem (the nearest, sm, is 1rem = 16px vs the 14px base here), so hold the
+  // glyph on the inherited em — the 28px chevron box above is unchanged, and
+  // the glyph keeps tracking the surrounding text.
+  chevronGlyph: {
+    width: '1em',
+    height: '1em',
+    fontSize: 'inherit',
+  },
   headerEndContent: {
     flexShrink: 0,
     display: 'flex',
@@ -179,16 +196,14 @@ const styles = stylex.create({
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-2'],
     marginInline: spacingVars['--spacing-1'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
+  // Composes over `chevron` — the flipped popover copy differs only by the
+  // rotation, so it carries just that.
   popoverChevron: {
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: spacingVars['--spacing-7'],
-    minHeight: spacingVars['--spacing-7'],
-    color: colorVars['--color-icon-secondary'],
     transform: 'rotate(180deg)',
   },
   popover: {
@@ -226,14 +241,8 @@ export interface TopNavHeadingProps extends BaseProps<HTMLElement> {
   heading?: string;
   /**
    * Link for the heading (e.g., product home).
-   * Alias: `href` (for backward compatibility).
    */
   headingHref?: string;
-  /**
-   * @deprecated Use `headingHref` instead.
-   * URL to navigate to when the heading is clicked.
-   */
-  href?: string;
   /**
    * Text above the heading (e.g., suite name).
    */
@@ -303,8 +312,7 @@ export function TopNavHeading({
   logo,
   logoLabel,
   heading,
-  headingHref: headingHrefProp,
-  href,
+  headingHref,
   superheading,
   superheadingHref,
   subheading,
@@ -318,9 +326,8 @@ export function TopNavHeading({
   ref,
   ...props
 }: TopNavHeadingProps) {
+  const t = useTranslator();
   const LinkComponent = useLinkComponent(as);
-  // Support both headingHref and legacy href
-  const headingHref = headingHrefProp ?? href;
   // When the logo is wrapped in a link it needs its own accessible name (the
   // logo image itself is decorative). Prefer an explicit logoLabel, fall back
   // to the heading text. axe: link-name.
@@ -329,27 +336,35 @@ export function TopNavHeading({
   const rootRef = useRef<HTMLElement>(null);
 
   const popover = usePopover({
-    dialogLabel: 'Navigation menu',
+    dialogLabel: t('@astryx.topNav.heading.dialogLabel'),
+    // The popup exposes its own role="menu" semantics; a role="dialog"
+    // aria-modal wrapper would announce "dialog, Navigation menu" around a
+    // menu (the anti-pattern removed in a478a3dcf).
+    role: 'none',
     hasCloseButton: false,
   });
 
-  const closeMenuCtx = useMemo(
-    () => ({closeMenu: popover.hide}),
-    [popover.hide],
-  );
+  const {
+    triggerProps,
+    contentProps,
+    menuRef,
+    setTriggerEl,
+    close: closeMenu,
+  } = useMenuHover<HTMLDivElement>({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: !!menu,
+    showDelay: 0,
+  });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
-    useMenuHover<HTMLDivElement>({
-      show: popover.show,
-      hide: popover.hide,
-      isOpen: popover.isOpen,
-      isEnabled: !!menu,
-      showDelay: 0,
-    });
+  const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
+  // setTriggerEl belongs on the chevron button, not this root: it is the
+  // focus-restore target and a <div> cannot take focus. triggerRef stays here
+  // because the panel anchors to the whole heading.
   const setRef = mergeRefs<HTMLElement>(
     rootRef,
-    setTriggerEl,
     ref,
     menu ? popover.triggerRef : undefined,
   );
@@ -406,7 +421,12 @@ export function TopNavHeading({
   );
 
   const chevronElement = showChevron && (
-    <span {...stylex.props(styles.chevron)}>{getIcon('chevronDown')}</span>
+    <Icon
+      icon="chevronDown"
+      size="sm"
+      color="secondary"
+      xstyle={[styles.chevron, styles.chevronGlyph]}
+    />
   );
 
   const headerEndContentElement = headerEndContent && (
@@ -419,12 +439,16 @@ export function TopNavHeading({
     <button
       type="button"
       {...stylex.props(styles.popoverHeading)}
-      onClick={triggerProps.onClick}>
+      // A close affordance, not the trigger: dismiss only.
+      onClick={closeMenu}>
       {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
       {renderTextContent(
-        <span {...stylex.props(styles.popoverChevron)}>
-          {getIcon('chevronDown')}
-        </span>,
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="secondary"
+          xstyle={[styles.chevron, styles.chevronGlyph, styles.popoverChevron]}
+        />,
       )}
     </button>
   );
@@ -492,16 +516,24 @@ export function TopNavHeading({
           )}>
           {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
           {renderTextContent(
+            // Stays a <button>: this box is the popover trigger, so it carries
+            // the accessible name and handlers — only the glyph moves to Icon.
             <button
+              ref={setTriggerEl}
               type="button"
-              aria-label="Open menu"
+              aria-label={t('@astryx.topNav.heading.openMenu')}
               onClick={e => {
                 e.stopPropagation();
                 triggerProps.onClick();
               }}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
-              {getIcon('chevronDown')}
+              <Icon
+                icon="chevronDown"
+                size="sm"
+                color="inherit"
+                xstyle={styles.chevronGlyph}
+              />
             </button>,
           )}
           {headerEndContentElement}
@@ -509,13 +541,19 @@ export function TopNavHeading({
         {popover.render(
           <div
             ref={menuRef}
-            role="menu"
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <NavHeadingCloseContext value={closeMenuCtx}>
-              {menu}
-            </NavHeadingCloseContext>
+            {/* The menu role is scoped to the actual menu items so the
+                heading button above stays a valid sibling, not an invalid
+                child of a role="menu" element. */}
+            <div
+              role="menu"
+              aria-label={heading ?? t('@astryx.topNav.heading.dialogLabel')}>
+              <NavHeadingCloseContext value={closeMenuCtx}>
+                {menu}
+              </NavHeadingCloseContext>
+            </div>
           </div>,
           {
             placement: 'below',
@@ -555,16 +593,25 @@ export function TopNavHeading({
             ))}
           {renderTextContent(
             showChevron ? (
+              // Stays a <button>: this box is the popover trigger, so it
+              // carries the accessible name and handlers — only the glyph
+              // moves to Icon.
               <button
+                ref={setTriggerEl}
                 type="button"
-                aria-label="Open menu"
+                aria-label={t('@astryx.topNav.heading.openMenu')}
                 onClick={e => {
                   e.stopPropagation();
                   triggerProps.onClick();
                 }}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
-                {getIcon('chevronDown')}
+                <Icon
+                  icon="chevronDown"
+                  size="sm"
+                  color="inherit"
+                  xstyle={styles.chevronGlyph}
+                />
               </button>
             ) : undefined,
           )}
@@ -573,13 +620,19 @@ export function TopNavHeading({
         {popover.render(
           <div
             ref={menuRef}
-            role="menu"
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <NavHeadingCloseContext value={closeMenuCtx}>
-              {menu}
-            </NavHeadingCloseContext>
+            {/* The menu role is scoped to the actual menu items so the
+                heading button above stays a valid sibling, not an invalid
+                child of a role="menu" element. */}
+            <div
+              role="menu"
+              aria-label={heading ?? t('@astryx.topNav.heading.dialogLabel')}>
+              <NavHeadingCloseContext value={closeMenuCtx}>
+                {menu}
+              </NavHeadingCloseContext>
+            </div>
           </div>,
           {
             placement: 'below',

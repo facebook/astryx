@@ -33,8 +33,9 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
-import {useAnnounce} from '../hooks/useAnnounce';
+import {useClipboard} from '../hooks/useClipboard';
 import {Icon} from '../Icon';
+import {IconButton} from '../IconButton';
 import {
   tokenize,
   tokenizeAsync,
@@ -45,6 +46,8 @@ import type {SyntaxToken, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {useTranslator} from '../i18n';
 import {SyntaxTheme, type SyntaxThemeDefinition} from '../theme/syntax';
 
 // ---------------------------------------------------------------------------
@@ -85,6 +88,23 @@ const dynamicStyles = stylex.create({
   gutterWidth: (digits: number) => ({
     '--_codeblock-gutter-width': `${digits}ch`,
   }),
+});
+
+// Light reveal so the leading chevron eases into view instead of popping in.
+// Growing the chevron's own footprint (width + inline margin) from zero slides
+// the title into place instead of snapping it over, and clipping keeps the
+// glyph from spilling while it's mid-reveal.
+const chevronReveal = stylex.keyframes({
+  from: {
+    width: 0,
+    marginInlineEnd: 0,
+    opacity: 0,
+  },
+  to: {
+    width: '14px',
+    marginInlineEnd: spacingVars['--spacing-1'],
+    opacity: 1,
+  },
 });
 
 const styles = stylex.create({
@@ -132,7 +152,6 @@ const styles = stylex.create({
   headerTitle: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontFamily: typographyVars['--font-family-code'],
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -172,28 +191,38 @@ const styles = stylex.create({
     flexShrink: 0,
     width: '14px',
     height: '14px',
+    marginInlineEnd: spacingVars['--spacing-1'],
+    overflow: 'hidden',
     color: 'var(--color-syntax-comment)',
+    animationName: {
+      default: chevronReveal,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
+    animationDuration: durationVars['--duration-medium'],
+    animationTimingFunction: easeVars['--ease-standard'],
+  },
+  // Applied to the chevron <Icon> (via `xstyle`): the glyph is the element that
+  // rotates and the element a theme targets, so one selector reaches both.
+  collapseChevronIcon: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  collapseChevronCollapsed: {
-    transform: 'rotate(180deg)',
+  collapseChevronExpanded: {
+    // Leading disclosure convention (matches TreeList/Table): the resting
+    // chevronRight points right (>) when collapsed; rotate it down (v) when
+    // expanded.
+    transform: 'rotate(90deg)',
   },
   headerCollapsible: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
     // Restore a keyboard-only focus ring with the standard token/offset so this
     // disclosure control matches the rest of the system (Collapsible, TabMenu);
     // otherwise it falls back to the inconsistent UA default outline.
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   code: {
     display: 'block',
@@ -275,27 +304,16 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-code-size'],
   },
   copyButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacingVars['--spacing-1'],
-    marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
-    border: 'none',
-    borderRadius: radiusVars['--radius-inner'],
-    backgroundColor: {
-      default: 'transparent',
-      '@media (hover: hover)': {
-        ':hover': colorVars['--color-overlay-hover'],
-      },
-    },
+    // The copy control is a ghost IconButton (Button owns its own padding,
+    // radius, and hover surface); this only tints the resting glyph to the
+    // muted syntax-comment colour so it blends into the header/corner. A theme
+    // reaches it via the `codeblock-copy-button` target on the Button.
     color: 'var(--color-syntax-comment)',
-    cursor: 'pointer',
-    lineHeight: 0,
   },
   copyButtonAbsolute: {
     position: 'absolute',
     top: spacingVars['--spacing-2'],
-    right: spacingVars['--spacing-2'],
+    insetInlineEnd: spacingVars['--spacing-2'],
   },
 });
 
@@ -718,18 +736,13 @@ export function CodeBlock({
   ref,
   ...props
 }: CodeBlockProps) {
-  const [copied, setCopied] = useState(false);
-  const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const announce = useAnnounce();
-
-  // Clear a pending "copied" reset when the block unmounts.
-  useEffect(() => {
-    return () => {
-      if (copyResetTimerRef.current != null) {
-        clearTimeout(copyResetTimerRef.current);
-      }
-    };
-  }, []);
+  const t = useTranslator();
+  // Owns the clipboard write, the transient copied flag, its reset timer, and
+  // the polite copy announcement (a swapped aria-label alone is not reliably
+  // announced) — shared with Timestamp via the same hook.
+  const {copy, isCopied: copied} = useClipboard({
+    announce: t('@astryx.codeBlock.copied'),
+  });
 
   const useSpans =
     highlightMode === 'spans' ||
@@ -752,26 +765,11 @@ export function CodeBlock({
   );
 
   const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      // Swapping the button's aria-label alone isn't reliably announced by
-      // screen readers, so confirm the copy via a polite live region.
-      announce('Copied');
+    const didCopy = await copy(code);
+    if (didCopy) {
       onCopy?.();
-      // Restart the reset timer on every copy — otherwise a rapid re-copy
-      // is reverted early by the previous click's timer.
-      if (copyResetTimerRef.current != null) {
-        clearTimeout(copyResetTimerRef.current);
-      }
-      copyResetTimerRef.current = setTimeout(() => {
-        copyResetTimerRef.current = null;
-        setCopied(false);
-      }, 2000);
-    } catch {
-      // Clipboard failures leave the copied state unchanged.
     }
-  }, [code, onCopy, announce]);
+  }, [code, copy, onCopy]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   // Digits in the largest line number — sizes the gutter column width.
@@ -793,32 +791,37 @@ export function CodeBlock({
     ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
     : undefined;
 
-  const copyIcon = (
-    <Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />
-  );
-
   const copyButtonEl = hasCopyButton ? (
-    <button
-      type="button"
+    <IconButton
+      variant="ghost"
+      size="sm"
+      icon={<Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />}
+      // A visible "Copy" hover/focus hint via Button's built-in tooltip. It
+      // stays "Copy" after copying — the copy → check icon flip is the
+      // confirmation, not a tooltip change. The aria-label still swaps to the
+      // localized "Copied" for assistive tech, backed by the announcement.
+      tooltip={t('@astryx.codeBlock.copyCode')}
+      label={
+        copied ? t('@astryx.codeBlock.copied') : t('@astryx.codeBlock.copyCode')
+      }
       onClick={e => {
         // Stop propagation so copying does not toggle the collapsible header.
         e.stopPropagation();
         void handleCopy();
       }}
-      aria-label={copied ? 'Copied' : 'Copy code'}
-      {...stylex.props(
-        styles.copyButton,
-        !showHeader && styles.copyButtonAbsolute,
-      )}>
-      {copyIcon}
-    </button>
+      xstyle={[styles.copyButton, !showHeader && styles.copyButtonAbsolute]}
+      {...themeProps('codeblock-copy-button')}
+    />
   ) : null;
 
   const headerEl = showHeader ? (
     <div
-      {...stylex.props(
-        styles.headerRow,
-        hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
+      {...mergeProps(
+        themeProps('codeblock-header', {size, language, container}),
+        stylex.props(
+          styles.headerRow,
+          hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
+        ),
       )}>
       <div
         role={canCollapse ? 'button' : undefined}
@@ -836,23 +839,31 @@ export function CodeBlock({
               }
             : undefined
         }
-        {...stylex.props(
+        {...focusOutlineProps.focusVisible(
           styles.header,
           canCollapse && styles.headerCollapsible,
         )}>
-        <span {...stylex.props(styles.headerTitle)}>
+        <span
+          {...mergeProps(
+            themeProps('codeblock-title', {size, language}),
+            stylex.props(styles.headerTitle),
+          )}>
+          {canCollapse && (
+            <span {...stylex.props(styles.collapseChevron)}>
+              <Icon
+                icon="chevronRight"
+                size="xsm"
+                color="inherit"
+                xstyle={[
+                  styles.collapseChevronIcon,
+                  !isCollapsed && styles.collapseChevronExpanded,
+                ]}
+              />
+            </span>
+          )}
           {title}
           {title && languageLabel ? ' — ' : ''}
           {languageLabel}
-          {canCollapse && (
-            <span
-              {...stylex.props(
-                styles.collapseChevron,
-                isCollapsed && styles.collapseChevronCollapsed,
-              )}>
-              <Icon icon="chevronDown" size="xsm" color="inherit" />
-            </span>
-          )}
         </span>
       </div>
       {copyButtonEl}
@@ -868,7 +879,7 @@ export function CodeBlock({
       // create duplicate same-named landmarks (axe: landmark-unique).
       tabIndex={0}
       role="group"
-      aria-label={languageLabel ?? 'Code'}
+      aria-label={languageLabel ?? t('@astryx.codeBlock.code')}
       {...mergeProps(stylex.props(styles.scrollContainer), {
         style: scrollStyle,
       })}>
@@ -921,6 +932,12 @@ export function CodeBlock({
       {canCollapse ? (
         <div
           id={regionId}
+          // While collapsed, the region is only hidden visually (0fr grid
+          // row); inert also removes it from the tab order and accessibility
+          // tree so keyboard users cannot Tab into the invisible scroll
+          // container (tabIndex=0). aria-controls pointing at an inert
+          // element remains a valid, resolvable reference.
+          inert={isCollapsed ? true : undefined}
           {...stylex.props(
             styles.collapseGrid,
             isCollapsed && styles.collapseGridCollapsed,

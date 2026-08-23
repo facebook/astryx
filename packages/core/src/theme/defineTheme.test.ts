@@ -2,13 +2,13 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import type {IconRegistry} from '../Icon/globalIconRegistry';
-import {
-  defineTheme,
-  generateThemeCSS,
-  generateThemeCSSFlat,
-  isDefinedTheme,
-} from './defineTheme';
+import type {DefinedTheme} from './defineTheme';
+import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 describe('defineTheme', () => {
   it('creates a theme with name', () => {
     const theme = defineTheme({name: 'test'});
@@ -100,7 +100,7 @@ describe('generateThemeCSS', () => {
         '--radius-container': '16px',
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain('--color-accent: light-dark(#0077B6, #48CAE4)');
     expect(css).toContain('--radius-container: 16px');
@@ -110,7 +110,7 @@ describe('generateThemeCSS', () => {
 
   it('includes prose rules even with no overrides', () => {
     const theme = defineTheme({name: 'empty'});
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain(':where(h1, h2, h3, h4, h5, h6)');
     expect(css).toContain('font-family: var(--font-family-heading)');
@@ -192,7 +192,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-card {');
     expect(css).toContain('border-width: 2px');
     expect(css).toContain('border-color: var(--color-accent)');
@@ -211,7 +211,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-button.secondary');
     expect(css).toContain('background-color: rgba(0,0,0,0.06)');
   });
@@ -227,7 +227,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-button.destructive.sm');
     expect(css).toContain('padding: 2px 6px');
   });
@@ -241,7 +241,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('font-family: "Playfair Display", serif');
     expect(css).not.toContain('fontFamily');
   });
@@ -254,7 +254,7 @@ describe('generateThemeCSS with components', () => {
         card: {base: {borderWidth: '1px'}},
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain('--radius-container: 20px');
     expect(css).toContain('.astryx-card {');
@@ -488,7 +488,7 @@ describe('custom status via components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // parseStyleKey('status:neutral') → '.neutral', so CSS should have .astryx-banner.neutral
     expect(css).toContain('.astryx-banner.neutral');
     expect(css).toContain('background-color: var(--color-background-muted)');
@@ -521,7 +521,7 @@ describe('custom status via components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-button.primary-muted');
     expect(css).toContain('background-color: #ECF5FF');
   });
@@ -733,12 +733,14 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Base rule
     expect(css).toContain('.astryx-radio {');
     expect(css).toContain('border-color: #8F9296');
     // Pseudo rule — separate selector
-    expect(css).toContain('.astryx-radio:hover {');
+    expect(css).toContain(
+      '.astryx-radio:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
     expect(css).toContain(
       'border-color: color-mix(in srgb, #8F9296, black 20%)',
     );
@@ -761,10 +763,12 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-button.primary-muted {');
     expect(css).toContain('background-color: #ECF5FF');
-    expect(css).toContain('.astryx-button.primary-muted:hover {');
+    expect(css).toContain(
+      '.astryx-button.primary-muted:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
     expect(css).toContain('background-color: #D6EBFF');
     expect(css).toContain('.astryx-button.primary-muted:focus-visible {');
     expect(css).toContain('outline: 2px solid var(--color-accent)');
@@ -783,11 +787,13 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Should NOT emit an empty base rule
     expect(css).not.toMatch(/\.astryx-switch\s*\{\s*\}/);
     // Should emit the pseudo rule
-    expect(css).toContain('.astryx-switch:hover {');
+    expect(css).toContain(
+      '.astryx-switch:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
   });
 
   it('keeps non-pseudo string values as regular properties', () => {
@@ -802,7 +808,7 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-card {');
     expect(css).toContain('border-width: 2px');
     expect(css).toContain('border-color: var(--color-accent)');
@@ -821,7 +827,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Should NOT emit raw padding property (only the scoped token)
     expect(css).not.toMatch(/[^-]padding: 20px/);
     // Should emit component-scoped shorthand token
@@ -840,7 +846,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline: 20px');
     expect(css).toContain('--astryx-card-padding-block-start: 16px');
     expect(css).toContain('--astryx-card-padding-block-end: 16px');
@@ -857,7 +863,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline: 16px');
     expect(css).toContain('--astryx-card-padding-block-start: 24px');
     expect(css).toContain('--astryx-card-padding-block-end: 24px');
@@ -875,7 +881,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Section — uniform → shorthand
     expect(css).toContain('--astryx-section-padding: 12px');
     // Dialog — asymmetric → directional
@@ -892,7 +898,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Button is not a container — padding passes through as-is
     expect(css).toContain('padding: 8px 16px');
     expect(css).not.toContain('--astryx-button-padding');
@@ -911,7 +917,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Non-padding props pass through
     expect(css).toContain('--_card-radius: 16px');
     expect(css).toContain('background-color: white');
@@ -929,7 +935,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-block-start: 16px');
     expect(css).toContain('--astryx-card-padding-block-end: 12px');
     expect(css).toContain('--astryx-card-padding-inline: 20px');
@@ -944,7 +950,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-block-start: 16px');
     expect(css).toContain('--astryx-card-padding-block-end: 24px');
   });
@@ -958,7 +964,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline-start: 12px');
     expect(css).toContain('--astryx-card-padding-inline-end: 20px');
   });
@@ -972,7 +978,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-block-start: 32px');
     expect(css).not.toContain('--astryx-card-padding-block-end');
     expect(css).not.toContain('--astryx-card-padding-inline');
@@ -987,7 +993,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline-start: 8px');
     expect(css).toContain('--astryx-card-padding-inline-end: 24px');
   });
@@ -1126,5 +1132,131 @@ describe('defineTheme extends', () => {
     expect(child.tokens['--font-size-base']).not.toBe(
       base.tokens['--font-size-base'],
     );
+  });
+
+  it('inherits indicators when the child has none', () => {
+    const indicator = (() => null) as unknown as NonNullable<
+      DefinedTheme['indicators']
+    >['check'];
+    const base = defineTheme({name: 'base', indicators: {check: indicator}});
+    const child = defineTheme({name: 'child', extends: base});
+    expect(child.indicators?.check).toBe(indicator);
+  });
+
+  it('inherits onDark token overrides from base theme', () => {
+    const base = defineTheme({
+      name: 'base',
+      onDark: {tokens: {'--color-border': '#ffffff'}},
+    });
+    const child = defineTheme({name: 'child', extends: base});
+    expect(child.__onDark?.tokens['--color-border']).toBe('#ffffff');
+  });
+
+  it('inherits onLight token overrides from base theme', () => {
+    const base = defineTheme({
+      name: 'base',
+      onLight: {tokens: {'--color-border': '#000000'}},
+    });
+    const child = defineTheme({name: 'child', extends: base});
+    expect(child.__onLight?.tokens['--color-border']).toBe('#000000');
+  });
+
+  it('lets the child override an inherited onDark token', () => {
+    const base = defineTheme({
+      name: 'base',
+      onDark: {tokens: {'--color-border': '#ffffff', '--color-track': '#eee'}},
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      onDark: {tokens: {'--color-border': '#cccccc'}},
+    });
+    expect(child.__onDark?.tokens['--color-border']).toBe('#cccccc');
+    expect(child.__onDark?.tokens['--color-track']).toBe('#eee');
+  });
+
+  it('inherits and deep-merges onDark component overrides', () => {
+    const base = defineTheme({
+      name: 'base',
+      onDark: {
+        components: {
+          card: {base: {borderColor: '#fff', backgroundColor: '#111'}},
+          badge: {base: {color: '#fff'}},
+        },
+      },
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      onDark: {components: {card: {base: {borderColor: '#ccc'}}}},
+    });
+    expect(child.__onDark?.components?.card?.base).toEqual({
+      borderColor: '#ccc',
+      backgroundColor: '#111',
+    });
+    expect(child.__onDark?.components?.badge?.base).toEqual({color: '#fff'});
+  });
+
+  it('inherits __inputTokens so inherited [light, dark] tuples survive', () => {
+    const base = defineTheme({
+      name: 'base',
+      tokens: {'--color-accent': ['#111111', '#eeeeee']},
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      tokens: {'--color-border': '#cccccc'},
+    });
+    expect(child.__inputTokens?.['--color-accent']).toEqual([
+      '#111111',
+      '#eeeeee',
+    ]);
+    expect(child.__inputTokens?.['--color-border']).toBe('#cccccc');
+  });
+
+  it('__inputTokens from the child win over the base', () => {
+    const base = defineTheme({
+      name: 'base',
+      tokens: {'--color-accent': ['#111111', '#eeeeee']},
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      tokens: {'--color-accent': '#ff0000'},
+    });
+    expect(child.__inputTokens?.['--color-accent']).toBe('#ff0000');
+  });
+
+  // The failure that motivated these: `extends` resolving to `undefined` (a
+  // named import that silently missed — see the theme-build resolution tests)
+  // used to inherit nothing and build a stylesheet that looked fine.
+  it('throws when extends is present but undefined', () => {
+    expect(() =>
+      defineTheme({
+        name: 'child',
+        extends: undefined,
+        tokens: {'--color-accent': '#ff0000'},
+      }),
+    ).toThrow(/extends/);
+  });
+
+  it('throws when extends is not a theme', () => {
+    expect(() =>
+      defineTheme({
+        name: 'child',
+        // A module namespace object is the shape a bad import hands over.
+        extends: {foo: 'bar'} as unknown as DefinedTheme,
+      }),
+    ).toThrow(/extends/);
+  });
+
+  it('accepts a pre-built theme module as a base', () => {
+    const built = {
+      name: 'built-base',
+      __built: true,
+      tokens: {'--color-accent': '#111111'},
+    } as DefinedTheme;
+    const child = defineTheme({name: 'child', extends: built});
+    expect(child.tokens['--color-accent']).toBe('#111111');
   });
 });

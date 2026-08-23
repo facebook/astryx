@@ -27,6 +27,12 @@ import {
   shadowVars,
 } from '../theme/tokens.stylex';
 import {Button} from '../Button';
+import {rtlStyles} from '../utils';
+import {useTranslator} from '../i18n';
+import {useDevWarning} from '../hooks/useDevWarning';
+import {mergeProps} from '../utils/mergeProps';
+import {themeProps} from '../utils/themeProps';
+import {stableClassName} from '../naming';
 
 const styles = stylex.create({
   // Default popover surface — background, radius, shadow.
@@ -41,12 +47,13 @@ const styles = stylex.create({
   contentWrapper: {
     position: 'relative',
   },
-  // Hidden close button wrapper - sr-only until focused, then positioned below popover
+  // Hidden close button wrapper - sr-only until focused, then positioned below
+  // popover. Inline-axis centering (+ the translateY(100%) that drops it below
+  // the surface) comes from rtlStyles.centerInline('100%') at the call site —
+  // it centers correctly in both LTR and RTL.
   closeButtonWrapper: {
     position: 'absolute',
     bottom: 0,
-    left: '50%',
-    transform: 'translate(-50%, 100%)',
     zIndex: 1,
     // sr-only by default
     width: {
@@ -183,6 +190,22 @@ export interface UsePopoverOptions {
    * @default true
    */
   hasSurface?: boolean;
+
+  /**
+   * Theme-target name stamped on the popup SURFACE — the element that paints
+   * the background, radius and elevation — without the `astryx-` prefix
+   * (e.g. `'complex-selector-popup'`).
+   *
+   * The surface is created here, not by the calling component, so a component
+   * that wants its popup themeable cannot reach it on its own: a target it
+   * renders itself lands on its content INSIDE the surface, where a background
+   * or radius rule paints the wrong box. Name the surface through this option
+   * and document the class in the component's `theming.targets`.
+   *
+   * The shared `astryx-popover-surface` class is always present alongside it,
+   * so a theme can style every popup surface at once.
+   */
+  surfaceTarget?: string;
 }
 
 /**
@@ -308,12 +331,17 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
     hasEscapeDismiss = true,
     hasAutoFocus = true,
     hasSurface = true,
+    surfaceTarget,
     hasCloseButton = true,
-    closeButtonLabel = 'Close popover',
+    closeButtonLabel: closeButtonLabelFromProps,
     dialogLabel,
     role = 'dialog',
     isModal = true,
   } = options;
+
+  const t = useTranslator();
+  const closeButtonLabel =
+    closeButtonLabelFromProps ?? t('@astryx.popover.close');
 
   // Track the trigger element for returning focus
   const triggerElementRef = useRef<HTMLElement | null>(null);
@@ -386,37 +414,48 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
     'aria-controls': layer.id,
   };
 
-  // Dev-time guardrail: a dialog popover should always be labeled. Warn once
-  // per hook instance (in an effect) rather than on every render.
-  const warnedUnnamedDialogRef = useRef(false);
-  useEffect(() => {
-    if (role === 'dialog' && !dialogLabel && !warnedUnnamedDialogRef.current) {
-      warnedUnnamedDialogRef.current = true;
-      console.warn(
-        'usePopover: role="dialog" without a `dialogLabel` renders an unnamed ' +
-          'dialog. Pass `dialogLabel`, or use `role: "none"` for listbox/menu ' +
-          'popups whose content already carries its own role.',
-      );
-    }
-  }, [role, dialogLabel]);
+  // Dev-time guardrail: a dialog popover should always be labeled.
+  useDevWarning(
+    'usePopover',
+    'role="dialog" without a `dialogLabel` renders an unnamed ' +
+      'dialog. Pass `dialogLabel`, or use `role: "none"` for listbox/menu ' +
+      'popups whose content already carries its own role.',
+    role === 'dialog' && !dialogLabel,
+  );
 
   // Wrapped render function that includes surface styles and optional hidden close button
   const render = useCallback(
     (children: ReactNode, props?: ContextRenderProps): ReactNode => {
+      // `mergeProps` is positional — a third OBJECT argument is read as
+      // `style`, not as more props — so the surface's classes are composed
+      // into one props object before merging with the StyleX result.
+      const surfaceProps = themeProps('popover-surface');
+      const surfaceClassName =
+        surfaceTarget != null
+          ? `${surfaceProps.className} ${stableClassName(surfaceTarget)}`
+          : surfaceProps.className;
+
       return layer.render(
         <div
           ref={contentRef}
           role={role === 'dialog' ? 'dialog' : undefined}
           aria-modal={role === 'dialog' && isModal ? true : undefined}
           aria-label={role === 'dialog' ? dialogLabel : undefined}
-          {...stylex.props(
-            styles.contentWrapper,
-            hasSurface && styles.surface,
-            xstyle,
+          {...mergeProps(
+            {...surfaceProps, className: surfaceClassName},
+            stylex.props(
+              styles.contentWrapper,
+              hasSurface && styles.surface,
+              xstyle,
+            ),
           )}>
           {children}
           {hasCloseButton && (
-            <div {...stylex.props(styles.closeButtonWrapper)}>
+            <div
+              {...stylex.props(
+                styles.closeButtonWrapper,
+                rtlStyles.centerInline('100%'),
+              )}>
               <Button
                 variant="secondary"
                 label={closeButtonLabel}
@@ -432,6 +471,7 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
       layer,
       hasCloseButton,
       hasSurface,
+      surfaceTarget,
       closeButtonLabel,
       contentRef,
       dialogLabel,

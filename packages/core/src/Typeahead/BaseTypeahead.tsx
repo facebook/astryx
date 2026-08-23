@@ -14,7 +14,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
- * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
 import React, {
@@ -30,6 +30,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {isImeKeyEvent} from '../utils/ime';
 import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
 import {
@@ -44,6 +45,7 @@ import {getKey, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -157,6 +159,16 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   inputXStyle?: StyleXStyles;
 
   /**
+   * Tab-order override for the input element. Typeahead passes `-1` while
+   * its selected-value token is shown: the input is visually collapsed
+   * (width 0 / opacity 0) but must stay programmatically focusable for
+   * token edit/clear interactions, so removing it from the Tab order is
+   * what prevents an invisible tab stop (WCAG 2.4.3 / 2.4.7). The input
+   * remains focusable via `.focus()` regardless of this value.
+   */
+  inputTabIndex?: number;
+
+  /**
    * Ref to the anchor element for dropdown positioning.
    * The dropdown will be positioned relative to this element.
    * If not provided, the input itself is used as the anchor.
@@ -203,7 +215,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   dropdown: {
     boxSizing: 'border-box',
@@ -214,10 +226,6 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
-  popoverGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
   item: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -225,11 +233,14 @@ const styles = stylex.create({
     width: '100%',
     padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
     backgroundColor: 'transparent',
     border: 'none',
-    textAlign: 'left',
+    textAlign: 'start',
   },
   itemHighlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
@@ -302,10 +313,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   value,
   onChange,
   renderItem,
-  placeholder = 'Search...',
+  placeholder: placeholderFromProps,
   hasEntriesOnFocus = false,
   maxMenuItems = 10,
-  emptySearchResultsText = 'No results found',
+  emptySearchResultsText: emptySearchResultsTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
   hasAutoFocus = false,
@@ -315,12 +326,19 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   ariaDescribedBy,
   ariaLabelledBy,
   inputXStyle,
+  inputTabIndex,
   anchorRef,
   onKeyDown: externalOnKeyDown,
   debounceMs = 150,
   size = 'md',
   ref,
 }: BaseTypeaheadProps<T>) {
+  const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.typeahead.searchPlaceholder');
+  const emptySearchResultsText =
+    emptySearchResultsTextFromProps ??
+    t('@astryx.typeahead.emptySearchResults');
   const generatedId = useId();
   const inputId = externalInputId ?? generatedId;
   const listboxId = useId();
@@ -424,7 +442,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         resultsGenRef.current = gen;
         const shown = searchResults.slice(0, maxMenuItems);
         setResults(shown);
-        setHighlightedIndex(searchResults.length > 0 ? 0 : -1);
+        setHighlightedIndex(shown.length > 0 ? 0 : -1);
         if (searchResults.length > 0 || searchQuery.length > 0) {
           showLayer();
         }
@@ -434,7 +452,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           announce(
             shown.length === 0
               ? emptySearchResultsText
-              : `${shown.length} ${shown.length === 1 ? 'result' : 'results'}`,
+              : t('@astryx.typeahead.resultCount', {count: shown.length}),
           );
         }
       } catch {
@@ -449,7 +467,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
       }
     },
-    [searchSource, maxMenuItems, showLayer, announce, emptySearchResultsText],
+    [
+      searchSource,
+      maxMenuItems,
+      showLayer,
+      announce,
+      emptySearchResultsText,
+      t,
+    ],
   );
 
   // Perform bootstrap
@@ -462,8 +487,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         return;
       }
       resultsGenRef.current = gen;
-      setResults(bootstrapResults.slice(0, maxMenuItems));
-      setHighlightedIndex(bootstrapResults.length > 0 ? 0 : -1);
+      const shown = bootstrapResults.slice(0, maxMenuItems);
+      setResults(shown);
+      setHighlightedIndex(shown.length > 0 ? 0 : -1);
       if (bootstrapResults.length > 0) {
         showLayer();
       }
@@ -614,6 +640,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         return;
       }
 
+      // An IME candidate window uses Enter to commit the composition and
+      // Escape/ArrowUp/ArrowDown/Home/End to navigate its own candidates.
+      // Without this guard, a composing Enter both fires handleSelect AND
+      // clears the input via handleSelect's setQuery(''), so the IME's
+      // subsequent compositionend then writes the still-pending syllable
+      // into the freshly-cleared field -- producing a second, spurious
+      // selection on the next real Enter.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
+
       if (!popover.isOpen) {
         if (e.key === 'ArrowDown' && (hasEntriesOnFocus || query.length > 0)) {
           e.preventDefault();
@@ -630,15 +667,19 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setHighlightedIndex(prev =>
-            prev < results.length - 1 ? prev + 1 : 0,
-          );
+          if (results.length > 0) {
+            setHighlightedIndex(prev =>
+              prev < results.length - 1 ? prev + 1 : 0,
+            );
+          }
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setHighlightedIndex(prev =>
-            prev > 0 ? prev - 1 : results.length - 1,
-          );
+          if (results.length > 0) {
+            setHighlightedIndex(prev =>
+              prev > 0 ? prev - 1 : results.length - 1,
+            );
+          }
           break;
         case 'Enter':
           e.preventDefault();
@@ -653,13 +694,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         case 'Home':
           if (popover.isOpen) {
             e.preventDefault();
-            setHighlightedIndex(0);
+            if (results.length > 0) {
+              setHighlightedIndex(0);
+            }
           }
           break;
         case 'End':
           if (popover.isOpen) {
             e.preventDefault();
-            setHighlightedIndex(results.length - 1);
+            if (results.length > 0) {
+              setHighlightedIndex(results.length - 1);
+            }
           }
           break;
       }
@@ -687,13 +732,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // cursor walks off-screen once navigation passes the visible window. Mirrors
   // CommandPaletteItem's scrollIntoView({block: 'nearest'}) behavior.
   useEffect(() => {
-    if (!popover.isOpen || highlightedIndex < 0) {
+    if (
+      !popover.isOpen ||
+      highlightedIndex < 0 ||
+      highlightedIndex >= results.length
+    ) {
       return;
     }
     document
       .getElementById(getItemId(highlightedIndex))
       ?.scrollIntoView?.({block: 'nearest'});
-  }, [popover.isOpen, highlightedIndex, getItemId]);
+  }, [popover.isOpen, highlightedIndex, getItemId, results.length]);
 
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
@@ -718,7 +767,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         aria-expanded={popover.isOpen}
         aria-controls={listboxId}
         aria-activedescendant={
-          popover.isOpen && highlightedIndex >= 0
+          popover.isOpen &&
+          highlightedIndex >= 0 &&
+          highlightedIndex < results.length
             ? getItemId(highlightedIndex)
             : undefined
         }
@@ -726,6 +777,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         aria-describedby={ariaDescribedBy}
         aria-labelledby={ariaLabelledBy}
         aria-disabled={isFocusableDisabled ? 'true' : undefined}
+        tabIndex={inputTabIndex}
         value={query}
         onChange={handleInputChange}
         onPointerDown={() => {
@@ -759,7 +811,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       {isLoading && (
         <span
           role="status"
-          aria-label="Loading"
+          aria-label={t('@astryx.typeahead.loading')}
           {...stylex.props(styles.loadingSpinner)}>
           <Icon icon="clock" size="sm" color="secondary" />
         </span>
@@ -769,13 +821,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         <div
           id={listboxId}
           role="listbox"
-          aria-label="Search results"
+          aria-label={t('@astryx.typeahead.searchResults')}
           {...mergeProps(
             themeProps('typeahead-dropdown'),
             stylex.props(styles.dropdown),
           )}>
           {results.length === 0 && hasSearched ? (
-            <div {...stylex.props(styles.emptyState)}>
+            <div
+              {...mergeProps(
+                themeProps('typeahead-empty-state'),
+                stylex.props(styles.emptyState),
+              )}>
               {emptySearchResultsText}
             </div>
           ) : (
@@ -815,7 +871,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: [styles.popover, styles.popoverGap],
+          offset: spacingVars['--spacing-1'],
+          xstyle: styles.popover,
         },
       )}
     </>

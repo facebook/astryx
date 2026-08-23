@@ -32,6 +32,7 @@ import {TimeInput} from '../TimeInput';
 import {Selector} from '../Selector';
 import {Tokenizer} from '../Tokenizer';
 import {Typeahead} from '../Typeahead';
+import {useTranslator} from '../i18n';
 
 export interface PowerSearchValueEditorProps {
   operatorValue: OperatorValue;
@@ -85,6 +86,7 @@ function StringEditor({
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
 }) {
+  const t = useTranslator();
   const currentValue = filterValue?.type === 'string' ? filterValue.value : '';
 
   // When a searchSource is provided, render a typeahead instead of a plain
@@ -96,7 +98,7 @@ function StringEditor({
 
     return (
       <Typeahead
-        label="Value"
+        label={t('@astryx.powersearch.valueEditor.value')}
         isLabelHidden
         searchSource={operatorValue.searchSource}
         value={selectedItem}
@@ -107,7 +109,7 @@ function StringEditor({
             onChange({type: 'string', value: ''});
           }
         }}
-        placeholder="Search..."
+        placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
         debounceMs={150}
       />
     );
@@ -115,10 +117,10 @@ function StringEditor({
 
   return (
     <TextInput
-      label="Value"
+      label={t('@astryx.powersearch.valueEditor.value')}
       isLabelHidden
       value={currentValue}
-      placeholder="Enter value..."
+      placeholder={t('@astryx.powersearch.valueEditor.enterValuePlaceholder')}
       onChange={(value: string) => {
         onChange({type: 'string', value});
       }}
@@ -135,6 +137,7 @@ function StringListEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
 }) {
+  const t = useTranslator();
   const currentValue: SearchableItem[] = useMemo(() => {
     if (filterValue?.type !== 'string_list') {
       return [];
@@ -160,7 +163,7 @@ function StringListEditor({
 
   return (
     <Tokenizer
-      label="Values"
+      label={t('@astryx.powersearch.valueEditor.values')}
       isLabelHidden
       searchSource={source}
       value={currentValue}
@@ -170,7 +173,7 @@ function StringListEditor({
           value: items.map(item => item.label),
         });
       }}
-      placeholder="Add values..."
+      placeholder={t('@astryx.powersearch.valueEditor.addValuesPlaceholder')}
       debounceMs={operatorValue.searchSource ? 150 : 0}
       hasCreate={hasCreate}
     />
@@ -186,12 +189,13 @@ function IntegerEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
 }) {
+  const t = useTranslator();
   const currentValue =
     filterValue?.type === 'integer' ? filterValue.value : undefined;
 
   return (
     <NumberInput
-      label="Value"
+      label={t('@astryx.powersearch.valueEditor.value')}
       isLabelHidden
       value={currentValue ?? null}
       onChange={(value: number) => {
@@ -201,7 +205,7 @@ function IntegerEditor({
       max={operatorValue.maxValue}
       units={operatorValue.units}
       isIntegerOnly
-      placeholder="Enter number..."
+      placeholder={t('@astryx.powersearch.valueEditor.enterNumberPlaceholder')}
     />
   );
 }
@@ -215,12 +219,13 @@ function FloatEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
 }) {
+  const t = useTranslator();
   const currentValue =
     filterValue?.type === 'float' ? filterValue.value : undefined;
 
   return (
     <NumberInput
-      label="Value"
+      label={t('@astryx.powersearch.valueEditor.value')}
       isLabelHidden
       value={currentValue ?? null}
       onChange={(value: number) => {
@@ -229,7 +234,7 @@ function FloatEditor({
       min={operatorValue.minValue}
       max={operatorValue.maxValue}
       units={operatorValue.units}
-      placeholder="Enter number..."
+      placeholder={t('@astryx.powersearch.valueEditor.enterNumberPlaceholder')}
     />
   );
 }
@@ -243,6 +248,7 @@ function TimeEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
 }) {
+  const t = useTranslator();
   const currentValue =
     filterValue?.type === 'time'
       ? (filterValue.value as ISOTimeString)
@@ -250,7 +256,7 @@ function TimeEditor({
 
   return (
     <TimeInput
-      label="Time"
+      label={t('@astryx.powersearch.valueEditor.time')}
       isLabelHidden
       value={currentValue}
       onChange={value => {
@@ -272,6 +278,7 @@ function DateAbsoluteEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
 }) {
+  const t = useTranslator();
   // Convert unixSeconds to ISO date string for the date input
   const currentValue = useMemo(() => {
     if (filterValue?.type !== 'date_absolute') {
@@ -283,7 +290,7 @@ function DateAbsoluteEditor({
 
   return (
     <DateInput
-      label="Date"
+      label={t('@astryx.powersearch.valueEditor.date')}
       isLabelHidden
       value={currentValue}
       onChange={value => {
@@ -305,6 +312,7 @@ function DateRelativeEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
 }) {
+  const t = useTranslator();
   const currentValue =
     filterValue?.type === 'date_relative' ? filterValue.value : undefined;
 
@@ -342,7 +350,7 @@ function DateRelativeEditor({
 
   return (
     <Selector
-      label="Relative date"
+      label={t('@astryx.powersearch.valueEditor.relativeDate')}
       isLabelHidden
       options={options}
       value={currentValue}
@@ -361,6 +369,7 @@ function DateRangeEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
 }) {
+  const t = useTranslator();
   const startValue = useMemo(() => {
     if (filterValue?.type !== 'date_range') {
       return undefined;
@@ -428,13 +437,13 @@ function DateRangeEditor({
   return (
     <>
       <DateInput
-        label="Start date"
+        label={t('@astryx.powersearch.valueEditor.startDate')}
         isLabelHidden
         value={startValue}
         onChange={handleStartChange}
       />
       <DateInput
-        label="End date"
+        label={t('@astryx.powersearch.valueEditor.endDate')}
         isLabelHidden
         value={endValue}
         onChange={handleEndChange}
@@ -452,6 +461,7 @@ function EnumEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
 }) {
+  const t = useTranslator();
   const currentValue =
     filterValue?.type === 'enum' ? filterValue.value : undefined;
 
@@ -466,7 +476,7 @@ function EnumEditor({
 
   return (
     <Selector
-      label="Value"
+      label={t('@astryx.powersearch.valueEditor.value')}
       isLabelHidden
       options={options}
       value={currentValue}
@@ -486,6 +496,7 @@ function EnumListEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
 }) {
+  const t = useTranslator();
   const items = useMemo(
     () => enumItemsToSearchableItems(operatorValue.values),
     [operatorValue.values],
@@ -505,7 +516,7 @@ function EnumListEditor({
 
   return (
     <Tokenizer
-      label="Values"
+      label={t('@astryx.powersearch.valueEditor.values')}
       isLabelHidden
       searchSource={source}
       value={currentValue}
@@ -515,7 +526,7 @@ function EnumListEditor({
           value: selectedItems.map(item => item.id),
         });
       }}
-      placeholder="Select values..."
+      placeholder={t('@astryx.powersearch.valueEditor.selectValuesPlaceholder')}
       hasEntriesOnFocus
       debounceMs={0}
     />
@@ -531,6 +542,7 @@ function EntityListEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
 }) {
+  const t = useTranslator();
   const source = useMemo<SearchSource<SearchableItem>>(() => {
     if (operatorValue.searchSource) {
       return operatorValue.searchSource;
@@ -555,7 +567,7 @@ function EntityListEditor({
 
   return (
     <Tokenizer
-      label="Entities"
+      label={t('@astryx.powersearch.valueEditor.entities')}
       isLabelHidden
       searchSource={source}
       value={currentValue}
@@ -574,7 +586,7 @@ function EntityListEditor({
         });
       }}
       renderItem={operatorValue.renderItem}
-      placeholder="Search..."
+      placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
       debounceMs={operatorValue.searchSource ? 150 : 0}
     />
   );
@@ -591,6 +603,7 @@ function CustomEditor({
   onChange: (value: FilterValue) => void;
   isDisabled?: boolean;
 }) {
+  const t = useTranslator();
   const currentValue =
     filterValue?.type === 'custom' ? filterValue.value : null;
   const EditorComponent = operatorValue.Editor;
@@ -603,7 +616,7 @@ function CustomEditor({
           onChange({type: 'custom', value});
         }
       }}
-      placeholder="Enter value..."
+      placeholder={t('@astryx.powersearch.valueEditor.enterValuePlaceholder')}
       value={currentValue}
     />
   );

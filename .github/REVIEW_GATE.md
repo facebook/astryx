@@ -7,12 +7,12 @@ neutral yellow "waiting" signal, not a red failure).
 
 ## TL;DR
 
-| Author | High-risk code | Design-affecting change | Everything else |
-| --- | --- | --- | --- |
-| **Eng owner** (`ENGOWNERS`) | self-serve | advisory label only | self-serve |
-| **Design owner** (`DESIGNOWNERS`) | needs code review | self-serve | self-serve |
-| **Contributor** (anyone else) | needs code review | needs code review + design label | needs code review |
-| **Bot** (Dependabot, etc.) | exempt | exempt | exempt |
+| Author                            | High-risk code    | Design-affecting change          | Everything else   |
+| --------------------------------- | ----------------- | -------------------------------- | ----------------- |
+| **Eng owner** (`ENGOWNERS`)       | self-serve        | advisory label only              | self-serve        |
+| **Design owner** (`DESIGNOWNERS`) | needs code review | self-serve                       | self-serve        |
+| **Contributor** (anyone else)     | needs code review | needs code review + design label | needs code review |
+| **Bot** (Dependabot, etc.)        | exempt            | exempt                           | exempt            |
 
 - **Code review is the only hard gate.** It shows up as the `review-required`
   status: `pending` (🟡, blocks the merge) or `success` (🟢).
@@ -22,12 +22,12 @@ neutral yellow "waiting" signal, not a red failure).
 
 ## Sources of truth
 
-| File | Meaning |
-| --- | --- |
-| `.github/ENGOWNERS` | Engineering team. Self-serve **code**. |
-| `.github/DESIGNOWNERS` | Design team. Self-serve **design**. Checked first. |
-| `.github/CODEOWNERS` (`*` line) | Who can **clear** the code gate (and native review requirement). |
-| `.github/copilot-instructions.md` + `instructions/*` | Copilot reviewer guidance (advisory). |
+| File                                                 | Meaning                                                          |
+| ---------------------------------------------------- | ---------------------------------------------------------------- |
+| `.github/ENGOWNERS`                                  | Engineering team. Self-serve **code**.                           |
+| `.github/DESIGNOWNERS`                               | Design team. Self-serve **design**. Checked first.               |
+| `.github/CODEOWNERS` (`*` line)                      | Who can **clear** the code gate (and native review requirement). |
+| `.github/copilot-instructions.md` + `instructions/*` | Copilot reviewer guidance (advisory).                            |
 
 Author bucket is resolved in order: **design owner → eng owner → contributor.**
 A handle in `DESIGNOWNERS` is treated as a design owner even if also an eng
@@ -36,20 +36,25 @@ label so the contribution queue is filterable).
 
 ## What counts as high-risk / design-affecting
 
-Detection is **path-based and deterministic** (no LLM in the enforcement path).
-`packages/lab/**` is filtered out entirely first — lab is canary staging, so
-new components there are expected and never gate.
+Detection is **deterministic** (no LLM in the enforcement path): code detection
+is path-based; design detection combines paths with a deterministic score over
+the diff content (`.github/scripts/lib/classify-visual.js`), because most
+component styling is an inline `stylex.create` edit in a `.tsx` that no path
+pattern can see. `packages/lab/**` is filtered out entirely first — lab is
+canary staging, so new components there are expected and never gate.
 
 **High-risk code** (drives the code gate):
+
 - a new package (`packages/<name>/package.json` added)
 - a new component/module in a published `src/` (not lab)
 - a runtime change under `packages/core/src/**` (incl. styling `.tsx`; excludes
   tests/docs/stories) — core has high blast radius
 - a public API surface change (a `src/**/index.ts(x)` barrel or a
   `package.json`)
-- **plus:** *any* PR from a contributor (see policy note below)
+- **plus:** _any_ PR from a contributor (see policy note below)
 
 **Design-affecting** (drives the advisory design label):
+
 - StyleX styling, theme/token files, template `.tsx`, docsite visual dirs
   (`app`/`components`/`themes`)
 
@@ -102,6 +107,7 @@ write but are not owners. (Repo admins can still bypass.)
 ## Why a commit status (not a check run)
 
 The gate is a **commit status**, not a check run, for two reasons:
+
 1. Branch protection requires `review-required` as a **status context**
    ("Expected — waiting for status to be reported"); a check run of the same
    name does not satisfy it.
@@ -115,6 +121,7 @@ to failure).
 ## Recovery / manual re-flag
 
 `review-signal.yml` has a `workflow_dispatch`:
+
 - blank `pr` input → re-flag **all** open PRs (backfill / mass recovery)
 - a PR number → re-flag just that one
 

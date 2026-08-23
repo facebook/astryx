@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Popover',
@@ -73,6 +73,20 @@ export const docs = {
           description: 'Accessible label for the popover dialog.',
         },
         {
+          name: 'role',
+          type: "'dialog' | 'none'",
+          description:
+            'ARIA role for the popover wrapper. Use dialog for dialog-style popovers; use none when content provides its own role, like menu or listbox.',
+          default: "'dialog'",
+        },
+        {
+          name: 'isModal',
+          type: 'boolean',
+          description:
+            'Whether a dialog-style popover sets aria-modal. Only applies when role is dialog.',
+          default: 'true',
+        },
+        {
           name: 'hasCloseButton',
           type: 'boolean',
           description: 'Whether to include a hidden close button for accessibility.',
@@ -119,6 +133,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-popover'},
+      {className: 'astryx-popover-surface'},
     ],
     vars: [
       {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
@@ -145,7 +160,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Popover',
   displayName: 'Popover',
@@ -214,6 +229,20 @@ export const docsZh = {
           description: '弹出框对话框的无障碍标签。',
         },
         {
+          name: 'role',
+          type: "'dialog' | 'none'",
+          description:
+            '弹出框包装器的 ARIA 角色。对话框式弹出框使用 dialog；当内容提供自己的角色（如 menu 或 listbox）时使用 none。',
+          default: "'dialog'",
+        },
+        {
+          name: 'isModal',
+          type: 'boolean',
+          description:
+            '对话框式弹出框是否设置 aria-modal。仅在 role 为 dialog 时适用。',
+          default: 'true',
+        },
+        {
           name: 'hasCloseButton',
           type: 'boolean',
           description: '是否包含用于无障碍访问的隐藏关闭按钮。',
@@ -249,6 +278,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-popover'},
+      {className: 'astryx-popover-surface'},
     ],
     vars: [
       {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
@@ -275,7 +305,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Click-triggered popover displaying interactive content anchored to trigger element; implements button+dialog ARIA pattern.',
