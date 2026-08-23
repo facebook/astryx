@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] BottomSheet: a tap inside the sheet is a tap, and the sheet leaves on an exit curve.
+[fix] BottomSheet: a tap inside the sheet is a tap, and the sheet leaves on an exit curve (#5326).
 
 Two defects, both of which read as "the sheet closes with no animation" — reported against the touch DateInput picker, which is a Bottom Sheet.
 
