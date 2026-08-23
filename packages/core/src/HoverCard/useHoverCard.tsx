@@ -443,16 +443,25 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       }
     },
     onDismiss: () => {
-      isEscapeDismissingRef.current = true;
       clearTimeouts();
       touch.clearTapOpen();
+      // Only when the card itself held focus, which is the one case the
+      // content-level handler this replaced could run in. Refocusing
+      // unconditionally would drag the caret out of a field the user was
+      // typing in while a hover card happened to be up; arming the re-show
+      // guard unconditionally would swallow their next focus on the trigger,
+      // because a focus() on the already-focused trigger fires no focusin to
+      // clear it.
+      const card =
+        typeof document === 'undefined'
+          ? null
+          : document.getElementById(layer.id);
+      const hadFocus = card?.contains(document.activeElement) ?? false;
       layer.hide();
-      // The card content used to run this itself on keydown, behind a
-      // stopPropagation() that kept the press from the dialog's listener but
-      // not from the browser's close watcher — so one press closed the card
-      // and the dialog behind it. Refocusing here keeps a card the user had
-      // tabbed into from dropping focus to the body.
-      triggerRef.current?.focus();
+      if (hadFocus) {
+        isEscapeDismissingRef.current = true;
+        triggerRef.current?.focus();
+      }
     },
   });
 
