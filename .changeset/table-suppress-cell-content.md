@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Table: a plugin can suppress a body cell's content, and grouped rows use it to keep synthetic group headers out of your cell renderers
+[fix] Table: a plugin can suppress a body cell's content, and grouped rows use it to keep synthetic group headers out of your cell renderers (#5363)
 
 `useTableGroupedRows` injects section-header rows into the flattened data, and
 `BaseTable` evaluates every column's `renderCell` against every row. A renderer
