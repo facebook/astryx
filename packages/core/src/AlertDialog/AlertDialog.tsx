@@ -41,9 +41,6 @@ const styles = stylex.create({
     maxWidth: SMALL_SCREEN_DIALOG_WIDTH,
   },
   smallScreenAction: {
-    // AlertDialog labels communicate the decision and must remain complete.
-    // Only the small-screen state opts into wrapping and flexible height;
-    // the standard wider Button stays on its shared defaults.
     width: '100%',
     maxWidth: '100%',
     height: 'auto',
