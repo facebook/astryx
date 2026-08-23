@@ -20,6 +20,7 @@ import {useCallback, useEffect, useRef} from 'react';
 
 import {useLayerDepth} from './LayerDepthContext';
 import {
+  isTextComposing,
   isTopmostLayer,
   registerLayer,
   type LayerEscapeBehavior,
@@ -93,6 +94,15 @@ export interface UseLayerDismissalReturn {
    * press, swipe) so every channel agrees on who is on top.
    */
   isTopmost: () => boolean;
+  /**
+   * Whether a close request the browser started on its own — a `<dialog>`'s
+   * `cancel`, the Android back gesture, the platform close watcher — should
+   * dismiss this layer. Ask this from a `cancel` handler rather than
+   * `isTopmost`: as well as the top-most rule, it declines a request that
+   * arrives while an IME composition is running, which no `cancel` handler can
+   * tell on its own because the event carries no composition state.
+   */
+  shouldDismissOnCloseRequest: () => boolean;
 }
 
 /**
@@ -165,5 +175,10 @@ export function useLayerDismissal(
     [isRegistered],
   );
 
-  return {isTopmost};
+  const shouldDismissOnCloseRequest = useCallback(
+    () => !isTextComposing() && isTopmost(),
+    [isTopmost],
+  );
+
+  return {isTopmost, shouldDismissOnCloseRequest};
 }

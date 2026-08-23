@@ -543,27 +543,28 @@ export function MobileNav({
     };
   }, []);
 
-  const {isTopmost} = useLayerDismissal({
+  const {shouldDismissOnCloseRequest} = useLayerDismissal({
     isActive: isOpen,
     onDismiss: () => onOpenChange(false),
   });
 
   // The native `cancel` event is the browser's own close-watcher firing: an
-  // Android back gesture, or an Escape the stack stood down on. Escape presses
-  // the stack owns never arrive here — it preventDefault()s those, which
-  // suppresses the close watcher.
+  // Android back gesture, or a close request the stack never saw a press for.
+  // Escape presses the stack owns never arrive here — it preventDefault()s
+  // those, which suppresses the close watcher.
   //
   // Always preventDefault so the browser cannot close a controlled <dialog>
-  // behind React's back, then answer with the stack's own ordering.
+  // behind React's back, then answer with the stack's own rules: top-most
+  // only, and never while an IME composition is in progress.
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
-      if (!isTopmost()) {
+      if (!shouldDismissOnCloseRequest()) {
         return;
       }
       onOpenChange(false);
     },
-    [onOpenChange, isTopmost],
+    [onOpenChange, shouldDismissOnCloseRequest],
   );
 
   // Handle clicks on the dialog backdrop area (outside the drawer)

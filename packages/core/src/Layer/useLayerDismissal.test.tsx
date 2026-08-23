@@ -353,6 +353,92 @@ describe('useLayerDismissal', () => {
       pressEscape();
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
+
+    it('claims the composing Escape so the browser raises no close request', () => {
+      // Not dismissing is only half of it. An unclaimed Escape lets the browser
+      // raise its own close request, which reaches the layer's `cancel` handler
+      // and dismisses it on the same keypress — so the guard has to swallow the
+      // press, not merely skip the dismissal.
+      render(<Layer onDismiss={vi.fn()} />);
+      const event = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      });
+      Object.defineProperty(event, 'isComposing', {value: true});
+
+      document.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('leaves a composing Escape alone when no layer is on screen', () => {
+      // With nothing to protect the press is not ours to take: an idle hover
+      // layer in the tree must not suppress the page's own close watcher.
+      render(<Layer onDismiss={vi.fn()} isPresent={() => false} />);
+      const event = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      });
+      Object.defineProperty(event, 'isComposing', {value: true});
+
+      document.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+    });
+  });
+
+  describe('close requests the browser starts itself', () => {
+    // The Android back gesture and the platform close watcher arrive as a
+    // `cancel` with no keydown to read, so the keydown guard cannot see them.
+    function CloseRequestLayer({onAsk}: {onAsk: (answer: boolean) => void}) {
+      const {shouldDismissOnCloseRequest} = useLayerDismissal({
+        isActive: true,
+        onDismiss: () => {},
+      });
+      return (
+        <>
+          <input aria-label="composing field" />
+          <button
+            type="button"
+            onClick={() => onAsk(shouldDismissOnCloseRequest())}>
+            ask
+          </button>
+        </>
+      );
+    }
+
+    const ask = (onAsk: ReturnType<typeof vi.fn>): boolean => {
+      fireEvent.click(document.querySelector('button')!);
+      return Boolean(onAsk.mock.lastCall?.[0]);
+    };
+
+    it('declines while an IME composition is running, and again once it ends', () => {
+      const onAsk = vi.fn();
+      render(<CloseRequestLayer onAsk={onAsk} />);
+      const field = document.querySelector('input')!;
+
+      expect(ask(onAsk)).toBe(true);
+
+      fireEvent.compositionStart(field);
+      expect(ask(onAsk)).toBe(false);
+
+      fireEvent.compositionEnd(field);
+      expect(ask(onAsk)).toBe(true);
+    });
+
+    it('stops declining when focus leaves a field mid-composition', () => {
+      // A compositionend the stack never sees would otherwise leave the flag
+      // stuck on, and every later back gesture would be swallowed.
+      const onAsk = vi.fn();
+      render(<CloseRequestLayer onAsk={onAsk} />);
+      const field = document.querySelector('input')!;
+
+      fireEvent.compositionStart(field);
+      expect(ask(onAsk)).toBe(false);
+
+      fireEvent.blur(field);
+      expect(ask(onAsk)).toBe(true);
+    });
   });
 
   it('leaves the event alone when no layer is open', () => {

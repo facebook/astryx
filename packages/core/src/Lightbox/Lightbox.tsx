@@ -419,27 +419,28 @@ export function Lightbox({
     onOpenChange(false);
   }, [onOpenChange]);
 
-  const {isTopmost} = useLayerDismissal({
+  const {shouldDismissOnCloseRequest} = useLayerDismissal({
     isActive: isOpen,
     onDismiss: handleClose,
   });
 
   // The native `cancel` event is the browser's own close-watcher firing: an
-  // Android back gesture, or an Escape the stack stood down on. Escape presses
-  // the stack owns never arrive here — it preventDefault()s those, which
-  // suppresses the close watcher.
+  // Android back gesture, or a close request the stack never saw a press for.
+  // Escape presses the stack owns never arrive here — it preventDefault()s
+  // those, which suppresses the close watcher.
   //
   // Always preventDefault so the browser cannot close a controlled <dialog>
-  // behind React's back, then answer with the stack's own ordering.
+  // behind React's back, then answer with the stack's own rules: top-most
+  // only, and never while an IME composition is in progress.
   const handleCancel = useCallback(
     (e: React.SyntheticEvent) => {
       e.preventDefault();
-      if (!isTopmost()) {
+      if (!shouldDismissOnCloseRequest()) {
         return;
       }
       handleClose();
     },
-    [handleClose, isTopmost],
+    [handleClose, shouldDismissOnCloseRequest],
   );
 
   // Backdrop click. The layout container fills the whole transparent dialog,

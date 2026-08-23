@@ -50,6 +50,18 @@
  * `popover="auto"`, so relying on it would leave non-modal `show()` drawers,
  * `popover="manual"` layers, and older browsers on a second, differently-behaved
  * code path. One code path, one ordering, everywhere.
+ *
+ * ## An Escape that cancels an IME composition
+ *
+ * That press is not a dismissal, so no layer acts on it — but the stack still
+ * claims it, because an unclaimed Escape is exactly what makes the browser
+ * raise a close request, and that request dismisses the layer through its
+ * `cancel` handler on the same keypress. Claiming is the whole fix; the guard
+ * that only returns measures identically to no guard at all.
+ *
+ * Close requests that arrive with no keydown to read — the Android back
+ * gesture, the platform close watcher — are answered by the hosts, which ask
+ * `isTextComposing()` through `useLayerDismissal`.
  */
 
 import {isImeKeyEvent} from '../utils/ime';
@@ -180,6 +192,45 @@ function isPresentEntry(entry: LayerStackEntry): boolean {
   return entry.isPresent?.() ?? true;
 }
 
+// Whether a text composition is running anywhere on the page. Tracked from
+// composition events because the DOM offers no way to ask.
+let isComposing = false;
+
+/**
+ * Whether the user is part-way through composing text with an IME.
+ *
+ * The stack reads this to decide what an Escape means, and layers read it
+ * through `useLayerDismissal`'s `shouldDismissOnCloseRequest` for the close
+ * requests that arrive without a keydown to inspect — the Android back
+ * gesture, the platform close watcher, or a composing Escape whose keydown
+ * never reached this listener because content stopped it. Mid-composition,
+ * those are far more likely to be the user backing out of a half-formed
+ * character than a request to dismiss a layer, and guessing wrong that way
+ * costs them everything they have typed into it.
+ *
+ * Scope, deliberately page-wide: a composition in a field behind a non-modal
+ * layer also suppresses that layer's close requests. It is one keypress to
+ * recover from, and the alternative — matching the composing element against
+ * a layer's container — cannot work for the layers that do not have one.
+ *
+ * A composition already running when the first layer registers is invisible
+ * here: the listeners go on with the stack's own.
+ */
+export function isTextComposing(): boolean {
+  return isComposing;
+}
+
+function handleCompositionStart(): void {
+  isComposing = true;
+}
+
+// Focus leaving the field ends the composition too. Clearing on blur as well
+// means a compositionend this listener never sees cannot leave the flag stuck
+// on, swallowing every later close request.
+function handleCompositionEnd(): void {
+  isComposing = false;
+}
+
 /** The top-most present layer, or null when nothing is on screen. */
 function topPresentEntry(): LayerStackEntry | null {
   let top: LayerStackEntry | null = null;
@@ -221,8 +272,15 @@ function handleKeyDown(event: KeyboardEvent): void {
     return;
   }
   // An IME user pressing Escape is cancelling a composition, not dismissing a
-  // layer. Stand down entirely — the default action must run.
+  // layer. Claim the press anyway, then stand down: left unclaimed, the browser
+  // raises its own close request, which arrives at a layer's `cancel` handler
+  // and dismisses it on this very keypress — measured in Chromium, where a
+  // guard that only returns behaves exactly like no guard at all. Claim it only
+  // while a layer is on screen; with nothing to protect, the press is not ours.
   if (isImeKeyEvent(event)) {
+    if (topPresentEntry() != null) {
+      event.preventDefault();
+    }
     return;
   }
   // Content inside a layer already claimed this press (see the bubble-phase
@@ -244,6 +302,9 @@ function startListening(): void {
     return;
   }
   document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener('compositionstart', handleCompositionStart, true);
+  document.addEventListener('compositionend', handleCompositionEnd, true);
+  document.addEventListener('blur', handleCompositionEnd, true);
   isListening = true;
 }
 
@@ -252,6 +313,14 @@ function stopListening(): void {
     return;
   }
   document.removeEventListener('keydown', handleKeyDown);
+  document.removeEventListener(
+    'compositionstart',
+    handleCompositionStart,
+    true,
+  );
+  document.removeEventListener('compositionend', handleCompositionEnd, true);
+  document.removeEventListener('blur', handleCompositionEnd, true);
+  isComposing = false;
   isListening = false;
 }
 
@@ -280,5 +349,6 @@ export function resetLayerStackForTests(): void {
   entries.length = 0;
   seqByToken = new WeakMap();
   nextSeq = 0;
+  isComposing = false;
   stopListening();
 }

@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {Dialog, resolveDialogPositionOffsets} from './Dialog';
 import {DialogHeader} from './DialogHeader';
 
@@ -141,6 +141,61 @@ describe('Dialog', () => {
 
       expect(cancelEvent.defaultPrevented).toBe(true);
       expect(handleHide).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('IME composition', () => {
+    // A CJK user presses Escape to cancel a half-formed character several times
+    // a sentence. jsdom models neither composition nor the close watcher, so
+    // these pin the wiring; the behaviour itself is measured in Chromium
+    // against the Layer Dismissal stories.
+    function DialogWithField({onOpenChange}: {onOpenChange: () => void}) {
+      return (
+        <Dialog isOpen onOpenChange={onOpenChange} aria-label="Filters">
+          <input aria-label="Search" />
+        </Dialog>
+      );
+    }
+
+    it('claims the composing Escape instead of letting the browser act', () => {
+      const onOpenChange = vi.fn();
+      render(<DialogWithField onOpenChange={onOpenChange} />);
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      });
+      Object.defineProperty(event, 'isComposing', {value: true});
+      screen.getByRole('textbox', {name: 'Search'}).dispatchEvent(event);
+
+      // Unclaimed, this press becomes a close request that arrives at
+      // handleCancel and closes the dialog on the same keystroke.
+      expect(event.defaultPrevented).toBe(true);
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('ignores a close request that arrives mid-composition', () => {
+      // The back gesture and the platform close watcher carry no composition
+      // state, so the dialog asks the stack rather than the event.
+      const onOpenChange = vi.fn();
+      render(<DialogWithField onOpenChange={onOpenChange} />);
+      const field = screen.getByRole('textbox', {name: 'Search'});
+
+      fireEvent.compositionStart(field);
+      const duringComposition = new Event('cancel', {cancelable: true});
+      screen.getByRole('dialog').dispatchEvent(duringComposition);
+
+      expect(duringComposition.defaultPrevented).toBe(true);
+      expect(onOpenChange).not.toHaveBeenCalled();
+
+      fireEvent.compositionEnd(field);
+      screen
+        .getByRole('dialog')
+        .dispatchEvent(new Event('cancel', {cancelable: true}));
+
+      expect(onOpenChange).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
 

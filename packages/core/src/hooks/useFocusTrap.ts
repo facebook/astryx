@@ -331,8 +331,13 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
   }, [isActive]);
 
   /**
-   * Handle Tab key to wrap focus at boundaries, and Escape to close.
-   * Also tracks that keyboard navigation is occurring.
+   * Handle Tab key to wrap focus at boundaries. Also tracks that keyboard
+   * navigation is occurring.
+   *
+   * No Escape here, and no IME guard: the shared stack owns the press, claims
+   * a composing Escape so no close request follows, and dismisses the trap
+   * through `onEscape` above. The trap renders no element of its own, so it
+   * has no `cancel` to answer either.
    */
   useEffect(() => {
     if (!isActive) {
