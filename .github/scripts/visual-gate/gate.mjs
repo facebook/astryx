@@ -327,12 +327,14 @@ async function main() {
         .map(([key]) => key);
       const stories = [...new Set(unstable.map(key => key.split('__')[0]))].sort();
       process.stdout.write(
-        `${unstable.length} unstable shot(s) across ${passes} passes, in ${stories.length} stor${stories.length === 1 ? 'y' : 'ies'}:\n`,
+        `${unstable.length} unstable shot(s) across ${passes} passes, in ${stories.length} stor${stories.length === 1 ? 'y' : 'ies'}\n`,
       );
       for (const story of stories) process.stdout.write(`  ${story}\n`);
-      process.stdout.write(
-        '\nAdd these to excludeStories in visual-gate.config.json, each with the reason it cannot reproduce.\n',
-      );
+      if (unstable.length > 0) {
+        process.stdout.write(
+          `\nEach pass is kept under ${passRoot} — diff them to see what moved, then add these to excludeStories in visual-gate.config.json with the reason each one cannot reproduce.\n`,
+        );
+      }
       return unstable.length > 0 ? EXIT.changed : EXIT.clean;
     }
     case 'accept': {

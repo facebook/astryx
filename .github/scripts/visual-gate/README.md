@@ -102,6 +102,11 @@ gate run id, the keys (or `all`), and a reason. The promoted PNGs come out of
 that run's capture artifact, so the picture that becomes the baseline is
 exactly the picture that was reviewed.
 
+**Bootstrapping**: the first gate run has nothing to compare against — it
+reports every shot as `added` and passes. Dispatch **Visual Baseline** against
+that run with `keys=all` to make it the reference. Do the same after a
+deliberate system-wide restyle.
+
 A browser bump moves antialiasing everywhere at once; the gate detects it and
 tells you to refresh rather than reporting hundreds of regressions.
 

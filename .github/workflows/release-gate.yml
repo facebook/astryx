@@ -245,7 +245,7 @@ jobs:
             git -C /tmp/gh-pages sparse-checkout set visual-gate
             RUN_DIR="/tmp/gh-pages/visual-gate/${GITHUB_RUN_ID}"
             rm -rf "$RUN_DIR" /tmp/gh-pages/visual-gate/latest
-            mkdir -p "$RUN_DIR"
+            mkdir -p "$RUN_DIR" /tmp/gh-pages/visual-gate/latest
             cp -r report/. "$RUN_DIR"/
             cp -r report/. /tmp/gh-pages/visual-gate/latest/
 
