@@ -12,7 +12,7 @@
  * clamps it to the dynamic viewport with spacing-token gutters so narrow
  * viewports keep content and controls on screen without changing the public API.
  * Fullscreen dialogs preserve the same padding floor while honoring safe-area
- * insets around notches, rounded corners, and home indicators.
+ * insets, and fade in without the centered-dialog translate/scale motion.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Dialog/Dialog.doc.mjs (props table, features, implementation notes)
@@ -125,6 +125,11 @@ const enterDirectional = stylex.keyframes({
   to: {opacity: 1, transform: 'translate(0, 0) scale(1)'},
 });
 
+const enterFullscreen = stylex.keyframes({
+  from: {opacity: 0},
+  to: {opacity: 1},
+});
+
 /**
  * Dialog styles using native <dialog> element
  * Uses ::backdrop pseudo-element for overlay
@@ -177,6 +182,12 @@ const styles = stylex.create({
     borderRadius: 0,
     margin: 0,
     inset: 0,
+  },
+  fullscreenOpen: {
+    animationName: {
+      default: enterFullscreen,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
   },
   fullscreenSafeArea: {
     paddingBlockStart:
@@ -693,6 +704,7 @@ export function Dialog({
               );
             })(),
           isFullscreen && styles.fullscreen,
+          isFullscreen && isOpen && styles.fullscreenOpen,
           xstyle,
         ),
         className,

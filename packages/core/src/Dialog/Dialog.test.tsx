@@ -9,6 +9,7 @@
  * SYNC: When Dialog.tsx changes, update tests to match new behavior
  */
 
+import {readFileSync} from 'node:fs';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Dialog, resolveDialogPositionOffsets} from './Dialog';
@@ -204,6 +205,35 @@ describe('Dialog', () => {
         '--x-maxWidth: min(100%, calc(100dvw - var(--spacing-4) - var(--spacing-4)))',
       );
       expect(inlineStyle).toContain('--x-maxHeight: 70dvh');
+    });
+
+    it('uses a fullscreen-specific fade animation instead of centered dialog movement', () => {
+      const source = readFileSync(
+        'packages/core/src/Dialog/Dialog.tsx',
+        'utf8',
+      );
+      const standardOpen = source.slice(
+        source.indexOf('  open: {'),
+        source.indexOf('  // Backdrop using ::backdrop'),
+      );
+      const fullscreenOpen = source.slice(
+        source.indexOf('  fullscreenOpen: {'),
+        source.indexOf('  fullscreenSafeArea: {'),
+      );
+      const modalStyleOrder = source.slice(
+        source.indexOf('focusOutlineProps.focusVisible('),
+        source.indexOf(
+          '          xstyle,',
+          source.indexOf('focusOutlineProps.focusVisible('),
+        ),
+      );
+
+      expect(standardOpen).toContain('enterDirectional');
+      expect(fullscreenOpen).toContain('enterFullscreen');
+      expect(fullscreenOpen).not.toContain('enterDirectional');
+      expect(modalStyleOrder.indexOf('styles.open')).toBeLessThan(
+        modalStyleOrder.indexOf('styles.fullscreenOpen'),
+      );
     });
 
     it('protects fullscreen content with safe-area padding', () => {

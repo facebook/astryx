@@ -2,15 +2,19 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {
   Layout,
   LayoutContent,
   LayoutFooter,
   HStack,
+  VStack,
 } from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
+import {Heading} from '@astryxdesign/core/Heading';
 import {Text} from '@astryxdesign/core/Text';
+import {TextArea} from '@astryxdesign/core/TextArea';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import * as stylex from '@stylexjs/stylex';
 
@@ -945,6 +949,153 @@ export const ReadinessNarrowViewport: Story = {
       description: {
         story:
           'Visual evidence for the narrow viewport layout scenario using a constrained review frame. Storybook does not emulate coarse pointer or no-hover capability here.',
+      },
+    },
+  },
+};
+
+type PresentationChoiceProps = {
+  presentation: 'dialog' | 'fullscreen' | 'bottom-sheet';
+};
+
+function PresentationChoice({presentation}: PresentationChoiceProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [filter, setFilter] = useState('Active');
+  const [notes, setNotes] = useState('');
+  const title =
+    presentation === 'fullscreen'
+      ? 'Edit workflow details'
+      : presentation === 'bottom-sheet'
+        ? 'Filter results'
+        : 'Confirm status change';
+
+  const openButtonLabel =
+    presentation === 'fullscreen'
+      ? 'Open fullscreen Dialog'
+      : presentation === 'bottom-sheet'
+        ? 'Open Bottom Sheet'
+        : 'Open Dialog';
+
+  const footer = (
+    <HStack gap={2} hAlign="end" wrap="wrap">
+      <Button
+        label="Cancel"
+        variant="secondary"
+        onClick={() => setIsOpen(false)}
+      />
+      <Button
+        label="Apply"
+        variant="primary"
+        onClick={() => setIsOpen(false)}
+      />
+    </HStack>
+  );
+
+  const formContent = (
+    <VStack gap={4}>
+      <Text type="supporting" color="secondary">
+        These deterministic examples compare presentation choices. The adaptive
+        recipe uses BottomSheet only after explicit touchPresentation opt-in and
+        matching touch-oriented conditions.
+      </Text>
+      <TextInput label="Status" value={filter} onChange={setFilter} />
+      <TextArea label="Notes" rows={6} value={notes} onChange={setNotes} />
+    </VStack>
+  );
+
+  if (presentation === 'bottom-sheet') {
+    return (
+      <>
+        <Button label={openButtonLabel} onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label={title}
+          purpose="info"
+          height="hug">
+          <VStack gap={4} style={{padding: 'var(--spacing-4)'}}>
+            <Heading level={3}>{title}</Heading>
+            <Text type="supporting" color="secondary">
+              Use Bottom Sheet for lightweight contextual actions, pickers, or
+              filters. Its purpose contract controls Escape, scrim click, and
+              swipe dismissal.
+            </Text>
+            <Button label="Active" variant="secondary" />
+            <Button label="Archived" variant="secondary" />
+            <Button label="Owned by me" variant="secondary" />
+            {footer}
+          </VStack>
+        </BottomSheet>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Button label={openButtonLabel} onClick={() => setIsOpen(true)} />
+      <Dialog
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        purpose="form"
+        variant={presentation === 'fullscreen' ? 'fullscreen' : 'standard'}>
+        <Layout
+          header={<DialogHeader title={title} onOpenChange={setIsOpen} />}
+          content={
+            <LayoutContent>
+              {presentation === 'fullscreen' ? (
+                formContent
+              ) : (
+                <Text type="body">
+                  Keep Dialog for centered, focused tasks and confirmations. It
+                  stays the default presentation on every device.
+                </Text>
+              )}
+            </LayoutContent>
+          }
+          footer={<LayoutFooter>{footer}</LayoutFooter>}
+        />
+      </Dialog>
+    </>
+  );
+}
+
+/** Mobile presentation alternative: keep centered Dialog for focused tasks. */
+export const MobilePresentationKeepDialog: Story = {
+  name: 'Mobile presentation alternatives / keep Dialog',
+  render: () => <PresentationChoice presentation="dialog" />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Deterministic presentation example: keep the centered responsive Dialog for confirmations and focused tasks. This is the default choice, not device emulation.',
+      },
+    },
+  },
+};
+
+/** Mobile presentation alternative: fullscreen Dialog for complex workflows. */
+export const MobilePresentationFullscreenDialog: Story = {
+  name: 'Mobile presentation alternatives / fullscreen Dialog',
+  render: () => <PresentationChoice presentation="fullscreen" />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Deterministic presentation example: use fullscreen Dialog for complex, long, or keyboard-heavy workflows when the user should stay in a Dialog contract.',
+      },
+    },
+  },
+};
+
+/** Mobile presentation alternative: BottomSheet for lightweight contextual UI. */
+export const MobilePresentationBottomSheet: Story = {
+  name: 'Mobile presentation alternatives / BottomSheet',
+  render: () => <PresentationChoice presentation="bottom-sheet" />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Deterministic presentation example: use BottomSheet for lightweight contextual actions, pickers, or filters. Its purpose prop controls Escape, scrim click, and swipe dismissal.',
       },
     },
   },

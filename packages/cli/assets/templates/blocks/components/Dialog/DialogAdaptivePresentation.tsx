@@ -109,6 +109,14 @@ export default function DialogAdaptivePresentation() {
   return (
     <>
       <Button label="Edit profile" onClick={() => setIsOpen(true)} />
+      {/*
+        touchPresentation examples:
+        - "dialog" keeps Dialog even in touch-oriented <=lg contexts.
+        - "fullscreen" uses fullscreen Dialog there.
+        - "bottom-sheet" uses BottomSheet there.
+        presentation="dialog" | "fullscreen" | "bottom-sheet" overrides
+        the media query for tests and unusual environments.
+      */}
       <AdaptiveDialog
         isOpen={isOpen}
         onOpenChange={setIsOpen}
