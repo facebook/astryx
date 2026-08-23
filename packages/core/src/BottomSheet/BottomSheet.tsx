@@ -39,6 +39,7 @@ import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {useDevWarning, useScrollLock} from '../hooks';
+import {isImeKeyEvent} from '../utils/ime';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,
@@ -321,7 +322,7 @@ function StandaloneBottomSheet({
   );
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDialogElement>) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !isImeKeyEvent(event.nativeEvent)) {
         event.preventDefault();
         dismissOnEscape();
       }
