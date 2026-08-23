@@ -5,6 +5,7 @@ import {render, screen, fireEvent, within} from '@testing-library/react';
 import {useState, useCallback} from 'react';
 import {Table} from '../../Table';
 import type {TableColumn} from '../../types';
+import {useTableRowStatus, type TableRowStatus} from '../rowStatus';
 import {useTableGroupedRows} from './useTableGroupedRows';
 
 interface Person extends Record<string, unknown> {
@@ -174,6 +175,105 @@ describe('useTableGroupedRows', () => {
       screen.queryByRole('button', {name: /group/i}),
     ).not.toBeInTheDocument();
   });
+
+  it('never runs a column renderCell against a group header row', () => {
+    // The renderer that breaks: it keys a lookup off a field rather than
+    // printing it, so the header Proxy answering `''` is no better than
+    // `undefined`.
+    const TEAM_META: Record<string, {dot: string}> = {
+      Core: {dot: 'green'},
+      Infra: {dot: 'blue'},
+    };
+    const seen: Person[] = [];
+    const lookupColumns: TableColumn<Person>[] = [
+      {
+        key: 'team',
+        header: 'Team',
+        renderCell: item => {
+          seen.push(item);
+          return <span>{TEAM_META[item.team].dot}</span>;
+        },
+      },
+    ];
+
+    function LookupHarness() {
+      const [collapsed, setCollapsed] = useState<Set<string>>(EMPTY);
+      const grouped = useTableGroupedRows<Person>({
+        data: people,
+        groupBy: p => p.team,
+        collapsedGroups: collapsed,
+        onToggleGroup: k => setCollapsed(new Set([k])),
+        getRowKey: p => p.id,
+      });
+      return (
+        <Table
+          data={grouped.data}
+          columns={lookupColumns}
+          idKey={grouped.idKey}
+          plugins={{grouped: grouped.plugin}}
+        />
+      );
+    }
+
+    expect(() => render(<LookupHarness />)).not.toThrow();
+    expect(seen.map(p => p.name)).toEqual(['Alice', 'Bob', 'Carol']);
+    expect(screen.getByText('Core')).toBeInTheDocument();
+    expect(screen.getByText('Infra')).toBeInTheDocument();
+  });
+
+  describe.each([
+    ['grouped first', true],
+    ['rowStatus first', false],
+  ])(
+    'with a column contributed by another plugin (%s)',
+    (_label, groupedFirst) => {
+      // `grouped` and `rowStatus` are both absent from PLUGIN_ORDER, so the
+      // record's insertion order is the pipeline order. Whichever way round
+      // the consumer types it, the status column's renderCell must not see a
+      // header row.
+      const STATUS_BY_TEAM: Record<string, TableRowStatus> = {
+        Core: {color: 'success', label: 'Healthy'},
+        Infra: {color: 'error', label: 'Paging'},
+      };
+
+      function StatusHarness() {
+        const [collapsed, setCollapsed] = useState<Set<string>>(EMPTY);
+        const grouped = useTableGroupedRows<Person>({
+          data: people,
+          groupBy: p => p.team,
+          collapsedGroups: collapsed,
+          onToggleGroup: k => setCollapsed(new Set([k])),
+          getRowKey: p => p.id,
+        });
+        const rowStatus = useTableRowStatus<Person>({
+          getStatus: useCallback((item: Person) => {
+            const {color, label} = STATUS_BY_TEAM[item.team];
+            return {color, label};
+          }, []),
+        });
+        return (
+          <Table
+            data={grouped.data}
+            columns={columns}
+            idKey={grouped.idKey}
+            plugins={
+              groupedFirst
+                ? {grouped: grouped.plugin, rowStatus}
+                : {rowStatus, grouped: grouped.plugin}
+            }
+          />
+        );
+      }
+
+      it('renders the group headers without throwing', () => {
+        expect(() => render(<StatusHarness />)).not.toThrow();
+        expect(screen.getByText('Core')).toBeInTheDocument();
+        expect(screen.getByText('Infra')).toBeInTheDocument();
+        // One indicator per real row, none on the two headers.
+        expect(screen.getAllByRole('img')).toHaveLength(3);
+      });
+    },
+  );
 
   it('keeps a group collapsed across a data change (state keyed by group)', () => {
     function ChangingHarness() {

@@ -1344,7 +1344,17 @@ export function Selector<T extends SelectorOptionType>(
         if (isSearching) {
           continue;
         }
-        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
+        // role="listbox" only permits option/group children; the divider
+        // carries no information the options don't, so it's hidden from the
+        // accessibility tree entirely rather than exposing role="separator"
+        // as a disallowed listbox child (axe aria-required-children).
+        elements.push(
+          <Divider
+            key={`divider-${i}`}
+            aria-hidden="true"
+            xstyle={styles.divider}
+          />,
+        );
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
         for (const opt of option.options) {

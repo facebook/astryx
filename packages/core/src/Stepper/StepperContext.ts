@@ -9,8 +9,8 @@
  * @position Context for Stepper <-> Step communication
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/Stepper/Stepper.doc.mjs
- * - /packages/lab/src/Stepper/index.ts
+ * - /packages/core/src/Stepper/Stepper.doc.mjs
+ * - /packages/core/src/Stepper/index.ts
  */
 
 import {createContext, use} from 'react';
@@ -30,17 +30,30 @@ export type StepperIndicatorPosition = 'separated' | 'on-track';
 
 export interface StepperContextValue {
   activeStep: number;
+  /**
+   * The `activeStep` this stepper last rendered with, so a Step can tell
+   * whether the change it is reacting to was a single step forward — the one
+   * change that animates the connector fill — and which span that change
+   * crossed (see the CONNECTOR FILL block in Step.tsx). Equal to `activeStep`
+   * on the first render, which is what keeps a stepper that mounts mid-flow
+   * from animating its way to the step it opened on.
+   *
+   * Internal: not part of the public API, and deliberately not a Stepper prop.
+   * When the connector animates is behaviour the stepper owns, not something a
+   * consumer configures.
+   */
+  previousActiveStep: number;
   orientation: StepperOrientation;
   isNonLinear: boolean;
   onStepClick: ((index: number) => void) | null;
   density: StepperDensity;
   indicatorPosition: StepperIndicatorPosition;
   /**
-   * Horizontal only. When true, non-current step labels collapse via a
-   * container query once the stepper is too narrow to fit them all, so the
-   * track can shrink. The current step keeps its label.
+   * Dev-mode index registration. Each Step calls this on mount with its `step`
+   * index. The Stepper tracks the set and warns if two Steps share the same
+   * index. Returns a cleanup function to call on unmount.
    */
-  hasCollapsibleLabels: boolean;
+  registerStep: (index: number) => () => void;
 }
 
 export const StepperContext = createContext<StepperContextValue | null>(null);
