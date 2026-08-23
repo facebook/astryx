@@ -34,8 +34,8 @@ let activeEscapeTrapCount = 0;
  *
  * @deprecated The focus trap no longer owns Escape coordination — every overlay
  *   family shares one stack (`useLayerDismissal`), which routes each press to
- *   the top-most layer. A layer that needs to know whether it is on top should
- *   ask its own `isTopmost()` rather than whether a trap exists.
+ *   the top-most layer. A layer that wants the same ordering should join the
+ *   stack rather than ask whether a trap exists.
  */
 export function hasActiveFocusTrapEscape(): boolean {
   return activeEscapeTrapCount > 0;

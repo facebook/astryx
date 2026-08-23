@@ -520,9 +520,15 @@ function MobileNavAloneExample() {
 export const MobileNavAlone: Story = {render: () => <MobileNavAloneExample />};
 
 /**
- * A non-modal bottom sheet with a hover tip showing inside it. The sheet still
- * owns its own Escape and defers to a focus trap above it, so the tip being up
- * must not stop the sheet from closing.
+ * A non-modal bottom sheet with a hover tip showing inside it. The standalone
+ * sheet is the one family not on the shared stack yet, so it still owns its own
+ * Escape: the press closes the sheet, and the tip goes with the content it was
+ * anchored to. That is two layers on one press — the exception this stack
+ * exists to remove, and it closes when the sheet migrates.
+ *
+ * What this story pins today is the narrower promise: a tip being up must not
+ * stop the sheet from closing, which is what happened when
+ * `hasActiveFocusTrapEscape()` counted every layer instead of focus traps only.
  */
 function SheetWithHoverTipExample() {
   const [activeSheet, setActiveSheet] = useState<string | null>(null);
@@ -542,7 +548,8 @@ function SheetWithHoverTipExample() {
           <VStack gap={3} xstyle={sheetStyles.body}>
             <Text type="body">
               Hover the button to show the tip, then press Escape. The sheet
-              closes.
+              closes — this sheet is not on the shared stack yet, so the press
+              takes it and the tip together.
             </Text>
             <Tooltip content="A hover tip, showing">
               <Button label="Hover me" variant="secondary" />
@@ -556,4 +563,161 @@ function SheetWithHoverTipExample() {
 
 export const SheetWithHoverTip: Story = {
   render: () => <SheetWithHoverTipExample />,
+};
+
+/**
+ * Three layers deep, in two different families: a modal, a modal opened from
+ * inside it, and a popover opened from inside that. Three Escape presses peel
+ * them off one at a time, innermost first — the ordering has to hold past the
+ * two-layer case that is easy to get right by accident.
+ */
+function ThreeDeepExample() {
+  const [isOuterOpen, setIsOuterOpen] = useState(false);
+  const [isInnerOpen, setIsInnerOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        label="Open outer modal"
+        variant="secondary"
+        onClick={() => setIsOuterOpen(true)}
+      />
+      <Dialog
+        isOpen={isOuterOpen}
+        onOpenChange={setIsOuterOpen}
+        width={520}
+        aria-label="Outer modal">
+        <Layout
+          header={
+            <DialogHeader title="Outer modal" onOpenChange={setIsOuterOpen} />
+          }
+          content={
+            <LayoutContent>
+              <VStack gap={3}>
+                <Text type="body">
+                  Open the inner modal, then the popover inside it. Three
+                  Escapes, one layer each.
+                </Text>
+                <Button
+                  label="Open inner modal"
+                  variant="primary"
+                  onClick={() => setIsInnerOpen(true)}
+                />
+              </VStack>
+
+              <Dialog
+                isOpen={isInnerOpen}
+                onOpenChange={setIsInnerOpen}
+                width={400}
+                aria-label="Inner modal">
+                <Layout
+                  header={
+                    <DialogHeader
+                      title="Inner modal"
+                      onOpenChange={setIsInnerOpen}
+                    />
+                  }
+                  content={
+                    <LayoutContent>
+                      <Popover content={<Text type="body">Deepest layer</Text>}>
+                        <Button label="Open popover" variant="primary" />
+                      </Popover>
+                    </LayoutContent>
+                  }
+                />
+              </Dialog>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    </>
+  );
+}
+
+export const ThreeDeep: Story = {render: () => <ThreeDeepExample />};
+
+/**
+ * A dialog whose `purpose` changes while it is open re-registers with the
+ * stack. Its place in the order must not move: a second modal opened over it
+ * still takes the next Escape, and a flip to `required` must not let the older
+ * dialog start swallowing presses meant for the newer one.
+ *
+ * Open the first modal, open the second, flip the first to required, then
+ * press Escape — the second closes, as it would have without the flip.
+ */
+function PurposeFlipsWhileOpenExample() {
+  const [isFirstOpen, setIsFirstOpen] = useState(false);
+  const [isSecondOpen, setIsSecondOpen] = useState(false);
+  const [isFirstRequired, setIsFirstRequired] = useState(false);
+
+  return (
+    <>
+      <HStack gap={2}>
+        <Button
+          label="Open first modal"
+          variant="secondary"
+          onClick={() => setIsFirstOpen(true)}
+        />
+        <Button
+          label="Open second modal"
+          variant="secondary"
+          onClick={() => setIsSecondOpen(true)}
+        />
+        <Button
+          label="Make first required"
+          variant="secondary"
+          onClick={() => setIsFirstRequired(true)}
+        />
+      </HStack>
+      <Dialog
+        isOpen={isFirstOpen}
+        onOpenChange={setIsFirstOpen}
+        purpose={isFirstRequired ? 'required' : undefined}
+        width={460}
+        aria-label="First modal">
+        <Layout
+          header={<DialogHeader title="First modal" />}
+          content={
+            <LayoutContent>
+              <Text type="body">
+                Opened first. Flipping this to required re-registers it and must
+                not promote it above the modal opened after it.
+              </Text>
+            </LayoutContent>
+          }
+          footer={
+            <LayoutFooter>
+              <HStack gap={2} hAlign="end">
+                <Button
+                  label="Close"
+                  variant="secondary"
+                  onClick={() => setIsFirstOpen(false)}
+                />
+              </HStack>
+            </LayoutFooter>
+          }
+        />
+      </Dialog>
+      <Dialog
+        isOpen={isSecondOpen}
+        onOpenChange={setIsSecondOpen}
+        width={380}
+        aria-label="Second modal">
+        <Layout
+          header={
+            <DialogHeader title="Second modal" onOpenChange={setIsSecondOpen} />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">Escape closes this one.</Text>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    </>
+  );
+}
+
+export const PurposeFlipsWhileOpen: Story = {
+  render: () => <PurposeFlipsWhileOpenExample />,
 };

@@ -36,7 +36,7 @@ export type {
   UseLayerDismissalOptions,
   UseLayerDismissalReturn,
 } from './useLayerDismissal';
-export {LayerDepthProvider, useLayerDepth} from './LayerDepthContext';
+export {LayerDepthProvider} from './LayerDepthContext';
 
 // Shared touch behavior for the hover layers
 export {useTouchTrigger, isActionTrigger} from './useTouchTrigger';

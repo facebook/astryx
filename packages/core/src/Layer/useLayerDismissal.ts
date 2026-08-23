@@ -62,22 +62,10 @@ export interface UseLayerDismissalOptions {
    * layer is invisible to dismissal: a press flows past it to the layer below,
    * exactly as if it were not open.
    *
-   * This is the opt-out, and it is deliberately separate from `escapeBehavior:
-   * 'block'` — `'block'` is a layer that is present and swallows the press;
-   * this is a layer that is not there at all. Reach for it when:
-   *
-   * - **The consumer owns the keyboard contract.** A controlled overlay whose
-   *   visibility is driven by a prop: the app decides when it closes, and the
-   *   system silently closing it would fight the state the app is holding.
-   * - **The layer is not really an overlay.** `Dialog`'s inline rendering mode
-   *   puts dialog content in normal flow with nothing layered over anything.
-   * - **Escape means something else inside it.** A layer hosting an editor or a
-   *   nested widget with its own Escape semantics. Prefer letting that content
-   *   claim the press (`stopPropagation`/`preventDefault`, which the stack
-   *   honors) — opting the whole layer out is the blunt version, and gives up
-   *   dismissal even when focus is nowhere near the widget.
-   * - **Something else already sequences it.** A layer whose dismissal is
-   *   driven by an animation or gesture controller that must run the teardown.
+   * Deliberately separate from `escapeBehavior: 'block'` — `'block'` is a layer
+   * that is present and swallows the press; this is a layer that is not there
+   * at all. `Dialog`'s inline rendering mode is the case it exists for: inline
+   * dialog content sits in normal flow with nothing layered over anything.
    *
    * Layers that are never Escape-dismissible (toasts) should simply not call
    * this hook.
@@ -89,18 +77,12 @@ export interface UseLayerDismissalOptions {
 
 export interface UseLayerDismissalReturn {
   /**
-   * Whether this layer is currently top-most. The stack already routes Escape
-   * for you; this is for dismissal channels it does not model yet (outside
-   * press, swipe) so every channel agrees on who is on top.
-   */
-  isTopmost: () => boolean;
-  /**
    * Whether a close request the browser started on its own — a `<dialog>`'s
    * `cancel`, the Android back gesture, the platform close watcher — should
-   * dismiss this layer. Ask this from a `cancel` handler rather than
-   * `isTopmost`: as well as the top-most rule, it declines a request that
-   * arrives while an IME composition is running, which no `cancel` handler can
-   * tell on its own because the event carries no composition state.
+   * dismiss this layer. As well as the top-most rule the stack applies to an
+   * Escape press, it declines a request that arrives while an IME composition
+   * is running, which no `cancel` handler can tell on its own because the
+   * event carries no composition state.
    */
   shouldDismissOnCloseRequest: () => boolean;
 }
@@ -120,7 +102,7 @@ export interface UseLayerDismissalReturn {
  *
  * @example
  * ```tsx
- * const {isTopmost} = useLayerDismissal({
+ * useLayerDismissal({
  *   isActive: isOpen,
  *   onDismiss: () => onOpenChange(false),
  * });
@@ -170,15 +152,11 @@ export function useLayerDismissal(
     });
   }, [isRegistered, depth, escapeBehavior]);
 
-  const isTopmost = useCallback(
-    () => isRegistered && isTopmostLayer(tokenRef.current),
+  const shouldDismissOnCloseRequest = useCallback(
+    () =>
+      isRegistered && !isTextComposing() && isTopmostLayer(tokenRef.current),
     [isRegistered],
   );
 
-  const shouldDismissOnCloseRequest = useCallback(
-    () => !isTextComposing() && isTopmost(),
-    [isTopmost],
-  );
-
-  return {isTopmost, shouldDismissOnCloseRequest};
+  return {shouldDismissOnCloseRequest};
 }
