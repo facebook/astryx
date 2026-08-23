@@ -5,11 +5,34 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {DateInput} from '@astryxdesign/core/DateInput';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof DateInput> = {
   title: 'Core/DateInput',
   component: DateInput,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A date field that fits the pointer it is used with. Every story ' +
+          'below shows the pointer surface — a text input you can type into ' +
+          'with a calendar in a popover — because that is the right answer ' +
+          'for the mouse you are reading this with.\n\n' +
+          'Where the primary pointer is a finger (`pointer: coarse`), the ' +
+          'same component renders a picker built for one instead: a bottom ' +
+          'sheet of months swiped sideways, with month and year wheels ' +
+          'behind the header title, and no text entry (the keyboard would ' +
+          'cover the sheet it is meant to fill in). Same props either way — ' +
+          'there is nothing to opt into.\n\n' +
+          '**Seeing the touch surface:** open any story below on a phone or ' +
+          'tablet, or in a device-emulated tab reporting a coarse pointer. ' +
+          'Every one of them renders it — they are the same stories, and ' +
+          'that is the point. There is no separate touch story because there ' +
+          'is no separate thing to adopt.',
+      },
+    },
+  },
   argTypes: {
     label: {
       control: 'text',
@@ -57,6 +80,33 @@ const meta: Meta<typeof DateInput> = {
       options: [1, 2],
       description: 'Number of months to display in calendar',
     },
+    weekStartsOn: {
+      control: 'select',
+      options: [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        'sun',
+        'mon',
+        'tue',
+        'wed',
+        'thu',
+        'fri',
+        'sat',
+      ],
+      description:
+        'First day of week in the calendar popover (0 = Sunday, or a three-letter day name)',
+    },
+    format: {
+      control: 'select',
+      options: ['date_long', 'date', 'date_weekday', 'system_date'],
+      description:
+        "Display format for the committed value, reusing Timestamp's vocabulary. Defaults to 'date_long' (long-month date).",
+    },
   },
 };
 
@@ -83,6 +133,71 @@ export const WithValue: Story = {
   },
   args: {
     label: 'Event date',
+  },
+};
+
+export const MondayFirstWeek: Story = {
+  name: 'Week starts on Monday',
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>(undefined);
+    return <DateInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Date',
+    placeholder: 'Select a date',
+    weekStartsOn: 'mon',
+  },
+};
+
+/**
+ * The committed date value can be rendered in different shapes via `format`,
+ * reusing `Timestamp`'s format vocabulary so the same literal renders the same
+ * date shape in both components. It defaults to `'date_long'` (a long-month
+ * date, "March 21, 2026"). While the user is typing, the raw text is shown
+ * verbatim — `format` applies only to the committed value.
+ */
+export const Formats: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-03-21' as ISODateString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <DateInput
+          label="Default (format='date_long')"
+          value={value}
+          onChange={setValue}
+        />
+        <DateInput
+          label="format='date'"
+          value={value}
+          onChange={setValue}
+          format="date"
+        />
+        <DateInput
+          label="format='date_weekday'"
+          value={value}
+          onChange={setValue}
+          format="date_weekday"
+        />
+        <DateInput
+          label="format='system_date'"
+          value={value}
+          onChange={setValue}
+          format="system_date"
+        />
+        <DateInput
+          label="Custom function"
+          value={value}
+          onChange={setValue}
+          format={iso =>
+            new Intl.DateTimeFormat('en-GB', {dateStyle: 'full'}).format(
+              new Date(iso + 'T00:00'),
+            )
+          }
+        />
+      </div>
+    );
   },
 };
 
@@ -364,5 +479,121 @@ export const ClearableWithStatus: Story = {
   args: {
     label: 'Deadline',
     status: {type: 'error', message: 'Date is in the past'},
+  },
+};
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    const [b, setB] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+        <DateInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'This date is not available'}}
+        />
+        <DateInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'This date is not available'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Theme the clear glyph precisely via `defineTheme`.
+ *
+ * `components['date-input-clear-icon'].base` scopes overrides to the clear
+ * icon itself (via the `astryx-date-input-clear-icon` target), so a theme can
+ * recolor it, morph its color on hover, and resize it — without a fragile
+ * descendant selector or raw CSS. Same-element rules in `@layer astryx-theme`
+ * win over the icon's own base color/size.
+ */
+const clearIconTheme = defineTheme({
+  name: 'date-input-clear-icon-demo',
+  components: {
+    'date-input-clear-icon': {
+      base: {
+        width: '12px',
+        height: '12px',
+        fontSize: '12px',
+        color: 'var(--color-icon-secondary)',
+        ':hover': {color: 'var(--color-accent)'},
+      },
+    },
+  },
+});
+
+export const ThemedClearIcon: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    return (
+      <Theme theme={clearIconTheme} mode="light">
+        <DateInput
+          label="Clear icon themed (12px, accent on hover)"
+          value={value}
+          onChange={setValue}
+          hasClear
+        />
+      </Theme>
+    );
+  },
+};
+
+/**
+ * Theme the calendar-toggle glyph precisely via `defineTheme`.
+ *
+ * - `components['date-input-toggle-icon'].base` scopes overrides to the toggle
+ *   icon itself (via the `astryx-date-input-toggle-icon` target), so a theme
+ *   can resize and recolor it — without a fragile descendant selector or raw
+ *   CSS. Same-element rules in `@layer astryx-theme` win over the icon's own
+ *   base color/size.
+ * - `state:expanded` restyles the open state, which the icon reflects as a
+ *   `data-state` attribute.
+ */
+const toggleIconTheme = defineTheme({
+  name: 'date-input-toggle-icon-demo',
+  components: {
+    'date-input-toggle-icon': {
+      base: {
+        width: '14px',
+        height: '14px',
+        fontSize: '14px',
+        color: 'var(--color-icon-secondary)',
+      },
+      'state:expanded': {
+        color: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedCalendarToggleIcon: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    return (
+      <Theme theme={toggleIconTheme} mode="light">
+        <DateInput
+          label="Calendar toggle icon themed (14px, accent when open)"
+          value={value}
+          onChange={setValue}
+        />
+      </Theme>
+    );
   },
 };

@@ -34,7 +34,7 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Button} from '@astryxdesign/core/Button';
 import {NavIcon} from '@astryxdesign/core/NavIcon';
 import {Banner} from '@astryxdesign/core/Banner';
-import {NavMenuItem} from '@astryxdesign/core/NavMenu';
+import {NavHeadingMenuItem} from '@astryxdesign/core/NavMenu';
 
 // =============================================================================
 // Configuration types
@@ -579,9 +579,9 @@ function SampleSideNav({
 
   const headingMenu = (
     <>
-      <NavMenuItem label="Sibling Product 1" onClick={() => {}} />
-      <NavMenuItem label="Sibling Product 2" onClick={() => {}} />
-      <NavMenuItem label="Sibling Product 3" onClick={() => {}} />
+      <NavHeadingMenuItem label="Sibling Product 1" onClick={() => {}} />
+      <NavHeadingMenuItem label="Sibling Product 2" onClick={() => {}} />
+      <NavHeadingMenuItem label="Sibling Product 3" onClick={() => {}} />
     </>
   );
 
@@ -630,9 +630,7 @@ function SampleSideNav({
         resizable={config.isResizable}
         header={heading}
         topContent={
-          config.showTopContent ? (
-            <SideNavItem label="Create New" />
-          ) : undefined
+          config.showTopContent ? <SideNavItem label="Create New" /> : undefined
         }
         footer={
           config.showFooter ? (
@@ -844,9 +842,9 @@ function SampleTopNav({
 
   const topNavHeadingMenu = (
     <>
-      <NavMenuItem label="Sibling Product 1" onClick={() => {}} />
-      <NavMenuItem label="Sibling Product 2" onClick={() => {}} />
-      <NavMenuItem label="Sibling Product 3" onClick={() => {}} />
+      <NavHeadingMenuItem label="Sibling Product 1" onClick={() => {}} />
+      <NavHeadingMenuItem label="Sibling Product 2" onClick={() => {}} />
+      <NavHeadingMenuItem label="Sibling Product 3" onClick={() => {}} />
     </>
   );
 
@@ -1043,16 +1041,8 @@ function ShellLabContent() {
                     href="#"
                     icon={DashboardIcon}
                   />
-                  <SideNavItem
-                    label="Projects"
-                    href="#"
-                    icon={ProjectsIcon}
-                  />
-                  <SideNavItem
-                    label="Messages"
-                    href="#"
-                    icon={MessagesIcon}
-                  />
+                  <SideNavItem label="Projects" href="#" icon={ProjectsIcon} />
+                  <SideNavItem label="Messages" href="#" icon={MessagesIcon} />
                 </SideNavSection>
               </MobileNav>
             ),

@@ -262,9 +262,16 @@
   }
 
   /*
-   * Default cursor for disabled elements.
+   * Disabled elements take back any interactive cursor: a control that will
+   * not respond must not answer the pointer as though it will. `default`
+   * rather than `not-allowed` — a disabled control sealed behind
+   * `pointer-events: none` shows whatever its ancestor shows, and one cursor
+   * everywhere beats a stronger one we can only paint on half of them.
+   * Covers [aria-disabled] too: astryx keeps a disabled control focusable
+   * that way wherever its reason must stay discoverable (Button with a
+   * tooltip, Selector's trigger, SideNavItem).
    */
-  :where(:disabled) {
+  :where(:disabled, [aria-disabled='true']) {
     cursor: default;
   }
 
@@ -358,32 +365,6 @@
    */
   :where(html) {
     -webkit-tap-highlight-color: transparent;
-  }
-
-  /* ===========================================================================
-     Touch Devices
-     =========================================================================== */
-
-  /*
-   * Suppress focus-visible outlines on touch-only devices.
-   *
-   * Focus rings exist to show keyboard users where focus is. On devices
-   * with no hover capability and a coarse pointer (phones, tablets),
-   * there's no keyboard navigation — focus rings are visual noise that
-   * can flash on tap, on dialog open (showModal auto-focus), or on
-   * programmatic focus.
-   *
-   * This targets touch-only devices specifically:
-   * - (hover: none) — no hover capability (not a mouse)
-   * - (pointer: coarse) — imprecise pointer (finger, not stylus)
-   *
-   * Hybrid devices (laptop with touchscreen) are NOT affected because
-   * their primary pointer is fine (trackpad/mouse) and hover is available.
-   */
-  @media (hover: none) and (pointer: coarse) {
-    :where(:focus-visible) {
-      outline: none;
-    }
   }
 
   /* ===========================================================================

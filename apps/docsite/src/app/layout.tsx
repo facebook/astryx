@@ -27,7 +27,7 @@ import {
 // uses for its cover. Reusing the same branded banner keeps the shared-link
 // preview consistent with the launch creative across the site and the post.
 const OG_IMAGE =
-  'https://lookaside.facebook.com/assets/astryx/Astryx-Banner.png';
+  '/images/Astryx-Banner.png';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

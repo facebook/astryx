@@ -2,7 +2,7 @@
 
 /**
  * @file FieldStatus.tsx
- * @input Uses React, stylex, theme tokens
+ * @input Uses React, stylex, theme tokens, useAnnounce, Icon
  * @output Exports FieldStatus component, FieldStatusProps
  * @position Core implementation; consumed by Field, Switch, CheckboxInput, and the FieldStatus entrypoint
  *
@@ -11,14 +11,15 @@
  * - /packages/core/src/Field/Field.doc.mjs (compat docs when public API changes)
  * - /packages/core/src/FieldStatus/index.ts (exports if types change)
  * - /packages/core/src/Field/index.ts (compat re-export if public API changes)
- * - /packages/cli/templates/blocks/components/FieldStatus/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/FieldStatus/ (showcase blocks)
  */
 
 'use client';
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {mergeProps} from '../utils';
 import {
   colorVars,
@@ -30,6 +31,20 @@ import {
 import type {InputStatusType} from '../Field/types';
 import {useEntryAnimation} from '../hooks/useEntryAnimation';
 import {themeProps} from '../utils/themeProps';
+import {Icon} from '../Icon';
+import type {IconName} from '../Icon';
+import type {FieldStatusVariantMap} from './index';
+
+/**
+ * Maps each status type to its status glyph. Mirrors the mapping the input
+ * controls already use for the on-field status affordance, so the detached
+ * message shows the same icon a consumer sees elsewhere for that status.
+ */
+const statusIconMap: Record<InputStatusType, IconName> = {
+  warning: 'warning',
+  error: 'error',
+  success: 'success',
+};
 
 const styles = stylex.create({
   base: {
@@ -42,14 +57,28 @@ const styles = stylex.create({
     paddingBlockStart: `calc(${spacingVars['--spacing-1-5']} + ${spacingVars['--spacing-2']})`,
     paddingBlockEnd: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
-    borderBottomLeftRadius: radiusVars['--radius-element'],
-    borderBottomRightRadius: radiusVars['--radius-element'],
+    borderEndStartRadius: radiusVars['--radius-element'],
+    borderEndEndRadius: radiusVars['--radius-element'],
   },
   detached: {
     marginTop: spacingVars['--spacing-1'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
+  },
+  detachedContent: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: spacingVars['--spacing-1'],
+  },
+  detachedIcon: {
+    // Center the glyph within the first text-line box so it aligns to the
+    // first line of the message (rather than the top of the flex row) when the
+    // message wraps to multiple lines.
+    display: 'inline-flex',
+    alignItems: 'center',
+    height: `calc(${typeScaleVars['--text-supporting-size']} * ${typeScaleVars['--text-supporting-leading']})`,
+    flexShrink: 0,
   },
 });
 
@@ -67,24 +96,6 @@ const colorStyles = stylex.create({
     color: colorVars['--color-text-green'],
   },
 });
-
-/**
- * Extensible variant map for FieldStatus.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/FieldStatus' {
- *   interface FieldStatusVariantMap {
- *     'inline': true;
- *   }
- * }
- * ```
- */
-export interface FieldStatusVariantMap {
-  attached: true;
-  detached: true;
-}
 
 /**
  * FieldStatus variant type. Extensible via module augmentation of FieldStatusVariantMap.
@@ -113,6 +124,23 @@ export interface FieldStatusProps extends BaseProps<HTMLDivElement> {
 /**
  * A status message component for form fields.
  *
+ * The `detached` variant renders a leading status icon before the message so
+ * status is not conveyed by color or position alone (WCAG 1.4.1). The icon is
+ * decorative for assistive tech (`aria-hidden`): the message text already names
+ * the status in words and is announced through the live region. The `attached`
+ * variant keeps its status affordance on the bordered input, so it renders no
+ * icon here to avoid a duplicate. The `tooltip` variant renders no message box
+ * at all — the input surfaces the status through a tooltip on its on-field
+ * icon — so callers skip rendering FieldStatus for it.
+ *
+ * Screen-reader announcements go through the persistent `useAnnounce` live
+ * regions (assertive for errors, polite otherwise) rather than `role`/
+ * `aria-live` on the rendered element. Live regions that mount together with
+ * their content are not reliably announced by assistive technology, and
+ * FieldStatus is almost always conditionally rendered by its callers. The
+ * message is announced whenever it appears — including on first mount — and
+ * whenever it changes.
+ *
  * @example
  * ```
  * <FieldStatus
@@ -138,13 +166,22 @@ export function FieldStatus({
   ...rest
 }: FieldStatusProps) {
   const entryStyle = useEntryAnimation('slideDown');
+  const announce = useAnnounce();
+
+  // Announce the message through the persistently-mounted live regions.
+  // Announce-on-mount is intentional: callers conditionally mount FieldStatus
+  // when a status appears (and whole forms can mount with a server-side
+  // validation error already present), and both cases must be heard.
+  useEffect(() => {
+    if (message) {
+      announce(message, type === 'error' ? 'assertive' : 'polite');
+    }
+  }, [announce, message, type]);
 
   return (
     <div
       ref={ref}
       id={id}
-      role={type === 'error' ? 'alert' : 'status'}
-      aria-live={type === 'error' ? 'assertive' : 'polite'}
       {...rest}
       {...mergeProps(
         themeProps('field-status', {type, variant}),
@@ -158,7 +195,27 @@ export function FieldStatus({
         className,
         style,
       )}>
-      {message}
+      {variant === 'detached' ? (
+        <span {...stylex.props(styles.detachedContent)}>
+          <span {...stylex.props(styles.detachedIcon)}>
+            <Icon
+              icon={statusIconMap[type]}
+              size="sm"
+              color="inherit"
+              // Stable theme target on the detached message box's leading glyph
+              // itself, so a theme can restyle just this icon (color, size) —
+              // and each status — via `defineTheme`. Same-element rules in
+              // @layer astryx-theme win over the icon's own base
+              // width/height/fontSize, which a field-level target could not
+              // reach.
+              {...themeProps('field-status-icon', {type})}
+            />
+          </span>
+          <span>{message}</span>
+        </span>
+      ) : (
+        message
+      )}
     </div>
   );
 }

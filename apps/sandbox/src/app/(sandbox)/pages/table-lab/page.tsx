@@ -46,9 +46,9 @@ import {
   useTableColumnResize,
   useTableStickyColumns,
   useTableRowExpansion,
-  useTableRowExpansionState,
   useTableGroupedRows,
   useTableRowIndex,
+  useTableRowStatus,
 } from '@astryxdesign/core/Table';
 import type {TablePlugin, TableSortState} from '@astryxdesign/core/Table';
 
@@ -72,7 +72,8 @@ type PluginId =
   | 'stickyColumns'
   | 'rowExpansion'
   | 'groupedRows'
-  | 'rowIndex';
+  | 'rowIndex'
+  | 'rowStatus';
 
 interface PluginMeta {
   id: PluginId;
@@ -116,6 +117,11 @@ const PLUGIN_REGISTRY: PluginMeta[] = [
     id: 'rowIndex',
     label: 'Row Index',
     description: 'Prepend a monospaced row-number column',
+  },
+  {
+    id: 'rowStatus',
+    label: 'Row Status',
+    description: 'Status dot / icon (by member status)',
   },
 ];
 
@@ -198,16 +204,27 @@ function useLabPlugins({
     endKeys: ['joined'],
   });
 
-  // --- row expansion (flat rows; no real tree in the synthetic data) ---
+  // --- row expansion (detail panel below the row) ---
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-  const {expansionConfig} = useTableRowExpansionState<LabRow>({
-    baseData: dataAfterPage,
-    getChildren: () => [],
-    getRowKey: item => item.id,
+  const rowExpansionPlugin = useTableRowExpansion<LabRow>({
     expandedKeys,
-    setExpandedKeys,
+    onToggle: key =>
+      setExpandedKeys(prev => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        return next;
+      }),
+    getRowKey: item => item.id,
+    renderExpanded: item => (
+      <Text type="body" color="secondary">
+        {`Details for ${item.name}`}
+      </Text>
+    ),
   });
-  const rowExpansionPlugin = useTableRowExpansion(expansionConfig);
   if (enabled.rowExpansion) {
     summary.push(`${expandedKeys.size} expanded`);
   }
@@ -244,6 +261,21 @@ function useLabPlugins({
     getRowKey: item => item.id,
   });
 
+  // --- row status ---
+  const rowStatusPlugin = useTableRowStatus<LabRow>({
+    getStatus: item => {
+      // Semantic color names map to theme tokens; an icon adds a shape
+      // differentiator so status isn't conveyed by color alone.
+      if (item.status === 'Active') {
+        return {color: 'success', icon: 'success', label: 'Active'};
+      }
+      if (item.status === 'Away') {
+        return {color: 'warning', icon: 'warning', label: 'Away'};
+      }
+      return null; // Offline: no indicator
+    },
+  });
+
   // Assemble enabled plugins in a stable order.
   const plugins: Record<string, TablePlugin<LabRow>> = {};
   if (enabled.groupedRows) {
@@ -251,6 +283,9 @@ function useLabPlugins({
   }
   if (enabled.rowIndex) {
     plugins.rowIndex = rowIndexPlugin;
+  }
+  if (enabled.rowStatus) {
+    plugins.rowStatus = rowStatusPlugin;
   }
   if (enabled.sortable) {
     plugins.sort = sortPlugin;
@@ -431,6 +466,7 @@ export default function TableLabPage() {
     rowExpansion: false,
     groupedRows: false,
     rowIndex: false,
+    rowStatus: false,
   });
 
   const baseData = useMemo(() => generateRows(rowCount), [rowCount]);

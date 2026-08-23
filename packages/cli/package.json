@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/cli",
-  "version": "0.1.6",
+  "version": "0.4.7",
   "displayName": "CLI",
   "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
   "author": "Meta Open Source",
@@ -25,59 +25,76 @@
     "agent-docs"
   ],
   "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "bin": {
-    "astryx": "./bin/astryx.mjs",
-    "cli": "./bin/astryx.mjs"
+    "astryx": "./clients/cli/bin/astryx.mjs",
+    "cli": "./clients/cli/bin/astryx.mjs"
   },
   "exports": {
-    ".": "./bin/astryx.mjs",
+    ".": "./clients/cli/bin/astryx.mjs",
     "./json": {
-      "types": "./src/types/index.d.ts",
-      "import": "./src/lib/parse.mjs"
+      "types": "./api/json/index.ts",
+      "import": "./api/json/parse.mjs"
     },
     "./api": {
-      "types": "./src/types/api.d.ts",
-      "import": "./src/api/index.mjs"
+      "types": "./api/index.d.mts",
+      "import": "./api/index.mjs"
+    },
+    "./authoring": {
+      "types": "./authoring/index.d.ts",
+      "import": "./authoring/index.mjs"
     },
     "./config": {
-      "types": "./src/types/config.d.ts",
-      "import": "./src/config.mjs"
+      "types": "./authoring/config/type.ts",
+      "import": "./authoring/config/parse.mjs"
     },
     "./integration": {
-      "types": "./src/types/integration.d.ts",
-      "import": "./src/integration.mjs"
+      "types": "./authoring/integration/type.ts",
+      "import": "./authoring/integration/parse.mjs"
     },
     "./doc": {
-      "types": "./src/types/doc.d.ts",
-      "import": "./src/doc.mjs"
+      "types": "./authoring/doctypes/types.ts",
+      "import": "./authoring/doctypes/parse.mjs"
     },
     "./template": {
-      "types": "./src/types/template-api.d.ts",
-      "import": "./src/template.mjs"
+      "types": "./authoring/doctypes/types.ts",
+      "import": "./authoring/doctypes/template/parse.mjs"
     },
     "./codemod": {
-      "types": "./src/types/codemod.d.ts",
-      "import": "./src/codemod.mjs"
+      "types": "./authoring/codemod/type.ts",
+      "import": "./authoring/codemod/parse.mjs"
     },
     "./xle": {
-      "types": "./src/lib/xle/browser.d.ts",
-      "import": "./src/lib/xle/browser.mjs"
+      "types": "./foundation/xle/browser.d.ts",
+      "import": "./foundation/xle/browser.mjs"
     }
   },
   "files": [
-    "bin",
-    "src",
-    "templates",
-    "docs",
+    "clients",
+    "api",
+    "assets",
+    "authoring",
+    "foundation",
+    "scripts/postinstall.mjs",
     "CHANGELOG.md"
   ],
   "scripts": {
-    "astryx": "node bin/astryx.mjs",
+    "astryx": "node clients/cli/bin/astryx.mjs",
+    "postinstall": "node scripts/postinstall.mjs",
+    "test": "vitest run --root ../.. packages/cli",
+    "test:watch": "vitest --root ../.. packages/cli",
     "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
-    "typecheck:json-api": "tsc --project tsconfig.json-api.json && tsc --project tsconfig.api-contract.json"
+    "typecheck:json-api": "tsc --project tsconfig.json-api.json",
+    "typecheck:strict": "tsc --project tsconfig.strict.json",
+    "typecheck:authoring": "tsc --project tsconfig.authoring-contract.json",
+    "sync:api-types": "node scripts/sync-api-types.mjs",
+    "readme": "node scripts/generate-cli-readme.mjs",
+    "readme:check": "node scripts/generate-cli-readme.mjs --check",
+    "prepack": "pnpm sync:api-types"
   },
   "dependencies": {
-    "@clack/prompts": "^1.7.0",
     "commander": "^12.1.0",
     "jiti": "^2.7.0",
     "jscodeshift": "^17.3.0",

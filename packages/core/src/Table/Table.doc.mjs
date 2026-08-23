@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Table',
@@ -31,8 +31,8 @@ export const docs = {
       {className: 'astryx-table-body'},
       {className: 'astryx-table-footer'},
       {className: 'astryx-table-row'},
-      {className: 'astryx-table-cell'},
-      {className: 'astryx-table-header-cell'},
+      {className: 'astryx-table-cell', visualProps: ['density']},
+      {className: 'astryx-table-header-cell', visualProps: ['density']},
     ],
   },
   description: 'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support. T must extend Record<string, unknown>.',
@@ -94,6 +94,17 @@ export const docs = {
       description: 'Named plugins that extend table behavior via the transform pipeline. Converted to an ordered array internally.',
     },
     {
+      name: 'rowIndexStart',
+      type: 'number',
+      description: 'ARIA row index (1-based) for the first rendered body row. The row ordinal is an accessibility concern independent of any visible index column, so setting this (or rowCount) makes the table emit aria-rowindex on body rows and aria-rowcount on the table. For a paginated/windowed view, pass the offset of the first visible row (e.g. (page - 1) * pageSize + 1) so aria-rowindex reflects position in the full dataset. Data-driven mode only.',
+      default: '1',
+    },
+    {
+      name: 'rowCount',
+      type: 'number',
+      description: 'Total number of body rows across all pages/windows, used for aria-rowcount so assistive tech can announce "row X of Y" against the full dataset. When omitted but rowIndexStart is set (windowed view with an unknown total), aria-rowcount is set to -1 per the ARIA unknown-count convention. Data-driven mode only.',
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: 'Children mode: render TableRow/TableCell directly instead of using data-driven rendering.',
@@ -111,6 +122,8 @@ export const docs = {
     {name: 'useTableSelection'},
     {name: 'useTableSelectionState'},
     {name: 'useTableSortable'},
+    {name: 'useTableTreeData'},
+    {name: 'useTableTreeState'},
     {name: 'useTablePagination'},
     {name: 'useTableColumnSettings'},
     {name: 'useTableFiltering'},
@@ -139,7 +152,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -161,7 +174,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Data-driven table w/ rich cell content via renderCell. Compose cells w/ Badge, StatusDot, Text, Avatar, layout primitives. BaseTable provides unstyled structural core w/ composable plugin pipeline.',
   usage: {

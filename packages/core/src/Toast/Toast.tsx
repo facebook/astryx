@@ -92,9 +92,10 @@ export interface ToastProps {
  * Individual toast notification.
  *
  * Renders with inverted surface colors for the default variant,
- * and error-inverted for the error variant. Uses MediaTheme
- * to set the correct token context for children. Pauses auto-dismiss
- * on hover and focus.
+ * and error-inverted for the error variant. Applies MediaTheme for that
+ * surface, unless the painted colors make the chosen side unreadable —
+ * a theme is free to define an "inverted" background that is not.
+ * Pauses auto-dismiss on hover and focus.
  *
  * @example
  * ```
@@ -196,10 +197,11 @@ export function Toast({
   }, [onDismiss]);
 
   const isError = type === 'error';
-  // Determine media mode: inverted surface is always dark in light mode,
-  // always light in dark mode. Error toast is always on a dark surface.
+  // The surface is *usually* dark in light mode and light in dark mode, but a
+  // theme can define --color-background-inverted as anything — so the mode is
+  // measured, not assumed. This is only the pre-measurement fallback.
   const {mode} = useTheme();
-  const mediaMode = isError || mode === 'light' ? 'dark' : 'light';
+  const fallbackMediaMode = isError || mode === 'light' ? 'dark' : 'light';
 
   return (
     <div
@@ -218,7 +220,7 @@ export function Toast({
           isExiting && styles.exiting,
         ),
       )}>
-      <MediaTheme mode={mediaMode}>
+      <MediaTheme mode="auto" fallback={fallbackMediaMode}>
         <div {...stylex.props(styles.inner)}>
           <div {...stylex.props(styles.content)}>{body}</div>
 

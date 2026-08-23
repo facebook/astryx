@@ -4,8 +4,8 @@
 
 /**
  * @file useHoverCard.ts
- * @input Uses useLayer, React hooks
- * @output Exports useHoverCard hook for hover/focus triggered layers
+ * @input Uses useLayer, useTouchTrigger, React hooks
+ * @output Exports useHoverCard hook for hover/focus/tap triggered layers
  * @position Layer hook; builds on useLayer for hover card behavior
  *
  * SYNC: When modified, update:
@@ -15,7 +15,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   type ReactNode,
   type RefCallback,
@@ -27,6 +26,10 @@ import {
   type LayerAlignment,
   type LayerPlacement,
 } from '../Layer/useLayer';
+import {
+  useTouchTrigger,
+  type LayerTouchTrigger,
+} from '../Layer/useTouchTrigger';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   colorVars,
@@ -34,7 +37,6 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
@@ -45,23 +47,7 @@ const styles = stylex.create({
     borderRadius: 'var(--_hovercard-radius)',
     boxShadow: shadowVars['--shadow-med'],
   },
-  // Position-based margin styles
-  marginBlock: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-    marginInlineStart: 0,
-    marginInlineEnd: 0,
-  },
-  marginInline: {
-    marginBlockStart: 0,
-    marginBlockEnd: 0,
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
-  },
-  // Content wrapper for padding and mouse events.
-  // `display: block` keeps the wrapper a block box even though it renders as a
-  // `span` (the layer uses inline-safe phrasing markup so it is valid inside a
-  // paragraph and produces identical server/client markup).
+  // Content wrapper for padding and interaction events.
   content: {
     display: 'block',
     paddingBlockStart: spacingVars['--spacing-3'],
@@ -75,6 +61,11 @@ const styles = stylex.create({
  * Focus trigger behavior for hover cards
  */
 export type HoverCardFocusTrigger = 'auto' | 'always' | 'never';
+
+/**
+ * Touch trigger behavior for hover cards
+ */
+export type HoverCardTouchTrigger = LayerTouchTrigger;
 
 export interface HoverCardOptions {
   /**
@@ -112,12 +103,32 @@ export interface HoverCardOptions {
   focusTrigger?: HoverCardFocusTrigger;
 
   /**
+   * What a tap does on a touch pointer, where there is no hover:
+   * - `auto`: tap opens the card, unless the trigger performs an action of its
+   *   own (a button, a link, a form control) — that tap belongs to the control
+   * - `tap`: tap always opens the card, even on a trigger that acts
+   * - `none`: touch never opens the card
+   *
+   * @default 'auto'
+   */
+  touchTrigger?: HoverCardTouchTrigger;
+
+  /**
    * Whether the hover card is enabled.
    * When false, hover/focus triggers are disabled.
    *
    * @default true
    */
   isEnabled?: boolean;
+
+  /**
+   * Accessible name for the hover card popup.
+   *
+   * When provided, the popup is exposed to assistive technology as a named
+   * `role="dialog"`. When omitted, the popup falls back to `role="group"` —
+   * a group may validly be unnamed, an unnamed dialog may not.
+   */
+  label?: string;
 
   /**
    * Controlled open state. When provided, overrides hover/focus triggers:
@@ -249,29 +260,23 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     delay = 300,
     hideDelay = 200,
     focusTrigger = 'auto',
+    touchTrigger = 'auto',
     isEnabled = true,
+    label,
     isOpen,
     isDefaultOpen = false,
     onShow,
     onHide,
   } = options;
 
-  // Select margin style based on placement axis
-  const marginStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.marginBlock
-      : styles.marginInline;
-
   const layer = useLayer({
     mode: 'context',
+    lazyMount: true,
     onShow,
     onHide,
   });
 
-  const popoverXstyle = useMemo(
-    () => [styles.container, marginStyle],
-    [marginStyle],
-  );
+  const popoverXstyle = styles.container;
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -291,6 +296,30 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       hideTimeoutRef.current = null;
     }
   }, []);
+
+  // Touch resolves immediately: the hover delays exist to filter out a pointer
+  // passing across the trigger, and a tap is never that.
+  const showNow = useCallback(() => {
+    clearTimeouts();
+    layer.show();
+  }, [clearTimeouts, layer]);
+
+  const hideNow = useCallback(() => {
+    clearTimeouts();
+    isHoveringContentRef.current = false;
+    layer.hide();
+  }, [clearTimeouts, layer]);
+
+  const touch = useTouchTrigger({
+    touchTrigger,
+    isEnabled,
+    isControlled: isOpen !== undefined,
+    isOpen: layer.isOpen,
+    layerId: layer.id,
+    triggerRef,
+    show: showNow,
+    hide: hideNow,
+  });
 
   // Schedule show with delay (suppressed when isOpen is false)
   const scheduleShow = useCallback(() => {
@@ -319,15 +348,40 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
 
   // Event handlers
   const handleMouseEnter = useCallback(() => {
+    // A tap synthesizes mouseenter. On touch the tap path owns the decision,
+    // so hover must not also fire — without this a hover card opens on every
+    // tap of its trigger and has nothing to close it.
+    if (touch.isTouchPointerRef.current) {
+      return;
+    }
     scheduleShow();
-  }, [scheduleShow]);
+  }, [touch, scheduleShow]);
 
   const handleMouseLeave = useCallback(() => {
+    // On touch the synthesized mouseleave arrives with the next tap elsewhere,
+    // which the outside-tap dismissal already handles.
+    if (touch.isTouchPointerRef.current) {
+      return;
+    }
     scheduleHide();
-  }, [scheduleHide]);
+  }, [touch, scheduleHide]);
+
+  // Tap-to-open on touch; on a mouse this does nothing and hover still rules.
+  const handlePointerDown = useCallback(
+    (event: PointerEvent) => {
+      touch.handlePointerDown(event);
+    },
+    [touch],
+  );
 
   const handleFocusIn = useCallback(() => {
     if (!isEnabled) {
+      return;
+    }
+    // A tap focuses the trigger it activates. Opening on that focus would
+    // reinstate exactly the behavior the touch path just decided against —
+    // and on an action trigger it covers the thing the user tapped.
+    if (touch.isTouchInteraction()) {
       return;
     }
     // Skip showing if we're in the middle of an Escape dismiss
@@ -337,7 +391,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     }
     clearTimeouts();
     layer.show();
-  }, [isEnabled, clearTimeouts, layer]);
+  }, [isEnabled, touch, clearTimeouts, layer]);
 
   const handleFocusOut = useCallback(
     (e: FocusEvent) => {
@@ -362,13 +416,15 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         e.stopPropagation();
         // Hide immediately without refocusing (we're already on trigger)
         clearTimeouts();
+        touch.clearTapOpen();
         layer.hide();
       }
     },
-    [clearTimeouts, layer],
+    [touch, clearTimeouts, layer],
   );
 
   // Interaction ref that handles event listeners only
+  const {handlePointerEnter} = touch;
   const interactionRef: RefCallback<HTMLElement> = useCallback(
     (el: HTMLElement | null) => {
       // Cleanup previous element
@@ -381,12 +437,24 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
           handleFocusOut as EventListener,
         );
         triggerRef.current.removeEventListener('keydown', handleKeyDown);
+        triggerRef.current.removeEventListener(
+          'pointerenter',
+          handlePointerEnter,
+        );
+        triggerRef.current.removeEventListener(
+          'pointerdown',
+          handlePointerDown,
+        );
       }
 
       if (el) {
-        // Attach hover listeners
+        // Attach hover listeners. `pointerenter` runs before the synthesized
+        // `mouseenter` a tap produces, which is what lets the hover path know
+        // it is looking at a finger.
+        el.addEventListener('pointerenter', handlePointerEnter);
         el.addEventListener('mouseenter', handleMouseEnter);
         el.addEventListener('mouseleave', handleMouseLeave);
+        el.addEventListener('pointerdown', handlePointerDown);
 
         // Attach focus listeners based on focusTrigger option
         const shouldAttachFocus =
@@ -411,6 +479,8 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       handleFocusIn,
       handleFocusOut,
       handleKeyDown,
+      handlePointerEnter,
+      handlePointerDown,
     ],
   );
 
@@ -459,24 +529,50 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       props?: Omit<ContextRenderProps, 'positioning'>,
     ): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
+      const themeClassName = themeProps('hovercard').className;
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
-        role: 'dialog',
-        xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
-        // Render the layer as inline-safe phrasing markup so HoverCard stays
-        // valid (and hydration-stable) inside inline contexts like a `<p>`.
-        as: 'span' as const,
+        offset: spacingVars['--spacing-1'],
+        // A named dialog when a label is provided; otherwise a group. A group
+        // may validly be unnamed, an unnamed dialog may not — and hover cards
+        // are non-modal, so group is honest semantics without a name.
+        role: label ? 'dialog' : 'group',
+        'aria-label': label || undefined,
+        // Consumer surface style props land on the layer container — the
+        // themed surface (bg/radius/shadow) where the theme class lives — so
+        // customizing the card targets the same element as the theme. The inner
+        // div keeps `styles.content` for padding.
+        xstyle: [
+          popoverXstyle,
+          layerAnimations[renderPlacement],
+          props?.xstyle,
+        ],
+        className: props?.className
+          ? `${themeClassName} ${props.className}`
+          : themeClassName,
+        style: props?.style,
+        // useLayer mounts only after it has verified or corrected the parent,
+        // so rich HoverCard content can use block-safe markup.
+        as: 'div' as const,
       };
 
       return layer.render(
-        <span
-          {...mergeProps(themeProps('hovercard'), stylex.props(styles.content))}
+        <div
+          {...stylex.props(styles.content)}
           onMouseEnter={() => {
+            // Touch synthesizes these over the card too; letting a tap inside
+            // register as "hovering content" would block every later hide.
+            if (touch.isTouchPointerRef.current) {
+              return;
+            }
             isHoveringContentRef.current = true;
             clearTimeouts();
           }}
           onMouseLeave={() => {
+            if (touch.isTouchPointerRef.current) {
+              return;
+            }
             isHoveringContentRef.current = false;
             scheduleHide();
           }}
@@ -488,6 +584,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
               isEscapeDismissingRef.current = true;
               // Hide immediately
               clearTimeouts();
+              touch.clearTapOpen();
               layer.hide();
               // Refocus the trigger
               triggerRef.current?.focus();
@@ -512,11 +609,20 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
             scheduleHide();
           }}>
           {children}
-        </span>,
+        </div>,
         renderProps,
       );
     },
-    [layer, placement, alignment, clearTimeouts, scheduleHide, popoverXstyle],
+    [
+      layer,
+      placement,
+      alignment,
+      label,
+      clearTimeouts,
+      scheduleHide,
+      popoverXstyle,
+      touch,
+    ],
   );
 
   return {

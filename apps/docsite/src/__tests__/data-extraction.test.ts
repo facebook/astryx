@@ -319,10 +319,22 @@ describe('componentRegistry', () => {
     expect(lightbox!.playground?.defaults).toMatchObject({
       isOpen: false,
       media: {
-        src: expect.stringContaining('https://'),
+        src: expect.stringContaining('/template-assets/'),
         alt: expect.any(String),
       },
     });
+  });
+
+  it('MobileNavToggle declares an appShellMobile playground so its preview is not empty (#4983)', () => {
+    const core = components['@astryxdesign/core'];
+    const toggle = core.find(c => c.name === 'MobileNavToggle');
+    expect(toggle).toBeDefined();
+    // The toggle reads AppShell mobile context and renders null without it;
+    // appShellMobile makes the preview provide a simulated mobile context.
+    expect(toggle!.playground?.appShellMobile).toBe(true);
+    // The drawer's overlay playground stays on the MobileNav entry only —
+    // the toggle renders inline and must not inherit the overlay placeholder.
+    expect(toggle!.playground?.overlay).toBeUndefined();
   });
 
   it('dialog-family components keep contained isInline previews, not overlay mode (#3657)', () => {
@@ -896,7 +908,10 @@ describe('exampleRegistry', () => {
 // "Selectable Card Multi".
 describe('block example title convention', () => {
   const blocksDir = fileURLToPath(
-    new URL('../../../../packages/cli/templates/blocks', import.meta.url),
+    new URL(
+      '../../../../packages/cli/assets/templates/blocks',
+      import.meta.url,
+    ),
   );
 
   function displayNameOf(relPath: string): string | null {
@@ -978,5 +993,35 @@ describe('ToggleButtonGroup vertical example', () => {
     const vertical = examples.find(e => /Vertical/i.test(e.name));
     expect(vertical).toBeDefined();
     expect(vertical!.source).toContain('type="multiple"');
+  });
+});
+
+// ── LinkProvider utility page (#2733) ──────────────────────────────────────
+// LinkProvider is a non-visual provider: its page renders the hook-style
+// static layout (props table on the main page, no interactive playground).
+// That layout keys off `category: 'Utility'` with no curated playground, and
+// still needs props and an example block to have content to show.
+describe('LinkProvider utility page', () => {
+  const linkProvider = components['@astryxdesign/core'].find(
+    c => c.name === 'LinkProvider',
+  );
+
+  it('is a Utility entry without a curated playground', () => {
+    expect(linkProvider).toBeDefined();
+    expect(linkProvider!.category).toBe('Utility');
+    expect(linkProvider!.params).toBeNull();
+    expect(linkProvider!.playground).toBeNull();
+  });
+
+  it('documents props for the static props table', () => {
+    const propNames = linkProvider!.props.map(p => p.name);
+    expect(propNames).toContain('component');
+    expect(propNames).toContain('children');
+  });
+
+  it('registers an example block demonstrating a custom link component', () => {
+    const examples = exampleRegistry['LinkProvider'] ?? [];
+    expect(examples.length).toBeGreaterThanOrEqual(1);
+    expect(examples[0].source).toContain('<LinkProvider component=');
   });
 });

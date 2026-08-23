@@ -14,21 +14,23 @@
  * - /packages/core/src/Calendar/Calendar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Calendar/index.ts (exports if types change)
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Calendar/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Calendar/ (showcase blocks)
  */
 
 import {
+  use,
   useState,
   useMemo,
   useCallback,
   useEffect,
   useImperativeHandle,
+  useRef,
 } from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
 import {Icon} from '../Icon';
-import {useGridFocus} from '../hooks';
+import {useAnnounce, useGridFocus} from '../hooks';
 import {
   useCalendarDays,
   useCalendarConstraints,
@@ -56,7 +58,8 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
-import {mergeProps, composeEventHandlers} from '../utils';
+import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -84,7 +87,7 @@ import type {
 } from '../utils/dateTypes';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useTranslator, InternationalizationContext} from '../i18n';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -117,6 +120,25 @@ interface CalendarBaseProps extends Omit<
    * Use for complex rules like "weekdays only" or "no holidays".
    */
   dateConstraints?: ReadonlyArray<(date: Date) => boolean>;
+
+  /**
+   * Range mode only. Maximum number of days a selected range may span,
+   * counting both endpoints — `maxRangeSpan={7}` allows a 7-day window
+   * (start + 6 days). Once a start date is picked, days beyond this distance
+   * from it are disabled in either direction; before a start is picked every
+   * otherwise-valid day stays selectable. Use for rolling windows like "at
+   * most a week from the chosen day". For fixed calendar bounds use min/max.
+   */
+  maxRangeSpan?: number;
+
+  /**
+   * Range mode only. Minimum number of days a selected range must span,
+   * counting both endpoints — `minRangeSpan={2}` forbids a single-day range.
+   * Once a start date is picked, days closer than this to it are disabled —
+   * except the start itself, which stays selectable as the active anchor.
+   * Defaults to 1 (a same-day start and end is allowed).
+   */
+  minRangeSpan?: number;
 
   /**
    * Controlled focus date (which month is visible).
@@ -199,6 +221,7 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
  */
 export function Calendar({ref, ...props}: CalendarProps) {
   const t = useTranslator();
+  const {locale} = use(InternationalizationContext);
   const {
     handleRef,
     mode = 'single',
@@ -209,6 +232,8 @@ export function Calendar({ref, ...props}: CalendarProps) {
     min,
     max,
     dateConstraints,
+    maxRangeSpan,
+    minRangeSpan,
     focusDate: focusDateProp,
     onFocusDateChange,
     hasOutsideDays = true,
@@ -304,12 +329,31 @@ export function Calendar({ref, ...props}: CalendarProps) {
   // Format month header
   const monthYearLabel = useMemo(() => {
     if (numberOfMonths === 1) {
-      return plainDateFormat(visibleMonths[0], DATE_FORMAT_MONTH_YEAR);
+      return plainDateFormat(visibleMonths[0], DATE_FORMAT_MONTH_YEAR, locale);
     }
     return visibleMonths
-      .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR))
+      .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR, locale))
       .join(' – ');
-  }, [visibleMonths, numberOfMonths]);
+  }, [visibleMonths, numberOfMonths, locale]);
+
+  // Announce the newly visible month to screen readers whenever it changes.
+  // The visible month label (`<span>`) carries no live semantics, so paging the
+  // grid — via the header prev/next buttons, keyboard grid paging (arrow keys
+  // across a month boundary, PageUp/PageDown), the `navigateTo` handle, or a
+  // controlled `focusDate` change — otherwise updates the grid silently. Keying
+  // off `monthYearLabel` reuses the existing single-/multi-month formatting and
+  // only fires when the visible month actually changes (so selecting a date,
+  // which does not move the grid, stays silent). The first-render guard avoids
+  // announcing the initial month on mount.
+  const announce = useAnnounce();
+  const isInitialRenderRef = useRef(true);
+  useEffect(() => {
+    if (isInitialRenderRef.current) {
+      isInitialRenderRef.current = false;
+      return;
+    }
+    announce(monthYearLabel);
+  }, [monthYearLabel, announce]);
 
   // Determine if prev/next navigation is possible based on min/max
   const canNavigatePrevious = useMemo(() => {
@@ -391,11 +435,36 @@ export function Calendar({ref, ...props}: CalendarProps) {
       } else {
         // Range mode
         if (rangeSelectionStart === null) {
-          // First click - start the range
+          // First click - start the range. Nothing else about this pick is
+          // perceivable non-visually (WCAG 1.3.1) — the grid doesn't move, so
+          // the month-change announcement stays silent — so speak the range
+          // progress through the same polite live region.
           setRangeSelectionStart(iso);
+          announce(
+            t('@astryx.calendar.rangeStartAnnounce', {
+              date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY, locale),
+            }),
+          );
         } else {
           // Second click - complete the range
           const startPd = plainDateFromISO(rangeSelectionStart);
+
+          // Clicking the anchor again clears the in-progress start rather than
+          // committing a zero-length range. This is also the escape hatch when
+          // `minRangeSpan` disables the days around the anchor: without it the
+          // anchor would be the only clickable day left and the start could
+          // never be moved. `minRangeSpan` leaves the anchor itself enabled
+          // precisely so this toggle stays reachable.
+          if (plainDateIsEqual(date, startPd)) {
+            setRangeSelectionStart(null);
+            announce(
+              t('@astryx.calendar.rangeClearedAnnounce', {
+                date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY),
+              }),
+            );
+            return;
+          }
+
           let start: ISODateString;
           let end: ISODateString;
 
@@ -412,10 +481,26 @@ export function Calendar({ref, ...props}: CalendarProps) {
           setInternalValue(range);
           setRangeSelectionStart(null);
           (onChange as CalendarRangeProps['onChange'])?.(range);
+          // Completed-range announcement, in chronological order (matches the
+          // swapped {start, end} above even for a reverse pick).
+          announce(
+            t('@astryx.calendar.rangeCompleteAnnounce', {
+              start: plainDateFormat(
+                plainDateFromISO(start),
+                DATE_FORMAT_WITH_WEEKDAY,
+                locale,
+              ),
+              end: plainDateFormat(
+                plainDateFromISO(end),
+                DATE_FORMAT_WITH_WEEKDAY,
+                locale,
+              ),
+            }),
+          );
         }
       }
     },
-    [mode, onChange, rangeSelectionStart],
+    [mode, onChange, rangeSelectionStart, announce, t, locale],
   );
 
   return (
@@ -432,13 +517,17 @@ export function Calendar({ref, ...props}: CalendarProps) {
       {/* Header with navigation */}
       <div {...stylex.props(calendarStyles.header)}>
         <Button
+          {...themeProps('calendar-nav', {
+            nav: 'prev',
+            disabled: !canNavigatePrevious ? 'disabled' : null,
+          })}
           label={t('@astryx.calendar.previousMonth')}
           variant="ghost"
           icon={
             // Wrapper span (not Icon props): Icon's string mode clobbers
             // caller classNames, so the RTL mirror must live on its own
             // element.
-            <span {...stylex.props(calendarStyles.navIcon)}>
+            <span {...stylex.props(calendarStyles.navIcon, rtlStyles.mirror)}>
               <Icon icon="chevronLeft" size="sm" color="inherit" />
             </span>
           }
@@ -452,10 +541,14 @@ export function Calendar({ref, ...props}: CalendarProps) {
         </span>
 
         <Button
+          {...themeProps('calendar-nav', {
+            nav: 'next',
+            disabled: !canNavigateNext ? 'disabled' : null,
+          })}
           label={t('@astryx.calendar.nextMonth')}
           variant="ghost"
           icon={
-            <span {...stylex.props(calendarStyles.navIcon)}>
+            <span {...stylex.props(calendarStyles.navIcon, rtlStyles.mirror)}>
               <Icon icon="chevronRight" size="sm" color="inherit" />
             </span>
           }
@@ -477,6 +570,8 @@ export function Calendar({ref, ...props}: CalendarProps) {
             min={min}
             max={max}
             dateConstraints={dateConstraints}
+            maxRangeSpan={maxRangeSpan}
+            minRangeSpan={minRangeSpan}
             hasOutsideDays={hasOutsideDays}
             hasWeekNumbers={hasWeekNumbers}
             hasVariableRowCount={hasVariableRowCount}
@@ -516,6 +611,8 @@ interface MonthGridProps {
   min?: ISODateString;
   max?: ISODateString;
   dateConstraints?: ReadonlyArray<(date: Date) => boolean>;
+  maxRangeSpan?: number;
+  minRangeSpan?: number;
   hasOutsideDays: boolean;
   hasWeekNumbers: boolean;
   hasVariableRowCount: boolean;
@@ -538,6 +635,8 @@ function MonthGrid({
   min,
   max,
   dateConstraints,
+  maxRangeSpan,
+  minRangeSpan,
   hasOutsideDays,
   hasWeekNumbers,
   hasVariableRowCount,
@@ -550,6 +649,7 @@ function MonthGrid({
   pendingFocus,
   onPendingFocusHandled,
 }: MonthGridProps) {
+  const {locale} = use(InternationalizationContext);
   const year = month.year;
 
   // Use hooks for days generation and constraints
@@ -559,11 +659,30 @@ function MonthGrid({
     weekStartsOn,
     hasVariableRowCount,
   });
+  const dayNameHeaders = useMemo(
+    () =>
+      dayNames.map((name, offset) => ({
+        dayOfWeek: ((weekStartsOn + offset) % 7) as DayOfWeek,
+        name,
+      })),
+    [dayNames, weekStartsOn],
+  );
+
+  const rangeAnchor = useMemo(
+    () =>
+      mode === 'range' && rangeSelectionStart
+        ? plainDateFromISO(rangeSelectionStart)
+        : null,
+    [mode, rangeSelectionStart],
+  );
 
   const {isDateDisabled} = useCalendarConstraints({
     min,
     max,
     dateConstraints,
+    maxRangeSpan,
+    minRangeSpan,
+    rangeAnchor,
   });
 
   // Parse selected date for roving tabindex priority
@@ -752,8 +871,8 @@ function MonthGrid({
 
   // Month label for announcements
   const monthLabel = useMemo(() => {
-    return plainDateFormat(month, DATE_FORMAT_MONTH_YEAR);
-  }, [month]);
+    return plainDateFormat(month, DATE_FORMAT_MONTH_YEAR, locale);
+  }, [month, locale]);
 
   return (
     <div {...stylex.props(monthGridStyles.monthGrid)}>
@@ -762,6 +881,9 @@ function MonthGrid({
         ref={gridRef}
         role="grid"
         aria-label={monthLabel}
+        // APG grid pattern: a range selection holds multiple selected cells,
+        // so the grid must advertise multi-selectability.
+        aria-multiselectable={mode === 'range' ? true : undefined}
         onKeyDown={handleGridKeyDown}
         onFocus={handleGridFocus}
         {...stylex.props(
@@ -779,9 +901,9 @@ function MonthGrid({
               )}
             />
           )}
-          {dayNames.map(name => (
+          {dayNameHeaders.map(({dayOfWeek, name}) => (
             <div
-              key={name}
+              key={dayOfWeek}
               role="columnheader"
               {...stylex.props(monthGridStyles.dayName)}>
               {name}
@@ -836,6 +958,7 @@ function MonthGrid({
                     isDisabled={isDateDisabled(day.date)}
                     neighbors={neighbors}
                     isTabbable={day.iso === seedTabbableIso}
+                    isRangeSelectionInProgress={rangeSelectionStart !== null}
                     onDayClick={onDayClick}
                     onDayHover={onDayHover}
                   />
@@ -877,6 +1000,13 @@ interface DayCellProps {
    * existing `tabindex="0"` and repairs/moves it on navigation and focus.
    */
   isTabbable: boolean;
+  /**
+   * Whether a range selection is mid-flight (first pick made, awaiting the
+   * second). Disambiguates the accessible name of the picked day: mid-flight
+   * it is only the "range start", while a completed one-day range is both
+   * "range start and range end" (rangeStart === rangeEnd in both cases).
+   */
+  isRangeSelectionInProgress: boolean;
   onDayClick: (date: PlainDate) => void;
   onDayHover: (date: PlainDate | null) => void;
 }
@@ -895,9 +1025,12 @@ function DayCell({
   isDisabled,
   neighbors,
   isTabbable: isTabbableDay,
+  isRangeSelectionInProgress,
   onDayClick,
   onDayHover,
 }: DayCellProps) {
+  const t = useTranslator();
+  const {locale} = use(InternationalizationContext);
   const {date, isOutside, dayNumber} = day;
 
   if (isOutside && !hasOutsideDays) {
@@ -921,6 +1054,43 @@ function DayCell({
   });
 
   const endpoint = isEndpoint(state);
+
+  // The day's focus-ring treatment, derived once so the reflected `marker`
+  // theme state and the StyleX ring styles below share a single source of
+  // truth. `state.isSelected` is single-select only, so a range endpoint that
+  // is today still qualifies for the today-in-range ring (unchanged prior
+  // behavior).
+  const showsTodayRing = state.isToday && !state.isSelected && !state.isInRange;
+  const showsTodayInRangeRing =
+    state.isToday && !state.isSelected && state.isInRange;
+  const markerState: 'today-only' | 'today-in-range' | null = showsTodayRing
+    ? 'today-only'
+    : showsTodayInRangeRing
+      ? 'today-in-range'
+      : null;
+
+  // Accessible name for the day button. Roving focus lands on the <button>,
+  // not the role="gridcell" wrapper that carries aria-selected — and
+  // aria-selected is invalid on role="button" — so the selection/range state
+  // must be encoded into the button's name (WCAG 4.1.2). Localized via ICU
+  // params rather than string concatenation. A mid-flight first pick (where
+  // rangeStart === rangeEnd) reads as "range start" only; a completed one-day
+  // range reads as both start and end.
+  const dateLabel = plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY, locale);
+  const dayLabel = state.isSelected
+    ? t('@astryx.calendar.daySelected', {date: dateLabel})
+    : state.isRangeStart && state.isRangeEnd
+      ? isRangeSelectionInProgress
+        ? t('@astryx.calendar.dayRangeStart', {date: dateLabel})
+        : t('@astryx.calendar.dayRangeStartAndEnd', {date: dateLabel})
+      : state.isRangeStart
+        ? t('@astryx.calendar.dayRangeStart', {date: dateLabel})
+        : state.isRangeEnd
+          ? t('@astryx.calendar.dayRangeEnd', {date: dateLabel})
+          : state.isInRange
+            ? t('@astryx.calendar.dayInRange', {date: dateLabel})
+            : dateLabel;
+
   const rangeRounding = computeRangeRounding(state, {
     prevInRange: neighbors.prevInRange,
     nextInRange: neighbors.nextInRange,
@@ -941,16 +1111,16 @@ function DayCell({
           {...stylex.props(
             dayCellStyles.rangeBg,
             dayCellTheme.rangeBg,
-            rangeRounding.roundLeft && dayCellStyles.rangeBgRadiusLeft,
-            rangeRounding.roundRight && dayCellStyles.rangeBgRadiusRight,
-            state.isRangeStart && dayCellStyles.rangeInsetLeft,
+            rangeRounding.roundStart && dayCellStyles.rangeBgRadiusStart,
+            rangeRounding.roundEnd && dayCellStyles.rangeBgRadiusEnd,
+            state.isRangeStart && dayCellStyles.rangeInsetStart,
             state.isRangeStart &&
-              rangeRounding.roundRight &&
-              dayCellStyles.rangeInsetRight,
-            state.isRangeEnd && dayCellStyles.rangeInsetRight,
+              rangeRounding.roundEnd &&
+              dayCellStyles.rangeInsetEnd,
+            state.isRangeEnd && dayCellStyles.rangeInsetEnd,
             state.isRangeStart &&
-              rangeRounding.roundLeft &&
-              dayCellStyles.rangeInsetLeft,
+              rangeRounding.roundStart &&
+              dayCellStyles.rangeInsetStart,
           )}
         />
       )}
@@ -961,8 +1131,8 @@ function DayCell({
           {...stylex.props(
             dayCellStyles.previewBg,
             dayCellTheme.previewBg,
-            previewRounding.roundLeft && dayCellStyles.previewBgRadiusLeft,
-            previewRounding.roundRight && dayCellStyles.previewBgRadiusRight,
+            previewRounding.roundStart && dayCellStyles.previewBgRadiusStart,
+            previewRounding.roundEnd && dayCellStyles.previewBgRadiusEnd,
             state.isPreviewStart && dayCellStyles.previewStart,
             state.isPreviewEnd && dayCellStyles.previewEnd,
           )}
@@ -973,7 +1143,7 @@ function DayCell({
       <button
         type="button"
         data-date={day.iso}
-        aria-label={plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY)}
+        aria-label={dayLabel}
         aria-disabled={state.effectivelyDisabled || undefined}
         // Mark today's cell programmatically (APG date-picker pattern), not just
         // visually, so screen-reader users can identify the current date.
@@ -990,28 +1160,27 @@ function DayCell({
             today: state.isToday ? 'today' : null,
             disabled: state.effectivelyDisabled ? 'disabled' : null,
             'in-range': state.isInRange ? 'in-range' : null,
+            // `marker` reflects the day's *actual* focus-ring treatment as a
+            // single compound state, so a theme can target exactly the states
+            // the ring is drawn under without needing `:not()` in the theme
+            // key. It is null unless a ring is shown:
+            //   'today-only'     → today, not single-selected, not in a range
+            //   'today-in-range' → today, not single-selected, inside a range
+            // `isSelected` here is single-select only (see computeDayCellState),
+            // so a today range endpoint still shows the today-in-range ring —
+            // `marker` mirrors the StyleX conditions below exactly, preserving
+            // the default rendering.
+            marker: markerState,
           }),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             dayCellStyles.day,
             dayCellTheme.day,
             isOutside && dayCellStyles.dayOutside,
             isOutside && dayCellTheme.dayOutside,
-            state.isToday &&
-              !state.isSelected &&
-              !state.isInRange &&
-              dayCellStyles.dayToday,
-            state.isToday &&
-              !state.isSelected &&
-              !state.isInRange &&
-              dayCellTheme.dayToday,
-            state.isToday &&
-              !state.isSelected &&
-              state.isInRange &&
-              dayCellStyles.dayTodayInRange,
-            state.isToday &&
-              !state.isSelected &&
-              state.isInRange &&
-              dayCellTheme.dayTodayInRange,
+            showsTodayRing && dayCellStyles.dayToday,
+            showsTodayRing && dayCellTheme.dayToday,
+            showsTodayInRangeRing && dayCellStyles.dayTodayInRange,
+            showsTodayInRangeRing && dayCellTheme.dayTodayInRange,
             endpoint && dayCellStyles.daySelected,
             endpoint && dayCellTheme.daySelected,
             state.effectivelyDisabled && dayCellStyles.dayDisabled,

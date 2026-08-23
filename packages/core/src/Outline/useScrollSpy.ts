@@ -10,17 +10,40 @@
  *
  * Drives the active outline item from scroll position. On each scroll
  * (rAF-throttled) it reads live heading positions and marks the last heading
- * whose top has passed its activation line (its own scroll-margin-top, i.e.
- * where it lands when navigated to). This is stable — it never compares stale
- * cached positions — so the indicator moves monotonically instead of jumping.
- * Defaults to the first item at the top and the last item at the bottom so
- * short final sections still activate.
+ * whose top has passed its activation line. This is stable — it never compares
+ * stale cached positions — so the indicator moves monotonically instead of
+ * jumping. Defaults to the first item at the top and the last item at the
+ * bottom so short final sections still activate.
+ *
+ * The activation line and the scroll landing are the same number, computed once
+ * in `getRestingTop`: scroll-root top + `offset` (a fixed header overlaying the
+ * root) + the heading's own `scroll-margin-top`. A heading therefore activates
+ * exactly where navigating to it puts it. `offset` and `scroll-margin-top`
+ * compose — the header, then the breathing room below it — they do not
+ * duplicate each other.
+ *
+ * It also owns the single navigation path (`scrollTo`), shared by click and
+ * keyboard activation: it announces the jump, suppresses scroll-spy for the
+ * duration of the programmatic scroll (so the indicator doesn't chase it), and
+ * resolves when the scroll settles — via `scrollend` where supported, or a
+ * timeout fallback where it is not.
+ *
+ * The scroll root is the `scrollContainerRef` element when provided, otherwise
+ * the nearest scrollable ancestor of the outline, otherwise the viewport.
  *
  * SYNC: When modified, update /packages/core/src/Outline/Outline.tsx
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {OutlineItem} from './types';
+
+/**
+ * How long to wait for a programmatic smooth scroll to settle when the
+ * `scrollend` event never arrives — either because the browser does not
+ * support it (Safari at time of writing) or because the target was already in
+ * position, so no scroll happened at all and no events were emitted.
+ */
+const SCROLL_SETTLE_TIMEOUT_MS = 1200;
 
 /** Keys that scroll the viewport — used to detect a manual scroll intent. */
 const SCROLL_KEYS = new Set([
@@ -58,25 +81,81 @@ function getScrollableAncestor(
   return null;
 }
 
+/** The element's own `scroll-margin-top` in px (0 when unset). */
+function getScrollMarginTop(element: HTMLElement): number {
+  return (
+    Number.parseFloat(window.getComputedStyle(element).scrollMarginTop) || 0
+  );
+}
+
+/** The top of the scroll root in viewport coordinates (0 for the viewport). */
+function getRootTop(scrollRoot: HTMLElement | null): number {
+  return scrollRoot != null ? scrollRoot.getBoundingClientRect().top : 0;
+}
+
+/**
+ * Where a heading comes to rest, in viewport coordinates: below the fixed
+ * header (`offset`) and below its own `scroll-margin-top` breathing room.
+ *
+ * This is the single source of truth shared by the activation line and the
+ * scroll landing — the two must agree, or a heading activates somewhere other
+ * than where navigating to it puts it.
+ */
+function getRestingTop(
+  target: HTMLElement,
+  scrollRoot: HTMLElement | null,
+  offset: number,
+): number {
+  return getRootTop(scrollRoot) + offset + getScrollMarginTop(target);
+}
+
+/**
+ * Bring `target` to rest at the top of the scroll root, below any fixed header.
+ *
+ * With no `offset`, this is the CSS-native path: `scrollIntoView` already
+ * honors the heading's `scroll-margin-top`, and it walks *every* scrollable
+ * ancestor, so the browser does it better than we can.
+ *
+ * An `offset` describes a fixed header overlaying the top of the scroll root —
+ * which the browser cannot know about, so `scrollIntoView` would park the
+ * heading underneath it, hidden. Compute the landing explicitly instead, from
+ * the same {@link getRestingTop} the activation line uses.
+ */
+function scrollToTarget(
+  target: HTMLElement,
+  scrollRoot: HTMLElement | null,
+  scrollTarget: HTMLElement | Window,
+  offset: number,
+): void {
+  if (offset === 0) {
+    target.scrollIntoView({behavior: 'smooth', block: 'start'});
+    return;
+  }
+
+  const delta =
+    target.getBoundingClientRect().top -
+    getRestingTop(target, scrollRoot, offset);
+  scrollTarget.scrollBy({top: delta, behavior: 'smooth'});
+}
+
 /**
  * Resolve the active heading id from current scroll position.
  *
- * A heading is "passed" once its top reaches its activation line — the scroll
- * root's top plus the heading's own scroll-margin-top. The active heading is
- * the last passed one (headings are in document order). When none have passed
- * (scrolled above the first), the first item is active; at the bottom, the
- * last item is active.
+ * A heading is "passed" once its top reaches its activation line — exactly
+ * where navigating to it would land it ({@link getRestingTop}): the scroll
+ * root's top, plus `offset` (a fixed header overlaying the scroll root), plus
+ * the heading's own scroll-margin-top. The active heading is the last passed
+ * one (headings are in document order). When none have passed (scrolled above
+ * the first), the first item is active; at the bottom, the last item is active.
  */
 function resolveActiveId(
   items: OutlineItem[],
   scrollRoot: HTMLElement | null,
+  offset: number,
 ): string | undefined {
   if (items.length === 0) {
     return undefined;
   }
-
-  const rootTop =
-    scrollRoot != null ? scrollRoot.getBoundingClientRect().top : 0;
 
   const atBottom =
     scrollRoot != null
@@ -94,11 +173,10 @@ function resolveActiveId(
     if (element == null) {
       continue;
     }
-    const top = element.getBoundingClientRect().top;
-    const marginTop =
-      Number.parseFloat(window.getComputedStyle(element).scrollMarginTop) || 0;
 
-    if (top <= rootTop + marginTop + 1) {
+    // 1px of tolerance absorbs sub-pixel rounding after a scroll lands.
+    const top = element.getBoundingClientRect().top;
+    if (top <= getRestingTop(element, scrollRoot, offset) + 1) {
       activeId = item.id;
     } else {
       break;
@@ -112,6 +190,20 @@ interface UseScrollSpyOptions {
   items: OutlineItem[];
   onActiveIdChange?: (id: string) => void;
   rootRef: React.RefObject<HTMLElement | null>;
+  /**
+   * Height in px of a fixed header overlaying the top of the scroll root.
+   * Shifts both the activation line and the scroll landing by the same amount,
+   * on top of each heading's own `scroll-margin-top`.
+   */
+  offset?: number;
+  /** Scroll container to track, instead of the nearest scrollable ancestor. */
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
+  /** Whether {@link UseScrollSpyResult.scrollTo} performs the smooth scroll. */
+  hasScrollOnClick?: boolean;
+  /** Called when a navigation begins, before the scroll starts. */
+  onNavigateStart?: (id: string) => void;
+  /** Called once per navigation, when the scroll settles or is interrupted. */
+  onNavigateEnd?: (id: string) => void;
 }
 
 interface UseScrollSpyResult {
@@ -119,13 +211,19 @@ interface UseScrollSpyResult {
   /** Set the active id (notifies onActiveIdChange). For controlled consumers. */
   setActiveId: (id: string) => void;
   /**
-   * Handle a click on the outline item with id `id`. Delays moving the
-   * indicator: scroll-spy is suppressed during the programmatic smooth scroll
-   * so the indicator doesn't chase it, then the indicator moves once to the
-   * clicked item when the scroll settles. If the user scrolls manually mid-way,
-   * scroll-position tracking resumes immediately instead.
+   * Navigate to the item with id `id` — the single path shared by click and
+   * keyboard activation.
+   *
+   * Fires `onNavigateStart(id)`, scrolls (unless `hasScrollOnClick` is false),
+   * and fires `onNavigateEnd(id)` exactly once when the scroll settles or the
+   * user interrupts it. While uncontrolled, scroll-spy is suppressed for the
+   * duration so the indicator doesn't chase the scroll through intervening
+   * sections; it lands on the target once the scroll settles, or resumes
+   * position tracking if the user scrolls away mid-flight.
+   *
+   * Returns false (and does nothing) when no element with `id` exists.
    */
-  lockActiveId: (id: string) => void;
+  scrollTo: (id: string) => boolean;
 }
 
 export function useScrollSpy({
@@ -133,18 +231,29 @@ export function useScrollSpy({
   items,
   onActiveIdChange,
   rootRef,
+  offset = 0,
+  scrollContainerRef,
+  hasScrollOnClick = true,
+  onNavigateStart,
+  onNavigateEnd,
 }: UseScrollSpyOptions): UseScrollSpyResult {
   const isControlled = activeId !== undefined;
   const [uncontrolledActiveId, setUncontrolledActiveId] = useState<
     string | undefined
   >(items[0]?.id);
   const activeIdRef = useRef<string | undefined>(activeId);
-  // While true, scroll-spy ignores scroll updates because a click is driving a
-  // programmatic scroll. Released when that scroll settles or the user scrolls.
+  // While true, scroll-spy ignores scroll updates because a navigation is
+  // driving a programmatic scroll. Released when it settles or the user scrolls.
   const suppressRef = useRef(false);
-  const releaseSuppressionRef = useRef<(() => void) | null>(null);
-  // Latest scroll-position resolver, so the click handler can resume tracking
-  // when the user scrolls during a programmatic scroll.
+  // The navigation currently in flight, if any.
+  const navigationRef = useRef<{
+    /** End it (without resuming tracking) because a new one is starting. */
+    supersede: () => void;
+    /** Drop its listeners without firing onNavigateEnd (unmount). */
+    teardown: () => void;
+  } | null>(null);
+  // Latest scroll-position resolver, so a navigation can resume tracking when
+  // the user scrolls during the programmatic scroll.
   const syncRef = useRef<(() => void) | null>(null);
   // Keep latest items/callback in refs so the scroll listener effect doesn't
   // re-subscribe on every render (items is a fresh array each render).
@@ -155,12 +264,23 @@ export function useScrollSpy({
   const itemIds = items.map(item => item.id).join('\n');
   activeIdRef.current = isControlled ? activeId : uncontrolledActiveId;
 
+  /**
+   * The element whose scroll position drives the outline: the explicit
+   * container when scoped, else the nearest scrollable ancestor, else null
+   * (meaning the viewport).
+   */
+  const getScrollRoot = useCallback((): HTMLElement | null => {
+    return (
+      scrollContainerRef?.current ?? getScrollableAncestor(rootRef.current)
+    );
+  }, [rootRef, scrollContainerRef]);
+
   useEffect(() => {
     if (isControlled || typeof window === 'undefined') {
       return;
     }
 
-    const scrollRoot = getScrollableAncestor(rootRef.current);
+    const scrollRoot = getScrollRoot();
     const scrollTarget: HTMLElement | Window = scrollRoot ?? window;
 
     let frame = 0;
@@ -169,7 +289,11 @@ export function useScrollSpy({
       if (suppressRef.current) {
         return;
       }
-      const nextActiveId = resolveActiveId(itemsRef.current, scrollRoot);
+      const nextActiveId = resolveActiveId(
+        itemsRef.current,
+        scrollRoot,
+        offset,
+      );
       if (nextActiveId != null && nextActiveId !== activeIdRef.current) {
         activeIdRef.current = nextActiveId;
         setUncontrolledActiveId(nextActiveId);
@@ -195,12 +319,12 @@ export function useScrollSpy({
         cancelAnimationFrame(frame);
       }
     };
-  }, [isControlled, itemIds, rootRef]);
+  }, [isControlled, itemIds, offset, getScrollRoot]);
 
-  // Tear down any pending suppression listeners when the Outline unmounts.
+  // Tear down any in-flight navigation's listeners when the Outline unmounts.
   useEffect(() => {
     return () => {
-      releaseSuppressionRef.current?.();
+      navigationRef.current?.teardown();
     };
   }, []);
 
@@ -211,65 +335,117 @@ export function useScrollSpy({
     onActiveIdChange?.(nextActiveId);
   };
 
-  const lockActiveId = useCallback((clickedId: string) => {
-    if (typeof window === 'undefined') {
-      setUncontrolledActiveId(clickedId);
-      activeIdRef.current = clickedId;
-      onActiveIdChangeRef.current?.(clickedId);
-      return;
+  // Defined in render (not memoized) so it always closes over the current props
+  // — it only ever runs from an event handler, never during render.
+  const scrollTo = (id: string): boolean => {
+    const target =
+      typeof document !== 'undefined' ? document.getElementById(id) : null;
+    if (target == null) {
+      return false;
     }
 
-    // Freeze the indicator during the programmatic smooth scroll instead of
-    // moving it immediately — it lands on the clicked item once the scroll
-    // settles, so it doesn't chase the scroll through intervening sections.
-    suppressRef.current = true;
-    // Replace any in-flight handlers from a previous click.
-    releaseSuppressionRef.current?.();
+    // A second navigation replaces the first: end the old one (balancing its
+    // onNavigateStart) without resuming tracking, since we are about to
+    // suppress it again anyway.
+    navigationRef.current?.supersede();
+
+    onNavigateStart?.(id);
+
+    if (isControlled) {
+      // The consumer owns the active state — notify only.
+      setActiveId(id);
+    } else {
+      // Freeze the indicator during the programmatic scroll instead of moving
+      // it immediately: it lands on the target once the scroll settles, so it
+      // doesn't chase the scroll through intervening sections.
+      suppressRef.current = true;
+    }
+
+    const scrollRoot = getScrollRoot();
+    const scrollTarget: HTMLElement | Window = scrollRoot ?? window;
 
     let settleTimer = 0;
+    let isSettled = false;
+
     const cleanup = () => {
-      window.removeEventListener('scrollend', onSettle);
-      window.removeEventListener('wheel', onManual);
-      window.removeEventListener('touchmove', onManual);
+      scrollTarget.removeEventListener('scrollend', onSettle);
+      scrollTarget.removeEventListener('wheel', onManual);
+      scrollTarget.removeEventListener('touchmove', onManual);
       window.removeEventListener('keydown', onKeyDown);
       if (settleTimer !== 0) {
         clearTimeout(settleTimer);
         settleTimer = 0;
       }
-      releaseSuppressionRef.current = null;
+      navigationRef.current = null;
     };
-    // Programmatic scroll finished: move the indicator to the clicked item.
-    const onSettle = () => {
+
+    /**
+     * End the navigation exactly once. `didArrive` is false when the user took
+     * over with a manual scroll mid-flight. `onNavigateEnd` fires either way,
+     * so every `onNavigateStart` is balanced and a consumer's "navigating"
+     * state can never leak.
+     */
+    const finish = (didArrive: boolean, shouldResume = true) => {
+      if (isSettled) {
+        return;
+      }
+      isSettled = true;
       cleanup();
-      suppressRef.current = false;
-      setUncontrolledActiveId(clickedId);
-      activeIdRef.current = clickedId;
-      onActiveIdChangeRef.current?.(clickedId);
+
+      if (!isControlled) {
+        suppressRef.current = false;
+        if (didArrive) {
+          setUncontrolledActiveId(id);
+          activeIdRef.current = id;
+          onActiveIdChangeRef.current?.(id);
+        } else if (shouldResume) {
+          // Hand control back to scroll-position tracking.
+          syncRef.current?.();
+        }
+      }
+
+      onNavigateEnd?.(id);
     };
-    // User scrolled mid-flight: hand control back to scroll-position tracking.
-    const onManual = () => {
-      cleanup();
-      suppressRef.current = false;
-      syncRef.current?.();
-    };
+
+    const onSettle = () => finish(true);
+    const onManual = () => finish(false);
     const onKeyDown = (event: KeyboardEvent) => {
-      if (SCROLL_KEYS.has(event.key)) {
-        onManual();
+      // A key the outline itself consumed (arrow roving focus, Space
+      // activation) is prevented, so the browser will not scroll — it is not a
+      // manual scroll intent and must not cancel the navigation it just began.
+      if (!event.defaultPrevented && SCROLL_KEYS.has(event.key)) {
+        finish(false);
       }
     };
 
-    window.addEventListener('scrollend', onSettle, {once: true});
-    window.addEventListener('wheel', onManual, {passive: true});
-    window.addEventListener('touchmove', onManual, {passive: true});
-    window.addEventListener('keydown', onKeyDown);
-    // Fallback when scrollend is unsupported or no scroll is needed.
-    settleTimer = window.setTimeout(onSettle, 1200);
-    releaseSuppressionRef.current = cleanup;
-  }, []);
+    if (hasScrollOnClick) {
+      // Arm settle detection *before* scrolling so an instant jump (a target
+      // already in position, or prefers-reduced-motion collapsing the smooth
+      // scroll) cannot land before anyone is listening.
+      scrollTarget.addEventListener('scrollend', onSettle, {once: true});
+      scrollTarget.addEventListener('wheel', onManual, {passive: true});
+      scrollTarget.addEventListener('touchmove', onManual, {passive: true});
+      window.addEventListener('keydown', onKeyDown);
+      settleTimer = window.setTimeout(onSettle, SCROLL_SETTLE_TIMEOUT_MS);
+      navigationRef.current = {
+        supersede: () => finish(false, false),
+        teardown: cleanup,
+      };
+      scrollToTarget(target, scrollRoot, scrollTarget, offset);
+    } else {
+      // The consumer owns scrolling — there is no scroll to wait for, so the
+      // navigation is already at rest. Resolving immediately (instead of
+      // waiting on the settle timeout) keeps onNavigateEnd usable for arrival
+      // effects even when hasScrollOnClick is false.
+      finish(true);
+    }
+
+    return true;
+  };
 
   return {
     activeId: isControlled ? activeId : uncontrolledActiveId,
     setActiveId,
-    lockActiveId,
+    scrollTo,
   };
 }

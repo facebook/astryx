@@ -7,16 +7,30 @@
  * @input Uses React, StyleX, useScrollOverflow, useLayer, Button, Icon, theme tokens
  * @output Exports Carousel component
  * @position Horizontal scroll container with fade-edge overflow indication,
- *   optional prev/next buttons on the top layer, scroll-snap, and a 1px
- *   visual bleed allowance for child selection indicators.
+ *   optional prev/next buttons on the top layer, scroll-snap, a 1px
+ *   visual bleed allowance for child selection indicators, and Shift + wheel
+ *   mapping so mouse users can scroll horizontally. Supports optional
+ *   wrap-around looping and an imperative handle (handleRef) for programmatic
+ *   scroll control. Exposes APG
+ *   carousel semantics: the root is a labelled region with
+ *   aria-roledescription="carousel" and each item wrapper is a group with
+ *   aria-roledescription="slide" named "Slide N of M".
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Carousel/index.ts (exports)
  * - /apps/storybook/stories/Carousel.stories.tsx
- * - /packages/cli/templates/blocks/components/Carousel/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Carousel/ (showcase blocks)
  */
 
-import {type ReactNode, useRef, useCallback, useEffect, Children} from 'react';
+import {
+  type ReactNode,
+  useRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  Children,
+  isValidElement,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   spacingVars,
@@ -30,14 +44,55 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {useLayer} from '../Layer';
 import {useScrollOverflow} from '../hooks/useScrollOverflow';
+import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+/**
+ * Imperative control surface for the Carousel, accessed via the `handleRef`
+ * prop. Methods drive the same native-scroll machinery as the built-in
+ * buttons, so they respect RTL, reduced-motion, and `hasLoop`.
+ */
+export interface CarouselHandle {
+  /**
+   * Scroll forward by roughly one viewport. With `hasLoop`, wraps to the
+   * start once the end is reached.
+   */
+  scrollNext(): void;
+  /**
+   * Scroll backward by roughly one viewport. With `hasLoop`, wraps to the
+   * end once the start is reached.
+   */
+  scrollPrev(): void;
+  /**
+   * Scroll the item at the given 0-based index to the start edge. The index
+   * is clamped to the item range, and only the carousel scrolls — the page
+   * position is left untouched.
+   */
+  scrollTo(index: number): void;
+  /**
+   * Whether there is scrollable content past the trailing edge. With
+   * `hasLoop`, returns true whenever the content overflows, since wrapping
+   * is always available. Reads live state — safe to call in an event handler.
+   */
+  canScrollNext(): boolean;
+  /**
+   * Whether there is scrollable content past the leading edge. With
+   * `hasLoop`, returns true whenever the content overflows. Reads live state.
+   */
+  canScrollPrev(): boolean;
+}
+
 export interface CarouselProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
+  /**
+   * Imperative handle for programmatic scroll control. Exposes scrollNext,
+   * scrollPrev, scrollTo, and the canScrollNext/canScrollPrev queries.
+   */
+  handleRef?: React.Ref<CarouselHandle>;
   /** Carousel items — rendered in a horizontal scroll container. */
   children: ReactNode;
   /**
@@ -57,6 +112,16 @@ export interface CarouselProps extends BaseProps<HTMLDivElement> {
    * @default true
    */
   hasEdgeFade?: boolean;
+  /**
+   * Enable wrap-around scrolling. When the content overflows, pressing Next
+   * at the end scrolls back to the start, and Prev at the start scrolls to
+   * the end — for both the built-in buttons and the imperative handle. The
+   * navigation buttons stay visible at both edges instead of hiding, since a
+   * scroll is always available. Has no effect when the content fits without
+   * overflowing.
+   * @default false
+   */
+  hasLoop?: boolean;
   /**
    * Enable scroll-snap on items. Each direct child snaps to the start edge.
    * @default false
@@ -155,10 +220,16 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   buttonPillStart: {
-    transform: 'translateX(-50%)',
+    transform: {
+      default: 'translateX(-50%)',
+      ':is([dir="rtl"] *)': 'translateX(50%)',
+    },
   },
   buttonPillEnd: {
-    transform: 'translateX(50%)',
+    transform: {
+      default: 'translateX(50%)',
+      ':is([dir="rtl"] *)': 'translateX(-50%)',
+    },
   },
   buttonHidden: {
     opacity: 0,
@@ -251,10 +322,12 @@ const paddingStyles = stylex.create({
  */
 export function Carousel({
   ref,
+  handleRef,
   children,
   gap = 1,
   hasButtons = true,
   hasEdgeFade = true,
+  hasLoop = false,
   hasSnap = false,
   padding,
   'aria-label': ariaLabelFromProps,
@@ -267,7 +340,13 @@ export function Carousel({
   const t = useTranslator();
   const ariaLabel = ariaLabelFromProps ?? t('@astryx.carousel.label');
   const scrollElRef = useRef<HTMLElement | null>(null);
-  const {scrollRef, overflowStart, overflowEnd} = useScrollOverflow();
+  const {scrollRef, overflowStart, overflowEnd, hasOverflow} =
+    useScrollOverflow();
+
+  // Children.toArray drops null/undefined/boolean children and assigns
+  // stable keys, so slide numbering ("Slide N of M") matches what actually
+  // renders even when some children are conditionally omitted.
+  const slides = Children.toArray(children);
 
   const layer = useLayer({
     mode: 'context',
@@ -290,29 +369,125 @@ export function Carousel({
     [scrollRef],
   );
 
-  const scrollBy = useCallback((direction: -1 | 1) => {
+  // Map Shift + vertical wheel to horizontal scroll. Trackpads emit
+  // horizontal deltas natively, but a standard mouse only produces deltaY —
+  // so mouse users can't wheel-scroll a horizontal container. Shift + wheel
+  // is the long-established convention for horizontal scroll containers; we
+  // honor it by translating the vertical delta into a horizontal scroll.
+  //
+  // Only kicks in when Shift is held and the wheel is purely vertical
+  // (deltaX === 0), so native trackpad horizontal scrolling is untouched.
+  const handleWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    if (!event.shiftKey || event.deltaY === 0 || event.deltaX !== 0) {
+      return;
+    }
     const el = scrollElRef.current;
     if (!el) {
       return;
     }
-    const firstChild = el.firstElementChild as HTMLElement | null;
-    const itemWidth = firstChild ? firstChild.offsetWidth : 0;
-    const amount = el.clientWidth - itemWidth * 0.5;
-    // Respect the user's reduced-motion preference — mirrors the CSS
-    // scroll-behavior override so button-driven scrolling doesn't animate
-    // for users who opted out of motion.
+    // Nothing to scroll horizontally — let the event fall through so the page
+    // can scroll as it normally would.
+    if (el.scrollWidth <= el.clientWidth) {
+      return;
+    }
+    event.preventDefault();
+    el.scrollBy({left: event.deltaY, behavior: 'auto'});
+  }, []);
+
+  const scrollBy = useCallback(
+    (direction: -1 | 1) => {
+      const el = scrollElRef.current;
+      if (!el) {
+        return;
+      }
+      // Respect the user's reduced-motion preference — mirrors the CSS
+      // scroll-behavior override so button-driven scrolling doesn't animate
+      // for users who opted out of motion.
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const behavior = prefersReducedMotion ? 'auto' : 'smooth';
+      // Under RTL the scroll axis is inverted (start is scrollLeft 0, the end
+      // is negative), so flip the physical delta sign.
+      const rtlSign = isRtlElement(el) ? -1 : 1;
+
+      // Wrap-around: when looping over overflowing content, a press that would
+      // run past an edge jumps to the opposite edge instead. Overshoot by the
+      // full scroll width in the opposite logical direction and let the browser
+      // clamp to the far edge — this reuses the same RTL sign convention as a
+      // normal scroll, so it stays direction-correct without special-casing.
+      if (hasLoop && hasOverflow) {
+        const atEnd = direction === 1 && !overflowEnd;
+        const atStart = direction === -1 && !overflowStart;
+        if (atEnd || atStart) {
+          el.scrollBy({left: rtlSign * -direction * el.scrollWidth, behavior});
+          return;
+        }
+      }
+
+      const firstChild = el.firstElementChild as HTMLElement | null;
+      const itemWidth = firstChild ? firstChild.offsetWidth : 0;
+      const amount = el.clientWidth - itemWidth * 0.5;
+      el.scrollBy({
+        // `direction` is the logical intent (-1 = toward content start, +1 =
+        // toward content end).
+        left: rtlSign * direction * Math.max(amount, itemWidth),
+        behavior,
+      });
+    },
+    [hasLoop, hasOverflow, overflowStart, overflowEnd],
+  );
+
+  const scrollToIndex = useCallback((index: number) => {
+    const el = scrollElRef.current;
+    const items = el?.children;
+    if (!el || !items || items.length === 0) {
+      return;
+    }
+    const clamped = Math.max(0, Math.min(index, items.length - 1));
+    const target = items[clamped] as HTMLElement;
     const prefersReducedMotion =
       typeof window !== 'undefined' &&
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Bring the item to the start edge by scrolling the container by the
+    // measured gap between the item and the container edge. Using scrollBy
+    // (not scrollIntoView) keeps the scroll contained to the carousel and
+    // never moves ancestors or the page. In RTL the start edge is the right
+    // edge, so align the trailing edges instead of the leading ones.
+    const containerRect = el.getBoundingClientRect();
+    const itemRect = target.getBoundingClientRect();
+    const delta = isRtlElement(el)
+      ? itemRect.right - containerRect.right
+      : itemRect.left - containerRect.left;
     el.scrollBy({
-      left: direction * Math.max(amount, itemWidth),
+      left: delta,
       behavior: prefersReducedMotion ? 'auto' : 'smooth',
     });
   }, []);
 
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      scrollNext: () => scrollBy(1),
+      scrollPrev: () => scrollBy(-1),
+      scrollTo: (index: number) => scrollToIndex(index),
+      // With loop, either direction is reachable whenever the content
+      // overflows; otherwise reflect the live per-edge overflow state.
+      canScrollNext: () => (hasLoop ? hasOverflow : overflowEnd),
+      canScrollPrev: () => (hasLoop ? hasOverflow : overflowStart),
+    }),
+    [scrollBy, scrollToIndex, hasLoop, hasOverflow, overflowStart, overflowEnd],
+  );
+
+  // With loop, the buttons stay reachable at both edges as long as there's
+  // something to scroll; without loop they follow the per-edge overflow state.
+  const canScrollStart = hasLoop && hasOverflow ? true : overflowStart;
+  const canScrollEnd = hasLoop && hasOverflow ? true : overflowEnd;
+
   const fadeStyle = hasEdgeFade
-    ? overflowStart && overflowEnd
+    ? (hasLoop && hasOverflow) || (overflowStart && overflowEnd)
       ? styles.fadeBoth
       : overflowStart
         ? styles.fadeStart
@@ -346,6 +521,7 @@ export function Carousel({
       <div
         ref={composedRef}
         tabIndex={0}
+        onWheel={handleWheel}
         {...stylex.props(
           styles.scroller,
           gapStyles[gap],
@@ -353,8 +529,23 @@ export function Carousel({
           hasSnap && styles.snap,
           fadeStyle,
         )}>
-        {Children.map(children, child => (
-          <div {...stylex.props(styles.item)}>{child}</div>
+        {slides.map((child, index) => (
+          // APG carousel pattern: each slide container is a group with
+          // aria-roledescription="slide" and an "N of M" accessible name so
+          // ATs announce slide boundaries and position instead of anonymous
+          // generics.
+          <div
+            // eslint-disable-next-line @eslint-react/no-array-index-key -- index fallback only applies to text/number children, which are positional by definition; elements keep their Children.toArray keys
+            key={isValidElement(child) ? child.key : index}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={t('@astryx.carousel.slideLabel', {
+              current: index + 1,
+              total: slides.length,
+            })}
+            {...stylex.props(styles.item)}>
+            {child}
+          </div>
         ))}
       </div>
 
@@ -365,10 +556,16 @@ export function Carousel({
               {...stylex.props(
                 styles.buttonPill,
                 styles.buttonPillStart,
-                !overflowStart && styles.buttonHidden,
+                !canScrollStart && styles.buttonHidden,
               )}>
               <Button
-                icon={<Icon icon="chevronLeft" size="xsm" />}
+                icon={
+                  <Icon
+                    icon="chevronLeft"
+                    size="xsm"
+                    xstyle={rtlStyles.mirror}
+                  />
+                }
                 label={t('@astryx.carousel.scrollLeft')}
                 variant="ghost"
                 size="sm"
@@ -377,7 +574,7 @@ export function Carousel({
                 // button mounted (stable layout/focus) but removes it from the
                 // tab order and a11y tree while it's visually hidden, so
                 // keyboard users don't land on an invisible control.
-                isDisabled={!overflowStart}
+                isDisabled={!canScrollStart}
                 onClick={() => scrollBy(-1)}
                 xstyle={styles.buttonRadiusOverride}
               />
@@ -386,17 +583,23 @@ export function Carousel({
               {...stylex.props(
                 styles.buttonPill,
                 styles.buttonPillEnd,
-                !overflowEnd && styles.buttonHidden,
+                !canScrollEnd && styles.buttonHidden,
               )}>
               <Button
-                icon={<Icon icon="chevronRight" size="xsm" />}
+                icon={
+                  <Icon
+                    icon="chevronRight"
+                    size="xsm"
+                    xstyle={rtlStyles.mirror}
+                  />
+                }
                 label={t('@astryx.carousel.scrollRight')}
                 variant="ghost"
                 size="sm"
                 isIconOnly
                 // See "Scroll left" — disabled while visually hidden so the
                 // button stays mounted but out of the tab order / a11y tree.
-                isDisabled={!overflowEnd}
+                isDisabled={!canScrollEnd}
                 onClick={() => scrollBy(1)}
                 xstyle={styles.buttonRadiusOverride}
               />
