@@ -72,8 +72,11 @@ Exit codes are the contract: `0` pass, `1` crashed, `2` changed.
 
 `pr-visual` compares only the stable published visual surface:
 
-- Core component change → every story of that component, light/dark, in every
-  shipped theme that styles it.
+- Core component change → the representative story in the default theme and
+  every shipped theme that styles the component, plus any story explicitly
+  tagged `visual-baseline` in the default theme; all are captured light/dark.
+  Behavioral and audit-only fixtures stay in their dedicated checks without
+  multiplying the pixel baseline.
 - Published theme change → that theme's relevant target/story matrix.
 - Shared stable theming/token infrastructure → the full plan, which declines
   visibly at the 240-shot review budget and defers to the daily gate.
