@@ -142,12 +142,24 @@ const BLOCK_END_BLEED = `max(${RING_BLEED}, ${INDICATOR_BLEED})`;
 const FADE_WIDTH = spacingVars['--spacing-8'];
 
 /**
- * Keeps a tab scrolled into view clear of the faded edge and the bleed
- * padding. Declared as scroll-padding so the browser's own focus scrolling
- * uses it too, and read back from the computed style so the arithmetic below
- * has one source of truth with the CSS.
+ * Where the fade turns fully opaque, and — the same distance, for the same
+ * reason — how far a revealed stop is kept clear of the edge. Declared as
+ * scroll-padding so the browser's own focus scrolling uses it too, and read
+ * back from the computed style so the arithmetic below has one source of
+ * truth with the CSS.
  */
 const SCROLL_EDGE_INSET = `calc(${RING_BLEED} + ${FADE_WIDTH})`;
+
+/**
+ * The fade reaches transparent at the strip's *own* edge, not at the bleed
+ * edge — otherwise the scroll container paints tabs `RING_BLEED` past the
+ * TabList's box, past a divider rail, and past the scroll arrow that caps
+ * that edge. Masking the bleed costs nothing: only a faded edge is masked,
+ * and a stop at a faded edge never holds focus, so the bleed is still there
+ * when the ring needs it.
+ */
+const FADE_FROM_START = `linear-gradient(to right, transparent ${RING_BLEED}, black ${SCROLL_EDGE_INSET})`;
+const FADE_FROM_END = `linear-gradient(to left, transparent ${RING_BLEED}, black ${SCROLL_EDGE_INSET})`;
 
 const styles = stylex.create({
   nav: {
@@ -214,18 +226,18 @@ const styles = stylex.create({
   },
   fadeStart: {
     maskImage: {
-      default: `linear-gradient(to right, transparent, black ${FADE_WIDTH})`,
-      ':is([dir="rtl"] *)': `linear-gradient(to left, transparent, black ${FADE_WIDTH})`,
+      default: FADE_FROM_START,
+      ':is([dir="rtl"] *)': FADE_FROM_END,
     },
   },
   fadeEnd: {
     maskImage: {
-      default: `linear-gradient(to left, transparent, black ${FADE_WIDTH})`,
-      ':is([dir="rtl"] *)': `linear-gradient(to right, transparent, black ${FADE_WIDTH})`,
+      default: FADE_FROM_END,
+      ':is([dir="rtl"] *)': FADE_FROM_START,
     },
   },
   fadeBoth: {
-    maskImage: `linear-gradient(to right, transparent, black ${FADE_WIDTH}, black calc(100% - ${FADE_WIDTH}), transparent 100%)`,
+    maskImage: `linear-gradient(to right, transparent ${RING_BLEED}, black ${SCROLL_EDGE_INSET}, black calc(100% - ${SCROLL_EDGE_INSET}), transparent calc(100% - ${RING_BLEED}))`,
   },
   arrow: {
     position: 'absolute',
@@ -366,10 +378,10 @@ export function TabList({
         return;
       }
       const stripBox = strip.getBoundingClientRect();
-      const tabBox = stop.getBoundingClientRect();
+      const stopBox = stop.getBoundingClientRect();
       const inset = parseFloat(getComputedStyle(strip).scrollPaddingLeft) || 0;
-      const pastEnd = tabBox.right - (stripBox.right - inset);
-      const pastStart = tabBox.left - (stripBox.left + inset);
+      const pastEnd = stopBox.right - (stripBox.right - inset);
+      const pastStart = stopBox.left - (stripBox.left + inset);
       const delta = pastEnd > 0 ? pastEnd : pastStart < 0 ? pastStart : 0;
       if (delta !== 0) {
         // Not an animation: the strip has to arrive already showing the right

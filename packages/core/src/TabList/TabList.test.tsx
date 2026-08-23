@@ -1182,6 +1182,26 @@ describe('TabList overflow (scroll)', () => {
     expect(scrollBy.mock.calls[0][0].left).toBeCloseTo(40);
   });
 
+  it('fades out at the strip’s own edge, not at the bleed edge', () => {
+    // The scroll box is a ring-bleed wider than the TabList on each side, so a
+    // fade that ran to the box edge would paint tabs outside the component and
+    // past the arrow that caps that edge.
+    const bleed =
+      'calc(var(--focus-outline-width) + var(--focus-outline-offset))';
+    const {strip} = renderStrip();
+    strip.scrollBy = vi.fn();
+
+    fakeScrollBox(strip, {scrollWidth: 600, clientWidth: 300});
+    fireEvent.scroll(strip);
+    expect(getComputedStyle(strip).maskImage).toContain(`transparent ${bleed}`);
+
+    fakeScrollBox(strip, {scrollWidth: 600, clientWidth: 300, scrollLeft: 150});
+    fireEvent.scroll(strip);
+    expect(getComputedStyle(strip).maskImage).toContain(
+      `transparent calc(100% - ${bleed})`,
+    );
+  });
+
   it('does not hand focus to an arrow, which is hidden from assistive tech', () => {
     const {container, strip} = renderStrip();
     fakeScrollBox(strip, {scrollWidth: 600, clientWidth: 300});
