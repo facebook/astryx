@@ -555,3 +555,47 @@ export const EmptyState: Story = {
     );
   },
 };
+
+export const SheetVariant: Story = {
+  name: 'Sheet variant (touch)',
+  parameters: {
+    viewport: {defaultViewport: 'mobile1'},
+  },
+  render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
+    const {filters, onFilterChange} = useTableFilterState();
+    const columns: TableColumn<Employee>[] = [
+      {key: 'name', header: 'Name', filter: 'name'},
+      {key: 'role', header: 'Role', filter: 'role'},
+      {key: 'department', header: 'Department', filter: 'department'},
+    ];
+    // Pinned to 'sheet' so the variant is visible at any width. Left at the
+    // default, a table takes this presentation automatically below 640px.
+    const filterPlugin = useTableFiltering<Employee>({
+      filters,
+      onFilterChange,
+      variant: 'sheet',
+      searchConfig: config,
+    });
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
+    return (
+      <div style={{maxWidth: 420}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+          Every filter lives behind the Filter button, which carries the active
+          count. Toggling one applies it straight away and the sheet has no
+          scrim, so the rows keep updating behind it. Showing {data.length}/
+          {employees.length} rows.
+        </p>
+        <Table
+          data={data}
+          columns={columns}
+          idKey="name"
+          plugins={{filter: filterPlugin}}
+        />
+      </div>
+    );
+  },
+};

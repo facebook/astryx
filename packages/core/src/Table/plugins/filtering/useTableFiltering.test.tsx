@@ -7,9 +7,9 @@
  * @position Test file; validates filter rendering, interaction, and accessibility
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {useState} from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Table} from '../../Table';
 import {useTableFiltering, toSearchFilters} from './useTableFiltering';
@@ -17,6 +17,7 @@ import type {
   TableFilterState,
   TableFilterVariant,
   TableFilterValue,
+  TableFilterSheetBreakpoint,
 } from './useTableFiltering';
 import type {PowerSearchConfig} from '../../../PowerSearch/types';
 import type {TableColumn} from '../../types';
@@ -122,7 +123,14 @@ const allFilterColumns: TableColumn<TestRow>[] = [
 
 function FilterTable({
   columns = defaultColumns,
-  variant = 'popover' as TableFilterVariant,
+  variant = 'popover',
+  sheetBreakpoint,
+  defaultIsMobile,
+}: {
+  columns?: TableColumn<TestRow>[];
+  variant?: TableFilterVariant;
+  sheetBreakpoint?: TableFilterSheetBreakpoint;
+  defaultIsMobile?: boolean;
 }) {
   const [filters, setFilters] = useState<TableFilterState>({});
 
@@ -138,6 +146,8 @@ function FilterTable({
       });
     },
     variant,
+    sheetBreakpoint,
+    defaultIsMobile,
     searchConfig,
   });
 
@@ -314,6 +324,251 @@ describe('useTableFiltering', () => {
       expect(() =>
         render(<FilterTable columns={noFilterColumns} />),
       ).not.toThrow();
+    });
+  });
+  describe('sheet variant', () => {
+    // Every filtering test above runs at desktop width because the setup's
+    // matchMedia answers only `(hover: hover)`. These drive the width query
+    // directly so both sides of the breakpoint are reachable.
+    function stubViewportWidth(width: number) {
+      vi.stubGlobal('matchMedia', (query: string) => {
+        const maxWidth = /\(max-width:\s*(\d+)px\)/.exec(query);
+        return {
+          matches: maxWidth
+            ? width <= Number(maxWidth[1])
+            : /\(\s*hover\s*:\s*hover\s*\)/.test(query),
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false,
+        };
+      });
+    }
+
+    const PHONE = 390;
+    const DESKTOP = 1280;
+
+    // jsdom implements neither <dialog> open/close nor pointer capture.
+    beforeEach(() => {
+      HTMLDialogElement.prototype.showModal = vi.fn(function (
+        this: HTMLDialogElement,
+      ) {
+        this.setAttribute('open', '');
+      });
+      HTMLDialogElement.prototype.show = vi.fn(function (
+        this: HTMLDialogElement,
+      ) {
+        this.setAttribute('open', '');
+      });
+      HTMLDialogElement.prototype.close = vi.fn(function (
+        this: HTMLDialogElement,
+      ) {
+        this.removeAttribute('open');
+      });
+      if (!Element.prototype.setPointerCapture) {
+        Element.prototype.setPointerCapture = vi.fn();
+        Element.prototype.releasePointerCapture = vi.fn();
+      }
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    async function openSheet(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole('button', {name: /^Filter/}));
+      return screen.getByRole('dialog', {name: 'Filters'});
+    }
+
+    it('takes the filters out of the header and puts them behind one Filter button', () => {
+      stubViewportWidth(PHONE);
+      render(<FilterTable />);
+
+      // The per-column funnel triggers are what a phone cannot use.
+      expect(screen.queryByRole('button', {name: 'Filter Name'})).toBeNull();
+      expect(screen.getByRole('button', {name: 'Filter'})).toBeInTheDocument();
+    });
+
+    it('keeps the header controls above the breakpoint', () => {
+      stubViewportWidth(DESKTOP);
+      render(<FilterTable />);
+
+      expect(
+        screen.getByRole('button', {name: 'Filter Name'}),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: 'Filter'})).toBeNull();
+    });
+
+    it('honors sheetBreakpoint="none" on a narrow viewport', () => {
+      stubViewportWidth(PHONE);
+      // defaultIsMobile too: opting out has to survive the SSR hint.
+      render(<FilterTable sheetBreakpoint="none" defaultIsMobile />);
+
+      expect(
+        screen.getByRole('button', {name: 'Filter Name'}),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: 'Filter'})).toBeNull();
+    });
+
+    it('honors variant="sheet" above the breakpoint', () => {
+      stubViewportWidth(DESKTOP);
+      render(<FilterTable variant="sheet" />);
+
+      expect(screen.getByRole('button', {name: 'Filter'})).toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: 'Filter Name'})).toBeNull();
+    });
+
+    it('renders no Filter button when no column is filterable', () => {
+      stubViewportWidth(PHONE);
+      render(
+        <FilterTable
+          columns={[
+            {key: 'name', header: 'Name'},
+            {key: 'status', header: 'Status'},
+          ]}
+        />,
+      );
+
+      expect(screen.queryByRole('button', {name: /^Filter/})).toBeNull();
+    });
+
+    it('gives the sheet one labelled control per filterable column', async () => {
+      const user = userEvent.setup();
+      stubViewportWidth(PHONE);
+      render(<FilterTable columns={allFilterColumns} />);
+
+      const sheet = await openSheet(user);
+      // Labelled by the column header, not "Filter by Name": the header cell
+      // that carried that context is gone.
+      expect(within(sheet).getByLabelText('Name')).toBeInTheDocument();
+      expect(
+        within(sheet).getByRole('spinbutton', {name: 'Age'}),
+      ).toBeInTheDocument();
+      expect(
+        within(sheet).getByRole('radiogroup', {name: 'Status'}),
+      ).toBeInTheDocument();
+      expect(
+        within(sheet).getByRole('group', {name: 'Tags'}),
+      ).toBeInTheDocument();
+    });
+
+    it('applies a toggle immediately, with no Apply step', async () => {
+      const user = userEvent.setup();
+      stubViewportWidth(PHONE);
+      render(<FilterTable columns={allFilterColumns} />);
+
+      const sheet = await openSheet(user);
+      expect(within(sheet).queryByRole('button', {name: 'Apply'})).toBeNull();
+
+      await user.click(within(sheet).getByRole('checkbox', {name: 'Admin'}));
+
+      // The row count on the trigger is the only in-plugin evidence that the
+      // filter took effect (the consumer owns the data).
+      expect(
+        screen.getByRole('button', {name: 'Filter, 1 active'}),
+      ).toBeInTheDocument();
+    });
+
+    it('counts the active filters on the trigger', async () => {
+      const user = userEvent.setup();
+      stubViewportWidth(PHONE);
+      render(<FilterTable columns={allFilterColumns} />);
+
+      const sheet = await openSheet(user);
+      await user.click(within(sheet).getByRole('checkbox', {name: 'Admin'}));
+      await user.click(within(sheet).getByRole('radio', {name: 'Active'}));
+
+      const trigger = screen.getByRole('button', {name: 'Filter, 2 active'});
+      expect(within(trigger).getByText('2')).toBeInTheDocument();
+    });
+
+    it('clears every filter with Reset', async () => {
+      const user = userEvent.setup();
+      stubViewportWidth(PHONE);
+      render(<FilterTable columns={allFilterColumns} />);
+
+      const sheet = await openSheet(user);
+      const reset = within(sheet).getByRole('button', {name: 'Reset'});
+      expect(reset).toBeDisabled();
+
+      await user.click(within(sheet).getByRole('checkbox', {name: 'Admin'}));
+      await user.click(within(sheet).getByRole('radio', {name: 'Active'}));
+      await user.click(reset);
+
+      expect(screen.getByRole('button', {name: 'Filter'})).toBeInTheDocument();
+      expect(
+        within(sheet).getByRole('checkbox', {name: 'Admin'}),
+      ).not.toBeChecked();
+    });
+
+    it('closes on Done without dropping the filters', async () => {
+      const user = userEvent.setup();
+      stubViewportWidth(PHONE);
+      render(<FilterTable columns={allFilterColumns} />);
+
+      const sheet = await openSheet(user);
+      await user.click(within(sheet).getByRole('checkbox', {name: 'Admin'}));
+      await user.click(within(sheet).getByRole('button', {name: 'Done'}));
+
+      expect(
+        screen.getByRole('button', {name: 'Filter, 1 active'}),
+      ).toBeInTheDocument();
+    });
+
+    it('keeps a Selector for an enum longer than a list should be', async () => {
+      const user = userEvent.setup();
+      stubViewportWidth(PHONE);
+
+      const manyValues = Array.from({length: 12}, (_, i) => ({
+        value: `v${i}`,
+        label: `Value ${i}`,
+      }));
+      const wideConfig: PowerSearchConfig = {
+        name: 'test',
+        fields: [
+          {
+            key: 'status',
+            label: 'Status',
+            defaultOperator: 'is',
+            operators: [
+              {
+                key: 'is',
+                label: 'is',
+                value: {type: 'enum', values: manyValues},
+              },
+            ],
+          },
+        ],
+      };
+
+      function WideEnumTable() {
+        const [filters, setFilters] = useState<TableFilterState>({});
+        const plugin = useTableFiltering<TestRow>({
+          filters,
+          onFilterChange: (key, value) =>
+            setFilters(prev => ({...prev, [key]: value ?? undefined})),
+          searchConfig: wideConfig,
+        });
+        return (
+          <Table
+            data={testData}
+            columns={[{key: 'status', header: 'Status', filter: 'status'}]}
+            idKey="id"
+            plugins={{filter: plugin}}
+          />
+        );
+      }
+
+      render(<WideEnumTable />);
+      const sheet = await openSheet(user);
+
+      expect(within(sheet).queryByRole('radiogroup')).toBeNull();
+      expect(
+        within(sheet).getByRole('combobox', {name: 'Status'}),
+      ).toBeInTheDocument();
     });
   });
 });

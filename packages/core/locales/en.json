@@ -563,6 +563,22 @@
     "defaultMessage": "Apply",
     "description": "Primary button label inside a table's filter panel/popover; commits pending filter values. Imperative verb; pairs with `Reset`."
   },
+  "@astryx.table.filter.button": {
+    "defaultMessage": "Filter",
+    "description": "Label on the button above a table that opens the filter sheet on small screens. Imperative verb (\"filter these rows\"), not the noun."
+  },
+  "@astryx.table.filter.buttonWithCount": {
+    "defaultMessage": "Filter, {count} active",
+    "description": "Accessible name for that same Filter button when filters are applied; the visible button shows the count as a badge. `count` is how many columns are currently filtered."
+  },
+  "@astryx.table.filter.title": {
+    "defaultMessage": "Filters",
+    "description": "Heading and accessible name of the bottom sheet holding a table's filter controls on small screens. Plural noun."
+  },
+  "@astryx.table.filter.done": {
+    "defaultMessage": "Done",
+    "description": "Primary button that closes a table's filter sheet. The filters are already applied, so this dismisses rather than commits — unlike `Apply` in the per-column popover."
+  },
   "@astryx.table.selection.selectAllRows": {
     "defaultMessage": "Select all rows",
     "description": "Aria label for the \"select all rows\" checkbox in a Table header."
