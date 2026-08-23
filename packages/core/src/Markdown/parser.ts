@@ -56,10 +56,15 @@ type BlockNodeKind =
   | {type: 'image'; src: string; alt: string};
 
 /**
- * Character offsets `[start, end)` of a block in the source string handed to
- * `parseMarkdown`. `end` excludes the block's trailing blank lines.
+ * Where a block sits in the source string handed to `parseMarkdown`:
+ * `source.slice(start, end)` is the block, and `end` excludes the block's
+ * trailing blank lines.
+ *
+ * An object rather than a `[start, end]` tuple so a second way of addressing
+ * the same block — line numbers, once a consumer needs them — can be added as
+ * optional fields without breaking anyone.
  */
-export type SourceRange = readonly [start: number, end: number];
+export type SourceRange = {readonly start: number; readonly end: number};
 
 export type ListItemNode = {checked?: boolean; children: BlockNode[]};
 export type TableCellNode = {children: InlineNode[]};
@@ -1540,7 +1545,7 @@ function stampSourceRanges(
     // range that dropped it would slice to something that re-parses
     // differently.
     const end = lineStart(endLine) + lines[endLine].length;
-    blocks[i] = {...blocks[i], range: [lineStart(startLine), end]};
+    blocks[i] = {...blocks[i], range: {start: lineStart(startLine), end}};
   }
 }
 
@@ -1876,7 +1881,7 @@ function mergeSettledBlocks(
       // One list now, so one range: from where the first half started to
       // where the second half ended.
       ...(prevLast.range != null && deltaFirst.range != null
-        ? {range: [prevLast.range[0], deltaFirst.range[1]] as SourceRange}
+        ? {range: {start: prevLast.range.start, end: deltaFirst.range.end}}
         : null),
     };
     return [...prev.slice(0, -1), merged, ...delta.slice(1)];
