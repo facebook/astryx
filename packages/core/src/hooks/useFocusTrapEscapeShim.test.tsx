@@ -95,7 +95,7 @@ describe('hasActiveFocusTrapEscape', () => {
         isOpen={true}
         onOpenChange={() => {}}
         content="Popover body"
-        dialogLabel="Popover">
+        label="Popover">
         <button type="button">Open</button>
       </Popover>,
     );
@@ -150,7 +150,7 @@ describe('hasActiveFocusTrapEscape', () => {
             isOpen={isPopoverOpen}
             onOpenChange={() => {}}
             content="Popover body"
-            dialogLabel="Popover">
+            label="Popover">
             <button type="button">Open</button>
           </Popover>
         </Dialog>
