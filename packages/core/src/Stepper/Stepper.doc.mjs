@@ -219,7 +219,6 @@ export const docsDense = {
         step: 'zero-based step index',
         label: 'step label text',
         description: 'supporting text below label',
-        icon: 'custom icon for the indicator',
         status: 'semantic color: accent/success/warning/error (color only)',
         indicator: "'auto' | 'number' | 'none' | custom node",
         isDisabled: 'disable interaction',
@@ -331,11 +330,6 @@ export const docsZh = {
           name: 'description',
           type: 'string',
           description: '标签下方的可选描述。',
-        },
-        {
-          name: 'icon',
-          type: 'ReactNode',
-          description: '指示器中的自定义图标。',
         },
         {
           name: 'status',
