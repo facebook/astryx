@@ -19,8 +19,4 @@ column's renderer or the default one. It is decided per cell at render time
 against the final column list, so it also covers columns other plugins
 contributed — whatever order the plugins were listed in.
 
-`useTableGroupedRows` also returns `isGroupHeader`, so a row-level plugin or
-handler of your own (click-to-open-detail, row links, per-row menus) can tell a
-synthetic header from a real row without matching on the `__group_` key prefix.
-
 @ernestt

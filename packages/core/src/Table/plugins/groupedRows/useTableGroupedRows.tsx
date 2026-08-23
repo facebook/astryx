@@ -109,19 +109,6 @@ export interface UseTableGroupedRowsResult<T extends Record<string, unknown>> {
    * `<Table idKey={grouped.idKey} />`.
    */
   idKey: (item: T) => string;
-  /**
-   * True when the row is a synthetic group header rather than one of your own
-   * rows. Row-level plugins and handlers see both, so guard anything that
-   * assumes a real row — click-to-open-detail, row links, per-row menus:
-   *
-   * ```
-   * transformBodyRow(props, item) {
-   *   if (grouped.isGroupHeader(item)) return props;
-   *   return {...props, htmlProps: {...props.htmlProps, onClick: () => open(item)}};
-   * }
-   * ```
-   */
-  isGroupHeader: (item: T) => boolean;
 }
 
 const styles = stylex.create({
@@ -399,5 +386,5 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
     [collapsedGroups, onToggleGroup, renderGroupHeader, t],
   );
 
-  return {plugin, data: flattened, idKey, isGroupHeader};
+  return {plugin, data: flattened, idKey};
 }

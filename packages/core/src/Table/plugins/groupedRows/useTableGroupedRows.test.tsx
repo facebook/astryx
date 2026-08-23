@@ -4,7 +4,7 @@ import {describe, it, expect} from 'vitest';
 import {render, screen, fireEvent, within} from '@testing-library/react';
 import {useState, useCallback} from 'react';
 import {Table} from '../../Table';
-import type {TableColumn, TablePlugin} from '../../types';
+import type {TableColumn} from '../../types';
 import {useTableRowStatus, type TableRowStatus} from '../rowStatus';
 import {useTableGroupedRows} from './useTableGroupedRows';
 
@@ -274,50 +274,6 @@ describe('useTableGroupedRows', () => {
       });
     },
   );
-
-  it('exposes isGroupHeader so a consumer can guard their own row plugin', () => {
-    const clicked: string[] = [];
-    function GuardHarness() {
-      const [collapsed, setCollapsed] = useState<Set<string>>(EMPTY);
-      const grouped = useTableGroupedRows<Person>({
-        data: people,
-        groupBy: p => p.team,
-        collapsedGroups: collapsed,
-        onToggleGroup: k => setCollapsed(new Set([k])),
-        getRowKey: p => p.id,
-      });
-      const openDetail: TablePlugin<Person> = {
-        transformBodyRow(props, item) {
-          if (grouped.isGroupHeader(item)) {
-            return props;
-          }
-          return {
-            ...props,
-            htmlProps: {
-              ...props.htmlProps,
-              onClick: () => clicked.push(item.name),
-            },
-          };
-        },
-      };
-      return (
-        <Table
-          data={grouped.data}
-          columns={columns}
-          idKey={grouped.idKey}
-          plugins={{grouped: grouped.plugin, openDetail}}
-        />
-      );
-    }
-    render(<GuardHarness />);
-    for (const name of ['Alice', 'Bob', 'Carol']) {
-      fireEvent.click(screen.getByText(name).closest('tr')!);
-    }
-    expect(clicked).toEqual(['Alice', 'Bob', 'Carol']);
-    // The guarded plugin left the header row alone; clicking it only toggles.
-    fireEvent.click(screen.getByText('Core').closest('tr')!);
-    expect(clicked).toEqual(['Alice', 'Bob', 'Carol']);
-  });
 
   it('keeps a group collapsed across a data change (state keyed by group)', () => {
     function ChangingHarness() {
