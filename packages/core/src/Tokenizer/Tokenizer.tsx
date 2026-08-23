@@ -4,13 +4,15 @@
 
 /**
  * @file Tokenizer.tsx
- * @input Uses React, BaseTypeahead, Field, Token, useAnnounce
- * @output Exports Tokenizer multi-select typeahead component
+ * @input Uses React, BaseTypeahead, Field, Token, useTokenSelection, useMediaQuery
+ * @output Exports Tokenizer multi-select typeahead component and its two surfaces
  * @position Composed component; forwards DOM ref and exposes focus control via
  *   handleRef
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Tokenizer/index.ts
+ * - /packages/core/src/Tokenizer/TouchTokenizerField.tsx
+ * - /packages/core/src/Tokenizer/Tokenizer.doc.mjs
  * - /apps/storybook/stories/Tokenizer.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Tokenizer/ (showcase blocks)
  */
@@ -19,7 +21,6 @@ import React, {
   useCallback,
   useId,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -43,8 +44,8 @@ import {Token} from '../Token';
 import {renderIconSlot, type IconType} from '../Icon';
 import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useTooltip} from '../Tooltip';
-import {useAnnounce} from '../hooks/useAnnounce';
 import {
   colorVars,
   spacingVars,
@@ -55,6 +56,8 @@ import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {TouchTokenizerField} from './TouchTokenizerField';
+import {useTokenSelection} from './useTokenSelection';
 
 // Re-export status types for convenience
 export type {
@@ -332,49 +335,24 @@ const layerPlaceholderSizeStyles = stylex.create({
 // Component
 // =============================================================================
 
-// Sentinel prefix for creatable items — used to distinguish
-// "Create: X" suggestions from real search results.
-const CREATABLE_ID_PREFIX = '__xds_create__';
+/**
+ * The pointer that decides which surface a `Tokenizer` renders.
+ *
+ * `pointer: coarse` is the *primary* pointing device, which is what makes it
+ * the whole test. A touchscreen laptop reports `fine` (its trackpad) with
+ * `any-pointer: coarse` alongside, so it keeps the typable field — right,
+ * because its keyboard is there. A tablet reports `coarse` and gets the sheet,
+ * at any width. There is deliberately no width bound: it would only re-exclude
+ * the tablets, since a narrowed desktop window is still a mouse.
+ */
+const TOUCH_POINTER_QUERY = '(pointer: coarse)';
 
 /**
- * Multi-select input with token chips and typeahead search.
- *
- * Composes BaseTypeahead for search and Token for selected items.
- * Tokens render inline before the text input. Selecting an item adds a token
- * and clears the query. Backspace on empty input removes the last token.
- *
- * @example
- * ```
- * const [members, setMembers] = useState<UserItem[]>([]);
- * <Tokenizer
- *   label="Team members"
- *   searchSource={userSource}
- *   value={members}
- *   onChange={(items, change) => {
- *     setMembers(items);
- *     if (change.type === 'add') {
- *       console.log('Added:', change.item.label);
- *     }
- *   }}
- *   placeholder="Search people..."
- * />
- * <Tokenizer
- *   label="Tags"
- *   searchSource={tagSource}
- *   value={tags}
- *   onChange={(items) => setTags(items)}
- *   renderToken={(item, onRemove) => (
- *     <Token
- *       label={item.label}
- *       color={item.auxiliaryData.color}
- *       onRemove={onRemove}
- *     />
- *   )}
- *   maxEntries={5}
- * />
- * ```
+ * The pointer-driven field: tokens that wrap, with a text input among them and
+ * a suggestion menu in a popover. `Tokenizer` renders this whenever the primary
+ * pointer is not a finger.
  */
-export function Tokenizer<T extends SearchableItem>({
+function PointerTokenizerField<T extends SearchableItem>({
   label,
   isLabelHidden = false,
   description,
@@ -523,123 +501,15 @@ export function Tokenizer<T extends SearchableItem>({
 
   const isAtMax = maxEntries != null && value.length >= maxEntries;
 
-  // Filter out already-selected items from search results
-  const selectedIds = useMemo(
-    () => new Set(value.map(item => item.id)),
-    [value],
-  );
-
-  const filteredSource: SearchSource<T> = useMemo(
-    () => ({
-      search: async (query: string) => {
-        const results = await searchSource.search(query);
-        const filtered = results.filter(item => !selectedIds.has(item.id));
-
-        // Append a "Create: X" synthetic item when hasCreate is true,
-        // the user has typed something, and it doesn't exactly match an
-        // existing result.
-        if (hasCreate && query.trim()) {
-          const trimmed = query.trim();
-          const alreadyExists =
-            selectedIds.has(trimmed) ||
-            filtered.some(
-              item => item.label.toLowerCase() === trimmed.toLowerCase(),
-            );
-          if (!alreadyExists) {
-            const creatableItem = {
-              id: `${CREATABLE_ID_PREFIX}${trimmed}`,
-              label: `Create "${trimmed}"`,
-              auxiliaryData: {__createdValue: trimmed},
-            } as unknown as T;
-            filtered.push(creatableItem);
-          }
-        }
-
-        return filtered;
-      },
-      bootstrap: async () => {
-        const results = await searchSource.bootstrap();
-        return results.filter(item => !selectedIds.has(item.id));
-      },
-    }),
-    [searchSource, selectedIds, hasCreate],
-  );
-
-  const emptySource: SearchSource<T> = useMemo(
-    () => ({
-      search: async () => [],
-      bootstrap: async () => [],
-    }),
-    [],
-  );
-
-  // Announce token add/remove politely via the persistent live region.
-  // Tokens previously appeared and disappeared silently — Backspace on an
-  // empty input removes the trailing token, and the per-token remove buttons
-  // gave no audible feedback either.
-  const announce = useAnnounce();
-
-  // Handle adding an item — detect creatable synthetic items
-  const handleAdd = useCallback(
-    (item: T | null) => {
-      if (!item) {
-        return;
-      }
-      if (isAtMax) {
-        return;
-      }
-
-      // Detect "Create: X" synthetic items from the creatable source
-      if (
-        hasCreate &&
-        typeof item.id === 'string' &&
-        item.id.startsWith(CREATABLE_ID_PREFIX)
-      ) {
-        const createdValue = item.id.slice(CREATABLE_ID_PREFIX.length);
-        if (selectedIds.has(createdValue)) {
-          return;
-        }
-        const base = {id: createdValue, label: createdValue};
-        const realItem = base as T;
-        const newItems = [...value, realItem];
-        onChange(newItems, {item: realItem, type: 'create'});
-        announce(t('@astryx.tokenizer.tokenAdded', {label: createdValue}));
-        return;
-      }
-
-      if (selectedIds.has(item.id)) {
-        return;
-      }
-      const newItems = [...value, item];
-      onChange(newItems, {item, type: 'add'});
-      announce(t('@astryx.tokenizer.tokenAdded', {label: item.label}));
-    },
-    [value, onChange, isAtMax, selectedIds, hasCreate, announce, t],
-  );
-
-  // Handle removing an item. Single removal path: both Backspace on an empty
-  // input and the per-token remove buttons route through here, so the
-  // announcement covers both.
-  const handleRemove = useCallback(
-    (item: T) => {
-      const newItems = value.filter(v => v.id !== item.id);
-      onChange(newItems, {item, type: 'remove'});
-      announce(t('@astryx.tokenizer.tokenRemoved', {label: item.label}));
-      inputRef.current?.focus();
-    },
-    [value, onChange, announce, t],
-  );
-
-  // Handle clearing all items
-  const handleClearAll = useCallback(() => {
-    if (value.length === 0) {
-      return;
-    }
-    // Report the last item as removed (convention)
-    const lastItem = value[value.length - 1];
-    onChange([], {item: lastItem, type: 'remove'});
-    inputRef.current?.focus();
-  }, [value, onChange]);
+  const {filteredSource, emptySource, addItem, removeItem, clearAll} =
+    useTokenSelection<T>({
+      value,
+      onChange,
+      searchSource,
+      hasCreate,
+      maxEntries,
+      onAfterRemove: () => inputRef.current?.focus(),
+    });
 
   // Handle backspace on empty input — remove last token
   const handleKeyDown = useCallback(
@@ -651,10 +521,10 @@ export function Tokenizer<T extends SearchableItem>({
       ) {
         e.preventDefault();
         const lastItem = value[value.length - 1];
-        handleRemove(lastItem);
+        removeItem(lastItem);
       }
     },
-    [value, handleRemove],
+    [value, removeItem],
   );
 
   // Click wrapper to focus input
@@ -686,7 +556,7 @@ export function Tokenizer<T extends SearchableItem>({
 
   // Render tokens
   const tokens = value.map(item => {
-    const onRemoveItem = () => handleRemove(item);
+    const onRemoveItem = () => removeItem(item);
 
     if (renderToken) {
       return (
@@ -773,7 +643,7 @@ export function Tokenizer<T extends SearchableItem>({
         ref={inputRef}
         searchSource={isAtMax ? emptySource : filteredSource}
         value={null}
-        onChange={handleAdd}
+        onChange={addItem}
         renderItem={renderItem}
         placeholder={value.length === 0 ? placeholder : ''}
         hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
@@ -817,7 +687,7 @@ export function Tokenizer<T extends SearchableItem>({
               label={t('@astryx.tokenizer.clearAll')}
               onClick={e => {
                 e.stopPropagation();
-                handleClearAll();
+                clearAll();
               }}
             />
           )}
@@ -923,6 +793,78 @@ export function Tokenizer<T extends SearchableItem>({
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
+  );
+}
+
+PointerTokenizerField.displayName = 'PointerTokenizerField';
+
+/**
+ * Multi-select input with token chips and search, in the shape the pointer
+ * calls for.
+ *
+ * With a mouse it is the control it has always been: tokens that wrap, a text
+ * input among them, and a suggestion menu in a popover. Selecting an item adds
+ * a token and clears the query; Backspace on an empty input removes the last
+ * one.
+ *
+ * Where the primary pointer is a finger it is a row of tokens that scrolls
+ * sideways and an Add button that opens a full-height sheet of suggestions.
+ * See {@link TouchTokenizerField} for why each of those parts is what it is.
+ *
+ * ## Why a runtime switch and not CSS
+ *
+ * The two surfaces are structurally different — an inline input with a popover
+ * versus a scrolling row with a sheet — so "render both, hide one" would double
+ * the DOM, double the tab stops, and run two searches. The condition is not
+ * layout either: it is *which interaction is possible*, since the desktop
+ * control's two core gestures (type between the tokens, Backspace to remove)
+ * both need a keyboard that a phone only shows by covering the field.
+ *
+ * ## Hydration
+ *
+ * `useMediaQuery` reports false during SSR, so server HTML is always the
+ * pointer field and the swap happens after hydration. Both surfaces render the
+ * same closed field — a bordered box of tokens under the same label — so what
+ * moves is small and what changes is what a tap does.
+ *
+ * @example
+ * ```
+ * const [members, setMembers] = useState<UserItem[]>([]);
+ * <Tokenizer
+ *   label="Team members"
+ *   searchSource={userSource}
+ *   value={members}
+ *   onChange={(items, change) => {
+ *     setMembers(items);
+ *     if (change.type === 'add') {
+ *       console.log('Added:', change.item.label);
+ *     }
+ *   }}
+ *   placeholder="Search people..."
+ * />
+ * <Tokenizer
+ *   label="Tags"
+ *   searchSource={tagSource}
+ *   value={tags}
+ *   onChange={(items) => setTags(items)}
+ *   renderToken={(item, onRemove) => (
+ *     <Token
+ *       label={item.label}
+ *       color={item.auxiliaryData.color}
+ *       onRemove={onRemove}
+ *     />
+ *   )}
+ *   maxEntries={5}
+ * />
+ * ```
+ */
+export function Tokenizer<T extends SearchableItem>(props: TokenizerProps<T>) {
+  const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
+
+  return isTouch ? (
+    <TouchTokenizerField {...props} />
+  ) : (
+    <PointerTokenizerField {...props} />
   );
 }
 

@@ -6,7 +6,7 @@ export const docs = {
   name: 'Tokenizer',
   displayName: 'Tokenizer',
   category: 'Data Input',
-  keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
+  keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput","mobile","touch","bottomsheet"],
   props: [
     {
       name: 'label',
@@ -38,7 +38,7 @@ export const docs = {
       name: 'placeholder',
       type: 'string',
       description:
-        'Input placeholder text. Only shown when no tokens are selected.',
+        'Input placeholder text. Only shown when no tokens are selected. On a touch device it also becomes the placeholder of the sheet\'s search field, so write it as a search hint ("Search skills").',
     },
     {
       name: 'maxEntries',
@@ -215,7 +215,7 @@ export const docs = {
   },
   usage: {
     description:
-      'Tokenizer is a multi-select input that lets users search, select, and manage multiple items displayed as removable chips. Use it when users need to build a set of selections from a searchable data source, like adding team members, applying tags, or choosing filters.',
+      'Tokenizer is a multi-select input that lets users search, select, and manage multiple items displayed as removable chips. Use it when users need to build a set of selections from a searchable data source, like adding team members, applying tags, or choosing filters. It renders two surfaces and picks between them at runtime: with a mouse, chips that wrap around an inline text input with a suggestion popover; where the primary pointer is a finger, chips on one sideways-scrolling line plus an Add button that opens a full-height sheet of suggestions. Nothing at the call site changes, and the value is the same either way.',
     bestPractices: [
       {guidance: true, description: 'Write a placeholder that tells users what they can search for, such as "Search people..." or "Add tags...", so the input is not a blank mystery.'},
       {guidance: true, description: 'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.'},
@@ -225,12 +225,15 @@ export const docs = {
       {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer; use the default token style for visual consistency across the set.'},
       {guidance: false, description: 'Don\'t hide the label; every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
       {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
+      {guidance: false, description: 'Don\'t branch on a media query at the call site to render a mobile alternative; Tokenizer already chooses its surface from the primary pointer, and a second switch outside it will disagree with the one inside.'},
+      {guidance: false, description: 'Avoid renderToken output that only works in a wrapping row, such as a chip with a second line; on touch the chips sit on a single scrolling line whose height is fixed.'},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text above the input describing what the user is selecting. Also used as the accessible name.'},
       {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
-      {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
-      {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
+      {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Inline among the chips with a mouse, and at the top of the suggestion sheet on touch. Hides when maxEntries is reached.'},
+      {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types. On touch it is the sheet\'s list of full-width rows instead, populated before anything is typed.'},
+      {name: 'Add button', required: false, description: 'Touch only. Sits at the trailing edge of the token row, outside the scroller so it stays in place, and opens the suggestion sheet. Disabled once maxEntries is reached.'},
       {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
       {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
     ],
@@ -272,7 +275,8 @@ export const docsZh = {
       name: 'placeholder',
       type: 'string',
       description:
-        '\u8f93\u5165\u6846\u5360\u4f4d\u6587\u672c\u3002\u4ec5\u5728\u672a\u9009\u62e9\u4efb\u4f55\u6807\u8bb0\u65f6\u663e\u793a\u3002',
+        '\u8f93\u5165\u6846\u5360\u4f4d\u6587\u672c\u3002\u4ec5\u5728\u672a\u9009\u62e9\u4efb\u4f55\u6807\u8bb0\u65f6\u663e\u793a\u3002'
+        + '\u5728\u89e6\u63a7\u8bbe\u5907\u4e0a\uff0c\u5b83\u540c\u65f6\u4f5c\u4e3a\u5e95\u90e8\u5f39\u51fa\u9762\u677f\u4e2d\u641c\u7d22\u6846\u7684\u5360\u4f4d\u6587\u672c\uff0c\u56e0\u6b64\u8bf7\u5199\u6210\u641c\u7d22\u63d0\u793a\u3002',
     },
     {
       name: 'maxEntries',
@@ -429,7 +433,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Tokenizer is a multi-select input that lets users search, select, and manage multiple items displayed as removable chips. Use it when users need to build a set of selections from a searchable data source, like adding team members, applying tags, or choosing filters.',
+      'Tokenizer is a multi-select input that lets users search, select, and manage multiple items displayed as removable chips. Use it when users need to build a set of selections from a searchable data source, like adding team members, applying tags, or choosing filters. It renders two surfaces and picks between them at runtime: with a mouse, chips that wrap around an inline text input with a suggestion popover; where the primary pointer is a finger, chips on one sideways-scrolling line plus an Add button that opens a full-height sheet of suggestions. Nothing at the call site changes, and the value is the same either way.',
     bestPractices: [
       {guidance: true, description: 'Write a placeholder that tells users what they can search for, such as "Search people..." or "Add tags...", so the input is not a blank mystery.'},
       {guidance: true, description: 'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.'},
@@ -439,12 +443,15 @@ export const docsZh = {
       {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer; use the default token style for visual consistency across the set.'},
       {guidance: false, description: 'Don\'t hide the label; every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
       {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
+      {guidance: false, description: 'Don\'t branch on a media query at the call site to render a mobile alternative; Tokenizer already chooses its surface from the primary pointer, and a second switch outside it will disagree with the one inside.'},
+      {guidance: false, description: 'Avoid renderToken output that only works in a wrapping row, such as a chip with a second line; on touch the chips sit on a single scrolling line whose height is fixed.'},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text above the input describing what the user is selecting. Also used as the accessible name.'},
       {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
-      {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
-      {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
+      {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Inline among the chips with a mouse, and at the top of the suggestion sheet on touch. Hides when maxEntries is reached.'},
+      {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types. On touch it is the sheet\'s list of full-width rows instead, populated before anything is typed.'},
+      {name: 'Add button', required: false, description: 'Touch only. Sits at the trailing edge of the token row, outside the scroller so it stays in place, and opens the suggestion sheet. Disabled once maxEntries is reached.'},
       {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
       {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
     ],
@@ -453,10 +460,10 @@ export const docsZh = {
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'Multi-select typeahead w/ token chips for selected items. Composes BaseTypeahead for search+Token for chips.',
+  description: 'Multi-select typeahead w/ token chips for selected items. Composes BaseTypeahead for search+Token for chips. Two surfaces, chosen at runtime from the primary pointer: inline input+popover on a mouse, h-scrolling chip row+Add button+tall suggestion sheet on touch.',
   usage: {
     description:
-      'Multi-select input for searching and selecting multiple items as removable chips. Use for team members, tags, filters, or any set built from a searchable source.',
+      'Multi-select input for searching and selecting multiple items as removable chips. Use for team members, tags, filters, or any set built from a searchable source. Picks its own surface from the pointer; same props, same value on both.',
     bestPractices: [
       {guidance: true, description: 'Placeholder that communicates what to search, such as "Search people..." rather than blank.'},
       {guidance: true, description: 'maxEntries when selections are bounded (e.g. 5 approvers max).'},
@@ -466,6 +473,8 @@ export const docsDense = {
       {guidance: false, description: 'Avoid custom token colors; default style for consistency.'},
       {guidance: false, description: 'Don\'t hide the label unless context makes purpose obvious.'},
       {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
+      {guidance: false, description: 'Don\'t media-query a mobile alternative at the call site; the component already switches on pointer: coarse.'},
+      {guidance: false, description: 'Avoid renderToken output needing a wrapping row (e.g. two-line chips); touch puts chips on one fixed-height scrolling line.'},
     ],
   },
   propDescriptions: {
@@ -474,7 +483,7 @@ export const docsDense = {
     value: 'Array of currently selected items.',
     onChange: "Fired on selection change. Change arg includes affected item+type ('add'|'create'|'remove'|'reorder').",
     hasCreate: 'Enable free-text token creation. Shows "Create" dropdown option for unmatched typed text.',
-    placeholder: 'Input placeholder. Only shown when no tokens selected.',
+    placeholder: 'Input placeholder. Only shown when no tokens selected. Touch: also the sheet search field\'s placeholder.',
     maxEntries: 'Max selections allowed. Input hidden at limit.',
     hasClear: 'Clear-all button for bulk removal.',
     renderToken: 'Custom token render. Default renders Token w/ label+onRemove.',
