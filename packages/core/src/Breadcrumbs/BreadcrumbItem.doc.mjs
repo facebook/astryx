@@ -8,6 +8,10 @@ export const docs = {
   displayName: 'Breadcrumb Item',
   isHiddenFromOverview: true,
   description: 'Individual breadcrumb item that renders as a link when href is provided, or as plain text for the current page.',
+  // Own playground so this page doesn't inherit Breadcrumbs' multi-item defaults.
+  playground: {
+    defaults: {children: 'Home', href: '#'},
+  },
   props: [
     {
       name: 'children',

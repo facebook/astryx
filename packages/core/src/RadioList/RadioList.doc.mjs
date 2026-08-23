@@ -8,6 +8,17 @@ export const docs = {
   group: 'Radio',
   category: 'Data Input',
   keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
+  playground: {
+    defaults: {
+      label: 'Notification preference',
+      value: 'email',
+      children: [
+        {__element: 'RadioListItem', props: {label: 'Email', value: 'email'}},
+        {__element: 'RadioListItem', props: {label: 'SMS', value: 'sms'}},
+        {__element: 'RadioListItem', props: {label: 'Push', value: 'push'}},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'astryx-radio-list', visualProps: ['orientation', 'size']},
