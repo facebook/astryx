@@ -222,7 +222,10 @@ export const Elevation: Story = {
   ),
 };
 
-/** Long labels in a narrow container: text expansion and 320px reflow. */
+/**
+ * Long labels in a narrow container. Members neither wrap nor truncate, so a
+ * group whose labels are wider than its container overflows it.
+ */
 export const LongLabels: Story = {
   render: () => (
     <div style={{width: 280}}>
