@@ -19,19 +19,26 @@
 import {useCallback, useEffect, useRef} from 'react';
 
 import {FOCUSABLE_SELECTOR} from './focusableSelector';
-import {hasOpenLayer} from '../Layer/layerStack';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 
+// Escape-dismissible focus traps currently mounted. This is the whole state
+// behind `hasActiveFocusTrapEscape`, which predates the shared stack and must
+// keep answering about focus traps alone — the stack now carries families that
+// never trapped focus (tooltips, hover cards), and counting those would tell
+// callers a trap is above them when none is.
+let activeEscapeTrapCount = 0;
+
 /**
- * Whether any layer is currently registered on the shared dismissal stack.
+ * Whether an Escape-dismissible focus trap is currently active — a Popover,
+ * menu or other trapped layer that would take an Escape press.
  *
  * @deprecated The focus trap no longer owns Escape coordination — every overlay
  *   family shares one stack (`useLayerDismissal`), which routes each press to
  *   the top-most layer. A layer that needs to know whether it is on top should
- *   ask its own `isTopmost()` rather than whether anything at all is open.
+ *   ask its own `isTopmost()` rather than whether a trap exists.
  */
 export function hasActiveFocusTrapEscape(): boolean {
-  return hasOpenLayer();
+  return activeEscapeTrapCount > 0;
 }
 
 /**
@@ -188,9 +195,13 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
   // a modal inside a modal all peel off one at a time. A trap with no
   // `onEscape` is not dismissible and stays off the stack, so a press flows
   // past it to whatever is underneath.
+  // One expression drives both the stack registration and the deprecated
+  // `hasActiveFocusTrapEscape` count, so the two can never disagree about
+  // whether this trap is active.
+  const isEscapeTrap = isActive && onEscape != null;
+
   useLayerDismissal({
-    isActive,
-    isEnabled: onEscape != null,
+    isActive: isEscapeTrap,
     onDismiss: () => {
       onEscape?.();
     },
@@ -199,6 +210,16 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
     // still resolve in the right order.
     getContainer: () => containerRef.current,
   });
+
+  useEffect(() => {
+    if (!isEscapeTrap) {
+      return;
+    }
+    activeEscapeTrapCount += 1;
+    return () => {
+      activeEscapeTrapCount -= 1;
+    };
+  }, [isEscapeTrap]);
 
   /**
    * Focus the first focusable element.
