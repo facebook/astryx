@@ -86,8 +86,8 @@ export const Async: Story = {
 };
 
 /**
- * Desktop fine-pointer reference. Above 640px the dialog keeps the pre-existing
- * 400px centered surface and horizontal Cancel/destructive action row.
+ * Wide reference state. In a wide viewport, Dialog preserves AlertDialog's
+ * preferred 400px surface and AlertDialog renders a horizontal action row.
  */
 export const DesktopFinePointer: Story = {
   args: {
@@ -102,9 +102,8 @@ export const DesktopFinePointer: Story = {
 };
 
 /**
- * Narrow fine-pointer reference. At 640px and below, available width determines
- * layout: the surface uses token gutters, destructive appears above Cancel, and
- * labels wrap even when the pointer can hover.
+ * Narrow reference state. Use a <=640px viewport to see Dialog's width clamp
+ * with AlertDialog's destructive-above-Cancel stacked action order.
  */
 export const NarrowFinePointer: Story = {
   args: {
@@ -120,9 +119,8 @@ export const NarrowFinePointer: Story = {
 };
 
 /**
- * Mobile touch reference. A <=640px coarse-pointer/no-hover viewport uses the
- * same narrow stacked layout as NarrowFinePointer; pointer type does not decide
- * geometry.
+ * Mobile reference state. Use a <=640px mobile viewport to verify the same
+ * stacked action order; this story does not emulate pointer or hover capability.
  */
 export const MobileTouch: Story = {
   args: NarrowFinePointer.args,

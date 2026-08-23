@@ -31,21 +31,22 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {useMediaQuery} from '../hooks';
-import {sizeVars, spacingVars} from '../theme/tokens.stylex';
+import {sizeVars} from '../theme/tokens.stylex';
 
 const SMALL_SCREEN_QUERY = '(max-width: 640px)';
-const SMALL_SCREEN_DIALOG_WIDTH = `calc(100dvw - ${spacingVars['--spacing-4']} - ${spacingVars['--spacing-4']})`;
 
 const styles = stylex.create({
-  smallScreenSurface: {
-    maxWidth: SMALL_SCREEN_DIALOG_WIDTH,
-  },
-  smallScreenAction: {
-    width: '100%',
+  action: {
     maxWidth: '100%',
+    minWidth: 0,
     height: 'auto',
     minHeight: sizeVars['--size-element-md'],
     whiteSpace: 'normal',
+    overflowWrap: 'anywhere',
+  },
+  stackedAction: {
+    width: '100%',
+    maxWidth: '100%',
   },
 });
 
@@ -166,22 +167,26 @@ export function AlertDialog({
   const cancelLabel = cancelLabelFromProps ?? t('@astryx.alertDialog.cancel');
   const titleId = useId();
   const descriptionId = useId();
+  // Width stays delegated to Dialog: this query exists only so AlertDialog can
+  // keep narrow visual, DOM, and tab order aligned for its destructive/cancel
+  // semantics without coupling action order to pointer or hover capability.
   const isSmallScreen = useMediaQuery(SMALL_SCREEN_QUERY);
 
   const handleCancel = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
 
-  const smallScreenActionStyle = isSmallScreen
-    ? styles.smallScreenAction
-    : undefined;
+  const buttonActionStyle = [
+    styles.action,
+    isSmallScreen && styles.stackedAction,
+  ];
   const cancelButton = (
     <Button
       key="cancel"
       variant="ghost"
       label={cancelLabel}
       onClick={handleCancel}
-      xstyle={smallScreenActionStyle}
+      xstyle={buttonActionStyle}
       // Dialog focuses [data-autofocus] itself after showModal(), because
       // React's autoFocus runs during commit while the dialog is invisible.
       // Cancel is least destructive, so it remains the autofocus target even
@@ -196,7 +201,7 @@ export function AlertDialog({
       label={actionLabel}
       onClick={onAction}
       isLoading={isActionLoading}
-      xstyle={smallScreenActionStyle}
+      xstyle={buttonActionStyle}
     />
   );
 
@@ -207,7 +212,7 @@ export function AlertDialog({
       isOpen={isOpen}
       isInline={isInline}
       onOpenChange={onOpenChange}
-      width={isSmallScreen ? SMALL_SCREEN_DIALOG_WIDTH : width}
+      width={width}
       purpose="form"
       // `alertdialog` is a modal role: it promises an interruption the user
       // has to deal with, a focus trap, and an inert page behind it. The
@@ -218,7 +223,7 @@ export function AlertDialog({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       {...mergeProps(themeProps('alert-dialog'), {className, style})}
-      xstyle={isSmallScreen ? [styles.smallScreenSurface, xstyle] : xstyle}
+      xstyle={xstyle}
       data-testid={testId}>
       <Layout
         content={
@@ -233,10 +238,15 @@ export function AlertDialog({
         }
         footer={
           <LayoutFooter>
+            {/* Generic Dialog footers should wrap, but their consumers own
+                action semantics and order. AlertDialog keeps this
+                destructive-above-Cancel narrow order because confirmation
+                actions have component-specific meaning here. */}
             <Stack
               direction={isSmallScreen ? 'vertical' : 'horizontal'}
               gap={2}
-              hAlign={isSmallScreen ? 'stretch' : 'end'}>
+              hAlign={isSmallScreen ? 'stretch' : 'end'}
+              wrap={isSmallScreen ? 'nowrap' : 'wrap'}>
               {isSmallScreen
                 ? [actionButton, cancelButton]
                 : [cancelButton, actionButton]}

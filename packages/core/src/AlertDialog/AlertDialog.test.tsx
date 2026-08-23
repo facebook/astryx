@@ -167,7 +167,11 @@ describe('AlertDialog', () => {
   });
 
   describe('responsive actions', () => {
-    it('preserves the desktop fine-pointer layout above the small breakpoint', () => {
+    const longCancelLabel = 'Keep this workspace and all of its dashboards';
+    const longActionLabel =
+      'Permanently delete this workspace and all dashboards';
+
+    it('preserves the preferred width and horizontal order above the small breakpoint', () => {
       stubAlertDialogMedia({
         smallScreen: false,
         coarsePointer: false,
@@ -180,15 +184,49 @@ describe('AlertDialog', () => {
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
+      const footerStack = buttons[0].parentElement!;
       expect(dialog.getAttribute('style')).toContain('--x-width: 400px');
+      expect(dialog.getAttribute('style')).toContain(
+        '--x-maxWidth: min(100%, calc(100dvw - var(--spacing-4) - var(--spacing-4)))',
+      );
       expect(buttons.map(button => button.textContent)).toEqual([
         'Cancel',
         'Delete',
       ]);
-      expect(getComputedStyle(buttons[0]).whiteSpace).toBe('nowrap');
+      expect(getComputedStyle(footerStack).flexWrap).toBe('wrap');
     });
 
-    it('stacks destructive above cancel on a narrow fine-pointer screen', () => {
+    it('wraps long action labels in the wide horizontal branch', () => {
+      stubAlertDialogMedia({
+        smallScreen: false,
+        coarsePointer: false,
+        noHover: false,
+      });
+      render(
+        <AlertDialog
+          {...defaultProps}
+          cancelLabel={longCancelLabel}
+          actionLabel={longActionLabel}
+        />,
+      );
+
+      const dialog = screen.getByRole('alertdialog');
+      const buttons = within(dialog).getAllByRole('button');
+      const footerStack = buttons[0].parentElement!;
+      expect(buttons.map(button => button.textContent)).toEqual([
+        longCancelLabel,
+        longActionLabel,
+      ]);
+      expect(getComputedStyle(footerStack).flexWrap).toBe('wrap');
+      for (const button of buttons) {
+        const computed = getComputedStyle(button);
+        expect(computed.whiteSpace).toBe('normal');
+        expect(computed.height).toBe('auto');
+        expect(computed.maxWidth).toBe('100%');
+      }
+    });
+
+    it('stacks long destructive action labels above cancel on a narrow fine-pointer screen', () => {
       stubAlertDialogMedia({
         smallScreen: true,
         coarsePointer: false,
@@ -197,8 +235,8 @@ describe('AlertDialog', () => {
       render(
         <AlertDialog
           {...defaultProps}
-          cancelLabel="Keep this workspace"
-          actionLabel="Permanently delete workspace"
+          cancelLabel={longCancelLabel}
+          actionLabel={longActionLabel}
         />,
       );
 
@@ -207,15 +245,19 @@ describe('AlertDialog', () => {
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
-      expect(dialog.getAttribute('style')).toContain('100dvw');
+      const footerStack = buttons[0].parentElement!;
+      expect(dialog.getAttribute('style')).toContain('--x-width: 400px');
       expect(buttons.map(button => button.textContent)).toEqual([
-        'Permanently delete workspace',
-        'Keep this workspace',
+        longActionLabel,
+        longCancelLabel,
       ]);
-      expect(getComputedStyle(buttons[0]).whiteSpace).toBe('normal');
-      expect(getComputedStyle(buttons[0]).width).toBe('100%');
-      expect(getComputedStyle(buttons[1]).whiteSpace).toBe('normal');
-      expect(getComputedStyle(buttons[1]).width).toBe('100%');
+      expect(getComputedStyle(footerStack).flexDirection).toBe('column');
+      for (const button of buttons) {
+        const computed = getComputedStyle(button);
+        expect(computed.whiteSpace).toBe('normal');
+        expect(computed.width).toBe('100%');
+        expect(computed.maxWidth).toBe('100%');
+      }
     });
 
     it('uses the same stacked layout on a mobile touch screen', () => {
@@ -237,7 +279,7 @@ describe('AlertDialog', () => {
       expect(window.matchMedia).not.toHaveBeenCalledWith('(hover: none)');
       const dialog = screen.getByRole('alertdialog');
       const buttons = within(dialog).getAllByRole('button');
-      expect(dialog.getAttribute('style')).toContain('100dvw');
+      expect(dialog.getAttribute('style')).toContain('--x-width: 400px');
       expect(buttons.map(button => button.textContent)).toEqual([
         'Permanently delete workspace',
         'Keep this workspace',
@@ -246,6 +288,33 @@ describe('AlertDialog', () => {
       expect(getComputedStyle(buttons[0]).width).toBe('100%');
       expect(getComputedStyle(buttons[1]).whiteSpace).toBe('normal');
       expect(getComputedStyle(buttons[1]).width).toBe('100%');
+    });
+
+    it('keeps narrow visual, DOM, and tab order aligned while autofocus stays on cancel', async () => {
+      const user = userEvent.setup();
+      stubAlertDialogMedia({
+        smallScreen: true,
+        coarsePointer: false,
+        noHover: false,
+      });
+      render(
+        <AlertDialog
+          {...defaultProps}
+          cancelLabel={longCancelLabel}
+          actionLabel={longActionLabel}
+        />,
+      );
+
+      const action = screen.getByRole('button', {name: longActionLabel});
+      const cancel = screen.getByRole('button', {name: longCancelLabel});
+      expect(
+        action.compareDocumentPosition(cancel) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(cancel).toHaveAttribute('data-autofocus');
+      action.focus();
+      await user.tab();
+      expect(cancel).toHaveFocus();
     });
   });
 

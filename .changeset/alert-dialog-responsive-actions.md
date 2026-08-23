@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] AlertDialog preserves its >640px centered layout and, at 640px and below, fills available width with token gutters, stacks the destructive action above Cancel, and wraps complete decision labels regardless of pointer type.
+[fix] AlertDialog lets Dialog preserve and clamp its preferred width, stacks the destructive action above Cancel at 640px and below, and wraps complete decision labels in both horizontal and stacked action layouts regardless of pointer type.
 
-@rubycheung
+@rubyycheung
