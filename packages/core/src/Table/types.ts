@@ -322,6 +322,19 @@ export interface BodyCellRenderProps {
    * sticky offsets. Optional for backward compatibility.
    */
   columns?: ReadonlyArray<TableColumn<Record<string, unknown>>>;
+  /**
+   * When true, the cell renders empty: BaseTable calls neither the column's
+   * `renderCell` nor the default renderer. Set it for a row whose cells a
+   * plugin is going to replace wholesale in `transformBodyRow` (a grouped-rows
+   * section header, a summary row) — the row is not one the consumer supplied,
+   * so their renderer can only misread it or throw, and its output is
+   * discarded moments later anyway.
+   *
+   * Applies to this cell only, and is decided per render against the final
+   * column list, so it covers columns other plugins contributed regardless of
+   * where in the pipeline this plugin sits.
+   */
+  skipContent?: boolean;
 }
 
 /**
