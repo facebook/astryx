@@ -3,7 +3,7 @@
 /**
  * @file LayerDismissal.stories.tsx
  * @input Uses Dialog, Popover, Tooltip, Lightbox, MobileNav, BottomSheet,
- *   Button, Layout from @astryxdesign/core
+ *   Button, Layout from @astryxdesign/core; InfoTip from @astryxdesign/lab
  * @output Storybook stories demonstrating shared layer dismissal
  * @position Storybook; the visual contract for the layer dismissal stack
  *
@@ -30,6 +30,7 @@ import {
   VStack,
 } from '@astryxdesign/core';
 import {BottomSheet, BottomSheetSwitcher} from '@astryxdesign/core/BottomSheet';
+import {InfoTip} from '@astryxdesign/lab/InfoTip';
 import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const sheetStyles = stylex.create({
@@ -727,3 +728,51 @@ function PurposeFlipsWhileOpenExample() {
 export const PurposeFlipsWhileOpen: Story = {
   render: () => <PurposeFlipsWhileOpenExample />,
 };
+
+/**
+ * A lab InfoTip inside a modal, its tip showing. One Escape hides the tip and
+ * leaves the modal open; a second closes the modal.
+ *
+ * The InfoTip used to `stopPropagation()` the press at its trigger, so the
+ * stack never saw it and the browser's own close watcher closed the modal
+ * underneath instead — one press, both gone (#5168). It now handles no keys of
+ * its own and lets its Tooltip's stack entry take the press.
+ */
+function InfoTipInModalExample() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        label="Open modal"
+        variant="secondary"
+        onClick={() => setIsOpen(true)}
+      />
+      <Dialog
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        width={480}
+        aria-label="Modal with an info tip">
+        <Layout
+          header={
+            <DialogHeader
+              title="Modal with an info tip"
+              subtitle="Focus or hover the info button, then press Escape once"
+              onOpenChange={setIsOpen}
+            />
+          }
+          content={
+            <LayoutContent>
+              <HStack gap={1} vAlign="center">
+                <Text type="body">Rolling spend</Text>
+                <InfoTip content="30-day rolling average, excluding refunds." />
+              </HStack>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    </>
+  );
+}
+
+export const InfoTipInModal: Story = {render: () => <InfoTipInModalExample />};
