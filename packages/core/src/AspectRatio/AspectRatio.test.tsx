@@ -323,7 +323,7 @@ describe('AspectRatio', () => {
   });
 
   describe('style merging', () => {
-    it('keeps the consumer style and applies the ratio over it', () => {
+    it('keeps the consumer style and lets an inline ratio win', () => {
       render(
         <AspectRatio
           ratio={16 / 9}
@@ -334,7 +334,8 @@ describe('AspectRatio', () => {
       );
       const element = screen.getByTestId('aspect-ratio');
       expect(element.style.opacity).toBe('0.5');
-      expect(element.style.aspectRatio).toBe(String(16 / 9));
+      expect(element.style.aspectRatio).toBe('3 / 1');
+      expect(ratioVar(element)).toBe(ratioValue(16 / 9));
     });
 
     it('keeps a consumer className beside the theme target', () => {
