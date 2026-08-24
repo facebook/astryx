@@ -6,6 +6,7 @@ import stylex from '@stylexjs/unplugin';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createRequire} from 'node:module';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -242,55 +243,19 @@ export function astryxStylex(
               return next();
             }
 
-            if (!stylexPlugin) {
-              res.statusCode = 200;
-              res.setHeader('Content-Type', 'text/css');
-              res.end('');
-              return;
-            }
-
-            const shared = stylexPlugin.__stylexGetSharedStore?.();
-            const rulesById = shared?.rulesById;
-
-            if (!rulesById || rulesById.size === 0) {
-              res.statusCode = 200;
-              res.setHeader('Content-Type', 'text/css');
-              res.end('');
-              return;
-            }
-
-            const libraryRules: any[] = [];
-            const productRules: any[] = [];
-
-            for (const [filePath, rules] of rulesById.entries()) {
-              if (filePath.includes(libraryPattern)) {
-                libraryRules.push(...rules);
-              } else {
-                productRules.push(...rules);
-              }
-            }
-
-            const libraryCss = libraryRules.length
-              ? stylexBabelPlugin.processStylexRules(libraryRules, {
-                  useLayers: true,
-                })
-              : '';
-            const productCss = productRules.length
-              ? stylexBabelPlugin.processStylexRules(productRules, {
-                  useLayers: true,
-                })
-              : '';
-
-            const parts: string[] = [];
-            if (libraryCss)
-              parts.push(`@layer ${libraryLayer} {\n${libraryCss}\n}`);
-            if (productCss)
-              parts.push(`@layer ${productLayer} {\n${productCss}\n}`);
+            const rulesById =
+              stylexPlugin?.__stylexGetSharedStore?.()?.rulesById;
 
             res.statusCode = 200;
             res.setHeader('Content-Type', 'text/css');
             res.setHeader('Cache-Control', 'no-store');
-            res.end(parts.join('\n\n'));
+            res.end(
+              renderSplitLayers(rulesById, {
+                libraryPattern,
+                libraryLayer,
+                productLayer,
+              }),
+            );
           },
         });
       };
@@ -302,44 +267,184 @@ export function astryxStylex(
     layerOrderPlugin,
     basePlugin,
     splitLayerPlugin,
-    buildLayerWrapPlugin(libraryLayer),
+    buildLayerSplitPlugin(basePlugin, {
+      libraryPattern,
+      libraryLayer,
+      productLayer,
+      lightningcssOptions: stylexOptions.lightningcssOptions,
+    }),
   ];
 }
 
 /**
- * StyleX emits its rules into its own top-level `@layer priority1…priorityN`.
- * On the dev server `astryx-split-layers` re-serves them wrapped in the library
- * layer, but that plugin is `configureServer` — nothing wrapped them in a
- * production build, so the priority layers were declared after the
- * `@layer reset, astryx-base, astryx-theme, product;` statement and therefore
- * outranked `astryx-theme`. Every component override a theme sets — a colour, a
- * radius, a public custom property — was silently dropped in a built app while
- * working in dev and in the pre-compiled `astryx.css`.
+ * Partition StyleX's collected rules by the source file that authored them and
+ * render each half into its cascade layer: Astryx's own styles into the library
+ * layer (below `astryx-theme`, so a theme can override them), product styles
+ * into the product layer (above it, so an app always wins).
  *
- * Wrapping the emitted block restores one meaning for the layer order across
- * all three. StyleX's CSS is appended to the bundle's stylesheet, so the block
- * runs from its first priority layer to the end of the file.
+ * This is the one implementation. The dev middleware and the build hook differ
+ * only in when they run and what they do with the string — the partition itself
+ * must not diverge, because it did: the build shipped a version that wrapped
+ * everything in the library layer, which put product styles UNDER a theme.
+ *
+ * `rulesById` is keyed by absolute source path, which is the only place the
+ * distinction survives — by the time the CSS is text, the origin is gone.
  */
-function buildLayerWrapPlugin(libraryLayer: string): Plugin {
+function renderSplitLayers(
+  rulesById: Map<string, unknown[]> | undefined,
+  options: {
+    libraryPattern: string;
+    libraryLayer: string;
+    productLayer: string;
+  },
+): string {
+  if (!rulesById || rulesById.size === 0) return '';
+
+  const libraryRules: unknown[] = [];
+  const productRules: unknown[] = [];
+
+  for (const [filePath, rules] of rulesById.entries()) {
+    if (filePath.includes(options.libraryPattern)) {
+      libraryRules.push(...rules);
+    } else {
+      productRules.push(...rules);
+    }
+  }
+
+  const render = (rules: unknown[], layer: string) =>
+    rules.length
+      ? `@layer ${layer} {\n${stylexBabelPlugin.processStylexRules(rules as never, {useLayers: true})}\n}`
+      : '';
+
+  return [
+    render(libraryRules, options.libraryLayer),
+    render(productRules, options.productLayer),
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+/**
+ * The build half of the split. StyleX appends one merged block of CSS to the
+ * build's stylesheet, in its own top-level `@layer priority1…priorityN` — which
+ * is declared after `@layer reset, astryx-base, astryx-theme, product;` and so
+ * outranks every one of them. On the dev server `astryx-split-layers` re-serves
+ * the same rules already partitioned; a build had no equivalent, so a theme's
+ * component overrides were silently dropped in the built app while working in
+ * dev.
+ *
+ * This replaces that merged block with the partitioned pair. It runs in
+ * `writeBundle` because StyleX emits through two different paths depending on
+ * whether the bundle already has a stylesheet to append to (`generateBundle`)
+ * or has to write its own file (`writeBundle`) — on disk, after both, there is
+ * one case instead of two.
+ *
+ * The block is located by an exact match against StyleX's own collector rather
+ * than by looking for `@layer priority1`: a wrong guess about where the block
+ * starts silently moves rules between layers, which is the failure this exists
+ * to prevent. If the rules exist and the block cannot be found, the build
+ * fails.
+ */
+function buildLayerSplitPlugin(
+  basePlugin: unknown,
+  options: {
+    libraryPattern: string;
+    libraryLayer: string;
+    productLayer: string;
+    lightningcssOptions?: unknown;
+  },
+): Plugin {
+  const stylex = basePlugin as {
+    __stylexGetSharedStore?: () => {rulesById: Map<string, unknown[]>};
+    __stylexCollectCss?: () => string;
+  };
+
   return {
-    name: 'astryx-build-layer-wrap',
+    name: 'astryx-build-layer-split',
     apply: 'build',
-    // After the StyleX plugin's own generateBundle, which is what appends it.
     enforce: 'post',
-    generateBundle(_opts, bundle) {
-      for (const asset of Object.values(bundle)) {
-        if (asset.type !== 'asset' || !asset.fileName.endsWith('.css'))
-          continue;
-        const css =
-          typeof asset.source === 'string'
-            ? asset.source
-            : Buffer.from(asset.source).toString('utf-8');
-        const start = css.indexOf('@layer priority1');
-        if (start === -1 || css.includes(`@layer ${libraryLayer} {`)) continue;
-        asset.source = `${css.slice(0, start)}@layer ${libraryLayer} {\n${css.slice(start)}\n}\n`;
+    writeBundle(outputOptions) {
+      const rulesById = stylex.__stylexGetSharedStore?.().rulesById;
+      if (!rulesById || rulesById.size === 0) return;
+
+      const merged = stylex.__stylexCollectCss?.();
+      if (!merged) return;
+
+      const split = postProcessCss(
+        renderSplitLayers(rulesById, options),
+        options.lightningcssOptions,
+      );
+
+      const outDir = outputOptions.dir
+        ? outputOptions.dir
+        : outputOptions.file
+          ? path.dirname(outputOptions.file)
+          : null;
+      if (!outDir || !fs.existsSync(outDir)) return;
+
+      let patched = false;
+      for (const file of listCssFiles(outDir)) {
+        const css = fs.readFileSync(file, 'utf-8');
+        const at = css.lastIndexOf(merged);
+        if (at === -1) continue;
+        fs.writeFileSync(
+          file,
+          css.slice(0, at) + split + css.slice(at + merged.length),
+        );
+        patched = true;
+      }
+
+      if (!patched) {
+        this.error(
+          'astryx-build-layer-split: StyleX emitted rules but its CSS block ' +
+            `was not found in any stylesheet under ${outDir}, so Astryx and ` +
+            'product styles could not be separated into their cascade layers. ' +
+            'Leaving the build unsplit would let product styles lose to a ' +
+            'theme. This usually means the StyleX plugin version changed how ' +
+            'it emits CSS.',
+        );
       }
     },
   };
+}
+
+/** Every `.css` file under a directory, recursively. */
+function listCssFiles(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...listCssFiles(full));
+    else if (entry.name.endsWith('.css')) out.push(full);
+  }
+  return out;
+}
+
+/**
+ * StyleX runs its collected CSS through lightningcss before emitting it, so
+ * anything replacing that output has to run the same pass or the build quietly
+ * loses the vendor prefixes and lowering the original had.
+ *
+ * lightningcss ships with both Vite and the StyleX plugin, either of which must
+ * be installed for this plugin to run at all. If it somehow is not resolvable,
+ * the unprocessed CSS is correct — just less compatible — so this degrades
+ * rather than failing the build.
+ */
+function postProcessCss(css: string, lightningcssOptions: unknown): string {
+  if (!css) return css;
+  try {
+    const require_ = createRequire(import.meta.url);
+    const {transform, browserslistToTargets} = require_('lightningcss');
+    const browserslist = require_('browserslist');
+    const {code} = transform({
+      targets: browserslistToTargets(browserslist()),
+      ...(lightningcssOptions as object),
+      filename: 'stylex.css',
+      code: Buffer.from(css),
+    });
+    return code.toString();
+  } catch {
+    return css;
+  }
 }
 
 /**
@@ -412,55 +517,19 @@ function astryxStylexLegacy(options: AstryxVitePluginLegacyOptions): Plugin[] {
               return next();
             }
 
-            if (!stylexPlugin) {
-              res.statusCode = 200;
-              res.setHeader('Content-Type', 'text/css');
-              res.end('');
-              return;
-            }
-
-            const shared = stylexPlugin.__stylexGetSharedStore?.();
-            const rulesById = shared?.rulesById;
-
-            if (!rulesById || rulesById.size === 0) {
-              res.statusCode = 200;
-              res.setHeader('Content-Type', 'text/css');
-              res.end('');
-              return;
-            }
-
-            const libraryRules: any[] = [];
-            const productRules: any[] = [];
-
-            for (const [filePath, rules] of rulesById.entries()) {
-              if (filePath.includes(libraryPattern)) {
-                libraryRules.push(...rules);
-              } else {
-                productRules.push(...rules);
-              }
-            }
-
-            const libraryCss = libraryRules.length
-              ? stylexBabelPlugin.processStylexRules(libraryRules, {
-                  useLayers: true,
-                })
-              : '';
-            const productCss = productRules.length
-              ? stylexBabelPlugin.processStylexRules(productRules, {
-                  useLayers: true,
-                })
-              : '';
-
-            const parts: string[] = [];
-            if (libraryCss)
-              parts.push(`@layer ${libraryLayer} {\n${libraryCss}\n}`);
-            if (productCss)
-              parts.push(`@layer ${productLayer} {\n${productCss}\n}`);
+            const rulesById =
+              stylexPlugin?.__stylexGetSharedStore?.()?.rulesById;
 
             res.statusCode = 200;
             res.setHeader('Content-Type', 'text/css');
             res.setHeader('Cache-Control', 'no-store');
-            res.end(parts.join('\n\n'));
+            res.end(
+              renderSplitLayers(rulesById, {
+                libraryPattern,
+                libraryLayer,
+                productLayer,
+              }),
+            );
           },
         });
       };
@@ -471,6 +540,12 @@ function astryxStylexLegacy(options: AstryxVitePluginLegacyOptions): Plugin[] {
     layerOrderPlugin,
     basePlugin,
     splitLayerPlugin,
-    buildLayerWrapPlugin(libraryLayer),
+    buildLayerSplitPlugin(basePlugin, {
+      libraryPattern,
+      libraryLayer,
+      productLayer,
+      lightningcssOptions: (stylexOptions as {lightningcssOptions?: unknown})
+        ?.lightningcssOptions,
+    }),
   ];
 }
