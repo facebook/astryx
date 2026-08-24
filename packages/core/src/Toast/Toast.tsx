@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useCallback, useEffect, useRef} from 'react';
+import {useCallback, useRef} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
@@ -23,6 +23,7 @@ import {MediaTheme} from '../theme/MediaTheme';
 import type {ToastType, ToastDismissReason} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {useToastTimer} from './useToastTimer';
 
 const styles = stylex.create({
   root: {
@@ -118,79 +119,16 @@ export function Toast({
   onDismiss,
 }: ToastProps) {
   const t = useTranslator();
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isPausedRef = useRef(false);
-  const remainingRef = useRef(autoHideDuration);
-  // Will be initialized by startTimer when actually used
-  const startTimeRef = useRef<number | null>(null);
-
-  // Read onDismiss through a ref: the viewport re-creates it on every render
-  // (another toast arriving/exiting), and a startTimer that depends on it
-  // would restart — and un-pause — this toast's timer on unrelated renders.
+  // Read onDismiss through a ref so the timer callback never restarts on an
+  // unrelated viewport render.
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
 
-  const startTimer = useCallback(() => {
-    if (!isAutoHide || isPausedRef.current) {
-      return;
-    }
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-    startTimeRef.current = Date.now();
-    timerRef.current = setTimeout(() => {
-      onDismissRef.current('auto');
-    }, remainingRef.current);
-  }, [isAutoHide]);
-
-  const pauseTimer = useCallback(() => {
-    if (!isAutoHide || isPausedRef.current) {
-      return;
-    }
-    isPausedRef.current = true;
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    if (startTimeRef.current != null) {
-      const elapsed = Date.now() - startTimeRef.current;
-      remainingRef.current = Math.max(remainingRef.current - elapsed, 1000);
-    }
-  }, [isAutoHide]);
-
-  const resumeTimer = useCallback(() => {
-    if (!isAutoHide || !isPausedRef.current) {
-      return;
-    }
-    isPausedRef.current = false;
-    startTimer();
-  }, [isAutoHide, startTimer]);
-
-  useEffect(() => {
-    remainingRef.current = autoHideDuration;
-    startTimer();
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-    // startTimer's identity is stable per isAutoHide, so this runs on mount
-    // and on a genuine duration change — not on unrelated viewport renders.
-  }, [autoHideDuration, startTimer]);
-
-  // Pause the auto-hide timer while the window is not focused, so a toast
-  // doesn't silently expire while the user is in another window or tab.
-  useEffect(() => {
-    if (!isAutoHide) {
-      return;
-    }
-    window.addEventListener('blur', pauseTimer);
-    window.addEventListener('focus', resumeTimer);
-    return () => {
-      window.removeEventListener('blur', pauseTimer);
-      window.removeEventListener('focus', resumeTimer);
-    };
-  }, [isAutoHide, pauseTimer, resumeTimer]);
+  // The auto-hide lifetime is the toast's transport, shared with the viewport
+  // so a `renderToast` surface keeps it (see useToastTimer).
+  const timerHandlers = useToastTimer(isAutoHide, autoHideDuration, () =>
+    onDismissRef.current('auto'),
+  );
 
   const handleDismiss = useCallback(() => {
     onDismiss('manual');
@@ -208,10 +146,7 @@ export function Toast({
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
       aria-atomic="true"
-      onMouseEnter={pauseTimer}
-      onMouseLeave={resumeTimer}
-      onFocusCapture={pauseTimer}
-      onBlurCapture={resumeTimer}
+      {...timerHandlers}
       {...mergeProps(
         themeProps('toast', {type}),
         stylex.props(

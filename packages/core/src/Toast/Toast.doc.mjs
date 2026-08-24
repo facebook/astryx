@@ -66,9 +66,17 @@ export const docs = {
       description: 'Callback fired when the toast is dismissed.',
       required: true,
     },
+    {
+      name: 'renderToast',
+      type: '(toast: ToastRenderProps) => ReactNode',
+      description:
+        'On ToastViewport. Renders the entire visible surface of every toast, replacing Astryx\'s card — no background, no padding and no dismiss button are drawn for you. Applies to every toast in the viewport, including ones raised by library code. Your surface owns the dismiss control and its accessible name; call the supplied dismiss(). endContent is handed to you to place, not dropped.',
+    },
   ],  theming: {
     targets: [
       {className: 'astryx-toast', visualProps: ['type']},
+      {className: 'astryx-toast-viewport', visualProps: ['position']},
+      {className: 'astryx-toast-item'},
     ],
   },
 
@@ -109,6 +117,8 @@ export const docsZh = {
     uniqueID: '用于去重的唯一标识符。',
     collisionBehavior: '当已存在相同 uniqueID 的 toast 时的行为。',
     onHide: '当 toast 被移除时触发的回调。',
+    renderToast:
+      '位于 ToastViewport 上。渲染每个 toast 的整个可见表面，替换 Astryx 自带的卡片——不会为你绘制背景、内边距和关闭按钮。作用于该视口中的每个 toast，包括由库代码发起的 toast。你的表面拥有关闭控件及其无障碍名称，请调用传入的 dismiss()。endContent 会交给你放置，而不会被丢弃。',
   },
   usage: {
     description:

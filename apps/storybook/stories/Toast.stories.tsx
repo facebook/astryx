@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
 import {useState, useRef} from 'react';
 import {useToast, ToastViewport} from '@astryxdesign/core/Toast';
 import type {ToastType} from '@astryxdesign/core/Toast';
@@ -9,6 +10,23 @@ import {Link} from '@astryxdesign/core/Link';
 import {Card} from '@astryxdesign/core/Card';
 import {Stack} from '@astryxdesign/core/Stack';
 import {Dialog} from '@astryxdesign/core/Dialog';
+import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+
+// The custom toast surface used by the `renderToast` story below.
+const cardStyles = stylex.create({
+  card: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: spacingVars['--spacing-3'],
+    width: 380,
+    maxWidth: 'min(100%, calc(100vw - 32px))',
+    borderInlineStartWidth: 4,
+    borderInlineStartStyle: 'solid',
+  },
+  info: {borderInlineStartColor: colorVars['--color-accent']},
+  error: {borderInlineStartColor: colorVars['--color-text-red']},
+  body: {flex: 1, minWidth: 0},
+});
 
 const meta: Meta = {
   title: 'Core/Toast',
@@ -366,6 +384,111 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
           }}
         />
       </Stack>
+    </Stack>
+  );
+}
+
+// =============================================================================
+// Custom surface (renderToast)
+// =============================================================================
+
+// A product with its own notification design supplies `renderToast` on the
+// viewport, and Astryx draws no card at all — background, padding and the
+// dismiss button are all the renderer's. It applies to every toast in the
+// viewport, so a toast raised by library code that has never heard of this
+// card still gets it; the alternative — hiding Astryx's dismiss with CSS —
+// reaches only the toasts the app itself raised, and strips the library's
+// toast of its only way to close.
+//
+// The renderer owns the dismiss control and its accessible name. Astryx keeps
+// the transport: stacking, the top layer, and the auto-hide timer with its
+// pause-on-hover, all of which still work below.
+function ProductToastCard({
+  type,
+  body,
+  endContent,
+  dismiss,
+}: {
+  type: ToastType;
+  body: React.ReactNode;
+  endContent?: React.ReactNode;
+  dismiss: () => void;
+}) {
+  return (
+    <Card
+      xstyle={[
+        cardStyles.card,
+        type === 'error' ? cardStyles.error : cardStyles.info,
+      ]}>
+      <div {...stylex.props(cardStyles.body)}>{body}</div>
+      {endContent}
+      <Button
+        variant="ghost"
+        size="sm"
+        label="Dismiss notification"
+        isIconOnly
+        icon={<span aria-hidden="true">×</span>}
+        onClick={dismiss}
+      />
+    </Card>
+  );
+}
+
+export const CustomSurface: StoryObj = {
+  name: 'Custom surface (renderToast)',
+  render: function CustomSurfaceStory() {
+    return (
+      <ToastViewport
+        isTopLayer={false}
+        renderToast={toast => (
+          <ProductToastCard
+            type={toast.type}
+            body={toast.body}
+            endContent={toast.endContent}
+            dismiss={toast.dismiss}
+          />
+        )}>
+        <CustomSurfaceTriggers />
+      </ToastViewport>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`renderToast` on `ToastViewport` replaces the entire visible toast — Astryx renders no card and no dismiss button. It applies to every toast in the viewport, including ones raised by code that knows nothing about the custom card, which is what hiding the built-in dismiss with CSS cannot do. `endContent` is handed to the renderer to place rather than dropped, and the auto-hide timer keeps running: hover the toast to pause it.',
+      },
+    },
+  },
+};
+
+function CustomSurfaceTriggers() {
+  const toast = useToast();
+  return (
+    <Stack direction="horizontal" gap={2} wrap="wrap">
+      <Button
+        label="Show"
+        onClick={() => {
+          toast({body: 'Your changes have been saved.'});
+        }}
+      />
+      <Button
+        label="With an action"
+        variant="secondary"
+        onClick={() => {
+          toast({
+            body: 'Row deleted.',
+            endContent: <Button variant="ghost" size="sm" label="Undo" />,
+          });
+        }}
+      />
+      <Button
+        label="Error"
+        variant="destructive"
+        onClick={() => {
+          toast({body: 'Could not reach the server.', type: 'error'});
+        }}
+      />
     </Stack>
   );
 }

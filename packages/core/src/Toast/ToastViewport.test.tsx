@@ -25,7 +25,9 @@ import React from 'react';
 import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {ToastViewport} from './ToastViewport';
 import {useToast} from './useToast';
-import type {ToastOptions} from './types';
+import type {ToastOptions, ToastRenderProps} from './types';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
 // Spy on the announcement sink so tests can prove a toast is announced exactly
 // once. The mock wraps the real useAnnounce, so the singleton live regions are
@@ -484,5 +486,186 @@ describe('toast timer lifecycle (#3589)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // `renderToast` replaces the whole visible surface. What matters to a
+  // consumer is the handover: Astryx must stop drawing its own card (and its
+  // close button) so nothing has to be hidden with CSS, must route EVERY
+  // toast through the renderer including ones a library raised, and must
+  // hand over the pieces the surface needs to be complete.
+  describe('renderToast', () => {
+    function renderWithRenderer(
+      children: React.ReactNode,
+      renderToast: (t: ToastRenderProps) => React.ReactNode,
+    ) {
+      return render(
+        <ToastViewport isTopLayer={false} renderToast={renderToast}>
+          {children}
+        </ToastViewport>,
+      );
+    }
+
+    it('replaces the built-in surface, leaving no dismiss button to hide', () => {
+      // The reason this API exists: hiding Astryx's close with CSS also hits
+      // any button in endContent, and misses toasts a library raised.
+      renderWithRenderer(
+        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
+        toast => <div>{toast.body}</div>,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      expect(screen.getByText('Toast A')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Dismiss notification'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('renders a toast raised by code that knows nothing about the surface', () => {
+      // ShowToastButton calls the plain useToast() — it is the stand-in for a
+      // shared library. Its toast still gets the app's surface.
+      renderWithRenderer(
+        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
+        toast => <div data-testid="custom-surface">{toast.body}</div>,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      expect(screen.getByTestId('custom-surface')).toHaveTextContent('Toast A');
+    });
+
+    it('hands endContent to the surface rather than dropping it', () => {
+      // The trailing slot belongs to Astryx's card, which is gone. Passing it
+      // through is what keeps an Undo button working across the switch.
+      renderWithRenderer(
+        <ShowToastButton
+          options={{
+            body: 'Deleted',
+            endContent: <button type="button">Undo</button>,
+          }}
+          triggerLabel="Show"
+        />,
+        toast => (
+          <div data-testid="custom-surface">
+            {toast.body}
+            {toast.endContent}
+          </div>
+        ),
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      // Inside the custom surface specifically — Astryx's own card renders
+      // endContent too, so asserting mere presence would pass either way.
+      expect(
+        within(screen.getByTestId('custom-surface')).getByRole('button', {
+          name: 'Undo',
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it('gives the surface a dismiss that removes its own toast', () => {
+      // The surface owns the dismiss control now, so it needs a working one —
+      // and it is built before showToast() has returned anything to close.
+      const onHide = vi.fn();
+      renderWithRenderer(
+        <ShowToastButton
+          options={{body: 'Closable', onHide}}
+          triggerLabel="Show"
+        />,
+        toast => (
+          <button type="button" onClick={toast.dismiss}>
+            Close it
+          </button>
+        ),
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      act(() => {
+        fireEvent.click(screen.getByText('Close it'));
+      });
+      expect(onHide).toHaveBeenCalledWith('manual');
+    });
+
+    it('still auto-dismisses, and says so before it happens', () => {
+      // Astryx keeps owning the timer; the surface is told, so it can render a
+      // progress affordance or suppress its own close.
+      vi.useFakeTimers();
+      try {
+        const seen: {isAutoHide: boolean; autoHideDuration: number}[] = [];
+        const onHide = vi.fn();
+        renderWithRenderer(
+          <ShowToastButton
+            options={{body: 'Fleeting', autoHideDuration: 3000, onHide}}
+            triggerLabel="Show"
+          />,
+          toast => {
+            seen.push({
+              isAutoHide: toast.isAutoHide,
+              autoHideDuration: toast.autoHideDuration,
+            });
+            return <div>{toast.body}</div>;
+          },
+        );
+        act(() => {
+          fireEvent.click(screen.getByText('Show'));
+        });
+        expect(seen[0]).toEqual({isAutoHide: true, autoHideDuration: 3000});
+        act(() => {
+          vi.advanceTimersByTime(3000);
+        });
+        expect(onHide).toHaveBeenCalledWith('auto');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('keeps announcing through the live region', () => {
+      // The announcement is the viewport's job, not the card's — a custom
+      // surface must not cost a screen-reader user the notification.
+      renderWithRenderer(
+        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
+        toast => <div>{toast.body}</div>,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      expect(announceSpy).toHaveBeenCalledWith('Toast A', 'polite');
+    });
+  });
+
+  // The two chrome targets. A renderer replaces the toast's surface but not
+  // the stack around it — the gap between toasts, the clip box, the entry
+  // transition — and until now that chrome was reachable only through
+  // structural selectors like `[data-toast-id] > div`. These assert the theme
+  // pipeline routes an override to the class the viewport actually renders;
+  // that the classes are on the right elements is covered in a browser.
+  describe('chrome theming targets', () => {
+    const cssFor = (
+      components: Parameters<typeof defineTheme>[0]['components'],
+    ) =>
+      generateThemeCSS(defineTheme({name: 'toast-chrome', components}))
+        .component;
+
+    it('routes a viewport override to the stack container', () => {
+      expect(cssFor({'toast-viewport': {base: {padding: '24px'}}})).toContain(
+        '.astryx-toast-viewport {',
+      );
+    });
+
+    it('scopes a viewport override to one position', () => {
+      // Asserting the whole selector: the same rule on the bare target would
+      // re-pad all four corners, which is the bug a position variant avoids.
+      expect(
+        cssFor({'toast-viewport': {'position:topEnd': {padding: '24px'}}}),
+      ).toContain('.astryx-toast-viewport.topEnd {');
+    });
+
+    it('routes a stacked-item override to each toast wrapper', () => {
+      expect(
+        cssFor({'toast-item': {base: {paddingBlockEnd: '16px'}}}),
+      ).toContain('.astryx-toast-item {');
+    });
   });
 });

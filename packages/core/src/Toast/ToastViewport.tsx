@@ -19,7 +19,15 @@ import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {Toast} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
-import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
+import type {
+  ToastEntry,
+  ToastPosition,
+  ToastDismissReason,
+  ToastRenderFn,
+  ToastRenderProps,
+} from './types';
+import {themeProps} from '../utils/themeProps';
+import {useToastTimer} from './useToastTimer';
 import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
@@ -102,6 +110,32 @@ function getNodeText(node: ReactNode): string {
   return '';
 }
 
+/**
+ * One toast drawn by a consumer's `renderToast`.
+ *
+ * Astryx's own card runs the auto-hide timer itself; a custom surface replaces
+ * the card, so the timer has to live out here instead — the lifetime is the
+ * toast's transport, and the transport stays Astryx's whoever draws. The
+ * pause handlers ride the wrapper, which is the element the pointer and focus
+ * actually reach.
+ */
+function RenderedToast({
+  render,
+  toast,
+  onExpire,
+}: {
+  render: ToastRenderFn;
+  toast: ToastRenderProps;
+  onExpire: () => void;
+}) {
+  const timerHandlers = useToastTimer(
+    toast.isAutoHide,
+    toast.autoHideDuration,
+    onExpire,
+  );
+  return <div {...timerHandlers}>{render(toast)}</div>;
+}
+
 export interface ToastViewportProps {
   position?: ToastPosition;
   maxVisible?: number;
@@ -112,6 +146,37 @@ export interface ToastViewportProps {
    * @default true
    */
   isTopLayer?: boolean;
+  /**
+   * Renders the entire visible surface of every toast, replacing Astryx's own
+   * card — no background, no padding, and **no dismiss button** are drawn for
+   * you. Applies to every toast in the viewport, including ones raised by
+   * library code that calls `useToast()` without knowing about your surface.
+   *
+   * That app-wide reach is the point. Hiding Astryx's dismiss button with CSS
+   * to draw your own inside `body` reaches only the toasts your own wrapper
+   * created; a library's toast keeps Astryx's card and loses its only way to
+   * close. A renderer replaces the surface for those too.
+   *
+   * Your surface owns the dismiss control and its accessible name — call
+   * `dismiss` from it. `endContent` is handed to you rather than dropped;
+   * place it yourself.
+   *
+   * @example
+   * ```
+   * <ToastViewport
+   *   renderToast={toast => (
+   *     <MyCard
+   *       tone={toast.type}
+   *       title={toast.body}
+   *       action={toast.endContent}
+   *       onDismiss={toast.dismiss}
+   *     />
+   *   )}>
+   *   <App />
+   * </ToastViewport>
+   * ```
+   */
+  renderToast?: ToastRenderFn;
   children?: React.ReactNode;
 }
 
@@ -132,6 +197,7 @@ export function ToastViewport({
   maxVisible = 5,
   inset,
   isTopLayer = true,
+  renderToast,
   children,
 }: ToastViewportProps) {
   const t = useTranslator();
@@ -429,9 +495,11 @@ export function ToastViewport({
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.
         popover={isTopLayer ? 'manual' : undefined}
-        {...mergeProps(stylex.props(styles.viewport, posStyle), {
-          style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
-        })}>
+        {...mergeProps(
+          themeProps('toast-viewport', {position}),
+          stylex.props(styles.viewport, posStyle),
+          Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
+        )}>
         {visibleToasts.map(entry => {
           const o = entry.options;
           const type = o.type ?? 'info';
@@ -442,9 +510,12 @@ export function ToastViewport({
             <div
               key={entry.id}
               data-toast-id={entry.id}
-              {...stylex.props(
-                styles.toastWrapper,
-                isExiting && styles.toastWrapperExiting,
+              {...mergeProps(
+                themeProps('toast-item'),
+                stylex.props(
+                  styles.toastWrapper,
+                  isExiting && styles.toastWrapperExiting,
+                ),
               )}
               onTransitionEnd={
                 isExiting
@@ -456,15 +527,31 @@ export function ToastViewport({
                   : undefined
               }>
               <div {...stylex.props(styles.toastWrapperInner)}>
-                <Toast
-                  type={type}
-                  body={o.body}
-                  endContent={o.endContent}
-                  isAutoHide={isAutoHide}
-                  autoHideDuration={dur}
-                  isExiting={isExiting}
-                  onDismiss={reason => removeToast(entry.id, reason)}
-                />
+                {renderToast ? (
+                  <RenderedToast
+                    render={renderToast}
+                    toast={{
+                      body: o.body,
+                      endContent: o.endContent,
+                      type,
+                      isAutoHide,
+                      autoHideDuration: dur,
+                      uniqueID: o.uniqueID,
+                      dismiss: () => removeToast(entry.id, 'manual'),
+                    }}
+                    onExpire={() => removeToast(entry.id, 'auto')}
+                  />
+                ) : (
+                  <Toast
+                    type={type}
+                    body={o.body}
+                    endContent={o.endContent}
+                    isAutoHide={isAutoHide}
+                    autoHideDuration={dur}
+                    isExiting={isExiting}
+                    onDismiss={reason => removeToast(entry.id, reason)}
+                  />
+                )}
               </div>
             </div>
           );
