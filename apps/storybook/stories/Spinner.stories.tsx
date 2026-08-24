@@ -83,16 +83,17 @@ export const WithLabel: Story = {
   ),
 };
 
-// The ring is painted on a canvas, so a theme reaches its geometry and its two
-// colors through public custom properties rather than CSS box properties —
-// `width` would name a box the element does not have. These stories are how
-// that surface is checked: the a11y and RTL audits only see what a story
-// renders, and a themed ring cannot be verified in jsdom (no canvas, no
-// layout), so this is where a browser can look at it.
+// The ring is an SVG circle whose radius and stroke come off the cascade, so a
+// theme reaches its geometry and its two colors through public custom
+// properties rather than CSS box properties — `width` would name a box the
+// ring is not. These stories are how that surface is checked: the a11y and RTL
+// audits only see what a story renders, and a themed ring cannot be verified
+// in jsdom (no layout, no registered properties), so this is where a browser
+// can look at it.
 //
-// Geometry is deliberately themed in `rem` rather than `px`: the vars are
-// registered as `<length>`, and a relative unit reaching the canvas correctly
-// is the thing that distinguishes a resolved value from a parsed string.
+// Geometry is deliberately themed in `rem` rather than `px`: the resolved vars
+// are registered as `<length>`, and a relative unit surviving into the drawn
+// radius is what distinguishes a resolved value from substituted text.
 const themedGeometry = defineTheme({
   name: 'spinner-themed-geometry',
   components: {

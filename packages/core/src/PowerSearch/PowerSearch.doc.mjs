@@ -143,6 +143,22 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: 'Maximum width for the operator/value dropdown menu in pixels.',
+    },
+    {
+      name: 'maxOperatorMenuItems',
+      type: 'number',
+      description: 'Maximum number of items displayed in the operator dropdown.',
+    },
+    {
+      name: 'tokenOverflowBehavior',
+      type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
+      description: 'Controls how tokens overflow when the container is too narrow. Forwarded to Tokenizer.',
+      default: "'none'",
+    },
+    {
       name: 'onFocus',
       type: '(e: FocusEvent<HTMLInputElement>) => void',
       description: 'Fires when focus enters the search input.',

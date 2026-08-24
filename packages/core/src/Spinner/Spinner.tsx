@@ -4,12 +4,11 @@
 
 /**
  * @file Spinner.tsx
- * @input Uses React, StyleX, canvas rendering
+ * @input Uses React, StyleX, SVG rendering
  * @output Exports Spinner component, SpinnerProps, SpinnerSize, SpinnerShade types
  * @position Core implementation of spinner loading indicator
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Spinner/resolveRingGeometry.ts
  * - /packages/core/src/Spinner/Spinner.doc.mjs
  * - /packages/core/src/Spinner/Spinner.test.tsx
  * - /packages/core/src/Spinner/index.ts
@@ -17,24 +16,23 @@
  * - /packages/cli/assets/templates/blocks/components/Spinner/ (showcase blocks)
  */
 
-import {useEffect, useId, useRef, type ReactNode} from 'react';
+import {useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
-import {useTheme} from '../theme/useTheme';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-import {resolveRingGeometry} from './resolveRingGeometry';
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-/** How much of the circle the active arc covers (as a fraction of 2π) */
-const SPREAD = 0.75;
-/** Where the active arc starts (as a fraction of 2π) */
-const START_POINT = 1.5;
+/**
+ * Fraction of the ring the moving arc covers. The canvas ring this replaces
+ * swept 135deg, not the 270deg its constant's comment claimed.
+ */
+const ARC_FRACTION = 0.375;
 
 const SIZES = {
   sm: {diameter: 10, border: 2},
@@ -44,11 +42,12 @@ const SIZES = {
 };
 
 /**
- * Alpha the track is drawn at, per shade. `77 / 255` is the `4D` the onMedia
- * track used to append to the token's hex — the same composite, but applied to
- * a resolved color so it no longer depends on the token being hex notation.
+ * Opacity the track is drawn at, per shade. `77 / 255` is the `4D` the onMedia
+ * track used to append to the token's hex — the same composite, but applied as
+ * `stroke-opacity` to a color off the cascade, so it no longer depends on the
+ * token being hex notation and it applies to a themed color too.
  */
-const TRACK_ALPHA: Record<SpinnerShade, number> = {
+const TRACK_OPACITY: Record<SpinnerShade, number> = {
   default: 1,
   subtle: 1,
   onMedia: 77 / 255,
@@ -57,7 +56,7 @@ const TRACK_ALPHA: Record<SpinnerShade, number> = {
 
 /**
  * Where the resolved geometry lands: the public var if a theme set one, the
- * size's default otherwise. These are the names the box and the canvas read —
+ * size's default otherwise. These are the names the box and the ring read —
  * never the public ones directly. See `sizeStyles` for why.
  */
 const RESOLVED_DIAMETER = '--_spinner-ring-diameter';
@@ -69,10 +68,14 @@ let didRegisterVars = false;
 /**
  * Register the resolved geometry vars as `<length>`.
  *
- * Without this their computed value is the *specified* string, so a theme
- * writing `2.5rem` or `calc(2rem + 8px)` reaches the canvas as that text and
- * `parseFloat` silently truncates it to `2.5` / `NaN`. Registered, the
- * computed value is an absolute px length the canvas can use directly.
+ * Both are consumed inside `calc()` — the box adds two rails to a diameter,
+ * the circle halves one. Unregistered, a custom property substitutes as text,
+ * so whatever a theme wrote lands in the expression verbatim and a bare `0`
+ * (a valid length on its own, a `<number>` inside `calc()`) poisons the sum:
+ * `calc(28px + 0 * 2)` is invalid at computed-value time and the box loses its
+ * size. Registered, the value is already an absolute length by the time the
+ * `calc()` sees it, so `0` means `0px` and the documented "a rail of 0 draws
+ * an arc with no track" holds.
  *
  * Only the resolved vars are registered, and the public ones deliberately are
  * not: a registered property with an `initialValue` is never
@@ -107,6 +110,65 @@ function registerSpinnerVars(): void {
   }
 }
 
+/**
+ * Pin every ring's rotation to the document timeline's origin instead of its
+ * own start time, so spinners mounted seconds apart turn in phase.
+ *
+ * Setting `startTime` is exact where arithmetic on a clock read is not: a
+ * negative `animation-delay` computed at mount is only as good as the gap
+ * between reading the clock and the frame the animation starts in, which at
+ * 10x CPU throttling measured 116deg of drift.
+ *
+ * Rings are collected and pinned in one frame because `getAnimations()`
+ * resolves style and `startTime` dirties it again, so pinning them one at a
+ * time makes each mount re-force what the previous one invalidated — 53 style
+ * recalcs for 38 spinners against 19 batched.
+ */
+const pendingRings = new Set<SVGSVGElement>();
+let flushScheduled = false;
+
+function pinRingsToTimelineOrigin(): void {
+  flushScheduled = false;
+  const animations: Animation[] = [];
+  for (const svg of pendingRings) {
+    animations.push(...svg.getAnimations());
+  }
+  pendingRings.clear();
+  for (const animation of animations) {
+    animation.startTime = 0;
+  }
+}
+
+/**
+ * Ref callback for the ring: the one place a mounted ring touches the DOM.
+ *
+ * The registration rides here rather than at module scope so it stays out of
+ * the server render and out of a bundler's reach, and rather than in an effect
+ * so it lands before the first paint. It reads nothing back — the geometry is
+ * resolved by the cascade, not in JS.
+ */
+function syncRotationPhase(
+  svg: SVGSVGElement | null,
+): (() => void) | undefined {
+  if (svg == null) {
+    return undefined;
+  }
+  registerSpinnerVars();
+  // jsdom implements no Web Animations, and this runs in every consumer's
+  // component tests.
+  if (typeof svg.getAnimations !== 'function') {
+    return undefined;
+  }
+  pendingRings.add(svg);
+  if (!flushScheduled) {
+    flushScheduled = true;
+    requestAnimationFrame(pinRingsToTimelineOrigin);
+  }
+  return () => {
+    pendingRings.delete(svg);
+  };
+}
+
 // =============================================================================
 // Animation
 // =============================================================================
@@ -139,16 +201,23 @@ const styles = stylex.create({
     // Hosts that paint a spinner inside a fixed-size control are flex
     // containers (a Switch thumb is 14px at the smallest size), and a flex
     // item's default `flex-shrink: 1` lets the parent compress this box while
-    // the canvas keeps drawing at the size the vars asked for — the ring then
+    // the ring keeps drawing at the size the vars asked for — the ring then
     // paints outside its own clipped box. Refusing to shrink keeps the two
     // measurements the same thing, so a size that does not fit is visibly
     // wrong at the host rather than silently mismatched.
     flexShrink: 0,
   },
-  canvas: {
+  ring: {
     backfaceVisibility: 'hidden',
     display: 'block',
     willChange: 'transform',
+    // The svg keeps the size its `viewBox` describes, so one user unit is one
+    // CSS pixel and the lengths below mean what they say. A themed diameter
+    // therefore draws a ring wider than the svg's own box — which is fine, and
+    // stays centered, because the box it is centered in is the span, sized
+    // from the same two vars. Clipping it to the default frame is the one
+    // thing that would break that, hence `visible`.
+    overflow: 'visible',
     // Slow the rotation dramatically under reduced-motion rather than freezing
     // it (a frozen spinner reads as broken), matching ProgressBar's approach.
     // The role="status" + "Loading" label still convey busy state (obs-6).
@@ -159,6 +228,19 @@ const styles = stylex.create({
     animationIterationCount: 'infinite',
     animationName: rotation,
     animationTimingFunction: 'linear',
+  },
+  circle: {
+    fill: 'none',
+    strokeLinecap: 'round',
+    // The geometry the ring is actually drawn at. `r` and `stroke-width` are
+    // CSS properties on an SVG shape, and a CSS declaration outranks the
+    // presentation attribute of the same name — so the attributes below stay
+    // as the size's default (and as what a server render and a no-CSS render
+    // draw), and these take over the moment the cascade has a themed value.
+    // The arc's dash pattern needs no rule of its own: `pathLength` normalizes
+    // it to the default circumference, so it scales with whatever `r` becomes.
+    r: `calc(var(${RESOLVED_DIAMETER}) / 2)`,
+    strokeWidth: `var(${RESOLVED_RAIL})`,
   },
 });
 
@@ -195,35 +277,38 @@ const sizeStyles = stylex.create({
   },
 });
 
-// The two ring colors, each carried on a real `color` property rather than
-// read from the custom property directly. That indirection is what resolves
+// The two ring colors. Each shade's token is the fallback of the public var
+// rather than a declaration of it, for exactly the reason `sizeStyles`
+// explains. They ride `stroke` directly: the paint comes off the cascade, so
 // every notation a theme can write — `var()`, `color-mix()`, and the
-// `currentColor` the inherit shade is built on — into a value the canvas can
-// stroke with; a custom property read back raw would hand `canvas` the
-// unresolved text. It is the same read-back the inherit shade already used,
-// generalized to all four shades.
-//
-// The track rides the spinner box and the arc rides the canvas inside it, so
-// the two travel on separate elements and neither needs a second channel. For
-// the inherit shade both fall back to `currentColor`, which is the box's
-// inherited color in either case — the arc's `currentColor` resolves against
-// the box, whose own color is that same inherited value.
-const trackShadeStyles = stylex.create({
-  default: {color: `var(--spinner-track-color, ${colorVars['--color-track']})`},
-  subtle: {color: `var(--spinner-track-color, ${colorVars['--color-track']})`},
-  onMedia: {
-    color: `var(--spinner-track-color, ${colorVars['--color-on-dark']})`,
+// `currentColor` the inherit shade is built on — resolves where it is used and
+// a color changed after mount repaints instead of going stale.
+const arcStyles = stylex.create({
+  default: {stroke: `var(--spinner-color, ${colorVars['--color-accent']})`},
+  subtle: {
+    stroke: `var(--spinner-color, ${colorVars['--color-text-secondary']})`,
   },
-  inherit: {color: 'var(--spinner-track-color, currentColor)'},
+  onMedia: {stroke: `var(--spinner-color, ${colorVars['--color-on-dark']})`},
+  inherit: {stroke: 'var(--spinner-color, currentColor)'},
 });
 
-const arcShadeStyles = stylex.create({
-  default: {color: `var(--spinner-color, ${colorVars['--color-accent']})`},
-  subtle: {
-    color: `var(--spinner-color, ${colorVars['--color-text-secondary']})`,
+const trackStyles = stylex.create({
+  default: {
+    stroke: `var(--spinner-track-color, ${colorVars['--color-track']})`,
+    strokeOpacity: TRACK_OPACITY.default,
   },
-  onMedia: {color: `var(--spinner-color, ${colorVars['--color-on-dark']})`},
-  inherit: {color: 'var(--spinner-color, currentColor)'},
+  subtle: {
+    stroke: `var(--spinner-track-color, ${colorVars['--color-track']})`,
+    strokeOpacity: TRACK_OPACITY.subtle,
+  },
+  onMedia: {
+    stroke: `var(--spinner-track-color, ${colorVars['--color-on-dark']})`,
+    strokeOpacity: TRACK_OPACITY.onMedia,
+  },
+  inherit: {
+    stroke: 'var(--spinner-track-color, currentColor)',
+    strokeOpacity: TRACK_OPACITY.inherit,
+  },
 });
 
 // =============================================================================
@@ -308,111 +393,11 @@ export function Spinner({
   ref,
   ...restProps
 }: SpinnerProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  // Colors are resolved from the cascade at draw time, so the tokens are read
-  // only as a redraw signal: their identity changes when the theme does.
-  const {tokens: themeTokens} = useTheme();
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas == null) {
-      return;
-    }
-
-    const context = canvas.getContext('2d');
-    if (!context) {
-      return;
-    }
-
-    // The box the canvas sits in. It carries the track color and is sized from
-    // the geometry vars, so it is both the second color channel and the thing
-    // whose resize means "the geometry changed".
-    const box = canvas.parentElement;
-
-    registerSpinnerVars();
-
-    let lastDrawn = '';
-
-    const draw = () => {
-      const canvasStyle = getComputedStyle(canvas);
-
-      // Registered as <length>, so a themed value arrives resolved to px —
-      // see resolveRingGeometry for how each var falls back when it did not.
-      const {diameter, border} = resolveRingGeometry(
-        parseFloat(canvasStyle.getPropertyValue(RESOLVED_DIAMETER)),
-        parseFloat(canvasStyle.getPropertyValue(RESOLVED_RAIL)),
-        SIZES[size],
-      );
-      const pixelRatio = window.devicePixelRatio || 1;
-
-      // Both colors arrive resolved (see trackShadeStyles / arcShadeStyles):
-      // the arc from the canvas, the track from the box it sits in.
-      const activeColor = canvasStyle.color;
-      const backgroundColor =
-        box == null ? activeColor : getComputedStyle(box).color;
-
-      const key = `${diameter}|${border}|${pixelRatio}|${activeColor}|${backgroundColor}`;
-      if (key === lastDrawn) {
-        return;
-      }
-      lastDrawn = key;
-
-      const cssSize = diameter + border * 2;
-
-      // Round to an even number of device pixels so the center stays on a whole
-      // pixel (avoids rotation jitter); keep CSS size pinned to cssSize (#2732).
-      const rawFrameSize = Math.round(cssSize * pixelRatio);
-      const frameSize = rawFrameSize + (rawFrameSize % 2);
-
-      const scale = frameSize / cssSize;
-      const radius = (diameter / 2) * scale;
-      const lineWidth = border * scale;
-
-      canvas.height = canvas.width = frameSize;
-      canvas.style.width = canvas.style.height = cssSize + 'px';
-
-      context.lineCap = 'round';
-      context.lineWidth = lineWidth;
-
-      const center = frameSize / 2;
-
-      // Background circle (full ring). onMedia and inherit fade it so the arc
-      // reads against an arbitrary backdrop; see TRACK_ALPHA.
-      context.beginPath();
-      context.arc(center, center, radius, 0, 2 * Math.PI);
-      context.strokeStyle = backgroundColor;
-      context.globalAlpha = TRACK_ALPHA[shade];
-      context.stroke();
-      context.globalAlpha = 1;
-
-      // Active arc (partial ring, colored)
-      context.beginPath();
-      context.arc(
-        center,
-        center,
-        radius,
-        START_POINT * Math.PI,
-        ((START_POINT + SPREAD) % 2) * Math.PI,
-      );
-      context.strokeStyle = activeColor;
-      context.stroke();
-    };
-
-    draw();
-
-    // The box is sized from the same vars the ring is drawn from, so its
-    // resize is the signal that a themed diameter or rail width changed —
-    // including changes no dependency can see, like a media query swapping the
-    // var or a root font-size change moving a rem. Redrawing only when the
-    // computed inputs actually differ keeps this to one draw on mount.
-    if (box == null || typeof ResizeObserver === 'undefined') {
-      return;
-    }
-    const observer = new ResizeObserver(draw);
-    observer.observe(box);
-    return () => observer.disconnect();
-  }, [shade, size, themeTokens]);
-
+  const {border, diameter} = SIZES[size];
+  const frameSize = diameter + border * 2;
+  const center = frameSize / 2;
+  const circumference = Math.PI * diameter;
+  const arcLength = circumference * ARC_FRACTION;
   const hasLabel = label != null;
   const labelId = useId();
 
@@ -439,7 +424,6 @@ export function Spinner({
         hasLabel ? '' : themeProps('spinner', {size, shade}),
         stylex.props(
           styles.spinner,
-          trackShadeStyles[shade],
           // The size's geometry always rides the span that draws the ring. It
           // reads the public vars rather than declaring them, so it does not
           // matter whether the theme target is this element or the wrapper —
@@ -450,10 +434,33 @@ export function Spinner({
         hasLabel ? undefined : className,
         hasLabel ? {} : style,
       )}>
-      <canvas
-        ref={canvasRef}
-        {...stylex.props(styles.canvas, arcShadeStyles[shade])}
-      />
+      <svg
+        ref={syncRotationPhase}
+        width={frameSize}
+        height={frameSize}
+        viewBox={`0 0 ${frameSize} ${frameSize}`}
+        aria-hidden="true"
+        {...stylex.props(styles.ring)}>
+        <circle
+          cx={center}
+          cy={center}
+          r={diameter / 2}
+          strokeWidth={border}
+          {...stylex.props(styles.circle, trackStyles[shade])}
+        />
+        <circle
+          cx={center}
+          cy={center}
+          r={diameter / 2}
+          strokeWidth={border}
+          // Normalized to the default circumference, so the dash pattern below
+          // stays 135deg of arc whatever `r` the cascade ends up drawing.
+          pathLength={circumference}
+          strokeDasharray={`${arcLength} ${circumference - arcLength}`}
+          transform={`rotate(-90 ${center} ${center})`}
+          {...stylex.props(styles.circle, arcStyles[shade])}
+        />
+      </svg>
     </span>
   );
 

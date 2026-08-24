@@ -9,11 +9,30 @@
  * SYNC: When Spinner.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Spinner} from './Spinner';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+
+/** sm/md/lg/xl, as Spinner.tsx defines them. */
+const SIZES = {
+  sm: {diameter: 10, border: 2},
+  md: {diameter: 14, border: 3},
+  lg: {diameter: 18, border: 3},
+  xl: {diameter: 28, border: 4},
+} as const;
+
+const ring = (testId = 'spinner') =>
+  screen.getByTestId(testId).querySelector('svg') as SVGSVGElement;
+
+const circles = (testId = 'spinner') => {
+  const [track, arc] = [...ring(testId).querySelectorAll('circle')];
+  return {track, arc};
+};
+
+const dashOf = (el: SVGCircleElement) =>
+  (el.getAttribute('stroke-dasharray') ?? '').split(/[\s,]+/).map(Number);
 
 describe('Spinner', () => {
   it('renders with default props', () => {
@@ -124,12 +143,12 @@ describe('Spinner', () => {
     expect(spinner.tagName.toLowerCase()).toBe('span');
   });
 
-  // The ring is painted on a canvas: jsdom implements neither the 2d context
-  // nor layout, so no test here can reach what is drawn — that is verified in
-  // a browser, and the numbers are in the PR. What IS a contract a unit test
-  // can hold is the routing: a theme writes an override against the documented
-  // key, and it has to come out on the selector the component reads from.
-  // The fallback half of the geometry lives in resolveRingGeometry.test.ts.
+  // The themed geometry resolves in the cascade — jsdom implements no layout
+  // and no custom-property registration, so no test here can reach what a
+  // theme actually draws; that is verified in a browser and the numbers are in
+  // the PR. What IS a contract a unit test can hold is the routing: a theme
+  // writes an override against the documented key, and it has to come out on
+  // the selector the component reads from.
   describe('a theme reaches the spinner through its public vars', () => {
     const cssFor = (
       components: Parameters<typeof defineTheme>[0]['components'],
@@ -163,5 +182,155 @@ describe('Spinner', () => {
         '.astryx-spinner {\n    --spinner-color: var(--color-brand);',
       );
     });
+  });
+});
+
+describe('Spinner ring', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('draws the ring in SVG', () => {
+    render(<Spinner data-testid="spinner" />);
+    const svg = ring();
+    expect(svg).not.toBeNull();
+    expect(svg.querySelectorAll('circle')).toHaveLength(2);
+    expect(screen.getByTestId('spinner').querySelector('canvas')).toBeNull();
+  });
+
+  it.each(Object.entries(SIZES))(
+    'sizes the %s ring from its size token',
+    (size, {diameter, border}) => {
+      render(
+        <Spinner size={size as keyof typeof SIZES} data-testid="spinner" />,
+      );
+      const frame = diameter + border * 2;
+      const svg = ring();
+      expect(svg.getAttribute('viewBox')).toBe(`0 0 ${frame} ${frame}`);
+      for (const c of [circles().track, circles().arc]) {
+        expect(Number(c.getAttribute('cx'))).toBe(frame / 2);
+        expect(Number(c.getAttribute('cy'))).toBe(frame / 2);
+        expect(Number(c.getAttribute('r'))).toBe(diameter / 2);
+        expect(Number(c.getAttribute('stroke-width'))).toBe(border);
+      }
+    },
+  );
+
+  // The canvas ring swept 135deg, not the 270deg its SPREAD comment claimed.
+  it.each(Object.entries(SIZES))(
+    'sweeps 135 degrees at %s',
+    (size, {diameter}) => {
+      render(
+        <Spinner size={size as keyof typeof SIZES} data-testid="spinner" />,
+      );
+      const {track, arc} = circles();
+      const [on, off] = dashOf(arc);
+      expect(on + off).toBeCloseTo(Math.PI * diameter, 6);
+      expect((on / (on + off)) * 360).toBeCloseTo(135, 6);
+      expect(track.getAttribute('stroke-dasharray')).toBeNull();
+    },
+  );
+
+  it('starts the arc at twelve o’clock', () => {
+    render(<Spinner data-testid="spinner" />);
+    const frame = SIZES.md.diameter + SIZES.md.border * 2;
+    expect(circles().arc.getAttribute('transform')).toBe(
+      `rotate(-90 ${frame / 2} ${frame / 2})`,
+    );
+  });
+
+  // The dash pattern is authored in absolute lengths, but a theme can move `r`
+  // from the cascade — so the arc declares its length as the default
+  // circumference and lets the UA rescale the pattern to whatever it actually
+  // draws. At the default geometry that is a no-op, which is what this pins:
+  // pathLength and the dash total are the same number.
+  it.each(Object.entries(SIZES))(
+    'normalizes the %s arc to its own circumference',
+    (size, {diameter}) => {
+      render(
+        <Spinner size={size as keyof typeof SIZES} data-testid="spinner" />,
+      );
+      const {track, arc} = circles();
+      const [on, off] = dashOf(arc);
+      expect(Number(arc.getAttribute('pathLength'))).toBeCloseTo(on + off, 6);
+      expect(Number(arc.getAttribute('pathLength'))).toBeCloseTo(
+        Math.PI * diameter,
+        6,
+      );
+      // The track is a full ring, so it needs neither.
+      expect(track.getAttribute('pathLength')).toBeNull();
+    },
+  );
+
+  // The whole point of the SVG ring: the colours come off the cascade, so
+  // nothing has to resolve them in JS. A read reaching the paint path again
+  // fails here.
+  it.each(['default', 'subtle', 'onMedia', 'inherit'] as const)(
+    'reads no computed style to paint the %s shade',
+    shade => {
+      const spy = vi.spyOn(window, 'getComputedStyle');
+      render(<Spinner shade={shade} data-testid="spinner" />);
+      const spinner = screen.getByTestId('spinner');
+      const onSpinner = spy.mock.calls.filter(
+        ([el]) => el instanceof Element && spinner.contains(el),
+      );
+      expect(onSpinner).toEqual([]);
+    },
+  );
+
+  it('schedules no frame where the Web Animations API is absent', () => {
+    expect(SVGElement.prototype).not.toHaveProperty('getAnimations');
+    const raf = vi.spyOn(window, 'requestAnimationFrame');
+    render(<Spinner data-testid="spinner" />);
+    expect(ring()).not.toBeNull();
+    expect(raf).not.toHaveBeenCalled();
+  });
+
+  it('pins every ring to the timeline origin in a single frame', () => {
+    const animations: {startTime: number | null}[] = [];
+    const getAnimations = vi.fn(function (this: SVGElement) {
+      const a = {startTime: null as number | null};
+      animations.push(a);
+      return [a];
+    });
+    Object.defineProperty(SVGElement.prototype, 'getAnimations', {
+      value: getAnimations,
+      configurable: true,
+      writable: true,
+    });
+    const frames: FrameRequestCallback[] = [];
+    const raf = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(cb => {
+        frames.push(cb);
+        return frames.length;
+      });
+    const computed = vi.spyOn(window, 'getComputedStyle');
+
+    try {
+      const {container} = render(
+        <>
+          {Array.from({length: 5}, (_, i) => (
+            <Spinner key={i} />
+          ))}
+        </>,
+      );
+      // One frame for five spinners: the reads are batched, so no mount
+      // re-forces what the previous mount invalidated.
+      expect(raf).toHaveBeenCalledTimes(1);
+      frames.forEach(cb => cb(0));
+      expect(animations).toHaveLength(5);
+      expect(animations.every(a => a.startTime === 0)).toBe(true);
+      // The pin runs on the branch the other shade cases cannot reach, so the
+      // no-read assertion is made here too.
+      expect(
+        computed.mock.calls.filter(
+          ([el]) => el instanceof Element && container.contains(el),
+        ),
+      ).toEqual([]);
+    } finally {
+      // @ts-expect-error — removing the stub restores jsdom's real surface
+      delete SVGElement.prototype.getAnimations;
+    }
   });
 });

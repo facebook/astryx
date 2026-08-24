@@ -20,7 +20,7 @@ import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
 import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useTranslator} from '../i18n';
 import {useLocale} from '../i18n/useLocale';
@@ -33,6 +33,7 @@ import type {
   TimestampTooltipLine,
 } from './tooltipEntries';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // Load the overlay lazily so a card-less Timestamp — the default — never
 // bundles HoverCard or the copy affordance's Icon/IconButton. Mirrors the code
 // split the read-only Tooltip path used before it.
@@ -422,6 +423,7 @@ export function Timestamp({
   const t = useTranslator();
   const locale = useLocale();
   const timeRef = useRef<HTMLTimeElement>(null);
+  const mergedTimeRef = useMergedRefs(ref, timeRef);
   const [now, setNow] = useState(() => new Date());
 
   const date = parseValue(value);
@@ -526,7 +528,7 @@ export function Timestamp({
       xstyle={xstyle}
       {...timestampProps}>
       <time
-        ref={mergeRefs(ref, timeRef)}
+        ref={mergedTimeRef}
         dateTime={isoString}
         // `ariaLabelText` is '' only for an invalid date, which bails out
         // before rendering — but keep the guard local: an empty aria-label

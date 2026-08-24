@@ -109,6 +109,73 @@ export async function collectThemingTargets(coreSrc) {
 }
 
 /**
+ * One public custom property a theme may set on a component's target.
+ * @typedef {object} ThemingVar
+ * @property {string} name - the custom property, e.g. `--tree-list-indent`
+ * @property {string} component - the component whose doc declares it
+ * @property {string} dir - absolute path to the directory the doc lives in
+ * @property {string} default - the documented default value
+ */
+
+/**
+ * Every PUBLIC theming var declared under a core `src` directory, sorted by
+ * name. Private `--_*` vars are a component's own plumbing, not a theme's to
+ * set, so they are not enumerated here.
+ *
+ * @param {string} coreSrc - absolute path to `<core>/src`
+ * @returns {Promise<ThemingVar[]>}
+ */
+export async function collectThemingVars(coreSrc) {
+  if (!coreSrc || !fs.existsSync(coreSrc)) return [];
+
+  /** @type {Map<string, ThemingVar>} */
+  const vars = new Map();
+
+  /** @param {string} dir */
+  async function scan(dir) {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (SKIP_DIRS.has(entry.name)) continue;
+        await scan(full);
+        continue;
+      }
+      if (!entry.name.endsWith('.doc.mjs')) continue;
+
+      /** @type {any} */
+      let doc;
+      try {
+        doc = await loadComponentDoc(full);
+      } catch {
+        continue;
+      }
+
+      const component =
+        typeof doc?.name === 'string' && doc.name
+          ? doc.name
+          : path.basename(path.dirname(full));
+
+      for (const entryVar of doc?.theming?.vars || []) {
+        const name = entryVar?.name;
+        if (typeof name !== 'string') continue;
+        if (entryVar.private === true || name.startsWith('--_')) continue;
+        if (vars.has(name)) continue;
+        vars.set(name, {
+          name,
+          component,
+          dir: path.dirname(full),
+          default: typeof entryVar.default === 'string' ? entryVar.default : '',
+        });
+      }
+    }
+  }
+
+  await scan(coreSrc);
+
+  return [...vars.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
  * Collapse the enumeration into the `{key: [props and states]}` map theme
  * validation checks override keys against — both are legal override keys, so
  * they share one list.

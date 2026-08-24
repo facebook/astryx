@@ -41,12 +41,13 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {getKey, mergeProps, mergeRefs} from '../utils';
+import {getKey, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Types
 // =============================================================================
@@ -691,6 +692,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           e.preventDefault();
           popover.hide();
           break;
+        case 'Tab':
+          // Dismiss here rather than from the blur this press produces:
+          // hiding a top-layer popover during the focusout makes Chrome
+          // abandon the in-flight focus move and drop focus to <body>, so the
+          // user's Tab appears to do nothing. Selector and MultiSelector
+          // already dismiss on this keydown.
+          popover.hide();
+          break;
         case 'Home':
           if (popover.isOpen) {
             e.preventDefault();
@@ -760,7 +769,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   return (
     <>
       <input
-        ref={mergeRefs(ref, inputRef, fallbackAnchorRef)}
+        ref={useMergedRefs(ref, inputRef, fallbackAnchorRef)}
         id={inputId}
         type="text"
         role="combobox"

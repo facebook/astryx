@@ -100,8 +100,10 @@ function blocksBuiltPerChunk(
   return built;
 }
 
-const median = (values: number[]): number =>
-  [...values].sort((a, b) => a - b)[Math.floor((values.length - 1) / 2)];
+const percentile = (values: number[], p: number): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+};
 
 const sum = (values: number[]): number => values.reduce((a, b) => a + b, 0);
 
@@ -248,14 +250,37 @@ describe('parseMarkdownIncremental cache', () => {
   it('builds a bounded number of blocks per chunk however long the document is', () => {
     const chunkSize = 50;
     const medians = [50, 200, 500].map(paragraphs =>
-      median(blocksBuiltPerChunk(generateAIResponse(paragraphs), chunkSize)),
+      percentile(
+        blocksBuiltPerChunk(generateAIResponse(paragraphs), chunkSize),
+        0.5,
+      ),
     );
     console.log(
       `  median blocks built per chunk (50/200/500 paragraphs): ${medians.join('/')}`,
     );
     // A chunk re-parses its unsettled tail, not the document — so the typical
     // chunk's cost is a constant, and a 10x longer document does not move it.
-    expect(medians).toEqual([2, 2, 2]);
+    expect(medians).toEqual([1, 1, 1]);
+  });
+
+  it('bounds the worst chunk, not just the typical one, at every document length', () => {
+    const chunkSize = 50;
+    const worst = [50, 200, 500].map(paragraphs =>
+      Math.max(
+        ...blocksBuiltPerChunk(generateAIResponse(paragraphs), chunkSize),
+      ),
+    );
+    console.log(
+      `  worst chunk's blocks built (50/200/500 paragraphs): ${worst.join('/')}`,
+    );
+    // A cache that dumps on a minority of chunks is flat at the median and at
+    // p95 while the total work is still quadratic: the blank-line path of
+    // #5378 hit ~1.4% of chunks on this fixture, and no percentile bound saw
+    // it. The worst chunk does, and each collapse costs more as the document
+    // grows — so this asserts the worst one, and that a 10x document does not
+    // move it. Deterministic: same fixture, same chunking, integers with no
+    // timing input.
+    expect(worst).toEqual([3, 3, 3]);
   });
 
   it('keeps the cache when source ranges are asked for', () => {
