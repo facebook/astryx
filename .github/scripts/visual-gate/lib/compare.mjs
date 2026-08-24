@@ -55,6 +55,7 @@ function pad(png, width, height, PNG) {
  * @param {string} options.diffDir - where diff PNGs are written
  * @param {number} options.threshold - pixelmatch per-pixel colour threshold
  * @param {number} options.maxDiffPixels - pixels allowed to differ before a shot counts as changed
+ * @param {boolean} [options.scoped] - the plan covers only part of the baseline
  * @returns {Promise<{changes: Change[], added: string[], removed: string[], unchanged: string[]}>}
  */
 export async function compareCaptures({
@@ -65,6 +66,7 @@ export async function compareCaptures({
   diffDir,
   threshold,
   maxDiffPixels,
+  scoped = false,
 }) {
   const {PNG} = await import('pngjs');
   const pixelmatch = (await import('pixelmatch')).default;
@@ -123,7 +125,13 @@ export async function compareCaptures({
     });
   }
 
-  const removed = [...baselineKeys].filter(key => !currentManifest.shots[key]);
+  // A scoped run (a PR shooting only the components it touched) deliberately
+  // captures a fraction of the baseline, so "in the baseline, not in this run"
+  // means out of scope — not removed. Reporting it as removal would put a
+  // five-hundred-shot deletion on every PR.
+  const removed = scoped
+    ? []
+    : [...baselineKeys].filter(key => !currentManifest.shots[key]);
   changes.sort((a, b) => b.diffPixels - a.diffPixels);
   return {changes, added, removed, unchanged};
 }

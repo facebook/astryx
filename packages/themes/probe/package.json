@@ -1,0 +1,34 @@
+{
+  "name": "@astryxdesign/theme-probe",
+  "version": "0.4.7",
+  "private": true,
+  "description": "Test fixture: a generated theme that styles every declared theming target, so the visual gate can prove each one still reaches the pixels. Never published.",
+  "author": "Meta Open Source",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/source.js",
+  "types": "./dist/source.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/source.d.ts",
+      "import": "./dist/source.mjs",
+      "require": "./dist/source.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsup"
+  },
+  "peerDependencies": {
+    "@astryxdesign/core": "0.4.7",
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.0"
+  },
+  "module": "./dist/source.mjs"
+}

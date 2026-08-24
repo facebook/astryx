@@ -54,6 +54,19 @@ const tiers = (flag('tiers') ?? config.tiers.join(',')).split(',').filter(Boolea
 const sample = flag('sample') ? Number(flag('sample')) : null;
 /** Restrict the plan to story ids containing any of these — for debugging a shot, never for a gate run. */
 const only = (flag('only') ?? '').split(',').filter(Boolean);
+/** For the `component` tier: the components a PR touched. */
+const components = (flag('components') ?? '').split(',').filter(Boolean);
+/**
+ * Above this many shots the run declines instead of capturing.
+ *
+ * A sweeping PR — a token change, a shared hook, a rename across the system —
+ * would put hundreds of diffs in front of a reviewer who has no way to judge
+ * them one by one, and the honest answer is that a per-PR check is the wrong
+ * instrument for that change: the daily gate reviews it against the whole
+ * baseline instead. Declining loudly beats either timing out or dumping a
+ * report nobody can read.
+ */
+const maxShots = flag('max-shots') ? Number(flag('max-shots')) : Infinity;
 
 /**
  * Which stories the scout needs to look at: every story of a component some
@@ -77,17 +90,19 @@ function storiesToScout(stories, targets, themeOverrides) {
 async function plan() {
   const [targets, themeOverrides] = await Promise.all([
     loadThemingTargets(REPO_ROOT),
-    loadThemeOverrides(REPO_ROOT),
+    loadThemeOverrides(REPO_ROOT, config.probeTheme),
   ]);
   const stories = readStoryIndex(storybookDir, Object.keys(config.excludeStories));
 
   let observations;
-  if (!has('no-scout') && tiers.includes('theme-matrix')) {
+  if (!has('no-scout') && (tiers.includes('theme-matrix') || tiers.includes('probe'))) {
     const cachePath = flag('observations');
     if (cachePath && fs.existsSync(cachePath)) {
       observations = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
     } else {
-      const storyIds = storiesToScout(stories, targets, themeOverrides);
+      const storyIds = tiers.includes('probe')
+        ? stories.map(story => story.id)
+        : storiesToScout(stories, targets, themeOverrides);
       process.stderr.write(`Scouting ${storyIds.length} stories for theming targets…\n`);
       observations = await scout({
         storyIds,
@@ -106,6 +121,8 @@ async function plan() {
     observations,
     defaultTheme: config.defaultTheme,
     tiers,
+    components,
+    probeTheme: config.probeTheme,
   });
   // A sample is for trying the rig out, never for a gate run: it is taken
   // evenly across the plan so it spans components rather than the first few.
@@ -163,6 +180,34 @@ function stageReportImages({reportDir, keys, currentDir, baselinePath}) {
 
 async function check() {
   const shots = await plan();
+
+  // Over budget: say so in the verdict rather than capturing. The report and
+  // the PR comment both render this, so a skipped check is visible as a
+  // decision, never as a silent pass.
+  if (shots.length > maxShots) {
+    const verdict = {
+      version: 1,
+      status: 'skipped',
+      generatedAt: new Date().toISOString(),
+      reason: `${shots.length} shots exceeds the ${maxShots}-shot budget${components.length ? ` (${components.length} components touched)` : ''} — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
+      counts: {total: shots.length, unchanged: 0, changed: 0, added: 0, removed: 0, failed: 0},
+      components,
+      changes: [],
+    };
+    fs.mkdirSync(outDir, {recursive: true});
+    fs.writeFileSync(path.join(outDir, 'verdict.json'), `${JSON.stringify(verdict, null, 2)}\n`);
+    const summary = `## Visual gate: skipped\n\n${verdict.reason}\n`;
+    process.stdout.write(summary);
+    if (flag('summary-output')) fs.writeFileSync(flag('summary-output'), summary);
+    if (process.env.GITHUB_OUTPUT) {
+      fs.appendFileSync(
+        process.env.GITHUB_OUTPUT,
+        `status=skipped\nchanged=0\nadded=0\nfailed=0\ntotal=${shots.length}\n`,
+      );
+    }
+    return EXIT.clean;
+  }
+
   process.stderr.write(`Visual gate: ${shots.length} shots (${tiers.join(', ')})\n`);
   const {manifest, failures} = await runCapture(shots);
 
@@ -182,11 +227,12 @@ async function check() {
     diffDir: path.join(reportDir, 'diff'),
     threshold: config.threshold,
     maxDiffPixels: config.maxDiffPixels,
+    scoped: components.length > 0,
   });
 
   const [targets, themeOverrides] = await Promise.all([
     loadThemingTargets(REPO_ROOT),
-    loadThemeOverrides(REPO_ROOT),
+    loadThemeOverrides(REPO_ROOT, config.probeTheme),
   ]);
   const targeting = analyzeTargeting({
     observedTargets: manifest.observedTargets,
@@ -200,7 +246,7 @@ async function check() {
     baselineManifest,
     targeting,
     failures,
-    context: {...manifest.context, tiers, baselineExists: exists},
+    context: {...manifest.context, tiers, baselineExists: exists, scoped: components.length > 0, components},
   });
 
   stageReportImages({
