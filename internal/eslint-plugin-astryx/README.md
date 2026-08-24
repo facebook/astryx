@@ -249,11 +249,12 @@ Style objects imported from another module are read from that module, so
 rewrite that moves the styles onto the child. Removing a node can shift layout,
 so it is never applied by `--fix`.
 
-### `@astryx/no-inline-merge-refs`
+### `@astryx/no-unstable-merged-refs`
 
 Flags two unstable ref-composition patterns:
 
-1. `mergeRefs(...)` inside a JSX `ref` prop. Calling the utility during render
+1. `mergeRefs(...)` used by a JSX `ref` prop, whether the call appears inline
+   or is first assigned to a local variable. Calling the utility during render
    creates a new callback ref every time, so React detaches and reattaches the
    element on unrelated rerenders.
 2. An inline callback passed to `useMergedRefs(...)`. The changing input makes
@@ -264,6 +265,8 @@ Use `useMergedRefs(...)` with stable ref inputs instead.
 ```tsx
 // Bad
 <div ref={mergeRefs(forwardedRef, internalRef)} />;
+const mergedRef = mergeRefs(forwardedRef, internalRef);
+<div ref={mergedRef} />;
 useMergedRefs(forwardedRef, node => setNode(node));
 
 // Good — the hook itself may be called inline when Hooks ordering is valid
@@ -274,8 +277,8 @@ const ref = useMergedRefs(forwardedRef, internalRef);
 <div ref={ref} />;
 ```
 
-The rule is an error in both tiers because core contains no inline
-`mergeRefs(...)` JSX callsites.
+The rule is an error in both tiers because core contains no render-time
+`mergeRefs(...)` JSX ref callsites.
 
 ### `@astryx/require-letter-spacing`
 
@@ -552,7 +555,9 @@ Breadcrumbs shipped the second shape. Both halves read as correct in review, and
 
 ```tsx
 <button
-  {...mergeProps(themeProps('breadcrumb-item-menu-trigger'), {...popover.triggerProps})}
+  {...mergeProps(themeProps('breadcrumb-item-menu-trigger'), {
+    ...popover.triggerProps,
+  })}
   {...stylex.props(itemStyles.link, itemStyles.buttonReset)}
 />
 ```

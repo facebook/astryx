@@ -151,6 +151,19 @@ describe('Button', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLButtonElement));
   });
 
+  it('keeps its merged ref attached across unrelated rerenders', () => {
+    const ref = vi.fn();
+    const {rerender} = render(<Button label="Test" ref={ref} />);
+    const button = screen.getByRole('button');
+    expect(ref).toHaveBeenLastCalledWith(button);
+    ref.mockClear();
+
+    rerender(<Button label="Test" variant="primary" ref={ref} />);
+
+    expect(ref).not.toHaveBeenCalled();
+    expect(screen.getByRole('button')).toBe(button);
+  });
+
   // endContent tests
   it('renders endContent after label', () => {
     render(

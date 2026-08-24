@@ -19,7 +19,14 @@
  * Last synced props: alt, fallbackSrc, name, size, src, status, href, as, target, rel, onClick
  */
 
-import {isValidElement, useMemo, useRef, useState, type ReactNode} from 'react';
+import {
+  isValidElement,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -34,7 +41,8 @@ import {
   type AvatarStatusLabelTarget,
 } from './AvatarStatusLabelContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {themeProps} from '../utils/themeProps';
 import {firstCharacter} from '../utils/characters';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
@@ -608,47 +616,62 @@ export function Avatar({
     label: undefined,
     update: null,
   });
-  // A fresh callback ref every render, so React reattaches it on every commit
-  // and the name is recomposed after React has written this render's props.
+  const {
+    'aria-hidden': consumerAriaHidden,
+    'aria-label': consumerAriaLabel,
+    role: consumerRole,
+  } = props;
+  // Recompose the name after React has written any relevant prop changes.
   // `update` covers the other direction: a label that changes while the avatar
   // itself does not re-render.
-  const nameRef = (element: HTMLElement | null) => {
-    if (element == null) {
-      return;
-    }
-    const target = statusLabelRef.current;
-    target.update = () => {
-      const composed = composeAccessibleName(
-        t,
-        nameLabel,
-        meaningful(target.label) ?? getStatusLabel(status),
-      );
-      // A consumer's own ARIA wins here exactly as it does in render, where
-      // the derived props spread before `{...props}`.
-      if (props['aria-label'] == null) {
-        setAttributeOrRemove(element, 'aria-label', composed);
+  const nameRef = useCallback(
+    (element: HTMLElement | null) => {
+      if (element == null) {
+        return;
       }
-      // An `<a>`/`<button>` root carries its own role and must not be hidden,
-      // so only the name transfers there.
-      if (!isInteractive) {
-        if (props.role == null) {
-          element.setAttribute('role', composed ? 'img' : 'presentation');
+      const target = statusLabelRef.current;
+      target.update = () => {
+        const composed = composeAccessibleName(
+          t,
+          nameLabel,
+          meaningful(target.label) ?? getStatusLabel(status),
+        );
+        // A consumer's own ARIA wins here exactly as it does in render, where
+        // the derived props spread before `{...props}`.
+        if (consumerAriaLabel == null) {
+          setAttributeOrRemove(element, 'aria-label', composed);
         }
-        if (props['aria-hidden'] == null) {
-          setAttributeOrRemove(
-            element,
-            'aria-hidden',
-            composed ? undefined : 'true',
-          );
+        // An `<a>`/`<button>` root carries its own role and must not be hidden,
+        // so only the name transfers there.
+        if (!isInteractive) {
+          if (consumerRole == null) {
+            element.setAttribute('role', composed ? 'img' : 'presentation');
+          }
+          if (consumerAriaHidden == null) {
+            setAttributeOrRemove(
+              element,
+              'aria-hidden',
+              composed ? undefined : 'true',
+            );
+          }
         }
-      }
-    };
-    target.update();
-    return () => {
-      target.update = null;
-    };
-  };
-  const rootRef = mergeRefs(
+      };
+      target.update();
+      return () => {
+        target.update = null;
+      };
+    },
+    [
+      consumerAriaHidden,
+      consumerAriaLabel,
+      consumerRole,
+      isInteractive,
+      nameLabel,
+      status,
+      t,
+    ],
+  );
+  const rootRef = useMergedRefs(
     ref,
     showTooltip ? tooltipHook.ref : undefined,
     nameRef,
