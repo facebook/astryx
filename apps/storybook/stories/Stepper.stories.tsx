@@ -183,7 +183,7 @@ export const StatusVertical: Story = {
           <Step
             step={0}
             label="Email verified"
-            description="ernesttien@meta.com"
+            description="alice@example.com"
             status="success"
           />
           <Step
@@ -905,7 +905,7 @@ export const OnTrackStatus: Story = {
           <Step
             step={0}
             label="Email verified"
-            description="ernesttien@meta.com"
+            description="alice@example.com"
             status="success"
           />
           <Step
