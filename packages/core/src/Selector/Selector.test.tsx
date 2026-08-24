@@ -961,7 +961,7 @@ describe('Selector', () => {
       expect(onChange).toHaveBeenCalledWith('Banana');
     });
 
-    it('closes dropdown on Tab without preventing default focus movement', async () => {
+    it('closes the search dropdown on Tab without preventing default focus movement', async () => {
       const user = userEvent.setup();
       render(
         <>
@@ -1253,6 +1253,29 @@ describe('Selector', () => {
   });
 
   describe('keyboard accessibility', () => {
+    it('Tab from the open listbox moves focus to the next control', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+          />
+          <button type="button">Next</button>
+        </>,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      await user.keyboard('{Tab}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
+    });
+
     it('trigger is focusable via Tab when enabled', async () => {
       const user = userEvent.setup();
       render(<Selector label="Fruit" options={OPTIONS} />);

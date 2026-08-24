@@ -437,6 +437,7 @@ describe('MultiSelector', () => {
 
     await user.keyboard('{Tab}');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
   });
 
   it('supports keyboard navigation with ArrowDown/ArrowUp', async () => {

@@ -356,14 +356,18 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
 
         const focusable = getFocusableElements(container);
         if (focusable.length === 0) {
+          const active = document.activeElement;
+          if (!(active instanceof HTMLElement) || !container.contains(active)) {
+            // A layer can be open while focus legitimately sits outside it —
+            // a listbox popup anchored to its own input. Cancelling there
+            // would take Tab away from the whole page.
+            return;
+          }
           // There is nowhere to advance to. Keep focus on the current
           // programmatic target (for example a dialog panel with tabIndex=-1)
           // rather than allowing the browser to move into background content.
           event.preventDefault();
-          const active = document.activeElement;
-          if (active instanceof HTMLElement && container.contains(active)) {
-            lastFocusRef.current = active;
-          }
+          lastFocusRef.current = active;
           isKeyboardNavigationRef.current = false;
           return;
         }
