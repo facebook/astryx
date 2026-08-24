@@ -34,12 +34,15 @@ const REWARD_MEMBER_NAME = 'Ami Pena';
 const REWARD_MEMBER_AVATAR = '/images/avatars/DATA-Ami-Pena.png';
 
 const styles = stylex.create({
-  // Desktop overlap stage: fixed, viewport-centered 1200px box (shared with the
+  // Desktop overlap stage: a viewport-centered 1200px box (shared with the
   // aurora blobs) so cards track the blobs on resize. Capped to 100vw to avoid
   // horizontal scroll. Hidden <1024px, where the collage takes over.
+  // Absolute against HeroThemeReel's pinLayer, which supplies the pin and the
+  // header offset — this was `fixed`, which bypassed that layer entirely and
+  // left the cards painting past the end of the page (#5392).
   stage: {
-    position: 'fixed',
-    top: 'var(--appshell-header-height, 0px)',
+    position: 'absolute',
+    top: 0,
     left: '50%',
     transform: 'translateX(-50%)',
     width: 'min(1200px, 100vw)',

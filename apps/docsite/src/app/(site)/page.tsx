@@ -39,19 +39,40 @@ const styles = stylex.create({
     // Shared by the nav→wordmark gap and the text→cards gap so they match.
     '--hero-gap': 'calc(var(--spacing-12) * 2)',
   },
-  // Desktop: fixed for pin-and-cover (heroSpacer reserves its height). Narrow:
-  // in flow — the mobile hero is taller than the viewport, so pinning stranded
-  // the lower collage below the fold.
+  // Desktop: the layer that pins the hero text over the band. Sticky rather
+  // than fixed so the pin is bounded by the band and can't paint past the end
+  // of the page (#5392); zero height so it gets the whole band to travel,
+  // with heroContent placed absolutely against it. Narrow: an inert wrapper —
+  // the mobile hero is taller than the viewport, so pinning it stranded the
+  // lower collage below the fold.
+  //
+  // It has to sit BEFORE heroSpacer in the DOM: a sticky layer pins from its
+  // natural flow position, so after the spacer it would only start pinning
+  // once the whole band had already scrolled by.
+  heroPin: {
+    position: {
+      default: 'static',
+      '@media (min-width: 1024px)': 'sticky',
+    },
+    top: {
+      default: 'auto',
+      '@media (min-width: 1024px)': 'var(--appshell-header-height, 0px)',
+    },
+    height: {
+      default: 'auto',
+      '@media (min-width: 1024px)': 0,
+    },
+    width: '100%',
+    zIndex: 0,
+  },
+  // Desktop: absolute inside heroPin, which supplies the pin and the header
+  // offset (heroSpacer reserves the band's height). Narrow: in flow.
   heroContent: {
     position: {
       default: 'relative',
-      '@media (min-width: 1024px)': 'fixed',
+      '@media (min-width: 1024px)': 'absolute',
     },
-    // top offset only matters when fixed; in flow it would leave a gap.
-    top: {
-      default: 0,
-      '@media (min-width: 1024px)': 'var(--appshell-header-height, 0px)',
-    },
+    top: 0,
     left: 0,
     right: 0,
     // Desktop: fixed band, centered (cards are a separate overlap layer).
@@ -85,7 +106,7 @@ const styles = stylex.create({
     // content (the buttons/links re-enable pointer events on themselves).
     zIndex: 0,
   },
-  // Reserves the fixed hero's height (desktop); 0 on narrow (hero is in flow).
+  // Reserves the pinned hero's height (desktop); 0 on narrow (hero is in flow).
   heroSpacer: {
     height: {
       default: 0,
@@ -344,9 +365,14 @@ export default function HomePage() {
       <HeroReelProvider>
         {/* Desktop overlap cards layer (the gutters). */}
         <HeroReelCards />
-        {/* Reserves the fixed hero's height so the showcase starts below it. */}
+        {/* Desktop: pins the hero text over the band. Narrow: inert wrapper.
+            Must precede heroSpacer — a sticky layer pins from its natural
+            flow position. */}
+        <div {...stylex.props(styles.heroPin)}>
+          <HeroContent contentRef={heroContentRef} />
+        </div>
+        {/* Reserves the pinned hero's height so the showcase starts below it. */}
         <div {...stylex.props(styles.heroSpacer)} aria-hidden="true" />
-        <HeroContent contentRef={heroContentRef} />
       </HeroReelProvider>
       <VStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>
         <FeaturesShowcase />
