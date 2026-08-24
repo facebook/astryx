@@ -28,6 +28,13 @@
  *
  * Name + keyword signals always outweigh description/prose, so an exact match
  * sorts above an incidental mention.
+ *
+ * Keywords come in two grades. Authored ones — a component's `keywords`, a
+ * block's `componentsUsed`, a page's `category` — score the ladder above at
+ * face value. Derived ones — the component names read back out of a page
+ * template's own source — score it scaled by {@link derivedKeywordWeight},
+ * because "this page renders a <List> somewhere" is weaker evidence than "this
+ * page is about lists", and weaker still the more components the page renders.
  */
 
 import {pathToFileURL} from 'node:url';
@@ -51,6 +58,7 @@ import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
  * @property {'component'|'hook'|'doc'|'template'} domain
  * @property {string} name
  * @property {string[]} [keywords]
+ * @property {string[]} [derivedKeywords] - Read back from source, not authored; weighted down by breadth.
  * @property {string} [description]
  * @property {string[]} [prose]
  * @property {string} [_import]
@@ -251,6 +259,62 @@ export function scoreQuery(term, tokens, candidate) {
 }
 
 /**
+ * Pivot for the derived-keyword falloff `PIVOT / (PIVOT + count)`. Tuned so a
+ * focused page (~5 rendered components) lands an exact derived hit on the
+ * "related keyword" rung (70) rather than the "authored keyword" rung (90) —
+ * derived evidence enters one rung below what a template author declared — and
+ * a page past ~14 components no longer clears {@link MIN_TOKEN_SCORE} on one,
+ * so a kitchen-sink page stops claiming a concept it only brushes against. For
+ * scale: the median page template renders 13 components, the widest renders 51.
+ */
+const DERIVED_SURFACE_PIVOT = 18;
+
+/**
+ * Length-normalize a derived keyword hit by how many keywords were derived
+ * alongside it. A page rendering five components is plausibly *about* any one
+ * of them; a page rendering fifty is about none of them. Without this every
+ * page that renders a `<List>` scored an identical 90 on "list" and the
+ * ranking degenerated into `name.localeCompare`.
+ *
+ * @param {number} count - How many keywords were derived for this candidate.
+ * @returns {number} Multiplier in (0, 1); 0 when nothing was derived.
+ */
+function derivedKeywordWeight(count) {
+  if (count <= 0) return 0;
+  return DERIVED_SURFACE_PIVOT / (DERIVED_SURFACE_PIVOT + count);
+}
+
+/**
+ * Run the keyword ladder (exact 90 / substring + distance-1 70 / distance-2 30)
+ * over one keyword list, scaled by `weight`, feeding each hit to `consider`.
+ *
+ * @param {string} term - Lowercased search term.
+ * @param {string[]} keywords
+ * @param {number} weight - 1 for authored keywords; see {@link derivedKeywordWeight}.
+ * @param {string} label - How the hit reads in the `reason` ("keyword" / "renders").
+ * @param {(score: number, why: string) => void} consider
+ */
+function considerKeywords(term, keywords, weight, label, consider) {
+  /** @param {number} score */
+  const scaled = score => Math.round(score * weight);
+  for (const kw of keywords) {
+    const kwLower = String(kw).toLowerCase();
+    if (kwLower === term) {
+      consider(scaled(90), `${label} "${kw}"`);
+      continue;
+    }
+    const s = term.length < kwLower.length ? term : kwLower;
+    const l = term.length < kwLower.length ? kwLower : term;
+    if (s.length >= 4 && l.includes(s) && s.length / l.length >= 0.5) {
+      consider(scaled(70), `${label} "${kw}"`);
+    }
+    const dist = levenshteinDistance(term, kwLower);
+    if (dist === 1) consider(scaled(70), `${label} "${kw}" (distance ${dist})`);
+    else if (dist === 2) consider(scaled(30), `${label} "${kw}" (distance ${dist})`);
+  }
+}
+
+/**
  * Score a single candidate against the search term across name, keywords,
  * and prose signals. Returns the best (highest) score plus a human reason,
  * or null if nothing matched above the floor.
@@ -258,12 +322,16 @@ export function scoreQuery(term, tokens, candidate) {
  * @param {string} term - Lowercased search term.
  * @param {object} candidate
  * @param {string} candidate.name - Primary identifier (component/hook name, topic, template name).
- * @param {string[]} [candidate.keywords]
+ * @param {string[]} [candidate.keywords] - Authored keywords; scored at face value.
+ * @param {string[]} [candidate.derivedKeywords] - Read back from source; scored down by breadth.
  * @param {string} [candidate.description]
  * @param {string[]} [candidate.prose] - Extra free-text blobs (doc section text, best practices).
  * @returns {{score: number, reason: string} | null}
  */
-export function scoreCandidate(term, {name, keywords = [], description = '', prose = []}) {
+export function scoreCandidate(
+  term,
+  {name, keywords = [], derivedKeywords = [], description = '', prose = []},
+) {
   let best = 0;
   let reason = '';
   /**
@@ -296,21 +364,16 @@ export function scoreCandidate(term, {name, keywords = [], description = '', pro
   }
 
   // ── Keyword signals ─────────────────────────────────────────────
-  for (const kw of keywords) {
-    const kwLower = String(kw).toLowerCase();
-    if (kwLower === term) {
-      consider(90, `keyword "${kw}"`);
-      continue;
-    }
-    const s = term.length < kwLower.length ? term : kwLower;
-    const l = term.length < kwLower.length ? kwLower : term;
-    if (s.length >= 4 && l.includes(s) && s.length / l.length >= 0.5) {
-      consider(70, `keyword "${kw}"`);
-    }
-    const dist = levenshteinDistance(term, kwLower);
-    if (dist === 1) consider(70, `keyword "${kw}" (distance ${dist})`);
-    else if (dist === 2) consider(30, `keyword "${kw}" (distance ${dist})`);
-  }
+  considerKeywords(term, keywords, 1, 'keyword', consider);
+
+  // ── Derived keyword signals (length-normalized) ─────────────────
+  considerKeywords(
+    term,
+    derivedKeywords,
+    derivedKeywordWeight(derivedKeywords.length),
+    'renders',
+    consider,
+  );
 
   // ── Prose / description signals (stem-tolerant whole word) ──────
   // Match the term's stem as a whole word, tolerating plural/gerund suffixes
@@ -483,24 +546,30 @@ async function gatherTemplates(cwd) {
     return [];
   }
   return templates.map(t => {
-    // Blocks ship componentsUsed; page templates don't, so derive them from the
-    // source. Category words (e.g. "Dashboard - Analytics") are strong intent
-    // signal for pages, which otherwise only index on name + description.
-    let keywords = Array.isArray(t.componentsUsed) ? [...t.componentsUsed] : [];
+    // Blocks ship componentsUsed; page templates usually don't, so read them
+    // back out of the source. Category words (e.g. "Dashboard - Analytics") are
+    // strong intent signal for pages, which otherwise only index on name +
+    // description.
+    const keywords = Array.isArray(t.componentsUsed) ? [...t.componentsUsed] : [];
+    /** @type {string[]} */
+    let derivedKeywords = [];
     if (t.type === 'page') {
       if (t.filePath) {
         try {
-          keywords = keywords.concat(extractComponents(t.filePath));
+          // Source-read, not authored: a page rendering a <List> in a sidebar
+          // must not claim "list" as loudly as one whose category says so.
+          derivedKeywords = extractComponents(t.filePath);
         } catch {
           // Best-effort: skip keyword enrichment if the source can't be read.
         }
       }
-      if (t.category) keywords = keywords.concat(t.category.split(/[^A-Za-z0-9]+/).filter(Boolean));
+      if (t.category) keywords.push(...t.category.split(/[^A-Za-z0-9]+/).filter(Boolean));
     }
     return {
       domain: 'template',
       name: t.dirName,
       keywords,
+      derivedKeywords,
       description: t.description || '',
       _displayName: t.name,
       _kind: t.type, // 'page' | 'block'
