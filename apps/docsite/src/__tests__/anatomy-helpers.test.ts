@@ -1,7 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
-import {anatomyDescription} from '../components/component-detail/anatomyHelpers';
+import {
+  anatomyDescription,
+  anatomyNameSegments,
+} from '../components/component-detail/anatomyHelpers';
 
 describe('anatomy description', () => {
   it('marks a required element with a bold lead-in on its description', () => {
@@ -40,5 +43,28 @@ describe('anatomy description', () => {
         description: '\n  A small indicator in the bottom-right corner.\n',
       }),
     ).toBe('**Required:** A small indicator in the bottom-right corner.');
+  });
+});
+
+describe('anatomy name segments', () => {
+  it('offers a break after a solidus, which CSS does not', () => {
+    // Field: "Optional/Required" is 132px in a 108px content box and has no
+    // break opportunity, so it came out as "Optional/Requ" / "ired indicator".
+    expect(anatomyNameSegments('Optional/Required indicator')).toEqual([
+      'Optional/',
+      'Required indicator',
+    ]);
+  });
+
+  it('leaves a name the browser can already wrap as one piece', () => {
+    // A hyphen is a break opportunity, so "Scroll-to-bottom" wraps correctly.
+    expect(anatomyNameSegments('Scroll-to-bottom button')).toEqual([
+      'Scroll-to-bottom button',
+    ]);
+    expect(anatomyNameSegments('Status dot')).toEqual(['Status dot']);
+  });
+
+  it('splits every solidus in a name', () => {
+    expect(anatomyNameSegments('a/b/c')).toEqual(['a/', 'b/', 'c']);
   });
 });

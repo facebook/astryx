@@ -5,9 +5,9 @@
  *
  * The `component-detail/` directory holds the internal building blocks of a
  * single page. Unlike `app/`, it contains no Next.js route entry points and no
- * script-consumed modules, so every module in it must be reachable from an
- * import — a renderer that nothing imports is dead code, and the data it was
- * written to display silently never reaches the page.
+ * script-consumed modules, so every module in it must be reachable from the
+ * router — a renderer nothing on the page reaches is dead code, and the data it
+ * was written to display silently never reaches the page.
  *
  * Run: pnpm -F @astryxdesign/docsite test
  */
@@ -23,6 +23,7 @@ const SRC_DIR = path.resolve(
   '..',
 );
 const DETAIL_DIR = path.join(SRC_DIR, 'components/component-detail');
+const APP_DIR = path.join(SRC_DIR, 'app');
 const EXTENSIONS = ['.ts', '.tsx'];
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -63,31 +64,47 @@ function resolveRelative(fromFile: string, specifier: string): string | null {
 
 const SPECIFIER_RE = /(?:from\s*|import\(\s*|require\(\s*)['"]([^'"]+)['"]/g;
 
-function collectImportedFiles(files: string[]): Set<string> {
-  const imported = new Set<string>();
-  for (const file of files) {
+/**
+ * Walk the relative-import graph out from `entries`, returning every file
+ * reachable from one of them.
+ *
+ * Reachability, not "somebody imports it": a renderer imported only by its own
+ * unit test — or only by another module the page never reaches — is still dark
+ * on the page, and a guard that counted those importers would pass on it.
+ */
+function collectReachable(entries: string[]): Set<string> {
+  const reachable = new Set<string>(entries);
+  const queue = [...entries];
+  while (queue.length > 0) {
+    const file = queue.pop()!;
     const source = fs.readFileSync(file, 'utf8');
     for (const match of source.matchAll(SPECIFIER_RE)) {
       const resolved = resolveRelative(file, match[1]);
-      if (resolved !== null) {
-        imported.add(resolved);
+      if (resolved !== null && !reachable.has(resolved)) {
+        reachable.add(resolved);
+        queue.push(resolved);
       }
     }
   }
-  return imported;
+  return reachable;
 }
 
 describe('component detail wiring', () => {
-  it('imports every module in component-detail/ from somewhere', () => {
+  it('reaches every module in component-detail/ from a page', () => {
     const detailModules = walk(DETAIL_DIR).filter(
       file => !file.includes('.test.'),
     );
     // Guard against a vacuous pass if the directory is ever moved or renamed.
     expect(detailModules.length).toBeGreaterThan(5);
 
-    const imported = collectImportedFiles(walk(SRC_DIR));
+    // The Next.js router loads `app/`; everything else in `src/` is only code
+    // that something under `app/` pulls in.
+    const entries = walk(APP_DIR);
+    expect(entries.length).toBeGreaterThan(5);
+
+    const reachable = collectReachable(entries);
     const orphans = detailModules
-      .filter(file => !imported.has(file))
+      .filter(file => !reachable.has(file))
       .map(file => path.relative(SRC_DIR, file))
       .sort();
 

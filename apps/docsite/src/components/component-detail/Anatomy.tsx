@@ -2,6 +2,7 @@
 
 'use client';
 
+import {Fragment} from 'react';
 import {Heading} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Section} from '@astryxdesign/core/Section';
@@ -9,7 +10,7 @@ import {Table, pixel} from '@astryxdesign/core/Table';
 import {Card} from '@astryxdesign/core/Card';
 import type {AnatomyElement} from '../../generated/componentRegistry';
 import {MarkdownText} from '../MarkdownText';
-import {anatomyDescription} from './anatomyHelpers';
+import {anatomyDescription, anatomyNameSegments} from './anatomyHelpers';
 
 interface AnatomyProps {
   elements: AnatomyElement[];
@@ -41,6 +42,15 @@ export function Anatomy({elements}: AnatomyProps) {
                 key: 'name',
                 header: 'Element',
                 width: pixel(140),
+                renderCell: (item: Record<string, unknown>) =>
+                  anatomyNameSegments(item.name as string).map(
+                    (segment, index) => (
+                      <Fragment key={index}>
+                        {index > 0 ? <wbr /> : null}
+                        {segment}
+                      </Fragment>
+                    ),
+                  ),
               },
               {
                 key: 'description',
