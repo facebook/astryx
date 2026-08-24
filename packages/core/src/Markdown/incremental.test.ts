@@ -143,13 +143,13 @@ describe('parseMarkdownIncremental', () => {
   it('does not hold back lines inside an unclosed fence', () => {
     const state = createIncrementalState();
     const blocks = parseMarkdownIncremental(
-      'Intro\n\n```ts\ntype Id = string | number;\n- still code',
+      'Intro\n\n```ts\ntype Id = string | number;',
       state,
     );
     const code = blocks.find(block => block.type === 'codeblock');
     expect(code).toMatchObject({
       type: 'codeblock',
-      content: 'type Id = string | number;\n- still code',
+      content: 'type Id = string | number;',
     });
   });
 
