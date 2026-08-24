@@ -1622,6 +1622,7 @@ export function Markdown({
   className,
   style,
   'data-testid': testId,
+  ...props
 }: MarkdownProps): React.ReactElement {
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
@@ -1744,6 +1745,8 @@ export function Markdown({
     const renderedInline = (
       <span
         ref={ref}
+        // Consumer props first: what the component sets for itself wins.
+        {...props}
         data-testid={testId}
         {...mergeProps(
           themeProps('markdown', {density}),
@@ -1775,8 +1778,11 @@ export function Markdown({
 
   const rendered = (
     <div
-      role="document"
       ref={ref as React.Ref<HTMLDivElement>}
+      // Consumer props first: what the component sets for itself — the
+      // document role included — wins.
+      {...props}
+      role="document"
       data-testid={testId}
       {...mergeProps(
         themeProps('markdown', {density}),
