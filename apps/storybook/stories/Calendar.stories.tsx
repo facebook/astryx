@@ -133,6 +133,28 @@ export const TwoMonthsRangeSelection: Story = {
   },
 };
 
+/**
+ * The two-month layout inside a container narrower than the two months need.
+ * The second month wraps below the first instead of overflowing, so a 320px
+ * viewport does not scroll sideways and the next-month button stays on screen.
+ */
+export const TwoMonthsNarrowContainer: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(undefined);
+    return (
+      <div style={{width: 320}}>
+        <Calendar
+          mode="single"
+          numberOfMonths={2}
+          value={value}
+          onChange={val => setValue(val)}
+          focusDate="2026-01-01"
+        />
+      </div>
+    );
+  },
+};
+
 export const MinMaxBoundary: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
