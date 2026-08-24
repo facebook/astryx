@@ -378,6 +378,26 @@ describe('HoverCard', () => {
     expect(trigger).not.toHaveAttribute('aria-describedby');
   });
 
+  it('merges existing popup attributes on the trigger when labelled', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-controls="menu-id"
+          aria-expanded="true">
+          Trigger
+        </button>
+      </HoverCard>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    // The hover card's dialog popup is advertised, but the trigger's own
+    // popup semantics are preserved rather than overwritten.
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger.getAttribute('aria-controls')).toContain('menu-id');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('keeps aria-describedby on the trigger when no label is provided', () => {
     render(
       <HoverCard content={<span>Card content</span>}>

@@ -264,15 +264,38 @@ export function HoverCard({
       // popup relationship with aria-haspopup/aria-expanded, not describe the
       // trigger with the dialog's content (aria-describedby is for plain-text
       // descriptions, not navigable regions). See #5049.
+      //
+      // Merge rather than overwrite: the trigger may already carry its own
+      // popup semantics (e.g. a menu button wrapped in a labelled HoverCard),
+      // so preserve the existing values and restore them on cleanup.
+      const existingHaspopup = firstChild.getAttribute('aria-haspopup');
+      const existingControls = firstChild.getAttribute('aria-controls');
+      const existingExpanded = firstChild.getAttribute('aria-expanded');
+
       firstChild.setAttribute('aria-haspopup', 'dialog');
-      firstChild.setAttribute('aria-controls', hoverCard.id);
+      firstChild.setAttribute(
+        'aria-controls',
+        mergeIds(existingControls, hoverCard.id) ?? '',
+      );
       firstChild.setAttribute('aria-expanded', String(hoverCard.isOpen));
 
       return () => {
         hoverCard.ref(null);
-        firstChild.removeAttribute('aria-haspopup');
-        firstChild.removeAttribute('aria-controls');
-        firstChild.removeAttribute('aria-expanded');
+        if (existingHaspopup) {
+          firstChild.setAttribute('aria-haspopup', existingHaspopup);
+        } else {
+          firstChild.removeAttribute('aria-haspopup');
+        }
+        if (existingControls) {
+          firstChild.setAttribute('aria-controls', existingControls);
+        } else {
+          firstChild.removeAttribute('aria-controls');
+        }
+        if (existingExpanded) {
+          firstChild.setAttribute('aria-expanded', existingExpanded);
+        } else {
+          firstChild.removeAttribute('aria-expanded');
+        }
       };
     }
 

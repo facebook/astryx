@@ -13,6 +13,7 @@ export default function HoverCardHookUsage() {
     placement: 'below',
     delay: 100,
     isDefaultOpen: true,
+    label: 'Alex Morgan',
   });
 
   return (
