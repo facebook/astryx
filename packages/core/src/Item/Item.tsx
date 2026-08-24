@@ -27,12 +27,14 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 // =============================================================================
 // Types
@@ -104,6 +106,15 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * and text-overflow: ellipsis is applied.
    */
   descriptionLines?: number;
+
+  /**
+   * How the label and description sit together. `stacked` puts the description
+   * on its own line below the label; `inline` keeps both on one line, with the
+   * description ellipsizing first, so the row fits a fixed-height host.
+   *
+   * @default 'stacked'
+   */
+  layout?: 'stacked' | 'inline';
 
   /**
    * Click handler. Makes the item clickable with button semantics.
@@ -206,26 +217,19 @@ const styles = stylex.create({
     alignItems: 'flex-start',
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
       ':active': colorVars['--color-overlay-pressed'],
-    },
-  },
-  focusVisibleOutline: {
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
     },
   },
   highlighted: {
@@ -235,7 +239,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     pointerEvents: 'none' as const,
   },
   disabledContent: {
@@ -243,7 +247,10 @@ const styles = stylex.create({
   },
   invisibleButton: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     display: 'flex',
@@ -255,7 +262,10 @@ const styles = stylex.create({
   },
   invisibleAnchor: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     display: 'flex',
@@ -273,8 +283,29 @@ const styles = stylex.create({
     minWidth: 0,
     textAlign: 'start',
   },
+  // `layout="inline"`: label and description share one line, so the row fits a
+  // fixed-height host such as a Selector trigger inside an InputGroup.
+  inlineContent: {
+    flexDirection: 'row',
+    // Centered, not baseline-aligned: two different font sizes on a shared
+    // baseline make a line box taller than either line, which would push a
+    // fixed-height host (a Selector trigger) a pixel off its size token.
+    alignItems: 'center',
+    columnGap: spacingVars['--spacing-1'],
+  },
+  inlineLabel: {
+    flexShrink: 0,
+  },
+  // The description yields width first, so the label — the part that identifies
+  // the item — is the last thing to ellipsize.
+  inlineDescription: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
   label: {
-    color: colorVars['--color-text-primary'],
+    // Falls back to the primary text token; a parent (e.g. a destructive menu
+    // item) can recolor the label by setting --_item-label-color.
+    color: `var(--_item-label-color, ${colorVars['--color-text-primary']})`,
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
   },
@@ -289,7 +320,8 @@ const styles = stylex.create({
     WebkitBoxOrient: 'vertical' as const,
   },
   description: {
-    color: colorVars['--color-text-secondary'],
+    // Companion to --_item-label-color for the secondary line.
+    color: `var(--_item-description-color, ${colorVars['--color-text-secondary']})`,
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
   },
@@ -364,6 +396,7 @@ export function Item({
   density = 'balanced',
   labelLines,
   descriptionLines,
+  layout = 'stacked',
   onClick,
   interactiveRef,
   href,
@@ -426,12 +459,16 @@ export function Item({
         ? styles.labelSingleTruncate
         : null;
 
+  // Inline rows are one line by definition, so the description always
+  // ellipsizes there — a ReactNode description cannot wrap the row open.
+  const isInline = layout === 'inline' && description != null;
+
   const descriptionTruncateStyle =
     descriptionLines != null
       ? descriptionLines === 1
         ? styles.descriptionSingleTruncate
         : styles.descriptionMultiTruncate
-      : isStringDescription
+      : isStringDescription || isInline
         ? styles.descriptionSingleTruncate
         : null;
 
@@ -440,6 +477,7 @@ export function Item({
       <span
         {...stylex.props(
           styles.label,
+          isInline && styles.inlineLabel,
           labelTruncateStyle,
           labelLines != null &&
             labelLines > 1 &&
@@ -451,6 +489,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.description,
+            isInline && styles.inlineDescription,
             descriptionTruncateStyle,
             descriptionLines != null &&
               descriptionLines > 1 &&
@@ -487,6 +526,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.content,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -500,6 +540,7 @@ export function Item({
           tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(
             styles.invisibleAnchor,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -511,6 +552,7 @@ export function Item({
           disabled={isDisabled}
           {...stylex.props(
             styles.invisibleButton,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -519,6 +561,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.content,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -537,11 +580,11 @@ export function Item({
     </>
   );
 
+  const mergedRef = useMergedRefs(ref, containerRef);
+
   return (
     <Component
-      ref={
-        (isDelegate ? mergeRefs(ref, containerRef) : ref) as React.Ref<never>
-      }
+      ref={(isDelegate ? mergedRef : ref) as React.Ref<never>}
       {...restProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
@@ -555,12 +598,11 @@ export function Item({
       aria-disabled={isDisabled || undefined}
       {...mergeProps(
         themeProps('item', {density, align}),
-        stylex.props(
+        focusOutlineProps.focusWithin(
           styles.root,
           densityStyles[density],
           align === 'start' && styles.alignStart,
           isInteractive && styles.interactive,
-          isInteractive && styles.focusVisibleOutline,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
           isDisabled && !hasParentRole && styles.disabled,

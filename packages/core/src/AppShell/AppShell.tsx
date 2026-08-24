@@ -50,13 +50,15 @@ import {AppShellMobileContext} from './AppShellMobileContext';
 import type {AppShellMobileContextValue} from './AppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs, isRenderable} from '../utils';
+import {mergeProps, isRenderable} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import type {AppShellVariantMap} from './index';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
   ? ({
@@ -217,7 +219,7 @@ export interface AppShellProps extends BaseProps<HTMLDivElement> {
    * <AppShell mobileNav={{ hasToggle: false }}>
    *   <MobileNavToggle />
    * </AppShell>
-   * <AppShell mobileNav={<MobileNav title="Menu">...</MobileNav>} />
+   * <AppShell mobileNav={<MobileNav header="Menu">...</MobileNav>} />
    * <AppShell mobileNav={false} />
    * ```
    */
@@ -409,8 +411,8 @@ const styles = stylex.create({
     flexShrink: 0,
     overflow: 'clip',
     position: 'sticky',
-    top: 'var(--appshell-header-height, 0px)',
-    height: 'calc(100dvh - var(--appshell-header-height, 0px))',
+    top: 'var(--_app-shell-header-height, 0px)',
+    height: 'calc(100dvh - var(--_app-shell-header-height, 0px))',
     // Ensure children (LayoutPanel → SideNav) fill the sticky container
     display: 'flex',
     flexDirection: 'column',
@@ -441,7 +443,7 @@ const styles = stylex.create({
  *   topNav={<TopNav label="Navigation" heading={<TopNavHeading heading="My App" />} />}
  *   sideNav={<SideNav>{navSections}</SideNav>}
  *   mobileNav={
- *     <MobileNav isOpen={mobileOpen} onOpenChange={(open) => setMobileOpen(open)} title="My App">
+ *     <MobileNav isOpen={mobileOpen} onOpenChange={(open) => setMobileOpen(open)} header="My App">
  *       {navSections}
  *     </MobileNav>
  *   }>
@@ -512,14 +514,19 @@ export function AppShell({
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const isMobileNavOpen = mobileNavConfig?.isOpen ?? uncontrolledMobileOpen;
 
+  const mobileNavOnOpenChange = mobileNavConfig?.onOpenChange;
   const setMobileNavOpen = useCallback(
     (open: boolean) => {
       if (!mobileNavIsControlled) {
         setUncontrolledMobileOpen(open);
       }
-      mobileNavConfig?.onOpenChange?.(open);
+      mobileNavOnOpenChange?.(open);
     },
-    [mobileNavIsControlled, mobileNavConfig],
+    // Depend on the callback itself, not on the config object: the documented
+    // usage is an inline `mobileNav={{isOpen, onOpenChange}}` literal, which is
+    // a new object every render and would otherwise churn this callback and the
+    // context value memo built from it on every render of the shell.
+    [mobileNavIsControlled, mobileNavOnOpenChange],
   );
 
   // Move focus to the main content container when the skip link is activated.
@@ -577,7 +584,7 @@ export function AppShell({
 
     const updateHeight = () => {
       const height = headerEl.getBoundingClientRect().height;
-      shellEl.style.setProperty('--appshell-header-height', `${height}px`);
+      shellEl.style.setProperty('--_app-shell-header-height', `${height}px`);
     };
 
     observeResize(headerEl, () => updateHeight());
@@ -669,20 +676,19 @@ export function AppShell({
       </LayoutHeader>
     ) : undefined;
 
-  const headerContent =
-    headerInner != null ? (
-      <div
-        ref={headerRef}
-        // Top-level banner landmark for the header region (topNav + banner).
-        // Safe here: the wrapper is never nested inside main/nav/other landmarks.
-        role="banner"
-        {...mergeProps(
-          themeProps('app-shell-header', {variant}),
-          stylex.props(navAreaStyle, isAuto && styles.headerSticky),
-        )}>
-        {headerInner}
-      </div>
-    ) : undefined;
+  const headerContent = isRenderable(headerInner) ? (
+    <div
+      ref={headerRef}
+      // Top-level banner landmark for the header region (topNav + banner).
+      // Safe here: the wrapper is never nested inside main/nav/other landmarks.
+      role="banner"
+      {...mergeProps(
+        themeProps('app-shell-header', {variant}),
+        stylex.props(navAreaStyle, isAuto && styles.headerSticky),
+      )}>
+      {headerInner}
+    </div>
+  ) : undefined;
 
   // =========================================================================
   // Build sideNav content
@@ -760,6 +766,11 @@ export function AppShell({
   const autoMobileTopBar =
     shouldShowAutoToggle && !hasTopNav && hasSideNav ? (
       <div
+        // Banner landmark for the mobile top bar, so the sidenav-only layout
+        // exposes the same landmark structure as the topNav one. Only when
+        // there is no headerContent: a banner slot with no topNav renders both,
+        // and two sibling banner regions is worse than the one this restores.
+        role={headerContent == null ? 'banner' : undefined}
         {...mergeProps(
           themeProps('app-shell-header', {variant}),
           stylex.props(navAreaStyle, isAuto && styles.headerSticky),
@@ -782,7 +793,7 @@ export function AppShell({
     <AppShellMobileContext value={mobileContextValue}>
       <div
         {...rest}
-        ref={mergeRefs(ref, shellRef)}
+        ref={useMergedRefs(ref, shellRef)}
         data-testid={dataTestId}
         {...mergeProps(
           themeProps('app-shell', {variant}),
@@ -805,7 +816,7 @@ export function AppShell({
         <a
           href={`#${MAIN_CONTENT_ID}`}
           onClick={handleSkipLinkClick}
-          {...stylex.props(styles.skipLink)}
+          {...focusOutlineProps.focusVisible(styles.skipLink)}
           data-testid="skip-to-content">
           {t('@astryx.appShell.skipToContent')}
         </a>

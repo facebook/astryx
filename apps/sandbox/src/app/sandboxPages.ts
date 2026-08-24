@@ -1,7 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file sandboxPages.ts
+ * @file Central registry of sandbox categories and persistent navigation.
+ * @input Authored sandbox metadata and the generated template registry.
+ * @output Typed category, home, and audit navigation entries.
  * @position Central registry of all sandbox pages, grouped by category.
  *
  * The "Templates" category is auto-populated from packages/cli/assets/templates/
@@ -44,6 +46,40 @@ export interface SandboxCategory {
   pages: SandboxPage[];
 }
 
+/**
+ * Persistent sidebar destinations that are not generated category pages.
+ * `icon` is a key into SandboxNav's icon map so this module stays JSX-free.
+ */
+export interface SandboxNavPage {
+  /** Label shown in the sidebar */
+  label: string;
+  /** Route path (with trailing slash) */
+  href: string;
+  /** Key into SandboxNav's icon map */
+  icon: string;
+  /**
+   * Match child routes too. Home must not (`/` prefixes everything); a section
+   * with sub-pages should.
+   */
+  matchesChildren?: boolean;
+}
+
+export const homePage: SandboxNavPage = {
+  label: 'Home',
+  href: '/',
+  icon: 'home',
+};
+
+export const auditPages: SandboxNavPage[] = [
+  {label: 'Template Audits', href: '/templates/', icon: 'templates'},
+  {
+    label: 'Component Audits',
+    href: '/pages/component-scores/',
+    icon: 'scores',
+    matchesChildren: true,
+  },
+];
+
 export const categories: SandboxCategory[] = [
   {
     label: 'Components & Patterns',
@@ -51,6 +87,18 @@ export const categories: SandboxCategory[] = [
     description:
       'Component demos, composition patterns, and interactive examples.',
     pages: [
+      {
+        name: 'Mobile Prototypes',
+        href: '/pages/mobile-prototypes/',
+        description:
+          'Interactive mobile interaction prototypes (bottom sheets, action sheets, drawers) for the component migration table',
+      },
+      {
+        name: 'TextArea Counter',
+        href: '/pages/textarea-counter/',
+        description:
+          'Explore where the character counter sits on the TextArea — below, inline with the label, or overlaid inside the field',
+      },
       {
         name: 'Card Examples',
         href: '/pages/example-cards/',
@@ -97,6 +145,12 @@ export const categories: SandboxCategory[] = [
         name: 'Component Overview',
         href: '/pages/example/',
         description: 'General component composition examples',
+      },
+      {
+        name: 'Tap Targets (AA)',
+        href: '/pages/tap-targets/',
+        description:
+          'WCAG 2.5.8 AA touch-target sizes visualized on real components',
       },
     ],
   },
@@ -196,6 +250,11 @@ export const categories: SandboxCategory[] = [
         href: '/pages/dictation-lab/',
         description:
           'Test voice dictation, tune sound effects, and explore animation',
+      },
+      {
+        name: 'Mobile Type',
+        href: '/pages/mobile-type/',
+        description: 'How the type scale adapts on touch devices',
       },
     ],
   },

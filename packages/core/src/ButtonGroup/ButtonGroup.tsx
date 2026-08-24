@@ -28,12 +28,13 @@ import {radiusVars, shadowVars} from '../theme/tokens.stylex';
 import type {Elevation} from '../utils/types';
 import {SizeProvider, useSize} from '../SizeContext/SizeContext';
 import {useListFocus} from '../hooks/useListFocus';
-import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {ButtonGroupContext} from './ButtonGroupContext';
 import type {ButtonGroupOrientation} from './ButtonGroupContext';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Props
 // =============================================================================
@@ -172,6 +173,13 @@ export function ButtonGroup({
 
   const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, [tabindex="0"]',
+    // A member's layer renders inline inside the group (useLayer does not
+    // portal it), so a key pressed in an open DropdownMenu bubbles here. The
+    // boundary is the group's own root or any layer, whichever is nearer to
+    // the target. Naming the group's own root is what keeps a group rendered
+    // inside a Popover or Toast working: bailing on any [popover] ancestor
+    // instead would swallow every arrow key it owns.
+    boundarySelector: '[role="group"], [popover]',
     orientation,
   });
 
@@ -184,10 +192,10 @@ export function ButtonGroup({
     <ButtonGroupContext value={contextValue}>
       <SizeProvider value={size}>
         <div
-          ref={mergeRefs(ref, listRef)}
+          ref={useMergedRefs(ref, listRef)}
           {...props}
           {...mergeProps(
-            themeProps('button-group', {size, orientation}),
+            themeProps('button-group', {size, orientation, elevation}),
             stylex.props(
               styles.group,
               orientation === 'vertical' && styles.vertical,

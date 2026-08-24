@@ -106,7 +106,7 @@ describe('TabList', () => {
     );
   });
 
-  it('marks selected tab with aria-current', () => {
+  it('marks selected tab with a generic aria-current, not "page"', () => {
     render(
       <TabList value="home" onChange={() => {}}>
         <Tab value="home" label="Home" />
@@ -116,9 +116,26 @@ describe('TabList', () => {
 
     expect(screen.getByRole('button', {name: 'Home'})).toHaveAttribute(
       'aria-current',
-      'page',
+      'true',
     );
     expect(screen.getByRole('button', {name: 'Settings'})).not.toHaveAttribute(
+      'aria-current',
+    );
+  });
+
+  it('marks a selected link tab with the same generic aria-current', () => {
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" href="/home" />
+        <Tab value="settings" label="Settings" href="/settings" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('link', {name: 'Home'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    expect(screen.getByRole('link', {name: 'Settings'})).not.toHaveAttribute(
       'aria-current',
     );
   });
@@ -148,7 +165,7 @@ describe('TabList', () => {
 
     expect(screen.getByRole('button', {name: 'Home'})).toHaveAttribute(
       'aria-current',
-      'page',
+      'true',
     );
 
     rerender(
@@ -163,7 +180,7 @@ describe('TabList', () => {
     );
     expect(screen.getByRole('button', {name: 'Settings'})).toHaveAttribute(
       'aria-current',
-      'page',
+      'true',
     );
   });
 

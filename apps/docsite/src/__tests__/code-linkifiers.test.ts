@@ -51,6 +51,51 @@ describe('doc topic linkifier', () => {
   });
 });
 
+describe('component name linkifier', () => {
+  it.each([
+    ['Button', '/components/Button'],
+    [
+      'InternationalizationProvider',
+      '/components/InternationalizationProvider',
+    ],
+    [
+      '<InternationalizationProvider>',
+      '/components/InternationalizationProvider',
+    ],
+    ['<Button/>', '/components/Button'],
+    ['<Button />', '/components/Button'],
+    ['  <Popover>  ', '/components/Popover'],
+    // XDS-prefixed aliases map to the unprefixed page, like the changelog's
+    // prose linkifier.
+    ['XDSButton', '/components/Button'],
+    ['<XDSButton>', '/components/Button'],
+  ])('links %s', (code, href) => {
+    expect(linkifyCode(code)).toBe(href);
+  });
+
+  it('links every documented component and hook name', () => {
+    for (const {name} of Object.values(components).flat()) {
+      expect(linkifyCode(name)).toBe(`/components/${name}`);
+    }
+  });
+
+  it.each([
+    // Case matters: `button` is the HTML element, `Button` the component.
+    ['button'],
+    ['<dialog>'],
+    // A name with anything attached is a snippet, not a reference.
+    ['Popover API'],
+    ['<Button open>'],
+    ['Button.props'],
+    ['Crimson Text'],
+    ['NotARealComponent'],
+    ['<NotARealComponent>'],
+    ['XDSNotARealComponent'],
+  ])('leaves %s as plain code', code => {
+    expect(linkifyCode(code)).toBeNull();
+  });
+});
+
 /** Every backticked `astryx docs ...` reference in a chunk of authored data. */
 function docReferences(json: string): string[] {
   const found = [...json.matchAll(/`((?:npx )?astryx docs[^`]*)`/g)];

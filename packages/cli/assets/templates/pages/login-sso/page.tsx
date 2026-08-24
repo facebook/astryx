@@ -20,7 +20,7 @@ import {Avatar} from '@astryxdesign/core/Avatar';
 // Styles
 // ---------------------------------------------------------------------------
 
-const BG_URL = 'https://lookaside.facebook.com/assets/astryx/building.png';
+const BG_URL = '/template-assets/building.png';
 
 const pageStyle: CSSProperties = {
   minHeight: '100%',

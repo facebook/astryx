@@ -14,14 +14,14 @@
  */
 
 import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
-import {useTranslator} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 export interface UseSpeechRecognitionOptions {
-  /** BCP-47 language tag. @default navigator.language */
+  /** BCP-47 language tag. @default InternationalizationProvider locale */
   lang?: string;
   /** Whether recognition continues until explicitly stopped. @default true */
   continuous?: boolean;
@@ -260,6 +260,7 @@ export function useSpeechRecognition(
   options: UseSpeechRecognitionOptions = {},
 ): UseSpeechRecognitionReturn {
   const t = useTranslator();
+  const providerLocale = useLocale();
   const {
     lang,
     continuous = true,
@@ -348,7 +349,7 @@ export function useSpeechRecognition(
     }
     recognitionRef.current?.abort();
     const recognition = new SR();
-    recognition.lang = lang ?? navigator.language;
+    recognition.lang = lang ?? providerLocale;
     recognition.continuous = continuous;
     recognition.interimResults = interimResults;
 
@@ -418,6 +419,7 @@ export function useSpeechRecognition(
     recognition.start();
   }, [
     lang,
+    providerLocale,
     continuous,
     interimResults,
     startVolumePolling,

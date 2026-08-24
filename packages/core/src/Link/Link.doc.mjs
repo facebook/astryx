@@ -79,6 +79,17 @@ export const docs = {
             'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".',
         },
         {
+          name: 'download',
+          type: 'string | boolean',
+          description:
+            'Causes the browser to download the linked URL. A string specifies the suggested filename.',
+        },
+        {
+          name: 'referrerPolicy',
+          type: 'HTMLAttributeReferrerPolicy',
+          description: 'Referrer policy for the link.',
+        },
+        {
           name: 'onClick',
           type: 'MouseEventHandler',
           description: 'Click event handler',
@@ -93,6 +104,34 @@ export const docs = {
           type: 'boolean',
           description: 'Applies base font sizing',
           default: 'false',
+        },
+        {
+          name: 'size',
+          type: "'4xs' | '3xs' | '2xs' | 'xsm' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl'",
+          description: 'Explicit font size override forwarded to Text.',
+        },
+        {
+          name: 'weight',
+          type: "'normal' | 'medium' | 'semibold' | 'bold'",
+          description: 'Font weight override forwarded to Text.',
+        },
+        {
+          name: 'color',
+          type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'accent' | 'inherit'",
+          description: 'Text color forwarded to Text.',
+          default: "'accent'",
+        },
+        {
+          name: 'display',
+          type: "'inline' | 'block'",
+          description: 'Display type for Text.',
+          default: "'inline'",
+        },
+        {
+          name: 'maxLines',
+          type: 'number',
+          description: 'Maximum lines before truncation.',
+          default: '0',
         },
         {
           name: 'children',

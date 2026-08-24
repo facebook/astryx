@@ -38,6 +38,10 @@ export {
   type DropdownMenuItemProps as BreadcrumbMenuItemProps,
 } from '../DropdownMenu/DropdownMenuItem';
 export {
+  DropdownMenuDivider as BreadcrumbMenuDivider,
+  type DropdownMenuDividerProps as BreadcrumbMenuDividerProps,
+} from '../DropdownMenu/DropdownMenuDivider';
+export {
   DropdownMenuCheckboxItem as BreadcrumbMenuCheckboxItem,
   type DropdownMenuCheckboxItemProps as BreadcrumbMenuCheckboxItemProps,
 } from '../DropdownMenu/DropdownMenuCheckboxItem';
@@ -56,6 +60,6 @@ export {
 export type {
   DropdownMenuOption as BreadcrumbMenuOption,
   DropdownMenuItemData as BreadcrumbMenuItemData,
-  DropdownMenuDivider as BreadcrumbMenuDivider,
+  DropdownMenuDividerData as BreadcrumbMenuDividerData,
   DropdownMenuSection as BreadcrumbMenuSection,
 } from '../DropdownMenu/DropdownMenu';

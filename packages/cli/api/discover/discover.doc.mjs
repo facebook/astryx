@@ -15,7 +15,7 @@ export const doc = {
   summary: 'Browse and search components from configured external packages.',
   description:
     'Explores components contributed by configured external packages and integrations ' +
-    '— the ones that declare a components root. With no query it lists those packages; ' +
+    'the ones that declare a components root. With no query it lists those packages; ' +
     'an @scope/name query browses one package; @scope/name/Component (or a free-text ' +
     "term that resolves to a single component) returns that component's validated doc; " +
     'a free-text term with several matches returns the candidate list.',
@@ -68,7 +68,7 @@ export const doc = {
     {
       type: 'discover.detail.doc',
       description:
-        'The validated ComponentDoc for one external component — an @scope/name/Component query, or a free-text term that resolves to exactly one component.',
+        'The validated ComponentDoc for one external component: an @scope/name/Component query, or a free-text term that resolves to exactly one component.',
     },
     {
       type: 'discover.search',

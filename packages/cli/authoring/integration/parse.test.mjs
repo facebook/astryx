@@ -26,6 +26,7 @@ describe('parseIntegration (load boundary)', () => {
     expect(parseIntegration({components: './src'})).toEqual({
       components: './src',
     });
+    expect(parseIntegration({docs: './docs'})).toEqual({docs: './docs'});
     expect(() =>
       parseIntegration({components: './c', issuesUrl: 'https://example.com/i'}),
     ).not.toThrow();

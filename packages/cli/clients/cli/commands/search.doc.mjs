@@ -15,7 +15,7 @@ export const doc = {
   namespace: 'cli',
   summary: 'Search components, hooks, docs, and templates in one ranked list',
   description:
-    'Terminal front-end to search() — prints one ranked, greppable list across ' +
+    'Terminal front-end to search(): prints one ranked, greppable list across ' +
     'every content domain, each row carrying a follow-up command to act on it.',
   fn: 'search',
   args: [{name: 'query', param: 'query', required: true}],

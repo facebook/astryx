@@ -3,7 +3,8 @@
 /**
  * @file Banner.test.tsx
  * @input Uses vitest, @testing-library/react, Banner component
- * @output Unit tests for Banner component behavior
+ * @output Unit tests for Banner component behavior, including the
+ *   'banner-icon' theme target riding on the status icon glyph (#4166)
  * @position Testing; validates Banner.tsx implementation
  *
  * SYNC: When modified, update this header
@@ -338,6 +339,62 @@ describe('Banner', () => {
   });
 
   // =========================================================================
+  // Status icon color theming (#4166)
+  // =========================================================================
+
+  it("carries the 'banner-icon' theme target on the default status icon glyph", () => {
+    // Theme overrides for 'banner-icon' + 'status:X' compile to
+    // '.astryx-banner-icon.<status>' (parseStyleKey). The target must sit on
+    // the <Icon> span itself so those same-element rules in
+    // @layer astryx-theme beat the Icon's own color variant.
+    const statuses = ['info', 'warning', 'error', 'success'] as const;
+    for (const status of statuses) {
+      const {container, unmount} = render(
+        <Banner status={status} title={`${status} banner`} />,
+      );
+      const glyph = container.querySelector(
+        `.astryx-icon.astryx-banner-icon.${status}`,
+      );
+      expect(glyph).not.toBeNull();
+      expect(glyph).toHaveAttribute('data-status', status);
+      // Exactly one element carries the target — the layout wrapper no
+      // longer does.
+      expect(container.querySelectorAll('.astryx-banner-icon')).toHaveLength(1);
+      unmount();
+    }
+  });
+
+  it('keeps the color variant on the theme-target element (regression pin for #4166)', () => {
+    // Pre-fix, '.astryx-banner-icon.info' matched the layout wrapper while
+    // the color variant (data-color="accent") sat on an inner span that a
+    // theme override could never reach. Target and paint now share one
+    // element.
+    const {container} = render(<Banner status="info" title="Info" />);
+    const target = container.querySelector('.astryx-banner-icon.info');
+    expect(target).toHaveAttribute('data-color', 'accent');
+  });
+
+  it("keeps the 'banner-icon' target on the wrapper for a custom icon node", () => {
+    // Core never injects props into consumer elements, so with a custom
+    // `icon` the target stays on the (layout-only) wrapper and overrides
+    // reach the node via inheritance. The node itself is untouched.
+    const {container} = render(
+      <Banner
+        status="info"
+        title="Custom icon"
+        icon={<span data-testid="custom-glyph">i</span>}
+      />,
+    );
+    const targets = container.querySelectorAll('.astryx-banner-icon');
+    expect(targets).toHaveLength(1);
+    expect(targets[0]?.tagName).toBe('DIV');
+    expect(targets[0]).toHaveAttribute('aria-hidden', 'true');
+    const custom = container.querySelector('[data-testid="custom-glyph"]');
+    expect(custom).not.toBeNull();
+    expect(custom?.className).toBe('');
+  });
+
+  // =========================================================================
   // Icon registry integration
   // =========================================================================
 
@@ -396,6 +453,114 @@ describe('Banner', () => {
       expect(def.firstElementChild!.className).toBe(
         none.firstElementChild!.className,
       );
+    });
+  });
+
+  describe('dismiss focus handoff', () => {
+    it('returns focus to where it came from instead of dropping it to body', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <button type="button">Before</button>
+          <Banner status="info" title="Heads up" isDismissable />
+        </>,
+      );
+      const before = screen.getByRole('button', {name: 'Before'});
+      before.focus();
+
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'Dismiss'})).toHaveFocus();
+
+      await user.keyboard('{Enter}');
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(before).toHaveFocus();
+      expect(document.activeElement).not.toBe(document.body);
+    });
+
+    it('leaves focus alone when it never entered the banner', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <button type="button">Elsewhere</button>
+          <Banner status="info" title="Heads up" isDismissable />
+        </>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('empty slots', () => {
+    it('does not show the expand affordance for children that render nothing', () => {
+      render(
+        <Banner status="info" title="Heads up">
+          {false}
+        </Banner>,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Expand'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('still shows the expand affordance for real children', () => {
+      render(
+        <Banner status="info" title="Heads up">
+          <p>Detail</p>
+        </Banner>,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Expand'}),
+      ).toBeInTheDocument();
+    });
+
+    it('renders no description node for a description that renders nothing', () => {
+      const {container} = render(
+        <Banner status="info" title="Heads up" description="" />,
+      );
+      const header = container.firstElementChild!.firstElementChild!;
+      // icon wrapper + text column, and the text column holds the title alone
+      expect(header.children[1].children).toHaveLength(1);
+    });
+  });
+
+  // jsdom does no flex layout, so these read the declarations that produce the
+  // wrap. The rendered result is verified in Chromium at 320/375/480/768.
+  describe('narrow-viewport wrapping', () => {
+    const renderBanner = (endContent?: React.ReactNode) => {
+      const {container} = render(
+        <Banner
+          status="warning"
+          title="A compute node is required"
+          endContent={endContent}
+        />,
+      );
+      const header = container.firstElementChild!.firstElementChild!;
+      return {
+        header,
+        textColumn: screen.getByText('A compute node is required')
+          .parentElement!,
+      };
+    };
+
+    it('lets the header wrap so the end area can take its own row', () => {
+      const {header} = renderBanner(<button type="button">Retry</button>);
+      expect(getComputedStyle(header).flexWrap).toBe('wrap');
+    });
+
+    it('gives the text column a wrap threshold when endContent is present', () => {
+      const {textColumn} = renderBanner(<button type="button">Retry</button>);
+      expect(getComputedStyle(textColumn).flexBasis).toBe('8rem');
+    });
+
+    it('leaves the text column free to shrink when there is no endContent', () => {
+      const {textColumn} = renderBanner();
+      expect(getComputedStyle(textColumn).flexBasis).not.toBe('8rem');
+    });
+
+    it('leaves it free for an endContent that renders nothing', () => {
+      const {textColumn} = renderBanner(false);
+      expect(getComputedStyle(textColumn).flexBasis).not.toBe('8rem');
     });
   });
 });

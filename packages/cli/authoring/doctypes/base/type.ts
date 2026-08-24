@@ -117,6 +117,23 @@ export interface ComponentPlaygroundConfig {
    *  the component is visible on load and knobs stay usable, whereas a real
    *  top-layer modal makes the rest of the page inert (#3657). */
   overlay?: boolean;
+  /** Override the controlled prop and open value used by an overlay preview.
+   *  Use with `overlay: true` when the component does not use `isOpen: true`
+   *  to represent its open state. */
+  overlayControl?: {
+    /** Controlled prop that determines whether the overlay is open. */
+    stateProp: string;
+    /** Value assigned to stateProp when the preview's open button is used. */
+    openValue: unknown;
+  };
+  /** The component reads AppShell mobile context and renders nothing
+   *  without it (e.g. `MobileNavToggle` returns null unless the context
+   *  reports an enabled mobile viewport — the default value outside
+   *  AppShell never does). The interactive preview provides a simulated
+   *  mobile AppShell context so the stage is not an empty box, keeps the
+   *  drawer open state interactive, and notes the simulation under the
+   *  rendered component (#4983). */
+  appShellMobile?: boolean;
   /** Required parent wrapper for sub-components that depend on a parent
    *  context provider (e.g. `Tab` calls `useTabListContext()` and throws
    *  standalone). The preview wraps the component in this parent before
@@ -260,6 +277,8 @@ export interface ComponentSlotElement {
  * { property: 'padding', vars: ['--_card-padding'] },
  * ```
  */
+// SYNC: apps/docsite/scripts/generate-data.mjs (interface DerivedVar) — see the
+// note on ComponentThemingTarget below.
 export interface ComponentThemingDerivedVar {
   /** The standard CSS property name (camelCase) that theme authors write.
    *  e.g. `'borderRadius'`, `'padding'`, `'paddingBlock'` */
@@ -270,6 +289,12 @@ export interface ComponentThemingDerivedVar {
   /** Named expansion strategy instead of specific vars.
    *  `'container'` — expands padding to 7 container layout tokens. */
   expand?: 'container';
+  /** Emit only the internal `vars`, dropping the source property from the
+   *  generated rule. Use when the class-carrying element must not receive the
+   *  standard property itself — the value reaches a child through the var
+   *  (e.g. TextArea's flush wrapper drives the inner textarea's inline
+   *  padding). Without this, the property is emitted alongside the var. */
+  replaces?: boolean;
 }
 
 /**
@@ -285,6 +310,10 @@ export interface ComponentThemingDerivedVar {
  * {className: 'astryx-card'}
  * ```
  */
+// SYNC: When adding a field here, add it to the docsite's generated-registry
+// copy too — apps/docsite/scripts/generate-data.mjs (interface ThemingTarget).
+// `next build` type-checks the emitted componentRegistry.ts against that copy,
+// so a field present in a .doc.mjs but missing there fails the docsite build.
 export interface ComponentThemingTarget {
   /** The stable CSS class name rendered by the component.
    *  Always starts with `astryx-`.
@@ -304,6 +333,15 @@ export interface ComponentThemingTarget {
    *  `[data-checked="checked"]`. Legacy state classes are still emitted for
    *  compatibility. Omit if the element has no state-driven selectors. */
   states?: string[];
+  /** Set when this target has been RENAMED and this entry is the old name.
+   *  The component still emits the class (via `themeProps`'s `legacyNames`),
+   *  so existing themes keep working, but the docsite should steer readers to
+   *  the replacement. The value is the class name that supersedes this one,
+   *  without the `astryx-` prefix — e.g. `"checkbox-indicator"`.
+   *
+   *  A theme target is public API; renaming one without this is a silent
+   *  break for every theme styling it. */
+  deprecatedFor?: string;
 }
 
 /**
@@ -318,7 +356,7 @@ export interface ComponentThemingTarget {
  * ```
  */
 export interface ComponentThemingVar {
-  /** CSS custom property name, e.g. '--_card-radius' or '--button-press-scale' */
+  /** CSS custom property name, e.g. '--_card-radius' or '--button-focus-offset' */
   name: string;
   /** What this var controls */
   description: string;

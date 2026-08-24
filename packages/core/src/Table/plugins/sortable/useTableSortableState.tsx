@@ -18,10 +18,8 @@
  */
 
 import {useState, useMemo, useCallback, useRef} from 'react';
-import type {
-  TableSortState,
-  UseTableSortableConfig,
-} from './useTableSortable';
+import type {TableSortState, UseTableSortableConfig} from './useTableSortable';
+import {useCollator} from '../../../i18n/useCollator';
 
 // =============================================================================
 // Comparator Types
@@ -104,14 +102,16 @@ export interface UseTableSortableStateConfig<
    * two row items. Comparators should sort ascending — the hook flips the
    * sign for descending.
    *
-   * For keys not in this map, the hook falls back to `localeCompare` with
-   * `{ numeric: true }` on the stringified values.
+   * For keys not in this map, the hook falls back to an `Intl.Collator`
+   * comparison (`{numeric: true}`) on the stringified values, bound to the
+   * active `InternationalizationProvider` locale.
    *
    * @example
    * ```
+   * const collator = useCollator({numeric: true});
    * comparators: {
    *   age: (a, b) => a.age - b.age,
-   *   name: (a, b) => a.name.localeCompare(b.name),
+   *   name: (a, b) => collator.compare(a.name, b.name),
    * }
    * ```
    */
@@ -164,6 +164,7 @@ function defaultCompare<T extends Record<string, unknown>>(
   a: T,
   b: T,
   sortKey: string,
+  collator: Intl.Collator,
 ): number {
   const aVal = a[sortKey];
   const bVal = b[sortKey];
@@ -171,8 +172,10 @@ function defaultCompare<T extends Record<string, unknown>>(
   // null/undefined/NaN sort to the end. NaN must not reach the numeric fast
   // path: a NaN comparator result reads as "equal" to Array.sort, which makes
   // the comparator inconsistent and corrupts the order of the other rows.
-  const aMissing = aVal == null || (typeof aVal === 'number' && Number.isNaN(aVal));
-  const bMissing = bVal == null || (typeof bVal === 'number' && Number.isNaN(bVal));
+  const aMissing =
+    aVal == null || (typeof aVal === 'number' && Number.isNaN(aVal));
+  const bMissing =
+    bVal == null || (typeof bVal === 'number' && Number.isNaN(bVal));
   if (aMissing && bMissing) {
     return 0;
   }
@@ -188,14 +191,9 @@ function defaultCompare<T extends Record<string, unknown>>(
     return aVal - bVal;
   }
 
-  // string comparison with numeric collation
-  return toSortableString(aVal).localeCompare(
-    toSortableString(bVal),
-    undefined,
-    {
-      numeric: true,
-    },
-  );
+  // string comparison with numeric collation, bound to the provider locale
+  // via useCollator() rather than a raw localeCompare(value, locale) call.
+  return collator.compare(toSortableString(aVal), toSortableString(bVal));
 }
 
 // =============================================================================
@@ -208,7 +206,8 @@ function sortData<
 >(
   data: T[],
   sortState: TableSortState<TSortKey>,
-  comparators?: Partial<Record<TSortKey, TableSortComparator<T>>>,
+  comparators: Partial<Record<TSortKey, TableSortComparator<T>>> | undefined,
+  collator: Intl.Collator,
 ): T[] {
   if (sortState.length === 0) {
     return data;
@@ -218,7 +217,9 @@ function sortData<
     for (const entry of sortState) {
       const {sortKey, direction} = entry;
       const customCmp = comparators?.[sortKey];
-      const cmp = customCmp ? customCmp(a, b) : defaultCompare(a, b, sortKey);
+      const cmp = customCmp
+        ? customCmp(a, b)
+        : defaultCompare(a, b, sortKey, collator);
 
       if (cmp !== 0) {
         return direction === 'ascending' ? cmp : -cmp;
@@ -265,6 +266,7 @@ export function useTableSortableState<
     allowUnsortedState,
     isMultiSortEnabled,
   } = config;
+  const collator = useCollator({numeric: true});
 
   // Internal state (used in uncontrolled mode)
   const [internalSort, setInternalSort] =
@@ -287,14 +289,15 @@ export function useTableSortableState<
 
   // Sorted data — memoized on sort state + data identity
   const sortedData = useMemo(
-    () => sortData(data, sort, comparatorsRef.current),
-    [data, sort],
+    () => sortData(data, sort, comparatorsRef.current, collator),
+    [data, sort, collator],
   );
 
   // applySort — lets consumers sort arbitrary data with the current state
   const applySort = useCallback(
-    (inputData: T[]): T[] => sortData(inputData, sort, comparatorsRef.current),
-    [sort],
+    (inputData: T[]): T[] =>
+      sortData(inputData, sort, comparatorsRef.current, collator),
+    [sort, collator],
   );
 
   // Config ready for useTableSortable

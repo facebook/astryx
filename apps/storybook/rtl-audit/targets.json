@@ -1,5 +1,16 @@
 [
   {
+    "component": "ButtonGroup",
+    "storyId": "core-buttongroup--horizontal",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "[role=\"group\"] button:first-child",
+      "next": "[role=\"group\"] button:last-child"
+    }
+  },
+  {
     "component": "Calendar",
     "storyId": "core-calendar--default",
     "dims": [

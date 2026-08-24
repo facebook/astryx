@@ -90,7 +90,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
 
   // Sync the managed agent-docs block FIRST — it documents the installed library
   // independent of codemods, so refresh on every path (issue #4168).
-  const agentDocs = refreshAgentDocs({cwd, installedVersion: targetVersion, apply: apply || false});
+  const agentDocs = await refreshAgentDocs({cwd, installedVersion: targetVersion, apply: apply || false});
 
   if (!options.force && semverGte(currentVersion, targetVersion)) {
     return statusUpToDate({from: currentVersion, to: targetVersion, agentDocs});

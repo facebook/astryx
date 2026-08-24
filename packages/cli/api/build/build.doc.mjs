@@ -54,7 +54,7 @@ export const doc = {
     {
       type: 'build.help',
       description:
-        'Emitted when the query is omitted — a pure marker (`data.playbook: true`) that the command renderer expands into the page-building workflow prose.',
+        'Emitted when the query is omitted: a pure marker (`data.playbook: true`) that the command renderer expands into the page-building workflow prose.',
     },
     {
       type: 'build.kit',

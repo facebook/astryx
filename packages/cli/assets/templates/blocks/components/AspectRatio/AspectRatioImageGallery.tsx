@@ -27,9 +27,9 @@ export default function AspectRatioImageGallery() {
         {images.map(({id, alt}) => (
           <AspectRatio key={id} ratio={4 / 3} fit="cover">
             <img
-              src="https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png"
+              src="/template-assets/illustrative-horizontal-1.png"
               alt={alt}
-              style={{borderRadius: 8}}
+              style={{borderRadius: 'var(--radius-element)'}}
             />
           </AspectRatio>
         ))}

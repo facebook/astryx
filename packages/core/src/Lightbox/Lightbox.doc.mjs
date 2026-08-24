@@ -48,6 +48,18 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'defaultIndex',
+      type: 'number',
+      description: 'Initial image index in gallery mode for uncontrolled usage.',
+      default: '0',
+    },
+    {
+      name: 'hasAutoPlay',
+      type: 'boolean',
+      description: 'Automatically start video playback when a video media item is shown.',
+      default: 'false',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization. Must be stylex.create() value.',
@@ -77,7 +89,7 @@ export const docs = {
     defaults: {
       isOpen: false,
       media: {
-        src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
+        src: '/template-assets/light-scene-horizontal-1.png',
         alt: 'Coastal shoreline with ocean waves',
         caption: 'A scenic coastline with waves rolling onto a sandy beach beneath a clear sky.',
       },

@@ -4,7 +4,8 @@
 
 /**
  * @file AvatarStatusDot.tsx
- * @input Uses React, StyleX, theme tokens, and AvatarSizeContext
+ * @input Uses React, StyleX, theme tokens, AvatarSizeContext, and
+ *   AvatarStatusLabelContext (label reporting)
  * @output Exports AvatarStatusDot component and AvatarStatusDotProps type
  * @position Sub-component of Avatar; renders a size-aware status indicator
  *
@@ -15,12 +16,13 @@
  * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
  */
 
-import React, {use, type ReactNode} from 'react';
+import React, {use, useCallback, useMemo, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
-import {isRenderable, mergeProps} from '../utils';
+import {AvatarStatusLabelContext} from './AvatarStatusLabelContext';
+import {isRenderable, mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import type {AvatarStatusDotVariantMap} from './index';
 
@@ -311,6 +313,30 @@ export function AvatarStatusDot({
   ...props
 }: AvatarStatusDotProps) {
   const avatarSize = use(AvatarSizeContext);
+  const statusLabelRef = use(AvatarStatusLabelContext);
+  // Report the label through the avatar's ref from a callback ref rather than
+  // an Effect: the ref runs in the commit phase, so the avatar's accessible
+  // name is composed before paint, and a ref write costs no render.
+  /* eslint-disable react-compiler/react-compiler -- the avatar shares its own
+     ref through context so the dot can write into it; a context read looks
+     immutable to the compiler */
+  const reportRef = useCallback(() => {
+    const target = statusLabelRef?.current;
+    if (target == null) {
+      return;
+    }
+    target.label = label;
+    target.update?.();
+    return () => {
+      target.label = undefined;
+      target.update?.();
+    };
+  }, [statusLabelRef, label]);
+  /* eslint-enable react-compiler/react-compiler */
+  // Memoized so React only detaches and reattaches when the reported label
+  // actually changes; an inline merge would withdraw and re-report on every
+  // render of the avatar.
+  const rootRef = useMemo(() => mergeRefs(ref, reportRef), [ref, reportRef]);
   const {dotSize, borderWidth, iconSize, tier} =
     resolveStatusDotSize(avatarSize);
   const showsIcon = isRenderable(icon) && iconSize > 0;
@@ -321,7 +347,7 @@ export function AvatarStatusDot({
   return (
     <div
       {...props}
-      ref={ref}
+      ref={rootRef}
       {...(label ? {role: 'img', 'aria-label': label} : undefined)}
       {...mergeProps(
         themeProps('avatar-status-dot', {variant}),

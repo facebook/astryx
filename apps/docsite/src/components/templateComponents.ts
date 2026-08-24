@@ -162,18 +162,6 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-page/page'),
   ),
-  'table-page-chart': lazy(
-    () =>
-      import('../../../../packages/cli/assets/templates/pages/table-page-chart/page'),
-  ),
-  'table-page-heatmap-status': lazy(
-    () =>
-      import('../../../../packages/cli/assets/templates/pages/table-page-heatmap-status/page'),
-  ),
-  'table-page-shoe-store-heatmap': lazy(
-    () =>
-      import('../../../../packages/cli/assets/templates/pages/table-page-shoe-store-heatmap/page'),
-  ),
 };
 
 /** Resolve a template's lazy component by slug, or `undefined` if unknown. */

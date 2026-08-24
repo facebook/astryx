@@ -37,6 +37,7 @@ import type {LinkComponentType} from '../Link/types';
 import {mergeProps} from '../utils';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 export interface TabProps extends BaseProps<HTMLButtonElement> {
   /**
@@ -100,20 +101,15 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textDecoration: 'none',
     whiteSpace: 'nowrap',
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   hoverBg: {
     position: 'absolute',
@@ -264,7 +260,11 @@ export function Tab({
     ...(isLabelHidden ? {'aria-label': label} : {}),
     [EDGE_COMP_ATTR]: '',
     'data-tab-value': value,
-    'aria-current': isSelected ? ('page' as const) : undefined,
+    // Generic `true` ("the current item within a set"), not `page`: the strip
+    // switches views in place at least as often as it navigates, and claiming
+    // "current page" when no page changed is a false statement to a screen
+    // reader. Stays truthful for the `href` case too, just less specific.
+    'aria-current': isSelected ? ('true' as const) : undefined,
     // Roving tabindex: the tab strip is a single Tab stop. The selected tab is
     // the tabbable one; the rest are reachable via arrow keys (handled by
     // TabList's onKeyDown). When no tab is selected, TabList's repair effect
@@ -274,7 +274,7 @@ export function Tab({
       themeProps('tab', {
         selected: isSelected ? 'selected' : null,
       }),
-      stylex.props(
+      focusOutlineProps.focusVisible(
         styles.base,
         sizeStyles[size],
         isSelected && styles.selected,

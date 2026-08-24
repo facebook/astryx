@@ -1,0 +1,990 @@
+{
+  "@astryx.pagination.label": {
+    "defaultMessage": "Stránkování",
+    "description": "Aria label for the pagination navigation region."
+  },
+  "@astryx.pagination.previous": {
+    "defaultMessage": "Přejít na předchozí stránku",
+    "description": "Aria label for the previous-page button."
+  },
+  "@astryx.pagination.next": {
+    "defaultMessage": "Přejít na další stránku",
+    "description": "Aria label for the next-page button."
+  },
+  "@astryx.pagination.previousBy": {
+    "defaultMessage": "Zpět o {step, number} {step, plural, one {stránku} few {stránky} many {stránky} other {stránek}}",
+    "description": "Aria label for the previous button when it advances more than one page per click (the `step` prop > 1). `step` is the number of pages skipped."
+  },
+  "@astryx.pagination.nextBy": {
+    "defaultMessage": "Vpřed o {step, number} {step, plural, one {stránku} few {stránky} many {stránky} other {stránek}}",
+    "description": "Aria label for the next button when it advances more than one page per click (the `step` prop > 1). `step` is the number of pages skipped."
+  },
+  "@astryx.pagination.first": {
+    "defaultMessage": "Přejít na první stránku",
+    "description": "Aria label for the first-page button (« double chevron) in the input pagination variant."
+  },
+  "@astryx.pagination.last": {
+    "defaultMessage": "Přejít na poslední stránku",
+    "description": "Aria label for the last-page button (» double chevron) in the input pagination variant."
+  },
+  "@astryx.pagination.goToPage": {
+    "defaultMessage": "Přejít na stránku {page, number}",
+    "description": "Aria label for an individual page-number button. `page` is 1-based."
+  },
+  "@astryx.pagination.goToPageInput": {
+    "defaultMessage": "Přejít na stránku",
+    "description": "Aria label for the editable page/row number box in the input pagination variant. No number — the box holds the value itself."
+  },
+  "@astryx.pagination.pageLabel": {
+    "defaultMessage": "Stránka",
+    "description": "Visible label before the editable box in the input pagination variant. Example: \"Page [ 1 ] / 10\"."
+  },
+  "@astryx.pagination.pageIndicators": {
+    "defaultMessage": "Ukazatele stránek",
+    "description": "Aria label for the dots-variant page-indicator group."
+  },
+  "@astryx.pagination.itemsPerPage": {
+    "defaultMessage": "Položek na stránku",
+    "description": "Label for the page-size selector."
+  },
+  "@astryx.pagination.count": {
+    "defaultMessage": "{from, number}–{to, number} z {total, number}",
+    "description": "Visible range-of-total text on a pagination bar. Example: \"1–20 of 347\"; the en-dash is translator's choice."
+  },
+  "@astryx.pagination.pageOfTotal": {
+    "defaultMessage": "Stránka {current, number} z {total, number}",
+    "description": "Visible \"Page X of Y\" text on the compact pagination variant; also announced by screen readers. Keep short — sits in a compact toolbar."
+  },
+  "@astryx.pagination.pageAnnounce": {
+    "defaultMessage": "Stránka {current, number}",
+    "description": "Screen-reader announcement when a page changes and total is unknown."
+  },
+  "@astryx.powersearch.editor.field": {
+    "defaultMessage": "Pole",
+    "description": "Noun form-label above the field-picker dropdown in the PowerSearch filter-builder popover (which data column to filter on). Not an action."
+  },
+  "@astryx.powersearch.editor.operator": {
+    "defaultMessage": "Operátor",
+    "description": "Noun form-label above the operator dropdown in the PowerSearch filter-builder popover. Refers to a comparison verb (\"is\", \"contains\"), not a math or phone operator."
+  },
+  "@astryx.powersearch.editor.addFilter": {
+    "defaultMessage": "+ Přidat filtr",
+    "description": "Button label inside a group in the PowerSearch filter-builder; adds another filter row (e.g. \"Status = Active\"). The leading \"+ \" is a plus-sign character."
+  },
+  "@astryx.powersearch.editor.removeFilter": {
+    "defaultMessage": "Odebrat filtr",
+    "description": "Screen-reader-only label on the \"×\" icon button next to a filter row in the PowerSearch editor; removes that row. Imperative verb."
+  },
+  "@astryx.powersearch.editor.groupOperator": {
+    "defaultMessage": "Operátor skupiny",
+    "description": "Screen-reader-only label for the AND/OR toggle that combines sibling filters inside a filter group. Sighted users see just \"AND\" or \"OR\"."
+  },
+  "@astryx.powersearch.editor.group": {
+    "defaultMessage": "Seskupit",
+    "description": "Fallback noun label shown on a nested filter-group chip when no AND/OR combining operator has been chosen. Use the noun (\"a cluster\"), not the verb \"to group\"."
+  },
+  "@astryx.powersearch.editor.delete": {
+    "defaultMessage": "Smazat",
+    "description": "Button label inside the PowerSearch filter-editor popover; deletes the currently-edited filter row. Imperative verb form."
+  },
+  "@astryx.powersearch.editor.cancel": {
+    "defaultMessage": "Zrušit",
+    "description": "Button label inside the PowerSearch filter-editor popover; closes the popover and discards pending edits. Imperative verb form."
+  },
+  "@astryx.powersearch.editor.apply": {
+    "defaultMessage": "Použít",
+    "description": "Primary button label inside the PowerSearch filter-editor popover; confirms the edited filter. Imperative verb; consumers may override to \"Save\"."
+  },
+  "@astryx.powersearch.valueEditor.value": {
+    "defaultMessage": "Hodnota",
+    "description": "Noun form-label above a single free-text/number input in the PowerSearch value editor (e.g. the \"acme\" in `Name contains acme`). Not a verb or \"worth\"."
+  },
+  "@astryx.powersearch.valueEditor.values": {
+    "defaultMessage": "Hodnoty",
+    "description": "Plural noun form-label above a multi-value chip input in the PowerSearch value editor. Should match its singular counterpart `Value` in your language."
+  },
+  "@astryx.powersearch.valueEditor.time": {
+    "defaultMessage": "Čas",
+    "description": "Noun form-label above a time-of-day (HH:MM) picker in the PowerSearch value editor. Clock time, not duration or era."
+  },
+  "@astryx.powersearch.valueEditor.date": {
+    "defaultMessage": "Datum",
+    "description": "Noun form-label above a calendar-date picker in the PowerSearch value editor. Calendar date, not romantic date or fruit."
+  },
+  "@astryx.powersearch.valueEditor.relativeDate": {
+    "defaultMessage": "Relativní datum",
+    "description": "Label for the relative-date selector (e.g. \"Last 7 days\") in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.startDate": {
+    "defaultMessage": "Počáteční datum",
+    "description": "Noun form-label above the start-of-range date picker in the PowerSearch value editor. Pairs with `End date` — keep the two parallel in your language."
+  },
+  "@astryx.powersearch.valueEditor.endDate": {
+    "defaultMessage": "Koncové datum",
+    "description": "Noun form-label above the end-of-range date picker in the PowerSearch value editor. Pairs with `Start date` — keep the two parallel."
+  },
+  "@astryx.powersearch.valueEditor.entities": {
+    "defaultMessage": "Entity",
+    "description": "\"Entities\" is jargon — plural noun form-label above an entity picker (people, teams, projects). Prefer a natural collective like \"items\" if your language has no equivalent."
+  },
+  "@astryx.powersearch.valueEditor.searchPlaceholder": {
+    "defaultMessage": "Hledat…",
+    "description": "Placeholder inside the search input in the PowerSearch entity/typeahead picker. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.powersearch.valueEditor.enterValuePlaceholder": {
+    "defaultMessage": "Zadejte hodnotu…",
+    "description": "Placeholder inside a free-text single-value input in the PowerSearch value editor. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.powersearch.valueEditor.addValuesPlaceholder": {
+    "defaultMessage": "Přidat hodnoty…",
+    "description": "Placeholder inside a multi-value chip input where the user types items and presses Enter to add each as a chip. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.powersearch.valueEditor.enterNumberPlaceholder": {
+    "defaultMessage": "Zadejte číslo…",
+    "description": "Placeholder inside a numeric input in the PowerSearch value editor. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.powersearch.valueEditor.selectValuesPlaceholder": {
+    "defaultMessage": "Vyberte hodnoty…",
+    "description": "Placeholder on a dropdown for choosing values from a fixed enum list in the PowerSearch value editor. Imperative verb (user selects, not types)."
+  },
+  "@astryx.powersearch.operator.contains": {
+    "defaultMessage": "obsahuje",
+    "description": "PowerSearch string operator, rendered inline as `<field> contains <value>` (e.g. `Name contains acme`). Lowercase verb form."
+  },
+  "@astryx.powersearch.operator.notContains": {
+    "defaultMessage": "neobsahuje",
+    "description": "PowerSearch negated string operator. Example: `Name does not contain test`. Lowercase; pairs with `contains`."
+  },
+  "@astryx.powersearch.operator.startsWith": {
+    "defaultMessage": "začíná na",
+    "description": "PowerSearch string prefix operator. Example: `Email starts with admin@`. Lowercase."
+  },
+  "@astryx.powersearch.operator.notStartsWith": {
+    "defaultMessage": "nezačíná na",
+    "description": "PowerSearch negated prefix operator. Example: `Email does not start with test`. Lowercase; pairs with `starts with`."
+  },
+  "@astryx.powersearch.operator.endsWith": {
+    "defaultMessage": "končí na",
+    "description": "PowerSearch string suffix operator. Example: `Email ends with @meta.com`. Lowercase."
+  },
+  "@astryx.powersearch.operator.notEndsWith": {
+    "defaultMessage": "nekončí na",
+    "description": "PowerSearch negated suffix operator. Example: `Email does not end with @gmail.com`. Lowercase; pairs with `ends with`."
+  },
+  "@astryx.powersearch.operator.is": {
+    "defaultMessage": "je",
+    "description": "PowerSearch equality operator for strings/enums. Example: `Status is Active`. Separate from `operator.equals` (numbers) — translations may diverge."
+  },
+  "@astryx.powersearch.operator.isNot": {
+    "defaultMessage": "není",
+    "description": "PowerSearch inequality operator for strings/enums. Example: `Status is not Draft`. Pairs with `is`; separate from `operator.notEquals`."
+  },
+  "@astryx.powersearch.operator.equals": {
+    "defaultMessage": "je",
+    "description": "PowerSearch numeric equality operator. Example: `Age is 30`. Ships same English \"is\" as `operator.is` but is separate so numbers may diverge (e.g. \"equals\")."
+  },
+  "@astryx.powersearch.operator.notEquals": {
+    "defaultMessage": "není",
+    "description": "PowerSearch numeric inequality operator. Example: `Count is not 0`. Same divergence option as `operator.equals`."
+  },
+  "@astryx.powersearch.operator.greaterThan": {
+    "defaultMessage": "je větší než",
+    "description": "PowerSearch numeric operator, strictly greater than. Example: `Age is greater than 18`. Lowercase."
+  },
+  "@astryx.powersearch.operator.lessThan": {
+    "defaultMessage": "je menší než",
+    "description": "PowerSearch numeric operator, strictly less than. Example: `Priority is less than 5`. Lowercase."
+  },
+  "@astryx.powersearch.operator.greaterThanOrEqual": {
+    "defaultMessage": "je větší nebo rovno",
+    "description": "PowerSearch numeric operator, ≥. Example: `Age is greater than or equal to 21`. A shorter form (e.g. \"≥\") is fine if idiomatic."
+  },
+  "@astryx.powersearch.operator.lessThanOrEqual": {
+    "defaultMessage": "je menší nebo rovno",
+    "description": "PowerSearch numeric operator, ≤. Example: `Priority is less than or equal to 3`. A shorter form is fine if idiomatic."
+  },
+  "@astryx.powersearch.operator.before": {
+    "defaultMessage": "je před",
+    "description": "PowerSearch date operator, strictly earlier. Example: `Created is before 2024-01-01`. Temporal, not spatial."
+  },
+  "@astryx.powersearch.operator.after": {
+    "defaultMessage": "je po",
+    "description": "PowerSearch date operator, strictly later. Example: `Updated is after 2024-06-01`. Temporal."
+  },
+  "@astryx.powersearch.operator.between": {
+    "defaultMessage": "je mezi",
+    "description": "PowerSearch date operator, inclusive range. Example: `Created is between 2024-01-01 and 2024-06-30`. The `and <end>` portion is composed separately."
+  },
+  "@astryx.powersearch.operator.isTrue": {
+    "defaultMessage": "je pravda",
+    "description": "PowerSearch boolean operator: matches truthy. Example: `Is admin is true`. Pairs with `is false`; field may be affirmative or a yes/no question."
+  },
+  "@astryx.powersearch.operator.isFalse": {
+    "defaultMessage": "je nepravda",
+    "description": "PowerSearch boolean operator: matches falsy. Example: `Is admin is false`. Pairs with `is true`."
+  },
+  "@astryx.powersearch.operator.isAnyOf": {
+    "defaultMessage": "je jedním z",
+    "description": "PowerSearch list operator: value is in the set. Example: `Status is any of [Active, Paused, Draft]`. The value list is composed separately; pairs with `is none of`."
+  },
+  "@astryx.powersearch.operator.isNoneOf": {
+    "defaultMessage": "není žádným z",
+    "description": "PowerSearch negated list operator: value not in the set. Example: `Status is none of [Archived, Deleted]`. Pairs with `is any of`."
+  },
+  "@astryx.powersearch.valueEditor.itemsCount": {
+    "defaultMessage": "{count, number} {count, plural, one {položka} few {položky} many {položky} other {položek}}",
+    "description": "Overflow summary on a compact filter chip when the list of selected items is too long. Example: `3 items` or `1 item`."
+  },
+  "@astryx.powersearch.valueEditor.entitiesCount": {
+    "defaultMessage": "{count, number} {count, plural, one {entita} few {entity} many {entity} other {entit}}",
+    "description": "Overflow summary on a compact filter chip when the list of selected entities is too long. Example: `5 entities` or `1 entity`. Pair with `itemsCount` translation."
+  },
+  "@astryx.powersearch.valueEditor.dateRange": {
+    "defaultMessage": "rozsah dat",
+    "description": "Fallback lowercase noun rendered inline in a filter chip when a date-range value can't be formatted (e.g. `Created is between date range`). Keep lowercase."
+  },
+  "@astryx.powersearch.valueEditor.filtersCount": {
+    "defaultMessage": "{count, number} {count, plural, one {filtr} few {filtry} many {filtru} other {filtrů}}",
+    "description": "Summary inside a filter chip when the value is a nested set of filters. Example: `3 filters` or `1 filter`."
+  },
+  "@astryx.powersearch.resultCount": {
+    "defaultMessage": "{count, number} {count, plural, one {výsledek} few {výsledky} many {výsledku} other {výsledků}}",
+    "description": "Live result-count text next to the PowerSearch input, announced to screen readers on change. Example: `12 results`, `1 result`; keep compact."
+  },
+  "@astryx.alertDialog.cancel": {
+    "defaultMessage": "Zrušit",
+    "description": "Button label on the secondary/dismiss button of an AlertDialog (modal confirmation). Imperative verb; consumers usually override with task-specific text."
+  },
+  "@astryx.appShell.mobileNavigation": {
+    "defaultMessage": "Mobilní navigace",
+    "description": "Screen-reader-only accessible name for the mobile-only navigation region on small viewports. \"Mobile\" = phone/tablet (small screen), not \"movable\"."
+  },
+  "@astryx.appShell.skipToContent": {
+    "defaultMessage": "Přejít na obsah",
+    "description": "Text of the skip link — the first focusable element on the page, visible only while keyboard-focused. Activating it jumps focus past the navigation to the main content area. Imperative verb; keep short."
+  },
+  "@astryx.avatarGroup.label": {
+    "defaultMessage": "Avatary",
+    "description": "Screen-reader-only fallback name for a horizontal cluster of user avatar images. Plural noun; consumers usually override with \"Team members\", \"Attendees\", etc."
+  },
+  "@astryx.avatarGroup.keyboardHint": {
+    "defaultMessage": "Pomocí šipek se pohybujte mezi avatary",
+    "description": "Screen-reader-only instruction attached (via aria-describedby) to a group of interactive avatars that share a single Tab stop. Tells keyboard users the Left/Right arrow keys move focus between the avatars. Only announced when the group has interactive (link/button) avatars."
+  },
+  "@astryx.avatarGroup.overflow": {
+    "defaultMessage": "o {count, number} více",
+    "description": "Accessible name for the \"+N\" overflow indicator at the end of an AvatarGroup — announces how many additional avatars are not shown. Example: `5 more`. The visible \"+N\" text is unaffected; this is the aria-label only."
+  },
+  "@astryx.banner.dismiss": {
+    "defaultMessage": "Zavřít",
+    "description": "\"Dismiss\" = close/hide this notification (not \"reject a person\"). Aria label AND tooltip on the small X button on a Banner."
+  },
+  "@astryx.calendar.previousMonth": {
+    "defaultMessage": "Předchozí měsíc",
+    "description": "Screen-reader-only label on the left-arrow button in a Calendar's month header (navigates one month back). Pairs with `calendar.nextMonth`."
+  },
+  "@astryx.calendar.nextMonth": {
+    "defaultMessage": "Další měsíc",
+    "description": "Screen-reader-only label on the right-arrow button in a Calendar's month header (navigates one month forward). Pairs with `calendar.previousMonth`."
+  },
+  "@astryx.calendar.daySelected": {
+    "defaultMessage": "{date}, vybráno",
+    "description": "Accessible name for the Calendar day button that is the current single-mode selection. `{date}` is the localized full date, e.g. \"Thursday, January 15, 2026\". The trailing state word tells screen-reader users the focused day is selected."
+  },
+  "@astryx.calendar.dayRangeStart": {
+    "defaultMessage": "{date}, začátek rozsahu",
+    "description": "Accessible name for the Calendar day button that begins the selected date range (or the first pick of an in-progress range). `{date}` is the localized full date."
+  },
+  "@astryx.calendar.dayRangeEnd": {
+    "defaultMessage": "{date}, konec rozsahu",
+    "description": "Accessible name for the Calendar day button that ends the selected date range. `{date}` is the localized full date. Pairs with `calendar.dayRangeStart`."
+  },
+  "@astryx.calendar.dayRangeStartAndEnd": {
+    "defaultMessage": "{date}, začátek a konec rozsahu",
+    "description": "Accessible name for a Calendar day button that both begins and ends a completed one-day range. `{date}` is the localized full date."
+  },
+  "@astryx.calendar.dayInRange": {
+    "defaultMessage": "{date}, v rozsahu",
+    "description": "Accessible name for a Calendar day button strictly inside the selected date range (not an endpoint). `{date}` is the localized full date."
+  },
+  "@astryx.calendar.rangeStartAnnounce": {
+    "defaultMessage": "Počáteční datum {date}. Vyberte koncové datum.",
+    "description": "Screen-reader announcement after the first pick of a Calendar range selection. `{date}` is the localized full date. Prompts the user that a second pick completes the range."
+  },
+  "@astryx.calendar.rangeCompleteAnnounce": {
+    "defaultMessage": "Vybraný rozsah: {start} až {end}.",
+    "description": "Screen-reader announcement after the second pick completes a Calendar range selection. `{start}` and `{end}` are localized full dates in chronological order."
+  },
+  "@astryx.carousel.label": {
+    "defaultMessage": "Karusel",
+    "description": "Screen-reader-only fallback name for a horizontally-scrolling row of items. If \"carousel\" is unfamiliar in your locale, prefer the standard term (e.g. \"slider\")."
+  },
+  "@astryx.carousel.scrollLeft": {
+    "defaultMessage": "Posunout doleva",
+    "description": "Screen-reader-only label on the left arrow button in a Carousel. Pairs with `carousel.scrollRight`; in RTL locales, coordinate the two so left/right match layout."
+  },
+  "@astryx.carousel.scrollRight": {
+    "defaultMessage": "Posunout doprava",
+    "description": "Screen-reader-only label on the right arrow button in a Carousel. Pairs with `carousel.scrollLeft`; same RTL note."
+  },
+  "@astryx.carousel.slideLabel": {
+    "defaultMessage": "Snímek {current, number} z {total, number}",
+    "description": "Screen-reader accessible name for one slide in a Carousel, giving its position. `current` is the 1-based slide number; `total` is the slide count."
+  },
+  "@astryx.chat.status.sending": {
+    "defaultMessage": "Odesílání",
+    "description": "Chat send-status caption under an outgoing message while it is being transmitted. Part of the set sending → sent → delivered → read (or failed) — keep tense/aspect consistent."
+  },
+  "@astryx.chat.status.sent": {
+    "defaultMessage": "Odesláno",
+    "description": "Chat send-status caption shown once the message reaches the server. Part of the set sending → **sent** → delivered → read (or failed) — keep tense consistent."
+  },
+  "@astryx.chat.status.delivered": {
+    "defaultMessage": "Doručeno",
+    "description": "Chat send-status caption shown once the recipient's device received the message. Part of the set sending → sent → **delivered** → read (or failed)."
+  },
+  "@astryx.chat.status.read": {
+    "defaultMessage": "Přečteno",
+    "description": "Chat send-status caption shown once the recipient opened the message. English past-participle (\"has been read\", /rɛd/), not the present verb — part of the set sending → sent → delivered → **read**."
+  },
+  "@astryx.chat.status.failed": {
+    "defaultMessage": "Neúspěšné",
+    "description": "Chat send-status caption shown when the send attempt errored. Part of the set — the terminal failure branch, orthogonal to the sent → delivered → read success track."
+  },
+  "@astryx.chat.messageAriaLabel": {
+    "defaultMessage": "Zpráva {status}",
+    "description": "Screen-reader-only accessible name for a chat message row. `{status}` interpolates the localized status word (e.g. `Message sent`, `Message delivered`) — reorder if needed."
+  },
+  "@astryx.chat.pastedText.expand": {
+    "defaultMessage": "Rozbalit",
+    "description": "Button label on a chip in the chat composer representing a long pasted text block; clicking reveals full content. \"Expand\" here means reveal more, not grow physically."
+  },
+  "@astryx.checkboxList.item.checkbox": {
+    "defaultMessage": "Zaškrtávací políčko",
+    "description": "Screen-reader-only last-ditch fallback name for a checkbox inside a list item when no label is provided. Should almost never render — consumers should supply a real label."
+  },
+  "@astryx.commandPalette.emptySearch": {
+    "defaultMessage": "Žádné výsledky",
+    "description": "Fallback empty-state text inside a CommandPalette when the user's query has no matches. Very short (2 words); neutral tone."
+  },
+  "@astryx.commandPalette.emptyBootstrap": {
+    "defaultMessage": "Pište pro vyhledávání",
+    "description": "Onboarding empty-state text shown inside a CommandPalette on first open, before the user has typed anything. Imperative sentence fragment."
+  },
+  "@astryx.commandPalette.resultCount": {
+    "defaultMessage": "{count, number} {count, plural, one {výsledek} few {výsledky} many {výsledku} other {výsledků}}",
+    "description": "Screen-reader-only announcement of how many commands match the CommandPalette query as the user types. Example: `12 results`, `1 result`; keep compact."
+  },
+  "@astryx.commandPalette.noResultsFor": {
+    "defaultMessage": "Žádné výsledky pro {query}",
+    "description": "Screen-reader-only announcement when a CommandPalette query matches nothing. `{query}` is the user's verbatim search text; keep it last if your language allows so truncation-by-AT still conveys the outcome."
+  },
+  "@astryx.commandPalette.loading": {
+    "defaultMessage": "Načítání",
+    "description": "Screen-reader-only announcement that a CommandPalette search has started and results are being fetched. Present-progressive form; matches the visible spinner."
+  },
+  "@astryx.dateRangeInput.presetDateRanges": {
+    "defaultMessage": "Přednastavené rozsahy dat",
+    "description": "Screen-reader-only accessible name for the sidebar of quick-pick preset ranges inside a DateRangeInput popover (e.g. \"Last 7 days\", \"This month\")."
+  },
+  "@astryx.dateTimeInput.timePlaceholder": {
+    "defaultMessage": "Vyberte čas",
+    "description": "Grey placeholder inside the empty time-of-day slot in a DateTimeInput. \"Time\" = clock time (HH:MM), not duration."
+  },
+  "@astryx.dialog.close": {
+    "defaultMessage": "Zavřít",
+    "description": "\"Close\" = shut/dismiss the dialog, not \"nearby\" (English homograph). Aria label AND tooltip on the X at the top-right of a Dialog."
+  },
+  "@astryx.dropdownMenu.label": {
+    "defaultMessage": "Nabídka",
+    "description": "Screen-reader-only fallback name for a dropdown menu popover. Very generic; consumers usually override. Noun (\"a menu\"), not the imperative."
+  },
+  "@astryx.lightbox.close": {
+    "defaultMessage": "Zavřít",
+    "description": "\"Close\" = shut/dismiss (not \"nearby\"). Screen-reader-only label on the X button that dismisses a Lightbox."
+  },
+  "@astryx.lightbox.previous": {
+    "defaultMessage": "Předchozí",
+    "description": "Screen-reader-only label on the left-arrow button in a Lightbox (navigates to previous media item). Pairs with `lightbox.next`."
+  },
+  "@astryx.lightbox.next": {
+    "defaultMessage": "Další",
+    "description": "Screen-reader-only label on the right-arrow button in a Lightbox (navigates to next media item). Pairs with `lightbox.previous`."
+  },
+  "@astryx.markdown.taskList": {
+    "defaultMessage": "Seznam úkolů",
+    "description": "Screen-reader-only accessible name for a GitHub-flavored Markdown task list (rendered from `- [ ] item` / `- [x] done` syntax)."
+  },
+  "@astryx.markdown.table": {
+    "defaultMessage": "Tabulka",
+    "description": "Screen-reader-only accessible name for a table rendered inside a Markdown block. Noun (\"a table\"), not the verb. Separate from `@astryx.table.label` — translations may diverge."
+  },
+  "@astryx.mobileNav.closeNavigation": {
+    "defaultMessage": "Zavřít navigaci",
+    "description": "Screen-reader-only label on the X/close button that dismisses the MobileNav overlay. Pairs with `mobileNav.toggle.open`."
+  },
+  "@astryx.multiSelector.selectAll": {
+    "defaultMessage": "Vybrat vše",
+    "description": "Label on the checkbox/toggle at the top of a MultiSelector dropdown that selects every option. \"All\" is a determiner here (as in \"all the options\"), not the pronoun."
+  },
+  "@astryx.multiSelector.searchPlaceholder": {
+    "defaultMessage": "Hledat…",
+    "description": "Placeholder inside the search input at the top of a MultiSelector's dropdown panel. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.multiSelector.searchOptions": {
+    "defaultMessage": "Hledat možnosti",
+    "description": "Screen-reader-only accessible name for that same search input inside a MultiSelector."
+  },
+  "@astryx.multiSelector.selectAllPartiallySelected": {
+    "defaultMessage": "{label}, částečně vybráno",
+    "description": "Accessible name for the MultiSelector select-all option while only some options are selected. `{label}` is the visible select-all label (e.g. \"Select all\"). ARIA forbids aria-selected=\"mixed\" on options, so the indeterminate state is conveyed through the name instead. \"Partially\" = some but not all."
+  },
+  "@astryx.popover.close": {
+    "defaultMessage": "Zavřít vyskakovací okno",
+    "description": "\"Close\" = shut/dismiss, not \"nearby\". Screen-reader-only label on the close button inside a Popover."
+  },
+  "@astryx.selector.searchPlaceholder": {
+    "defaultMessage": "Hledat…",
+    "description": "Placeholder inside the search input at the top of a Selector's dropdown panel (for filtering options). Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.selector.searchOptions": {
+    "defaultMessage": "Hledat možnosti",
+    "description": "\"Options\" = the list of choices in the dropdown. Screen-reader-only accessible name for the search input inside a Selector."
+  },
+  "@astryx.sideNav.label": {
+    "defaultMessage": "Boční navigace",
+    "description": "Screen-reader-only accessible name for the primary vertical sidebar nav (usually on the left)."
+  },
+  "@astryx.sideNav.resizeSidebar": {
+    "defaultMessage": "Změnit velikost postranního panelu",
+    "description": "Screen-reader-only label on the vertical drag handle at the right edge of the SideNav that lets the user resize the sidebar's width."
+  },
+  "@astryx.sideNav.heading.openMenu": {
+    "defaultMessage": "Otevřít nabídku",
+    "description": "Screen-reader-only label on the `⋯` overflow-menu button embedded in a SideNav section heading. Same string as `topNav.heading.openMenu` — translations may share."
+  },
+  "@astryx.tabList.label": {
+    "defaultMessage": "Karty",
+    "description": "Screen-reader-only fallback name for a horizontal tab bar. Plural noun; \"Tabs\" here = UI tab panels, not browser tabs or the Tab key."
+  },
+  "@astryx.table.label": {
+    "defaultMessage": "Tabulka",
+    "description": "Fallback screen-reader-only accessible name for a data-table region when the consumer provides none. Noun (\"a table\"), not the verb \"to table\"."
+  },
+  "@astryx.table.noData": {
+    "defaultMessage": "Žádná data",
+    "description": "Fallback empty-state text in the table body when there are zero rows. Neutral tone (not error-y); consumers commonly override with something specific like \"No results\"."
+  },
+  "@astryx.table.filter.allPlaceholder": {
+    "defaultMessage": "Vše",
+    "description": "Placeholder on a per-column filter dropdown when nothing is selected, meaning \"no filter — all rows match\". Determiner form (as in \"all values\"), not the pronoun."
+  },
+  "@astryx.table.filter.reset": {
+    "defaultMessage": "Obnovit",
+    "description": "Button label inside a table's filter panel/popover; clears pending filter values back to defaults. Imperative verb."
+  },
+  "@astryx.table.filter.apply": {
+    "defaultMessage": "Použít",
+    "description": "Primary button label inside a table's filter panel/popover; commits pending filter values. Imperative verb; pairs with `Reset`."
+  },
+  "@astryx.table.selection.selectAllRows": {
+    "defaultMessage": "Vybrat všechny řádky",
+    "description": "Aria label for the \"select all rows\" checkbox in a Table header."
+  },
+  "@astryx.table.selection.selectRow": {
+    "defaultMessage": "Vybrat řádek",
+    "description": "Aria label for the \"select row\" checkbox on a Table row."
+  },
+  "@astryx.table.selection.selectRowNamed": {
+    "defaultMessage": "Vybrat {label}",
+    "description": "Aria label for a Table row's selection checkbox when a per-row label is available (via getRowLabel). `label` is the row's human-readable identity, e.g. \"Alice\"."
+  },
+  "@astryx.table.sort.ascending": {
+    "defaultMessage": "Seřadit vzestupně",
+    "description": "Screen-reader-only label on a column header button that will sort the column ascending. Part of a set with `sort.descending` and `sort.clear` — keep parallel."
+  },
+  "@astryx.table.sort.descending": {
+    "defaultMessage": "Seřadit sestupně",
+    "description": "Screen-reader-only label on a column header button that will sort the column descending. Part of a set with `sort.ascending` and `sort.clear`."
+  },
+  "@astryx.table.sort.clear": {
+    "defaultMessage": "Vymazat řazení",
+    "description": "Screen-reader-only label on a column header button that will remove the current sort. \"Clear\" here means remove, not transparent. Part of the sort set."
+  },
+  "@astryx.table.sort.direction.ascending": {
+    "defaultMessage": "vzestupně",
+    "description": "Localized direction word interpolated as `direction` into @astryx.table.sort.sortedBy and @astryx.table.sort.sortedByWithPriority."
+  },
+  "@astryx.table.sort.direction.descending": {
+    "defaultMessage": "sestupně",
+    "description": "Localized direction word interpolated as `direction` into @astryx.table.sort.sortedBy and @astryx.table.sort.sortedByWithPriority."
+  },
+  "@astryx.table.sort.sortBy": {
+    "defaultMessage": "Seřadit podle {label}",
+    "description": "Aria label for a sortable Table header button when the column is unsorted. `label` is the column header text."
+  },
+  "@astryx.table.sort.sortedBy": {
+    "defaultMessage": "Seřadit podle {label}, seřazeno {direction}",
+    "description": "Aria label for a sorted Table header button. `direction` is the localized direction word from @astryx.table.sort.direction.*."
+  },
+  "@astryx.table.sort.sortedByWithPriority": {
+    "defaultMessage": "Seřadit podle {label}, seřazeno {direction}, priorita {rank, number} z {total, number}",
+    "description": "Aria label for a sorted Table header button in multi-sort. `rank` is the 1-based position of this column in the sort order; `total` is the number of sorted columns."
+  },
+  "@astryx.toast.dismiss": {
+    "defaultMessage": "Zavřít oznámení",
+    "description": "Screen-reader-only label on the X button of a Toast (transient notification popup). Distinct from `banner.dismiss` (persistent banner)."
+  },
+  "@astryx.toast.viewport": {
+    "defaultMessage": "Oznámení",
+    "description": "Screen-reader-only accessible name for the invisible landmark region hosting the stack of Toast popups (usually pinned to a screen corner)."
+  },
+  "@astryx.tokenizer.clearAll": {
+    "defaultMessage": "Vymazat vše",
+    "description": "Label on the \"×\" button that removes every token/chip from a Tokenizer input. Imperative verb + determiner \"all\"; short."
+  },
+  "@astryx.topNav.heading.openMenu": {
+    "defaultMessage": "Otevřít nabídku",
+    "description": "Screen-reader-only label on the `⋯` overflow button in a TopNav section heading. Kept separate from `sideNav.heading.openMenu` so translations may diverge."
+  },
+  "@astryx.topNav.landmarkLabel": {
+    "defaultMessage": "Horní navigace",
+    "description": "Default accessible name (aria-label) for the <nav> landmark rendered by TopNav when no label is provided."
+  },
+  "@astryx.treeList.toggleChildren": {
+    "defaultMessage": "Přepnout podřízené položky",
+    "description": "\"Children\" = child nodes in the tree, not human children. Screen-reader-only label on the chevron next to a TreeList item that has children — toggles the sub-list."
+  },
+  "@astryx.typeahead.emptySearchResults": {
+    "defaultMessage": "Nebyly nalezeny žádné výsledky",
+    "description": "Fallback empty-state message inside a Typeahead's suggestion popover when the current query has no matches. Neutral tone (not error-y)."
+  },
+  "@astryx.typeahead.loading": {
+    "defaultMessage": "Načítání",
+    "description": "Screen-reader-only name for a spinner shown inside a Typeahead dropdown while suggestions are being fetched. Present-progressive form."
+  },
+  "@astryx.typeahead.searchResults": {
+    "defaultMessage": "Výsledky hledání",
+    "description": "Screen-reader-only accessible name for the list of suggestions inside a Typeahead dropdown."
+  },
+  "@astryx.typeahead.clearSelection": {
+    "defaultMessage": "Vymazat výběr",
+    "description": "\"Selection\" = the chosen value (not highlighted text). Screen-reader-only label on the X that clears the currently-selected value from a Typeahead."
+  },
+  "@astryx.breadcrumbs.label": {
+    "defaultMessage": "Drobečková navigace",
+    "description": "Screen-reader-only fallback name for the breadcrumb trail (e.g. `Home > Section > Page`). Singular in English per ARIA convention; plural is fine if natural in your locale."
+  },
+  "@astryx.chat.composer.placeholder": {
+    "defaultMessage": "Napište zprávu…",
+    "description": "Grey placeholder text inside the empty chat composer textarea. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.chat.composerDrawer.label": {
+    "defaultMessage": "Položky",
+    "description": "Fallback aria label for the ChatComposerDrawer — a horizontal list of attachment/tool chips. Consumers usually override with \"Attachments\", \"Tools\", etc."
+  },
+  "@astryx.chat.composerInput.label": {
+    "defaultMessage": "Pole zprávy",
+    "description": "Screen-reader-only accessible name for the chat composer textarea. Reorder freely if your language uses one word for \"message field\"."
+  },
+  "@astryx.chat.speechRecognition.noSpeechDetected": {
+    "defaultMessage": "Nebyla rozpoznána žádná řeč.",
+    "description": "Full-sentence error shown inline in the chat composer after voice input captured silence. Soft-error tone (not alarming); keep terminal period."
+  },
+  "@astryx.commandPalette.label": {
+    "defaultMessage": "Paleta příkazů",
+    "description": "Screen-reader-only fallback name for a keyboard-driven command menu (usually opened with Cmd/Ctrl-K). If unfamiliar, prefer a natural equivalent like \"quick actions\"."
+  },
+  "@astryx.commandPalette.input.placeholder": {
+    "defaultMessage": "Hledat…",
+    "description": "Grey placeholder inside the CommandPalette's search input. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.commandPalette.list.label": {
+    "defaultMessage": "Příkazy",
+    "description": "\"Command\" = an app action a user can invoke (metaphor from CLI), not a Unix command. Screen-reader-only name for the matching-commands list."
+  },
+  "@astryx.contextMenu.label": {
+    "defaultMessage": "Kontextová nabídka",
+    "description": "Screen-reader-only fallback name for the right-click / long-press popup menu. \"Context\" = context-specific to the activated element, not linguistic context."
+  },
+  "@astryx.dateInput.placeholder": {
+    "defaultMessage": "Vyberte datum",
+    "description": "Grey placeholder inside an empty DateInput field. \"Date\" = calendar date, not romantic or fruit. Imperative verb."
+  },
+  "@astryx.dateInput.dialogLabel": {
+    "defaultMessage": "Zvolit datum",
+    "description": "Screen-reader-only accessible name for the popover dialog opened from a DateInput's calendar toggle. Imperative verb + noun."
+  },
+  "@astryx.dateInput.closeCalendar": {
+    "defaultMessage": "Zavřít kalendář",
+    "description": "Screen-reader-only label on the X inside the DateInput calendar popover (dismisses the popover). Distinct from `dateInput.toggleCalendarClose`, which labels the outer toggle."
+  },
+  "@astryx.dateInput.openCalendar": {
+    "defaultMessage": "Otevřít kalendář",
+    "description": "Aria label for the DateInput / DateRangeInput / DateTimeInput calendar toggle button when the popover is closed."
+  },
+  "@astryx.dateInput.toggleCalendarClose": {
+    "defaultMessage": "Zavřít kalendář",
+    "description": "Aria label for the DateInput / DateRangeInput / DateTimeInput calendar toggle button when the popover is open. Distinct from closeCalendar (which labels the X inside the popover) so translators can differentiate the toggle vs the close-X UI."
+  },
+  "@astryx.dateInput.clear": {
+    "defaultMessage": "Vymazat {label}",
+    "description": "Aria label for the clear-value button in DateInput / DateRangeInput / DateTimeInput. `{label}` is the field's own label so screen readers announce e.g. 'Clear Start date'."
+  },
+  "@astryx.dateTimeInput.timeSuffix": {
+    "defaultMessage": "čas: {label}",
+    "description": "Screen-reader-only accessible name for the time-of-day slot in a DateTimeInput. Example: `Start date time`; reorder freely (e.g. \"time of {label}\")."
+  },
+  "@astryx.dateRangeInput.placeholder": {
+    "defaultMessage": "Vyberte rozsah dat",
+    "description": "Grey placeholder inside an empty DateRangeInput field. Represents picking a start–end date pair. Imperative verb."
+  },
+  "@astryx.dateRangeInput.dialogLabel": {
+    "defaultMessage": "Zvolit rozsah dat",
+    "description": "Screen-reader-only accessible name for the popover dialog opened from a DateRangeInput. Imperative verb + noun phrase."
+  },
+  "@astryx.dateTimeInput.placeholder": {
+    "defaultMessage": "Vyberte datum",
+    "description": "Grey placeholder inside an empty DateTimeInput field. Note: the English says only \"date\" though the field is date+time — do not add \"and time\" unless natural."
+  },
+  "@astryx.dateTimeInput.dialogLabel": {
+    "defaultMessage": "Zvolit datum",
+    "description": "Screen-reader-only accessible name for the DateTimeInput picker dialog. Same English-only \"date\" phrasing as the placeholder — don't add \"and time\" unless natural."
+  },
+  "@astryx.link.newTab": {
+    "defaultMessage": "(otevře se na nové kartě)",
+    "description": "Visually-hidden (screen-reader-only) suffix appended to a Link's accessible name when it opens in a new tab. Example: `Documentation (opens in new tab)`."
+  },
+  "@astryx.mobileNav.toggle.open": {
+    "defaultMessage": "Otevřít navigaci",
+    "description": "Screen-reader-only label on the hamburger button that opens the MobileNav overlay (rendered when the overlay is closed). Pairs with `mobileNav.closeNavigation`."
+  },
+  "@astryx.moreMenu.label": {
+    "defaultMessage": "Další možnosti",
+    "description": "Screen-reader-only name for the small `⋯` (three-dots) overflow button that opens a menu of additional actions. Very short — sits on a tiny icon button."
+  },
+  "@astryx.multiSelector.selectPlaceholder": {
+    "defaultMessage": "Vybrat…",
+    "description": "Placeholder on an empty MultiSelector trigger button. Same English as `selector.placeholder` but a separate key — plural phrasing like \"Choose items…\" is fine."
+  },
+  "@astryx.outline.label": {
+    "defaultMessage": "Obsah",
+    "description": "Screen-reader-only fallback name for a page's outline / table-of-contents sidebar (list of in-page headings). Rendered as `aria-label` on a `<nav>` landmark."
+  },
+  "@astryx.powersearch.label": {
+    "defaultMessage": "Hledat",
+    "description": "Screen-reader-only accessible name for the PowerSearch input (a filter-builder). The visible placeholder is separate; noun form often reads better than the verb."
+  },
+  "@astryx.powersearch.placeholder": {
+    "defaultMessage": "Hledat…",
+    "description": "Grey placeholder text inside the empty PowerSearch input. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.resizable.collapsed": {
+    "defaultMessage": "Sbaleno",
+    "description": "aria-valuetext for the Resizable drag handle (role=separator) while its panel is collapsed to zero size. Replaces the numeric value announcement, since the numeric value is clamped to the minimum while collapsed. Adjective describing the panel state, not a verb/command."
+  },
+  "@astryx.resizable.handle.label": {
+    "defaultMessage": "Úchyt pro změnu velikosti",
+    "description": "Screen-reader-only accessible name for the small draggable divider between two Resizable panels (users drag it to change the split ratio)."
+  },
+  "@astryx.selector.placeholder": {
+    "defaultMessage": "Vybrat…",
+    "description": "Placeholder text on an empty Selector trigger button (a dropdown). Imperative verb; trailing `…` is one character. Very short — appears on the button face."
+  },
+  "@astryx.sideNav.heading.dialogLabel": {
+    "defaultMessage": "Navigační nabídka",
+    "description": "Screen-reader-only accessible name for the dropdown dialog opened from a SideNavHeading's overflow menu."
+  },
+  "@astryx.table.pagination.label": {
+    "defaultMessage": "Stránkování tabulky",
+    "description": "Screen-reader-only accessible name for the pagination `<nav>` appended below a data table. Kept separate from `@astryx.pagination.label` so translations may diverge."
+  },
+  "@astryx.timeInput.placeholder": {
+    "defaultMessage": "Vyberte čas",
+    "description": "\"Time\" = clock time (HH:MM), not duration or era. Grey placeholder inside an empty TimeInput field; imperative verb."
+  },
+  "@astryx.topNav.heading.dialogLabel": {
+    "defaultMessage": "Navigační nabídka",
+    "description": "Screen-reader-only accessible name for the dropdown dialog opened from a TopNavHeading's overflow menu. Kept separate from the SideNav sibling."
+  },
+  "@astryx.typeahead.searchPlaceholder": {
+    "defaultMessage": "Hledat…",
+    "description": "Placeholder inside an empty Typeahead input (a search field that suggests results as the user types). Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.banner.collapse": {
+    "defaultMessage": "Sbalit",
+    "description": "\"Collapse\" = fold up, not crumble. Aria label AND tooltip on the Banner expand/collapse toggle when currently expanded. Pairs with `banner.expand`."
+  },
+  "@astryx.banner.expand": {
+    "defaultMessage": "Rozbalit",
+    "description": "\"Expand\" = reveal more, not grow physically. Aria label AND tooltip on the same toggle when currently collapsed. Pairs with `banner.collapse`."
+  },
+  "@astryx.button.loading": {
+    "defaultMessage": "Načítání",
+    "description": "Screen-reader-only live-region announcement while a Button is in its loading state (spinner shown, action in flight). Progressive sense (\"work in progress\"), not a noun. Kept separate from `typeahead.loading` — translations may diverge."
+  },
+  "@astryx.chatComposerDrawer.expand": {
+    "defaultMessage": "Rozbalit {label}",
+    "description": "Screen-reader-only label on the ChatComposerDrawer toggle when the drawer is collapsed. `{label}` is the drawer's visible name — example: `Expand Attachments`. Pairs with `collapse`."
+  },
+  "@astryx.chatComposerDrawer.collapse": {
+    "defaultMessage": "Sbalit {label}",
+    "description": "Screen-reader-only label on the ChatComposerDrawer toggle when the drawer is expanded. Example: `Collapse Attachments`. Pairs with `expand`."
+  },
+  "@astryx.chatDictationButton.startDictation": {
+    "defaultMessage": "Spustit diktování",
+    "description": "Accessible label for the microphone button when idle (not listening)."
+  },
+  "@astryx.chatDictationButton.stopDictation": {
+    "defaultMessage": "Zastavit diktování",
+    "description": "Accessible label for the microphone button when actively listening."
+  },
+  "@astryx.chatLayout.newMessages": {
+    "defaultMessage": "Nové zprávy",
+    "description": "Text on a floating pill at the bottom of a chat viewport when unseen messages arrive below the fold; clicking scrolls to bottom. Keep short — narrow pill."
+  },
+  "@astryx.chatLayoutScrollButton.scrollToBottom": {
+    "defaultMessage": "Přejít dolů",
+    "description": "Visible tooltip AND screen-reader label for a small down-arrow button that scrolls the chat viewport to its latest message."
+  },
+  "@astryx.chatMessage.messageFrom": {
+    "defaultMessage": "Zpráva od {sender}",
+    "description": "Screen-reader-only accessible name for a chat message when the sender name isn't visible. Example: `Message from Sarah`, `Message from Bot` — reorder freely."
+  },
+  "@astryx.chatSendButton.stop": {
+    "defaultMessage": "Zastavit",
+    "description": "Button label that replaces `Send` on the chat send button while an AI response is streaming; clicking aborts generation. Short — appears on a small button."
+  },
+  "@astryx.chatSendButton.send": {
+    "defaultMessage": "Odeslat",
+    "description": "Primary button label on the chat submit button (paperplane icon). Imperative verb; pairs with `Stop`. Very short."
+  },
+  "@astryx.chatToolCalls.error": {
+    "defaultMessage": "Chyba: {message}",
+    "description": "Screen-reader text for a tool call that failed. {message} is the error detail."
+  },
+  "@astryx.chatToolCalls.groupLabel": {
+    "defaultMessage": "Volání nástrojů: {count}",
+    "description": "Summary label shown in the group header when multiple tool calls are expanded. {count} is the number of calls."
+  },
+  "@astryx.chatTriggerMenu.suggestions": {
+    "defaultMessage": "Návrhy",
+    "description": "Screen-reader-only fallback label for the popover listbox opened by a trigger character (`@`, `/`) in the chat composer when the trigger provides no specific label."
+  },
+  "@astryx.citation.label": {
+    "defaultMessage": "Citace {number}: {title}",
+    "description": "Screen-reader-only accessible name for a Citation chip (a small numbered link to a source). Example: `Citation 1: OpenAI research paper`. Reorder freely."
+  },
+  "@astryx.codeBlock.copied": {
+    "defaultMessage": "Zkopírováno",
+    "description": "Screen-reader-only label on the CodeBlock copy button for ~2s after a successful copy. Past-participle (\"has been copied\"); pairs with `codeBlock.copyCode`."
+  },
+  "@astryx.codeBlock.copyCode": {
+    "defaultMessage": "Kopírovat kód",
+    "description": "\"Code\" = source code. Aria label AND tooltip on the CodeBlock copy button in its default state. Pairs with `codeBlock.copied` (post-click state)."
+  },
+  "@astryx.codeBlock.code": {
+    "defaultMessage": "Kód",
+    "description": "Screen-reader-only fallback name for a code-snippet scroll container when the code's language is unknown. \"Code\" = source code, not secret code or code of conduct."
+  },
+  "@astryx.field.optional": {
+    "defaultMessage": "Volitelné",
+    "description": "Visible indicator shown next to a form field's label when the field is optional (isOptional). Mutually exclusive with the required indicator. Very short — appears inline after the label text."
+  },
+  "@astryx.field.required": {
+    "defaultMessage": "Povinné",
+    "description": "Visible indicator shown next to a form field's label when the field must be filled in (isRequired). Mutually exclusive with the optional indicator. Very short — appears inline after the label text."
+  },
+  "@astryx.fileInput.clearLabel": {
+    "defaultMessage": "Vymazat {label}",
+    "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."
+  },
+  "@astryx.fileInput.required": {
+    "defaultMessage": "Povinné",
+    "description": "Screen-reader-only description on the FileInput trigger indicating the field must be filled in. Mirrors the visible `Required` indicator next to the field label; conveyed via description because aria-required is not supported on role=\"button\"."
+  },
+  "@astryx.keyboardHint.toNavigate": {
+    "defaultMessage": "pro navigaci",
+    "description": "Trailing text in the keyboard-hint badge, shown after arrow-key icons — reads as `← → to navigate`. Lowercase sentence fragment completing the visual phrase; the badge is aria-hidden, so this is for sighted users only."
+  },
+  "@astryx.lightbox.mediaViewer": {
+    "defaultMessage": "Prohlížeč médií",
+    "description": "Screen-reader-only fallback name for the Lightbox dialog when the current media item has no alt text. Should rarely render — consumers should provide alt."
+  },
+  "@astryx.lightbox.zoom": {
+    "defaultMessage": "Přiblížení",
+    "description": "Screen-reader-only label on the Lightbox image acting as a zoom toggle button (aria-pressed reflects zoomed state). Verb (\"to zoom\"), very short."
+  },
+  "@astryx.lightbox.zoomedIn": {
+    "defaultMessage": "Přiblíženo, pro posun použijte šipky",
+    "description": "Polite screen-reader announcement after zooming into a Lightbox image, including a hint that arrow keys pan while zoomed. Pairs with `lightbox.zoomedOut`."
+  },
+  "@astryx.lightbox.zoomedOut": {
+    "defaultMessage": "Oddáleno",
+    "description": "Polite screen-reader announcement after zooming back out of a Lightbox image. Pairs with `lightbox.zoomedIn`."
+  },
+  "@astryx.metadataList.showMore": {
+    "defaultMessage": "Zobrazit více",
+    "description": "Button label under a MetadataList that reveals items hidden beyond the configured maximum. Toggles with `metadataList.showLess` — keep the pair parallel in your language."
+  },
+  "@astryx.metadataList.showLess": {
+    "defaultMessage": "Zobrazit méně",
+    "description": "Button label under a MetadataList that re-hides the extra items revealed by `metadataList.showMore`. Keep the pair parallel."
+  },
+  "@astryx.mobileNav.navigation": {
+    "defaultMessage": "Navigace",
+    "description": "Screen-reader-only fallback name for the MobileNav overlay dialog when no explicit label was passed."
+  },
+  "@astryx.multiSelector.clearAll": {
+    "defaultMessage": "Vymazat vše: {label}",
+    "description": "Screen-reader-only label on the X that clears every selected value from a MultiSelector. Example: `Clear all Countries`. `{label}` is typically already plural in English."
+  },
+  "@astryx.input.statusButton.error": {
+    "defaultMessage": "Podrobnosti chyby",
+    "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is error. Activating or focusing the button reveals the error message in a tooltip. Keep it short — it labels an icon-only button."
+  },
+  "@astryx.input.statusButton.warning": {
+    "defaultMessage": "Podrobnosti varování",
+    "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is warning. Activating or focusing the button reveals the warning message in a tooltip."
+  },
+  "@astryx.input.statusButton.success": {
+    "defaultMessage": "Podrobnosti úspěchu",
+    "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is success. Activating or focusing the button reveals the success message in a tooltip."
+  },
+  "@astryx.numberInput.clearLabel": {
+    "defaultMessage": "Vymazat {label}",
+    "description": "Screen-reader-only label on the X that clears the value from a NumberInput. Example: `Clear Age`, `Clear Quantity`."
+  },
+  "@astryx.selector.clearLabel": {
+    "defaultMessage": "Vymazat {label}",
+    "description": "Screen-reader-only label on the X that clears the selected value from a Selector. `{label}` is the selector's visible label — example: `Clear Country`."
+  },
+  "@astryx.sideNavCollapseButton.expandSidebar": {
+    "defaultMessage": "Rozbalit postranní panel",
+    "description": "Aria label AND tooltip on the SideNav collapse/expand toggle when the sidebar is currently collapsed (clicking expands it). Pairs with `collapseSidebar`."
+  },
+  "@astryx.sideNavCollapseButton.collapseSidebar": {
+    "defaultMessage": "Sbalit postranní panel",
+    "description": "Aria label AND tooltip on the same toggle when the sidebar is currently expanded (clicking collapses it). Pairs with `expandSidebar`."
+  },
+  "@astryx.sideNavItem.expand": {
+    "defaultMessage": "Rozbalit {label}",
+    "description": "Screen-reader-only label on the chevron next to a SideNav item with children when the group is collapsed. Example: `Expand Settings`. Pairs with `sideNavItem.collapse`."
+  },
+  "@astryx.sideNavItem.collapse": {
+    "defaultMessage": "Sbalit {label}",
+    "description": "Screen-reader-only label on the same chevron when the group is expanded. Example: `Collapse Settings`. Pairs with `sideNavItem.expand`."
+  },
+  "@astryx.tableFiltering.filterByColumn": {
+    "defaultMessage": "Filtrovat {header}",
+    "description": "Triple-use string on per-column filter controls: visible label, placeholder, AND aria label. `{header}` is the column header — example: `Filter Name`. Keep short."
+  },
+  "@astryx.tableGroupedRows.expandGroup": {
+    "defaultMessage": "Rozbalit skupinu {groupKey}",
+    "description": "Screen-reader-only label on the chevron next to a grouped table's group header when collapsed. Example: `Expand group Q1 2024`. Pairs with `collapseGroup`."
+  },
+  "@astryx.tableGroupedRows.collapseGroup": {
+    "defaultMessage": "Sbalit skupinu {groupKey}",
+    "description": "Screen-reader-only label on the same chevron when the group is expanded. Example: `Collapse group Q1 2024`. Pairs with `expandGroup`."
+  },
+  "@astryx.tableRowExpansion.collapseRow": {
+    "defaultMessage": "Sbalit řádek",
+    "description": "Screen-reader-only label on the row-expand chevron when the row is currently expanded. Part of the four-way expand/collapse set."
+  },
+  "@astryx.tableRowExpansion.expandRow": {
+    "defaultMessage": "Rozbalit řádek",
+    "description": "Screen-reader-only label on the row-expand chevron when the row is currently collapsed. Part of a four-way set with `collapseRow`, `expandAllRows`, `collapseAllRows`."
+  },
+  "@astryx.tableRowExpansion.collapseAllRows": {
+    "defaultMessage": "Sbalit všechny řádky",
+    "description": "Screen-reader-only label on the same header button when every row is expanded. Part of the four-way set."
+  },
+  "@astryx.tableRowExpansion.expandAllRows": {
+    "defaultMessage": "Rozbalit všechny řádky",
+    "description": "Screen-reader-only label on the header expand-all/collapse-all button when at least one row is collapsed (clicking expands every expandable row). Part of the four-way set."
+  },
+  "@astryx.step.goToStep": {
+    "defaultMessage": "Přejít na krok {stepNumber, number}: {label}",
+    "description": "Accessible name for a clickable step in the lab Stepper. {stepNumber} is the 1-based position, {label} is the step's visible label."
+  },
+  "@astryx.step.goToStepWithStatus": {
+    "defaultMessage": "Přejít na krok {stepNumber, number}: {label}, {status}",
+    "description": "Accessible name for a clickable lab Stepper step that also carries a status. {status} is one of the translated `step.status.*` words (completed/warning/error). Keep the pattern parallel to `step.goToStep`."
+  },
+  "@astryx.step.status.completed": {
+    "defaultMessage": "dokončeno",
+    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when the step is done (either progress-completed or status=success). Lowercase adjective; it is read mid-sentence after the step label."
+  },
+  "@astryx.step.status.warning": {
+    "defaultMessage": "varování",
+    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=warning. Lowercase noun/adjective; read mid-sentence after the step label."
+  },
+  "@astryx.step.status.error": {
+    "defaultMessage": "chyba",
+    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
+  },
+  "@astryx.tableTree.collapseRow": {
+    "defaultMessage": "Sbalit řádek",
+    "description": "Aria label for the Table tree-data expander chevron when the row is currently expanded."
+  },
+  "@astryx.tableTree.expandRow": {
+    "defaultMessage": "Rozbalit řádek",
+    "description": "Aria label for the Table tree-data expander chevron when the row is currently collapsed."
+  },
+  "@astryx.tableTree.collapseAllRows": {
+    "defaultMessage": "Sbalit všechny řádky",
+    "description": "Aria label for the Table tree-data header toggle when all rows are expanded and clicking it collapses them."
+  },
+  "@astryx.tableTree.expandAllRows": {
+    "defaultMessage": "Rozbalit všechny řádky",
+    "description": "Aria label for the Table tree-data header toggle when rows are collapsed and clicking it expands them."
+  },
+  "@astryx.textArea.charactersRemaining": {
+    "defaultMessage": "Zbývá {count, number} {count, plural, one {znak} few {znaky} many {znaku} other {znaků}}",
+    "description": "Screen-reader-only announcement of how many characters the user can still type before hitting a TextArea's maxLength. Announced politely as the count nears the limit. `{count}` is the number remaining — example: `12 characters remaining`."
+  },
+  "@astryx.textArea.charactersOverLimit": {
+    "defaultMessage": "{count, number} {count, plural, one {znak} few {znaky} many {znaku} other {znaků}} nad limit",
+    "description": "Screen-reader-only assertive announcement when the user has typed past a TextArea's maxLength. `{count}` is how many characters over — example: `3 characters over the limit`."
+  },
+  "@astryx.textInput.clearLabel": {
+    "defaultMessage": "Vymazat {label}",
+    "description": "Screen-reader-only label on the X that clears the value from a TextInput. Example: `Clear Email`, `Clear Name`."
+  },
+  "@astryx.thumbnail.remove": {
+    "defaultMessage": "Odebrat {accessibleName}",
+    "description": "Screen-reader-only label on the \"×\" on a Thumbnail (image preview chip). `{accessibleName}` is the thumbnail's name — example: `Remove profile.jpg`."
+  },
+  "@astryx.thumbnail.open": {
+    "defaultMessage": "Otevřít {accessibleName}",
+    "description": "\"Open\" = launch/reveal (not \"unfold\" or the adjective). Screen-reader-only name on a clickable Thumbnail — example: `Open Sunset photo`."
+  },
+  "@astryx.thumbnail.fallbackName": {
+    "defaultMessage": "Náhled",
+    "description": "Generic screen-reader name for a Thumbnail (image preview) that has no `alt` or `label`. Last-resort fallback so the control is never nameless; prefer a real name via `alt` or `label`."
+  },
+  "@astryx.timeInput.clearLabel": {
+    "defaultMessage": "Vymazat {label}",
+    "description": "Screen-reader-only label on the X that clears the value from a TimeInput. Example: `Clear Start time`."
+  },
+  "@astryx.timestamp.copyValue": {
+    "defaultMessage": "Kopírovat {value}",
+    "description": "Aria label on a Timestamp copyable-hover-card row's copy button, in its default state. `value` is the formatted instant that row shows (e.g. `Copy February 19, 2026 at 5:00:00 PM UTC`). Imperative verb. Pairs with `timestamp.copied` (post-click state)."
+  },
+  "@astryx.timestamp.copy": {
+    "defaultMessage": "Kopírovat",
+    "description": "Short label shown in the tooltip on a Timestamp copyable-hover-card row's copy button (hover/focus), in its default state. Imperative verb. Pairs with `timestamp.copied` (post-click state). The full `copyValue` string remains the button's aria-label for assistive tech."
+  },
+  "@astryx.timestamp.copied": {
+    "defaultMessage": "Zkopírováno",
+    "description": "Aria label on a Timestamp copy button for ~1.5s after a successful copy, and the text announced to a polite live region. Past-participle (\"has been copied\"); pairs with `timestamp.copyValue`."
+  },
+  "@astryx.timestamp.detailsLabel": {
+    "defaultMessage": "Podrobnosti časové značky",
+    "description": "Accessible name for the Timestamp copyable hover card popup, which lists the instant in the configured time zones/formats with a copy button per row."
+  },
+  "@astryx.token.remove": {
+    "defaultMessage": "Odebrat {label}",
+    "description": "Screen-reader-only label on the \"×\" on an individual Token/chip. Example: `Remove John Smith`, `Remove Active`. Imperative verb."
+  }
+}

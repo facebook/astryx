@@ -86,7 +86,7 @@ export const doc = {
     {
       type: 'upgrade.list',
       description:
-        'Every available codemod, oldest→newest, as {name, title, version, optional} — returned when `list` is set; nothing is run.',
+        'Every available codemod, oldest→newest, as {name, title, version, optional}, returned when `list` is set; nothing is run.',
     },
     {
       type: 'upgrade.status',

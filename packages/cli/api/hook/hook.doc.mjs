@@ -70,7 +70,7 @@ export const doc = {
     {
       type: 'hook.list',
       description:
-        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map — hook names, brief entries, or full HookDoc per entry.",
+        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: hook names, brief entries, or full HookDoc per entry.",
     },
     {
       type: 'hook.detail',

@@ -17,7 +17,7 @@ export const doc = {
   summary: 'Expand a layout expression into validated XDS TSX',
   description:
     'Parses and validates a compressed XLE/XLO expression, then expands it into ' +
-    'ready-to-use XDS TSX — routing children into slots, scaffolding typed useState for ' +
+    'ready-to-use XDS TSX, routing children into slots, scaffolding typed useState for ' +
     'interactive controls, and splicing referenced blocks. Writes to a path, or returns the code.',
   fn: 'layoutExpand',
   args: [

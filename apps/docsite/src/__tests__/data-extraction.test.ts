@@ -319,10 +319,22 @@ describe('componentRegistry', () => {
     expect(lightbox!.playground?.defaults).toMatchObject({
       isOpen: false,
       media: {
-        src: expect.stringContaining('https://'),
+        src: expect.stringContaining('/template-assets/'),
         alt: expect.any(String),
       },
     });
+  });
+
+  it('MobileNavToggle declares an appShellMobile playground so its preview is not empty (#4983)', () => {
+    const core = components['@astryxdesign/core'];
+    const toggle = core.find(c => c.name === 'MobileNavToggle');
+    expect(toggle).toBeDefined();
+    // The toggle reads AppShell mobile context and renders null without it;
+    // appShellMobile makes the preview provide a simulated mobile context.
+    expect(toggle!.playground?.appShellMobile).toBe(true);
+    // The drawer's overlay playground stays on the MobileNav entry only —
+    // the toggle renders inline and must not inherit the overlay placeholder.
+    expect(toggle!.playground?.overlay).toBeUndefined();
   });
 
   it('dialog-family components keep contained isInline previews, not overlay mode (#3657)', () => {

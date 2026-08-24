@@ -350,7 +350,7 @@ if (getComputedStyle(button).paddingInline === '0px') {
             'Run the app in light and dark mode and check that surfaces, borders, text, icons, hover states, focus rings, and status colors flow together.',
             'Open the command palette from the shell, type into it, select items by keyboard, and confirm focus returns to the trigger.',
             'Check the SideNav at collapsed, expanded, active, hover, nested, and mobile states.',
-            'Verify settings popovers and dialogs in jsdom and in a real browser because native dialog and Popover APIs may need test shims.',
+            'Verify settings popovers and dialogs in jsdom and in a real browser because the native dialog and [`Popover`](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) APIs may need test shims.',
             'Search for leftover hardcoded Tailwind colors, arbitrary hex values, and one-off hover colors after each route migration.',
             'Run component tests, build, and at least one browser screenshot pass for each migrated route.',
           ],

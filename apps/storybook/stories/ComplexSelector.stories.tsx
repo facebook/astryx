@@ -1,9 +1,24 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file ComplexSelector.stories.tsx
+ * @input Uses React state, Astryx primitives, and ComplexSelector
+ * @output Storybook examples for rich selector surfaces and trigger variants
+ * @position Core component stories and visual integration coverage
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/ComplexSelector/ComplexSelector.tsx
+ * - /packages/core/src/ComplexSelector/ComplexSelector.doc.mjs
+ * - /packages/core/src/ComplexSelector/ComplexSelector.test.tsx
+ */
+
 import type {Meta, StoryObj} from '@storybook/react';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {ComplexSelector} from '@astryxdesign/core/ComplexSelector';
+import {
+  ComplexSelector,
+  type ComplexSelectorHandle,
+} from '@astryxdesign/core/ComplexSelector';
 import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
@@ -34,7 +49,7 @@ const meta: Meta<typeof ComplexSelector> = {
     docs: {
       description: {
         component:
-          'A high-level selector shell for rich custom content. The component owns the field, trigger, popover, focus restore, and async changeAction flow while consumers render the content. Custom content should use Astryx focus hooks where appropriate and be evaluated against WCAG 2.2.',
+          'A high-level selector shell for rich custom content. The component owns the field, trigger, popover, focus restore, and async changeAction flow while consumers render the content. Its sm, md, and lg triggers use the 28px, 32px, and 36px element-height tokens. Custom content should use Astryx focus hooks where appropriate and be evaluated against WCAG 2.2.',
       },
     },
   },
@@ -372,6 +387,20 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-3'],
     color: colorVars['--color-text-secondary'],
     textAlign: 'center',
+  },
+  toolbarDemo: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacingVars['--spacing-1'],
+    width: 360,
+    padding: spacingVars['--spacing-1'],
+    borderRadius: radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-background-muted'],
+  },
+  toolbarContent: {
+    width: 280,
+    padding: spacingVars['--spacing-3'],
   },
 });
 
@@ -724,6 +753,72 @@ export const CategoryTreeSelector: Story = {
       description: {
         story:
           'A second tree-search example showing the same ComplexSelector shell with different hierarchical data and a form action nearby. The custom content relies on TreeList focus behavior and should be checked against WCAG 2.2.',
+      },
+    },
+  },
+};
+
+type ViewDensity = 'Comfortable' | 'Compact';
+
+export const ControlledToolbarTrigger: Story = {
+  name: 'Controlled toolbar trigger',
+  render: () => {
+    const [density, setDensity] = useState<ViewDensity>('Comfortable');
+    const selectorRef = useRef<ComplexSelectorHandle>(null);
+
+    return (
+      <div {...stylex.props(styles.toolbarDemo)}>
+        <Button
+          label="Open options externally"
+          variant="ghost"
+          size="sm"
+          onClick={() => selectorRef.current?.toggle()}
+        />
+        <ComplexSelector<ViewDensity>
+          label="View options"
+          isLabelHidden
+          value={density}
+          onChange={setDensity}
+          triggerLabel={`Density: ${density}`}
+          variant="ghost"
+          startIcon="viewColumns"
+          alignment="end"
+          handleRef={selectorRef}
+          contentXstyle={styles.toolbarContent}>
+          {(selectedDensity, onChange, close) => (
+            <VStack gap={3}>
+              <Text type="supporting" color="secondary">
+                The selector owns visibility. An external control drives it
+                imperatively via handleRef; choosing a density commits the value
+                and closes the surface.
+              </Text>
+              <HStack gap={2}>
+                {(['Comfortable', 'Compact'] as const).map(option => (
+                  <Button
+                    key={option}
+                    label={option}
+                    size="sm"
+                    variant={
+                      selectedDensity === option ? 'primary' : 'secondary'
+                    }
+                    onClick={() => {
+                      onChange(option);
+                      close();
+                    }}
+                  />
+                ))}
+              </HStack>
+            </VStack>
+          )}
+        </ComplexSelector>
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A compact toolbar composition using the ghost trigger, a leading icon, end-aligned content, and an external control that opens the selector imperatively through its handleRef. The selector still owns its own visibility, focus restoration, and light dismiss.',
       },
     },
   },
