@@ -167,7 +167,10 @@ const styles = stylex.create({
     // Standard padding minus border width to prevent height jump
     // when a token (28px) is added inside the input
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
-    cursor: 'text',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   token: {
     // Offset token so it sits 3px from the inner edge (4px from outer edge

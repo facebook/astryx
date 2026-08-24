@@ -17,6 +17,7 @@
  */
 
 import {
+  use,
   useId,
   useState,
   useCallback,
@@ -88,7 +89,7 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {useTranslator} from '../i18n';
+import {useTranslator, InternationalizationContext} from '../i18n';
 
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
@@ -120,11 +121,14 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
   },
   iconButtonDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   icon: {
     display: 'flex',
@@ -153,7 +157,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
@@ -450,6 +454,7 @@ export function DateTimeInput({
 }: DateTimeInputProps) {
   const t = useTranslator();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
+  const {locale} = use(InternationalizationContext);
   // Speaks arrow-key stepping results through the persistent live regions:
   // stepping programmatically rewrites a plain textbox's value, which screen
   // readers do not announce on their own (WCAG 4.1.2).
@@ -560,13 +565,17 @@ export function DateTimeInput({
     datePendingInput !== null
       ? datePendingInput
       : valueParts.date && /^\d{4}-\d{2}-\d{2}$/.test(valueParts.date)
-        ? plainDateFormat(plainDateFromISO(valueParts.date), DATE_FORMAT_LONG)
+        ? plainDateFormat(
+            plainDateFromISO(valueParts.date),
+            DATE_FORMAT_LONG,
+            locale,
+          )
         : '';
 
   const isDateInputValid =
     datePendingInput === null || !datePendingInput.trim()
       ? true
-      : parseDateInput(datePendingInput) !== null;
+      : parseDateInput(datePendingInput, locale) !== null;
 
   // --- Time input state ---
   const [timePendingInput, setTimePendingInput] = useState<string | null>(null);
@@ -694,7 +703,7 @@ export function DateTimeInput({
       const text = e.target.value;
       setDatePendingInput(text);
 
-      const parsed = parseDateInput(text);
+      const parsed = parseDateInput(text, locale);
       if (
         parsed &&
         plainDateToISO(parsed) !== valueParts.date &&
@@ -706,7 +715,13 @@ export function DateTimeInput({
         calendarRef.current?.navigateTo(parsedISO);
       }
     },
-    [valueParts.date, isDateDisabled, handleDateChange, isEffectivelyDisabled],
+    [
+      valueParts.date,
+      isDateDisabled,
+      handleDateChange,
+      isEffectivelyDisabled,
+      locale,
+    ],
   );
 
   const commitDatePendingInput = useCallback(() => {
@@ -722,7 +737,7 @@ export function DateTimeInput({
       return;
     }
 
-    const parsed = parseDateInput(datePendingInput);
+    const parsed = parseDateInput(datePendingInput, locale);
     if (parsed && !isDateDisabled(parsed)) {
       const parsedISO = plainDateToISO(parsed);
       if (parsedISO !== valueParts.date) {
@@ -737,6 +752,7 @@ export function DateTimeInput({
     fireChange,
     isDateDisabled,
     handleDateChange,
+    locale,
   ]);
 
   const handleDateBlur = useCallback(() => {

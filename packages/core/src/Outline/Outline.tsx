@@ -190,7 +190,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     boxSizing: 'border-box',
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     display: 'flex',
     fontWeight: fontWeightVars['--font-weight-normal'],
     outline: 'none',
@@ -203,7 +206,7 @@ const styles = stylex.create({
     width: '100%',
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
         color: colorVars['--color-text-primary'],

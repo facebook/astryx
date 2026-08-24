@@ -149,6 +149,34 @@ export const MinMaxBoundary: Story = {
   },
 };
 
+export const WindowAwayFromToday: Story = {
+  name: 'Min/max window away from today',
+  render: () => {
+    const [past, setPast] = useState<ISODateString | undefined>(undefined);
+    const [future, setFuture] = useState<ISODateString | undefined>(undefined);
+    // Windows three years either side of today, so neither contains today.
+    const year = new Date().getFullYear();
+    return (
+      <div style={{display: 'flex', gap: 24, flexWrap: 'wrap'}}>
+        <Calendar
+          mode="single"
+          min={`${year - 3}-02-03` as ISODateString}
+          max={`${year - 3}-05-19` as ISODateString}
+          value={past}
+          onChange={val => setPast(val)}
+        />
+        <Calendar
+          mode="single"
+          min={`${year + 3}-08-11` as ISODateString}
+          max={`${year + 3}-11-24` as ISODateString}
+          value={future}
+          onChange={val => setFuture(val)}
+        />
+      </div>
+    );
+  },
+};
+
 export const WithDateConstraints: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);

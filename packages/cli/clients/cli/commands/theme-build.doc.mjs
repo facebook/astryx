@@ -19,7 +19,7 @@ export const doc = {
     'Compiles a file that calls defineTheme() into a scoped CSS file, a JS module, and ' +
     'type declarations: the exact CSS the <Theme> runtime emits. Takes any number of theme ' +
     'files and compiles them in one process, in argument order, stopping at the first ' +
-    'failure — an app with several themes does not need a shell loop. With --check it writes ' +
+    'failure; an app with several themes does not need a shell loop. With --check it writes ' +
     'nothing and instead reports whether the committed outputs have drifted from source. ' +
     'When a separate build step emits the icon registry, --icons-specifier declares the ' +
     'fully specified module path that the generated JS should import.',

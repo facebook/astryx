@@ -20,7 +20,7 @@ export const docs = {
       name: 'defaultOptionality',
       type: "'optional' | 'required'",
       description:
-        'The state the form treats as its default, so only the exception shows an optional/required indicator. With "optional", only fields marked isRequired show an indicator; with "required", only fields marked isOptional do. A field that restates the default shows nothing. Under "required" the unmarked fields also expose aria-required so screen readers match the visual default — aria-required only, never the native required attribute. Leave unset for today\'s per-field behavior.',
+        'The state the form treats as its default, so only the exception shows an optional/required indicator. With "optional", only fields marked isRequired show an indicator; with "required", only fields marked isOptional do. A field that restates the default shows nothing. Under "required" the unmarked fields also expose aria-required so screen readers match the visual default; aria-required only, never the native required attribute. Leave unset for today\'s per-field behavior.',
     },
     {
       name: 'children',

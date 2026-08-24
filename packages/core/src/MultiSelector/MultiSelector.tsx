@@ -103,7 +103,10 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Trigger button — the actual combobox button, visually integrated with the container
   trigger: {
@@ -124,7 +127,10 @@ const styles = stylex.create({
     fontSize: 'inherit',
     lineHeight: 'inherit',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     // The wrapper (inputWrapperStyles.base) renders the focus ring via
     // :focus-within when this button is focused, matching
     // TextInput/NumberInput/Selector. The button must not draw its own
@@ -190,16 +196,17 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': 'none',
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
       ':focus-within': 'none',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -229,7 +236,10 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
   },
 
@@ -251,7 +261,10 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
 
   // Section heading. Plain secondary text, no rules — the same treatment
@@ -282,7 +295,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     width: '100%',
     borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     // Row typography lives here, not on the label span, so a theme override on
     // the row target reaches both the fallback label and renderOption output
     // (a declaration on the span would win over the inherited row value).
@@ -301,7 +317,7 @@ const styles = stylex.create({
   itemDisabled: {
     opacity: 0.5,
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 
   // Decorative checkbox (non-interactive, purely visual)
@@ -407,6 +423,11 @@ export type MultiSelectorVariant = 'input' | 'ghost';
 export type MultiSelectorStatusType = 'warning' | 'error' | 'success';
 
 export type {MultiSelectorStatus};
+
+export interface MultiSelectorSelectedItem {
+  value: string;
+  label: string;
+}
 
 export interface MultiSelectorProps<
   T extends MultiSelectorOptionType = MultiSelectorOptionType,
@@ -593,6 +614,17 @@ export interface MultiSelectorProps<
   triggerDisplay?: 'count' | 'labels' | 'badges';
 
   /**
+   * Formats the trigger text when triggerDisplay is 'count' or 'labels'.
+   * Receives the selected items (value plus resolved label, in selection
+   * order) and returns the full trigger text; the count is `items.length`.
+   * Not called when nothing is selected — the placeholder shows instead — and
+   * not called for triggerDisplay 'badges', which renders Badge elements
+   * rather than text.
+   * @default items => `${items.length} selected` for 'count', "A, B, C, +N" for 'labels'
+   */
+  formatValue?: (items: MultiSelectorSelectedItem[]) => string;
+
+  /**
    * Maximum number of badges to show before showing "+N".
    * Only used when triggerDisplay is 'badges'.
    * @default 3
@@ -695,6 +727,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   hasSearch = false,
   searchPlaceholder: searchPlaceholderFromProps,
   triggerDisplay = 'count',
+  formatValue,
   maxBadges = 3,
   renderOption,
   indicatorPosition = 'start',
@@ -1091,12 +1124,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }, [popover.isOpen, highlightedIndex, getItemId]);
 
   // Build trigger display content
-  const selectedLabels = useMemo(() => {
+  const selectedItems = useMemo(() => {
     return optimisticValue.map(v => {
       const item = selectableItems.find(i => i.value === v);
-      return item?.label ?? v;
+      return {value: v, label: item?.label ?? v};
     });
   }, [optimisticValue, selectableItems]);
+
+  const selectedLabels = useMemo(
+    () => selectedItems.map(item => item.label),
+    [selectedItems],
+  );
 
   const renderTriggerContent = useCallback(() => {
     if (optimisticValue.length === 0) {
@@ -1107,7 +1145,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       case 'count':
         return (
           <span {...stylex.props(styles.triggerText)}>
-            {optimisticValue.length} selected
+            {formatValue?.(selectedItems) ??
+              `${optimisticValue.length} selected`}
           </span>
         );
 
@@ -1118,7 +1157,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           remaining > 0
             ? `${displayed.join(', ')}, +${remaining}`
             : displayed.join(', ');
-        return <span {...stylex.props(styles.triggerText)}>{text}</span>;
+        return (
+          <span {...stylex.props(styles.triggerText)}>
+            {formatValue?.(selectedItems) ?? text}
+          </span>
+        );
       }
 
       case 'badges': {
@@ -1138,7 +1181,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         );
       }
     }
-  }, [optimisticValue, triggerDisplay, selectedLabels, placeholder, maxBadges]);
+  }, [
+    optimisticValue,
+    triggerDisplay,
+    selectedItems,
+    selectedLabels,
+    placeholder,
+    formatValue,
+    maxBadges,
+  ]);
 
   // Render search input
   const renderSearch = useCallback(() => {
@@ -1404,8 +1455,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         // A standalone divider between groups would orphan itself once its
         // neighbors are filtered out, so skip it while searching.
         if (!isSearching) {
+          // role="listbox" only permits option/group children; the divider
+          // carries no information the options don't, so it's hidden from
+          // the accessibility tree entirely rather than exposing
+          // role="separator" as a disallowed listbox child (axe
+          // aria-required-children).
           elements.push(
-            <Divider key={`divider-${i}`} xstyle={styles.divider} />,
+            <Divider
+              key={`divider-${i}`}
+              aria-hidden="true"
+              xstyle={styles.divider}
+            />,
           );
         }
       } else if (isSection(option)) {

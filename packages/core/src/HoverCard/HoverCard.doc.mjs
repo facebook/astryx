@@ -74,6 +74,13 @@ export const docs = {
           default: "'auto'",
         },
         {
+          name: 'touchTrigger',
+          type: "'auto' | 'tap' | 'none'",
+          description:
+            'What a tap does where there is no hover. auto opens on tap unless the trigger performs an action of its own (a button, link, or form control), whose tap belongs to the control. tap always opens. none never opens on touch. A tap-opened card is dismissed by a tap outside it.',
+          default: "'auto'",
+        },
+        {
           name: 'isEnabled',
           type: 'boolean',
           description: 'Enables or disables the hover and focus triggers.',
@@ -111,6 +118,7 @@ export const docs = {
       { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
       { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
       { guidance: true, description: 'Use the hook API (useHoverCard) when you need more control over timing or placement.' },
+      { guidance: true, description: 'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.' },
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
@@ -189,6 +197,13 @@ export const docsZh = {
           default: "'auto'",
         },
         {
+          name: 'touchTrigger',
+          type: "'auto' | 'tap' | 'none'",
+          description:
+            '在没有悬停的触摸设备上，轻点的行为。auto：轻点即打开，除非触发元素本身会执行操作（按钮、链接、表单控件），此时轻点归该控件所有。tap：始终轻点打开。none：触摸永不打开。轻点打开的卡片可通过点击卡片外部关闭。',
+          default: "'auto'",
+        },
+        {
           name: 'isEnabled',
           type: 'boolean',
           description: '启用或禁用悬停和聚焦触发器。',
@@ -226,6 +241,7 @@ export const docsZh = {
       { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
       { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
       { guidance: true, description: 'Use the hook API (useHoverCard) when you need more control over timing or placement.' },
+      { guidance: true, description: 'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.' },
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
@@ -244,6 +260,7 @@ export const docsDense = {
       { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
       { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
       { guidance: true, description: 'Use the hook API (useHoverCard) when you need more control over timing or placement.' },
+      { guidance: true, description: 'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.' },
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
@@ -263,6 +280,7 @@ export const docsDense = {
         delay: 'Show delay in ms.',
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger hover card.',
+        touchTrigger: 'Tap behavior where there is no hover. auto = tap opens unless the trigger acts (button/link/control); tap = always opens; none = never on touch. Tap-opened cards close on a tap outside.',
         isEnabled: 'Enable/disable hover + focus triggers.',
         label: 'Accessible name for the popup. With label: named role="dialog"; without: role="group".',
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',

@@ -55,7 +55,10 @@ import {focusOutlineProps} from '../utils/focusOutline.stylex';
 const styles = stylex.create({
   interactive: {
     position: 'relative',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'box-shadow, border-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -80,13 +83,13 @@ const styles = stylex.create({
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover::after': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   srOnly: {

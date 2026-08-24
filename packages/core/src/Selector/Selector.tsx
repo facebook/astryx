@@ -73,6 +73,7 @@ import {useCombobox, useSelectedItemOffset} from './hooks';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {SelectorOption} from './SelectorOption';
+import {SelectorRowLayoutContext} from './SelectorRowLayoutContext';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
@@ -101,9 +102,18 @@ const styles = stylex.create({
       default: typeScaleVars['--text-label-size'],
       '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
     },
-    lineHeight: typeScaleVars['--text-label-leading'],
+    // A FIXED line box, not the ratio: the trigger's padding is derived from
+    // one line being `--spacing-5` tall, and a ratio makes the line box track
+    // the font — which the coarse-pointer bump above (and any theme that
+    // changes `--font-size-base`) then moves, taking the control off its size
+    // token. The glyphs still grow for touch; only the box they sit in is
+    // pinned. Item's own rows set their line heights and are unaffected.
+    lineHeight: spacingVars['--spacing-5'],
     color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Trigger button — the actual combobox button, visually integrated with the container
   trigger: {
@@ -124,7 +134,10 @@ const styles = stylex.create({
     fontSize: 'inherit',
     lineHeight: 'inherit',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     // The wrapper (inputWrapperStyles.base) renders the focus ring via
     // :focus-within when this button is focused, matching TextInput/NumberInput.
     // The button must not draw its own :focus-visible outline or the two stack
@@ -141,6 +154,43 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     textAlign: 'start',
+  },
+  // Inside an InputGroup the group's own height is the row, and the trigger
+  // takes it: `height: 100%` from `groupStyles.inGroup` can only govern if the
+  // trigger stops asserting a floor of its own — otherwise a control sized
+  // above its group (`<InputGroup size="md"><Selector size="lg">`) grows the
+  // row it was supposed to sit in. The padding goes with it: the row is
+  // already the size token, and the value box is centred in it.
+  triggerInGroup: {
+    minHeight: 0,
+    paddingBlock: 0,
+  },
+  // Wrapper for `renderValue` output. Takes the free width and clips
+  // horizontally so a long value ellipsizes rather than widening the trigger;
+  // vertically the content sizes the control, which the size styles below
+  // handle.
+  triggerValue: {
+    flexGrow: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+    textAlign: 'start',
+  },
+  // Inside an InputGroup the row height is the group's, so the trigger clamps
+  // its own value box to that row rather than asking the value to fit it: any
+  // node is cut off at the row's edge instead of bleeding through the border
+  // over whatever sits above and below the group. The rows the system draws
+  // itself never reach the cut — the row-layout context folds them onto one
+  // line first (SelectorRowLayoutContext).
+  //
+  // The clamp is a percentage, not the size token, because a group can be a
+  // different size than the control inside it; the row is whatever the group
+  // made it. That needs a definite height to resolve against, which is what
+  // stretching the button provides.
+  triggerButtonInGroup: {
+    alignSelf: 'stretch',
+  },
+  triggerValueInGroup: {
+    maxHeight: '100%',
   },
   // Only what Icon does not already provide: `size="sm"` gives the 16px box
   // and `color` the token, but the glyph still must not shrink inside the flex
@@ -169,16 +219,17 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': 'none',
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
       ':focus-within': 'none',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -208,7 +259,10 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
   },
 
@@ -286,7 +340,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     outline: 'none',
   },
@@ -324,19 +381,35 @@ const styles = stylex.create({
   },
   itemDisabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 
+// The trigger is sized by PADDING, not by a fixed height, so it is the size
+// token plus one text line for each extra line the value uses: 28/32/36 for
+// one line, 48/52/56 for two. The token and a text line are both multiples of
+// 4, so every trigger lands on the 4px rhythm and lines up with the Buttons
+// and inputs beside it. No prop picks the height — the content does, and it
+// can only land on the grid.
+//
+// `--spacing-5` is one line here because `triggerContainer` pins its
+// line-height to exactly that; the two must stay in step, which is why both
+// read the same token rather than one hardcoding 20px.
+const linePad = (token: string) =>
+  `calc((${token} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`;
+
 const sizeStyles = stylex.create({
   sm: {
-    height: sizeVars['--size-element-sm'],
+    minHeight: sizeVars['--size-element-sm'],
+    paddingBlock: linePad(sizeVars['--size-element-sm']),
   },
   md: {
-    height: sizeVars['--size-element-md'],
+    minHeight: sizeVars['--size-element-md'],
+    paddingBlock: linePad(sizeVars['--size-element-md']),
   },
   lg: {
-    height: sizeVars['--size-element-lg'],
+    minHeight: sizeVars['--size-element-lg'],
+    paddingBlock: linePad(sizeVars['--size-element-lg']),
   },
 });
 
@@ -517,7 +590,8 @@ interface SelectorPropsBase<
   labelTooltip?: string;
 
   /**
-   * Icon displayed at the start of the selector trigger.
+   * Icon displayed at the start of the selector trigger. Takes precedence over
+   * the selected option's own `icon`, which the trigger otherwise renders.
    */
   startIcon?: ReactNode | IconType;
 
@@ -526,6 +600,31 @@ interface SelectorPropsBase<
    * Only called for selectable options (not dividers/sections).
    */
   renderOption?: (option: SelectorOptionData) => ReactNode;
+
+  /**
+   * Custom render function for the selected option inside the closed trigger.
+   * Only called when something is selected; the placeholder is unaffected.
+   *
+   * Passing this does not change the trigger's height — what it draws does. A
+   * one-line value measures exactly the `size` token, so the control still
+   * lines up with the Buttons and inputs beside it; each further line of
+   * content adds one text line. Inside an `InputGroup` the group owns the row
+   * height: the trigger clamps its value box to that row, so a `SelectorOption`
+   * folds onto one line and ellipsizes, and anything taller than the row is cut
+   * off at it rather than bleeding over the rows above and below.
+   *
+   * @example
+   * ```
+   * renderValue={option => (
+   *   <SelectorOption
+   *     icon={option.icon}
+   *     label={option.label}
+   *     description={option.description}
+   *   />
+   * )}
+   * ```
+   */
+  renderValue?: (option: SelectorOptionData) => ReactNode;
 
   /**
    * Which edge of the option row carries the selected mark. `start` reserves a
@@ -614,7 +713,11 @@ export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> =
  */
 function DefaultOption({option}: {option: SelectorOptionData}) {
   return (
-    <SelectorOption icon={option.icon} label={option.label ?? option.value} />
+    <SelectorOption
+      icon={option.icon}
+      label={option.label ?? option.value}
+      description={option.description}
+    />
   );
 }
 
@@ -687,6 +790,7 @@ export function Selector<T extends SelectorOptionType>(
     startIcon,
     htmlName,
     renderOption,
+    renderValue,
     indicatorPosition = 'end',
     hasSearch = false,
     searchPlaceholder: searchPlaceholderFromProps,
@@ -1166,12 +1270,27 @@ export function Selector<T extends SelectorOptionType>(
           aria-disabled={item.disabled}
           onClick={() => onItemSelect(item)}
           onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
-          {...stylex.props(
-            styles.item,
-            itemSizeStyles[size],
-            isHighlighted && styles.itemHighlighted,
-            isSelected && styles.itemSelected,
-            item.disabled && styles.itemDisabled,
+          {...mergeProps(
+            // Stable theme target on the option row itself, mirroring
+            // `multi-selector-option`: it carries the row's size and runtime
+            // state so a theme can express "selected option at large" or
+            // restyle a given row density without structural selectors. The
+            // row's padding is split across a base and a per-size override (the
+            // default `md` trims the block axis), so `size` is what a theme
+            // needs to reach it. Named `-option-row` because `selector-option`
+            // is the public SelectorOption content primitive, not this row.
+            themeProps('selector-option-row', {
+              size,
+              selected: isSelected ? 'selected' : null,
+              disabled: item.disabled ? 'disabled' : null,
+            }),
+            stylex.props(
+              styles.item,
+              itemSizeStyles[size],
+              isHighlighted && styles.itemHighlighted,
+              isSelected && styles.itemSelected,
+              item.disabled && styles.itemDisabled,
+            ),
           )}>
           {content}
         </div>
@@ -1225,7 +1344,17 @@ export function Selector<T extends SelectorOptionType>(
         if (isSearching) {
           continue;
         }
-        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
+        // role="listbox" only permits option/group children; the divider
+        // carries no information the options don't, so it's hidden from the
+        // accessibility tree entirely rather than exposing role="separator"
+        // as a disallowed listbox child (axe aria-required-children).
+        elements.push(
+          <Divider
+            key={`divider-${i}`}
+            aria-hidden="true"
+            xstyle={styles.divider}
+          />,
+        );
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
         for (const opt of option.options) {
@@ -1281,6 +1410,40 @@ export function Selector<T extends SelectorOptionType>(
   const showStatusTooltip =
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
+  // Two lines cannot fit inside an InputGroup: the group pins the row height,
+  // and the trigger clamps its value box to one line so nothing bleeds through
+  // its border (styles.triggerValueInGroup). The clamp holds for any node; the
+  // context is what lets the rows the system draws itself reflow into that one
+  // line — label and description side by side — instead of being cut off at
+  // it. Outside a group the caller's own row decides, and the trigger's
+  // padding sizes it to whatever that draws.
+  const rowLayout = inputGroup ? 'inline' : 'stacked';
+
+  // What the closed trigger shows for the current selection: the option's icon
+  // and label. `startIcon` wins over the option's own icon so a caller who
+  // pins a field icon does not get two.
+  const valueContent =
+    selectedItem && renderValue ? (
+      <SelectorRowLayoutContext value={rowLayout}>
+        <span
+          {...stylex.props(
+            styles.triggerValue,
+            inputGroup && styles.triggerValueInGroup,
+          )}>
+          {renderValue(selectedItem)}
+        </span>
+      </SelectorRowLayoutContext>
+    ) : (
+      <>
+        {!startIcon &&
+          selectedItem?.icon != null &&
+          renderIconSlot(selectedItem.icon, {size: 'sm', color: 'secondary'})}
+        <span {...stylex.props(styles.triggerLabel)}>
+          {selectedItem?.label ?? placeholder}
+        </span>
+      </>
+    );
+
   const selectorContent = (
     <>
       <div
@@ -1318,6 +1481,7 @@ export function Selector<T extends SelectorOptionType>(
               !isDisabled &&
               inputStatusHoverShadowStyles[status.type],
             variant !== 'ghost' && inputGroup && groupStyles.inGroup,
+            inputGroup && styles.triggerInGroup,
             xstyle,
           ),
           className,
@@ -1357,10 +1521,11 @@ export function Selector<T extends SelectorOptionType>(
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
           onKeyDown={handleTriggerKeyDown}
           tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-          {...stylex.props(styles.trigger)}>
-          <span {...stylex.props(styles.triggerLabel)}>
-            {selectedItem?.label ?? placeholder}
-          </span>
+          {...stylex.props(
+            styles.trigger,
+            inputGroup && styles.triggerButtonInGroup,
+          )}>
+          {valueContent}
         </button>
         {htmlName != null && (
           <input

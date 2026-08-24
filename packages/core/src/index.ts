@@ -55,6 +55,7 @@ export * from './NavIcon';
 export * from './NavMenu';
 export * from './Slider';
 export * from './Stack';
+export * from './Stepper';
 export * from './Switch';
 export * from './DateInput';
 export * from './DateTimeInput';

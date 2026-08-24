@@ -60,6 +60,12 @@ export const docs = {
       type: '(reason: "auto" | "manual") => void',
       description: 'Callback fired when the toast is removed.',
     },
+    {
+      name: 'onDismiss',
+      type: '(reason: "auto" | "manual") => void',
+      description: 'Callback fired when the toast is dismissed.',
+      required: true,
+    },
   ],  theming: {
     targets: [
       {className: 'astryx-toast', visualProps: ['type']},

@@ -18,7 +18,7 @@
  * error) so `validate-integration` can stay exit-0 in a non-integration dir.
  *
  * The on-disk contribution validators themselves (roots + codemods/templates/
- * components, behind `validateLoadedIntegration`) live in
+ * components/docs, behind `validateLoadedIntegration`) live in
  * `foundation/integrations/validate-contributions.mjs`, because foundation also
  * runs them: `Project` collects integration issues and `integration-warnings`
  * nudges about them on ordinary commands. This file re-exports
@@ -158,6 +158,7 @@ async function validateAtPackageDir(packageDir, identity) {
     components: resolveRoot(manifest.components),
     templates: resolveRoot(manifest.templates),
     codemods: resolveRoot(manifest.codemods),
+    docs: resolveRoot(manifest.docs),
     issuesUrl: manifest.issuesUrl,
     __spec: identity.name,
     __packageDir: packageDir,

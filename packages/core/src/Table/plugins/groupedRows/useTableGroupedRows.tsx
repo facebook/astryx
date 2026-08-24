@@ -41,8 +41,11 @@ function isGroupHeader(item: unknown): item is GroupHeader {
   );
 }
 
-// Proxy handler: any field access beyond the marker fields resolves to `''`
-// so user cell renderers (`item.name.toUpperCase()`) never throw on a header.
+// Proxy handler: any field access beyond the marker fields resolves to `''`,
+// which keeps anything that reads a header's data — the sortable and filtering
+// plugins, a consumer's own row handler — off `undefined`. Cell renderers are
+// handled at render time instead (see `transformBodyCell` below); the Proxy
+// never protected them, because `''` fails a lookup exactly as `undefined` does.
 const HEADER_PROXY_HANDLER: ProxyHandler<Record<string | symbol, unknown>> = {
   // eslint-disable-next-line @typescript-eslint/promise-function-async -- Proxy get trap, not a promise-returning fn
   get(t: Record<string | symbol, unknown>, prop: string | symbol): unknown {
@@ -54,12 +57,9 @@ const HEADER_PROXY_HANDLER: ProxyHandler<Record<string | symbol, unknown>> = {
 };
 
 /**
- * Build a synthetic header row wrapped in a Proxy so arbitrary field access
- * from user cell renderers (e.g. `item.name.toUpperCase()`) resolves to `''`
- * instead of throwing — BaseTable evaluates `col.renderCell(item)` on every
- * row (including synthetic headers) before `transformBodyRow` can replace the
- * row's cells. `transformBodyRow` then discards those cells and renders a
- * single full-width header cell.
+ * Build a synthetic header row wrapped in a Proxy so field access resolves to
+ * `''` instead of `undefined`. `transformBodyRow` then discards the row's
+ * cells and renders a single full-width header cell.
  */
 function makeHeader<T extends Record<string, unknown>>(
   groupKey: string,
@@ -113,7 +113,10 @@ export interface UseTableGroupedRowsResult<T extends Record<string, unknown>> {
 
 const styles = stylex.create({
   headerRow: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
     backgroundColor: colorVars['--color-background-muted'],
     // Divider beneath each group header row (Ernest review #2).
@@ -145,10 +148,14 @@ const styles = stylex.create({
     margin: 0,
     background: 'transparent',
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: {
       default: colorVars['--color-icon-secondary'],
-      ':hover': colorVars['--color-icon-primary'],
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+        colorVars['--color-icon-primary'],
     },
   },
   chevronIcon: {
@@ -294,6 +301,15 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
 
   const plugin = useMemo(
     (): TablePlugin<T> => ({
+      // A header row is not one of the caller's rows, so running a cell
+      // renderer against it can only misread it or throw — and the cells are
+      // discarded by `transformBodyRow` below regardless.
+      transformBodyCell(props, _column, item) {
+        if (!isGroupHeader(item)) {
+          return props;
+        }
+        return {...props, isContentSuppressed: true};
+      },
       // Replace a header row's pre-rendered cells with one full-width cell.
       transformBodyRow(props, item) {
         if (!isGroupHeader(item)) {

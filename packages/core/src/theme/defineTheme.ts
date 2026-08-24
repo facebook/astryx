@@ -113,6 +113,11 @@ export type TokenValue = string | [light: string, dark: string];
  * to the component selector. Supported pseudo-classes include `:hover`,
  * `:focus-visible`, `:active`, `:checked`, `:disabled`, etc.
  *
+ * A `:hover` override describes the ENABLED control: it is emitted with a
+ * guard that keeps it off disabled and `aria-disabled` elements, which
+ * `:hover` would otherwise still match. Style the disabled state through
+ * `:disabled` instead.
+ *
  * @example
  * ```ts
  * {

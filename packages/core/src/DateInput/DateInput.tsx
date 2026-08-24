@@ -17,6 +17,7 @@
  */
 
 import {
+  use,
   useId,
   useState,
   useCallback,
@@ -58,8 +59,10 @@ import {
 } from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {usePopover} from '../Popover';
+import {TouchDateField} from './TouchDateField';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA, isImeKeyEvent, parseDateInput} from '../utils';
 import {
@@ -79,11 +82,14 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
   },
   iconButtonDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   input: {
     display: 'block',
@@ -106,7 +112,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
@@ -161,7 +167,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
-import {useTranslator} from '../i18n';
+import {useTranslator, InternationalizationContext} from '../i18n';
 
 export interface DateInputProps extends Omit<
   BaseProps,
@@ -357,18 +363,30 @@ export interface DateInputProps extends Omit<
 }
 
 /**
- * A date picker component combining a text input with a calendar popover.
+ * The pointer that decides which surface a `DateInput` renders.
  *
- * @example
- * ```
- * <DateInput
- *   label="Event date"
- *   value={date}
- *   onChange={setDate}
- * />
- * ```
+ * `pointer: coarse` is the *primary* pointing device, which is what makes it
+ * the whole test. A touchscreen laptop reports `fine` (its trackpad) with
+ * `any-pointer: coarse` alongside, so it keeps the typable field — right,
+ * because its keyboard is there. A tablet reports `coarse` and gets the
+ * picker, at any width. There is deliberately no width bound: it would only
+ * re-exclude the tablets, since a narrowed desktop window is still a mouse.
+ *
+ * Deliberately NOT exported. It was, briefly, on the theory that an app might
+ * want to ask the same question and lay out to match — but nothing asked, and
+ * six other core components (CheckboxInput, ChatComposerInput, ...) just
+ * write `@media (pointer: coarse)` inline rather than sharing a constant. An
+ * export is additive later and awkward to withdraw, so it waits for a real
+ * caller.
  */
-export function DateInput({
+const TOUCH_POINTER_QUERY = '(pointer: coarse)';
+
+/**
+ * The pointer-driven field: a text input you can type into, with a calendar
+ * in a popover beside it. `DateInput` renders this whenever the primary
+ * pointer is not a finger — see {@link TOUCH_POINTER_QUERY}.
+ */
+function PointerDateField({
   label,
   isLabelHidden = false,
   description,
@@ -401,6 +419,7 @@ export function DateInput({
 }: DateInputProps) {
   const t = useTranslator();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
+  const {locale} = use(InternationalizationContext);
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -483,8 +502,8 @@ export function DateInput({
     (iso: ISODateString): string =>
       typeof format === 'function'
         ? format(iso)
-        : formatSharedDate(plainDateFromISO(iso), format),
-    [format],
+        : formatSharedDate(plainDateFromISO(iso), format, locale),
+    [format, locale],
   );
 
   // Display value: pending input if typing, otherwise formatted value
@@ -499,7 +518,7 @@ export function DateInput({
   const isInputValid =
     pendingInput === null || !pendingInput.trim()
       ? true
-      : parseDateInput(pendingInput) !== null;
+      : parseDateInput(pendingInput, locale) !== null;
 
   const popover = usePopover({
     dialogLabel: t('@astryx.dateInput.dialogLabel'),
@@ -581,7 +600,7 @@ export function DateInput({
       setPendingInput(newValue);
 
       // If the input is valid and passes constraints, update immediately
-      const parsed = parseDateInput(newValue);
+      const parsed = parseDateInput(newValue, locale);
       if (
         parsed &&
         plainDateToISO(parsed) !== value &&
@@ -594,7 +613,7 @@ export function DateInput({
         calendarRef.current?.navigateTo(parsedISO);
       }
     },
-    [value, fireChange, isDateDisabled, isEffectivelyDisabled],
+    [value, fireChange, isDateDisabled, isEffectivelyDisabled, locale],
   );
 
   // Commit pending input (shared by blur and Enter key)
@@ -611,7 +630,7 @@ export function DateInput({
       return;
     }
 
-    const parsed = parseDateInput(pendingInput);
+    const parsed = parseDateInput(pendingInput, locale);
     if (parsed && !isDateDisabled(parsed)) {
       const parsedISO = plainDateToISO(parsed);
       if (parsedISO !== value) {
@@ -619,7 +638,7 @@ export function DateInput({
       }
     }
     setPendingInput(null);
-  }, [pendingInput, value, fireChange, isDateDisabled]);
+  }, [pendingInput, value, fireChange, isDateDisabled, locale]);
 
   // Handle blur - validate, check constraints, and clear pending input
   const handleBlur = useCallback(() => {
@@ -819,6 +838,59 @@ export function DateInput({
       width={width}>
       {inputWrapper}
     </Field>
+  );
+}
+
+PointerDateField.displayName = 'PointerDateField';
+
+/**
+ * A date picker that fits the pointer it is being used with.
+ *
+ * With a mouse or trackpad this is a text input you can type into, with a
+ * calendar in a popover — unchanged, and still the surface every existing
+ * consumer gets. With a finger it is a picker built for one: a bottom sheet
+ * holding one month per screen, swiped sideways, with month and year wheels
+ * behind the header title for the far jumps swiping is bad at.
+ *
+ * The props are identical either way — this is one component with two
+ * surfaces, not two components — so nothing at the call site changes, and a
+ * date typed on a laptop and a date thumbed on a phone are the same value.
+ *
+ * ## Why a runtime switch and not CSS
+ *
+ * The two surfaces are structurally different — a popover anchored to a text
+ * field versus a full-width sheet holding a scroller — so "render both, hide
+ * one" would double the DOM, double the tab stops, and mount two calendars.
+ * The condition is not layout either: it is *which interaction is faster*,
+ * and that depends on the pointer, which CSS cannot hand to JS.
+ *
+ * They are two components rather than one with a branch inside because the
+ * hook lists differ; keeping them separate is what lets each own its own.
+ *
+ * ## Hydration
+ *
+ * `useMediaQuery` reports false during SSR, so server HTML is always the
+ * pointer field and the swap happens after hydration. That is deliberately
+ * unobservable: both surfaces render the SAME closed field — a bordered input
+ * with a calendar icon and the formatted date — and differ only in what
+ * opens. Nothing moves; the field just starts opening a sheet.
+ *
+ * @example
+ * ```
+ * <DateInput
+ *   label="Event date"
+ *   value={date}
+ *   onChange={setDate}
+ * />
+ * ```
+ */
+export function DateInput(props: DateInputProps) {
+  const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
+
+  return isTouch ? (
+    <TouchDateField {...props} />
+  ) : (
+    <PointerDateField {...props} />
   );
 }
 

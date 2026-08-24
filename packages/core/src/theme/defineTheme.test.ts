@@ -738,7 +738,9 @@ describe('pseudo-class overrides in components', () => {
     expect(css).toContain('.astryx-radio {');
     expect(css).toContain('border-color: #8F9296');
     // Pseudo rule — separate selector
-    expect(css).toContain('.astryx-radio:hover {');
+    expect(css).toContain(
+      '.astryx-radio:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
     expect(css).toContain(
       'border-color: color-mix(in srgb, #8F9296, black 20%)',
     );
@@ -764,7 +766,9 @@ describe('pseudo-class overrides in components', () => {
     const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-button.primary-muted {');
     expect(css).toContain('background-color: #ECF5FF');
-    expect(css).toContain('.astryx-button.primary-muted:hover {');
+    expect(css).toContain(
+      '.astryx-button.primary-muted:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
     expect(css).toContain('background-color: #D6EBFF');
     expect(css).toContain('.astryx-button.primary-muted:focus-visible {');
     expect(css).toContain('outline: 2px solid var(--color-accent)');
@@ -787,7 +791,9 @@ describe('pseudo-class overrides in components', () => {
     // Should NOT emit an empty base rule
     expect(css).not.toMatch(/\.astryx-switch\s*\{\s*\}/);
     // Should emit the pseudo rule
-    expect(css).toContain('.astryx-switch:hover {');
+    expect(css).toContain(
+      '.astryx-switch:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
   });
 
   it('keeps non-pseudo string values as regular properties', () => {

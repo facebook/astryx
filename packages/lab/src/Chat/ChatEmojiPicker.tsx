@@ -140,12 +140,15 @@ const styles = stylex.create({
     padding: 0,
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         default: 'transparent',
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     fontSize: 18,
     lineHeight: typeScaleVars['--text-body-leading'],
     // Inset, not the shared offset: the cells sit in a tight 8-across grid, so

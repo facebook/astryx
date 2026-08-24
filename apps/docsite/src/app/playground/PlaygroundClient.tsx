@@ -37,6 +37,7 @@ import dynamic from 'next/dynamic';
 import * as stylex from '@stylexjs/stylex';
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {compressCode, decompressCode} from '../../lib/compress';
+import {isTrustedPreviewMessage, trustedPreviewOrigin} from './previewChannel';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
@@ -357,7 +358,7 @@ export function PlaygroundClient() {
   const postToPreview = useCallback((message: unknown) => {
     iframeRef.current?.contentWindow?.postMessage(
       message,
-      window.location.origin,
+      trustedPreviewOrigin(),
     );
   }, []);
 
@@ -407,7 +408,13 @@ export function PlaygroundClient() {
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (e.source !== iframeRef.current?.contentWindow) {
+      if (
+        !isTrustedPreviewMessage(
+          e,
+          trustedPreviewOrigin(),
+          iframeRef.current?.contentWindow,
+        )
+      ) {
         return;
       }
       if (e.data?.type === 'preview-ready') {

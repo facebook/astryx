@@ -31,7 +31,15 @@ const fmt = (
   maxLength = 20,
   timezoneID?: string,
 ): string =>
-  formatFilterValue({} as never, operator, value, maxLength, t, timezoneID);
+  formatFilterValue(
+    {} as never,
+    operator,
+    value,
+    maxLength,
+    t,
+    'en-US',
+    timezoneID,
+  );
 
 const ELLIPSIS = '…';
 
@@ -87,8 +95,20 @@ describe('formatFilterValue', () => {
   });
 
   describe('integer / float', () => {
+    it('formats the same number differently when the locale changes', () => {
+      const args = [
+        {} as never,
+        {type: 'float'} as OperatorValue,
+        {type: 'float', value: 1234.5} as FilterValue,
+        40,
+        t,
+      ] as const;
+      expect(formatFilterValue(...args, 'en-US')).toBe('1,234.5');
+      expect(formatFilterValue(...args, 'de-DE')).toBe('1.234,5');
+    });
+
     it('formats an integer with locale grouping', () => {
-      const expected = new Intl.NumberFormat().format(1234567);
+      const expected = new Intl.NumberFormat('en-US').format(1234567);
       expect(
         fmt({type: 'integer'}, {type: 'integer', value: 1234567}, 40),
       ).toBe(expected);

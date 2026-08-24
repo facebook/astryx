@@ -145,9 +145,12 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
@@ -181,7 +184,10 @@ const styles = stylex.create({
     fontWeight: 'inherit',
     lineHeight: 'inherit',
     textAlign: 'start',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // No border and no background: `usePopover` paints the panel this renders
   // into. Drawing a second surface here put square corners inside its rounded

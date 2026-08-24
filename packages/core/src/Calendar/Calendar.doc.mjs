@@ -83,7 +83,8 @@ export const docs = {
     {
       name: 'focusDate',
       type: 'ISODateString',
-      description: 'Controlled visible month.',
+      description:
+        'Controlled visible month. Unset, the calendar opens on the selected date, else on today clamped into the min/max window.',
     },
     {
       name: 'onFocusDateChange',
@@ -156,7 +157,7 @@ export const docsZh = {
     {name: 'dateConstraints', type: 'Array<(date: Date) => boolean>', description: '自定义约束函数。'},
     {name: 'maxRangeSpan', type: 'number', description: '范围模式：范围最多可跨越的天数，含首尾两端（7 = 7 天窗口）。选定起始日后限制窗口大小。'},
     {name: 'minRangeSpan', type: 'number', description: '范围模式：范围最少需跨越的天数，含首尾两端（2 表示禁止单日范围）。默认为 1。'},
-    {name: 'focusDate', type: 'ISODateString', description: '受控可见月份。'},
+    {name: 'focusDate', type: 'ISODateString', description: '受控可见月份。未设置时，日历打开时显示已选日期所在月份；若无选中值，则显示今天，并将其限制在 min/max 范围内。'},
     {name: 'onFocusDateChange', type: '(focusDate: ISODateString) => void', description: '导航回调函数。'},
     {name: 'handleRef', type: 'React.Ref<CalendarHandle>', description: '日历导航的命令式句柄，包括 navigateTo()。'},
     {name: 'hasOutsideDays', type: 'boolean', description: '显示相邻月份的日期。', default: 'true'},
@@ -221,7 +222,7 @@ export const docsDense = {
     dateConstraints: 'custom constraint fns',
     maxRangeSpan: 'range mode: max days a range may span, both ends counted (7 = 7-day window)',
     minRangeSpan: 'range mode: min days a range must span, both ends counted (default 1)',
-    focusDate: 'controlled visible month',
+    focusDate: 'controlled visible month (default: selected date, else today clamped into min/max)',
     onFocusDateChange: 'navigation callback',
     handleRef: 'imperative navigation handle',
     hasOutsideDays: 'show days from adjacent months',

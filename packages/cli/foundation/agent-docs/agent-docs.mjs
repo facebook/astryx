@@ -299,11 +299,22 @@ export function detectStylingSystem(targetDir) {
  * configured (see {@link detectStylingSystem}) so the agent never reaches for a
  * styling path that isn't compiled here.
  *
+ * `topics` is the project's doc-topic list. Passing it is what puts an
+ * integration's topics — including one it contributed in place of a built-in —
+ * in front of the agent by name; without it the block falls back to the CLI's
+ * own topics, because resolving a project's catalog is async and this is not.
+ *
+ * Either way the list now includes the hyphenated topics. The fallback scan
+ * matched `\w+`, which does not match `-`, so five real topics were missing
+ * from every block ever written — `getting-started` and `cli-integrations`
+ * among them. An agent cannot ask for a topic it was never told about, and
+ * `getting-started` is the one it should reach for first.
+ *
  * @param {string} version
- * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string}} [options]
+ * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[]}} [options]
  * @returns {string}
  */
-export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css'} = {}) {
+export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css', topics} = {}) {
   const run = invocation;
   const lines = [MARKER_START];
 
@@ -377,13 +388,18 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   lines.push(`  component --list   ${componentCount} components by category`);
   lines.push('  template --list    page + block recipes');
   const docsDir = path.join(CLI_ROOT, 'assets', 'docs');
-  if (fs.existsSync(docsDir)) {
-    const topics = fs.readdirSync(docsDir)
-      .map(f => f.match(/^(\w+)\.doc\.mjs$/))
-      .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
-      .map(m => m[1])
-      .sort();
-    if (topics.length > 0) lines.push(`  docs <topic>       ${topics.join(', ')}`);
+  const resolvedTopics =
+    topics ??
+    (fs.existsSync(docsDir)
+      ? fs
+          .readdirSync(docsDir)
+          .map(f => f.match(/^([\w-]+)\.doc\.mjs$/))
+          .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
+          .map(m => m[1])
+          .sort()
+      : []);
+  if (resolvedTopics.length > 0) {
+    lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
   }
   lines.push('  swizzle <Name>     eject component source for deep customization');
   lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
@@ -566,14 +582,17 @@ export function removeAgentDocs(targetDir) {
  * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'hermes', 'all'
  * @param {string[]} [options.paths] - Explicit paths (overrides agent/auto-detect)
  * @param {boolean} [options.onlyReplace] - Only update files that already have Astryx markers (for upgrades)
+ * @param {string[]} [options.topics] - Doc topics to list in the block; defaults
+ *   to the CLI's own. Pass the project's catalog (`(await project.docs()).names()`)
+ *   so an integration's topics reach the agent.
  * @returns {string[]} List of files written
  */
-export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false} = {}) {
+export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false, topics} = {}) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const invocation = getCliInvocation(targetDir);
   const stylingSystem = detectStylingSystem(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem});
+  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem, topics});
   /** @type {string[]} */
   const written = [];
 

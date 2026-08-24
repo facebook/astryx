@@ -61,13 +61,13 @@ const hoverRowStyles = stylex.create({
   row: {
     backgroundColor: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     '--table-row-overlay': {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -82,14 +82,14 @@ const stripedHoverRowStyles = stylex.create({
     backgroundColor: {
       default: null,
       ':nth-child(even)': colorVars['--color-background-muted'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     '--table-row-overlay': {
       default: null,
       ':nth-child(even)': colorVars['--color-background-muted'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },

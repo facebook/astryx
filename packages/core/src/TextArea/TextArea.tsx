@@ -108,7 +108,7 @@ const styles = stylex.create({
     resize: 'vertical',
   },
   textareaDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   // Reserve start padding so text clears the start icon.
   // inline inset + 16px icon (sm) + 8px gap
