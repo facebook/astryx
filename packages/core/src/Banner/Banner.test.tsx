@@ -253,6 +253,18 @@ describe('Banner', () => {
     expect(screen.getByRole('button', {name: 'Collapse'})).toBeInTheDocument();
   });
 
+  it('treats a null collapsible as the default', () => {
+    render(
+      // @ts-expect-error null is outside the prop's type, but JS callers and a
+      // value widened to `| null` still reach this.
+      <Banner status="info" title="Nullish" collapsible={null}>
+        <div data-testid="child-content">Content</div>
+      </Banner>,
+    );
+    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
+  });
+
   it('does not show expand/collapse button when no children', () => {
     render(<Banner status="info" title="No Children" />);
     expect(

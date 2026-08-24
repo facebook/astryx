@@ -463,7 +463,8 @@ export function Banner({
   // opens by default, a banner starts closed. Its header already carries the
   // message, so the content is supplementary — and this is the behaviour
   // Banner has always had.
-  const collapsibleConfig = typeof collapsible === 'object' ? collapsible : {};
+  const collapsibleConfig =
+    collapsible != null && typeof collapsible === 'object' ? collapsible : {};
   const {
     isEnabled: isCollapsible,
     isOpen: isExpanded,
