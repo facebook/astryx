@@ -53,6 +53,60 @@ describe('astryxStylex layer order (legacy API)', () => {
   });
 });
 
+/**
+ * A production build had no equivalent of the dev server's split-layer plugin,
+ * so StyleX's `@layer priorityN` blocks sat outside the declared order and
+ * outranked `astryx-theme` — every component override a theme set was dropped.
+ */
+describe('astryxStylex build-time library layer wrap', () => {
+  /** Run the wrap plugin's generateBundle over one stylesheet. */
+  function wrap(css: string, plugins = astryxStylex()): string {
+    const plugin = plugins.find(p => p.name === 'astryx-build-layer-wrap');
+    expect(plugin, 'astryx-build-layer-wrap plugin should exist').toBeTruthy();
+    const asset = {type: 'asset', fileName: 'assets/index.css', source: css};
+    const bundle = {'assets/index.css': asset} as any;
+    const hook = (plugin as any).generateBundle;
+    (typeof hook === 'function' ? hook : hook.handler).call({}, {}, bundle);
+    return asset.source;
+  }
+
+  const stylexCss =
+    '@layer priority1;\n@layer priority2 {\n  .x1 { color: red; }\n}\n';
+
+  it('wraps the StyleX block in the library layer, leaving app CSS outside', () => {
+    const out = wrap(`.app { color: blue; }\n${stylexCss}`);
+    expect(out).toBe(
+      `.app { color: blue; }\n@layer astryx-base {\n${stylexCss}\n}\n`,
+    );
+  });
+
+  it('runs after the StyleX plugin, which is what appends the block', () => {
+    const plugin = astryxStylex().find(
+      p => p.name === 'astryx-build-layer-wrap',
+    );
+    expect(plugin?.enforce).toBe('post');
+    expect(plugin?.apply).toBe('build');
+  });
+
+  it('honors a configured library layer name', () => {
+    const out = wrap(
+      stylexCss,
+      astryxStylex({layers: {library: 'custom-base'}}),
+    );
+    expect(out.startsWith('@layer custom-base {')).toBe(true);
+  });
+
+  it('leaves a stylesheet with no StyleX block alone', () => {
+    const css = '.app { color: blue; }\n';
+    expect(wrap(css)).toBe(css);
+  });
+
+  it('wraps on the legacy API too', () => {
+    const out = wrap(stylexCss, astryxStylex({stylexOptions: {}}));
+    expect(out.startsWith('@layer astryx-base {')).toBe(true);
+  });
+});
+
 describe('astryxStylex optimizeDeps package discovery', () => {
   let rootDir: string;
 

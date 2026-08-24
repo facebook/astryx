@@ -463,6 +463,16 @@ jobs:
       - name: Run modal close visibility guard
         run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
 
+      # A public component var can be documented, read, and emitted into the
+      # theme CSS and still be unreachable — an inline write or an unlayered
+      # declaration outranks `@layer astryx-theme` (#4530). jsdom resolves no
+      # cascade, so the unit suites assert on the generated CSS text, which
+      # proves emission and not effect. Chromium is where the promise is
+      # checkable. The source-side wiring half lives in
+      # packages/cli/foundation/discovery/theming-targets.test.mjs.
+      - name: Run theme var reachability guard
+        run: node .github/scripts/theme-var-reachability.js --storybook-dir apps/storybook/dist
+
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so a PR only pays for the components it touched.
   # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that

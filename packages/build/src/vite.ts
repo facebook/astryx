@@ -297,7 +297,49 @@ export function astryxStylex(
     },
   };
 
-  return [configPlugin, layerOrderPlugin, basePlugin, splitLayerPlugin];
+  return [
+    configPlugin,
+    layerOrderPlugin,
+    basePlugin,
+    splitLayerPlugin,
+    buildLayerWrapPlugin(libraryLayer),
+  ];
+}
+
+/**
+ * StyleX emits its rules into its own top-level `@layer priority1…priorityN`.
+ * On the dev server `astryx-split-layers` re-serves them wrapped in the library
+ * layer, but that plugin is `configureServer` — nothing wrapped them in a
+ * production build, so the priority layers were declared after the
+ * `@layer reset, astryx-base, astryx-theme, product;` statement and therefore
+ * outranked `astryx-theme`. Every component override a theme sets — a colour, a
+ * radius, a public custom property — was silently dropped in a built app while
+ * working in dev and in the pre-compiled `astryx.css`.
+ *
+ * Wrapping the emitted block restores one meaning for the layer order across
+ * all three. StyleX's CSS is appended to the bundle's stylesheet, so the block
+ * runs from its first priority layer to the end of the file.
+ */
+function buildLayerWrapPlugin(libraryLayer: string): Plugin {
+  return {
+    name: 'astryx-build-layer-wrap',
+    apply: 'build',
+    // After the StyleX plugin's own generateBundle, which is what appends it.
+    enforce: 'post',
+    generateBundle(_opts, bundle) {
+      for (const asset of Object.values(bundle)) {
+        if (asset.type !== 'asset' || !asset.fileName.endsWith('.css'))
+          continue;
+        const css =
+          typeof asset.source === 'string'
+            ? asset.source
+            : Buffer.from(asset.source).toString('utf-8');
+        const start = css.indexOf('@layer priority1');
+        if (start === -1 || css.includes(`@layer ${libraryLayer} {`)) continue;
+        asset.source = `${css.slice(0, start)}@layer ${libraryLayer} {\n${css.slice(start)}\n}\n`;
+      }
+    },
+  };
 }
 
 /**
@@ -425,5 +467,10 @@ function astryxStylexLegacy(options: AstryxVitePluginLegacyOptions): Plugin[] {
     },
   };
 
-  return [layerOrderPlugin, basePlugin, splitLayerPlugin];
+  return [
+    layerOrderPlugin,
+    basePlugin,
+    splitLayerPlugin,
+    buildLayerWrapPlugin(libraryLayer),
+  ];
 }
