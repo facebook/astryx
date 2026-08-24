@@ -253,7 +253,7 @@ const brandTheme = defineTheme({
           rows: [
             ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
             ['components', 'Deep-merged: child component rules override matching keys from the base.'],
-            ['icons', 'Shallow-merged: child icons override matching names from the base.'],
+            ['icons', 'Shallow-merged: child icons override matching names from the base. Accepts built-in names and colon-namespaced library extension keys (e.g. `richtext:bold`).'],
             ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
             ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
             ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],

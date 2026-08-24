@@ -103,6 +103,9 @@ export {
 export type {RGBA} from './color';
 
 export {devWarn, devError, warnOnce, formatDevMessage} from './devWarning';
+// Test-only: clears warnOnce's per-key dedup so a suite can assert on a
+// warning that another test already consumed.
+export {__resetDevWarnings} from './devWarning';
 
 export {rtlStyles} from './rtlStyles';
 

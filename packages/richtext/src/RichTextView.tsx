@@ -4,7 +4,8 @@
 
 /**
  * @file RichTextView.tsx
- * @input Uses React, Lexical (lexical + @lexical/react), design tokens
+ * @input Uses React (including a class error boundary), Lexical (lexical +
+ *   @lexical/react), mergeProps and warnOnce from core utils, design tokens
  * @output Exports RichTextView component and RichTextViewProps
  * @position Read-only renderer for serialized Lexical editor state; experimental
  *   (richtext), exported from @astryxdesign/richtext
@@ -15,10 +16,18 @@
  * - /apps/storybook/stories/RichTextEditor.stories.tsx
  */
 
-import {useEffect, useRef, useState, type ReactNode} from 'react';
+import {
+  Component,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {sharedEditorTheme} from './editorTheme';
 import type {BaseProps} from '@astryxdesign/core';
+import {mergeProps, warnOnce} from '@astryxdesign/core/utils';
 
 import {
   LexicalComposer,
@@ -58,6 +67,15 @@ export interface RichTextViewProps extends BaseProps {
    */
   value: string;
   /**
+   * Accessible name for the read-only text surface. The view renders a
+   * `role="textbox"` element, and a textbox without a name fails
+   * axe's `aria-input-field-name`; pass a label describing the content
+   * (e.g. "Meeting notes"). A blank or whitespace-only string is treated
+   * exactly like omitting the prop — it names nothing, so no `aria-label`
+   * is emitted and the dev warning still fires.
+   */
+  label?: string;
+  /**
    * Additional Lexical nodes to register beyond the default OSS set. Must match
    * the nodes used to author `value` so custom node types deserialize.
    */
@@ -70,8 +88,9 @@ export interface RichTextViewProps extends BaseProps {
   /** The Lexical composer namespace. @default 'astryx-view' */
   namespace?: string;
   /**
-   * Called when `value` cannot be parsed/rendered (e.g. malformed JSON, or
-   * state authored with node types not registered via `nodes`). A read-only
+   * Called when `value` cannot be parsed/rendered — malformed JSON, valid
+   * JSON that is not a usable editor state (`'{}'`, `'null'`), or state
+   * authored with node types not registered via `nodes`. A read-only
    * view renders *persisted* content — exactly where stale or foreign-schema
    * state shows up — so by default a parse failure renders `errorFallback`
    * instead of throwing and taking down the host. Provide `onParseError` to log or
@@ -84,6 +103,8 @@ export interface RichTextViewProps extends BaseProps {
    * @default null
    */
   errorFallback?: ReactNode;
+  /** Ref to the view's root element. */
+  ref?: Ref<HTMLDivElement>;
 }
 
 /**
@@ -116,10 +137,10 @@ export interface RichTextViewProps extends BaseProps {
  */
 function SyncValuePlugin({value}: {value: string}): null {
   const [editor] = useLexicalComposerContext();
-  const isFirstRun = useRef(true);
+  const isFirstRunRef = useRef(true);
   useEffect(() => {
-    if (isFirstRun.current) {
-      isFirstRun.current = false;
+    if (isFirstRunRef.current) {
+      isFirstRunRef.current = false;
       return;
     }
     editor.setEditorState(editor.parseEditorState(value));
@@ -137,8 +158,52 @@ function SyncValuePlugin({value}: {value: string}): null {
  * <RichTextView value={storedEditorStateJSON} />
  * ```
  */
+/**
+ * Catches a render-phase throw out of {@link LexicalComposer}. Lexical builds
+ * and seeds the editor inside a `useMemo` during render, so a `value` that is
+ * valid JSON but not a usable editor state — `'{}'`, `'null'`, an unregistered
+ * node type directly under `root` — makes Lexical's own `setEditorState`
+ * invariant throw from there, past every plugin-level boundary. `onParseError`
+ * has already fired by then (Lexical routes the failure through `onError`
+ * first), so this boundary only has to swap in the fallback instead of letting
+ * the throw take down the host.
+ */
+class ViewErrorBoundary extends Component<
+  {resetKey: string; fallback: ReactNode; children: ReactNode},
+  {hasError: boolean; resetKey: string}
+> {
+  constructor(props: {
+    resetKey: string;
+    fallback: ReactNode;
+    children: ReactNode;
+  }) {
+    super(props);
+    this.state = {hasError: false, resetKey: props.resetKey};
+  }
+
+  static getDerivedStateFromError(): {hasError: boolean} {
+    return {hasError: true};
+  }
+
+  static getDerivedStateFromProps(
+    props: {resetKey: string},
+    state: {resetKey: string},
+  ): {hasError: boolean; resetKey: string} | null {
+    // A new `value` earns a fresh attempt, matching the recovery the
+    // JSON-parse guard already gives malformed input.
+    return props.resetKey === state.resetKey
+      ? null
+      : {hasError: false, resetKey: props.resetKey};
+  }
+
+  render(): ReactNode {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
+
 export function RichTextView({
   value,
+  label,
   nodes,
   plugins,
   namespace = 'astryx-view',
@@ -149,6 +214,19 @@ export function RichTextView({
   style,
   ...rest
 }: RichTextViewProps) {
+  // A blank label names nothing: `aria-label=""` resolves to the same empty
+  // accessible name as no attribute at all, and role=textbox takes no name
+  // from its content. Treat blank exactly like absent — warn, and emit no
+  // attribute — so the guard cannot be silenced by an empty string.
+  const trimmedLabel = label?.trim();
+  if (!trimmedLabel) {
+    warnOnce(
+      'richtext:view-needs-label',
+      'RichTextView',
+      'RichTextView renders a keyboard-reachable textbox; pass a non-blank `label` so it has an accessible name (axe aria-input-field-name).',
+    );
+  }
+
   const themeRef = useRef<EditorThemeClasses | null>(null);
   if (themeRef.current === null) {
     themeRef.current = sharedEditorTheme();
@@ -184,9 +262,7 @@ export function RichTextView({
   if (hasError) {
     return (
       <div
-        {...stylex.props(styles.root, xstyle)}
-        className={className}
-        style={style}
+        {...mergeProps(stylex.props(styles.root, xstyle), className, style)}
         {...rest}>
         {errorFallback}
       </div>
@@ -206,19 +282,28 @@ export function RichTextView({
 
   return (
     <div
-      {...stylex.props(styles.root, xstyle)}
-      className={className}
-      style={style}
+      {...mergeProps(stylex.props(styles.root, xstyle), className, style)}
       {...rest}>
-      <LexicalComposer initialConfig={initialConfig}>
-        <SyncValuePlugin value={value} />
-        <RichTextPlugin
-          contentEditable={<ContentEditable />}
-          placeholder={null}
-          ErrorBoundary={LexicalErrorBoundary}
-        />
-        {plugins}
-      </LexicalComposer>
+      <ViewErrorBoundary resetKey={value} fallback={errorFallback}>
+        <LexicalComposer initialConfig={initialConfig}>
+          <SyncValuePlugin value={value} />
+          <RichTextPlugin
+            contentEditable={
+              // A read-only textbox still needs a name and must stay in the
+              // tab order so keyboard and screen-reader users can reach and
+              // read it.
+              <ContentEditable
+                ariaLabel={trimmedLabel ? label : undefined}
+                ariaMultiline
+                tabIndex={0}
+              />
+            }
+            placeholder={null}
+            ErrorBoundary={LexicalErrorBoundary}
+          />
+          {plugins}
+        </LexicalComposer>
+      </ViewErrorBoundary>
     </div>
   );
 }

@@ -73,6 +73,9 @@ export const DEFAULT_LINK_MATCHERS: LinkMatcher[] = [
   },
 ];
 
+// This is a renderless Lexical plugin: it renders no DOM element of its own,
+// so there is nothing to style (BaseProps) or reference (ref).
+// eslint-disable-next-line @astryx/require-base-props, @astryx/require-ref-prop
 export interface RichTextEditorAutoLinkPluginProps {
   /**
    * Link matchers to use. Defaults to {@link DEFAULT_LINK_MATCHERS} (URLs +

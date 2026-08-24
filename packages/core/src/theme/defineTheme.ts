@@ -36,7 +36,7 @@
  * - /packages/cli/assets/docs/theme.doc.mjs (`astryx docs theme`)
  */
 
-import type {IconRegistry} from '../Icon/globalIconRegistry';
+import type {ExtendedIconRegistry} from '../Icon/globalIconRegistry';
 import type {IndicatorRegistry} from '../Indicator/types';
 import type {TypographyConfig, FontWeight} from './types';
 import {
@@ -318,8 +318,12 @@ export interface DefineThemeInput {
    * ```
    */
   components?: ComponentStyleMap;
-  /** Icon registry — maps semantic icon names to React nodes */
-  icons?: Partial<IconRegistry>;
+  /**
+   * Icon registry — maps semantic icon names to React nodes. Accepts
+   * extension keys contributed by libraries (e.g. `'richtext:bold'`) in
+   * addition to the built-in names.
+   */
+  icons?: ExtendedIconRegistry;
   /**
    * Indicator overrides — replaces the components that draw stateful control
    * visuals with the theme's own, by name.
@@ -380,8 +384,8 @@ export interface DefinedTheme {
   tokens: Record<string, string>;
   /** Component style overrides */
   components?: ComponentStyleMap;
-  /** Icon registry */
-  icons?: Partial<IconRegistry>;
+  /** Icon registry (built-in names plus library extension keys) */
+  icons?: ExtendedIconRegistry;
   /** Indicator overrides for stateful control visuals, keyed by name */
   indicators?: IndicatorRegistry;
   /** Whether this theme has been pre-compiled by theme build CLI */

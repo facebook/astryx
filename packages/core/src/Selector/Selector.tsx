@@ -95,7 +95,12 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-2'],
     width: '100%',
-    paddingBlock: spacingVars['--spacing-2'],
+    // Block padding lives on the combobox button (styles.trigger +
+    // triggerSizeStyles), not here: the button is the measured interactive
+    // element, and padding on the container would collapse it to its ~20px
+    // line box — under the WCAG 2.5.8 24px minimum. Zero (not absent) so the
+    // base input wrapper's own block padding cannot reintroduce the collapse.
+    paddingBlock: 0,
     paddingInline: spacingVars['--spacing-3'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
@@ -125,6 +130,10 @@ const styles = stylex.create({
     flexShrink: 1,
     flexBasis: 0,
     minWidth: 0,
+    // Stretch across the container and carry the block padding so the
+    // button's hit area spans the full control height (WCAG 2.5.8); the
+    // rendered text keeps the same inset the container used to provide.
+    alignSelf: 'stretch',
     padding: 0,
     margin: 0,
     borderWidth: 0,
@@ -188,6 +197,9 @@ const styles = stylex.create({
   // stretching the button provides.
   triggerButtonInGroup: {
     alignSelf: 'stretch',
+    // The row is already the group's height; an inset of the trigger's own
+    // size would push past it (see `triggerInGroup`, the container half).
+    paddingBlock: 0,
   },
   triggerValueInGroup: {
     maxHeight: '100%',
@@ -398,19 +410,24 @@ const styles = stylex.create({
 const linePad = (token: string) =>
   `calc((${token} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`;
 
+//
+// The two halves land on different elements. The floor stays on the
+// container, but the line padding goes on the combobox BUTTON: the button is
+// the element a hit-target audit measures, and padding on the container would
+// box it into the ~20px line box instead — under the WCAG 2.5.8 24px minimum.
+// The button stretches (`styles.trigger`), so it still drives the same total
+// height and the text keeps the same inset; only the element carrying the
+// inset changed.
 const sizeStyles = stylex.create({
-  sm: {
-    minHeight: sizeVars['--size-element-sm'],
-    paddingBlock: linePad(sizeVars['--size-element-sm']),
-  },
-  md: {
-    minHeight: sizeVars['--size-element-md'],
-    paddingBlock: linePad(sizeVars['--size-element-md']),
-  },
-  lg: {
-    minHeight: sizeVars['--size-element-lg'],
-    paddingBlock: linePad(sizeVars['--size-element-lg']),
-  },
+  sm: {minHeight: sizeVars['--size-element-sm']},
+  md: {minHeight: sizeVars['--size-element-md']},
+  lg: {minHeight: sizeVars['--size-element-lg']},
+});
+
+const triggerSizeStyles = stylex.create({
+  sm: {paddingBlock: linePad(sizeVars['--size-element-sm'])},
+  md: {paddingBlock: linePad(sizeVars['--size-element-md'])},
+  lg: {paddingBlock: linePad(sizeVars['--size-element-lg'])},
 });
 
 /**
@@ -1523,6 +1540,7 @@ export function Selector<T extends SelectorOptionType>(
           tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
           {...stylex.props(
             styles.trigger,
+            triggerSizeStyles[size],
             inputGroup && styles.triggerButtonInGroup,
           )}>
           {valueContent}
