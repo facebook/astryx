@@ -273,13 +273,13 @@ describe('parseMarkdownIncremental cache', () => {
     console.log(
       `  worst chunk's blocks built (50/200/500 paragraphs): ${worst.join('/')}`,
     );
-    // A cache that holds for the typical chunk and dumps on a minority of them
-    // is flat at the median and at p95 while the total work is still O(N²):
-    // that is what #5378 was, on 2% of chunks by one path and 31% by the other.
-    // Only the worst chunk sees a rare collapse, and every collapse costs more
-    // as the document grows — so this asserts the worst one and that a 10x
-    // document does not move it. Deterministic: same fixture, same chunking,
-    // integers with no timing input.
+    // A cache that dumps on a minority of chunks is flat at the median and at
+    // p95 while the total work is still quadratic: the blank-line path of
+    // #5378 hit ~1.4% of chunks on this fixture, and no percentile bound saw
+    // it. The worst chunk does, and each collapse costs more as the document
+    // grows — so this asserts the worst one, and that a 10x document does not
+    // move it. Deterministic: same fixture, same chunking, integers with no
+    // timing input.
     expect(worst).toEqual([3, 3, 3]);
   });
 
