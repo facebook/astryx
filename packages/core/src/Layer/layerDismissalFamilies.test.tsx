@@ -2,7 +2,8 @@
 
 /**
  * @file layerDismissalFamilies.test.tsx
- * @input Uses vitest, @testing-library/react, Dialog, Lightbox, MobileNav
+ * @input Uses vitest, @testing-library/react, Dialog, Lightbox, MobileNav,
+ *   HoverCard, Tooltip
  * @output Tests that every overlay family shares the one dismissal stack
  * @position Colocated with layerStack; the families' own behavior is tested in
  *   their own files, this one only asks who takes the press
@@ -16,16 +17,57 @@
  * SYNC: When a new overlay family joins the stack, add it here.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterAll,
+  afterEach,
+} from 'vitest';
 import {render, screen} from '@testing-library/react';
 
 import {Dialog} from '../Dialog/Dialog';
+import {HoverCard} from '../HoverCard/HoverCard';
 import {Lightbox} from '../Lightbox/Lightbox';
 import {MobileNav} from '../MobileNav/MobileNav';
+import {Tooltip} from '../Tooltip/Tooltip';
 import {resetLayerStackForTests} from './layerStack';
+
+const originalMatches = HTMLElement.prototype.matches;
+const popoverOpenState = new WeakMap<HTMLElement, boolean>();
+
+// jsdom implements no Popover API, and the hover layers answer `isPresent`
+// from `:popover-open`.
+beforeAll(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    popoverOpenState.set(this, true);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    popoverOpenState.set(this, false);
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return popoverOpenState.get(this) ?? false;
+    }
+    return originalMatches.call(this, selector);
+  };
+});
+
+afterAll(() => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = originalMatches;
+});
 
 // jsdom does not implement showModal/close.
 beforeEach(() => {
+  vi.mocked(HTMLElement.prototype.showPopover).mockClear();
+  vi.mocked(HTMLElement.prototype.hidePopover).mockClear();
   HTMLDialogElement.prototype.showModal = vi.fn(function (
     this: HTMLDialogElement,
   ) {
@@ -231,6 +273,87 @@ describe('overlay families on the shared dismissal stack', () => {
 
       expect(onDialogChange).not.toHaveBeenCalled();
       expect(onLightboxChange).not.toHaveBeenCalled();
+    });
+  });
+
+  // Controlled follows control state for `isOpen`: Escape still attempts the
+  // close, but only the caller's update function may perform it. Dialog has
+  // always worked this way; these two now do too.
+  describe('controlled hover layers', () => {
+    it('a controlled HoverCard takes the press and reports instead of hiding', () => {
+      const onCardChange = vi.fn();
+      const onDialogChange = vi.fn();
+
+      render(
+        <Dialog isOpen={true} onOpenChange={onDialogChange} aria-label="Host">
+          <HoverCard
+            isOpen={true}
+            onOpenChange={onCardChange}
+            content={<span>Pinned card</span>}>
+            <button type="button">Trigger</button>
+          </HoverCard>
+        </Dialog>,
+      );
+      onCardChange.mockClear();
+      vi.mocked(HTMLElement.prototype.hidePopover).mockClear();
+
+      const event = pressEscape();
+
+      expect(onCardChange).toHaveBeenCalledWith(false);
+      expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+      expect(onDialogChange).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('a controlled Tooltip takes the press and reports instead of hiding', () => {
+      const onTipChange = vi.fn();
+      const onDialogChange = vi.fn();
+
+      render(
+        <Dialog isOpen={true} onOpenChange={onDialogChange} aria-label="Host">
+          <Tooltip
+            isOpen={true}
+            onOpenChange={onTipChange}
+            content="Pinned tip">
+            <button type="button">Trigger</button>
+          </Tooltip>
+        </Dialog>,
+      );
+      onTipChange.mockClear();
+      vi.mocked(HTMLElement.prototype.hidePopover).mockClear();
+
+      const event = pressEscape();
+
+      expect(onTipChange).toHaveBeenCalledWith(false);
+      expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+      expect(onDialogChange).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('leaves the Dialog unclosable when the consumer discards the request', () => {
+      // The round-6 regression, now by consumer choice rather than by ours: a
+      // layer that holds itself open and ignores its own change handler keeps
+      // taking the press, and nothing behind it can be reached.
+      const onCardChange = vi.fn();
+      const onDialogChange = vi.fn();
+
+      render(
+        <Dialog isOpen={true} onOpenChange={onDialogChange} aria-label="Host">
+          <HoverCard
+            isOpen={true}
+            onOpenChange={onCardChange}
+            content={<span>Stuck card</span>}>
+            <button type="button">Trigger</button>
+          </HoverCard>
+        </Dialog>,
+      );
+      onCardChange.mockClear();
+
+      pressEscape();
+      pressEscape();
+
+      expect(onCardChange).toHaveBeenCalledTimes(2);
+      expect(onDialogChange).not.toHaveBeenCalled();
     });
   });
 });

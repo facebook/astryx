@@ -64,10 +64,12 @@ export interface UseLayerDismissalOptions {
    *
    * Deliberately separate from `escapeBehavior: 'block'` — `'block'` is a layer
    * that is present and swallows the press; this is a layer that is not there
-   * at all. Two cases use it: `Dialog`'s inline rendering mode, where content
-   * sits in normal flow with nothing layered over anything; and a controlled
-   * `Tooltip` or `HoverCard`, whose visibility belongs to the consumer, so the
-   * stack cannot dismiss it and must not consume its press either.
+   * at all. One case uses it: `Dialog`'s inline rendering mode, where content
+   * sits in normal flow with nothing layered over anything.
+   *
+   * A controlled layer is NOT one of these. It stays registered and takes the
+   * press like any other, answering it by calling the consumer's change
+   * handler; whether it then closes is the consumer's decision.
    *
    * Layers that are never Escape-dismissible (toasts) should simply not call
    * this hook.

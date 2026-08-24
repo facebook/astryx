@@ -137,9 +137,10 @@ export interface HoverCardOptions {
    * - `false`: force-hide the hover card
    * - `undefined`: uncontrolled — hover/focus triggers manage visibility
    *
-   * A controlled hover card also stops taking Escape: the system cannot dismiss
-   * something whose visibility you are holding, so the press falls through to
-   * whatever is underneath — a Dialog hosting it will close instead.
+   * A controlled hover card still takes Escape when it is the top-most layer,
+   * and answers by calling `onHide` without hiding itself — closing is your
+   * update's decision, exactly as for a controlled Dialog. Ignore the call and
+   * the card stays, and so does the press: nothing underneath dismisses.
    */
   isOpen?: boolean;
 
@@ -422,10 +423,10 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
   // card or not — so focusing a HoverCard trigger inside a Dialog silently ate
   // the press that should have closed the Dialog. Presence is now answered from
   // the DOM, so a closed card never claims a press.
-  // A controlled hover card opts out of the stack entirely, the same way a
-  // controlled Tooltip does: its visibility is the consumer's state, so the
-  // stack cannot dismiss it — and a layer that consumes a press it cannot act
-  // on leaves the dialog behind it keyboard-unclosable.
+  // A controlled hover card stays on the stack and takes the press like any
+  // other layer, but answers it by reporting instead of hiding: `isOpen` is
+  // the consumer's value, so only their update may change it. Same contract as
+  // a controlled Dialog.
   useLayerDismissal({
     // Registered for the hook's lifetime rather than gated on `layer.isOpen`:
     // that state can lag a frame behind the DOM, so a press arriving right after
@@ -450,10 +451,16 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         return layer.isOpen;
       }
     },
-    isEnabled: isOpen === undefined,
     onDismiss: () => {
       clearTimeouts();
       touch.clearTapOpen();
+      // Controlled: report and stop. The close — and the focus restore that
+      // goes with it — happens in the controlled effect if and when the
+      // consumer flips `isOpen`.
+      if (isOpen !== undefined) {
+        onHide?.();
+        return;
+      }
       // Only when the card itself held focus, which is the one case the
       // content-level handler this replaced could run in. Refocusing
       // unconditionally would drag the caret out of a field the user was
@@ -564,7 +571,19 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       layer.show();
     } else {
       clearTimeouts();
+      // A consumer closing the card while it holds focus would strand focus on
+      // <body>. Arming the re-show guard is what keeps the refocus from
+      // reopening the card through `handleFocusIn`, which shows on any focusin.
+      const card =
+        typeof document === 'undefined'
+          ? null
+          : document.getElementById(layer.id);
+      const hadFocus = card?.contains(document.activeElement) ?? false;
       layer.hide();
+      if (hadFocus) {
+        isEscapeDismissingRef.current = true;
+        triggerRef.current?.focus();
+      }
     }
   }, [isOpen, clearTimeouts, layer]);
 

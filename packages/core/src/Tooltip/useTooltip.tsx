@@ -145,9 +145,10 @@ export interface TooltipOptions {
    * - `false`: force-hide the tooltip
    * - `undefined`: uncontrolled — hover/focus triggers manage visibility
    *
-   * A controlled tooltip also stops taking Escape: the system cannot dismiss
-   * something whose visibility you are holding, so the press falls through to
-   * whatever is underneath — a Dialog hosting it will close instead.
+   * A controlled tooltip still takes Escape when it is the top-most layer, and
+   * answers by calling `onHide` without hiding itself — closing is your
+   * update's decision, exactly as for a controlled Dialog. Ignore the call and
+   * the tip stays, and so does the press: nothing underneath dismisses.
    */
   isOpen?: boolean;
 
@@ -530,9 +531,10 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
   // exceptions, and the failure mode is one extra keystroke instead of a
   // dialog closing under someone who only wanted the tip gone.
   //
-  // A controlled tooltip opts out of the stack entirely: its visibility is the
-  // consumer's state, and the system closing it behind their back would fight
-  // the value they are holding.
+  // A controlled tooltip stays on the stack and takes the press like any other
+  // layer, but answers it by reporting instead of hiding: `isOpen` is the
+  // consumer's value, so only their update may change it. Same contract as a
+  // controlled Dialog.
   useLayerDismissal({
     // Registered for the hook's lifetime rather than gated on `layer.isOpen`:
     // that state can lag a frame behind the DOM, so a press arriving right after
@@ -557,10 +559,13 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
         return layer.isOpen;
       }
     },
-    isEnabled: isOpen === undefined,
     onDismiss: () => {
       clearTimeouts();
       clearTapOpen();
+      if (isOpen !== undefined) {
+        onHide?.();
+        return;
+      }
       layer.hide();
     },
   });

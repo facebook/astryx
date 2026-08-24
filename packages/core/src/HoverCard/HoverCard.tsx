@@ -145,9 +145,11 @@ export interface HoverCardProps extends Pick<
    * - `false`: force-hide the hover card
    * - `undefined`: uncontrolled — hover/focus triggers manage visibility
    *
-   * A controlled hover card also stops taking Escape: the system cannot dismiss
-   * something whose visibility you are holding, so the press falls through to
-   * whatever is underneath — a Dialog hosting it will close instead.
+   * A controlled hover card still takes Escape when it is the top-most layer,
+   * and answers by calling `onOpenChange(false)` without hiding itself —
+   * closing is your update's decision, exactly as for a controlled Dialog.
+   * Ignore the call and the card stays, and so does the press: nothing
+   * underneath dismisses.
    */
   isOpen?: boolean;
 

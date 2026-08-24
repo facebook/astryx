@@ -831,23 +831,29 @@ export const HoverCardInModal: Story = {
 };
 
 /**
- * A hover card pinned open by the consumer (`isOpen`), inside a modal. One
- * Escape closes the MODAL and leaves the card, because the card's visibility
- * is the consumer's state and the stack cannot dismiss it.
+ * A hover card the consumer controls (`isOpen`), inside a modal. One Escape
+ * goes to the CARD — it is the top-most layer — and the card answers by
+ * calling `onOpenChange(false)` rather than hiding itself. This consumer's
+ * update closes it, so the card goes and the modal stays.
  *
- * A controlled hover layer therefore opts out of the stack entirely. When it
- * did not, it consumed a press it could not act on and the modal underneath
- * could not be closed from the keyboard at all.
+ * Controlled follows control state: Escape attempts the close, the caller's
+ * update function decides. Same contract as a controlled Dialog.
  */
 function PinnedHoverCardInModalExample() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isCardOpen, setIsCardOpen] = useState(true);
+  const [requests, setRequests] = useState(0);
 
   return (
     <>
       <Button
         label="Open modal"
         variant="secondary"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsCardOpen(true);
+          setRequests(0);
+          setIsOpen(true);
+        }}
       />
       <Dialog
         isOpen={isOpen}
@@ -858,15 +864,29 @@ function PinnedHoverCardInModalExample() {
           header={
             <DialogHeader
               title="Modal with a pinned hover card"
-              subtitle="The card is pinned open by the app — Escape closes the modal"
+              subtitle="The app holds the card open — Escape asks it to close, and this app agrees"
               onOpenChange={setIsOpen}
             />
           }
           content={
             <LayoutContent>
-              <HoverCard isOpen content={<Text type="body">Pinned card</Text>}>
-                <Button label="Card trigger" variant="secondary" />
-              </HoverCard>
+              <VStack gap={2}>
+                <HoverCard
+                  isOpen={isCardOpen}
+                  onOpenChange={open => {
+                    setRequests(n => n + 1);
+                    setIsCardOpen(open);
+                  }}
+                  content={
+                    <VStack gap={2}>
+                      <Text type="body">Pinned card</Text>
+                      <Button label="Card action" variant="secondary" />
+                    </VStack>
+                  }>
+                  <Button label="Card trigger" variant="secondary" />
+                </HoverCard>
+                <Text type="body">{`close requests: ${requests}`}</Text>
+              </VStack>
             </LayoutContent>
           }
         />
@@ -877,4 +897,123 @@ function PinnedHoverCardInModalExample() {
 
 export const PinnedHoverCardInModal: Story = {
   render: () => <PinnedHoverCardInModalExample />,
+};
+
+/**
+ * The same pinned card, with a consumer who ignores their own change handler.
+ * Escape reaches the card, the card reports, nothing happens — and because the
+ * card claimed the press, the modal underneath does not close either.
+ *
+ * That is the consumer's choice, not the stack's doing: a layer that holds
+ * itself open and discards its close requests is keyboard-undismissable, and
+ * so is anything behind it. The story exists to make that visible.
+ */
+function StuckHoverCardInModalExample() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [requests, setRequests] = useState(0);
+
+  return (
+    <>
+      <Button
+        label="Open modal"
+        variant="secondary"
+        onClick={() => {
+          setRequests(0);
+          setIsOpen(true);
+        }}
+      />
+      <Dialog
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        width={520}
+        aria-label="Modal with a stuck hover card">
+        <Layout
+          header={
+            <DialogHeader
+              title="Modal with a stuck hover card"
+              subtitle="The app pins the card and ignores onOpenChange — Escape closes nothing"
+              onOpenChange={setIsOpen}
+            />
+          }
+          content={
+            <LayoutContent>
+              <VStack gap={2}>
+                <HoverCard
+                  isOpen
+                  onOpenChange={() => setRequests(n => n + 1)}
+                  content={<Text type="body">Stuck card</Text>}>
+                  <Button label="Card trigger" variant="secondary" />
+                </HoverCard>
+                <Text type="body">{`close requests: ${requests}`}</Text>
+              </VStack>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    </>
+  );
+}
+
+export const StuckHoverCardInModal: Story = {
+  render: () => <StuckHoverCardInModalExample />,
+};
+
+/**
+ * The Tooltip side of the same contract. The tip is pinned open by the app
+ * inside a modal; Escape reaches the tip, which calls `onOpenChange(false)`,
+ * and this app's update hides it. The modal stays open — one press, one layer.
+ */
+function PinnedTooltipInModalExample() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isTipOpen, setIsTipOpen] = useState(true);
+  const [requests, setRequests] = useState(0);
+
+  return (
+    <>
+      <Button
+        label="Open modal"
+        variant="secondary"
+        onClick={() => {
+          setIsTipOpen(true);
+          setRequests(0);
+          setIsOpen(true);
+        }}
+      />
+      <Dialog
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        width={520}
+        aria-label="Modal with a pinned tooltip">
+        <Layout
+          header={
+            <DialogHeader
+              title="Modal with a pinned tooltip"
+              subtitle="The app holds the tip open — Escape asks it to close, and this app agrees"
+              onOpenChange={setIsOpen}
+            />
+          }
+          content={
+            <LayoutContent>
+              <VStack gap={2}>
+                <Tooltip
+                  isOpen={isTipOpen}
+                  onOpenChange={open => {
+                    setRequests(n => n + 1);
+                    setIsTipOpen(open);
+                  }}
+                  content="Pinned tip">
+                  <Button label="Tip trigger" variant="secondary" />
+                </Tooltip>
+                <Text type="body">{`close requests: ${requests}`}</Text>
+              </VStack>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    </>
+  );
+}
+
+export const PinnedTooltipInModal: Story = {
+  render: () => <PinnedTooltipInModalExample />,
 };
