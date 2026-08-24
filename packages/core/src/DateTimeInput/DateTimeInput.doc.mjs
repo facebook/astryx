@@ -183,7 +183,7 @@ export const docs = {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
       description:
-        'First day of week in the calendar. A number (0 = Sunday … 6 = Saturday) or a three-letter day name.',
+        'First day of week in the calendar. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
       default: '0',
     },
     {
@@ -210,6 +210,8 @@ export const docs = {
         className: 'astryx-date-time-input-time-segment',
         visualProps: ['size', 'status'],
       },
+      {className: 'astryx-date-time-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-time-input-clock-icon'},
       {className: 'astryx-date-time-input-time-listbox'},
       {className: 'astryx-date-time-input-time-option'},
     ],
@@ -522,6 +524,8 @@ export const docsZh = {
         className: 'astryx-date-time-input-time-segment',
         visualProps: ['size', 'status'],
       },
+      {className: 'astryx-date-time-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-time-input-clock-icon'},
       {className: 'astryx-date-time-input-time-listbox'},
       {className: 'astryx-date-time-input-time-option'},
     ],

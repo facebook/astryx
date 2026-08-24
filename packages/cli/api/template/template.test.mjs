@@ -52,6 +52,32 @@ describe('stripTemplateAssetRefs', () => {
     const out = stripTemplateAssetRefs(src);
     expect(out).toBe(src);
   });
+
+  it('strips a /template-assets .mp4 source to an empty string, not the image data URI (#4780)', () => {
+    const src = "src: '/template-assets/Nature-1.mp4',";
+    const out = stripTemplateAssetRefs(src);
+    expect(out).toBe("src: '',");
+    expect(out).not.toContain('data:image/svg+xml,');
+    expect(out).not.toContain('/template-assets/');
+  });
+
+  it('strips other video extensions (.webm, .mov, .ogv) the same way', () => {
+    for (const ext of ['webm', 'mov', 'ogv']) {
+      const src = `src: '/template-assets/clip.${ext}',`;
+      const out = stripTemplateAssetRefs(src);
+      expect(out).toBe("src: '',");
+    }
+  });
+
+  it('still replaces an adjacent image reference with the placeholder when a video reference is also present', () => {
+    const src = [
+      "poster: '/template-assets/Nature-1-poster.jpg',",
+      "src: '/template-assets/Nature-1.mp4',",
+    ].join('\n');
+    const out = stripTemplateAssetRefs(src);
+    expect(out).toContain('data:image/svg+xml,');
+    expect(out).toContain("src: '',");
+  });
 });
 
 describe('template --skeleton component extraction (prefix-agnostic)', () => {

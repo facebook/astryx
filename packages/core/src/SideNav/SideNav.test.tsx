@@ -10,16 +10,22 @@
  */
 
 import React from 'react';
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, act, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
+import {Button} from '../Button';
 import {SideNav} from './SideNav';
 import {SideNavCollapseButton} from './SideNavCollapseButton';
 import {SideNavHeading} from './SideNavHeading';
 import {SideNavItem} from './SideNavItem';
 import {SideNavSection} from './SideNavSection';
 import {LinkProvider} from '../Link/LinkProvider';
+import {InternationalizationProvider} from '../i18n/InternationalizationProvider';
+import pseudoCatalog from '../../locales/pseudo.json';
 import {
   SideNavCollapseContext,
   type SideNavImperativeCollapseHandle,
@@ -181,6 +187,27 @@ describe('SideNav', () => {
     // is the nav's only child.
     const nav = screen.getByTestId('nav');
     expect(nav.children).toHaveLength(1);
+  });
+
+  it('centers footer content when collapsed, matching children alignment', () => {
+    render(
+      <SideNav
+        data-testid="nav"
+        collapsible={{isCollapsed: true, hasButton: false}}
+        footer={<span data-testid="footer-content">F</span>}>
+        <span data-testid="children-content">C</span>
+      </SideNav>,
+    );
+
+    // scrollableCollapsed (wraps children) and stickyBottomCollapsed (wraps
+    // footer) are structurally parallel collapsed-rail containers; both
+    // must center their content the same way, or full-width footer content
+    // stretches to the collapsed rail's width instead of centering.
+    const childrenContainer =
+      screen.getByTestId('children-content').parentElement;
+    const footerContainer = screen.getByTestId('footer-content').parentElement;
+    expect(getComputedStyle(childrenContainer!).alignItems).toBe('center');
+    expect(getComputedStyle(footerContainer!).alignItems).toBe('center');
   });
 
   it('fires a consumer onClick on the collapse button in addition to toggling', async () => {
@@ -591,6 +618,31 @@ describe('SideNavHeading collapsed', () => {
     for (const button of Array.from(document.querySelectorAll('button'))) {
       expect(menu!.contains(button)).toBe(false);
     }
+  });
+
+  it('anchors the collapsed icon-only trigger so the popover positions against it', () => {
+    render(
+      <CollapsedWrapper>
+        <SideNavHeading
+          heading="My App"
+          icon={<span data-testid="app-icon">🏠</span>}
+          menu={<div role="menuitem">Alpha</div>}
+        />
+      </CollapsedWrapper>,
+    );
+    const trigger = screen.getByRole('button', {name: 'My App'});
+    // The same element also carries the collapsed-item Tooltip's own
+    // anchor-name (via anchorRef={collapsedItemRef}), so a plain
+    // non-empty check would pass even when the menu popover itself isn't
+    // anchored. Assert the popover's own position-anchor id specifically
+    // appears in the trigger's (possibly multi-value) anchor-name list.
+    const popoverEl = document.querySelector('[popover]') as HTMLElement;
+    const anchorId = popoverEl.style.positionAnchor;
+    expect(anchorId).not.toBe('');
+    const triggerAnchorNames = trigger.style.anchorName
+      .split(',')
+      .map(s => s.trim());
+    expect(triggerAnchorNames).toContain(anchorId);
   });
 });
 
@@ -1129,6 +1181,233 @@ describe('SideNavItem (collapsed)', () => {
 });
 
 // =============================================================================
+// SideNavItem — collapsed submenu hover intent (useMenuHover adoption, C12)
+// =============================================================================
+
+/**
+ * Pin the ambient pointer modality: the global `matchMedia` stub never
+ * matches, which reads as a coarse pointer, so hover assertions must opt in.
+ */
+function stubPointerModality(modality: 'fine' | 'coarse') {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: modality === 'fine' && query.includes('hover: hover'),
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
+
+/** The hook's hover-intent delays: 150 ms to show, 200 ms to hide. */
+const SHOW_DELAY = 150;
+const HIDE_DELAY = 200;
+
+describe('SideNavItem — collapsed submenu hover intent', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  function renderFlyout() {
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+        <SideNavItem label="Security" href="/settings/security" />
+      </SideNavItem>,
+    );
+    return screen.getByTestId('parent');
+  }
+
+  const advance = (ms: number) =>
+    act(() => {
+      vi.advanceTimersByTime(ms);
+    });
+
+  it('opens the flyout only after the hover-intent delay', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+
+    fireEvent.mouseEnter(trigger);
+    // A pointer merely passing over the icon must not open anything.
+    advance(SHOW_DELAY - 1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    advance(1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('closes a hover-opened flyout when the pointer leaves', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+
+    fireEvent.mouseEnter(trigger);
+    advance(SHOW_DELAY);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.mouseLeave(trigger);
+    advance(HIDE_DELAY);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps a click-opened flyout open when the pointer leaves', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+
+    // `detail: 1` marks a pointer click: the hook reads a detail-0 click as
+    // Enter/Space, which always opens rather than toggling.
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Clicking is a commitment: the flyout outlives the pointer.
+    fireEvent.mouseLeave(trigger);
+    advance(HIDE_DELAY * 2);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not spring back open when a click dismisses it under a stationary pointer', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+
+    fireEvent.mouseEnter(trigger);
+    advance(SHOW_DELAY);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The pointer never left, so dismissing fires a fresh mouseenter as the
+    // flyout unmounts — which used to reopen what the user just closed.
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.mouseEnter(trigger);
+    advance(SHOW_DELAY);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    // One-shot, not a latch: a deliberate leave-and-return opens it again.
+    fireEvent.mouseLeave(trigger);
+    fireEvent.mouseEnter(trigger);
+    advance(SHOW_DELAY);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('schedules no hover timers on a coarse pointer', () => {
+    stubPointerModality('coarse');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+
+    // A touch tap synthesises mouseenter. On a device that cannot hover there
+    // is no hover intent to read, so nothing may be scheduled from it.
+    fireEvent.mouseEnter(trigger);
+    expect(vi.getTimerCount()).toBe(0);
+
+    advance(SHOW_DELAY * 2);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    // Tapping still opens it — the touch path goes through click, untouched.
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not open the hover popover after the item unmounts', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const {unmount} = render(
+      <SideNavCollapseContext
+        value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
+        <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+          <SideNavItem label="General" href="/settings/general" />
+        </SideNavItem>
+      </SideNavCollapseContext>,
+    );
+
+    fireEvent.mouseEnter(screen.getByTestId('parent'));
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+
+    unmount();
+
+    // The hook owns the timer cleanup now; it still has to hold.
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('leaves arrow keys in the flyout to the browser', async () => {
+    stubPointerModality('fine');
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+        <SideNavItem label="Security" href="/settings/security" />
+      </SideNavItem>,
+    );
+
+    const trigger = screen.getByTestId('parent');
+    await user.click(trigger);
+
+    // The flyout renders as a native popover, which jsdom leaves
+    // `display: none`, so its contents are outside the default a11y-tree
+    // queries.
+    const first = screen.getByRole('link', {name: 'General', hidden: true});
+    first.focus();
+
+    // A dialog of links, not a menu of menuitems: wiring the hook's
+    // list-focus half would preventDefault every arrow key and find no
+    // `[role="menuitem"]` to move to.
+    const notPrevented = fireEvent.keyDown(first, {key: 'ArrowDown'});
+    expect(notPrevented).toBe(true);
+    expect(first).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('opens from the keyboard, moves focus into the flyout, and restores it on Escape', async () => {
+    stubPointerModality('fine');
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+        <SideNavItem label="Security" href="/settings/security" />
+      </SideNavItem>,
+    );
+
+    const trigger = screen.getByTestId('parent');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Keyboard opens move focus in; hover opens leave it on the trigger.
+    await waitFor(() =>
+      expect(
+        screen.getByRole('link', {name: 'General', hidden: true}),
+      ).toHaveFocus(),
+    );
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it('leaves focus on the trigger when hover opens the flyout', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+    trigger.focus();
+
+    fireEvent.mouseEnter(trigger);
+    advance(SHOW_DELAY);
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+
+    // `skipAutoFocus`: a mid-hover pointer user keeps their caret.
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(trigger).toHaveFocus();
+  });
+});
+
+// =============================================================================
 // Mobile nav close-on-activate
 // =============================================================================
 
@@ -1345,5 +1624,628 @@ describe('SideNavItem — mobile drawer close-on-activate', () => {
     );
     await user.click(screen.getByTestId('item'));
     expect(closeMobileNav).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// Keyboard operation (audit §6 V6)
+// =============================================================================
+
+describe('SideNav keyboard operation', () => {
+  it('reaches every nav item with Tab, in document order', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNav>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" />
+          <SideNavItem label="Projects" href="/projects" />
+          <SideNavItem label="Settings" onClick={() => {}} />
+        </SideNavSection>
+      </SideNav>,
+    );
+
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Dashboard'})).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Projects'})).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Settings'})).toHaveFocus();
+  });
+
+  it('skips a disabled item in the tab order', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNav>
+        <SideNavItem label="Dashboard" onClick={() => {}} />
+        <SideNavItem label="Archived" onClick={() => {}} isDisabled />
+        <SideNavItem label="Settings" onClick={() => {}} />
+      </SideNav>,
+    );
+
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Dashboard'})).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Settings'})).toHaveFocus();
+  });
+
+  it('toggles a collapsible group with Enter and with Space', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Settings" onClick={() => {}} collapsible>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
+    toggle.focus();
+
+    await user.keyboard('{Enter}');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    await user.keyboard(' ');
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('activates a button item with Enter', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(<SideNavItem label="Log out" onClick={onClick} />);
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the collapsed submenu from the keyboard and closes it with Escape', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const trigger = screen.getByTestId('parent');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+// =============================================================================
+// Focus management (audit §6 V7)
+// =============================================================================
+
+describe('SideNav focus management', () => {
+  it('keeps focus on the toggle when a group collapses', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Settings" href="/settings" collapsible>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
+  });
+
+  it('does not leave focus on a child that the group just hid', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Settings" href="/settings" collapsible>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const child = screen.getByRole('link', {name: 'General'});
+    child.focus();
+
+    const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
+    await user.click(toggle);
+
+    // The collapsed group is `inert`: focus may land neither inside it nor
+    // on <body>.
+    expect(document.activeElement).not.toBe(child);
+    expect(document.activeElement).not.toBe(document.body);
+    expect(toggle).toHaveFocus();
+  });
+
+  it('returns focus to the trigger when the collapsed submenu closes', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const trigger = screen.getByTestId('parent');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    // The layer restores focus asynchronously after it closes.
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+});
+
+// =============================================================================
+// Audit regressions — the defects this pass fixed
+// =============================================================================
+
+describe('SideNav audit regressions', () => {
+  it('names the collapsed submenu dialog from the catalog, not a concatenation', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    await user.click(screen.getByTestId('parent'));
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog).toHaveAttribute('aria-label', 'Settings submenu');
+  });
+
+  it('translates the collapsed submenu dialog name', async () => {
+    const user = userEvent.setup();
+    render(
+      <InternationalizationProvider
+        locale="pseudo"
+        messages={{pseudo: pseudoCatalog}}>
+        <SideNavCollapseContext
+          value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
+          <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+            <SideNavItem label="General" href="/settings/general" />
+          </SideNavItem>
+        </SideNavCollapseContext>
+      </InternationalizationProvider>,
+    );
+
+    await user.click(screen.getByTestId('parent'));
+    const label = document
+      .querySelector('[role="dialog"]')
+      ?.getAttribute('aria-label');
+
+    // A concatenated `${label} submenu` would stay plain English here.
+    expect(label).toContain('Settings');
+    expect(label).not.toBe('Settings submenu');
+  });
+
+  it('forwards unrecognised props on SideNavItem through to the control', () => {
+    render(
+      <SideNavItem
+        label="Dashboard"
+        href="/dashboard"
+        data-analytics="nav-dashboard"
+        aria-describedby="hint"
+      />,
+    );
+
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    expect(link).toHaveAttribute('data-analytics', 'nav-dashboard');
+    expect(link).toHaveAttribute('aria-describedby', 'hint');
+  });
+
+  it('forwards unrecognised props on a collapsed SideNavItem', () => {
+    renderCollapsed(
+      <SideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href="/dashboard"
+        data-analytics="nav-dashboard"
+      />,
+    );
+
+    expect(screen.getByRole('link')).toHaveAttribute(
+      'data-analytics',
+      'nav-dashboard',
+    );
+  });
+
+  it('exposes a disabled item as a theming state', () => {
+    render(<SideNavItem label="Archived" onClick={() => {}} isDisabled />);
+
+    expect(screen.getByRole('button', {name: 'Archived'})).toHaveAttribute(
+      'data-disabled',
+      'disabled',
+    );
+  });
+
+  it('keeps a hidden section header readable by assistive technology', () => {
+    render(
+      <SideNavSection title="Main" isHeaderHidden>
+        <SideNavItem label="Dashboard" href="/dashboard" />
+      </SideNavSection>,
+    );
+
+    expect(screen.getByRole('group')).toHaveAccessibleName('Main');
+    expect(screen.getByText('Main')).toBeInTheDocument();
+  });
+
+  it('keeps a SideNavCollapseButton outside the sidenav in step with it', async () => {
+    const user = userEvent.setup();
+
+    function App() {
+      const [isCollapsed, setIsCollapsed] = useState(false);
+      const collapsible = {isCollapsed, onCollapsedChange: setIsCollapsed};
+      return (
+        <>
+          <SideNavCollapseButton collapsible={collapsible} />
+          <SideNav collapsible={{...collapsible, hasButton: false}}>
+            <SideNavItem label="Dashboard" href="/dashboard" />
+          </SideNav>
+        </>
+      );
+    }
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    const expand = await screen.findByRole('button', {name: 'Expand sidebar'});
+
+    await user.click(expand);
+    expect(
+      await screen.findByRole('button', {name: 'Collapse sidebar'}),
+    ).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// A15 — the shared focus ring
+//
+// jsdom does not derive `:focus-visible` from `.focus()` or from Tab, so the
+// painted ring cannot be read back here; the geometry is measured in a real
+// browser instead. These pin the composition — that the focusable element
+// carries the classes `focusOutlineStyles.focusVisible` compiles to.
+// =============================================================================
+
+const sharedFocusRingClasses = stylex
+  .props(focusOutlineStyles.focusVisible)
+  .className!.split(' ');
+
+function expectSharedFocusRing(el: Element) {
+  const classes = el.className.split(' ');
+  for (const c of sharedFocusRingClasses) {
+    expect(classes).toContain(c);
+  }
+}
+
+function expectNoSharedFocusRing(el: Element) {
+  const classes = el.className.split(' ');
+  for (const c of sharedFocusRingClasses) {
+    expect(classes).not.toContain(c);
+  }
+}
+
+describe('SideNav focus ring (A15)', () => {
+  it('draws the shared ring on a link item', () => {
+    render(<SideNavItem label="Dashboard" href="/dashboard" />);
+    expectSharedFocusRing(screen.getByRole('link', {name: 'Dashboard'}));
+  });
+
+  it('draws the shared ring on a button item', () => {
+    render(<SideNavItem label="Dashboard" onClick={() => {}} />);
+    expectSharedFocusRing(screen.getByRole('button', {name: 'Dashboard'}));
+  });
+
+  it('draws the shared ring on a collapsed icon-only item', () => {
+    renderCollapsed(
+      <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />,
+    );
+    expectSharedFocusRing(screen.getByRole('link', {name: 'Dashboard'}));
+  });
+
+  it('draws the shared ring on a collapsed submenu trigger', () => {
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon}>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+    expectSharedFocusRing(screen.getByRole('button', {name: 'Settings'}));
+  });
+
+  it('rings each focusable of a split-action row, and not the row itself', () => {
+    render(
+      <SideNavItem label="Settings" href="/settings" collapsible>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Settings'});
+    const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
+    expectSharedFocusRing(link);
+    expectSharedFocusRing(toggle);
+
+    // A presentational <div> holding two independent tab stops; ringing it
+    // too would paint a second outline around the whole row.
+    const row = link.parentElement!;
+    expect(row.tagName).toBe('DIV');
+    expect(row).toContainElement(toggle);
+    expectNoSharedFocusRing(row);
+  });
+
+  it('draws the shared ring on a heading rendered as one link', () => {
+    render(<SideNavHeading heading="My App" headingHref="/" />);
+    expectSharedFocusRing(screen.getByRole('link', {name: /My App/}));
+  });
+
+  it('draws the shared ring on a collapsed heading link', () => {
+    renderCollapsed(
+      <SideNavHeading heading="My App" headingHref="/" icon={<span>i</span>} />,
+    );
+    expectSharedFocusRing(screen.getByRole('link', {name: 'My App'}));
+  });
+
+  it('draws the shared ring on the heading menu trigger', () => {
+    render(<SideNavHeading heading="My App" menu={<div>menu</div>} />);
+    expectSharedFocusRing(screen.getByRole('button', {name: 'Open menu'}));
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so these assert that the
+// compiled output carries the rules the selected row relies on. The rendered
+// behaviour was measured in Chromium under `forced-colors: active` — see the
+// evidence on #4880.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles forced-colors overrides so the current page survives Windows High Contrast', () => {
+    render(
+      <SideNav>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" isSelected />
+          <SideNavItem label="Projects" href="/projects" />
+        </SideNavSection>
+      </SideNav>,
+    );
+    const css = getForcedColorsRules();
+    // `--color-neutral` is a background: forced colors flatten it to Canvas
+    // and the selected row loses every trace of being selected. Highlight /
+    // HighlightText is the platform convention that survives.
+    expect(css).toContain('background-color: highlight;');
+    expect(css).toContain('color: highlighttext;');
+    // The hover fill has to hold the Highlight too, or hovering the current
+    // page repaints it with the ordinary hover overlay and erases the state.
+    // Nesting it inside the hover media query is what wins that fight: the
+    // rule compiles to a triple-class selector, which outranks `item`'s
+    // single-class hover overlay no matter the source order.
+    expect(css).toMatch(
+      /@media \(hover: hover\)[\s\S]*?forced-colors: active[\s\S]*?:hover[\s\S]*?background-color: highlight/,
+    );
+  });
+
+  it('does not opt nav rows out of UA colour remapping', () => {
+    render(
+      <SideNav>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" isSelected />
+        </SideNavSection>
+      </SideNav>,
+    );
+    // A nav row is not a native form control — it resets `appearance` and
+    // paints its own background, so the system keywords land without
+    // `forced-color-adjust: none`. Setting it would inherit into
+    // `endContent`, keeping a Badge's authored fill instead of remapping it.
+    const row = screen.getByRole('link', {name: 'Dashboard'});
+    expect(getComputedStyle(row).forcedColorAdjust).not.toBe('none');
+  });
+});
+
+// =============================================================================
+// Footer icon row — one size for the whole row
+// =============================================================================
+
+describe('SideNav footer icon row sizing', () => {
+  /**
+   * The class(es) a `size="sm"` Button carries that a `size="md"` one does
+   * not — i.e. whatever StyleX compiled the sm height into. Comparing class
+   * sets keeps the assertion off the generated hashes.
+   */
+  function sizeOnlyClasses(size: 'sm' | 'lg'): string[] {
+    const {unmount} = render(
+      <>
+        <Button
+          label="sized reference"
+          size={size}
+          isIconOnly
+          icon={<span />}
+          data-testid="sized-ref"
+        />
+        <Button
+          label="md reference"
+          size="md"
+          isIconOnly
+          icon={<span />}
+          data-testid="md-ref"
+        />
+      </>,
+    );
+    const sized = new Set(screen.getByTestId('sized-ref').classList);
+    const md = new Set(screen.getByTestId('md-ref').classList);
+    const only = [...sized].filter(c => !md.has(c));
+    unmount();
+    // Guard against a vacuous pass: if the two sizes compiled to the same
+    // classes there is nothing to assert and every check would trivially hold.
+    expect(only.length).toBeGreaterThan(0);
+    return only;
+  }
+
+  it('renders the built-in collapse button at the row size, not the Button default', () => {
+    const smClasses = sizeOnlyClasses('sm');
+    render(
+      <SideNav collapsible>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" />
+        </SideNavSection>
+      </SideNav>,
+    );
+    const collapseButton = screen.getByRole('button', {
+      name: /collapse sidebar/i,
+    });
+    for (const className of smClasses) {
+      expect(collapseButton).toHaveClass(className);
+    }
+  });
+
+  it('cascades the same size to footerIcons the consumer did not size', () => {
+    const smClasses = sizeOnlyClasses('sm');
+    render(
+      <SideNav
+        collapsible
+        footerIcons={
+          <Button label="Help" isIconOnly icon={<span />} data-testid="help" />
+        }>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" />
+        </SideNavSection>
+      </SideNav>,
+    );
+    const help = screen.getByTestId('help');
+    for (const className of smClasses) {
+      expect(help).toHaveClass(className);
+    }
+  });
+
+  it('lets an explicit size on a footer icon win over the cascade', () => {
+    const lgClasses = sizeOnlyClasses('lg');
+    render(
+      <SideNav
+        collapsible
+        footerIcons={
+          <Button
+            label="Help"
+            size="lg"
+            isIconOnly
+            icon={<span />}
+            data-testid="help"
+          />
+        }>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" />
+        </SideNavSection>
+      </SideNav>,
+    );
+    const help = screen.getByTestId('help');
+    for (const className of lgClasses) {
+      expect(help).toHaveClass(className);
+    }
+  });
+
+  it('honours an explicit size on SideNavCollapseButton outside the nav', () => {
+    const lgClasses = sizeOnlyClasses('lg');
+    render(
+      <SideNavCollapseContext
+        value={{isCollapsed: false, toggle: () => {}, isCollapsible: true}}>
+        <SideNavCollapseButton size="lg" data-testid="collapse" />
+      </SideNavCollapseContext>,
+    );
+    const collapse = screen.getByTestId('collapse');
+    for (const className of lgClasses) {
+      expect(collapse).toHaveClass(className);
+    }
+  });
+
+  it('centres the chevron instead of seating it on a text baseline', () => {
+    renderExpanded(<SideNavCollapseButton data-testid="collapse" />);
+    // Icon renders its own `astryx-icon` span around the svg; the RTL-mirror
+    // wrapper this component adds is that span's parent.
+    const iconSpan = screen
+      .getByTestId('collapse')
+      .querySelector('span.astryx-icon');
+    const mirror = iconSpan?.parentElement;
+    // The RTL-mirror wrapper is a flex item of Button's icon slot, so it
+    // blockifies; as a block it gets a line box and the glyph sits on the
+    // baseline, 2.42px above centre (measured in Chromium). A flex container
+    // has no line box.
+    expect(mirror && getComputedStyle(mirror).display).toBe('flex');
+  });
+});
+
+describe('SideNavHeading hover/click guard', () => {
+  // tabIndex={-1} matches real menu items; a bare role=menuitem div is not
+  // focusable.
+  const menuItems = (
+    <>
+      <div role="menuitem" tabIndex={-1}>
+        Alpha
+      </div>
+      <div role="menuitem" tabIndex={-1}>
+        Beta
+      </div>
+    </>
+  );
+
+  it('keeps the menu open when a hover-open is immediately clicked', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    vi.useRealTimers();
+  });
+
+  it('closes on a click that lands well after the hover-open', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    act(() => {
+      vi.advanceTimersByTime(1200);
+    });
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    vi.useRealTimers();
+  });
+
+  it('leaves focus on the trigger for a hover-open, and moves it in on click', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    const firstItem = screen.getAllByRole('menuitem', {hidden: true})[0];
+    expect(firstItem).not.toHaveFocus();
+
+    await user.click(trigger);
+    expect(firstItem).toHaveFocus();
+
+    vi.useRealTimers();
+  });
+
+  it('returns focus to the trigger on Escape', async () => {
+    const user = userEvent.setup();
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
   });
 });

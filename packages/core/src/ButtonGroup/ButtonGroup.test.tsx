@@ -12,7 +12,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {transformSync} from '@babel/core';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
 import {readFileSync} from 'node:fs';
@@ -202,9 +203,9 @@ describe('ButtonGroup', () => {
   // Trailing radius (issue #2508)
   //
   // The trailing end cap cannot be keyed off `:last-child`: members render an
-  // invisible layer AFTER their button (tooltip'd Button, DropdownMenu), and
-  // useLayer renders it inline rather than portaling it, so the layer steals the
-  // slot. See IS_LAST_ITEM in Button.tsx.
+  // invisible layer infrastructure AFTER their button (tooltip'd Button,
+  // DropdownMenu), and useLayer renders a marker plus the layer inline when the
+  // host is safe, so they steal the slot. See IS_LAST_ITEM in Button.tsx.
   //
   // HOW THESE TESTS CATCH THE BUG
   // jsdom applies no StyleX CSS, so a DOM-only test cannot prove which rule
@@ -219,7 +220,9 @@ describe('ButtonGroup', () => {
   describe('trailing radius (#2508)', () => {
     /** The group members, in DOM order (excludes invisible layer siblings). */
     const items = (group: HTMLElement): Element[] =>
-      Array.from(group.querySelectorAll(':scope > *:not([popover])'));
+      Array.from(
+        group.querySelectorAll(':scope > *:not([popover]):not(template)'),
+      );
 
     // -- Compiled CSS, read from the source -----------------------------------
 
@@ -375,6 +378,7 @@ describe('ButtonGroup', () => {
           // .stylex.ts file it compiles to a mangled selector like `[x13pbwiz]`
           // that matches nothing in the DOM.
           expect(selector).toContain('[popover]');
+          expect(selector).toContain('template');
         }
       },
     );
@@ -607,6 +611,189 @@ describe('ButtonGroup', () => {
       expect(def.querySelector('[role="group"]')!.className).toBe(
         none.querySelector('[role="group"]')!.className,
       );
+    });
+
+    it('exposes the elevation to a theme as a data attribute', () => {
+      render(
+        <ButtonGroup label="Actions" elevation="high">
+          <Button label="One" />
+        </ButtonGroup>,
+      );
+
+      expect(screen.getByRole('group')).toHaveAttribute(
+        'data-elevation',
+        'high',
+      );
+    });
+  });
+
+  // ===========================================================================
+  // Keyboard navigation
+  //
+  // The group wires useListFocus, so arrow keys move focus between members.
+  // The last two tests cover the boundary: a member can own a layer, whose
+  // keys belong to that layer, and the group itself can sit inside a layer,
+  // whose keys are still the group's own. Both must hold at once.
+  // ===========================================================================
+  describe('keyboard navigation', () => {
+    const clipboard = (
+      <ButtonGroup label="Actions">
+        <Button label="Copy" />
+        <Button label="Cut" />
+        <Button label="Paste" />
+      </ButtonGroup>
+    );
+
+    it('moves focus between members with the arrow keys, wrapping at the end', async () => {
+      const user = userEvent.setup();
+      render(clipboard);
+
+      screen.getByRole('button', {name: 'Copy'}).focus();
+
+      await user.keyboard('{ArrowRight}');
+      expect(screen.getByRole('button', {name: 'Cut'})).toHaveFocus();
+
+      await user.keyboard('{ArrowRight}{ArrowRight}');
+      expect(screen.getByRole('button', {name: 'Copy'})).toHaveFocus();
+
+      await user.keyboard('{ArrowLeft}');
+      expect(screen.getByRole('button', {name: 'Paste'})).toHaveFocus();
+    });
+
+    it('jumps to the first and last member with Home and End', async () => {
+      const user = userEvent.setup();
+      render(clipboard);
+
+      screen.getByRole('button', {name: 'Cut'}).focus();
+
+      await user.keyboard('{End}');
+      expect(screen.getByRole('button', {name: 'Paste'})).toHaveFocus();
+
+      await user.keyboard('{Home}');
+      expect(screen.getByRole('button', {name: 'Copy'})).toHaveFocus();
+    });
+
+    it('uses the vertical arrows when the group is vertical', async () => {
+      const user = userEvent.setup();
+      render(
+        <ButtonGroup label="Actions" orientation="vertical">
+          <Button label="Copy" />
+          <Button label="Cut" />
+        </ButtonGroup>,
+      );
+
+      screen.getByRole('button', {name: 'Copy'}).focus();
+
+      await user.keyboard('{ArrowDown}');
+      expect(screen.getByRole('button', {name: 'Cut'})).toHaveFocus();
+
+      await user.keyboard('{ArrowUp}');
+      expect(screen.getByRole('button', {name: 'Copy'})).toHaveFocus();
+    });
+
+    it('follows visual direction in RTL', async () => {
+      const user = userEvent.setup();
+      // dir sits on the group because jsdom resolves computed direction from
+      // the element's own attribute, not from an ancestor.
+      render(
+        <ButtonGroup label="Actions" dir="rtl">
+          <Button label="Copy" />
+          <Button label="Cut" />
+          <Button label="Paste" />
+        </ButtonGroup>,
+      );
+      screen.getByRole('button', {name: 'Copy'}).focus();
+
+      await user.keyboard('{ArrowLeft}');
+      expect(screen.getByRole('button', {name: 'Cut'})).toHaveFocus();
+
+      await user.keyboard('{ArrowRight}');
+      expect(screen.getByRole('button', {name: 'Copy'})).toHaveFocus();
+    });
+
+    it('skips a disabled member', async () => {
+      const user = userEvent.setup();
+      render(
+        <ButtonGroup label="Actions">
+          <Button label="Copy" />
+          <Button label="Cut" isDisabled />
+          <Button label="Paste" />
+        </ButtonGroup>,
+      );
+
+      screen.getByRole('button', {name: 'Copy'}).focus();
+
+      await user.keyboard('{ArrowRight}');
+      expect(screen.getByRole('button', {name: 'Paste'})).toHaveFocus();
+    });
+
+    it('leaves arrow keys to a member\u2019s open menu', async () => {
+      const user = userEvent.setup();
+      render(
+        <ButtonGroup label="Approve action">
+          <Button label="Allow once" />
+          <DropdownMenu
+            hasChevron={false}
+            button={{label: 'Allow options', isIconOnly: true}}
+            items={[{label: 'Allow for 30 minutes'}, {label: 'Always allow'}]}
+          />
+        </ButtonGroup>,
+      );
+
+      await user.click(screen.getByRole('button', {name: /Allow options/}));
+      const item = screen.getByRole('menuitem', {
+        name: 'Allow for 30 minutes',
+        hidden: true,
+      });
+      item.focus();
+
+      // Assert positively: the menu item keeps focus. `.not.toHaveFocus()` on
+      // the group's buttons would also pass if the group had thrown focus
+      // somewhere else entirely.
+      fireEvent.keyDown(item, {key: 'ArrowRight'});
+      expect(item).toHaveFocus();
+
+      fireEvent.keyDown(item, {key: 'ArrowLeft'});
+      expect(item).toHaveFocus();
+
+      // End belongs to the menu's own list focus, so it lands on the last menu
+      // item rather than the group's last button.
+      fireEvent.keyDown(item, {key: 'End'});
+      expect(
+        screen.getByRole('menuitem', {name: 'Always allow', hidden: true}),
+      ).toHaveFocus();
+    });
+
+    it('still moves between its own members when the group sits inside a popover', async () => {
+      const user = userEvent.setup();
+      // A group rendered inside a Popover, ContextMenu, HoverCard or Toast has
+      // a `[popover]` ancestor, because that is how useLayer mounts a layer.
+      // A bare `popover` div is the same DOM fact without the layer harness.
+      render(
+        <div popover="manual">
+          <ButtonGroup label="Actions">
+            <Button label="Copy" />
+            <Button label="Cut" />
+            <Button label="Paste" />
+          </ButtonGroup>
+        </div>,
+      );
+
+      // A closed popover is display:none in jsdom, so its contents read as
+      // inaccessible; focus and key handling still work on them.
+      const button = (name: string) =>
+        screen.getByRole('button', {name, hidden: true});
+
+      button('Copy').focus();
+
+      await user.keyboard('{ArrowRight}');
+      expect(button('Cut')).toHaveFocus();
+
+      await user.keyboard('{End}');
+      expect(button('Paste')).toHaveFocus();
+
+      await user.keyboard('{Home}');
+      expect(button('Copy')).toHaveFocus();
     });
   });
 });

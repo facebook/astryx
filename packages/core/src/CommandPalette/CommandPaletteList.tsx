@@ -87,6 +87,7 @@ export function CommandPaletteList({
   return (
     <div
       ref={ref}
+      {...props}
       id={ctx?.listId}
       role="listbox"
       aria-label={label}
@@ -95,8 +96,7 @@ export function CommandPaletteList({
         stylex.props(styles.list, xstyle),
         className,
         style,
-      )}
-      {...props}>
+      )}>
       {children}
     </div>
   );

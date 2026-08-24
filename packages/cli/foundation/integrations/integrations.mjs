@@ -6,7 +6,7 @@
  * Integrations are PACKAGE NAMES listed in astryx.config.{ts,mjs,js}. Each
  * package declares a single conventional root manifest sibling to its
  * package.json — astryx.integration.{ts,mjs,js} — which contributes
- * components/templates/codemods roots and an optional issuesUrl. Identity
+ * components/templates/codemods/docs roots and an optional issuesUrl. Identity
  * (name, version) comes from the package's package.json, not the manifest.
  */
 
@@ -18,15 +18,16 @@ import {loadModuleWithParser, findPresentFiles} from '../fs/module-loader.mjs';
 
 /**
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
- * the package's package.json; the `components`/`templates`/`codemods` roots are
- * absolute paths resolved from the manifest. The `__`-prefixed fields are
- * internal bookkeeping used by validate-integration and Project.
+ * the package's package.json; the `components`/`templates`/`codemods`/`docs`
+ * roots are absolute paths resolved from the manifest. The `__`-prefixed fields
+ * are internal bookkeeping used by validate-integration and Project.
  * @typedef {object} LoadedIntegration
  * @property {string} name
  * @property {string} [version]
  * @property {string} [components]
  * @property {string} [templates]
  * @property {string} [codemods]
+ * @property {string} [docs]
  * @property {string} [issuesUrl]
  * @property {string} __spec
  * @property {string} __packageDir
@@ -187,6 +188,7 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
       components: resolveRoot(manifest.components),
       templates: resolveRoot(manifest.templates),
       codemods: resolveRoot(manifest.codemods),
+      docs: resolveRoot(manifest.docs),
       issuesUrl: manifest.issuesUrl,
       __spec: spec,
       __packageDir: packageDir,

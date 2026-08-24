@@ -6,9 +6,9 @@
  * @description RTL semantic audit. Grades component stories against the astryx
  *   RTL contract by comparing their LTR vs RTL render in the SAME run
  *   (relationship-based, no golden screenshots). Two layers:
- *     (A) AUTO-DISCOVERY — runs over EVERY `core-*` story with zero curated
- *         selectors, so a NEW component that ships without RTL handling is
- *         caught automatically. Two auto passes:
+ *     (A) AUTO-DISCOVERY — runs over EVERY `core-*` and `lab-*` story with zero
+ *         curated selectors, so a NEW component that ships without RTL handling
+ *         is caught automatically. Two auto passes:
  *           - D1 (icon-mirror): directional glyphs must flip/swap under RTL.
  *           - D5 (positional-mirror): an absolutely/fixed-positioned element
  *             with a LOGICAL anchor (insetInlineStart/End) + an UNFLIPPED
@@ -21,8 +21,8 @@
  *         genuinely need hand-written selectors.
  * @input --storybook-dir <path> --output <file> [--targets <path>] [--filter <csv>]
  *   [--auto-only] [--curated-only]
- * @output JSON scorecard: auto-discovery D1 verdicts across all core stories +
- *   curated D2/D3/D4 results. Mirrors the pr-a11y accessibility-audit harness.
+ * @output JSON scorecard: auto-discovery D1 verdicts across all audited stories
+ *   + curated D2/D3/D4 results. Mirrors the pr-a11y accessibility-audit harness.
  * @position internal test harness; run by the soft-gated `pr-rtl` CI job and
  *   locally via `pnpm -F @astryxdesign/storybook rtl-audit`.
  *
@@ -54,6 +54,13 @@ const TARGETS_PATH = getArg('targets') || path.join(HERE, 'targets.json');
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
+// Story-id prefixes the auto-discovery layer sweeps. These mirror the
+// publishable component packages in analyze-pr.js — a component the PR job can
+// name in --filter must also be discoverable here, or the audit silently
+// reports zero targets. Lab stories (`lab-*`) were excluded until this list
+// existed, so no lab component had ever been RTL-audited.
+const AUDITED_STORY_PREFIXES = ['core-', 'lab-'];
+const AUDITED_STORY_PREFIX = new RegExp(`^(?:${AUDITED_STORY_PREFIXES.join('|')})`);
 // Worker pool size. Each worker owns its own Playwright page; stories are
 // independent, and the run is dominated by page-load latency rather than CPU.
 // Defaults to 1 (serial) so the per-PR job's behaviour is unchanged while the
@@ -191,6 +198,17 @@ function isFlipMatrix(transform) {
   const [a, b, c, d] = m[1].split(',').map(v => parseFloat(v.trim()));
   return Math.abs(a + 1) < 0.01 && Math.abs(b) < 0.01 && Math.abs(c) < 0.01 && Math.abs(d - 1) < 0.01;
 }
+// Is `rtl` the mirror of `ltr`? i.e. rtl == scaleX(-1) . ltr, comparing the
+// linear part only (translation does not affect mirroring). Pre-multiplying by
+// scaleX(-1) negates the top row of the 2x2, so [a,b,c,d] -> [-a, b, -c, d]
+// in CSS's column-major matrix(a,b,c,d) ordering.
+function isMirrorOf(rtl, ltr) {
+  if (!Array.isArray(rtl)) return false;
+  const base = Array.isArray(ltr) ? ltr : [1, 0, 0, 1];
+  const expected = [-base[0], base[1], -base[2], base[3]];
+  return expected.every((v, i) => Math.abs(v - rtl[i]) < 0.01);
+}
+
 function isIdentityTransform(transform) {
   if (!transform || transform === 'none') return true;
   const m = transform.match(/matrix\(([^)]+)\)/);
@@ -248,9 +266,25 @@ const DETECTOR = /* js */ `
     if (/\\b(next|forward|scroll right|go right)\\b/.test(l)) return 'ctx';
     return null;
   }
-  // Walk up from the icon to find the element whose computed transform is the
-  // mirror (scaleX). Returns {transform, matchedMirror}.
-  function mirrorTransformFor(iconEl) {
+  // Compose the transforms from the icon up through its ancestors into one 2x2
+  // matrix (the linear part; translation is irrelevant to mirroring).
+  //
+  // We deliberately do NOT hunt for a single element whose transform is a pure
+  // flip. A mirror may be folded into the same declaration as a state rotation
+  // (transform: scaleX(-1) rotate(90deg)) because both are the one transform
+  // property, so on one element the later value would otherwise win. That
+  // composition renders identically to the older nested-element form, but no
+  // individual element then reads as a flip. Comparing the COMPOSED matrix
+  // against its LTR counterpart tests the contract (is the glyph mirrored?)
+  // instead of the DOM shape that happens to implement it.
+  function composedMatrixFor(iconEl) {
+    let acc = [1, 0, 0, 1];
+    const mul = (m, n) => [
+      m[0] * n[0] + m[2] * n[1],
+      m[1] * n[0] + m[3] * n[1],
+      m[0] * n[2] + m[2] * n[3],
+      m[1] * n[2] + m[3] * n[3],
+    ];
     let el = iconEl;
     let steps = 0;
     while (el && steps < 6) {
@@ -259,16 +293,14 @@ const DETECTOR = /* js */ `
         const m = tf.match(/matrix\\(([^)]+)\\)/);
         if (m) {
           const p = m[1].split(',').map(v => parseFloat(v.trim()));
-          // horizontal flip present anywhere in the chain
-          if (Math.abs(p[0] + 1) < 0.01 && Math.abs(p[1]) < 0.01 && Math.abs(p[2]) < 0.01 && Math.abs(p[3] - 1) < 0.01) {
-            return {transform: tf, flip: true};
-          }
+          // Ancestor transforms apply outermost-last: parent then child.
+          acc = mul([p[0], p[1], p[2], p[3]], acc);
         }
       }
       el = el.parentElement;
       steps++;
     }
-    return {transform: 'none', flip: false};
+    return acc;
   }
   const svgs = Array.from(document.querySelectorAll('svg'));
   const found = [];
@@ -307,8 +339,11 @@ const DETECTOR = /* js */ `
     seenPaths.add(key);
     const btn = svg.closest('button,[role=button],a');
     const aria = btn ? (btn.getAttribute('aria-label') || '') : '';
-    const {transform, flip} = mirrorTransformFor(svg);
-    found.push({dir, aria: aria.slice(0, 40), pathSig: dcat.slice(0, 40), transform, flip});
+    const matrix = composedMatrixFor(svg);
+    const flip =
+      Math.abs(matrix[0] + 1) < 0.01 && Math.abs(matrix[1]) < 0.01 &&
+      Math.abs(matrix[2]) < 0.01 && Math.abs(matrix[3] - 1) < 0.01;
+    found.push({dir, aria: aria.slice(0, 40), pathSig: dcat.slice(0, 40), matrix, flip});
   }
   return found;
 })()
@@ -527,16 +562,28 @@ async function autoD1(page, port, storyId, component) {
   const perIcon = [];
   for (const k of keys) {
     const L = ltrBy.get(k), R = rtlBy.get(k);
-    // transform-mirror: RTL flips while LTR is identity
-    const mirrored = R && R.flip && (!L || !L.flip);
+    // transform-mirror: the glyph's COMPOSED transform under RTL equals its LTR
+    // transform pre-multiplied by scaleX(-1). This is the general form of "the
+    // glyph is mirrored", and it holds whether the mirror lives on its own
+    // element or is folded into the same declaration as a state rotation:
+    //   collapsed: scaleX(-1) . identity      = matrix(-1, 0, 0,  1)
+    //   expanded:  scaleX(-1) . rotate(90deg) = matrix( 0, 1, 1,  0)
+    // The older check demanded a pure flip matrix, which the second case never
+    // produces even though it renders correctly.
+    const mirrored = R && isMirrorOf(R.matrix, L?.matrix);
     // name-swap: the rendered glyph direction changed left<->right for this icon
     const swapped = L && R && L.dir !== R.dir && L.dir !== null && R.dir !== null;
     // double-flip: flip present in BOTH dirs -> nets to no visible mirror
-    const doubleFlip = L && R && L.flip && R.flip;
+    // A glyph flipped in BOTH directions nets to no visible mirror. Only a
+    // concern when the two are actually equal — a composed mirror has a
+    // different RTL matrix and is caught by `mirrored` above.
+    const doubleFlip =
+      L && R && L.flip && R.flip &&
+      L.matrix.every((v, i) => Math.abs(v - R.matrix[i]) < 0.01);
     if (mirrored || swapped) anyMirrored = true;
     else if (doubleFlip) { anyDoubleFlip = true; anyUnhandled = true; }
     else anyUnhandled = true;
-    perIcon.push({icon: k, ltrDir: L?.dir, rtlDir: R?.dir, ltrFlip: !!L?.flip, rtlFlip: !!R?.flip, mirrored: !!mirrored, swapped: !!swapped});
+    perIcon.push({icon: k, ltrDir: L?.dir, rtlDir: R?.dir, ltrMatrix: L?.matrix, rtlMatrix: R?.matrix, mirrored: !!mirrored, swapped: !!swapped});
   }
 
   // A component is RTL-ready for D1 iff EVERY directional icon is handled
@@ -630,7 +677,8 @@ async function scoreCurated(page, port, t) {
 // ---------------------------------------------------------------------------
 function componentFromId(id) {
   // core-tabletree--default -> TableTree (best-effort display name)
-  const seg = id.replace(/^core-/, '').split('--')[0];
+  // lab-listinput--tag-options -> listinput
+  const seg = id.replace(AUDITED_STORY_PREFIX, '').split('--')[0];
   return seg;
 }
 
@@ -669,12 +717,15 @@ async function mapPool(items, pages, fn) {
     process.exit(2);
   }
 
-  // ---- (A) auto-discovery over all core-* stories ----
+  // ---- (A) auto-discovery over every audited-package story ----
   const autoResults = []; // D1 icon-mirror
   const pmResults = []; // D5 positional-mirror
   if (!CURATED_ONLY) {
     const storyIds = Object.keys(entries).filter(
-      id => entries[id].type === 'story' && id.startsWith('core-') && !/--docs$/.test(id),
+      id =>
+        entries[id].type === 'story' &&
+        AUDITED_STORY_PREFIX.test(id) &&
+        !/--docs$/.test(id),
     );
     // D1 runs one representative story per component (extra stories add little
     // D1 signal). D5 (positional-mirror) runs over EVERY core story — a
@@ -702,7 +753,7 @@ async function mapPool(items, pages, fn) {
         }
       })),
     );
-    // D5 positional-mirror over every core story.
+    // D5 positional-mirror over every audited story.
     const pmTargets = storyIds
       .map(id => ({id, comp: componentFromId(id)}))
       .filter(({comp}) => !FILTER.length || FILTER.includes(comp.toLowerCase()));

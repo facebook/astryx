@@ -11,7 +11,13 @@
 
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {useState} from 'react';
-import {fireEvent, render, screen, within} from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {
   ListInput,
@@ -215,6 +221,16 @@ describe('ListInput', () => {
     expect(responsiveLabel?.closest('[data-list-input-cell]')).toContainElement(
       inputs[1],
     );
+  });
+
+  it('never renders aria-required on the group, even when isRequired is set (#4958)', () => {
+    // aria-required is not an allowed attribute on role="group" (axe
+    // aria-allowed-attr, impact critical). The requirement is already
+    // surfaced visibly through Field's Required indicator.
+    renderListInput({isRequired: true});
+
+    const group = screen.getByRole('group');
+    expect(group).not.toHaveAttribute('aria-required');
   });
 
   it('renders a compact centered EmptyState and keeps Add available', () => {
@@ -484,7 +500,7 @@ describe('ListInput', () => {
     });
   });
 
-  it('animates live add and removal reflow after the controlled change', () => {
+  it('animates live add and removal reflow after the controlled change', async () => {
     const events: string[] = [];
     const animate = mockMutationAnimations(events);
 
@@ -525,11 +541,13 @@ describe('ListInput', () => {
         easing: 'cubic-bezier(0.24, 1, 0.4, 1)',
       },
     ]);
-    expect(
-      Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
-        node => node.textContent === 'Added guest 3.',
-      ),
-    ).toBe(true);
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+          node => node.textContent === 'Added guest 3.',
+        ),
+      ).toBe(true);
+    });
 
     const removeEventStart = events.length;
     const animationCountBeforeRemove = animate.mock.calls.length;
@@ -554,14 +572,16 @@ describe('ListInput', () => {
           );
         }),
     ).toBe(true);
-    expect(
-      Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
-        node => node.textContent === 'Removed guest 1.',
-      ),
-    ).toBe(true);
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+          node => node.textContent === 'Removed guest 1.',
+        ),
+      ).toBe(true);
+    });
   });
 
-  it('uses instant add and remove changes when reduced motion is requested', () => {
+  it('uses instant add and remove changes when reduced motion is requested', async () => {
     const animate = mockMutationAnimations();
     vi.spyOn(window, 'matchMedia').mockImplementation(
       query =>
@@ -598,11 +618,13 @@ describe('ListInput', () => {
     expect(animate).not.toHaveBeenCalled();
     expect(screen.queryByDisplayValue('Ada')).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Add guest'})).toHaveFocus();
-    expect(
-      Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
-        node => node.textContent === 'Removed guest 1.',
-      ),
-    ).toBe(true);
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+          node => node.textContent === 'Removed guest 1.',
+        ),
+      ).toBe(true);
+    });
 
     fireEvent.click(screen.getByRole('button', {name: 'Add guest'}));
     expect(animate).not.toHaveBeenCalled();
@@ -1033,7 +1055,7 @@ describe('ListInput', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('activates a pointer drag after horizontal threshold movement', () => {
+  it('activates a pointer drag after horizontal threshold movement', async () => {
     const onChange = vi.fn();
     renderListInput({isReorderable: true, onChange});
     const rows = document.querySelectorAll<HTMLElement>(
@@ -1071,9 +1093,13 @@ describe('ListInput', () => {
     fireEvent.pointerUp(handle, {pointerId: 9, clientX: 15, clientY: 10});
 
     expect(onChange).not.toHaveBeenCalled();
-    expect(
-      screen.getByText('guest returned to position 1.'),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+          node => node.textContent === 'guest returned to position 1.',
+        ),
+      ).toBe(true);
+    });
   });
 
   it('cancels a keyboard reorder with Escape', () => {
@@ -1095,6 +1121,223 @@ describe('ListInput', () => {
         .getAllByRole('textbox')
         .map(input => (input as HTMLInputElement).value),
     ).toEqual(['Ada', 'Grace']);
+  });
+
+  it('locks every field and mutation control when isDisabled is set', () => {
+    const onChange = vi.fn();
+    renderListInput({isDisabled: true, isReorderable: true, onChange});
+
+    const group = screen.getByRole('group');
+    expect(group).toHaveAttribute('aria-disabled', 'true');
+    expect(group).not.toHaveAttribute('aria-busy');
+
+    for (const field of screen.getAllByRole('textbox')) {
+      expect(field).toBeDisabled();
+    }
+    expect(screen.getByRole('button', {name: /add guest/i})).toBeDisabled();
+    expect(
+      screen.getByRole('button', {name: 'Reorder guest 1'}),
+    ).toBeDisabled();
+    // Remove carries a tooltip, so it is disabled via aria and stays focusable
+    // rather than dropping out of the tab order with its explanation.
+    expect(
+      screen.getByRole('button', {name: 'Remove guest 1'}),
+    ).toHaveAttribute('aria-disabled', 'true');
+
+    // The values stay readable — a disabled list still communicates content.
+    expect(screen.getAllByRole('textbox')[0]).toHaveValue('Ada');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('marks the list busy and locks the same controls when isLoading is set', () => {
+    renderListInput({isLoading: true, isReorderable: true});
+
+    const group = screen.getByRole('group');
+    expect(group).toHaveAttribute('aria-busy', 'true');
+    // Loading is not disabled: the values may still change, so the group is
+    // never reported as disabled to assistive technology.
+    expect(group).not.toHaveAttribute('aria-disabled');
+
+    for (const field of screen.getAllByRole('textbox')) {
+      expect(field).toBeDisabled();
+    }
+    expect(screen.getByRole('button', {name: /add guest/i})).toBeDisabled();
+    expect(
+      screen.getByRole('button', {name: 'Reorder guest 1'}),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', {name: 'Remove guest 1'}),
+    ).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('cancels an in-flight keyboard reorder when the list becomes busy', () => {
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <ListInput<Guest>
+        label="Guests"
+        itemName="guest"
+        value={guests}
+        onChange={onChange}
+        getItemKey={guest => guest.id}
+        createItem={() => createdGuest}
+        columns={columns}
+        isReorderable
+      />,
+    );
+
+    const handle = screen.getByRole('button', {name: 'Reorder guest 1'});
+    handle.focus();
+    fireEvent.keyDown(handle, {key: ' ', code: 'Space'});
+    expect(
+      document.querySelector('[data-list-input-reorder-source]'),
+    ).toBeInTheDocument();
+
+    rerender(
+      <ListInput<Guest>
+        label="Guests"
+        itemName="guest"
+        value={guests}
+        onChange={onChange}
+        getItemKey={guest => guest.id}
+        createItem={() => createdGuest}
+        columns={columns}
+        isReorderable
+        isLoading
+      />,
+    );
+
+    // The pick-up is abandoned rather than committed, so no order change escapes.
+    expect(
+      document.querySelector('[data-list-input-reorder-source]'),
+    ).not.toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('describes warning and success list statuses from the group', () => {
+    const {rerender} = renderListInput({
+      status: {type: 'warning', message: 'Two guests share a name.'},
+    });
+
+    const describedBy = screen
+      .getByRole('group')
+      .getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy!)).toHaveTextContent(
+      'Two guests share a name.',
+    );
+
+    rerender(
+      <ListInput<Guest>
+        label="Guests"
+        itemName="guest"
+        value={guests}
+        onChange={() => {}}
+        getItemKey={guest => guest.id}
+        createItem={() => createdGuest}
+        columns={columns}
+        status={{type: 'success', message: 'Every guest is confirmed.'}}
+      />,
+    );
+    expect(screen.getByText('Every guest is confirmed.')).toBeInTheDocument();
+  });
+
+  it('associates list status with the group and item status with its row', () => {
+    renderListInput({
+      status: {type: 'error', message: 'Add at least three guests.'},
+      getItemStatus: guest =>
+        guest.id === 'grace'
+          ? {type: 'error', message: 'Grace is already invited.'}
+          : undefined,
+    });
+
+    const listDescribedBy = screen
+      .getByRole('group')
+      .getAttribute('aria-describedby');
+    expect(document.getElementById(listDescribedBy!)).toHaveTextContent(
+      'Add at least three guests.',
+    );
+
+    // Row-scoped status belongs to the row, not the list, so a reader on the
+    // second record does not inherit the first record's message.
+    const rows = screen.getAllByRole('listitem');
+    expect(rows[0]).not.toHaveAttribute('aria-invalid');
+    expect(rows[1]).toHaveAttribute('aria-invalid', 'true');
+    const rowDescribedBy = rows[1].getAttribute('aria-describedby');
+    expect(document.getElementById(rowDescribedBy!)).toHaveTextContent(
+      'Grace is already invited.',
+    );
+  });
+
+  it('moves a picked-up record to the first and last positions with Home and End', () => {
+    const onChange = vi.fn();
+    const threeGuests = [...guests, createdGuest];
+    render(
+      <ListInput<Guest>
+        label="Guests"
+        itemName="guest"
+        value={threeGuests}
+        onChange={onChange}
+        getItemKey={guest => guest.id}
+        createItem={() => createdGuest}
+        columns={columns}
+        isReorderable
+      />,
+    );
+
+    const handle = screen.getByRole('button', {name: 'Reorder guest 3'});
+    handle.focus();
+    fireEvent.keyDown(handle, {key: ' ', code: 'Space'});
+
+    fireEvent.keyDown(handle, {key: 'Home'});
+    expect(
+      document.querySelector('[data-list-input-reorder-source]')?.closest('li'),
+    ).toHaveAttribute('aria-posinset', '1');
+
+    fireEvent.keyDown(handle, {key: 'End'});
+    expect(
+      document.querySelector('[data-list-input-reorder-source]')?.closest('li'),
+    ).toHaveAttribute('aria-posinset', '3');
+
+    fireEvent.keyDown(handle, {key: 'Home'});
+    fireEvent.keyDown(handle, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(
+      [createdGuest, guests[0], guests[1]],
+      {type: 'reorder', item: createdGuest, fromIndex: 2, toIndex: 0},
+    );
+  });
+
+  it('moves focus to the next record after a removal, and to Add when the list empties', async () => {
+    function ControlledList() {
+      const [value, setValue] = useState(guests);
+      return (
+        <ListInput<Guest>
+          label="Guests"
+          itemName="guest"
+          value={value}
+          onChange={setValue}
+          getItemKey={guest => guest.id}
+          createItem={() => createdGuest}
+          columns={columns}
+        />
+      );
+    }
+    render(<ControlledList />);
+
+    // Removing the first of two lands on the record that took its place, so a
+    // keyboard user can delete consecutively without re-tabbing.
+    fireEvent.click(screen.getByRole('button', {name: 'Remove guest 1'}));
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {name: 'Remove guest 1'}),
+      ).toHaveFocus();
+    });
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+
+    // Removing the last record leaves nothing to focus, so focus falls back to Add.
+    fireEvent.click(screen.getByRole('button', {name: 'Remove guest 1'}));
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add guest/i})).toHaveFocus();
+    });
   });
 
   it('warns in development when getItemKey returns a duplicate key', () => {

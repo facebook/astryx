@@ -183,6 +183,7 @@ export const docs = {
     targets: [
       {className: 'astryx-typeahead', visualProps: ['status', 'size']},
       {className: 'astryx-typeahead-dropdown'},
+      {className: 'astryx-typeahead-empty-state'},
       {className: 'astryx-typeahead-item'},
     ],
   },

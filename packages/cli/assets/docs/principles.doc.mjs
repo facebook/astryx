@@ -39,7 +39,7 @@ export const docs = {
           style: 'ordered',
           items: [
             'Use components for everything they cover',
-            'Layout is frame-first: pick the shell and budget regions before writing content (see \`astryx docs layout\`)',
+            'Page layout is frame-first: pick the shell and budget regions before writing content (see \`astryx docs layout\`)',
             'Dense data renders as rows (Table, List/Item), edge-to-edge with dividers; Card is for widgets, galleries, and settings groups',
             'StyleX or Tailwind for custom styling; both are first-class (see \`astryx docs styling\`)',
             'Semantic tokens, not hardcoded values (see \`astryx docs tokens\`)',

@@ -12,7 +12,7 @@
  * - /packages/core/src/Calendar/hooks/index.ts
  */
 
-import {useState, useMemo, useCallback} from 'react';
+import {use, useState, useMemo, useCallback} from 'react';
 import type {ISODateString} from '../../utils/dateTypes';
 import {
   type PlainDate,
@@ -25,6 +25,7 @@ import {
   plainDateFormat,
   DATE_FORMAT_MONTH_YEAR,
 } from '../../utils/plainDate';
+import {InternationalizationContext} from '../../i18n';
 
 /**
  * Configuration for calendar navigation
@@ -98,6 +99,7 @@ export function useCalendarNavigation(
     onFocusDateChange,
     numberOfMonths = 1,
   } = options;
+  const {locale} = use(InternationalizationContext);
 
   // Pending focus target after month navigation
   const [pendingFocus, setPendingFocus] = useState<ISODateString | null>(null);
@@ -135,12 +137,12 @@ export function useCalendarNavigation(
   // Format month header
   const monthYearLabel = useMemo(() => {
     if (numberOfMonths === 1) {
-      return plainDateFormat(visibleMonths[0], DATE_FORMAT_MONTH_YEAR);
+      return plainDateFormat(visibleMonths[0], DATE_FORMAT_MONTH_YEAR, locale);
     }
     return visibleMonths
-      .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR))
+      .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR, locale))
       .join(' – ');
-  }, [visibleMonths, numberOfMonths]);
+  }, [visibleMonths, numberOfMonths, locale]);
 
   // Navigate to previous/next month
   const navigateMonth = useCallback(

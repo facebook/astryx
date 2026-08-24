@@ -16,6 +16,8 @@
  * - /packages/core/src/i18n/InternationalizationProvider.tsx
  * - /packages/core/src/i18n/t.client.ts
  * - /packages/core/src/i18n/useDirection.ts
+ * - /packages/core/src/i18n/useLocale.ts
+ * - /packages/core/src/i18n/useCollator.ts
  * - /packages/core/src/i18n/getLocaleDirection.ts
  * - /packages/core/src/i18n/index.ts
  */

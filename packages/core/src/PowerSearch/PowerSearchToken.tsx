@@ -13,6 +13,7 @@ import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Token} from '../Token';
 import {useTranslator} from '../i18n';
+import {useLocale} from '../i18n/useLocale';
 import {fontWeightVars} from '../theme/tokens.stylex';
 import {formatFilterValue} from './formatFilterValue';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
@@ -44,6 +45,7 @@ export function PowerSearchToken({
 }: PowerSearchTokenProps) {
   const config = useInternalConfig(configProp);
   const t = useTranslator();
+  const locale = useLocale();
 
   const fieldLabel = field.label;
   const resolvedOperatorLabel = resolveOperatorLabel(operator, t);
@@ -63,6 +65,7 @@ export function PowerSearchToken({
     filter.value,
     adjustedMaxLength,
     t,
+    locale,
   );
 
   const valueContent = valueStr ? (

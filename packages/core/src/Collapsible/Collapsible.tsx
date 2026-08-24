@@ -42,10 +42,11 @@ import {
 
 import {useCollapsible} from './useCollapsible';
 import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
-import {useIcon} from '../Icon';
+import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 const styles = stylex.create({
   root: {
@@ -64,7 +65,10 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -73,14 +77,6 @@ const styles = stylex.create({
     paddingBlock: 0,
     // `all: unset` above wipes the UA focus outline; restore a keyboard-only
     // focus ring using the standard token/offset (WCAG 2.4.7).
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   // Capsize: trim leading from text triggers
   triggerLabel: {
@@ -91,7 +87,7 @@ const styles = stylex.create({
   // button blocks click + keyboard activation; these styles restore the
   // visual affordance that `all: unset` wipes.
   triggerDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   // Chevron indicator
@@ -100,10 +96,17 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    // The chevron is sized off the trigger's own type size (--text-large-size,
+    // 17px), which sits between Icon's `sm` (16px) and `md` (20px) boxes.
+    // Pinning the box to the token keeps the glyph exactly the size it was
+    // when it was a bare 1em SVG inheriting the trigger's font-size, and keeps
+    // it tracking the trigger if a theme retunes that step.
+    width: typeScaleVars['--text-large-size'],
+    height: typeScaleVars['--text-large-size'],
+    fontSize: typeScaleVars['--text-large-size'],
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    color: colorVars['--color-icon-secondary'],
   },
   chevronOpen: {
     transform: 'rotate(180deg)',
@@ -293,8 +296,6 @@ export function Collapsible({
   const isDivided = presentation?.hasDividers ?? false;
   const density = presentation?.density ?? null;
 
-  const chevronIcon = useIcon('chevronDown');
-
   // Links the trigger to the region it shows/hides so assistive tech can move
   // from the button to its controlled content (disclosure pattern).
   const contentId = useId();
@@ -327,20 +328,26 @@ export function Collapsible({
           themeProps('collapsible-trigger', {
             density: density ?? undefined,
           }),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.trigger,
             density != null && triggerDensity[density],
             isDisabled && styles.triggerDisabled,
           ),
         )}>
         <span {...stylex.props(styles.triggerLabel)}>{trigger}</span>
-        <span
-          {...stylex.props(
+        <Icon
+          icon="chevronDown"
+          // Nearest size to the trigger's 17px type step; `chevron` re-pins the
+          // exact box (see the style) so the glyph does not resize.
+          size="sm"
+          // Was `--color-icon-secondary` on the old wrapper span; `secondary`
+          // is the same token, expressed as an Icon color.
+          color="secondary"
+          xstyle={[
             styles.chevron,
             isOpen ? styles.chevronOpen : styles.chevronClosed,
-          )}>
-          {chevronIcon}
-        </span>
+          ]}
+        />
       </button>
       <div
         id={contentId}

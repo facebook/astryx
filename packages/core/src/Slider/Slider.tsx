@@ -41,6 +41,7 @@ import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -173,19 +174,44 @@ const styles = stylex.create({
   },
   trackContainerHorizontal: {
     height: THUMB_SIZE,
+    // The whole track is the tap target (a click anywhere on it moves the
+    // slider), but it is only THUMB_SIZE (20px) tall — under the WCAG 2.5.8 AA
+    // 24px minimum. Floor its block size to 24px on touch pointers only. The
+    // rail and thumb center on 50%, so they stay put; only the invisible
+    // tappable area grows. Desktop (fine pointer) is unchanged.
+    minBlockSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
     width: '100%',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   trackContainerVertical: {
     width: THUMB_SIZE,
     height: 160,
+    // Same tap target, rotated: the vertical track is the thing you press, and
+    // it is only THUMB_SIZE (20px) wide. `minBlockSize` above floors the
+    // horizontal track's short axis; here the short axis is the inline one
+    // (the block size is already 160px), so floor that instead. The rail,
+    // fill, marks and thumb all center on the inline 50%, so they stay put;
+    // only the invisible tappable area grows. Desktop is unchanged.
+    minInlineSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
     flexDirection: 'column',
     justifyContent: 'center',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   trackContainerDisabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   track: {
     position: 'absolute',
@@ -231,7 +257,10 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: 'none',
-    cursor: 'grab',
+    cursor: {
+      default: 'grab',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
   },
   thumbHorizontal: {
@@ -248,24 +277,14 @@ const styles = stylex.create({
   thumbHover: {
     backgroundColor: {
       default: colorVars['--color-accent'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
   },
-  thumbFocusVisible: {
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
   thumbDisabled: {
     backgroundColor: colorVars['--color-background-muted'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   textValue: {
     fontFamily: typographyVars['--font-family-body'],
@@ -373,6 +392,44 @@ function getPercent(val: number, min: number, max: number): number {
     return 0;
   }
   return ((val - min) / (max - min)) * 100;
+}
+
+/**
+ * Thumb travel is inset by half a thumb at each end — the geometry a native
+ * `input[type=range]` uses — so the thumb stays inside the component box at
+ * min and max instead of overhanging it by half its width (#5050). The fill
+ * and the marks map through the same inset, and `travelFraction` inverts it,
+ * so the thumb tracks the pointer that grabbed it. Both directions read
+ * THUMB_SIZE, so a theme cannot resize the thumb through CSS alone.
+ */
+const THUMB_INSET = THUMB_SIZE / 2;
+
+function insetPosition(percent: number): string {
+  return cssLength(percent, THUMB_INSET - (percent / 100) * THUMB_SIZE);
+}
+
+/** Distance between two inset positions; the inset itself cancels out. */
+function insetSpan(fromPercent: number, toPercent: number): string {
+  const delta = toPercent - fromPercent;
+  return cssLength(delta, -(delta / 100) * THUMB_SIZE);
+}
+
+/** Inverse of `insetPosition`: an offset from the box start back to 0–1. */
+function travelFraction(offset: number, size: number): number {
+  const travel = size - THUMB_SIZE;
+  if (travel > 0) {
+    return (offset - THUMB_INSET) / travel;
+  }
+  // Narrower than the thumb, so there is no travel to map onto: fall back to
+  // the raw fraction rather than dividing by zero.
+  return size > 0 ? offset / size : 0;
+}
+
+function cssLength(percent: number, px: number): string {
+  // Percentages of the box and step arithmetic both carry binary
+  // floating-point error into the DOM (`calc(33% + 3.3999999999999995px)`).
+  const round = (n: number) => Number(n.toFixed(3));
+  return `calc(${round(percent)}% ${px < 0 ? '-' : '+'} ${Math.abs(round(px))}px)`;
 }
 
 // =============================================================================
@@ -492,17 +549,21 @@ export function Slider({ref, ...props}: SliderProps) {
       }
       const rect = track.getBoundingClientRect();
 
+      // Inverse of `insetPosition`: the pointer maps onto the thumb's travel
+      // (the box minus half a thumb at each end), so pressing on the thumb
+      // leaves it where it is instead of jumping.
       let percent: number;
       if (isHorizontal) {
         // In RTL the inline-start (value = min) is the right edge, so measure
         // the pointer fraction from the right instead of the left. Detected
         // from the track's computed direction (lazy, only on pointer move).
-        percent = isRtlElement(track)
-          ? (rect.right - clientX) / rect.width
-          : (clientX - rect.left) / rect.width;
+        percent = travelFraction(
+          isRtlElement(track) ? rect.right - clientX : clientX - rect.left,
+          rect.width,
+        );
       } else {
         // Vertical: bottom = min, top = max
-        percent = 1 - (clientY - rect.top) / rect.height;
+        percent = 1 - travelFraction(clientY - rect.top, rect.height);
       }
       percent = clamp(percent, 0, 1);
       const raw = min + percent * (max - min);
@@ -732,8 +793,8 @@ export function Slider({ref, ...props}: SliderProps) {
     const percent = getPercent(val, min, max);
 
     const positionStyle = isHorizontal
-      ? {insetInlineStart: `${percent}%`}
-      : {bottom: `${percent}%`, left: '50%'};
+      ? {insetInlineStart: insetPosition(percent)}
+      : {bottom: insetPosition(percent), left: '50%'};
 
     // In range mode each thumb keeps a short individual name that composes
     // with the group label (announced via the group's aria-labelledby), per
@@ -792,7 +853,7 @@ export function Slider({ref, ...props}: SliderProps) {
               ? styles.thumbHorizontal
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
-            !isDisabled && styles.thumbFocusVisible,
+            !isDisabled && focusOutlineStyles.focusVisible,
             isDisabled && styles.thumbDisabled,
           ),
           undefined,
@@ -818,22 +879,23 @@ export function Slider({ref, ...props}: SliderProps) {
     return thumbElement;
   };
 
-  // Filled track position
+  // Filled track position — ends at the thumb centre, so it uses the same
+  // inset mapping as the thumb.
   const filledStyle = (() => {
     if (isRange) {
       const [v0, v1] = values;
       const p0 = getPercent(v0, min, max);
       const p1 = getPercent(v1, min, max);
       if (isHorizontal) {
-        return {insetInlineStart: `${p0}%`, width: `${p1 - p0}%`};
+        return {insetInlineStart: insetPosition(p0), width: insetSpan(p0, p1)};
       }
-      return {bottom: `${p0}%`, height: `${p1 - p0}%`};
+      return {bottom: insetPosition(p0), height: insetSpan(p0, p1)};
     }
     const p = getPercent(values[0], min, max);
     if (isHorizontal) {
-      return {insetInlineStart: '0%', width: `${p}%`};
+      return {insetInlineStart: '0%', width: insetPosition(p)};
     }
-    return {bottom: '0%', height: `${p}%`};
+    return {bottom: '0%', height: insetPosition(p)};
   })();
 
   // Text value display
@@ -958,8 +1020,8 @@ export function Slider({ref, ...props}: SliderProps) {
               {marks.map(mark => {
                 const percent = getPercent(mark.value, min, max);
                 const markPos = isHorizontal
-                  ? {insetInlineStart: `${percent}%`}
-                  : {bottom: `${percent}%`};
+                  ? {insetInlineStart: insetPosition(percent)}
+                  : {bottom: insetPosition(percent)};
                 return (
                   <div key={mark.value}>
                     <div

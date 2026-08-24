@@ -46,6 +46,7 @@ import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
@@ -54,16 +55,12 @@ import {themeProps} from '../utils/themeProps';
 const styles = stylex.create({
   interactive: {
     position: 'relative',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textDecoration: 'none',
     color: 'inherit',
-    outlineOffset: '2px',
-  },
-  focusWithin: {
-    ':has(:focus-visible)': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: '2px',
-    },
   },
   // Hover overlay — guarded by @media (hover: hover) so touch devices
   // don't show a stuck hover state. Active/pressed state works everywhere.
@@ -84,7 +81,7 @@ const styles = stylex.create({
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover::after': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
@@ -116,13 +113,13 @@ const styles = stylex.create({
   // @media (hover: hover) so touch devices don't get a stuck hover state.
   borderedHoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         borderColor: colorVars['--color-border-emphasized'],
       },
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   srOnly: {
@@ -307,14 +304,15 @@ export function ClickableCard({
       padding={padding}
       variant={variant}
       elevation={elevation}
-      {...mergeProps(themeProps('clickable-card', {variant}), {
-        className: classNameProp,
+      {...mergeProps(
+        themeProps('clickable-card', {variant}),
+        focusOutlineProps.focusWithin(),
+        classNameProp,
         style,
-      })}
+      )}
       xstyle={
         [
           styles.interactive,
-          styles.focusWithin,
           hasBorder ? styles.bordered : styles.borderless,
           !isDisabled && styles.overlay,
           !isDisabled && styles.hoverOnPointer,

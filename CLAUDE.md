@@ -68,9 +68,13 @@ Documentation lives in two places:
 
 **Update Protocol**: When modifying code, update the file's header comment. Look for `SYNC:` comments as reminders.
 
+**Audience**: every `.doc.mjs`, and everything under `packages/cli/assets/docs/`, is written for people **building with** Astryx — not for people building Astryx. Rubrics, readiness gates, audit checklists and lab→core criteria belong in the wiki. [`packages/cli/assets/docs/README.md`](packages/cli/assets/docs/README.md) has the test and the page each kind of material goes to.
+
 ## Quick Reference
 
-- **Package manager**: pnpm 11 (via corepack — see CONTRIBUTING.md)
+- **Package manager**: pnpm 11, pinned by the `packageManager` field (see
+  CONTRIBUTING.md for install options — Corepack is one of several, and Node
+  25+ no longer bundles it)
 - **Testing**: Vitest (colocated tests)
 - **Components**: `packages/core/`
 - **Storybook**: `apps/storybook/`

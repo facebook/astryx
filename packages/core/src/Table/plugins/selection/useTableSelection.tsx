@@ -26,7 +26,13 @@
  * DOM elements and no central element tracking. Each subscription
  * self-cleans when the row disconnects.
  *
+ * Because the background is an inline style, it outranks anything
+ * userland can layer on with StyleX. `hasRowHighlight: false` is the
+ * supported way to reclaim the row background; `aria-selected` is
+ * unaffected by it.
+ *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Table/useTableSelection.doc.mjs (config prop table)
  * - /packages/core/src/Table/Table.doc.mjs (selection documentation)
  * - /packages/core/src/Table/index.ts (exports)
  */
@@ -81,6 +87,22 @@ export interface UseTableSelectionConfig<T extends Record<string, unknown>> {
    * ```
    */
   getRowLabel?: (item: T) => string;
+  /**
+   * Paint checked rows with the accent wash. Set false when the surrounding
+   * UI already uses row background to mean something else — a row that is
+   * open in a detail panel, for instance. The wash is an inline style, so
+   * it cannot be overridden from userland; this flag is the way off it.
+   *
+   * Only the background is dropped. `aria-selected` is still set on checked
+   * rows either way, so the selection stays legible to screen readers.
+   *
+   * @default true
+   * @example
+   * ```
+   * useTableSelection({...config, hasRowHighlight: false})
+   * ```
+   */
+  hasRowHighlight?: boolean;
 }
 
 // =============================================================================
@@ -121,18 +143,24 @@ function createSelectionStore<T extends Record<string, unknown>>(
 
 /**
  * Apply or remove selection styling on a <tr> element.
+ *
+ * `aria-selected` tracks selection on its own: it is the semantic half of
+ * the state and stays correct whether or not the row is painted.
  */
 function applyRowSelectionStyle(
   el: HTMLTableRowElement,
   isSelected: boolean,
+  hasRowHighlight: boolean,
 ): void {
   if (isSelected) {
     el.setAttribute('aria-selected', 'true');
-    el.style.backgroundColor = selectedBgColor;
   } else {
     el.removeAttribute('aria-selected');
-    el.style.backgroundColor = '';
   }
+  // Written on every pass, not just when painting: the flag can flip while a
+  // row is already selected, and the wash has to come back off.
+  el.style.backgroundColor =
+    isSelected && hasRowHighlight ? selectedBgColor : '';
 }
 
 // =============================================================================
@@ -358,18 +386,23 @@ export function useTableSelection<T extends Record<string, unknown>>(
           if (!el) {
             return;
           }
+          const applyStyle = () => {
+            const config = store.getConfig();
+            applyRowSelectionStyle(
+              el,
+              config.getIsItemSelected(item),
+              config.hasRowHighlight ?? true,
+            );
+          };
           // Apply initial style
-          applyRowSelectionStyle(el, store.getConfig().getIsItemSelected(item));
+          applyStyle();
           // Subscribe for future changes
           const unsub = store.subscribe(() => {
             if (!el.isConnected) {
               unsub();
               return;
             }
-            applyRowSelectionStyle(
-              el,
-              store.getConfig().getIsItemSelected(item),
-            );
+            applyStyle();
           });
           return () => {
             unsub();

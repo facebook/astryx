@@ -28,11 +28,8 @@ export {useTableColumnResize} from './plugins/columnResize';
 export {useTableStickyColumns} from './plugins/stickyColumns';
 export {useTableGroupedRows} from './plugins/groupedRows';
 export {useTableRowIndex} from './plugins/rowIndex';
-export {
-  useTableRowExpansion,
-  useTableRowExpansionState,
-} from './plugins/rowExpansion';
 export {useTableRowStatus} from './plugins/rowStatus';
+export {useTableRowExpansion} from './plugins/rowExpansion';
 export {useTableTreeData, useTableTreeState} from './plugins/tree';
 export {resolveContextActions} from './tableContextMenu';
 export {
