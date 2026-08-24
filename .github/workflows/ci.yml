@@ -472,16 +472,37 @@ jobs:
       - name: Run theme var reachability guard
         run: node .github/scripts/theme-var-reachability.js --storybook-dir apps/storybook/dist
 
-      # The layer order Astryx promises is Astryx < theme < product, and which
-      # declaration paints is a cascade fact no jsdom test can settle. The
-      # build has been wrong in both directions inside one week: unsplit, so
-      # StyleX outranked every theme; then wrapped instead of split, so an
-      # app's own styles lost to one. vite.build.test.ts reads the built
-      # stylesheet; this renders it.
+  # The layer order Astryx promises is Astryx < theme < product, and which
+  # declaration paints is a cascade fact no jsdom test can settle: the build has
+  # been wrong in both directions inside one week — unsplit, so StyleX outranked
+  # every theme, then wrapped instead of split, so an app's own styles lost to
+  # one. vite.build.test.ts reads the built stylesheet; this renders it.
+  #
+  # Its own job on purpose. pr-a11y, where the sibling Chromium guards live,
+  # runs only when packages/core or packages/lab changed, and what this guards
+  # is packages/build — so hosting it there would skip it on exactly the PRs
+  # that can break it. Gated like `test` instead: everything but docsite-only.
+  theme-layers:
+    needs: [check-scope]
+    if: needs.check-scope.outputs.docsite_only != 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      # The guard imports the plugin's build artifact, the same one a consumer
+      # installs.
+      - name: Build the Vite plugin
+        run: pnpm -F @astryxdesign/build build
+
       - name: Run theme layer cascade guard
-        run: |
-          pnpm -F @astryxdesign/build build
-          node .github/scripts/theme-layer-cascade.js
+        run: node .github/scripts/theme-layer-cascade.js
 
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so a PR only pays for the components it touched.
