@@ -563,6 +563,10 @@
     "defaultMessage": "Apply",
     "description": "Primary button label inside a table's filter panel/popover; commits pending filter values. Imperative verb; pairs with `Reset`."
   },
+  "@astryx.table.rowStatus.columnHeader": {
+    "defaultMessage": "Row status",
+    "description": "Screen-reader-only column header for the narrow status-indicator gutter a Table gains from useTableRowStatus. Sighted users see a blank gutter; assistive tech announces this as the column name."
+  },
   "@astryx.table.selection.selectAllRows": {
     "defaultMessage": "Select all rows",
     "description": "Aria label for the \"select all rows\" checkbox in a Table header."
@@ -711,6 +715,30 @@
     "defaultMessage": "Invalid date",
     "description": "Screen-reader-only live-region alert in DateInput / DateTimeInput when the typed date cannot be parsed. The field silently reverts on blur, so this is the only rejection feedback a screen-reader user gets."
   },
+  "@astryx.dateInput.resetPicking": {
+    "defaultMessage": "Reset",
+    "description": "Secondary button in the mobile date picker's footer, beside Save. Removes the chosen date AND returns the calendar to the current month — it undoes the picking done so far and puts the picker back to how it opens, so prefer a word covering both, not one that only means emptying a field. Not cancel: the picker stays open afterwards and nothing is dismissed."
+  },
+  "@astryx.dateInput.savePicking": {
+    "defaultMessage": "Save",
+    "description": "Full-width primary button that closes the mobile date picker, on the calendar. The date is already committed by the tap that chose it, so this only dismisses — but it is worded as saving because that is how the action reads to someone finishing a form. Use the word your platform uses for accepting and closing a sheet."
+  },
+  "@astryx.dateInput.doneChoosingMonth": {
+    "defaultMessage": "Done",
+    "description": "Full-width button under the month and year wheels in the mobile date picker. It does NOT close the picker — it returns to the calendar, having set the month. Word it as finishing this step, not as finishing the whole task; the calendar's own button is the one that closes."
+  },
+  "@astryx.dateInput.chooseMonthYear": {
+    "defaultMessage": "{monthYear}, Choose month and year",
+    "description": "Accessible name for the mobile date picker's header button, which swaps the calendar for month and year wheels. {monthYear} is the currently shown month and year, already localized (e.g. \"March 2026\"). The whole label is one string so the separator and word order can change per locale."
+  },
+  "@astryx.dateInput.monthWheel": {
+    "defaultMessage": "Month",
+    "description": "Accessible name for the scrollable month column in the mobile date picker. Single word; a calendar month, not a duration."
+  },
+  "@astryx.dateInput.yearWheel": {
+    "defaultMessage": "Year",
+    "description": "Accessible name for the scrollable year column in the mobile date picker. Single word; a calendar year, not a duration."
+  },
   "@astryx.dateTimeInput.timeHint12h": {
     "defaultMessage": "e.g., 2:30 PM",
     "description": "Placeholder hint shown in the DateTimeInput time field when focused and empty with 12-hour format. Gives an example of expected input format."
@@ -785,7 +813,15 @@
   },
   "@astryx.table.pagination.label": {
     "defaultMessage": "Table pagination",
-    "description": "Screen-reader-only accessible name for the pagination `<nav>` appended below a data table. Kept separate from `@astryx.pagination.label` so translations may diverge."
+    "description": "Screen-reader-only accessible name for a table's pagination `<nav>` (rendered below and/or above the table per the plugin's position config). Kept separate from `@astryx.pagination.label` so translations may diverge. When position='both', this string is interpolated as the {label} value into `@astryx.table.pagination.labelAbove`/`labelBelow` — keep it compatible with those suffix templates."
+  },
+  "@astryx.table.pagination.labelAbove": {
+    "defaultMessage": "{label} (top)",
+    "description": "Accessible name for the pagination `<nav>` rendered above the table when position='both' renders two navs. `label` is the resolved base label (default \"Table pagination\" or consumer-supplied); the suffix keeps the two same-type landmarks distinguishable."
+  },
+  "@astryx.table.pagination.labelBelow": {
+    "defaultMessage": "{label} (bottom)",
+    "description": "Accessible name for the pagination `<nav>` rendered below the table when position='both' renders two navs. `label` is the resolved base label (default \"Table pagination\" or consumer-supplied); the suffix keeps the two same-type landmarks distinguishable."
   },
   "@astryx.timeInput.placeholder": {
     "defaultMessage": "Select a time",
@@ -1043,29 +1079,33 @@
     "defaultMessage": "Expand all rows",
     "description": "Screen-reader-only label on the header expand-all/collapse-all button when at least one row is collapsed (clicking expands every expandable row). Part of the four-way set."
   },
+  "@astryx.stepper.label": {
+    "defaultMessage": "Progress",
+    "description": "Screen-reader-only fallback name for the Stepper's ordered list of steps, describing the sequence as a whole (e.g. `Progress`). Used as the aria-label when the consumer does not pass a `label`. Singular per ARIA convention."
+  },
   "@astryx.step.goToStep": {
     "defaultMessage": "Go to step {stepNumber, number}: {label}",
-    "description": "Accessible name for a clickable step in the lab Stepper. {stepNumber} is the 1-based position, {label} is the step's visible label."
+    "description": "Accessible name for a clickable step in the Stepper. {stepNumber} is the 1-based position, {label} is the step's visible label."
   },
   "@astryx.step.goToStepWithStatus": {
     "defaultMessage": "Go to step {stepNumber, number}: {label}, {status}",
-    "description": "Accessible name for a clickable lab Stepper step that also carries a status. {status} is one of the translated `step.status.*` words (completed/warning/error). Keep the pattern parallel to `step.goToStep`."
+    "description": "Accessible name for a clickable Stepper step that also carries a status. {status} is one of the translated `step.status.*` words (completed/warning/error). Keep the pattern parallel to `step.goToStep`."
   },
   "@astryx.step.optional": {
     "defaultMessage": "Optional",
-    "description": "Visible indicator appended after a lab Stepper step's label when the step is optional (isOptional). Very short; appears inline after the label text."
+    "description": "Visible indicator appended after a Stepper step's label when the step is optional (isOptional). Very short; appears inline after the label text."
   },
   "@astryx.step.status.completed": {
     "defaultMessage": "completed",
-    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when the step is done (either progress-completed or status=success). Lowercase adjective; it is read mid-sentence after the step label."
+    "description": "Screen-reader-only status word rendered next to a Stepper step label when the step is done (either progress-completed or status=success). Lowercase adjective; it is read mid-sentence after the step label."
   },
   "@astryx.step.status.warning": {
     "defaultMessage": "warning",
-    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=warning. Lowercase noun/adjective; read mid-sentence after the step label."
+    "description": "Screen-reader-only status word rendered next to a Stepper step label when status=warning. Lowercase noun/adjective; read mid-sentence after the step label."
   },
   "@astryx.step.status.error": {
     "defaultMessage": "error",
-    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
+    "description": "Screen-reader-only status word rendered next to a Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
   },
   "@astryx.tableTree.collapseRow": {
     "defaultMessage": "Collapse row",

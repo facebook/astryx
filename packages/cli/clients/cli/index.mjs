@@ -70,6 +70,7 @@ export const JSON_SUPPORTED = new Set([
   'theme list',
   'theme add',
   'theme template',
+  'theme targets',
   'upgrade',
   'manifest',
   'doctor',

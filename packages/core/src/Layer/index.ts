@@ -29,6 +29,14 @@ export type {
   FixedLayerReturn,
 } from './useLayer';
 
+// Shared touch behavior for the hover layers
+export {useTouchTrigger, isActionTrigger} from './useTouchTrigger';
+export type {
+  LayerTouchTrigger,
+  UseTouchTriggerOptions,
+  UseTouchTriggerReturn,
+} from './useTouchTrigger';
+
 // Layer provider
 export {LayerProvider} from './LayerProvider';
 export type {LayerProviderProps} from './LayerProvider';
@@ -50,6 +58,7 @@ export type {
 export {useHoverCard, HoverCard} from '../HoverCard';
 export type {
   HoverCardFocusTrigger,
+  HoverCardTouchTrigger,
   HoverCardOptions,
   HoverCardReturn,
   HoverCardProps,
@@ -59,6 +68,7 @@ export type {
 export {useTooltip, Tooltip} from '../Tooltip';
 export type {
   TooltipFocusTrigger,
+  TooltipTouchTrigger,
   TooltipOptions,
   TooltipReturn,
   TooltipProps,

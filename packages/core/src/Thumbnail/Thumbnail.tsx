@@ -159,7 +159,10 @@ const styles = stylex.create({
     color: colorVars['--color-icon-secondary'],
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Hover/pressed overlay — the exact same treatment as ClickableCard and
   // SelectableCard. A transparent `::after` tints on hover/press instead of
@@ -190,7 +193,10 @@ const styles = stylex.create({
   },
   interactiveButton: {
     all: 'unset',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     display: 'block',
     width: '100%',
     height: '100%',

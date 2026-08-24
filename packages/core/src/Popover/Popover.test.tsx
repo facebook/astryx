@@ -2,7 +2,8 @@
 
 /**
  * @file Popover.test.tsx
- * @input Uses vitest, @testing-library/react, Popover component
+ * @input Uses vitest, @testing-library/react, Popover, Dialog,
+ *   SegmentedControl
  * @output Unit tests for Popover component behavior
  * @position Testing; validates Popover.tsx implementation
  *
@@ -14,6 +15,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import React, {useRef} from 'react';
 import {Popover} from './Popover';
 import {Dialog} from '../Dialog';
+import {SegmentedControl, SegmentedControlItem} from '../SegmentedControl';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -303,6 +305,30 @@ describe('Popover', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
       fireEvent.keyDown(document, {key: 'Escape'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('dismisses on Escape pressed inside a roving-focus list', () => {
+      render(
+        <Popover
+          content={
+            <SegmentedControl value="grid" onChange={() => {}} label="View">
+              <SegmentedControlItem value="grid" label="Grid" />
+              <SegmentedControlItem value="list" label="List" />
+            </SegmentedControl>
+          }
+          label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const trigger = screen.getByRole('button', {name: 'Open'});
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      // From the segment, so the list's own key handler runs first. jsdom has
+      // no popover display, so the open content still reads as hidden.
+      const segment = screen.getByRole('radio', {name: 'Grid', hidden: true});
+      fireEvent.keyDown(segment, {key: 'Escape'});
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
     });
 

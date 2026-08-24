@@ -1,0 +1,15 @@
+{
+  "$comment": "Configuration for .github/scripts/visual-gate. Every excludeStories entry needs the reason the story cannot reproduce itself — the list stays reviewable instead of growing quietly, and `gate.mjs flaky` is how entries are found (run it, do not guess). A key ending in * covers a whole story file.",
+  "defaultTheme": "neutral",
+  "tiers": ["surface", "theme-matrix"],
+  "viewport": {"width": 1024, "height": 768},
+  "settleMs": 50,
+  "threshold": 0.1,
+  "maxDiffPixels": 0,
+  "excludeStories": {
+    "lab-chartstreamgl--*": "Streams live data on a setInterval; every frame is a different chart.",
+    "lab-chartstreamperf--*": "Renders measured fps and frame times, which differ every run by construction.",
+    "lab-codeeditorperf--*": "Renders performance.now() mount timings on screen.",
+    "lab-usechartrange--*": "Advances its own domain on a setInterval while the shot is taken."
+  }
+}

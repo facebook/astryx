@@ -11,6 +11,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Calendar/Calendar.doc.mjs (props table, features, implementation notes)
+ * - /packages/core/src/Calendar/getInitialFocusDate.ts (which month the calendar opens on)
  * - /packages/core/src/Calendar/Calendar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Calendar/index.ts (exports if types change)
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
@@ -18,6 +19,7 @@
  */
 
 import {
+  use,
   useState,
   useMemo,
   useCallback,
@@ -59,6 +61,7 @@ import {
 } from '../utils/plainDate';
 import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {getInitialFocusDate} from './getInitialFocusDate';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -86,7 +89,7 @@ import type {
 } from '../utils/dateTypes';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useTranslator, InternationalizationContext} from '../i18n';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -141,7 +144,9 @@ interface CalendarBaseProps extends Omit<
 
   /**
    * Controlled focus date (which month is visible).
-   * If not provided, defaults to selected date or today.
+   * If not provided, defaults to the selected date, else today clamped into
+   * the `min`/`max` window (so a window that excludes today opens on the
+   * bound nearest to it, not on an all-disabled month).
    */
   focusDate?: ISODateString;
 
@@ -220,6 +225,7 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
  */
 export function Calendar({ref, ...props}: CalendarProps) {
   const t = useTranslator();
+  const {locale} = use(InternationalizationContext);
   const {
     handleRef,
     mode = 'single',
@@ -275,20 +281,19 @@ export function Calendar({ref, ...props}: CalendarProps) {
   // Determine effective value
   const effectiveValue = value !== undefined ? value : internalValue;
 
-  // Focus date state (which month is visible)
-  const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() => {
-    if (focusDateProp) {
-      return plainDateFromISO(focusDateProp);
-    }
-    if (effectiveValue) {
-      if (typeof effectiveValue === 'string') {
-        return plainDateFromISO(effectiveValue);
-      } else {
-        return plainDateFromISO(effectiveValue.start);
-      }
-    }
-    return plainDateToday();
-  });
+  // Focus date state (which month is visible). Falls back to today, clamped
+  // into the min/max window so a window that doesn't contain today doesn't
+  // open on an all-disabled month.
+  const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() =>
+    getInitialFocusDate({
+      focusDate: focusDateProp,
+      value: effectiveValue,
+      min,
+      max,
+      numberOfMonths,
+      today,
+    }),
+  );
 
   // Use controlled focusDate if callback is provided, otherwise use internal state
   const isControlledFocus =
@@ -327,12 +332,12 @@ export function Calendar({ref, ...props}: CalendarProps) {
   // Format month header
   const monthYearLabel = useMemo(() => {
     if (numberOfMonths === 1) {
-      return plainDateFormat(visibleMonths[0], DATE_FORMAT_MONTH_YEAR);
+      return plainDateFormat(visibleMonths[0], DATE_FORMAT_MONTH_YEAR, locale);
     }
     return visibleMonths
-      .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR))
+      .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR, locale))
       .join(' – ');
-  }, [visibleMonths, numberOfMonths]);
+  }, [visibleMonths, numberOfMonths, locale]);
 
   // Announce the newly visible month to screen readers whenever it changes.
   // The visible month label (`<span>`) carries no live semantics, so paging the
@@ -440,7 +445,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
           setRangeSelectionStart(iso);
           announce(
             t('@astryx.calendar.rangeStartAnnounce', {
-              date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY),
+              date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY, locale),
             }),
           );
         } else {
@@ -486,17 +491,19 @@ export function Calendar({ref, ...props}: CalendarProps) {
               start: plainDateFormat(
                 plainDateFromISO(start),
                 DATE_FORMAT_WITH_WEEKDAY,
+                locale,
               ),
               end: plainDateFormat(
                 plainDateFromISO(end),
                 DATE_FORMAT_WITH_WEEKDAY,
+                locale,
               ),
             }),
           );
         }
       }
     },
-    [mode, onChange, rangeSelectionStart, announce, t],
+    [mode, onChange, rangeSelectionStart, announce, t, locale],
   );
 
   return (
@@ -645,6 +652,7 @@ function MonthGrid({
   pendingFocus,
   onPendingFocusHandled,
 }: MonthGridProps) {
+  const {locale} = use(InternationalizationContext);
   const year = month.year;
 
   // Use hooks for days generation and constraints
@@ -866,8 +874,8 @@ function MonthGrid({
 
   // Month label for announcements
   const monthLabel = useMemo(() => {
-    return plainDateFormat(month, DATE_FORMAT_MONTH_YEAR);
-  }, [month]);
+    return plainDateFormat(month, DATE_FORMAT_MONTH_YEAR, locale);
+  }, [month, locale]);
 
   return (
     <div {...stylex.props(monthGridStyles.monthGrid)}>
@@ -1025,6 +1033,7 @@ function DayCell({
   onDayHover,
 }: DayCellProps) {
   const t = useTranslator();
+  const {locale} = use(InternationalizationContext);
   const {date, isOutside, dayNumber} = day;
 
   if (isOutside && !hasOutsideDays) {
@@ -1070,7 +1079,7 @@ function DayCell({
   // params rather than string concatenation. A mid-flight first pick (where
   // rangeStart === rangeEnd) reads as "range start" only; a completed one-day
   // range reads as both start and end.
-  const dateLabel = plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY);
+  const dateLabel = plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY, locale);
   const dayLabel = state.isSelected
     ? t('@astryx.calendar.daySelected', {date: dateLabel})
     : state.isRangeStart && state.isRangeEnd

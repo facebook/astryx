@@ -610,4 +610,10 @@ describe('formatSharedDate', () => {
   it('formats the ISO "system_date" shape', () => {
     expect(formatSharedDate(pd, 'system_date')).toBe('2026-01-25');
   });
+
+  it('follows the passed locale rather than the host locale (#5074)', () => {
+    expect(formatSharedDate(pd, 'date_long', 'es-ES')).toBe(
+      '25 de enero de 2026',
+    );
+  });
 });

@@ -502,6 +502,22 @@ lint rule (autofixable) enforces it at author time; `pnpm guard:disabled-hover
 --storybook-dir apps/storybook/dist` sweeps a built Storybook in Chromium and
 fails on any disabled element whose paint changes under a forced `:hover`.
 
+### Disabled cursor guard
+
+A disabled control must not answer the pointer with an interactive cursor: the
+cursor is the only affordance a pointer user gets before they commit to a
+click. Write every `cursor` so the disabled state takes it back —
+`cursor: {default: 'pointer', ':is(:disabled,[aria-disabled="true"])': 'default'}`
+— including a flat `cursor` inside a `disabled` style, since StyleX merges one
+property at a time and a later declaration replaces the earlier one's
+conditions along with its value. `default` rather than `not-allowed`: a
+disabled control sealed behind `pointer-events: none` shows whatever its
+ancestor shows, so one cursor everywhere beats a stronger one we can only
+paint on some of them. The `@astryx/disabled-cursor` lint rule (autofixable)
+enforces it at author time; `pnpm guard:disabled-cursor --storybook-dir
+apps/storybook/dist` hit-tests every disabled element in a built Storybook in
+Chromium and fails on any other cursor.
+
 ## Versioning & Releases
 
 We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.

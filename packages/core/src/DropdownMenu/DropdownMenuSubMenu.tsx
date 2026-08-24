@@ -96,7 +96,10 @@ const triggerStyles = stylex.create({
       ':focus': colorVars['--color-overlay-hover'],
     },
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     outline: 'none',
   },
@@ -107,7 +110,7 @@ const triggerStyles = stylex.create({
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   caret: {
     display: 'flex',

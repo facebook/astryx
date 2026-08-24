@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {Profiler, useState} from 'react';
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {act, render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Avatar} from './Avatar';
 import {AvatarStatusDot} from './AvatarStatusDot';
@@ -207,6 +208,167 @@ describe('Avatar', () => {
       const el = screen.getByTestId('a');
       expect(el).toHaveAttribute('aria-hidden', 'true');
       expect(el).not.toHaveAttribute('aria-label');
+    });
+  });
+
+  describe('status label through a consumer wrapper (P14)', () => {
+    // A consumer's own component around AvatarStatusDot. Its prop is
+    // deliberately not called `label`, so `status.props.label` introspection
+    // has nothing to read; the dot's own report through context reaches it.
+    function PresenceDot({presence = 'Online'}: {presence?: string}) {
+      return <AvatarStatusDot variant="success" label={presence} />;
+    }
+
+    it('composes a label reported from inside a wrapper component', () => {
+      render(<Avatar name="Ada Lovelace" status={<PresenceDot />} />);
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+    });
+
+    it('composes a label reported at any nesting depth', () => {
+      function Outer() {
+        return (
+          <span>
+            <PresenceDot presence="Away" />
+          </span>
+        );
+      }
+      render(<Avatar name="Ada Lovelace" status={<Outer />} />);
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Away'}),
+      ).toBeInTheDocument();
+    });
+
+    it('follows a label that changes after mount', () => {
+      const {rerender} = render(
+        <Avatar
+          name="Ada Lovelace"
+          status={<PresenceDot presence="Online" />}
+        />,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+
+      rerender(
+        <Avatar name="Ada Lovelace" status={<PresenceDot presence="Busy" />} />,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Busy'}),
+      ).toBeInTheDocument();
+    });
+
+    it('drops the label when the status element unmounts', () => {
+      const {rerender} = render(
+        <Avatar name="Ada Lovelace" status={<PresenceDot />} data-testid="a" />,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+
+      rerender(<Avatar name="Ada Lovelace" data-testid="a" />);
+      expect(screen.getByTestId('a')).toHaveAttribute(
+        'aria-label',
+        'Ada Lovelace',
+      );
+    });
+
+    it('announces a wrapped status on an otherwise decorative avatar', () => {
+      render(<Avatar data-testid="a" status={<PresenceDot />} />);
+      const el = screen.getByTestId('a');
+      expect(el).toHaveAttribute('role', 'img');
+      expect(el).toHaveAttribute('aria-label', 'Online');
+      expect(el).not.toHaveAttribute('aria-hidden');
+    });
+
+    it('lets a reported label win over introspection', () => {
+      // The wrapper's own `label` prop is not the string the dot renders with,
+      // so introspection and the dot's report disagree here.
+      function TranslatedDot({label}: {label: string}) {
+        return <AvatarStatusDot label={label === 'busy' ? 'Busy' : label} />;
+      }
+      render(
+        <Avatar name="Ada Lovelace" status={<TranslatedDot label="busy" />} />,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Busy'}),
+      ).toBeInTheDocument();
+    });
+
+    it('costs no extra render and does not loop', () => {
+      // The label arrives in the commit phase, after this render composed the
+      // name. It lands on the root element directly, so a wrapped status is
+      // named without a second render. `tooltip={false}` keeps the tooltip's
+      // own mount commit out of the count.
+      const commits: number[] = [];
+      render(
+        <Profiler id="avatar" onRender={() => commits.push(1)}>
+          <Avatar
+            name="Ada Lovelace"
+            tooltip={false}
+            status={<PresenceDot />}
+          />
+        </Profiler>,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+      expect(commits).toHaveLength(1);
+    });
+
+    it('names a directly-passed dot on the first render, before any report', () => {
+      // Introspection answers render one; the dot's report then lands on the
+      // same name, still without a second render.
+      const commits: number[] = [];
+      render(
+        <Profiler id="avatar" onRender={() => commits.push(1)}>
+          <Avatar
+            name="Ada Lovelace"
+            tooltip={false}
+            status={<AvatarStatusDot label="Online" />}
+          />
+        </Profiler>,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+      expect(commits).toHaveLength(1);
+    });
+
+    it('follows a label that changes without re-rendering the avatar', () => {
+      // State inside the consumer's wrapper: the dot re-renders alone, so the
+      // avatar never gets the chance to recompose during render.
+      let setPresence: (presence: string) => void = () => {};
+      function SelfUpdatingDot() {
+        const [presence, setter] = useState('Online');
+        setPresence = setter;
+        return <AvatarStatusDot label={presence} />;
+      }
+      render(<Avatar name="Ada Lovelace" status={<SelfUpdatingDot />} />);
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+
+      act(() => setPresence('Busy'));
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Busy'}),
+      ).toBeInTheDocument();
+    });
+
+    it('leaves a consumer aria-label alone when a wrapped status reports', () => {
+      render(
+        <Avatar
+          name="Ada Lovelace"
+          aria-label="Ada Lovelace, first programmer"
+          data-testid="a"
+          status={<PresenceDot />}
+        />,
+      );
+      expect(screen.getByTestId('a')).toHaveAttribute(
+        'aria-label',
+        'Ada Lovelace, first programmer',
+      );
     });
   });
 
@@ -518,5 +680,61 @@ describe('Avatar — interactivity (Button trichotomy)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     render(<Avatar data-testid="a" />);
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('warns when the only accessible name is a status label', () => {
+    // A status is not an identity: "Online" alone is a worse control name than
+    // none, because it reads as a legitimate one.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Avatar
+        href="/somewhere"
+        src="https://example.com/ada.jpg"
+        status={<AvatarStatusDot label="Online" />}
+      />,
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('interactive avatar'),
+    );
+  });
+
+  it('warns when interactive with an empty-string name and alt', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(<Avatar href="/ada" name="" alt="" />);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('interactive avatar'),
+    );
+  });
+
+  it('does not warn when the consumer names the control with aria-label', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(<Avatar href="/ada" aria-label="Ada Lovelace" />);
+    expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('Avatar — consumer ARIA overrides win (Icon labelling pattern)', () => {
+  it('lets a consumer aria-label override the derived name on the static root', () => {
+    render(<Avatar name="Ada" aria-label="Ada Lovelace, on leave" />);
+    expect(
+      screen.getByRole('img', {name: 'Ada Lovelace, on leave'}),
+    ).toBeInTheDocument();
+  });
+
+  it('lets a consumer role override the derived role', () => {
+    render(<Avatar name="Ada" role="presentation" data-testid="a" />);
+    expect(screen.getByTestId('a')).toHaveAttribute('role', 'presentation');
+  });
+
+  it('lets a consumer hide a named avatar with aria-hidden', () => {
+    render(<Avatar name="Ada" aria-hidden="true" data-testid="a" />);
+    expect(screen.getByTestId('a')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('lets a consumer aria-label override the derived name on an interactive root', () => {
+    render(<Avatar name="Ada" href="/ada" aria-label="Ada Lovelace profile" />);
+    expect(
+      screen.getByRole('link', {name: 'Ada Lovelace profile'}),
+    ).toBeInTheDocument();
   });
 });

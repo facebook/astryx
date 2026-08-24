@@ -62,6 +62,11 @@ export const docs = {
         'Whether the field is optional (mutually exclusive with isRequired).',
     },
     {
+      name: 'onKeyDown',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
+      description: 'Callback fired on keydown events on the input.',
+    },
+    {
       name: 'isRequired',
       type: 'boolean',
       description:

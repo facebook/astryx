@@ -23,6 +23,7 @@ import * as fs from 'node:fs';
 import {discoverIntegrationCodemods} from '../../assets/codemods/integration-discovery.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
+import {discoverIntegrationDocs} from '../discovery/docs-discovery.mjs';
 
 /**
  * @typedef {import('./issue').AstryxIntegrationIssue} Issue
@@ -37,12 +38,12 @@ export function issueError(code, message) {
 /**
  * Verify each declared contribution root exists on disk. A declared-but-missing
  * root is a `missing_root` error.
- * @param {{components?: string, templates?: string, codemods?: string}} resolved
+ * @param {{components?: string, templates?: string, codemods?: string, docs?: string}} resolved
  *   absolute resolved roots (undefined when not declared)
  * @param {Issue[]} issues
  */
 function checkRoots(resolved, issues) {
-  const kinds = /** @type {const} */ (['components', 'templates', 'codemods']);
+  const kinds = /** @type {const} */ (['components', 'templates', 'codemods', 'docs']);
   for (const kind of kinds) {
     const root = resolved[kind];
     if (root == null) continue;
@@ -125,6 +126,31 @@ async function checkComponents(integration, issues) {
 }
 
 /**
+ * Validate the integration's doc topics via the landed discovery. A doc that
+ * cannot be loaded, is not a usable topic, or collides with a sibling is
+ * reported as an `invalid_doc` error.
+ *
+ * Only per-file problems are visible here: a topic that collides with another
+ * PACKAGE's, or names a `replaces`/`extends` target that does not exist, can
+ * only be judged once every integration is resolved together, so those are
+ * raised by `Project.docs()` instead.
+ *
+ * @param {LoadedIntegration} integration loaded-integration-shaped object
+ * @param {Issue[]} issues
+ */
+async function checkDocs(integration, issues) {
+  if (!integration.docs || !fs.existsSync(integration.docs)) return;
+  try {
+    const {errors} = await discoverIntegrationDocs(integration);
+    for (const e of errors) {
+      issues.push(issueError('invalid_doc', e.message));
+    }
+  } catch (err) {
+    issues.push(issueError('invalid_doc', /** @type {any} */ (err).message));
+  }
+}
+
+/**
  * Run every contribution validator against a loaded-integration-shaped object.
  * @param {LoadedIntegration} integration
  * @param {Issue[]} issues
@@ -133,6 +159,7 @@ async function runContributionChecks(integration, issues) {
   await checkCodemods(integration, issues);
   await checkTemplates(integration, issues);
   await checkComponents(integration, issues);
+  await checkDocs(integration, issues);
 }
 
 /**
@@ -161,6 +188,7 @@ export async function validateLoadedIntegration(loaded) {
       components: loaded.components,
       templates: loaded.templates,
       codemods: loaded.codemods,
+      docs: loaded.docs,
     },
     issues,
   );

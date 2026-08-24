@@ -917,6 +917,22 @@ describe('DateInput', () => {
       expect(screen.getByDisplayValue('Jan 25, 2026')).toBeInTheDocument();
     });
 
+    it('follows the InternationalizationProvider locale (#5074)', () => {
+      render(
+        <InternationalizationProvider locale="es-ES">
+          <DateInput
+            label="Date"
+            value="2026-01-25"
+            onChange={() => {}}
+            format="date_long"
+          />
+        </InternationalizationProvider>,
+      );
+      expect(
+        screen.getByDisplayValue('25 de enero de 2026'),
+      ).toBeInTheDocument();
+    });
+
     it('renders the ISO shape for format="system_date"', () => {
       render(
         <DateInput

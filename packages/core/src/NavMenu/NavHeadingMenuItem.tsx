@@ -48,7 +48,10 @@ const styles = stylex.create({
       },
     },
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     outline: 'none',
     textDecoration: 'none',
@@ -61,7 +64,7 @@ const styles = stylex.create({
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 

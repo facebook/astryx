@@ -18,6 +18,157 @@ This plugin implements a two-tier linting strategy:
 
 ## Rules
 
+### `@astryx/no-raw-intl-locale`
+
+`InternationalizationProvider` is the sole user-facing locale source. This
+rule forbids two independent things, anywhere in the lint scope:
+
+1. **Raw `Intl` access** — constructing a locale-sensitive `Intl` formatter,
+   calling `toLocaleString`/`toLocaleDateString`/`toLocaleTimeString`/
+   `toLocaleUpperCase`/`toLocaleLowerCase`/`localeCompare` **directly**, or
+   referencing the global `Intl` object at all outside an approved file —
+   regardless of whether a call has a locale argument, and regardless of
+   whether that argument is a literal, a variable, or `navigator.language`.
+   An explicit locale expression does **not** satisfy this rule by itself;
+   only going through the approved locale-aware boundary does. Beyond the
+   direct-call shape, the rule also flags aliasing (`const DTF =
+Intl.DateTimeFormat`), destructuring (`const {DateTimeFormat} = Intl`),
+   and indexing with a computed key (`Intl[key]`) — each of these constructs
+   a formatter without ever appearing as the call the direct-call check
+   watches for, so the reference itself is what gets reported.
+2. **`navigator.language`/`navigator.languages` as a locale source** — in
+   _any_ position, not only as an argument to an `Intl`/locale-method call.
+   `recognition.lang = lang ?? navigator.language` is flagged even though no
+   `Intl` API is involved.
+
+Shipped component code should read the locale through the public
+provider-aware utilities instead — `useLocale()`/`useCollator()` (exported
+from `@astryxdesign/core/i18n`) — or an existing formatting helper such as
+`plainDateFormat`/`formatInstant`/`formatFilterValue`, so the value always
+traces back to the provider.
+
+**Raw `Intl` is controlled by two closed file lists in the rule source:**
+
+- `APPROVED_IMPLEMENTATION_FILES` contains the pure formatter/parser
+  implementations. Direct Intl calls there still require a syntactically
+  explicit locale; `Intl.NumberFormat(undefined)`, an omitted locale, and
+  locale methods without their locale argument are errors. Aliasing or
+  destructuring Intl is also rejected. The only temporary ambient exceptions
+  are the existing calls inside the named `plainDateFormat` and
+  `isLocaleDayFirst` functions, pending #5120.
+- `APPROVED_TEST_ORACLE_FILES` contains named tests that deliberately construct
+  independent Intl expectations so assertions are not circular.
+
+Approved implementations:
+
+- `packages/core/src/utils/plainDate.ts`, `.../utils/dateParser.ts` — date
+  formatting/parsing core
+- `packages/core/src/Timestamp/formatInstant.ts`,
+  `.../Timestamp/tooltipEntries.ts` — Timestamp formatting and its
+  non-display time-zone validity probe
+- `packages/core/src/PowerSearch/formatFilterValue.ts`
+- `packages/core/src/i18n/useCollator.ts`
+- `packages/charts/src/formatters.ts`
+
+Named test oracles:
+
+- `packages/charts/src/formatters.test.ts`
+- `packages/core/src/Calendar/Calendar.test.tsx`
+- `packages/core/src/NumberInput/NumberInput.test.tsx`
+- `packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx`
+- `packages/core/src/Timestamp/tooltipEntries.test.ts`
+- `packages/core/src/PowerSearch/formatFilterValue.test.ts`
+- `packages/core/src/Timestamp/Timestamp.test.tsx`
+
+These lists are the **only** exception mechanism. There is no rule option or
+`eslint.config.js` override that widens them. A new entry requires a rule-source
+change and a focused rule test. `navigator.language`/`navigator.languages`
+remains rejected unconditionally, implementation or test oracle.
+
+`Intl.Locale` is never flagged, in any form — a bare reference, an alias, a
+call — it inspects a tag rather than formatting display output. `Intl.Segmenter`
+is exempt everywhere (infra or not) for exactly two shapes: a direct call
+with grapheme segmentation (including its standards-defined default
+granularity — grapheme boundaries do not vary meaningfully by locale, which
+is also why `packages/core/src/utils/characters.ts` and
+`packages/core/src/hooks/useStreamingText.ts` call it with none), and the
+`typeof Intl.Segmenter === 'function'` feature-detection idiom those same two
+files pair it with (which constructs nothing). Word, sentence, and otherwise
+unknown segmentation options are genuinely locale-sensitive and follow the
+same policy as every other formatter — and, like every other formatter,
+_aliasing_ `Intl.Segmenter` instead of calling it directly is **not** exempt
+outside an approved file: the exemption is a call shape, not a reference, so
+`const Seg = Intl.Segmenter; new Seg(undefined, {granularity: 'grapheme'})`
+is still flagged even though the eventual call is grapheme-only.
+
+**Known limitations (syntax-only, by design):**
+
+- The rule does not trace an alias back to its origin: `const lang =
+navigator.language; new Intl.DateTimeFormat(lang)` flags the
+  `navigator.language` read but not the later `Intl` call as
+  navigator-sourced (it still gets the generic raw-Intl message, since it's
+  outside an approved file).
+- The locale-sensitive prototype methods are matched on **method name
+  alone**, with no knowledge of the receiver's type. A custom class that
+  happens to define its own same-named method for unrelated,
+  non-locale-sensitive behavior would still be flagged — a false positive
+  a syntax-only rule cannot rule out. This has not surfaced in the current
+  codebase.
+- A **computed method name held in a variable** — `date[computedMethodName]()`
+  — cannot be resolved to `'toLocaleString'` (or any other name) without
+  value-flow analysis, so it is **not** caught. `Intl[key]` closes the
+  equivalent gap only for the `Intl` object itself (a single, nameable
+  global reference); it cannot generalize to an arbitrary method name on an
+  arbitrary receiver.
+
+A locally shadowed `Intl` or `navigator` (a parameter, an import, a local
+factory) is not the platform global and is not flagged as one — a shadowed
+`Intl` skips every Intl-specific check entirely (including its own aliasing),
+and a shadowed `navigator` is not treated as the browser global (so
+`navigator.language` through it is not flagged as `navigatorLocale` — a call
+built on a shadowed-Intl-but-real-navigator combination still gets
+`navigatorLocale` for the real navigator read, independent of the Intl
+shadow). There is no autofix: choosing the right locale source is an API
+decision.
+
+The repository enables the rule as an error for shipped source and tests in
+`core`, `charts`, `richtext`, and `vega`. It intentionally does not cover
+`lab`, applications, scripts, or stories. Lab must meet this requirement when
+a component graduates to a shipped package.
+
+**Bad:**
+
+```ts
+new Intl.DateTimeFormat().format(date);
+new Intl.DateTimeFormat(locale).format(date); // an explicit locale alone isn't enough
+new Intl.DateTimeFormat(navigator.language).format(date);
+value.toLocaleString(locale);
+left.localeCompare(right, locale);
+const DTF = Intl.DateTimeFormat; // aliasing bypasses the direct-call check too
+const {DateTimeFormat} = Intl; // ...and so does destructuring
+```
+
+**Good:**
+
+```tsx
+// Component code: read the provider locale through the public hook.
+import {useLocale, useCollator} from '@astryxdesign/core/i18n';
+
+function Example() {
+  const locale = useLocale();
+  return <span>{plainDateFormat(date, DATE_FORMAT_LONG, locale)}</span>;
+}
+
+// String comparison: useCollator(), not a raw Intl.Collator/localeCompare.
+function useSortedNames(names: string[]) {
+  const collator = useCollator({numeric: true});
+  return useMemo(
+    () => [...names].sort((a, b) => collator.compare(a, b)),
+    [names, collator],
+  );
+}
+```
+
 ### `@astryx/no-hardcoded-styles`
 
 Detects hardcoded CSS values in `stylex.create()` that should use Astryx tokens:
@@ -358,6 +509,78 @@ const styles = stylex.create({
 **Scope:** `:hover` on the styled element itself. A key that hovers something else — `:is(th:hover *)`, `stylex.when.ancestor(':hover')` — styles a descendant when an **ancestor** is hovered, which is a different question (a row may legitimately highlight around a disabled control) and is left alone. The rule is deliberately unconditional rather than scoped to components that have a disabled state: on an element that can never be disabled the guard is a no-op, and asking the question per component is what leaves the gaps.
 
 Autofixable, and mirrored at runtime by `.github/scripts/disabled-hover-audit.js`, which forces `:hover` on every disabled element in every story in Chromium and fails on any painted difference.
+
+Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.
+
+### `@astryx/no-classname-clobber`
+
+Flags two things on one JSX element that each set `className`. React applies attributes left to right and does not merge them, so the later writer wins outright and everything the earlier one carried is gone.
+
+There are two ways to write it twice. The first is a literal `className=` or `style=` attribute beside a `{...stylex.props()}` spread. The second is **two spreads that each carry a className** — and that one hides, because every helper here returns a `{className, style}` object: `stylex.props()`, `themeProps()`, `focusOutlineProps.*()`, and `mergeProps()` when it merges any of those.
+
+Breadcrumbs shipped the second shape. Both halves read as correct in review, and `mergeProps` on the first line reads as if the merging is handled:
+
+**Bad:**
+
+```tsx
+<button
+  {...mergeProps(themeProps('breadcrumb-item-menu-trigger'), {...popover.triggerProps})}
+  {...stylex.props(itemStyles.link, itemStyles.buttonReset)}
+/>
+```
+
+**Good:**
+
+```tsx
+<button
+  {...popover.triggerProps}
+  {...mergeProps(
+    themeProps('breadcrumb-item-menu-trigger'),
+    stylex.props(itemStyles.link, itemStyles.buttonReset),
+  )}
+/>
+```
+
+The second spread replaced the className the first built, so `astryx-breadcrumb-item-menu-trigger` — documented, registered, part of the public theming surface — rendered on no element at all, and a theme targeting it silently did nothing. Nothing else caught it: `themingTargets.test.ts` asserts documented targets are a **subset** of what source registers, so a target that renders on zero elements passes.
+
+**Scope:** two or more spreads on one opening element whose expressions are statically recognizable className producers. A spread of anything else — `{...rest}`, `{...popover.triggerProps}`, an unknown call — is not a producer and does not count, so one producer beside any number of those is fine. `mergeProps()` is the sanctioned merge and concatenates class names, so anything already inside a single `mergeProps()` call is correct however many producers it takes; it only becomes a problem beside a **second** spread that produces a className of its own. A producer reached through a conditional (`{...(cond ? stylex.props(a) : {})}`) is out of scope: no call site writes one, and reading through the branches invites guesses the rule cannot verify.
+
+Ships as a **warning in both tiers** for now. The spread check has exactly one violation in the repo, in `BreadcrumbItem.tsx`, whose fix is open in [#5332](https://github.com/facebook/astryx/pull/5332); both tiers go back to `error` when that lands.
+
+### `@astryx/disabled-cursor`
+
+Flags a `cursor` inside `stylex.create()` that does not give way to `default` on a disabled element. The cursor is the only affordance a pointer user gets **before** they commit to a click: `cursor: pointer` on a disabled control promises a click it will not honour, and `disabled`/`[aria-disabled]` do not change what the element's own declaration paints.
+
+A component's separate `disabled` style object is not the answer either — it only helps where the author remembered to write one, on the element the author had in mind: the inner input, not the label wrapping it; the trigger, not the icon inside it.
+
+**Bad:**
+
+```ts
+const styles = stylex.create({
+  trigger: {cursor: 'pointer'},
+});
+```
+
+**Good:**
+
+```ts
+const styles = stylex.create({
+  trigger: {
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
+});
+```
+
+The guarded condition outranks the default in StyleX's own ordering, so it wins the moment the element is disabled; on an element that can never be disabled it is a no-op.
+
+**Why `default` and not `not-allowed`.** A disabled control sealed behind `pointer-events: none` is never hit-tested, so it shows whatever its ancestor shows and no declaration on it can change that — 75 of the 635 disabled elements in the story set are sealed that way. One cursor everywhere beats a stronger one only half the library can paint, the disabled state already carries its own visual treatment, and this matches the internal XDS convention.
+
+**Scope:** every `cursor` a component writes, whatever the value — `default` itself is the only exemption. That breadth is not tidiness: StyleX merges `props()` one **property** at a time, so a later style setting `cursor` at all replaces the earlier declaration's conditions along with its value. SegmentedControlItem shipped exactly that — a guarded `cursor: pointer` on the base and a flat `cursor` in its `disabled` style applied after it, which threw the guard away. A computed value (`interactive ? 'grab' : undefined`) is left alone because the rule cannot know what it resolves to.
+
+Autofixable, and mirrored at runtime by `.github/scripts/disabled-cursor-audit.js`, which hit-tests every disabled element in every story in Chromium and fails on any other cursor. That sweep is what covers the two cases the lint rule cannot see: a computed value, and a disabled element whose cursor comes from somewhere other than its own declaration.
 
 Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.
 

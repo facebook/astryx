@@ -221,6 +221,8 @@ export const docsDense = {
       {guidance: true, description: 'Keep titles short: "Payment failed" not "There was a problem processing your payment."'},
       {guidance: false, description: 'Use for auto-dismissing messages; use Toast instead.'},
       {guidance: false, description: 'Stack multiple banners of the same status; combine into one.'},
+      {guidance: true, description: 'Error/warning render role="alert", info/success role="status"; mount an alert banner on an event, not first paint, so assistive tech announces it.'},
+      {guidance: false, description: 'Rely on status color or icon alone; state the status in the title text, since the icon is decorative to a screen reader.'},
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Set automatically from status.'},

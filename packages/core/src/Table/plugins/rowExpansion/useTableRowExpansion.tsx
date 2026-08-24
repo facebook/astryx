@@ -77,7 +77,10 @@ const expansionStyles = stylex.create({
     background: 'transparent',
     border: 'none',
     borderRadius: radiusVars['--radius-inner'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: colorVars['--color-icon-secondary'],
     transitionProperty: 'transform, color',
     transitionDuration: '150ms',

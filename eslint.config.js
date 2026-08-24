@@ -202,6 +202,24 @@ export default defineConfig(
       '@astryx/copyright-header': 'error',
     },
   },
+  // Locale-sensitive formatting in shipped packages must go through the
+  // provider-aware locale utilities, never raw Intl — see the rule's own doc
+  // comment and internal/eslint-plugin-astryx/README.md for the approved
+  // infrastructure boundary. Lab adopts this gate when a component graduates.
+  {
+    files: [
+      "packages/core/src/**/*.{ts,tsx}",
+      "packages/charts/src/**/*.{ts,tsx}",
+      "packages/richtext/src/**/*.{ts,tsx}",
+      "packages/vega/src/**/*.{ts,tsx}",
+    ],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-raw-intl-locale': 'error',
+    },
+  },
   // Astryx design token enforcement - applies to core package (excluding theme files)
   {
     files: ["packages/core/src/**/*.{ts,tsx}"],
@@ -223,9 +241,9 @@ export default defineConfig(
       '@astryx/no-hardcoded-i18n-string': isStrictMode ? 'error' : 'warn',
     },
   },
-  // A hover state on a disabled control is a defect wherever it ships, so
-  // this one rule reaches past core: lab components are consumed the same
-  // way, and lab is where the next core component comes from.
+  // What a disabled control says to the pointer is a defect wherever it
+  // ships, so these two rules reach past core: lab components are consumed
+  // the same way, and lab is where the next core component comes from.
   {
     files: ["packages/lab/src/**/*.{ts,tsx}"],
     plugins: {
@@ -233,6 +251,7 @@ export default defineConfig(
     },
     rules: {
       '@astryx/no-hover-on-disabled': 'error',
+      '@astryx/disabled-cursor': 'error',
     },
   },
   // The i18n runtime itself defines the message strings the rest of the

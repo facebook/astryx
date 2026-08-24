@@ -60,7 +60,7 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.4.5",
+    "@astryxdesign/core": "0.4.7",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
     "lexical": "^0.46.0",

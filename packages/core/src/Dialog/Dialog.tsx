@@ -8,6 +8,12 @@
  * @output Exports Dialog component, DialogProps, DialogVariant, DialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by Dialog.test.tsx
  *
+ * The standard variant treats `width` as the preferred surface width, then
+ * clamps it to the dynamic viewport with spacing-token gutters so narrow
+ * viewports keep content and controls on screen without changing the public API.
+ * Fullscreen dialogs preserve the same padding floor while honoring safe-area
+ * insets, and fade in without the centered-dialog translate/scale motion.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Dialog/Dialog.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Dialog/Dialog.test.tsx (tests for new/changed behavior)
@@ -35,6 +41,7 @@ import {
   durationVars,
   easeVars,
   shadowVars,
+  spacingVars,
 } from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
@@ -119,6 +126,11 @@ const enterDirectional = stylex.keyframes({
   to: {opacity: 1, transform: 'translate(0, 0) scale(1)'},
 });
 
+const enterFullscreen = stylex.keyframes({
+  from: {opacity: 0},
+  to: {opacity: 1},
+});
+
 /**
  * Dialog styles using native <dialog> element
  * Uses ::backdrop pseudo-element for overlay
@@ -172,6 +184,22 @@ const styles = stylex.create({
     margin: 0,
     inset: 0,
   },
+  fullscreenOpen: {
+    animationName: {
+      default: enterFullscreen,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
+  },
+  fullscreenSafeArea: {
+    paddingBlockStart:
+      'max(var(--container-padding-block-start), env(safe-area-inset-top, 0px))',
+    paddingBlockEnd:
+      'max(var(--container-padding-block-end), env(safe-area-inset-bottom, 0px))',
+    paddingInlineStart:
+      'max(var(--container-padding-inline-start), env(safe-area-inset-left, 0px))',
+    paddingInlineEnd:
+      'max(var(--container-padding-inline-end), env(safe-area-inset-right, 0px))',
+  },
   inner: {
     display: 'flex',
     flexDirection: 'column',
@@ -195,12 +223,30 @@ const styles = stylex.create({
   },
 });
 
-// Dynamic styles for width, maxHeight, and position
+const STANDARD_DIALOG_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const STANDARD_DIALOG_VIEWPORT_MAX_WIDTH = `calc(100dvw - ${STANDARD_DIALOG_VIEWPORT_GUTTER} - ${STANDARD_DIALOG_VIEWPORT_GUTTER})`;
+const STANDARD_DIALOG_MAX_WIDTH = `min(100%, ${STANDARD_DIALOG_VIEWPORT_MAX_WIDTH})`;
+
+function formatSizeValue(value: number | string): string {
+  return typeof value === 'number' ? `${value}px` : value;
+}
+
+function resolveDialogSizing(
+  width: number | string,
+  maxHeight: number | string,
+) {
+  return {
+    width: formatSizeValue(width),
+    maxWidth: STANDARD_DIALOG_MAX_WIDTH,
+    maxHeight: formatSizeValue(maxHeight),
+  };
+}
+
 const dynamicStyles = stylex.create({
-  sizing: (width: number | string, maxHeight: number | string) => ({
-    width: typeof width === 'number' ? `${width}px` : width,
-    maxWidth: '90vw',
-    maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
+  sizing: (width: string, maxWidth: string, maxHeight: string) => ({
+    width,
+    maxWidth,
+    maxHeight,
   }),
   position: (
     top: string,
@@ -289,7 +335,7 @@ export interface DialogProps extends BaseProps<HTMLDialogElement> {
    * The actual height will be the height of its content.
    * Numbers are treated as pixels, strings are used as-is.
    * Ignored when variant is 'fullscreen'.
-   * @default '75vh'
+   * @default '75dvh'
    */
   maxHeight?: number | string;
 
@@ -357,7 +403,7 @@ export function Dialog({
   isInline = false,
   onOpenChange,
   width = 400,
-  maxHeight = '75vh',
+  maxHeight = '75dvh',
   position,
   variant = 'standard',
   purpose = 'info',
@@ -375,6 +421,9 @@ export function Dialog({
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
 
   const isFullscreen = variant === 'fullscreen';
+  const standardSizing = isFullscreen
+    ? null
+    : resolveDialogSizing(width, maxHeight);
 
   // Default accessible name: publish a title id through DialogContext so a
   // DialogHeader applies it to its heading (mirrors AlertDialog's explicit
@@ -553,7 +602,6 @@ export function Dialog({
     }
   };
 
-  // Shared inner content wrapper
   const innerContent = (
     <div
       {...stylex.props(
@@ -562,22 +610,14 @@ export function Dialog({
           useThemeDefault
             ? {
                 useThemeDefault: 'dialog',
-                maxHeight: isFullscreen
-                  ? undefined
-                  : typeof maxHeight === 'number'
-                    ? `${maxHeight}px`
-                    : maxHeight,
+                maxHeight: standardSizing?.maxHeight,
               }
             : {
                 paddingInnerX: paddingToken,
                 paddingInnerY: paddingToken,
                 paddingOuterX: paddingToken,
                 paddingOuterY: paddingToken,
-                maxHeight: isFullscreen
-                  ? undefined
-                  : typeof maxHeight === 'number'
-                    ? `${maxHeight}px`
-                    : maxHeight,
+                maxHeight: standardSizing?.maxHeight,
               },
         ),
         !useThemeDefault &&
@@ -592,6 +632,7 @@ export function Dialog({
         !useThemeDefault &&
           effectivePadding !== 4 &&
           containerPaddingBlockEndVarStyles[effectivePadding],
+        isFullscreen && styles.fullscreenSafeArea,
       )}>
       <DialogContext value={dialogContextValue}>{children}</DialogContext>
     </div>
@@ -615,7 +656,12 @@ export function Dialog({
           stylex.props(
             styles.inlineWrapper,
             overlayPaddingReset.reset,
-            !isFullscreen && dynamicStyles.sizing(width, maxHeight),
+            standardSizing &&
+              dynamicStyles.sizing(
+                standardSizing.width,
+                standardSizing.maxWidth,
+                standardSizing.maxHeight,
+              ),
             isFullscreen && styles.fullscreen,
             xstyle,
           ),
@@ -644,7 +690,12 @@ export function Dialog({
           overlayPaddingReset.reset,
           isOpen && styles.open,
           styles.backdrop,
-          !isFullscreen && dynamicStyles.sizing(width, maxHeight),
+          standardSizing &&
+            dynamicStyles.sizing(
+              standardSizing.width,
+              standardSizing.maxWidth,
+              standardSizing.maxHeight,
+            ),
           hasPosition &&
             (() => {
               const o = resolveDialogPositionOffsets(position);
@@ -656,6 +707,7 @@ export function Dialog({
               );
             })(),
           isFullscreen && styles.fullscreen,
+          isFullscreen && isOpen && styles.fullscreenOpen,
           xstyle,
         ),
         className,

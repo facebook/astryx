@@ -191,7 +191,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     boxSizing: 'border-box',
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     display: 'flex',
     fontWeight: fontWeightVars['--font-weight-normal'],
     outline: 'none',
