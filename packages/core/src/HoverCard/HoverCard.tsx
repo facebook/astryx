@@ -259,7 +259,26 @@ export function HoverCard({
     // Use combined ref for position + interaction
     hoverCard.ref(firstChild);
 
-    // Set aria-describedby, merging with existing
+    if (label) {
+      // When named, the hover card is a dialog. The trigger should advertise the
+      // popup relationship with aria-haspopup/aria-expanded, not describe the
+      // trigger with the dialog's content (aria-describedby is for plain-text
+      // descriptions, not navigable regions). See #5049.
+      firstChild.setAttribute('aria-haspopup', 'dialog');
+      firstChild.setAttribute('aria-controls', hoverCard.id);
+      firstChild.setAttribute('aria-expanded', String(hoverCard.isOpen));
+
+      return () => {
+        hoverCard.ref(null);
+        firstChild.removeAttribute('aria-haspopup');
+        firstChild.removeAttribute('aria-controls');
+        firstChild.removeAttribute('aria-expanded');
+      };
+    }
+
+    // Unnamed fallback: the popup remains role="group", which is not a dialog,
+    // so keep the previous description relationship until a naming decision is
+    // made for the no-label case (tracked in #5049).
     const existingDescribedBy = firstChild.getAttribute('aria-describedby');
     firstChild.setAttribute(
       'aria-describedby',
@@ -274,7 +293,14 @@ export function HoverCard({
         firstChild.removeAttribute('aria-describedby');
       }
     };
-  }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
+  }, [
+    textOnly,
+    label,
+    hoverCard.ref,
+    hoverCard.id,
+    hoverCard.isOpen,
+    hoverCard.describedBy,
+  ]);
 
   // While closed, useLayer leaves only an inert <template> marker at this JSX
   // position. When the card needs to open, it uses that marker to keep the
@@ -293,7 +319,10 @@ export function HoverCard({
         <span
           ref={hoverCard.ref}
           tabIndex={0}
-          aria-describedby={hoverCard.describedBy}
+          aria-haspopup={label ? 'dialog' : undefined}
+          aria-controls={label ? hoverCard.id : undefined}
+          aria-expanded={label ? hoverCard.isOpen : undefined}
+          aria-describedby={label ? undefined : hoverCard.describedBy}
           {...stylex.props(
             styles.wrapperInline,
             showHoverIndication && styles.hoverIndication,

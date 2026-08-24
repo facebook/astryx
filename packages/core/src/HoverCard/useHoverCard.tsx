@@ -190,10 +190,21 @@ export interface HoverCardReturn {
   anchorId: string;
 
   /**
-   * ID for aria-describedby on the trigger element.
-   * Caller should compose with other IDs using mergeIds utility.
+   * Unique ID for the hover card container.
+   * Useful for `aria-controls` or `aria-owns` on the trigger.
+   */
+  id: string;
+
+  /**
+   * Deprecated alias of `id`. Kept for backwards compatibility; prefer `id`.
    */
   describedBy: string;
+
+  /**
+   * Whether the hover card is currently open.
+   * Useful for driving `aria-expanded` on the trigger.
+   */
+  isOpen: boolean;
 
   /**
    * Render function for hover card content.
@@ -681,7 +692,9 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     positionRef: layer.ref,
     interactionRef,
     anchorId: layer.anchorId,
+    id: layer.id,
     describedBy: layer.id,
+    isOpen: layer.isOpen,
     renderHoverCard,
     show: layer.show,
     hide: layer.hide,

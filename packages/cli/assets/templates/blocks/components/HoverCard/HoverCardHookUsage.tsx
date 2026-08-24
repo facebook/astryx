@@ -20,7 +20,9 @@ export default function HoverCardHookUsage() {
       <Button
         label="Hover profile"
         ref={hoverCard.ref}
-        aria-describedby={hoverCard.describedBy}
+        aria-haspopup="dialog"
+        aria-controls={hoverCard.id}
+        aria-expanded={hoverCard.isOpen}
       />
       {hoverCard.renderHoverCard(
         <VStack gap={1}>

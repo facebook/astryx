@@ -365,7 +365,20 @@ describe('HoverCard', () => {
     );
   });
 
-  it('injects aria-describedby on trigger', () => {
+  it('advertises a dialog popup on the trigger when labelled', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <button type="button">Trigger</button>
+      </HoverCard>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger).toHaveAttribute('aria-controls');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('keeps aria-describedby on the trigger when no label is provided', () => {
     render(
       <HoverCard content={<span>Card content</span>}>
         <button type="button">Trigger</button>
@@ -373,9 +386,10 @@ describe('HoverCard', () => {
     );
     const trigger = screen.getByRole('button', {name: 'Trigger'});
     expect(trigger).toHaveAttribute('aria-describedby');
+    expect(trigger).not.toHaveAttribute('aria-haspopup');
   });
 
-  it('merges existing aria-describedby', () => {
+  it('preserves existing aria-describedby when no label is provided', () => {
     render(
       <HoverCard content={<span>Card content</span>}>
         <button type="button" aria-describedby="existing-id">
@@ -386,6 +400,29 @@ describe('HoverCard', () => {
     const trigger = screen.getByRole('button', {name: 'Trigger'});
     const describedBy = trigger.getAttribute('aria-describedby');
     expect(describedBy).toContain('existing-id');
+  });
+
+  it('updates aria-expanded when the labelled hover card opens and closes', async () => {
+    render(
+      <HoverCard
+        content={<span>Card content</span>}
+        label="Profile actions"
+        delay={0}>
+        <button type="button">Trigger</button>
+      </HoverCard>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.mouseEnter(trigger);
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    fireEvent.mouseLeave(trigger);
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
   });
 
   it('calls onOpenChange(true) when shown', async () => {
@@ -429,16 +466,31 @@ describe('HoverCard', () => {
 
   it('supports text-only children with inline wrapper', () => {
     render(
-      <HoverCard content={<span>Card content</span>}>
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
         Just text, no element
       </HoverCard>,
     );
     // Text should be rendered
     expect(screen.getByText('Just text, no element')).toBeInTheDocument();
-    // Should have aria-describedby on the wrapper span
+    // When labelled, the wrapper advertises a dialog popup.
+    const wrapper = screen.getByText('Just text, no element');
+    expect(wrapper.tagName).toBe('SPAN');
+    expect(wrapper).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(wrapper).toHaveAttribute('aria-expanded', 'false');
+    expect(wrapper).toHaveAttribute('aria-controls');
+    expect(wrapper).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('keeps aria-describedby on text-only children when no label is provided', () => {
+    render(
+      <HoverCard content={<span>Card content</span>}>
+        Just text, no element
+      </HoverCard>,
+    );
     const wrapper = screen.getByText('Just text, no element');
     expect(wrapper.tagName).toBe('SPAN');
     expect(wrapper).toHaveAttribute('aria-describedby');
+    expect(wrapper).not.toHaveAttribute('aria-haspopup');
   });
 
   describe('isDefaultOpen', () => {
