@@ -132,8 +132,8 @@ export interface LayerStackEntry {
 }
 
 const entries: LayerStackEntry[] = [];
-// Open order per layer identity. A layer re-registers whenever its depth or
-// behavior changes — a Dialog whose `purpose` flips while open, a focus trap
+// Registration order per layer identity. A layer re-registers whenever its
+// depth or behavior changes — a Dialog whose `purpose` flips while open, a focus trap
 // that moves — and StrictMode remounts every effect once more on top of that.
 // Counting registrations instead would hand the layer a fresh, higher seq each
 // time and promote it above the layers opened over it.
@@ -163,8 +163,11 @@ function seqFor(token: object): number {
  *    `LayerDepthProvider`, which a bare `useFocusTrap` cannot do — it renders
  *    nothing. For those, containment recovers the nesting the tree did not
  *    report.
- * 3. **Registration order.** For unrelated layers, the one opened later is on
- *    top, matching how the browser's own top layer stacks.
+ * 3. **Registration order.** For unrelated layers, the one that registered
+ *    later is on top, matching how the browser's own top layer stacks. A layer
+ *    keeps its first place for as long as its identity lives, so one that
+ *    closes and reopens does not move to the top — see the known edge in the
+ *    pull request.
  *
  * Modality is deliberately NOT a key. Ranking modals above everything sounds
  * right and is not: a hover tip shown inside a modal renders on top of it, so
