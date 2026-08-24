@@ -159,8 +159,17 @@ function applyRowSelectionStyle(
   }
   // Written on every pass, not just when painting: the flag can flip while a
   // row is already selected, and the wash has to come back off.
-  el.style.backgroundColor =
-    isSelected && hasRowHighlight ? selectedBgColor : '';
+  const wash = isSelected && hasRowHighlight ? selectedBgColor : '';
+  el.style.backgroundColor = wash;
+  // A pinned column paints its own opaque background over the row, so the
+  // wash alone stops at the freeze line. Publishing it as the row overlay is
+  // what lets useTableStickyColumns replay it on those cells — the same
+  // contract TableRow honours for striping and hover.
+  if (wash === '') {
+    el.style.removeProperty(ROW_OVERLAY_VAR);
+  } else {
+    el.style.setProperty(ROW_OVERLAY_VAR, wash);
+  }
 }
 
 // =============================================================================
@@ -305,6 +314,13 @@ function SelectionCellContentInner<T extends Record<string, unknown>>({
 // =============================================================================
 
 const selectedBgColor = colorVars['--color-accent-muted'];
+
+/**
+ * The row's current fill, republished for pinned cells to read. Declared as a
+ * literal rather than imported because StyleX needs the same name as a static
+ * key on the reading side, so there is no one constant both ends can share.
+ */
+const ROW_OVERLAY_VAR = '--table-row-overlay';
 
 const selectionColumnStyles = stylex.create({
   center: {
