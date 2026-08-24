@@ -136,6 +136,10 @@ export interface HoverCardOptions {
    * - `true`: force-show the hover card (hover/focus hide is suppressed)
    * - `false`: force-hide the hover card
    * - `undefined`: uncontrolled — hover/focus triggers manage visibility
+   *
+   * A controlled hover card also stops taking Escape: the system cannot dismiss
+   * something whose visibility you are holding, so the press falls through to
+   * whatever is underneath — a Dialog hosting it will close instead.
    */
   isOpen?: boolean;
 
