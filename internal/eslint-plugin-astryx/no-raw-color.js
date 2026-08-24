@@ -170,26 +170,47 @@ const ALPHA_ONLY_PROPERTIES = new Set([
 ]);
 
 /**
+ * Is the object holding this property the argument to `stylex.create()`?
+ *
+ * Its keys are style-RULE names — `nav`, `fadeStart` — not CSS properties, so a
+ * rule someone names `mask` must not exempt the declarations inside it.
+ */
+function isStyleRuleName(property) {
+  const object = property.parent;
+  const call = object?.parent;
+  return (
+    object?.type === 'ObjectExpression' &&
+    call?.type === 'CallExpression' &&
+    call.arguments.includes(object) &&
+    call.callee?.type === 'MemberExpression' &&
+    call.callee.object?.name === 'stylex' &&
+    call.callee.property?.name === 'create'
+  );
+}
+
+/**
  * Is this literal a value of a property whose colour channel is discarded?
  *
- * The walk climbs to the nearest STYLE property rather than the nearest
- * property, because a value can sit several nodes below the one that names it:
- * a ternary picking one of two gradients, a `??` default, and — the shape this
- * repo actually writes — StyleX's conditional object, where the gradient is the
- * value of `default` inside the value of `maskImage`
- * (`TabList.tsx:261` and `Carousel.tsx:187`). Everything under a `maskImage`
- * key is a mask value, so finding that key anywhere up the chain is the answer.
+ * The walk climbs to the nearest CSS property rather than the nearest property,
+ * because a value can sit several nodes below the one that names it: a ternary
+ * picking one of two gradients, a `??` default, and — the shape this repo
+ * writes — StyleX's conditional object, where the gradient is the value of
+ * `default` inside the value of `maskImage` (`TabList.tsx:261`,
+ * `Carousel.tsx:187`). Everything under a `maskImage` key is a mask value, so
+ * finding that key anywhere up the chain is the answer.
  *
- * Only the node types a value can nest inside are traversed, so the walk stops
- * at the first thing that is not one and can never wander out of the style
- * object.
+ * Two things a match must not be: a style-RULE named `mask`, whose contents are
+ * ordinary declarations, and a computed key, whose identifier is a variable
+ * name rather than the property it resolves to. Only the node types a value can
+ * nest inside are traversed, so the walk stops at the first thing that is not
+ * one and can never leave the style object.
  */
 function isAlphaOnlyValue(node) {
   let current = node;
   for (let parent = current.parent; parent; parent = current.parent) {
     if (parent.type === 'Property' && parent.value === current) {
-      const key = parent.key?.name ?? parent.key?.value;
-      if (ALPHA_ONLY_PROPERTIES.has(key)) {
+      const key = parent.computed ? undefined : parent.key?.name ?? parent.key?.value;
+      if (ALPHA_ONLY_PROPERTIES.has(key) && !isStyleRuleName(parent)) {
         return true;
       }
       current = parent;

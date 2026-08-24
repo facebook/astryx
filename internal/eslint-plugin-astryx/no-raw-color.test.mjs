@@ -252,6 +252,21 @@ ruleTester.run('no-raw-color', rule, {
       }});`,
       errors: [{messageId: 'rawColor'}, {messageId: 'rawColor'}, {messageId: 'rawColor'}],
     },
+    // A style RULE named `mask` is not the CSS property — `stylex.create()`'s
+    // top-level keys are rule names, and the declarations inside one are
+    // ordinary paint.
+    {
+      filename: IN_COMPONENT,
+      code: `const s = stylex.create({mask: {backgroundColor: 'rgba(0, 0, 0, 0.5)'}});`,
+      errors: one,
+    },
+    // A computed key's identifier is a variable name, not the property it
+    // resolves to.
+    {
+      filename: IN_COMPONENT,
+      code: `const s = stylex.create({a: {[maskImage]: '#f00'}});`,
+      errors: one,
+    },
     // The theme exemption is matched by POSITION, not by directory name: a
     // `theme/` a component happens to nest inside itself is component source.
     // This is the boundary, and it is pinned from both sides — the two valid

@@ -915,7 +915,7 @@ that:
 | A colour assembled from values passed in — `rgba(${r}, ${g}, ${b}, ${a})` | ❌ no     |
 | Every channel from a token — `rgb(var(--r) var(--g) var(--b))`            | ❌ no     |
 | `'rgb('` with no closing parenthesis (a parser's prefix)                  | ❌ no     |
-| `mask`/`maskImage`/`maskMode` and friends — colour resolves through alpha | ❌ no     |
+| `mask`/`maskImage` and friends — the colour resolves through alpha        | ❌ no     |
 
 Two of those are worth the detail. A **colour function only counts when its
 arguments carry a literal digit** — that separates authoring a colour from
