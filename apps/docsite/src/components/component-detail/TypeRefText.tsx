@@ -26,6 +26,9 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     borderStyle: 'none',
     padding: 0,
+    // A button's UA text-align is `center`, which centres a wrapped type name
+    // in the fixed-width Type column of the hook tables.
+    textAlign: 'start',
     fontFamily: 'inherit',
     fontSize: 'inherit',
     lineHeight: 'inherit',
@@ -55,7 +58,7 @@ const styles = stylex.create({
  * inspect the shape without leaving the table (#2682). The popover mirrors
  * the Popover + Card + CodeExampleBlock pattern used by PackageActions.
  */
-export function TypeDefinitionTrigger({def}: {def: TypeDefinition}) {
+function TypeDefinitionTrigger({def}: {def: TypeDefinition}) {
   return (
     <Popover
       width="min(480px, calc(100vw - 32px))"
