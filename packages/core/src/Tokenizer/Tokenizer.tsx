@@ -156,6 +156,8 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   hasEntriesOnFocus?: boolean;
   /** Max dropdown items. @default 10 */
   maxMenuItems?: number;
+  /** Fixed dropdown width in pixels. Never shrinks below the input width. */
+  menuWidth?: number;
   /** Text shown when no results found. @default 'No results found' */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
@@ -224,7 +226,10 @@ const styles = stylex.create({
     position: 'relative',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
-    cursor: 'text',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     height: 'auto',
   },
   wrapperWithTokens: {
@@ -390,6 +395,7 @@ export function Tokenizer<T extends SearchableItem>({
   placeholder,
   hasEntriesOnFocus,
   maxMenuItems,
+  menuWidth,
   emptySearchResultsText,
   isDisabled = false,
   htmlName,
@@ -775,6 +781,7 @@ export function Tokenizer<T extends SearchableItem>({
         placeholder={value.length === 0 ? placeholder : ''}
         hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
         maxMenuItems={maxMenuItems}
+        menuWidth={menuWidth}
         emptySearchResultsText={emptySearchResultsText}
         isDisabled={isDisabled}
         isFocusableDisabled={showsDisabledMessage}

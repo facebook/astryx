@@ -35,11 +35,12 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {mergeProps, mergeRefs, rtlStyles} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import type {ResizableProps} from './useResizable';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
 
@@ -119,12 +120,18 @@ const styles = stylex.create({
   horizontal: {
     width: 1,
     height: '100%',
-    cursor: 'col-resize',
+    cursor: {
+      default: 'col-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   vertical: {
     height: 1,
     width: '100%',
-    cursor: 'row-resize',
+    cursor: {
+      default: 'row-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   noDividerHorizontal: {
     backgroundColor: 'transparent',
@@ -155,13 +162,19 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     top: 0,
     bottom: 0,
-    cursor: 'col-resize',
+    cursor: {
+      default: 'col-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   hitAreaVertical: {
     height: spacingVars['--spacing-4'],
     insetInlineStart: 0,
     insetInlineEnd: 0,
-    cursor: 'row-resize',
+    cursor: {
+      default: 'row-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Centered grab zone (pillPlacement 'center' / no bias): sit the hit area on
   // the divider itself. Inline centering comes from rtlStyles.centerInline at
@@ -537,7 +550,7 @@ export function ResizeHandle({
 
   return (
     <div
-      ref={mergeRefs(ref, handleRef)}
+      ref={useMergedRefs(ref, handleRef)}
       role="separator"
       aria-orientation={isHorizontal ? 'vertical' : 'horizontal'}
       aria-valuenow={ariaValueNow}

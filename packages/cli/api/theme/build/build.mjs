@@ -44,6 +44,10 @@ import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
 import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
 import {
+  collectThemingTargets,
+  targetsByKey,
+} from '../../../foundation/discovery/theming-targets.mjs';
+import {
   collectUnloadedFonts,
   formatFontLoadingHelp,
 } from './font-warning.mjs';
@@ -882,6 +886,9 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
  * Returns null when docs are unavailable so validation can skip unknown-key
  * warnings rather than guessing from a second registry.
  *
+ * Shares its enumeration with `theme targets`, so what a theme author can list
+ * is exactly what this validator accepts.
+ *
  * @returns {Promise<Record<string, string[]> | null>}
  */
 async function loadKnownComponents() {
@@ -889,44 +896,7 @@ async function loadKnownComponents() {
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return null;
 
-  /** @type {Record<string, string[]>} */
-  const targets = {};
-
-  /** @param {string} dir */
-  async function scan(dir) {
-    const entries = fs.readdirSync(dir, {withFileTypes: true});
-    for (const entry of entries) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
-        await scan(full);
-        continue;
-      }
-      if (!entry.name.endsWith('.doc.mjs')) continue;
-
-      /** @type {any} */
-      let doc;
-      try {
-        doc = await loadComponentDoc(full);
-      } catch {
-        continue;
-      }
-
-      for (const target of doc?.theming?.targets || []) {
-        const className = target?.className;
-        if (typeof className !== 'string') continue;
-        const key = className.replace(/^astryx-/, '');
-        if (!key) continue;
-        const props = [target.visualProps, target.states]
-          .filter(list => Array.isArray(list))
-          .flat()
-          .filter((/** @type {unknown} */ p) => typeof p === 'string');
-        targets[key] = [...new Set([...(targets[key] || []), ...props])];
-      }
-    }
-  }
-
-  await scan(coreSrc);
+  const targets = targetsByKey(await collectThemingTargets(coreSrc));
   return Object.keys(targets).length > 0 ? targets : null;
 }
 

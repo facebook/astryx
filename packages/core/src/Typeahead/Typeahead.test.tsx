@@ -420,6 +420,55 @@ describe('BaseTypeahead focus-out', () => {
     });
   });
 
+  it('closes the list on the Tab keydown, before the blur it produces', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    input.focus();
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // No blur is fired here on purpose: dismissing from the blur instead lets
+    // the popover close mid-focus-move, which Chrome answers by dropping
+    // focus to <body>.
+    fireEvent.keyDown(input, {key: 'Tab'});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('Tab from the input with the list open moves focus to the next control', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+        <button type="button">Next</button>
+      </>,
+    );
+    const input = screen.getByRole('combobox');
+    input.focus();
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    await user.keyboard('{Tab}');
+    expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
+  });
+
   it('keeps the dropdown open when focus moves into the anchor wrapper', async () => {
     const anchor = document.createElement('div');
     document.body.appendChild(anchor);

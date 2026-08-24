@@ -29,6 +29,15 @@ export type {
   FixedLayerReturn,
 } from './useLayer';
 
+// Layer dismissal stack — one Escape owner for every overlay family
+export {useLayerDismissal} from './useLayerDismissal';
+export type {
+  LayerEscapeBehavior,
+  UseLayerDismissalOptions,
+  UseLayerDismissalReturn,
+} from './useLayerDismissal';
+export {LayerDepthProvider} from './LayerDepthContext';
+
 // Shared touch behavior for the hover layers
 export {useTouchTrigger, isActionTrigger} from './useTouchTrigger';
 export type {

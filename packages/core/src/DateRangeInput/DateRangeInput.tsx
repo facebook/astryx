@@ -106,7 +106,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     outline: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -116,7 +119,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   triggerDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   iconButton: {
     display: 'flex',
@@ -127,11 +130,14 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
   },
   iconButtonDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   popoverLayout: {
     display: 'flex',
@@ -164,7 +170,10 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
   },
   presetButtonActive: {
@@ -173,7 +182,7 @@ const styles = stylex.create({
   },
   presetButtonDisabled: {
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
     backgroundColor: 'transparent',
   },
 });

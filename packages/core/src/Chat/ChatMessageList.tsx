@@ -10,7 +10,8 @@
  *
  * Renders a container with role="log" for chat message histories.
  * Handles density context, configurable gap, empty state,
- * a spacer that pushes messages to the bottom, and an infinite scroll sentinel.
+ * a configurable spacer (align) that pushes messages to the bottom,
+ * and an infinite scroll sentinel.
  *
  * Auto-scroll and the scroll-to-bottom button are owned by
  * ChatLayout. When used standalone (without a layout), the list
@@ -72,6 +73,24 @@ export interface ChatMessageListProps extends BaseProps<HTMLDivElement> {
    * be grouped) and row spacing should be tuned separately from density.
    */
   gap?: SpacingStep;
+
+  /**
+   * Vertical alignment of messages when the list is shorter than its
+   * container.
+   *
+   * - `'bottom'` (default): a spacer fills the free space and pushes
+   *   messages to the bottom, so a short conversation sits just above the
+   *   composer — the familiar messaging-app layout.
+   * - `'top'`: the spacer is omitted, so messages start at the top and grow
+   *   downward — better for document-style or log-style lists.
+   *
+   * This only changes the resting position of a non-full list. Once messages
+   * overflow the container the spacer collapses to zero in both modes, so
+   * ChatLayout auto-scroll-to-bottom behavior is identical either way.
+   *
+   * @default 'bottom'
+   */
+  align?: 'top' | 'bottom';
 
   /**
    * Whether an assistant message is actively streaming into the list.
@@ -183,7 +202,8 @@ const gapStyles = stylex.create({
  *
  * Renders messages in a flex column with density-based spacing.
  * Override gap to tune row spacing separately from density.
- * A spacer pushes content to the bottom when the list isn't full.
+ * By default a spacer pushes content to the bottom when the list isn't full;
+ * set `align='top'` to start messages at the top instead.
  * Supports loading older messages via `scrollToTopAction`.
  *
  * Auto-scroll and the scroll-to-bottom button are owned by
@@ -204,6 +224,7 @@ export function ChatMessageList({
   scrollToTopAction,
   density = 'balanced',
   gap,
+  align = 'bottom',
   isStreaming = false,
   xstyle,
   className,
@@ -291,8 +312,11 @@ export function ChatMessageList({
             </div>
           )}
 
-          {/* Spacer pushes messages to bottom when list isn't full */}
-          <div {...stylex.props(styles.spacer)} aria-hidden />
+          {/* Spacer pushes messages to bottom when the list isn't full.
+              Omitted for top alignment so messages start at the top. */}
+          {align === 'bottom' && (
+            <div {...stylex.props(styles.spacer)} aria-hidden />
+          )}
 
           {/* Messages or empty state */}
           {hasChildren ? (

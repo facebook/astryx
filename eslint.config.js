@@ -202,6 +202,23 @@ export default defineConfig(
       '@astryx/copyright-header': 'error',
     },
   },
+  // Table rows must sit inside a table section. `<table>` cannot contain a
+  // `<tr>` directly: the HTML parser inserts an implied `<tbody>` when it
+  // parses server-rendered markup and React does not when it renders on the
+  // client, so the two trees mismatch on hydration (#5277). Repo-wide, not
+  // core-only — the shape reached a shipped CLI page template, which consumers
+  // copy into their own apps, and the @eslint-react DOM rules below are scoped
+  // to packages/core/src.
+  {
+    files: ["**/*.{ts,tsx}"],
+    ignores: ["**/*.d.ts", "**/dist/**"],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/require-table-section': 'error',
+    },
+  },
   // Locale-sensitive formatting in shipped packages must go through the
   // provider-aware locale utilities, never raw Intl — see the rule's own doc
   // comment and internal/eslint-plugin-astryx/README.md for the approved
@@ -241,9 +258,9 @@ export default defineConfig(
       '@astryx/no-hardcoded-i18n-string': isStrictMode ? 'error' : 'warn',
     },
   },
-  // A hover state on a disabled control is a defect wherever it ships, so
-  // this one rule reaches past core: lab components are consumed the same
-  // way, and lab is where the next core component comes from.
+  // What a disabled control says to the pointer is a defect wherever it
+  // ships, so these two rules reach past core: lab components are consumed
+  // the same way, and lab is where the next core component comes from.
   {
     files: ["packages/lab/src/**/*.{ts,tsx}"],
     plugins: {
@@ -251,6 +268,7 @@ export default defineConfig(
     },
     rules: {
       '@astryx/no-hover-on-disabled': 'error',
+      '@astryx/disabled-cursor': 'error',
     },
   },
   // The i18n runtime itself defines the message strings the rest of the

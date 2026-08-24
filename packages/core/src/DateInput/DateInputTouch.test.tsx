@@ -56,6 +56,7 @@ import {
 } from './monthGeometry';
 import {SWIPE_DISTANCE} from './useOwnScrollGesture';
 import {DRAG_SLOP} from './usePointerDragScroll';
+import {SCROLL_QUIET_MS} from './useScrollSettle';
 
 // ---------------------------------------------------------------------------
 // jsdom scaffolding
@@ -218,6 +219,11 @@ function Controlled({
   return (
     <DateInput
       label="Event date"
+      // This suite is about Astryx's own touch surface, which is now opt-out:
+      // `nativePicker` defaults to 'touch', so a coarse pointer gets the
+      // platform's picker unless a field says otherwise. Tests that assert on
+      // the surface selection itself pass their own value over this.
+      nativePicker="never"
       {...DEFAULT_RANGE}
       {...props}
       value={value}
@@ -275,6 +281,16 @@ function weekdayRow(): HTMLElement {
 // ---------------------------------------------------------------------------
 
 describe('DateInput — surface selection', () => {
+  it('hands a touch device to the platform picker by default', () => {
+    // `nativePicker` defaults to 'touch': the OS draws the picker unless a
+    // field opts out. Everything else in this file passes 'never', so this is
+    // the one place the default itself is asserted.
+    stubMedia({pointer: 'coarse', width: 393});
+    render(<DateInput label="Event date" onChange={() => {}} />);
+    const input = document.querySelector('input');
+    expect(input).toHaveAttribute('type', 'date');
+  });
+
   it('switches on the pointer alone, so a tablet gets the picker too', () => {
     // `pointer` is the PRIMARY device, which is what makes it the whole test:
     // a touchscreen laptop reports `fine` (its trackpad) and keeps the
@@ -319,7 +335,7 @@ describe('DateInput — surface selection', () => {
     setViewport('desktop');
     const onChange = vi.fn();
     render(
-      <DateInput label="Event date" onChange={onChange} min={undefined} />,
+      <DateInput nativePicker="never" label="Event date" onChange={onChange} min={undefined} />,
     );
     fireEvent.change(field(), {target: {value: '2026-03-25'}});
     expect(onChange).toHaveBeenCalledWith('2026-03-25');
@@ -359,12 +375,12 @@ describe('DateInput — surface selection', () => {
 describe('DateInput — field parity', () => {
   it('shows a placeholder until a date is chosen, then the formatted value', () => {
     const {rerender} = render(
-      <DateInput label="Ship date" onChange={() => {}} />,
+      <DateInput nativePicker="never" label="Ship date" onChange={() => {}} />,
     );
     expect(field()).toHaveValue('');
     expect(field()).toHaveAttribute('placeholder', 'Select a date');
     rerender(
-      <DateInput label="Ship date" value="2026-03-21" onChange={() => {}} />,
+      <DateInput nativePicker="never" label="Ship date" value="2026-03-21" onChange={() => {}} />,
     );
     expect(field()).toHaveValue('March 21, 2026');
   });
@@ -372,6 +388,7 @@ describe('DateInput — field parity', () => {
   it('honors a named format', () => {
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         value="2026-03-21"
         format="system_date"
@@ -384,6 +401,7 @@ describe('DateInput — field parity', () => {
   it('honors a function format', () => {
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         value="2026-03-21"
         format={iso => `ISO:${iso}`}
@@ -396,6 +414,7 @@ describe('DateInput — field parity', () => {
   it('honors a custom placeholder', () => {
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         placeholder="Pick a day"
         onChange={() => {}}
@@ -408,6 +427,7 @@ describe('DateInput — field parity', () => {
     const onChange = vi.fn();
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         value="2026-03-21"
         hasClear
@@ -418,9 +438,46 @@ describe('DateInput — field parity', () => {
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
+  it('returns focus to the field without letting the page scroll', async () => {
+    // Clearing unmounts the clear button, and focusing another element in the
+    // same task as that unmount makes iOS Safari scroll the document to the
+    // top. Measured on the iOS 26 simulator against the live docsite, field at
+    // scrollY 2055: synchronous focus lands at 0, deferred focus stays at
+    // 2055. `preventScroll` alone does not fix it, so both halves are
+    // asserted: the focus is deferred past the unmount, and it is passed
+    // preventScroll. jsdom implements no scrolling, so the guard is asserted
+    // at the call.
+    vi.useFakeTimers();
+    try {
+      render(
+        <DateInput
+          nativePicker="never"
+          label="Ship date"
+          value="2026-03-21"
+          hasClear
+          onChange={() => {}}
+        />,
+      );
+      const input = field();
+      const focus = vi.spyOn(input, 'focus');
+
+      fireEvent.click(screen.getByRole('button', {name: /Clear Ship date/}));
+
+      // Not synchronous — that is the whole point.
+      expect(focus).not.toHaveBeenCalled();
+
+      vi.runAllTimers();
+
+      expect(focus).toHaveBeenCalledWith({preventScroll: true});
+      focus.mockRestore();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('does not open the picker until the field is tapped', () => {
     withLayout(() => {
-      render(<DateInput label="Ship date" onChange={() => {}} />);
+      render(<DateInput nativePicker="never" label="Ship date" onChange={() => {}} />);
       expect(field()).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('grid')).not.toBeInTheDocument();
       fireEvent.click(field());
@@ -438,7 +495,7 @@ describe('DateInput — field parity', () => {
   });
 
   it('is not openable while disabled', () => {
-    render(<DateInput label="Ship date" isDisabled onChange={() => {}} />);
+    render(<DateInput nativePicker="never" label="Ship date" isDisabled onChange={() => {}} />);
     expect(field()).toBeDisabled();
     fireEvent.click(field());
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
@@ -447,6 +504,7 @@ describe('DateInput — field parity', () => {
   it('stays focusable and explains itself when disabled with a reason', () => {
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         isDisabled
         disabledMessage="You need the Editor role"
@@ -463,6 +521,7 @@ describe('DateInput — field parity', () => {
   it('renders label, description and status through Field', () => {
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         description="When it leaves the warehouse"
         status={{type: 'error', message: 'Pick a date'}}
@@ -479,12 +538,12 @@ describe('DateInput — field parity', () => {
   });
 
   it('marks required for assistive technology', () => {
-    render(<DateInput label="Ship date" isRequired onChange={() => {}} />);
+    render(<DateInput nativePicker="never" label="Ship date" isRequired onChange={() => {}} />);
     expect(field()).toHaveAttribute('aria-required', 'true');
   });
 
   it('associates the label natively, so the field is named without ARIA', () => {
-    render(<DateInput label="Ship date" onChange={() => {}} />);
+    render(<DateInput nativePicker="never" label="Ship date" onChange={() => {}} />);
     expect(screen.getByLabelText('Ship date')).toBe(field());
   });
 
@@ -499,6 +558,7 @@ describe('DateInput — field parity', () => {
     withLayout(() => {
       render(
         <DateInput
+          nativePicker="never"
           label="Ship date"
           value="2026-03-10"
           min="2026-03-01"
@@ -521,7 +581,7 @@ describe('DateInput — field parity', () => {
   it('drops the Field wrapper inside an InputGroup', () => {
     render(
       <InputGroup label="Range">
-        <DateInput label="Start" onChange={() => {}} />
+        <DateInput nativePicker="never" label="Start" onChange={() => {}} />
       </InputGroup>,
     );
     // Named by the group label plus its own, the way core's inputs are.
@@ -606,7 +666,7 @@ describe('DateInput — calendar surface', () => {
   it('Save closes even with no date chosen, committing nothing', () => {
     const onChange = vi.fn();
     withLayout(() => {
-      render(<DateInput label="Ship date" onChange={onChange} />);
+      render(<DateInput nativePicker="never" label="Ship date" onChange={onChange} />);
       fireEvent.click(field());
       fireEvent.click(screen.getByRole('button', {name: 'Save'}));
     });
@@ -995,6 +1055,194 @@ describe('DateInput — calendar surface', () => {
     day.focus();
     fireEvent.keyDown(day, {key: 'ArrowDown'});
     expect(document.activeElement).toHaveAttribute('data-date', '2026-03-17');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Resting between two months — the iOS snap failure
+// ---------------------------------------------------------------------------
+
+/**
+ * `scroll-snap-type: mandatory` is supposed to make all of this unnecessary,
+ * and on a static list it does. This list is virtualized: seven panes exist
+ * out of twelve hundred, and THE PANES ARE THE SNAP AREAS — so every month
+ * the finger crosses mounts one and unmounts another, mid-fling.
+ *
+ * iOS scrolls off the main thread. It picks a landing place from the snap
+ * points it knows about at the time, and a React re-render that lands after
+ * that decision moves them; the scroller comes to rest where no snap point
+ * exists any more and nothing re-snaps it. Reported from a device as the
+ * calendar sitting between two months with the weekday header still square —
+ * which is exactly the shape of it: the grid is not skewed, the scrollport is
+ * parked a couple of columns into a pane, so the left of March and the right
+ * of April are on screen under one Sun-to-Sat header.
+ *
+ * Chrome never shows it, because it snaps again after the mutation. jsdom
+ * implements no snapping at all, which makes it a fine place to test the
+ * correction: the scroller can simply be PUT at a bad offset, exactly as iOS
+ * leaves it, and the settle has to fix it.
+ */
+describe('DateInput — a rest position between two months', () => {
+  /** The row March 2026 occupies in a range that opens in January 2024. */
+  const MARCH_2026_ROW = 26;
+  const FIVE_YEARS = {min: '2024-01-01', max: '2028-12-31'} as const;
+
+  /** A touchstart carrying the list a real one always has. */
+  const touchEvent = (type: string) => {
+    const event = new Event(type, {bubbles: true});
+    const point = {identifier: 1, clientX: 100, clientY: 100};
+    Object.defineProperties(event, {
+      touches: {value: type === 'touchend' ? [] : [point]},
+      targetTouches: {value: type === 'touchend' ? [] : [point]},
+      changedTouches: {value: [point]},
+    });
+    return event;
+  };
+
+  /** Drag, release, and let the quiet period elapse. */
+  const swipeTo = async (scroller: HTMLElement, offset: number) => {
+    scroller.dispatchEvent(touchEvent('touchstart'));
+    scroller.scrollLeft = offset;
+    fireEvent.scroll(scroller);
+    scroller.dispatchEvent(touchEvent('touchend'));
+  };
+
+  const openCalendar = () => {
+    render(<Controlled initial="2026-03-21" {...FIVE_YEARS} />);
+    fireEvent.click(screen.getByLabelText('Event date'));
+    const scroller = document.querySelector<HTMLElement>(
+      '[data-scroller="months"]',
+    )!;
+    const scrollTo = vi.mocked(Element.prototype.scrollTo);
+    scrollTo.mockClear();
+    return {scroller, scrollTo};
+  };
+
+  it('puts the calendar back on a pane once the swipe is over', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      // Two columns in — what the device screenshot showed.
+      const stray = Math.round((SCROLLPORT_WIDTH * 2) / 7);
+      await swipeTo(scroller, MARCH_2026_ROW * SCROLLPORT_WIDTH + stray);
+
+      await waitFor(() =>
+        expect(scrollTo).toHaveBeenCalledWith(
+          expect.objectContaining({left: MARCH_2026_ROW * SCROLLPORT_WIDTH}),
+        ),
+      );
+    });
+  });
+
+  it('goes to the nearer pane, not back the way it came', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      // Three quarters of the way to April: April is the honest answer, and a
+      // correction that always rounded down would drag the user backwards.
+      await swipeTo(
+        scroller,
+        MARCH_2026_ROW * SCROLLPORT_WIDTH + SCROLLPORT_WIDTH * 0.75,
+      );
+
+      await waitFor(() =>
+        expect(scrollTo).toHaveBeenCalledWith(
+          expect.objectContaining({
+            left: (MARCH_2026_ROW + 1) * SCROLLPORT_WIDTH,
+          }),
+        ),
+      );
+    });
+  });
+
+  /**
+   * A scroller the browser snapped for itself must be left alone. Correcting
+   * it anyway would mean every swipe on Chrome — where snapping works — ended
+   * with a second, pointless scroll.
+   */
+  it('leaves a scroller that snapped properly alone', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      await swipeTo(scroller, (MARCH_2026_ROW + 2) * SCROLLPORT_WIDTH);
+
+      // Long enough that the settle has certainly run.
+      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 2));
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * Sub-pixel drift is the browser's own rounding on a fractional viewport,
+   * not a failed snap. Correcting it would fire a scroll after every gesture
+   * on any device whose width is not a whole number of pixels.
+   */
+  it('ignores sub-pixel drift', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      await swipeTo(scroller, MARCH_2026_ROW * SCROLLPORT_WIDTH + 0.4);
+
+      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 2));
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * The correction waits for the finger. Firing it mid-drag would fight the
+   * hand that is still moving the scroller — the same mistake that made the
+   * wheels climb a month at a time on iOS, and the reason `useScrollSettle`
+   * waits for a release rather than for quiet alone.
+   */
+  it('does not correct while the finger is still down', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      scroller.dispatchEvent(touchEvent('touchstart'));
+      scroller.scrollLeft = MARCH_2026_ROW * SCROLLPORT_WIDTH + 120;
+      fireEvent.scroll(scroller);
+
+      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 2));
+      expect(scrollTo).not.toHaveBeenCalled();
+
+      // And on release it does the correction it was holding back.
+      scroller.dispatchEvent(touchEvent('touchend'));
+      await waitFor(() => expect(scrollTo).toHaveBeenCalled());
+    });
+  });
+
+  /**
+   * The one that actually reverses a swipe, and the reason the correction
+   * re-checks stillness rather than trusting the quiet period.
+   *
+   * iOS runs its own snap animation for ~150-300ms after the finger lifts,
+   * and fires scroll events irregularly while it does — a gap longer than the
+   * quiet period is routine in the slow tail. The settle lands mid-animation,
+   * reads an offset still travelling toward April, rounds THAT to the nearest
+   * pane (still March, since the animation is not yet halfway), and drags the
+   * calendar back where it came from. Swipe forward, get pulled backward.
+   *
+   * Simulated by moving the scroller between the two samples, which is what
+   * an animation in flight looks like from here.
+   */
+  it('does not correct a scroller that is still travelling', async () => {
+    await withLayout(async () => {
+      const {scroller, scrollTo} = openCalendar();
+      // A quarter of the way to April, and still going.
+      let offset = MARCH_2026_ROW * SCROLLPORT_WIDTH + SCROLLPORT_WIDTH * 0.25;
+      Object.defineProperty(scroller, 'scrollLeft', {
+        configurable: true,
+        get: () => {
+          // Every read advances it, the way an in-flight animation does.
+          offset += 8;
+          return offset;
+        },
+        set: (value: number) => {
+          offset = value;
+        },
+      });
+
+      await swipeTo(scroller, offset);
+      await new Promise(resolve => setTimeout(resolve, SCROLL_QUIET_MS * 3));
+      // Nothing. Correcting here would have sent it back to March, undoing a
+      // swipe the browser was already completing.
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
   });
 });
 

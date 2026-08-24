@@ -43,6 +43,7 @@ export interface DerivedVarEntry {
  * entries share the same property.
  */
 export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
+  avatar: [{property: 'borderRadius', vars: ['--_avatar-radius']}],
   banner: [{property: 'borderRadius', vars: ['--_banner-radius']}],
   button: [{property: 'borderRadius', vars: ['--_button-radius']}],
   card: [

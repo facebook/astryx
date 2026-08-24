@@ -249,6 +249,37 @@ Style objects imported from another module are read from that module, so
 rewrite that moves the styles onto the child. Removing a node can shift layout,
 so it is never applied by `--fix`.
 
+### `@astryx/no-unstable-merged-refs`
+
+Flags two unstable ref-composition patterns:
+
+1. `mergeRefs(...)` used by a JSX `ref` prop, whether the call appears inline
+   or is first assigned to a local variable. Calling the utility during render
+   creates a new callback ref every time, so React detaches and reattaches the
+   element on unrelated rerenders.
+2. An inline callback passed to `useMergedRefs(...)`. The changing input makes
+   the hook recreate its callback on every render, defeating the hook.
+
+Use `useMergedRefs(...)` with stable ref inputs instead.
+
+```tsx
+// Bad
+<div ref={mergeRefs(forwardedRef, internalRef)} />;
+const mergedRef = mergeRefs(forwardedRef, internalRef);
+<div ref={mergedRef} />;
+useMergedRefs(forwardedRef, node => setNode(node));
+
+// Good — the hook itself may be called inline when Hooks ordering is valid
+<div ref={useMergedRefs(forwardedRef, internalRef)} />;
+
+// Also good
+const ref = useMergedRefs(forwardedRef, internalRef);
+<div ref={ref} />;
+```
+
+The rule is an error in both tiers because core contains no render-time
+`mergeRefs(...)` JSX ref callsites.
+
 ### `@astryx/require-letter-spacing`
 
 Recommends adding `letterSpacing` when `fontSize` is defined (common design pattern for badges, labels).
@@ -512,6 +543,80 @@ Autofixable, and mirrored at runtime by `.github/scripts/disabled-hover-audit.js
 
 Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.
 
+### `@astryx/no-classname-clobber`
+
+Flags two things on one JSX element that each set `className`. React applies attributes left to right and does not merge them, so the later writer wins outright and everything the earlier one carried is gone.
+
+There are two ways to write it twice. The first is a literal `className=` or `style=` attribute beside a `{...stylex.props()}` spread. The second is **two spreads that each carry a className** — and that one hides, because every helper here returns a `{className, style}` object: `stylex.props()`, `themeProps()`, `focusOutlineProps.*()`, and `mergeProps()` when it merges any of those.
+
+Breadcrumbs shipped the second shape. Both halves read as correct in review, and `mergeProps` on the first line reads as if the merging is handled:
+
+**Bad:**
+
+```tsx
+<button
+  {...mergeProps(themeProps('breadcrumb-item-menu-trigger'), {
+    ...popover.triggerProps,
+  })}
+  {...stylex.props(itemStyles.link, itemStyles.buttonReset)}
+/>
+```
+
+**Good:**
+
+```tsx
+<button
+  {...popover.triggerProps}
+  {...mergeProps(
+    themeProps('breadcrumb-item-menu-trigger'),
+    stylex.props(itemStyles.link, itemStyles.buttonReset),
+  )}
+/>
+```
+
+The second spread replaced the className the first built, so `astryx-breadcrumb-item-menu-trigger` — documented, registered, part of the public theming surface — rendered on no element at all, and a theme targeting it silently did nothing. Nothing else caught it: `themingTargets.test.ts` asserts documented targets are a **subset** of what source registers, so a target that renders on zero elements passes.
+
+**Scope:** two or more spreads on one opening element whose expressions are statically recognizable className producers. A spread of anything else — `{...rest}`, `{...popover.triggerProps}`, an unknown call — is not a producer and does not count, so one producer beside any number of those is fine. `mergeProps()` is the sanctioned merge and concatenates class names, so anything already inside a single `mergeProps()` call is correct however many producers it takes; it only becomes a problem beside a **second** spread that produces a className of its own. A producer reached through a conditional (`{...(cond ? stylex.props(a) : {})}`) is out of scope: no call site writes one, and reading through the branches invites guesses the rule cannot verify.
+
+Ships as a **warning in both tiers** for now. The spread check has exactly one violation in the repo, in `BreadcrumbItem.tsx`, whose fix is open in [#5332](https://github.com/facebook/astryx/pull/5332); both tiers go back to `error` when that lands.
+
+### `@astryx/disabled-cursor`
+
+Flags a `cursor` inside `stylex.create()` that does not give way to `default` on a disabled element. The cursor is the only affordance a pointer user gets **before** they commit to a click: `cursor: pointer` on a disabled control promises a click it will not honour, and `disabled`/`[aria-disabled]` do not change what the element's own declaration paints.
+
+A component's separate `disabled` style object is not the answer either — it only helps where the author remembered to write one, on the element the author had in mind: the inner input, not the label wrapping it; the trigger, not the icon inside it.
+
+**Bad:**
+
+```ts
+const styles = stylex.create({
+  trigger: {cursor: 'pointer'},
+});
+```
+
+**Good:**
+
+```ts
+const styles = stylex.create({
+  trigger: {
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
+});
+```
+
+The guarded condition outranks the default in StyleX's own ordering, so it wins the moment the element is disabled; on an element that can never be disabled it is a no-op.
+
+**Why `default` and not `not-allowed`.** A disabled control sealed behind `pointer-events: none` is never hit-tested, so it shows whatever its ancestor shows and no declaration on it can change that — 75 of the 635 disabled elements in the story set are sealed that way. One cursor everywhere beats a stronger one only half the library can paint, the disabled state already carries its own visual treatment, and this matches the internal XDS convention.
+
+**Scope:** every `cursor` a component writes, whatever the value — `default` itself is the only exemption. That breadth is not tidiness: StyleX merges `props()` one **property** at a time, so a later style setting `cursor` at all replaces the earlier declaration's conditions along with its value. SegmentedControlItem shipped exactly that — a guarded `cursor: pointer` on the base and a flat `cursor` in its `disabled` style applied after it, which threw the guard away. A computed value (`interactive ? 'grab' : undefined`) is left alone because the rule cannot know what it resolves to.
+
+Autofixable, and mirrored at runtime by `.github/scripts/disabled-cursor-audit.js`, which hit-tests every disabled element in every story in Chromium and fails on any other cursor. That sweep is what covers the two cases the lint rule cannot see: a computed value, and a disabled element whose cursor comes from somewhere other than its own declaration.
+
+Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.
+
 ### `@astryx/no-unguarded-ime-keydown`
 
 Flags an `onKeyDown` handler on an **editable surface** that branches on a
@@ -575,3 +680,103 @@ imported handler is treated as unknown and not flagged. A `role`/`type`/
 `contentEditable` spread via `{...props}` is not seen.
 
 See: https://github.com/facebook/astryx/issues/4892
+
+### `@astryx/require-table-section`
+
+Flags a `TableRow` (or a raw `tr`) written as a **direct child of a table** —
+`Table`, `BaseTable`, or a raw `table` — instead of inside a section:
+`TableHeader` / `TableBody` / `TableFooter`, or a raw `thead` / `tbody` /
+`tfoot`.
+
+`<table>`'s content model does not admit `<tr>`. The HTML parser applies
+implied-`<tbody>` insertion, so when a server-rendered page is parsed the
+browser silently wraps the rows in a `<tbody>` the author never wrote. React's
+client render does not — `appendChild` puts the `<tr>` exactly where the tree
+says. The two trees then disagree and the render hydration-mismatches. React
+says so up front:
+
+```
+In HTML, <tr> cannot be a child of <table>. Add a <tbody>, <thead> or <tfoot>
+to your code to match the DOM tree generated by the browser.
+```
+
+Client-only it is still wrong: nothing reparents the rows, so the table ends up
+with `<tr>` children and no `<tbody>` at all, and any CSS or query aimed at
+`tbody` silently misses.
+
+`Table`'s data-driven mode (`data={...}`) renders its own `TableBody` and is
+unaffected. Children mode passes children straight to the `<table>`, which is
+the right API — it is what makes the section components composable — but it
+makes the section the caller's job, and nothing said so: the `children` prop
+doc described the pre-`#2098` contract, and `TableRow`'s own `@example` showed
+a row directly inside `<Table>`. A shipped page template was written from that
+documentation.
+
+**Bad:**
+
+```tsx
+<Table columns={columns}>
+  <colgroup>…</colgroup>
+  {rows.map(r => (
+    <TableRow key={r.id}>…</TableRow>
+  ))}
+</Table>
+```
+
+**Good:**
+
+```tsx
+<Table columns={columns}>
+  <colgroup>…</colgroup>
+  <TableBody>
+    {rows.map(r => (
+      <TableRow key={r.id}>…</TableRow>
+    ))}
+  </TableBody>
+</Table>
+```
+
+`<colgroup>`, `<col>`, and `<caption>` are legal direct children of a table and
+are not touched.
+
+**Scope:** repo-wide (`**/*.{ts,tsx}`), not core-only. The shape reached a
+shipped CLI page template, which consumers copy into their own apps as a page,
+and the `@eslint-react` DOM rules are scoped to `packages/core/src`. This is the
+`<table>` counterpart of `no-raw-paragraph`: both guard an HTML content model
+that browsers repair on parse and React does not.
+
+Ships as an **error in both tiers**: the repo is clean after the fixes in the
+commit below this one, and this keeps it that way.
+
+**How the walk decides.** The check is lexical. It walks up from the row through
+the wrappers that are transparent in the DOM — fragments, expression containers,
+`&&`/ternary guards, `if`/`switch`/`try` inside a callback, array literals and
+JSX spread children — and reports only when the first real element it reaches is
+the table.
+
+Calls are the subtle part, and the transparency there is **position-aware**, not
+a node-type lookup. The walk steps out of a callback only for `.map()` and
+`.flatMap()`, whose result is spliced into the JSX position the call occupies,
+and it follows a chain chained off that result (`rows.map(...).filter(Boolean)`).
+It does **not** step out of a call whose argument is the row itself: a row handed
+to a function is data, not placement, and the callee routinely puts it somewhere
+valid. `wrapInBody(<TableRow/>)` and
+`React.createElement('tbody', null, <TableRow/>)` are silent for that reason —
+flagging them told authors to wrap code that was already correct.
+
+Element names resolve on their last segment, so `Astryx.TableRow` is a row and
+`Rx.Fragment` is a fragment. There is no import resolution, deliberately: the
+rule already trusts a bare `Table`, and resolving the segment applies that same
+trade consistently.
+
+**Known limitations (intentional false-negatives):** a row that has left its
+lexical position — assigned to a variable, returned from a named helper, passed
+as a prop, or handed to a function as an argument — could land anywhere, so the
+rule stays silent rather than guessing. The same goes for an aliased import
+(`<DataTable>`), a sequence expression, and an awaited wrapper such as
+`await Promise.all(rows.map(...))`. Each of those is pinned as a valid fixture in
+the tests, so a change in that behaviour has to be deliberate. A deliberate
+unwrapped row (the contract test in `Table.test.tsx`) opts out with an
+`eslint-disable-next-line` and a reason.
+
+See: https://github.com/facebook/astryx/issues/5277

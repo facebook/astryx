@@ -29,7 +29,8 @@ import {useMenuHover} from '../hooks/useMenuHover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {Icon} from '../Icon';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
@@ -65,7 +66,10 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color, color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -115,7 +119,10 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-element'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -355,7 +362,7 @@ export function TopNavMenu({
       popoverId: popover.id,
     });
 
-  const setTriggerRef = mergeRefs<HTMLButtonElement>(
+  const setTriggerRef = useMergedRefs<HTMLButtonElement>(
     triggerButtonRef,
     popover.triggerRef,
     setTriggerEl,
@@ -420,7 +427,7 @@ export function TopNavMenu({
 
   // Menu container carries both the hover hook's ref (for its open/close
   // focus management) and the list-focus ref (for roving tabindex/typeahead).
-  const setMenuRef = mergeRefs<HTMLDivElement>(menuRef, listRef);
+  const setMenuRef = useMergedRefs<HTMLDivElement>(menuRef, listRef);
 
   // Mobile bar: hide menus entirely
   if (renderMode === 'mobile-bar') {

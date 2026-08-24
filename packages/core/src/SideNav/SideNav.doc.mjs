@@ -131,8 +131,8 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use sections to group related navigation items and help users scan for their destination.'},
       {guidance: true, description: 'Pair outline and filled icon variants so the selected state is visually distinct.'},
-      {guidance: true, description: 'Mark the current page with isSelected — it sets aria-current="page", so the current destination is announced rather than carried by color alone.'},
-      {guidance: true, description: 'SideNav renders a navigation landmark, and a collapsible item follows the WAI-ARIA APG Disclosure pattern (https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/): the toggle carries aria-expanded and aria-controls, and the group it owns is inert while collapsed. Keep item labels short — they are the accessible name in both expanded and icon-only modes.'},
+      {guidance: true, description: 'Mark the current page with isSelected: it sets aria-current="page", so the current destination is announced rather than carried by color alone.'},
+      {guidance: true, description: 'SideNav renders a navigation landmark, and a collapsible item follows the WAI-ARIA APG Disclosure pattern (https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/): the toggle carries aria-expanded and aria-controls, and the group it owns is inert while collapsed. Keep item labels short; they are the accessible name in both expanded and icon-only modes.'},
       {guidance: true, description: 'While the nav is collapsed, an item with children shows them in a submenu flyout. On a device that can hover, pointing at the item opens it after a short delay and moving away closes it; a flyout opened by clicking stays open until it is dismissed. On touch, it opens on tap. Do not put an action in there that has no other route to it.'},
       {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity; this duplicates branding.'},
       {guidance: false, description: 'Use for filtering content; use tabs or filter buttons instead.'},
@@ -153,8 +153,8 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Use sections to group related navigation items and help users scan for their destination.'},
       {guidance: true, description: 'Pair outline and filled icon variants so the selected state is visually distinct.'},
-      {guidance: true, description: 'Mark the current page with isSelected — it sets aria-current="page", so the current destination is announced rather than carried by color alone.'},
-      {guidance: true, description: 'SideNav renders a navigation landmark, and a collapsible item follows the WAI-ARIA APG Disclosure pattern (https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/): the toggle carries aria-expanded and aria-controls, and the group it owns is inert while collapsed. Keep item labels short — they are the accessible name in both expanded and icon-only modes.'},
+      {guidance: true, description: 'Mark the current page with isSelected: it sets aria-current="page", so the current destination is announced rather than carried by color alone.'},
+      {guidance: true, description: 'SideNav renders a navigation landmark, and a collapsible item follows the WAI-ARIA APG Disclosure pattern (https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/): the toggle carries aria-expanded and aria-controls, and the group it owns is inert while collapsed. Keep item labels short; they are the accessible name in both expanded and icon-only modes.'},
       {guidance: true, description: 'While the nav is collapsed, an item with children shows them in a submenu flyout. On a device that can hover, pointing at the item opens it after a short delay and moving away closes it; a flyout opened by clicking stays open until it is dismissed. On touch, it opens on tap. Do not put an action in there that has no other route to it.'},
       {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity; this duplicates branding.'},
       {guidance: false, description: 'Use for filtering content; use tabs or filter buttons instead.'},
@@ -175,8 +175,8 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use sections to group related navigation items and help users scan for their destination.'},
       {guidance: true, description: 'Pair outline and filled icon variants so the selected state is visually distinct.'},
-      {guidance: true, description: 'Mark the current page with isSelected — it sets aria-current="page", so the current destination is announced rather than carried by color alone.'},
-      {guidance: true, description: 'SideNav renders a navigation landmark, and a collapsible item follows the WAI-ARIA APG Disclosure pattern (https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/): the toggle carries aria-expanded and aria-controls, and the group it owns is inert while collapsed. Keep item labels short — they are the accessible name in both expanded and icon-only modes.'},
+      {guidance: true, description: 'Mark the current page with isSelected: it sets aria-current="page", so the current destination is announced rather than carried by color alone.'},
+      {guidance: true, description: 'SideNav renders a navigation landmark, and a collapsible item follows the WAI-ARIA APG Disclosure pattern (https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/): the toggle carries aria-expanded and aria-controls, and the group it owns is inert while collapsed. Keep item labels short; they are the accessible name in both expanded and icon-only modes.'},
       {guidance: true, description: 'While the nav is collapsed, an item with children shows them in a submenu flyout. On a device that can hover, pointing at the item opens it after a short delay and moving away closes it; a flyout opened by clicking stays open until it is dismissed. On touch, it opens on tap. Do not put an action in there that has no other route to it.'},
       {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity; this duplicates branding.'},
       {guidance: false, description: 'Use for filtering content; use tabs or filter buttons instead.'},

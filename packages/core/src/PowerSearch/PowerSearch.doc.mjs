@@ -6,7 +6,17 @@ export const docs = {
   name: 'PowerSearch',
   displayName: 'Power Search',
   category: 'Data Input',
-  keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
+  keywords: [
+    'powersearch',
+    'search',
+    'searchbar',
+    'filter',
+    'filterbar',
+    'faceted',
+    'querybuilder',
+    'structured',
+    'omnibar',
+  ],
   props: [
     {
       name: 'config',
@@ -43,8 +53,7 @@ export const docs = {
     {
       name: 'placeholder',
       type: 'string',
-      description:
-        'Placeholder text shown when no filters are selected.',
+      description: 'Placeholder text shown when no filters are selected.',
       default: "'Search...'",
     },
     {
@@ -80,8 +89,7 @@ export const docs = {
     {
       name: 'status',
       type: "{type: 'warning' | 'error' | 'success', message?: string}",
-      description:
-        'Validation status object with type and optional message.',
+      description: 'Validation status object with type and optional message.',
     },
     {
       name: 'startIcon',
@@ -102,6 +110,26 @@ export const docs = {
       type: 'number',
       description: 'Max character length for filter value display in tokens.',
       default: '40',
+    },
+    {
+      name: 'maxOperatorMenuItems',
+      type: 'number',
+      description:
+        'Maximum suggestions shown in string and entity value typeaheads. Does not affect the main field search menu or enum value menus.',
+      default: '10',
+    },
+    {
+      name: 'maxSearchResults',
+      type: 'number',
+      description:
+        'Max ranked results for a non-empty query. Does not affect a field value editor. Browsing with an empty query shows up to 1,000 fields.',
+      default: '10',
+    },
+    {
+      name: 'menuWidth',
+      type: 'number',
+      description:
+        'Width in pixels for the main field/search menu. Does not affect field value editors.',
     },
     {
       name: 'popoverSaveButtonLabel',
@@ -143,6 +171,32 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: 'Maximum width for the operator/value dropdown menu in pixels.',
+    },
+    {
+      name: 'maxOperatorMenuItems',
+      type: 'number',
+      description: 'Maximum number of items displayed in the operator dropdown.',
+    },
+    {
+      name: 'tokenOverflowBehavior',
+      type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
+      description: 'Controls how tokens overflow when the container is too narrow. Forwarded to Tokenizer.',
+      default: "'none'",
+    },
+    {
+      name: 'onFocus',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Fires when focus enters the search input.',
+    },
+    {
+      name: 'onBlur',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Fires when focus leaves the search input.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -153,16 +207,30 @@ export const docs = {
     description:
       'PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
-      { guidance: true, description: 'Define clear, descriptive field names and aliases so users can quickly find the filter they need.' },
-      { guidance: true, description: 'Provide a result count to give users feedback on how their filters affect the data set.' },
-      { guidance: false, description: 'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.' },
-      { guidance: false, description: 'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
+      {
+        guidance: true,
+        description:
+          'Define clear, descriptive field names and aliases so users can quickly find the filter they need.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a result count to give users feedback on how their filters affect the data set.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
   theming: {
-    targets: [
-      {className: 'astryx-power-search'},
-    ],
+    targets: [{className: 'astryx-power-search'}],
   },
 };
 
@@ -269,6 +337,25 @@ export const docsZh = {
       default: '40',
     },
     {
+      name: 'maxOperatorMenuItems',
+      type: 'number',
+      description:
+        '字符串和实体值预输入菜单中显示的最大建议数。不影响主字段搜索菜单或枚举值菜单。',
+      default: '10',
+    },
+    {
+      name: 'maxSearchResults',
+      type: 'number',
+      description:
+        '非空查询的最大排名结果数。不影响字段值编辑器。使用空查询浏览时最多显示 1,000 个字段。',
+      default: '10',
+    },
+    {
+      name: 'menuWidth',
+      type: 'number',
+      description: '主字段/搜索菜单的像素宽度。不影响字段值编辑器。',
+    },
+    {
       name: 'popoverSaveButtonLabel',
       type: 'string',
       description: '编辑弹出窗口中保存按钮的标签。',
@@ -282,7 +369,8 @@ export const docsZh = {
     {
       name: 'handleRef',
       type: 'Ref<PowerSearchHandle>',
-      description: '提供 focusTypeahead() 和 blurTypeahead() 方法的命令式句柄。',
+      description:
+        '提供 focusTypeahead() 和 blurTypeahead() 方法的命令式句柄。',
     },
     {
       name: 'endContent',
@@ -311,10 +399,26 @@ export const docsZh = {
     description:
       'PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
-      { guidance: true, description: 'Define clear, descriptive field names and aliases so users can quickly find the filter they need.' },
-      { guidance: true, description: 'Provide a result count to give users feedback on how their filters affect the data set.' },
-      { guidance: false, description: 'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.' },
-      { guidance: false, description: 'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
+      {
+        guidance: true,
+        description:
+          'Define clear, descriptive field names and aliases so users can quickly find the filter they need.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a result count to give users feedback on how their filters affect the data set.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };
@@ -327,16 +431,33 @@ export const docsDense = {
     description:
       'PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
-      { guidance: true, description: 'Define clear, descriptive field names and aliases so users can quickly find the filter they need.' },
-      { guidance: true, description: 'Provide a result count to give users feedback on how their filters affect the data set.' },
-      { guidance: false, description: 'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.' },
-      { guidance: false, description: 'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
+      {
+        guidance: true,
+        description:
+          'Define clear, descriptive field names and aliases so users can quickly find the filter they need.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a result count to give users feedback on how their filters affect the data set.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
   propDescriptions: {
     config: 'Configuration defining available fields, operators, value types.',
     filters: 'Currently active filters.',
-    onChange: "Called on filter change. changeType is 'add', 'edit', or 'remove'. index is affected filter position.",
+    onChange:
+      "Called on filter change. changeType is 'add', 'edit', or 'remove'. index is affected filter position.",
     label: 'Accessible label for search input.',
     isLabelHidden: 'Visually hides label while keeping accessible.',
     placeholder: 'Text shown when no filters selected.',
@@ -345,15 +466,26 @@ export const docsDense = {
     isReadOnly: 'Prevent adding, editing, or removing filters.',
     isDisabled: 'Disables entire component.',
     status: 'Validation status object w/ type + optional message.',
-    startIcon: 'Icon at input start, before filter tokens. Forwarded to internal Tokenizer.',
-    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
+    startIcon:
+      'Icon at input start, before filter tokens. Forwarded to internal Tokenizer.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     maxTokenLength: 'Max char length for filter value display in tokens.',
+    maxOperatorMenuItems:
+      'Max suggestions in string/entity value typeaheads; excludes main field search + enum menus.',
+    maxSearchResults:
+      'Max ranked results for a non-empty query; excludes value editors.',
+    menuWidth: 'Main field/search menu width in pixels.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',
-    handleRef: 'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',
-    endContent: 'Content at end of input row. Useful for action buttons or controls.',
-    resultCount: 'Result count matching current filters. Number formatted as "N results"; string displayed as-is.',
+    handleRef:
+      'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',
+    endContent:
+      'Content at end of input row. Useful for action buttons or controls.',
+    resultCount:
+      'Result count matching current filters. Number formatted as "N results"; string displayed as-is.',
     size: 'Search input+token size.',
-    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+    xstyle:
+      'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };

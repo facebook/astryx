@@ -961,7 +961,7 @@ describe('Selector', () => {
       expect(onChange).toHaveBeenCalledWith('Banana');
     });
 
-    it('closes dropdown on Tab without preventing default focus movement', async () => {
+    it('closes the search dropdown on Tab without preventing default focus movement', async () => {
       const user = userEvent.setup();
       render(
         <>
@@ -1253,6 +1253,29 @@ describe('Selector', () => {
   });
 
   describe('keyboard accessibility', () => {
+    it('Tab from the open listbox moves focus to the next control', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+          />
+          <button type="button">Next</button>
+        </>,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      await user.keyboard('{Tab}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
+    });
+
     it('trigger is focusable via Tab when enabled', async () => {
       const user = userEvent.setup();
       render(<Selector label="Fruit" options={OPTIONS} />);
@@ -2483,6 +2506,27 @@ describe('Selector section headings', () => {
     // The group already carries the title as its accessible name, so the
     // visible heading must not announce it a second time.
     expect(heading).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('hides a standalone divider from the accessibility tree (#4994)', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={['Apple', {type: 'divider'}, 'Banana']}
+        value={undefined}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // role="listbox" only permits option/group children. The divider still
+    // renders role="separator" (unchanged visual/DOM), but must be excluded
+    // from the accessibility tree so it never reaches the listbox's exposed
+    // children (axe aria-required-children).
+    const divider = document.querySelector('[role="separator"]');
+    expect(divider).toBeTruthy();
+    expect(divider).toHaveAttribute('aria-hidden', 'true');
   });
 });
 

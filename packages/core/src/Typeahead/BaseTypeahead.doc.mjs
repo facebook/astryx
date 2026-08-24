@@ -61,6 +61,11 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: 'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
       description: 'Text shown when search returns no results.',
@@ -170,6 +175,11 @@ export const docsZh = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: '下拉菜单的固定像素宽度。菜单不会小于其锚点宽度。',
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
       description: '搜索无结果时显示的文本。',
@@ -253,6 +263,7 @@ export const docsDense = {
     placeholder: 'Input placeholder.',
     hasEntriesOnFocus: 'Bootstrap results on focus.',
     maxMenuItems: 'Max dropdown items.',
+    menuWidth: 'Fixed dropdown width in pixels.',
     emptySearchResultsText: 'Text when no results.',
     isDisabled: 'Whether input disabled.',
     hasAutoFocus: 'Auto-focus on mount.',

@@ -67,7 +67,7 @@ import {
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
 } from '../Field';
-import {useInputStatusIcon} from '../hooks';
+import {useInputStatusIcon, useMergedRefs} from '../hooks';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
@@ -96,7 +96,6 @@ import {
   getInputARIA,
   isImeKeyEvent,
   mergeProps,
-  mergeRefs,
   rtlStyles,
   themeProps,
   formatSharedDate,
@@ -176,11 +175,14 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
   },
   iconButtonDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   input: {
     display: 'block',
@@ -202,14 +204,17 @@ const styles = stylex.create({
     outline: 'none',
     // It opens a picker; it does not take text. The caret would say otherwise.
     caretColor: 'transparent',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
     '::placeholder': {
       color: colorVars['--color-text-secondary'],
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 
   // ---- the picker surface ----
@@ -320,7 +325,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     whiteSpace: 'nowrap',
   },
   titleChevron: {
@@ -548,6 +556,7 @@ export function TouchDateField({
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const mergedInputRef = useMergedRefs(ref, inputRef);
   const inputGroup = useInputGroup();
 
   const [, startTransition] = useTransition();
@@ -590,6 +599,16 @@ export function TouchDateField({
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isWheelOpen, setIsWheelOpen] = useState(false);
   const scrollerHandleRef = useRef<MonthScrollerHandle | null>(null);
+  // Pending focus handoff from the clear button; see handleClear.
+  const clearFocusTimerRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (clearFocusTimerRef.current != null) {
+        clearTimeout(clearFocusTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const today = useMemo(() => plainDateToday(), []);
   const selectedDate = useMemo(
@@ -699,7 +718,31 @@ export function TouchDateField({
 
   const handleClear = useCallback(() => {
     fireChange(undefined);
-    inputRef.current?.focus();
+    // Focus goes back to the field on the NEXT task, not synchronously.
+    //
+    // Clearing unmounts this button (it only renders while there is a value),
+    // and focusing another element in the same task as that unmount makes iOS
+    // Safari scroll the whole document to the top — the user is thrown from
+    // wherever the field sat to the start of the page. Measured on the iOS 26
+    // simulator against the live docsite, field at scrollY 2055: synchronous
+    // focus lands at 0, deferred focus stays at 2055.
+    //
+    // `preventScroll` alone does NOT fix it (verified: still 0) — this is not
+    // the browser's ordinary scroll-the-focused-element-into-view step, so the
+    // deferral is the load-bearing half. It is kept because the reveal scroll
+    // is real too, and unwanted for the same reason: the field the user just
+    // tapped is already on screen (+12px on a plain page without it).
+    //
+    // Skipping the focus entirely would also stop the scroll, but then focus
+    // dies with the unmounting button and lands on <body>.
+    const field = inputRef.current;
+    if (field == null) {
+      return;
+    }
+    clearFocusTimerRef.current = window.setTimeout(() => {
+      clearFocusTimerRef.current = null;
+      field.focus({preventScroll: true});
+    }, 0);
   }, [fireChange]);
 
   /**
@@ -1126,7 +1169,7 @@ export function TouchDateField({
         />
       </button>
       <input
-        ref={mergeRefs(ref, inputRef)}
+        ref={mergedInputRef}
         id={id}
         type="text"
         role="combobox"

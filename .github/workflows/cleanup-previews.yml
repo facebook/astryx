@@ -77,6 +77,11 @@ jobs:
           #   /sandbox/      — stable (managed by deploy.yml, never cleaned)
           #   /pr/<number>/  — PR previews (cleaned when PR closes)
           #   /reports/      — vibe test reports (never cleaned)
+          #   /visual-gate/  — visual baseline + gate reports (never cleaned
+          #                    here; release-gate.yml prunes its own old runs,
+          #                    and the baseline under visual-gate/baseline/ is
+          #                    the reference the gate compares against — losing
+          #                    it silently disarms visual regression testing)
           #   /assets/       — landing page CSS (never cleaned)
           #   /index.html    — landing page (never cleaned)
           #   /latest        — deploy hash pointer (never cleaned)

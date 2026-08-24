@@ -10,9 +10,17 @@
  * `limit`, an empty query, and a bad `--type` all throw AstryxError with the
  * ERR_INVALID_ARGUMENT code, so a direct `@astryxdesign/cli/api` caller gets the
  * same contract as `astryx search` on the command line.
+ *
+ * The last describe block covers integration-contributed components, using the
+ * same temp-consumer harness as template-integration.test.mjs. Before this,
+ * `search`/`build` only ever scanned @astryxdesign/core — an integration's own
+ * components were invisible to both, even though `component --list` and
+ * `component <Name>` already resolved them. The two discovery paths silently
+ * disagreed.
  */
 
 import {describe, it, expect} from 'vitest';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {search, SEARCH_DOMAINS} from './search.mjs';
@@ -90,5 +98,68 @@ describe('search leaf — limit validation (API matches the CLI contract)', () =
     await expect(search('button', {cwd, limit: 2.5})).rejects.toMatchObject({
       code: 'ERR_INVALID_ARGUMENT',
     });
+  }, SLOW);
+});
+
+describe('search leaf — integration components', () => {
+  /**
+   * A minimal consumer project: a stub `@astryxdesign/core` (so `findCoreDir`
+   * resolves without needing the real package) plus an installed
+   * `@acme/widgets` integration that contributes one component.
+   */
+  function makeConsumerWithIntegrationComponent() {
+    const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-search-it-'));
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({name: 'consumer'}));
+    fs.writeFileSync(
+      path.join(dir, 'astryx.config.mjs'),
+      `export default { integrations: ['@acme/widgets'] };\n`,
+    );
+
+    // Stub core: just needs to exist with an (empty) src/ so discoverComponents
+    // doesn't throw. Its own component list is irrelevant to this test.
+    const coreDir = path.join(dir, 'node_modules', '@astryxdesign', 'core');
+    fs.mkdirSync(path.join(coreDir, 'src'), {recursive: true});
+
+    const widgetsDir = path.join(dir, 'node_modules', '@acme', 'widgets');
+    fs.mkdirSync(path.join(widgetsDir, 'components'), {recursive: true});
+    fs.writeFileSync(
+      path.join(widgetsDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.0.0'}),
+    );
+    fs.writeFileSync(
+      path.join(widgetsDir, 'astryx.integration.mjs'),
+      `export default { components: './components' };\n`,
+    );
+    fs.writeFileSync(
+      path.join(widgetsDir, 'components', 'FancyGizmo.doc.mjs'),
+      `export const docs = {
+        name: 'FancyGizmo',
+        keywords: ['gizmo', 'widget'],
+        usage: {description: 'A fancy gizmo widget.'},
+      };\n`,
+    );
+
+    return dir;
+  }
+
+  it('includes a component contributed by a configured integration', async () => {
+    const dir = makeConsumerWithIntegrationComponent();
+    try {
+      const r = await search('gizmo', {cwd: dir, type: 'component'});
+      expect(r.data.results.some(x => x.name === 'FancyGizmo')).toBe(true);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  }, SLOW);
+
+  it('reports the contributing package as the import hint', async () => {
+    const dir = makeConsumerWithIntegrationComponent();
+    try {
+      const r = await search('FancyGizmo', {cwd: dir, type: 'component'});
+      const hit = r.data.results.find(x => x.name === 'FancyGizmo');
+      expect(hit?.import).toBe('@acme/widgets');
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
   }, SLOW);
 });
