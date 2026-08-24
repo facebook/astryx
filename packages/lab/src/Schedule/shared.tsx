@@ -244,12 +244,13 @@ export function ListEventRow({
   const {categories} = useScheduleContext();
   const category = getEventCategory(event, categories);
   return (
-    <div {...stylex.props(styles.listEventRow, isPast && styles.listEventPast)}>
+    <div {...stylex.props(styles.listEventRow)}>
       <span
         aria-hidden
         {...stylex.props(
           styles.listEventDot,
           eventDotColorStyle(category.color),
+          isPast && styles.listEventDotPast,
         )}
       />
       <span {...stylex.props(styles.listEventTime)}>
@@ -257,7 +258,13 @@ export function ListEventRow({
           ? 'All day'
           : formatEventTimeRange(event, timezoneID)}
       </span>
-      <span {...stylex.props(styles.listEventTitle)}>{event.title}</span>
+      <span
+        {...stylex.props(
+          styles.listEventTitle,
+          isPast && styles.listEventTitlePast,
+        )}>
+        {event.title}
+      </span>
     </div>
   );
 }
@@ -1072,7 +1079,13 @@ export const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
   },
-  listEventPast: {
+  // A past row is muted with the secondary text token, which the theme
+  // guarantees at AA. Fading the whole row with opacity instead pulled its
+  // text toward the surface behind it — 2.35:1 on the light theme.
+  listEventTitlePast: {
+    color: colorVars['--color-text-secondary'],
+  },
+  listEventDotPast: {
     opacity: 0.5,
   },
   eventBlue: {
