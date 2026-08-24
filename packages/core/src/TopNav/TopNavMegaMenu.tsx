@@ -12,6 +12,13 @@
  * eliminating z-index stacking. CSS anchor positioning places the panel below
  * the nav wrapper.
  *
+ * The default (desktop) trigger opens on hover and click. Hover opens are
+ * transient; click/keyboard opens are pinned. A click shortly after hover-open
+ * confirms and pins the panel instead of closing it. The panel remains an auto
+ * popover for native dismissal and sibling exclusivity; `popoverTarget`
+ * registers the trigger as its native invoker so the guard runs before any
+ * dismiss.
+ *
  * Supports three render modes via TopNavRenderContext:
  * - 'default': desktop popover mega menu (hover/click triggered)
  * - 'mobile-bar': returns null (hidden in compact mobile bar)
@@ -43,6 +50,7 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useMenuHover} from '../hooks/useMenuHover';
 import {Grid} from '../Grid/Grid';
 import {Icon} from '../Icon';
 import {mergeProps, mergeRefs} from '../utils';
@@ -51,6 +59,7 @@ import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 // =============================================================================
 // Styles
@@ -69,23 +78,18 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color, color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
     },
     border: 'none',
     fontFamily: 'inherit',
@@ -139,7 +143,10 @@ const styles = stylex.create({
   // own content, keeping the surface radius/shadow static at the edges.
   // Internal scroll is a stopgap until the mobile bottom-sheet lands.
   panelViewportFit: {
-    display: 'flex',
+    display: {
+      default: 'none',
+      ':popover-open': 'flex',
+    },
     flexDirection: 'column',
     maxHeight: `calc(100% - ${spacingVars['--spacing-3']})`,
   },
@@ -367,6 +374,10 @@ TopNavMegaMenu.displayName = 'TopNavMegaMenu';
 // DefaultMegaMenu — desktop popover mode
 // =============================================================================
 
+/** The panel is a grid of links, not `role="menuitem"` rows. */
+const PANEL_ITEM_SELECTOR =
+  'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 function DefaultMegaMenu({
   ref,
   label,
@@ -377,10 +388,7 @@ function DefaultMegaMenu({
   onOpenChange,
 }: TopNavMegaMenuProps) {
   const slot = useTopNavSlot();
-  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
-  const clickLockedRef = useRef(false);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
@@ -392,14 +400,21 @@ function DefaultMegaMenu({
 
   const popover = usePopover({
     // role: 'none' — the panel exposes its own role="group" labeled by
-    // `label`. Focus stays on the trigger while the panel is open, so a
-    // role="dialog" aria-modal="true" wrapper would announce an unnamed
-    // modal dialog around a grid of links.
+    // `label`. Pointer/hover opens keep focus on the trigger; keyboard and
+    // assistive-tech opens move focus into the panel (a labeled group you exit
+    // with Escape or by tabbing out). Either way role="dialog"
+    // aria-modal="true" would be wrong: it announces an unnamed modal dialog
+    // around a grid of links (and, when focus stays on the trigger, marks the
+    // focused control inert).
     role: 'none',
     // hasSurface: false — mega menu provides its own surface (panelContainer)
     // with border-top and custom overflow. Animation is applied via the
     // render() call's xstyle prop (panelAnimation), not the hook options.
     hasSurface: false,
+    // Keep native outside-click/Escape dismissal and sibling exclusivity.
+    // The trigger's popoverTarget association prevents its activation from
+    // being treated as an ordinary outside interaction.
+    hasLightDismiss: true,
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
@@ -415,73 +430,37 @@ function DefaultMegaMenu({
     };
   }, [popover]);
 
-  const clearTimeouts = useCallback(() => {
-    if (showTimeoutRef.current) {
-      clearTimeout(showTimeoutRef.current);
-      showTimeoutRef.current = null;
-    }
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = null;
-    }
-  }, []);
-
-  const scheduleShow = useCallback(() => {
-    clearTimeouts();
-    showTimeoutRef.current = setTimeout(() => {
-      popover.show({skipAutoFocus: true});
-    }, delay);
-  }, [clearTimeouts, popover, delay]);
-
-  const scheduleHide = useCallback(() => {
-    clearTimeouts();
-    hideTimeoutRef.current = setTimeout(() => {
-      popover.hide();
-    }, hideDelay);
-  }, [clearTimeouts, popover, hideDelay]);
-
-  const handleMouseEnter = useCallback(() => {
-    if (!clickLockedRef.current) {
-      scheduleShow();
-    }
-  }, [scheduleShow]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (!clickLockedRef.current) {
-      scheduleHide();
-    }
-  }, [scheduleHide]);
-
-  const handleClick = useCallback(() => {
-    clearTimeouts();
-    if (popover.isOpen) {
-      clickLockedRef.current = false;
-      popover.hide();
-      triggerButtonRef.current?.focus();
-    } else {
-      clickLockedRef.current = true;
-      popover.show();
-    }
-  }, [popover, clearTimeouts]);
-
-  useEffect(() => {
-    return () => {
-      clearTimeouts();
-    };
-  }, [clearTimeouts]);
+  const {
+    triggerProps: hoverTriggerProps,
+    contentProps,
+    menuRef,
+    setTriggerEl,
+  } = useMenuHover<HTMLDivElement>({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: true,
+    showDelay: delay,
+    hideDelay,
+    itemSelector: PANEL_ITEM_SELECTOR,
+    // Trigger sits outside an auto popover; the invoker relationship exempts it
+    // from light dismiss.
+    popoverId: popover.id,
+  });
 
   return (
     <>
       <button
-        ref={mergeRefs(triggerButtonRef, ref)}
+        ref={mergeRefs(triggerButtonRef, setTriggerEl, ref)}
         type="button"
         {...popover.triggerProps}
-        onClick={handleClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        {...hoverTriggerProps}
         {...mergeProps(
           themeProps('top-nav-mega-menu'),
-          stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
+          focusOutlineProps.focusVisible(
+            styles.trigger,
+            popover.isOpen && styles.triggerOpen,
+          ),
         )}>
         {label}
         <Icon
@@ -496,10 +475,10 @@ function DefaultMegaMenu({
           // role="group" — a mega menu is a browsing grid of links, not an
           // ARIA menu of menuitems (per the WAI-ARIA APG, the menu role is
           // for action menus; link mega menus are the documented anti-case).
+          ref={menuRef}
           role="group"
           aria-label={label}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          {...contentProps}
           {...stylex.props(styles.panelContainer)}>
           <div {...stylex.props(styles.panelContent)}>
             {/* Menu items section */}
@@ -547,7 +526,10 @@ function DrawerMegaMenu({
         aria-controls={`${menuId}-items`}
         {...mergeProps(
           themeProps('top-nav-mega-menu', {mode: 'drawer'}),
-          stylex.props(navItemStyles.item, styles.drawerHeader),
+          focusOutlineProps.focusVisible(
+            navItemStyles.item,
+            styles.drawerHeader,
+          ),
         )}>
         {label}
         <Icon

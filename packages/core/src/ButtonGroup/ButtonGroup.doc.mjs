@@ -15,7 +15,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-button-group', visualProps: ['size', 'orientation']},
+      {className: 'astryx-button-group', visualProps: ['size', 'orientation', 'elevation']},
     ],
   },
   components: [
@@ -46,6 +46,8 @@ export const docs = {
       {guidance: false, description: "Don't mix wildly different actions. A Save button next to a Delete button in the same group is confusing."},
       {guidance: false, description: "Don't use ButtonGroup for navigation. Use SegmentedControl or TabList for switching between views."},
       {guidance: false, description: "Don't nest ButtonGroups. If you need multiple groups, place them side by side with a gap."},
+      {guidance: true, description: 'Name the group for what its buttons act on. The label is the group\u2019s accessible name and a screen reader reads it before each member.'},
+      {guidance: false, description: "Don't disable the group to show that an action is in flight. A disabled member drops focus, so a keyboard user loses their place; leave the group enabled and show progress on the button that started the work."},
     ],
     anatomy: [
       {name: 'Button', required: true, description: 'One or more Button or IconButton children that form the connected group.'},
@@ -84,6 +86,8 @@ export const docsZh = {
       {guidance: false, description: '不要混合差异很大的操作，将保存按钮和删除按钮放在同一组中会令人困惑。'},
       {guidance: false, description: '不要使用 ButtonGroup 进行导航，使用 SegmentedControl 或 TabList 切换视图。'},
       {guidance: false, description: '不要嵌套 ButtonGroup。如需多个组，请并排放置并留有间隔。'},
+      {guidance: true, description: '按钮组的标签应说明这些按钮作用于什么。该标签是按钮组的无障碍名称，屏幕阅读器会在每个成员之前朗读它。'},
+      {guidance: false, description: '不要用禁用整个按钮组来表示操作进行中。禁用的成员会失去焦点，键盘用户会丢失位置；请保持按钮组可用，并在发起操作的按钮上显示进度。'},
     ],
     anatomy: [
       {name: '按钮', required: true, description: '一个或多个 Button 或 IconButton 子元素，形成连接的组。'},
@@ -105,6 +109,8 @@ export const docsDense = {
       {guidance: false, description: "Don't mix unrelated actions in one group."},
       {guidance: false, description: "Don't use for navigation. Use SegmentedControl or TabList."},
       {guidance: false, description: "Don't nest ButtonGroups."},
+      {guidance: true, description: 'Label the group for what its buttons act on; it is the accessible name.'},
+      {guidance: false, description: "Don't disable the group for an in-flight action; a disabled member drops focus."},
     ],
   },
   components: [

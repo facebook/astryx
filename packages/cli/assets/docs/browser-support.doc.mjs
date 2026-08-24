@@ -15,7 +15,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Astryx is built on modern web platform features: the Popover API, CSS anchor positioning, and CSS `light-dark()`. These let components stay small, accessible, and dependency-free, but they also set a floor on which browsers render everything correctly.',
+          text: 'Astryx is built on modern web platform features: the [`Popover`](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) API, CSS anchor positioning, and CSS `light-dark()`. These let components stay small, accessible, and dependency-free, but they also set a floor on which browsers render everything correctly.',
         },
         {
           type: 'prose',
@@ -73,7 +73,7 @@ export const docs = {
               'Baseline 2026: the tightest requirement.',
             ],
             [
-              'Popover API',
+              '[`Popover`](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) API',
               'Opens, stacks, and light-dismisses layered surfaces via the top layer.',
               'Baseline 2025.',
             ],
@@ -86,7 +86,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The gap that matters is between Tier 1 and Tier 2: the Popover API and `light-dark()` reached wide availability well before anchor positioning. So in Tier 2 browsers, layered surfaces open and dismiss correctly; they just are not positioned. This is the one feature most consumers will need to reason about.',
+          text: 'The gap that matters is between Tier 1 and Tier 2: the [`Popover`](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) API and `light-dark()` reached wide availability well before anchor positioning. So in Tier 2 browsers, layered surfaces open and dismiss correctly; they just are not positioned. This is the one feature most consumers will need to reason about.',
         },
       ],
     },
@@ -112,7 +112,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'If your product does not use any of these, it has no anchor-positioning requirement at all; it needs only `light-dark()` (Tier 2 and up) for correct theme colors. Layout, typography, forms, buttons, cards, tables, and navigation all work down to Tier 2 with no special handling.',
+          text: 'If your product does not use any of these, it has no anchor-positioning requirement at all; it needs only `light-dark()` (Tier 2 and up) for correct theme colors. Page layout, typography, forms, buttons, cards, tables, and navigation all work down to Tier 2 with no special handling.',
         },
       ],
     },
@@ -123,7 +123,7 @@ export const docs = {
           type: 'list',
           style: 'do',
           items: [
-            'Components never throw on missing platform APIs. Where a browser lacks the Popover API, layers fall back to plain visibility instead of crashing.',
+            'Components never throw on missing platform APIs. Where a browser lacks the [`Popover`](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) API, layers fall back to plain visibility instead of crashing.',
             'Tier 1 and Tier 2 are officially supported and tested.',
             'Non-layered components render correctly down to Tier 2.',
           ],
@@ -192,7 +192,7 @@ const hasLightDark = CSS.supports('color', 'light-dark(#000, #fff)');`,
         },
         {
           type: 'prose',
-          text: 'This is not an arbitrary window: Baseline − 2 is close to where anchor positioning stops being available while the Popover API and `light-dark()` still are, so the tier boundary tracks a real capability edge, not a guessed date. The version floors above are reviewed and advanced roughly once a year as new Baseline years land. Always feature-detect rather than hardcoding version numbers, so your app adapts automatically as the platform moves.',
+          text: 'This is not an arbitrary window: Baseline − 2 is close to where anchor positioning stops being available while the [`Popover`](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) API and `light-dark()` still are, so the tier boundary tracks a real capability edge, not a guessed date. The version floors above are reviewed and advanced roughly once a year as new Baseline years land. Always feature-detect rather than hardcoding version numbers, so your app adapts automatically as the platform moves.',
         },
       ],
     },

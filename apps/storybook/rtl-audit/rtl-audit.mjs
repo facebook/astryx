@@ -6,9 +6,9 @@
  * @description RTL semantic audit. Grades component stories against the astryx
  *   RTL contract by comparing their LTR vs RTL render in the SAME run
  *   (relationship-based, no golden screenshots). Two layers:
- *     (A) AUTO-DISCOVERY — runs over EVERY `core-*` story with zero curated
- *         selectors, so a NEW component that ships without RTL handling is
- *         caught automatically. Two auto passes:
+ *     (A) AUTO-DISCOVERY — runs over EVERY `core-*` and `lab-*` story with zero
+ *         curated selectors, so a NEW component that ships without RTL handling
+ *         is caught automatically. Two auto passes:
  *           - D1 (icon-mirror): directional glyphs must flip/swap under RTL.
  *           - D5 (positional-mirror): an absolutely/fixed-positioned element
  *             with a LOGICAL anchor (insetInlineStart/End) + an UNFLIPPED
@@ -21,8 +21,8 @@
  *         genuinely need hand-written selectors.
  * @input --storybook-dir <path> --output <file> [--targets <path>] [--filter <csv>]
  *   [--auto-only] [--curated-only]
- * @output JSON scorecard: auto-discovery D1 verdicts across all core stories +
- *   curated D2/D3/D4 results. Mirrors the pr-a11y accessibility-audit harness.
+ * @output JSON scorecard: auto-discovery D1 verdicts across all audited stories
+ *   + curated D2/D3/D4 results. Mirrors the pr-a11y accessibility-audit harness.
  * @position internal test harness; run by the soft-gated `pr-rtl` CI job and
  *   locally via `pnpm -F @astryxdesign/storybook rtl-audit`.
  *
@@ -54,6 +54,13 @@ const TARGETS_PATH = getArg('targets') || path.join(HERE, 'targets.json');
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
+// Story-id prefixes the auto-discovery layer sweeps. These mirror the
+// publishable component packages in analyze-pr.js — a component the PR job can
+// name in --filter must also be discoverable here, or the audit silently
+// reports zero targets. Lab stories (`lab-*`) were excluded until this list
+// existed, so no lab component had ever been RTL-audited.
+const AUDITED_STORY_PREFIXES = ['core-', 'lab-'];
+const AUDITED_STORY_PREFIX = new RegExp(`^(?:${AUDITED_STORY_PREFIXES.join('|')})`);
 // Worker pool size. Each worker owns its own Playwright page; stories are
 // independent, and the run is dominated by page-load latency rather than CPU.
 // Defaults to 1 (serial) so the per-PR job's behaviour is unchanged while the
@@ -670,7 +677,8 @@ async function scoreCurated(page, port, t) {
 // ---------------------------------------------------------------------------
 function componentFromId(id) {
   // core-tabletree--default -> TableTree (best-effort display name)
-  const seg = id.replace(/^core-/, '').split('--')[0];
+  // lab-listinput--tag-options -> listinput
+  const seg = id.replace(AUDITED_STORY_PREFIX, '').split('--')[0];
   return seg;
 }
 
@@ -709,12 +717,15 @@ async function mapPool(items, pages, fn) {
     process.exit(2);
   }
 
-  // ---- (A) auto-discovery over all core-* stories ----
+  // ---- (A) auto-discovery over every audited-package story ----
   const autoResults = []; // D1 icon-mirror
   const pmResults = []; // D5 positional-mirror
   if (!CURATED_ONLY) {
     const storyIds = Object.keys(entries).filter(
-      id => entries[id].type === 'story' && id.startsWith('core-') && !/--docs$/.test(id),
+      id =>
+        entries[id].type === 'story' &&
+        AUDITED_STORY_PREFIX.test(id) &&
+        !/--docs$/.test(id),
     );
     // D1 runs one representative story per component (extra stories add little
     // D1 signal). D5 (positional-mirror) runs over EVERY core story — a
@@ -742,7 +753,7 @@ async function mapPool(items, pages, fn) {
         }
       })),
     );
-    // D5 positional-mirror over every core story.
+    // D5 positional-mirror over every audited story.
     const pmTargets = storyIds
       .map(id => ({id, comp: componentFromId(id)}))
       .filter(({comp}) => !FILTER.length || FILTER.includes(comp.toLowerCase()));

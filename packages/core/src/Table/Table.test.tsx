@@ -95,6 +95,12 @@ describe('columnUtils', () => {
     it('handles single character', () => {
       expect(capitalize('a')).toBe('A');
     });
+
+    it('uppercases an astral-plane letter without splitting it (#4759)', () => {
+      // Deseret 𐐨 (U+10428) uppercases to 𐐀 (U+10400); charAt(0) would grab
+      // half the surrogate pair and leave the string unchanged.
+      expect(capitalize('\u{10428}pple')).toBe('\u{10400}pple');
+    });
   });
 
   describe('generateColumns', () => {
@@ -496,6 +502,37 @@ describe('BaseTable', () => {
     });
   });
 
+  describe('TableRow styling props', () => {
+    it('applies className and style to the row inside a Table', () => {
+      render(
+        <Table>
+          <tbody>
+            <TableRow className="custom-row" style={{opacity: 0.9}}>
+              <TableCell>Cell</TableCell>
+            </TableRow>
+          </tbody>
+        </Table>,
+      );
+      const row = screen.getByRole('row');
+      expect(row.className).toContain('custom-row');
+      expect(row.className).toContain('astryx-table-row');
+      expect(row.style.opacity).toBe('0.9');
+    });
+
+    it('applies className to a standalone row (no table context)', () => {
+      render(
+        <table>
+          <tbody>
+            <TableRow className="custom-row">
+              <td>Cell</td>
+            </TableRow>
+          </tbody>
+        </table>,
+      );
+      expect(screen.getByRole('row').className).toContain('custom-row');
+    });
+  });
+
   describe('plugin pipeline', () => {
     it('applies transformTable plugin', () => {
       const plugin: TablePlugin<User> = {
@@ -563,6 +600,41 @@ describe('BaseTable', () => {
       // 3 rows * 3 columns = 9 calls
       expect(calls).toHaveLength(9);
       expect(calls[0]).toEqual({col: 'name', name: 'Alice'});
+    });
+
+    it('isContentSuppressed renders an empty cell and never calls the column renderer', () => {
+      const rendered: string[] = [];
+      const withRenderer: TableColumn<User>[] = [
+        {
+          key: 'name',
+          header: 'Name',
+          renderCell: item => {
+            rendered.push(item.name);
+            return <b>{item.name}</b>;
+          },
+        },
+      ];
+      const plugin: TablePlugin<User> = {
+        transformBodyCell: (props, _column, item) =>
+          item.name === 'Bob' ? {...props, isContentSuppressed: true} : props,
+      };
+      render(
+        <BaseTable data={users} columns={withRenderer} plugins={[plugin]} />,
+      );
+      expect(rendered).toEqual(['Alice', 'Charlie']);
+      const cells = screen.getAllByRole('cell');
+      expect(cells[1]).toBeEmptyDOMElement();
+      expect(cells[0]).toHaveTextContent('Alice');
+    });
+
+    it('isContentSuppressed also suppresses the default renderer', () => {
+      const plugin: TablePlugin<User> = {
+        transformBodyCell: props => ({...props, isContentSuppressed: true}),
+      };
+      render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
+      for (const cell of screen.getAllByRole('cell')) {
+        expect(cell).toBeEmptyDOMElement();
+      }
     });
 
     it('composes multiple plugins sequentially', () => {

@@ -104,6 +104,20 @@ describe('AvatarGroupOverflow', () => {
     expect(overflow).toHaveTextContent('+5');
   });
 
+  it('applies the group size class to the overflow chip', () => {
+    render(
+      <AvatarGroup size="lg">
+        <Avatar name="Alice" />
+        <AvatarGroupOverflow count={5} />
+      </AvatarGroup>,
+    );
+
+    const overflow = screen.getByLabelText('5 more');
+    expect(overflow.className).toContain('astryx-avatar-group-overflow');
+    expect(overflow.className).toContain('lg');
+    expect(overflow).toHaveAttribute('data-size', 'lg');
+  });
+
   it('renders as button when onClick is provided', () => {
     render(
       <AvatarGroup>
@@ -215,6 +229,31 @@ describe('AvatarGroupOverflow — hardening', () => {
 
     expect(screen.getByText('+0')).toBeInTheDocument();
     expect(screen.getByLabelText('0 more')).toBeInTheDocument();
+  });
+
+  it('clamps a negative count rather than rendering "+-3"', () => {
+    // `count={total - visibleCount}` is the documented shape, and it goes
+    // negative whenever the list is shorter than the slice.
+    render(
+      <AvatarGroup>
+        <Avatar name="Alice" />
+        <AvatarGroupOverflow count={-3} />
+      </AvatarGroup>,
+    );
+
+    expect(screen.queryByText('+-3')).not.toBeInTheDocument();
+    expect(screen.getByText('+0')).toBeInTheDocument();
+    expect(screen.getByLabelText('0 more')).toBeInTheDocument();
+  });
+
+  it('renders outside an AvatarGroup at the md fallback size', () => {
+    render(<AvatarGroupOverflow count={3} data-testid="loose" />);
+
+    const overflow = screen.getByTestId('loose');
+    expect(overflow).toHaveTextContent('+3');
+    // inline-flex, so a standalone indicator stays a circle instead of
+    // stretching to its parent's width.
+    expect(overflow.tagName).toBe('SPAN');
   });
 
   it('handles very large count', () => {
@@ -384,5 +423,42 @@ describe('AvatarGroup — roving focus + keyboard hint', () => {
     // Static avatars are not focusable — no roving tabindex stamped.
     expect(screen.getByTestId('alice')).not.toHaveAttribute('tabindex');
     expect(screen.getByTestId('bob')).not.toHaveAttribute('tabindex');
+  });
+});
+
+describe('AvatarGroup — size cascade', () => {
+  const sizeClasses = (el: HTMLElement) => el.className.split(/\s+/);
+
+  it("the group's size overrides a child's own size prop", () => {
+    render(
+      <AvatarGroup size="lg">
+        <Avatar name="Alice" size="xsm" data-testid="alice" />
+      </AvatarGroup>,
+    );
+
+    const classes = sizeClasses(screen.getByTestId('alice'));
+    expect(classes).toContain('lg');
+    expect(classes).not.toContain('xsm');
+  });
+
+  it("the group's default size also overrides a child's own size prop", () => {
+    // Known open finding: the group always publishes a size on its context, so
+    // a group that never set one still imposes md on children that did set one.
+    // Pinned here so the behaviour cannot change without a deliberate edit.
+    render(
+      <AvatarGroup>
+        <Avatar name="Alice" size="xl" data-testid="alice" />
+      </AvatarGroup>,
+    );
+
+    const classes = sizeClasses(screen.getByTestId('alice'));
+    expect(classes).toContain('md');
+    expect(classes).not.toContain('xl');
+  });
+
+  it("outside a group the avatar's own size applies", () => {
+    render(<Avatar name="Alice" size="xl" data-testid="alice" />);
+
+    expect(sizeClasses(screen.getByTestId('alice'))).toContain('xl');
   });
 });

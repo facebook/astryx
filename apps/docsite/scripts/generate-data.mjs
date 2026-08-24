@@ -740,6 +740,8 @@ export interface ThemingTarget {
   className: string;
   visualProps?: string[];
   states?: string[];
+  /** Old name of a renamed target; the class superseding it. */
+  deprecatedFor?: string;
 }
 
 export interface ComponentVar {
@@ -755,6 +757,8 @@ export interface DerivedVar {
   property: string;
   vars?: string[];
   expand?: 'container';
+  /** Emit only the vars, dropping the source property from the rule. */
+  replaces?: boolean;
 }
 
 export interface ThemingDoc {
@@ -822,6 +826,11 @@ export interface ElementDescriptor {
 export interface PlaygroundConfig {
   defaults?: Record<string, unknown>;
   overlay?: boolean;
+  overlayControl?: {
+    stateProp: string;
+    openValue: unknown;
+  };
+  appShellMobile?: boolean;
   wrapper?: {
     component: string;
     props?: Record<string, unknown>;
@@ -1353,6 +1362,29 @@ ${body}
 
 // ── 7. Showcase Registry ───────────────────────────────────────────────
 
+// Blocks are copied into the docsite and rendered via a live import, so they
+// can only reference packages the docsite actually depends on. A block for a
+// component whose package is not a docsite dependency (e.g. anything in
+// `@astryxdesign/lab`, which is canary-only and deliberately not installed
+// here) is authored and version-controlled in the CLI templates, but must be
+// skipped from the docsite's live preview until its package becomes resolvable
+// — otherwise `next build` fails on the unresolved import. The block source is
+// still shown as code; it just has no rendered preview until, for example, the
+// component is promoted to core.
+const _docsiteDeps = (() => {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(DOCSITE_ROOT, 'package.json'), 'utf-8'),
+  );
+  return {...pkg.dependencies, ...pkg.devDependencies};
+})();
+
+function importsPackageMissingFromDocsite(tsxSource) {
+  const imports = [
+    ...tsxSource.matchAll(/from\s+['"](@astryxdesign\/[^'"/]+)/g),
+  ].map(m => m[1]);
+  return imports.some(pkg => _docsiteDeps[pkg] == null);
+}
+
 function generateShowcaseRegistry() {
   console.log('Generating showcase registry...');
 
@@ -1379,6 +1411,15 @@ function generateShowcaseRegistry() {
     const basename = path.basename(docPath, '.doc.mjs');
     const tsxSrc = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxSrc)) continue;
+
+    // Skip blocks that reference a package the docsite cannot resolve.
+    const tsxContent = fs.readFileSync(tsxSrc, 'utf-8');
+    if (importsPackageMissingFromDocsite(tsxContent)) {
+      console.log(
+        `  skipping showcase ${basename} — imports a package not installed in the docsite`,
+      );
+      continue;
+    }
 
     const alsoShowcaseFor = extractStringArrayField(content, 'alsoShowcaseFor');
 
@@ -1463,6 +1504,17 @@ function generateExampleRegistry() {
 
     let source = '';
     try { source = fs.readFileSync(tsxSrc, 'utf-8'); } catch { /* ignore */ }
+
+    // Skip live-preview entries for blocks the docsite cannot resolve — they'd
+    // break `next build`. The block's code is still shown via the block
+    // registry; only the rendered preview is withheld until the package is a
+    // docsite dependency.
+    if (importsPackageMissingFromDocsite(source)) {
+      console.log(
+        `  skipping example ${basename} — imports a package not installed in the docsite`,
+      );
+      continue;
+    }
 
     const alsoExampleFor = extractStringArrayField(content, 'alsoExampleFor');
 

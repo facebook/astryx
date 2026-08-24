@@ -63,7 +63,7 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, isImeKeyEvent} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
@@ -71,7 +71,7 @@ import {useTranslator} from '../i18n';
 import type {
   DropdownMenuOption,
   DropdownMenuItemData,
-  DropdownMenuDivider,
+  DropdownMenuDividerData,
   DropdownMenuSection,
 } from '../DropdownMenu/DropdownMenu';
 
@@ -128,7 +128,7 @@ const styles = stylex.create({
 
 export type ContextMenuItemData = DropdownMenuItemData;
 
-export type ContextMenuDivider = DropdownMenuDivider;
+export type ContextMenuDividerData = DropdownMenuDividerData;
 
 export type ContextMenuSection = DropdownMenuSection;
 
@@ -334,7 +334,9 @@ export function ContextMenu({
       if (e.key !== 'Escape') {
         return;
       }
-      if (e.isComposing || e.keyCode === 229) {
+      if (isImeKeyEvent(e)) {
+        // Ignore Escape that is committing/cancelling an IME composition;
+        // see utils/ime.ts for why.
         return;
       }
       e.preventDefault();
@@ -466,9 +468,9 @@ export function ContextMenu({
     <>
       <div
         ref={mergeRefs(ref, triggerRef)}
+        {...triggerProps}
         onContextMenu={handleContextMenu}
         {...longPressHandlers}
-        {...triggerProps}
         data-testid={testId}
         {...stylex.props(
           styles.trigger,

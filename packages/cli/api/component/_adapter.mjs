@@ -18,6 +18,8 @@
  * deduped, so each leaf stays a thin projection.
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {findCoreDir, discoverExternalPackages} from '../../foundation/fs/paths.mjs';
 import {
@@ -48,6 +50,7 @@ export {CORE_PACKAGE};
  * @property {any[]} [components]
  * @property {{description?: string}} [usage]
  * @property {any} [theming]
+ * @property {string} [import] set when the doc states its own import specifier
  */
 
 /**
@@ -66,6 +69,13 @@ export {CORE_PACKAGE};
  * @property {string|null} sourcePath
  * @property {string|undefined} issuesUrl
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration|null} integration
+ */
+
+/**
+ * What ownership shaping needs from an owner. The core and legacy-external
+ * paths synthesize a bare `{package, sourcePath}` rather than resolving a full
+ * {@link ComponentOwner}, so everything past those two is optional here.
+ * @typedef {Partial<ComponentOwner> & {package: string, sourcePath: string|null}} OwnershipSubject
  */
 
 /**
@@ -357,7 +367,7 @@ export function extractProps(docs) {
  * swizzleable source file exists for the owner). Existing doc fields (name,
  * usage, props, …) are preserved.
  * @param {LoadedComponentDoc} docs
- * @param {{package: string, sourcePath: string|null}} owner
+ * @param {OwnershipSubject} owner
  * @param {string} componentName
  * @param {string} coreDir
  * @returns {import('./component.type.mjs').ComponentDetailResponse['data']}
@@ -366,13 +376,51 @@ export function withOwnership(docs, owner, componentName, coreDir) {
   const importSpec =
     owner.package === CORE_PACKAGE
       ? resolveImportPath(coreDir, componentName)
-      : `${owner.package}/${componentName}`;
+      : resolveIntegrationImportPath(owner, componentName);
   return /** @type {any} */ ({
     ...docs,
     package: owner.package,
-    import: importSpec,
+    // A doc file may state its own specifier, e.g. when one entry point exports
+    // several components. Only fall back to a resolved one when it does not.
+    import: docs.import ?? importSpec,
     sourceAvailable: owner.sourcePath != null,
   });
+}
+
+/**
+ * Resolve the specifier an integration component is imported from, against the
+ * owning package's `exports` map.
+ *
+ * A component lives in a directory that need not share its name — several
+ * components can be exported from one entry point — so the specifier has to
+ * come from the directory the doc file sits in, checked against `exports`,
+ * rather than from the component name. Falls back to the package root when the
+ * directory is not an exported subpath, matching what a consumer would have to
+ * write by hand.
+ *
+ * @param {OwnershipSubject} owner
+ * @param {string} componentName
+ * @returns {string}
+ */
+function resolveIntegrationImportPath(owner, componentName) {
+  const packageDir = owner.integration?.__packageDir;
+  const directory = owner.docPath
+    ? path.basename(path.dirname(owner.docPath))
+    : componentName;
+  if (!packageDir) {
+    return owner.package;
+  }
+  try {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+    );
+    if (manifest.exports?.[`./${directory}`]) {
+      return `${owner.package}/${directory}`;
+    }
+  } catch {
+    // An unreadable or malformed manifest is not worth failing a lookup over.
+  }
+  return owner.package;
 }
 
 /**

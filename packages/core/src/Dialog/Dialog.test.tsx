@@ -9,6 +9,7 @@
  * SYNC: When Dialog.tsx changes, update tests to match new behavior
  */
 
+import {readFileSync} from 'node:fs';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Dialog, resolveDialogPositionOffsets} from './Dialog';
@@ -181,6 +182,76 @@ describe('Dialog', () => {
         </Dialog>,
       );
       expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+  });
+
+  describe('responsive sizing', () => {
+    it('keeps the requested width but clamps standard dialogs to container and dynamic viewport gutters', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          width={600}
+          maxHeight="70dvh"
+          aria-label="Sized dialog">
+          Content
+        </Dialog>,
+      );
+
+      const dialog = screen.getByRole('dialog');
+      const inlineStyle = dialog.getAttribute('style') ?? '';
+      expect(inlineStyle).toContain('--x-width: 600px');
+      expect(inlineStyle).toContain(
+        '--x-maxWidth: min(100%, calc(100dvw - var(--spacing-4) - var(--spacing-4)))',
+      );
+      expect(inlineStyle).toContain('--x-maxHeight: 70dvh');
+    });
+
+    it('uses a fullscreen-specific fade animation instead of centered dialog movement', () => {
+      const source = readFileSync(
+        'packages/core/src/Dialog/Dialog.tsx',
+        'utf8',
+      );
+      const standardOpen = source.slice(
+        source.indexOf('  open: {'),
+        source.indexOf('  // Backdrop using ::backdrop'),
+      );
+      const fullscreenOpen = source.slice(
+        source.indexOf('  fullscreenOpen: {'),
+        source.indexOf('  fullscreenSafeArea: {'),
+      );
+      const modalStyleOrder = source.slice(
+        source.indexOf('focusOutlineProps.focusVisible('),
+        source.indexOf(
+          '          xstyle,',
+          source.indexOf('focusOutlineProps.focusVisible('),
+        ),
+      );
+
+      expect(standardOpen).toContain('enterDirectional');
+      expect(fullscreenOpen).toContain('enterFullscreen');
+      expect(fullscreenOpen).not.toContain('enterDirectional');
+      expect(modalStyleOrder.indexOf('styles.open')).toBeLessThan(
+        modalStyleOrder.indexOf('styles.fullscreenOpen'),
+      );
+    });
+
+    it('protects fullscreen content with safe-area padding', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          variant="fullscreen"
+          aria-label="Fullscreen dialog">
+          <div data-testid="child">Content</div>
+        </Dialog>,
+      );
+
+      const wrapper = screen.getByTestId('child').parentElement!;
+      const computed = window.getComputedStyle(wrapper);
+      expect(computed.paddingInlineStart).toContain('safe-area-inset-left');
+      expect(computed.paddingInlineEnd).toContain('safe-area-inset-right');
+      expect(wrapper.parentElement!.tagName).toBe('DIALOG');
     });
   });
 
@@ -459,6 +530,30 @@ describe('Dialog', () => {
 
       expect(before).toHaveFocus();
       before.remove();
+    });
+  });
+
+  describe('container padding isolation', () => {
+    it('resets container padding custom properties on the root dialog element', () => {
+      render(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          Content
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const computed = window.getComputedStyle(dialog);
+      expect(
+        computed.getPropertyValue('--container-padding-inline-start'),
+      ).toBe('0px');
+      expect(computed.getPropertyValue('--container-padding-inline-end')).toBe(
+        '0px',
+      );
+      expect(computed.getPropertyValue('--container-padding-block-start')).toBe(
+        '0px',
+      );
+      expect(computed.getPropertyValue('--container-padding-block-end')).toBe(
+        '0px',
+      );
     });
   });
 });

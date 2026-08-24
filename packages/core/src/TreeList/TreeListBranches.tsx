@@ -46,8 +46,23 @@ const styles = stylex.create({
     width: LINE_WIDTH,
     backgroundColor: colorVars['--color-border-emphasized'],
   },
+  // Guide segment spanning the full <li>. The row box's inter-row gap now lives
+  // INSIDE the <li> (as `padding-block` on the row wrapper), so `height: 100%`
+  // already covers it — the segment only needs the original `1px` to bridge the
+  // hairline into the next contiguous sibling so the connector reads as one
+  // continuous line. Independent of `--tree-list-row-gap`: the gap is absorbed
+  // by the <li> height, not added on top here.
   verticalFull: {
     height: 'calc(100% + 1px)',
+  },
+  // Last-in-group connector: nothing sits below, so the segment must not run
+  // through the row wrapper's bottom `padding-block` (`--tree-list-row-gap` / 2)
+  // into empty space. Clamp it back by that half-gap so it ends exactly at the
+  // row box's bottom edge. At the default `--spacing-0-5` gap this trims the
+  // 1px of bottom padding; at `0px` it is exactly `100%` — no overhang at any
+  // gap.
+  verticalLast: {
+    height: 'calc(100% - var(--tree-list-row-gap, 0px) / 2)',
   },
 });
 
@@ -76,7 +91,7 @@ interface TreeListBranchesProps {
  */
 export function TreeListBranches({
   ancestorsIsLast,
-  isLast: _isLast,
+  isLast,
   nestedLevel,
 }: TreeListBranchesProps) {
   return (
@@ -117,7 +132,15 @@ export function TreeListBranches({
           <div
             {...mergeProps(
               themeProps('tree-list-guide'),
-              stylex.props(styles.verticalLine, styles.verticalFull),
+              // The last item in a group has no sibling below, so its connector
+              // is clamped to the row box's bottom edge (verticalLast) instead
+              // of bridging into the inter-row gap — no overhang into empty
+              // space. Every other row bridges the gap (verticalFull) so the
+              // line stays continuous down to the next sibling.
+              stylex.props(
+                styles.verticalLine,
+                isLast ? styles.verticalLast : styles.verticalFull,
+              ),
             )}
           />
         </div>

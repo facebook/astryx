@@ -22,6 +22,9 @@ export const docs = {
       {className: 'astryx-tab-menu-dropdown'},
       {className: 'astryx-tab-menu-item'},
     ],
+    vars: [
+      {name: '--_tab-indicator-bottom', description: 'Vertical offset of the selected-tab indicator from the tab bottom edge. A host that draws its own bottom divider (Toolbar) sets this so the indicator sits on the divider instead of above it.', default: '-1px', private: true},
+    ],
   },
   description: 'Nav wrapper that provides TabListContext (value, onChange, size) to Tab and TabMenu children.',
   props: [

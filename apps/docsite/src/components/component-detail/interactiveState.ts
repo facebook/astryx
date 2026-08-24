@@ -5,9 +5,12 @@
  * Keeps runtime-only defaults (callbacks, mock search sources, descriptor
  * resolution) and preview-only controlled callbacks out of the generated JSON
  * registries while preserving typed option values from parsed controls.
+ * Also builds the simulated AppShell mobile context for
+ * `playground.appShellMobile` previews.
  */
 
 import {allSyntaxPresets} from '@astryxdesign/core/theme/syntax';
+import type {AppShellMobileContextValue} from '@astryxdesign/core/AppShell';
 import {themeObjectsFull} from '../../generated/themeRegistry';
 import {
   coerceDefault,
@@ -227,7 +230,42 @@ export function isOverlayPreviewClosed(
   playground: PlaygroundConfig | null | undefined,
   state: Record<string, unknown>,
 ): boolean {
-  return playground?.overlay === true && state.isOpen !== true;
+  const control = getOverlayPreviewControl(playground);
+  return (
+    control != null && !Object.is(state[control.stateProp], control.openValue)
+  );
+}
+
+/** Controlled prop/value used by the Properties preview's open button. */
+export function getOverlayPreviewControl(
+  playground: PlaygroundConfig | null | undefined,
+): {stateProp: string; openValue: unknown} | null {
+  if (playground?.overlay !== true) {
+    return null;
+  }
+  return playground.overlayControl ?? {stateProp: 'isOpen', openValue: true};
+}
+
+/**
+ * Context value for previews of components that read AppShell mobile context
+ * (`playground.appShellMobile`). MobileNavToggle renders null unless the
+ * context reports an enabled mobile viewport — the default value outside
+ * AppShell never does — so the preview simulates one, wiring the drawer open
+ * state back to the provided setter to keep the toggle interactive (#4983).
+ */
+export function buildAppShellMobilePreviewContext(
+  isMobileNavOpen: boolean,
+  onOpenChange: (isOpen: boolean) => void,
+): AppShellMobileContextValue {
+  return {
+    isMobile: true,
+    isMobileNavEnabled: true,
+    isMobileNavOpen,
+    toggleMobileNav: () => onOpenChange(!isMobileNavOpen),
+    openMobileNav: () => onOpenChange(true),
+    closeMobileNav: () => onOpenChange(false),
+    hasAutoToggle: true,
+  };
 }
 
 export function getMissingRequiredProps(

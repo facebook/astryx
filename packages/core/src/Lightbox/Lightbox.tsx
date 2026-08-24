@@ -35,6 +35,8 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {useTranslator} from '../i18n';
 
 /**
@@ -156,23 +158,20 @@ const styles = stylex.create({
     cursor: {
       default: 'zoom-in',
       '@media (hover: hover)': 'zoom-in',
-    },
-  },
-  zoomTarget: {
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   imageWrapperZoomed: {
-    cursor: 'grab',
+    cursor: {
+      default: 'grab',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   imageWrapperDragging: {
-    cursor: 'grabbing',
+    cursor: {
+      default: 'grabbing',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   image: {
     maxWidth: '100%',
@@ -387,9 +386,13 @@ export function Lightbox({
       return;
     }
     const item = mediaArray[Math.min(index, mediaArray.length - 1)];
-    const position = `${index + 1} of ${mediaArray.length}`;
-    announce(item?.alt ? `${item.alt}, ${position}` : `Image ${position}`);
-  }, [index, isOpen, announce, mediaArray]);
+    const position = {index: index + 1, total: mediaArray.length};
+    announce(
+      item?.alt
+        ? t('@astryx.lightbox.mediaPosition', {alt: item.alt, ...position})
+        : t('@astryx.lightbox.imagePosition', position),
+    );
+  }, [index, isOpen, announce, mediaArray, t]);
 
   // Open/close dialog
   useIsomorphicLayoutEffect(() => {
@@ -593,7 +596,7 @@ export function Lightbox({
       aria-label={currentItem.alt || t('@astryx.lightbox.mediaViewer')}
       {...mergeProps(
         themeProps('lightbox'),
-        stylex.props(styles.dialog, xstyle),
+        stylex.props(styles.dialog, overlayPaddingReset.reset, xstyle),
         className,
         style,
       )}
@@ -641,7 +644,7 @@ export function Lightbox({
             aria-label={isZoomTarget ? t('@astryx.lightbox.zoom') : undefined}
             {...stylex.props(
               styles.imageWrapper,
-              isZoomTarget && styles.zoomTarget,
+              isZoomTarget && focusOutlineStyles.focusVisible,
               !isVideo && hasZoom && !isZoomed && styles.imageWrapperZoomable,
               !isVideo && isZoomed && styles.imageWrapperZoomed,
               !isVideo && isDragging && styles.imageWrapperDragging,

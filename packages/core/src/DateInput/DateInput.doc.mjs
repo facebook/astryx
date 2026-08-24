@@ -146,7 +146,7 @@ export const docs = {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
       description:
-        'First day of week in the calendar popover. A number (0 = Sunday … 6 = Saturday) or a three-letter day name.',
+        'First day of week in the calendar popover. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
       default: '0',
     },
     {
@@ -173,7 +173,7 @@ export const docs = {
     targets: [
       {className: 'astryx-date-input', visualProps: ['size', 'status'], states: ['disabled']},
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-input-clear-icon'},
+      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
   usage: {
@@ -452,7 +452,7 @@ export const docsZh = {
         states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-input-clear-icon'},
+      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
 };

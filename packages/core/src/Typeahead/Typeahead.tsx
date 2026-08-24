@@ -45,7 +45,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
-import {getInputARIA, mergeProps, mergeRefs} from '../utils';
+import {getInputARIA, isImeKeyEvent, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
@@ -167,7 +167,10 @@ const styles = stylex.create({
     // Standard padding minus border width to prevent height jump
     // when a token (28px) is added inside the input
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
-    cursor: 'text',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   token: {
     // Offset token so it sits 3px from the inner edge (4px from outer edge
@@ -369,6 +372,15 @@ export function Typeahead<T extends SearchableItem>({
   // Handle Escape during edit mode — restore token
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // BaseTypeahead invokes this external handler *before* its own IME
+      // guard, so we must guard here too: an IME candidate window uses Escape
+      // to cancel the pending composition, and that composing Escape fires
+      // before compositionend. Without this, a Korean/Japanese/Chinese user
+      // cancelling a candidate would instead exit edit mode and blur the
+      // field. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'Escape' && editingValue) {
         e.preventDefault();
         setIsEditing(false);

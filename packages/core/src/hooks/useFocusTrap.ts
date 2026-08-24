@@ -19,6 +19,7 @@
 import {useCallback, useEffect, useRef} from 'react';
 
 import {FOCUSABLE_SELECTOR} from './focusableSelector';
+import {isImeKeyEvent} from '../utils/ime';
 
 /**
  * Module-level stack of active focus-trap Escape handlers.
@@ -92,20 +93,6 @@ function isTopEscapeHandler(handler: () => void): boolean {
  */
 export function hasActiveFocusTrapEscape(): boolean {
   return escapeStack.length > 0;
-}
-
-/**
- * Whether an Escape keydown should be ignored because it is cancelling an
- * in-progress IME composition. CJK/IME users press Escape to cancel
- * composition; that must not close the surrounding overlay. `keyCode === 229`
- * covers browsers that fire keydown before `isComposing` is set. Exported so
- * other overlays (Dialog, Drawer, CommandPalette) share one definition.
- */
-export function isImeKeyEvent(event: {
-  isComposing?: boolean;
-  keyCode?: number;
-}): boolean {
-  return event.isComposing === true || event.keyCode === 229;
 }
 
 /**
@@ -332,12 +319,21 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
         lastFocusRef.current = target as Element;
       } else if (isKeyboardNavigationRef.current) {
         // Focus escaped via keyboard - redirect it back
-        focusFirstDescendant(container);
+        const focusedFirst = focusFirstDescendant(container);
 
         // If we're back at the same element (Shift+Tab from first element),
         // try focusing the last element instead
-        if (lastFocusRef.current === document.activeElement) {
+        if (focusedFirst && lastFocusRef.current === document.activeElement) {
           focusLastDescendant(container);
+        } else if (
+          !focusedFirst &&
+          lastFocusRef.current instanceof HTMLElement &&
+          container.contains(lastFocusRef.current)
+        ) {
+          // A modal surface may intentionally have no tabbable controls and
+          // place initial focus on a tabIndex={-1} heading or panel. Preserve
+          // that programmatic focus target instead of letting Tab escape.
+          attemptFocus(lastFocusRef.current);
         }
 
         lastFocusRef.current = document.activeElement;
@@ -410,6 +406,15 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
 
         const focusable = getFocusableElements(container);
         if (focusable.length === 0) {
+          // There is nowhere to advance to. Keep focus on the current
+          // programmatic target (for example a dialog panel with tabIndex=-1)
+          // rather than allowing the browser to move into background content.
+          event.preventDefault();
+          const active = document.activeElement;
+          if (active instanceof HTMLElement && container.contains(active)) {
+            lastFocusRef.current = active;
+          }
+          isKeyboardNavigationRef.current = false;
           return;
         }
 

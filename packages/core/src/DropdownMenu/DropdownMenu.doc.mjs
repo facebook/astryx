@@ -30,11 +30,6 @@ export const docs = {
         visualProps: ['size'],
         states: ['checked', 'disabled'],
       },
-      {
-        className: 'astryx-dropdown-menu-radio-dot',
-        visualProps: ['size'],
-        states: ['checked', 'disabled'],
-      },
       {className: 'astryx-dropdown-menu-section-heading'},
       {className: 'astryx-dropdown-menu-divider'},
       {className: 'astryx-dropdown-menu-indicator-icon'},
@@ -59,7 +54,7 @@ export const docs = {
     {
       name: 'items',
       type: 'DropdownMenuOption[]',
-      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?, variant?}` (variant `"destructive"` renders it in the error color), a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
+      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, description?, endContent?, isDisabled?, variant?, hasCloseOnSelect?, id?}` (variant `"destructive"` renders it in the error color; `endContent` holds trailing content such as a keyboard-shortcut hint; `id` is the row\'s stable React key, needed only when the array reorders or filters), a divider `{type: "divider"}`, or a section `{type: "section", title?, id?, items: [...action items]}`.',
       required: true,
     },
     {
@@ -101,8 +96,9 @@ export const docs = {
       default: 'true',
     },    {
       name: 'children',
-      type: '(item: DropdownMenuItemData) => ReactNode',
-      description: 'Custom render function for each item in the list.',
+      type: 'ReactNode',
+      description:
+        'Compound-mode menu content: DropdownMenuItem, DropdownMenuDivider, DropdownMenuSubMenu, and the selectable items. Mutually exclusive with `items`.',
     },
   ],
   components: [

@@ -117,6 +117,44 @@ describe('generateCompressedIndex', () => {
     // The header defines the mapping; the bare "run every command as `npx astryx`" footgun must be absent.
     expect(result).not.toContain('npx astryx <cmd>');
   });
+
+  /** The `docs <topic>  a, b, c` line of the block. */
+  function topicLine(block) {
+    return (
+      block.split('\n').find(line => line.trimStart().startsWith('docs <topic>')) ?? ''
+    );
+  }
+
+  it('names the hyphenated topics, which the scan used to drop', () => {
+    // The fallback scan matched `\w+`, which does not match `-`, so five real
+    // topics were missing from every block ever written. An agent cannot ask
+    // for a topic it was never told about, and `getting-started` — the one it
+    // should reach for first — was one of them.
+    const line = topicLine(generateCompressedIndex('1.0.0'));
+    for (const topic of [
+      'getting-started',
+      'cli-integrations',
+      'browser-support',
+      'styling-libraries',
+      'working-with-ai',
+    ]) {
+      expect(line).toContain(topic);
+    }
+  });
+
+  it('lists the topics it is given, so an integration’s reach the agent', () => {
+    const line = topicLine(
+      generateCompressedIndex('1.0.0', {topics: ['tokens', 'deploying']}),
+    );
+    expect(line).toContain('tokens, deploying');
+    // The project's catalog replaces the built-in scan rather than adding to it:
+    // a topic an integration replaced must not also be listed under its old name.
+    expect(line).not.toContain('typography');
+  });
+
+  it('omits the line entirely when the project has no topics', () => {
+    expect(topicLine(generateCompressedIndex('1.0.0', {topics: []}))).toBe('');
+  });
 });
 
 describe('detectStylingSystem', () => {

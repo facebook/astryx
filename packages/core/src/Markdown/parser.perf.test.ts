@@ -6,7 +6,7 @@ import {
   parseMarkdownIncremental,
   createIncrementalState,
 } from './parser';
-import type {BlockNode} from './parser';
+import type {BlockNode, ParseOptions} from './parser';
 
 function generateAIResponse(paragraphs: number): string {
   const sections: string[] = [];
@@ -68,6 +68,42 @@ function simulateStreamingIncremental(
   }
   return parseMarkdownIncremental(fullText, state);
 }
+
+/**
+ * How many blocks each chunk of a streamed document had to build.
+ *
+ * A block the parser kept in its settled cache is handed back as the very same
+ * object, so a returned block that is not one of the previous chunk's is one
+ * this chunk built. That makes the cache countable without reaching into the
+ * parser's internals.
+ */
+function blocksBuiltPerChunk(
+  fullText: string,
+  chunkSize: number,
+  options?: ParseOptions,
+): number[] {
+  const state = createIncrementalState();
+  let previous: ReadonlySet<BlockNode> = new Set();
+  const built: number[] = [];
+  const step = (text: string) => {
+    const blocks =
+      options == null
+        ? parseMarkdownIncremental(text, state)
+        : parseMarkdownIncremental(text, state, options);
+    built.push(blocks.reduce((n, b) => (previous.has(b) ? n : n + 1), 0));
+    previous = new Set(blocks);
+  };
+  for (let i = chunkSize; i <= fullText.length; i += chunkSize) {
+    step(fullText.slice(0, i));
+  }
+  step(fullText);
+  return built;
+}
+
+const median = (values: number[]): number =>
+  [...values].sort((a, b) => a - b)[Math.floor((values.length - 1) / 2)];
+
+const sum = (values: number[]): number => values.reduce((a, b) => a + b, 0);
 
 // A single wall-clock measurement is flaky when the whole suite runs in
 // parallel forks: scheduler contention can inflate a millisecond-scale
@@ -202,5 +238,39 @@ describe('parseMarkdown performance', () => {
 
     // Incremental should be at least as fast (allowing small margin for noise)
     expect(incrElapsed).toBeLessThanOrEqual(fullElapsed * 1.1);
+  });
+});
+
+// What the incremental parser exists for is a cache, so these assert the cache:
+// integers that come out the same on a loaded CI box as on an idle laptop,
+// unlike the wall-clock budgets above.
+describe('parseMarkdownIncremental cache', () => {
+  it('builds a bounded number of blocks per chunk however long the document is', () => {
+    const chunkSize = 50;
+    const medians = [50, 200, 500].map(paragraphs =>
+      median(blocksBuiltPerChunk(generateAIResponse(paragraphs), chunkSize)),
+    );
+    console.log(
+      `  median blocks built per chunk (50/200/500 paragraphs): ${medians.join('/')}`,
+    );
+    // A chunk re-parses its unsettled tail, not the document — so the typical
+    // chunk's cost is a constant, and a 10x longer document does not move it.
+    expect(medians).toEqual([2, 2, 2]);
+  });
+
+  it('keeps the cache when source ranges are asked for', () => {
+    const text = generateAIResponse(200);
+    const chunkSize = 50;
+    const without = sum(blocksBuiltPerChunk(text, chunkSize));
+    const withRanges = sum(
+      blocksBuiltPerChunk(text, chunkSize, {sourceRanges: true}),
+    );
+    console.log(
+      `  blocks built streaming ${text.length} chars: ${without} without ranges, ${withRanges} with`,
+    );
+    // Stamping offsets must not cost a cache entry. An implementation that
+    // tracked positions by invalidating the settled cache each chunk would
+    // still pass any time budget generous enough not to flake; it fails here.
+    expect(withRanges).toBe(without);
   });
 });

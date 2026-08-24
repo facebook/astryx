@@ -63,7 +63,10 @@ const styles = stylex.create({
     cursor: 'default',
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -72,14 +75,17 @@ const styles = stylex.create({
     fontSize: 'inherit',
     fontWeight: fontWeightVars['--font-weight-normal'],
     textAlign: 'start',
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
   menuTrigger: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -190,7 +196,10 @@ const styles = stylex.create({
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-2'],
     marginInline: spacingVars['--spacing-1'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Composes over `chevron` — the flipped popover copy differs only by the
   // rotation, so it carries just that.
@@ -335,23 +344,27 @@ export function TopNavHeading({
     hasCloseButton: false,
   });
 
-  const closeMenuCtx = useMemo(
-    () => ({closeMenu: popover.hide}),
-    [popover.hide],
-  );
+  const {
+    triggerProps,
+    contentProps,
+    menuRef,
+    setTriggerEl,
+    close: closeMenu,
+  } = useMenuHover<HTMLDivElement>({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: !!menu,
+    showDelay: 0,
+  });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
-    useMenuHover<HTMLDivElement>({
-      show: popover.show,
-      hide: popover.hide,
-      isOpen: popover.isOpen,
-      isEnabled: !!menu,
-      showDelay: 0,
-    });
+  const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
+  // setTriggerEl belongs on the chevron button, not this root: it is the
+  // focus-restore target and a <div> cannot take focus. triggerRef stays here
+  // because the panel anchors to the whole heading.
   const setRef = mergeRefs<HTMLElement>(
     rootRef,
-    setTriggerEl,
     ref,
     menu ? popover.triggerRef : undefined,
   );
@@ -426,7 +439,8 @@ export function TopNavHeading({
     <button
       type="button"
       {...stylex.props(styles.popoverHeading)}
-      onClick={triggerProps.onClick}>
+      // A close affordance, not the trigger: dismiss only.
+      onClick={closeMenu}>
       {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
       {renderTextContent(
         <Icon
@@ -505,6 +519,7 @@ export function TopNavHeading({
             // Stays a <button>: this box is the popover trigger, so it carries
             // the accessible name and handlers — only the glyph moves to Icon.
             <button
+              ref={setTriggerEl}
               type="button"
               aria-label={t('@astryx.topNav.heading.openMenu')}
               onClick={e => {
@@ -582,6 +597,7 @@ export function TopNavHeading({
               // carries the accessible name and handlers — only the glyph
               // moves to Icon.
               <button
+                ref={setTriggerEl}
                 type="button"
                 aria-label={t('@astryx.topNav.heading.openMenu')}
                 onClick={e => {

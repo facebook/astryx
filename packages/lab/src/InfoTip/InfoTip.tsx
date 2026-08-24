@@ -26,6 +26,7 @@ import {
   radiusVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
+import {focusOutlineStyles} from '@astryxdesign/core/utils';
 
 /**
  * Size of the info icon. Maps 1:1 to Icon sizes
@@ -62,21 +63,16 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     borderRadius: radiusVars['--radius-full'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: {
       default: colorVars['--color-icon-secondary'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         default: null,
         '@media (hover: hover)': colorVars['--color-icon-primary'],
       },
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
     },
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
@@ -86,8 +82,8 @@ const styles = stylex.create({
 
 /**
  * An inline info-icon help affordance: a small "i" button that reveals a
- * tooltip on hover and keyboard focus. Use it next to labels, values, and
- * metrics for permission notes, metric definitions, and field help.
+ * tooltip on hover, keyboard focus, and tap. Use it next to labels, values,
+ * and metrics for permission notes, metric definitions, and field help.
  *
  * The value over hand-composing Icon inside Tooltip is the pre-wired
  * accessible trigger: a real button with an aria-label, Tab-reachable,
@@ -137,6 +133,11 @@ export function InfoTip({
   return (
     <Tooltip
       content={content}
+      // The trigger is a real button, so Tooltip's `auto` touch rule would
+      // give the tap to the control and suppress the tooltip. Here the tooltip
+      // IS the control's only purpose, so the tap has to open it — otherwise
+      // an InfoTip's content is unreachable on a phone.
+      touchTrigger="tap"
       isOpen={isDismissed ? false : undefined}
       onOpenChange={handleOpenChange}>
       <button
@@ -145,7 +146,7 @@ export function InfoTip({
         onKeyDown={handleKeyDown}
         onBlur={handleReset}
         onMouseLeave={handleReset}
-        {...stylex.props(styles.trigger)}>
+        {...stylex.props(focusOutlineStyles.focusVisible, styles.trigger)}>
         <Icon icon="info" size={size} />
       </button>
     </Tooltip>

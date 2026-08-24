@@ -14,6 +14,7 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TimeInput} from './TimeInput';
 import {InputGroup, InputGroupText} from '../InputGroup';
+import {InternationalizationProvider} from '../i18n';
 import type {ISOTimeString} from '../utils';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
@@ -39,6 +40,29 @@ describe('TimeInput', () => {
       <TimeInput label="Time" onChange={() => {}} placeholder="Pick a time" />,
     );
     expect(screen.getByPlaceholderText('Pick a time')).toBeInTheDocument();
+  });
+
+  it('does not step the time on a composing ArrowUp/ArrowDown (IME)', () => {
+    const onChange = vi.fn();
+    render(
+      <TimeInput
+        label="Time"
+        value={'14:30' as ISOTimeString}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText('Time');
+
+    // An IME candidate window navigates with the arrows; a composing keydown
+    // (isComposing / legacy keyCode 229) must not step the time value.
+    fireEvent.keyDown(input, {key: 'ArrowUp', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, {key: 'ArrowDown', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing ArrowUp still steps the time by one minute.
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalledWith('14:31');
   });
 
   it('displays formatted time in 12h format', () => {
@@ -207,6 +231,59 @@ describe('TimeInput', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('');
     expect(screen.queryByText('Invalid time')).not.toBeInTheDocument();
+  });
+
+  it('resolves the invalid-time announcement from the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="en"
+        overrides={{en: {'@astryx.timeInput.invalidTime': 'Ungültige Zeit'}}}>
+        <TimeInput label="Time" onChange={() => {}} />
+      </InternationalizationProvider>,
+    );
+
+    fireEvent.change(screen.getByRole('textbox'), {target: {value: '25:99'}});
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Ungültige Zeit');
+  });
+
+  // Arrow-key stepping mutates a plain textbox programmatically, and screen
+  // readers do not announce programmatic textbox changes — the new value must
+  // be announced through the polite live region (WCAG 4.1.2).
+  it('politely announces the new time after ArrowUp stepping', async () => {
+    const onChange = vi.fn();
+    render(
+      <TimeInput
+        label="Time"
+        value={'14:30' as ISOTimeString}
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('textbox'), {key: 'ArrowUp'});
+
+    expect(onChange).toHaveBeenCalledWith('14:31');
+    await waitFor(() => {
+      expect(politeRegion()).toHaveTextContent('2:31 PM');
+    });
+  });
+
+  it('politely announces the new time after ArrowDown stepping', async () => {
+    const onChange = vi.fn();
+    render(
+      <TimeInput
+        label="Time"
+        value={'14:30' as ISOTimeString}
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('textbox'), {key: 'ArrowDown'});
+
+    expect(onChange).toHaveBeenCalledWith('14:29');
+    await waitFor(() => {
+      expect(politeRegion()).toHaveTextContent('2:29 PM');
+    });
   });
 
   it('calls onChange on blur when input is valid', async () => {

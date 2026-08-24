@@ -39,6 +39,13 @@ export const docs = {
         'Additional content rendered after the label and description.',
     },
     {
+      name: 'hasCloseOnSelect',
+      type: 'boolean',
+      description:
+        'Whether activating the item closes the menu. Set false for an action that reports its result on the item itself.',
+      default: 'true',
+    },
+    {
       name: 'variant',
       type: "'default' | 'destructive'",
       description:
@@ -81,6 +88,12 @@ export const docsZh = {
       description: '在标签和描述之后渲染的附加内容。',
     },
     {
+      name: 'hasCloseOnSelect',
+      type: 'boolean',
+      description: '激活该项时是否关闭菜单。若操作要在该项上就地反馈结果，请设为 false。',
+      default: 'true',
+    },
+    {
       name: 'variant',
       type: "'default' | 'destructive'",
       description:
@@ -105,6 +118,8 @@ export const docsDense = {
     label: 'primary label text',
     description: 'secondary text below label',
     endContent: 'additional content after label+description',
+    hasCloseOnSelect:
+      'false keeps the menu open on activation (in-place result on the item)',
     variant:
       "'destructive' renders the item in the error color for dangerous actions",
     xstyle: 'StyleX styles for root container',
