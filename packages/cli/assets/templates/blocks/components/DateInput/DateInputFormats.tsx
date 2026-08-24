@@ -16,7 +16,11 @@ export default function DateInputFormats() {
   );
 
   return (
-    <Stack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
+    <Stack
+      direction="vertical"
+      gap={4}
+      width="100%"
+      style={{minWidth: 240, maxWidth: 400}}>
       <Text type="supporting" color="secondary">
         The same committed date, displayed with different formats.
       </Text>

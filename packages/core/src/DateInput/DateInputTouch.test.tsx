@@ -219,6 +219,11 @@ function Controlled({
   return (
     <DateInput
       label="Event date"
+      // This suite is about Astryx's own touch surface, which is now opt-out:
+      // `nativePicker` defaults to 'touch', so a coarse pointer gets the
+      // platform's picker unless a field says otherwise. Tests that assert on
+      // the surface selection itself pass their own value over this.
+      nativePicker="never"
       {...DEFAULT_RANGE}
       {...props}
       value={value}
@@ -276,6 +281,16 @@ function weekdayRow(): HTMLElement {
 // ---------------------------------------------------------------------------
 
 describe('DateInput — surface selection', () => {
+  it('hands a touch device to the platform picker by default', () => {
+    // `nativePicker` defaults to 'touch': the OS draws the picker unless a
+    // field opts out. Everything else in this file passes 'never', so this is
+    // the one place the default itself is asserted.
+    stubMedia({pointer: 'coarse', width: 393});
+    render(<DateInput label="Event date" onChange={() => {}} />);
+    const input = document.querySelector('input');
+    expect(input).toHaveAttribute('type', 'date');
+  });
+
   it('switches on the pointer alone, so a tablet gets the picker too', () => {
     // `pointer` is the PRIMARY device, which is what makes it the whole test:
     // a touchscreen laptop reports `fine` (its trackpad) and keeps the
@@ -320,7 +335,7 @@ describe('DateInput — surface selection', () => {
     setViewport('desktop');
     const onChange = vi.fn();
     render(
-      <DateInput label="Event date" onChange={onChange} min={undefined} />,
+      <DateInput nativePicker="never" label="Event date" onChange={onChange} min={undefined} />,
     );
     fireEvent.change(field(), {target: {value: '2026-03-25'}});
     expect(onChange).toHaveBeenCalledWith('2026-03-25');
@@ -360,12 +375,12 @@ describe('DateInput — surface selection', () => {
 describe('DateInput — field parity', () => {
   it('shows a placeholder until a date is chosen, then the formatted value', () => {
     const {rerender} = render(
-      <DateInput label="Ship date" onChange={() => {}} />,
+      <DateInput nativePicker="never" label="Ship date" onChange={() => {}} />,
     );
     expect(field()).toHaveValue('');
     expect(field()).toHaveAttribute('placeholder', 'Select a date');
     rerender(
-      <DateInput label="Ship date" value="2026-03-21" onChange={() => {}} />,
+      <DateInput nativePicker="never" label="Ship date" value="2026-03-21" onChange={() => {}} />,
     );
     expect(field()).toHaveValue('March 21, 2026');
   });
@@ -373,6 +388,7 @@ describe('DateInput — field parity', () => {
   it('honors a named format', () => {
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         value="2026-03-21"
         format="system_date"
@@ -385,6 +401,7 @@ describe('DateInput — field parity', () => {
   it('honors a function format', () => {
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         value="2026-03-21"
         format={iso => `ISO:${iso}`}
@@ -397,6 +414,7 @@ describe('DateInput — field parity', () => {
   it('honors a custom placeholder', () => {
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         placeholder="Pick a day"
         onChange={() => {}}
@@ -409,6 +427,7 @@ describe('DateInput — field parity', () => {
     const onChange = vi.fn();
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         value="2026-03-21"
         hasClear
@@ -432,6 +451,7 @@ describe('DateInput — field parity', () => {
     try {
       render(
         <DateInput
+          nativePicker="never"
           label="Ship date"
           value="2026-03-21"
           hasClear
@@ -457,7 +477,7 @@ describe('DateInput — field parity', () => {
 
   it('does not open the picker until the field is tapped', () => {
     withLayout(() => {
-      render(<DateInput label="Ship date" onChange={() => {}} />);
+      render(<DateInput nativePicker="never" label="Ship date" onChange={() => {}} />);
       expect(field()).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('grid')).not.toBeInTheDocument();
       fireEvent.click(field());
@@ -475,7 +495,7 @@ describe('DateInput — field parity', () => {
   });
 
   it('is not openable while disabled', () => {
-    render(<DateInput label="Ship date" isDisabled onChange={() => {}} />);
+    render(<DateInput nativePicker="never" label="Ship date" isDisabled onChange={() => {}} />);
     expect(field()).toBeDisabled();
     fireEvent.click(field());
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
@@ -484,6 +504,7 @@ describe('DateInput — field parity', () => {
   it('stays focusable and explains itself when disabled with a reason', () => {
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         isDisabled
         disabledMessage="You need the Editor role"
@@ -500,6 +521,7 @@ describe('DateInput — field parity', () => {
   it('renders label, description and status through Field', () => {
     render(
       <DateInput
+        nativePicker="never"
         label="Ship date"
         description="When it leaves the warehouse"
         status={{type: 'error', message: 'Pick a date'}}
@@ -516,12 +538,12 @@ describe('DateInput — field parity', () => {
   });
 
   it('marks required for assistive technology', () => {
-    render(<DateInput label="Ship date" isRequired onChange={() => {}} />);
+    render(<DateInput nativePicker="never" label="Ship date" isRequired onChange={() => {}} />);
     expect(field()).toHaveAttribute('aria-required', 'true');
   });
 
   it('associates the label natively, so the field is named without ARIA', () => {
-    render(<DateInput label="Ship date" onChange={() => {}} />);
+    render(<DateInput nativePicker="never" label="Ship date" onChange={() => {}} />);
     expect(screen.getByLabelText('Ship date')).toBe(field());
   });
 
@@ -536,6 +558,7 @@ describe('DateInput — field parity', () => {
     withLayout(() => {
       render(
         <DateInput
+          nativePicker="never"
           label="Ship date"
           value="2026-03-10"
           min="2026-03-01"
@@ -558,7 +581,7 @@ describe('DateInput — field parity', () => {
   it('drops the Field wrapper inside an InputGroup', () => {
     render(
       <InputGroup label="Range">
-        <DateInput label="Start" onChange={() => {}} />
+        <DateInput nativePicker="never" label="Start" onChange={() => {}} />
       </InputGroup>,
     );
     // Named by the group label plus its own, the way core's inputs are.
@@ -643,7 +666,7 @@ describe('DateInput — calendar surface', () => {
   it('Save closes even with no date chosen, committing nothing', () => {
     const onChange = vi.fn();
     withLayout(() => {
-      render(<DateInput label="Ship date" onChange={onChange} />);
+      render(<DateInput nativePicker="never" label="Ship date" onChange={onChange} />);
       fireEvent.click(field());
       fireEvent.click(screen.getByRole('button', {name: 'Save'}));
     });
