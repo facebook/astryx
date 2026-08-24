@@ -780,3 +780,69 @@ unwrapped row (the contract test in `Table.test.tsx`) opts out with an
 `eslint-disable-next-line` and a reason.
 
 See: https://github.com/facebook/astryx/issues/5277
+
+### `@astryx/no-light-dark-outside-theme`
+
+Flags the CSS `light-dark()` function written in component source.
+
+`light-dark(a, b)` picks a value from the resolved `color-scheme`. In a
+component that hardcodes both halves of the choice at the one place a theme
+cannot reach: a theme can retint every token a component consumes, but it
+cannot reach inside a literal.
+
+That is why the same defect keeps coming back. A dark-mode contrast failure
+patched with a component-level `light-dark()` fixes exactly the scheme the
+author was looking at; the element still fails on the light side in every theme
+whose palette lands differently, and no theme can do anything about it. A token
+pair fixed once in the theme layer reaches both schemes in every theme.
+
+**Bad** — the component decides, and only for the scheme it was written for:
+
+```ts
+const SHADOW_TINT = 'light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.32))';
+```
+
+**Good** — the theme decides, and every theme gets to:
+
+```ts
+const SHADOW_TINT = colorVars['--color-shadow'];
+```
+
+If no token fits, add the `[light, dark]` pair in the theme layer, where
+`defineTheme` generates the `light-dark()` for every theme at once.
+
+**Scope:** `packages/core/src/**` (error) and `packages/lab/src/**` (warn).
+Core is clean. Lab has one violation — `LogStream`'s `levelWarn`/`levelError`,
+a WCAG contrast fix written per scheme — and moving it to the theme layer means
+choosing which contrast-tuned status-text token those levels should read; until
+that is decided lab warns rather than blocks.
+
+**Exemptions**, kept in the rule source rather than only in `eslint.config.js`
+so they are testable and a config edit cannot quietly turn the theme layer into
+a violation:
+
+| Location                                                           | Reported? |
+| ------------------------------------------------------------------ | --------- |
+| Component source under `packages/core/src`, `packages/lab/src`     | ✅ yes    |
+| A `theme/` or `themes/` directory (`defineTheme`, `tokens.stylex`) | ❌ no     |
+| `*.test.*`, `*.spec.*`, `*.stories.*`, `*.doc.*`, `__tests__/`     | ❌ no     |
+| A comment (the rule reads literals, never comments)                | ❌ no     |
+| A `.css` file (ESLint never parses one)                            | ❌ no     |
+| `'light-dark('` with no closing parenthesis (a parser's prefix)    | ❌ no     |
+
+That last one is the interesting case: a resolver detecting a token it has to
+parse writes the opening text only (`raw.startsWith('light-dark(')` in
+`getChartColors`), never a complete call, so requiring a balanced closing
+parenthesis separates authoring a value from recognising one. Nesting counts,
+so `light-dark(color-mix(…), …)` closes on its own parenthesis. Template
+literals are checked across their quasis with interpolations replaced by a
+placeholder, so an expression carrying a stray parenthesis cannot skew the
+balance. Matching is case-insensitive, like CSS.
+
+**Known limitation (intentional false-negative):** the sibling mechanisms are
+not covered — a `@media (prefers-color-scheme: …)` block or a
+`:is([data-theme='dark'] *)` selector hardcodes the same decision and this rule
+says nothing about either. `light-dark()` is where the pattern actually shows up
+in this repo; the others can be added if they start to.
+
+See: https://github.com/facebook/astryx/pull/5321

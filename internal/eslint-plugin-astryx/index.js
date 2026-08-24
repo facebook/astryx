@@ -18,6 +18,7 @@
  * - require-table-section: Requires TableRow/tr to sit inside TableHeader/TableBody/TableFooter (a row directly inside a table emits <table><tr>, which browsers repair on parse and React does not)
  * - disabled-cursor: Flags a cursor that promises an interaction without giving way to not-allowed on a disabled element
  * - no-unstable-merged-refs: Flags render-time mergeRefs callbacks and unstable callback inputs to useMergedRefs
+ * - no-light-dark-outside-theme: Flags CSS light-dark() in component source (a light/dark decision belongs to the theme layer, where a token pair reaches both schemes in every theme)
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -52,6 +53,7 @@ import requireRefPropRule from './require-ref-prop.js';
 import noHardcodedI18nStringRule from './no-hardcoded-i18n-string.js';
 import i18nKeyFormatRule from './i18n-key-format.js';
 import requireTableSectionRule from './require-table-section.js';
+import noLightDarkOutsideThemeRule from './no-light-dark-outside-theme.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -350,6 +352,7 @@ const plugin = {
     'no-hardcoded-i18n-string': noHardcodedI18nStringRule,
     'i18n-key-format': i18nKeyFormatRule,
     'require-table-section': requireTableSectionRule,
+    'no-light-dark-outside-theme': noLightDarkOutsideThemeRule,
   },
   configs: {},
 };
@@ -420,6 +423,11 @@ plugin.configs.strict = {
     // A row directly inside a table is invalid DOM and hydration-unsafe, and
     // the repo is clean — error in both tiers so it stays that way (#5277).
     '@astryx/require-table-section': 'error',
+    // A component-level light-dark() is a light/dark decision no theme can
+    // override; the pair belongs in the theme layer. Core is clean after the
+    // sticky-column fix in this commit, so it errors in both tiers. (Lab
+    // warns — see the lab block in eslint.config.js.)
+    '@astryx/no-light-dark-outside-theme': 'error',
   },
 };
 
@@ -478,6 +486,11 @@ plugin.configs.recommended = {
     // A row directly inside a table is invalid DOM and hydration-unsafe, and
     // the repo is clean — error in both tiers so it stays that way (#5277).
     '@astryx/require-table-section': 'error',
+    // A component-level light-dark() is a light/dark decision no theme can
+    // override; the pair belongs in the theme layer. Core is clean after the
+    // sticky-column fix in this commit, so it errors in both tiers. (Lab
+    // warns — see the lab block in eslint.config.js.)
+    '@astryx/no-light-dark-outside-theme': 'error',
   },
 };
 

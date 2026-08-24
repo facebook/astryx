@@ -271,6 +271,25 @@ export default defineConfig(
       '@astryx/disabled-cursor': 'error',
     },
   },
+  // `light-dark()` is the theme layer's mechanism, and reaches lab for the
+  // same reason the two rules above do: a component that hardcodes a
+  // light/dark decision is unreachable by every theme, and lab is where the
+  // next core component comes from. Core is covered by the token-enforcement
+  // block above (which already excludes `packages/core/src/theme/**`) and is
+  // clean, so it errors there. Lab warns for now: LogStream's `levelWarn`/
+  // `levelError` are a WCAG contrast fix written per scheme, and moving them
+  // to the theme layer means deciding which contrast-tuned status-text token
+  // they should read — a token decision, not a mechanical one. Flip to
+  // 'error' once that lands.
+  {
+    files: ["packages/lab/src/**/*.{ts,tsx}"],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-light-dark-outside-theme': 'warn',
+    },
+  },
   // The i18n runtime itself defines the message strings the rest of the
   // package resolves against; a "hardcoded string" check against it would be
   // circular. Turn off @astryx/no-hardcoded-i18n-string just for this dir.
