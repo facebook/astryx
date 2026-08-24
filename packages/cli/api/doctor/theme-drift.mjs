@@ -20,6 +20,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import {collectThemingTargets} from '../../foundation/discovery/theming-targets.mjs';
+import {loadComponentDoc} from '../../foundation/discovery/component-loader.mjs';
+import {findCoreDir} from '../../foundation/fs/paths.mjs';
+
 /** Directories that never contain hand-authored consumer source. */
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', 'out', '.next', 'coverage', '.turbo', '.cache',
@@ -29,30 +33,111 @@ const SKIP_DIRS = new Set([
 const MAX_FILES = 400;
 
 /**
- * Prop and state values Astryx still emits as legacy *bare* classes
- * (`.astryx-button.primary`). Chaining one of these onto a stable component
- * class is the deprecated selector surface.
+ * A bare class chained onto a stable component class is only the deprecated
+ * selector surface if it is a real prop value or state — `.astryx-card.promo`
+ * is just the consumer's own class. Both facts, and the `data-*` attribute
+ * that replaces it, come from the component docs via
+ * {@link collectThemingTargets}, so nothing here is a second registry that can
+ * drift from the components.
  *
- * A curated list rather than a scrape of the 200+ component docs: loading
- * those costs ~700ms, which is far too much for a command that has to stay
- * fast, and the false-positive this guards against — a consumer's own class
- * chained onto an Astryx class, e.g. `.astryx-card.my-highlight` — only needs
- * the enumerated values to be excluded, not an exhaustive list.
+ * Resolved lazily: the enumeration costs ~300ms, which is far too much for the
+ * clean path, so it is only paid once a selector actually needs naming.
+ *
+ * Keyed by core directory, so two projects in one process cannot read each
+ * other's component set.
+ *
+ * @type {Map<string, Promise<Map<string, import('../../foundation/discovery/theming-targets.mjs').ThemingTarget>>>}
  */
-const LEGACY_BARE_CLASSES = new Set([
-  // variants
-  'primary', 'secondary', 'tertiary', 'ghost', 'destructive', 'muted', 'subtle',
-  'outline', 'solid', 'plain', 'inverse',
-  // status
-  'info', 'success', 'warning', 'error', 'danger', 'neutral',
-  // sizes
-  'xs', 'sm', 'md', 'lg', 'xl', 'compact', 'comfortable', 'spacious',
-  // states
-  'checked', 'selected', 'active', 'disabled', 'open', 'expanded', 'collapsed',
-  'pressed', 'loading', 'readonly', 'invalid', 'required', 'current',
-  // orientation / layout props
-  'horizontal', 'vertical', 'start', 'center', 'end', 'stretch',
-]);
+const targetsByCore = new Map();
+
+/** @param {string} coreSrc */
+function themingTargets(coreSrc) {
+  let pending = targetsByCore.get(coreSrc);
+  if (!pending) {
+    pending = collectThemingTargets(coreSrc).then(
+      list => new Map(list.map(t => [t.key, t])),
+      () => new Map(),
+    );
+    targetsByCore.set(coreSrc, pending);
+  }
+  return pending;
+}
+
+/** `listStyle` -> `list-style`, matching toDataAttributeName in core. */
+const kebab = (/** @type {string} */ s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+
+/**
+ * Work out which `data-*` attribute replaces a bare prop/state class.
+ *
+ * Components reflect the prop *key*, not a fixed name: `.active` on a
+ * pagination dot is `[data-active="active"]`, because Pagination renders
+ * `themeProps('pagination-dot', {active: 'active'})`. Always naming
+ * `data-variant` produced advice that silently matches nothing.
+ *
+ * Returns null when the token is not a known prop value or state — that is a
+ * consumer's own class and must not be flagged at all.
+ *
+ * @param {import('../../foundation/discovery/theming-targets.mjs').ThemingTarget} target
+ * @param {string} token
+ * @param {(name: string) => Promise<string[]>} propValues
+ * @returns {Promise<{attr: string, value: string}|null>}
+ */
+async function reflectionFor(target, token, propValues) {
+  // States reflect their own name as both key and value.
+  if (target.states.includes(token)) return {attr: `data-${kebab(token)}`, value: token};
+
+  // Prop-prefixed tokens: `level: 1` renders `.level-1` / [data-level="1"].
+  for (const prop of target.props) {
+    const prefix = `${kebab(prop)}-`;
+    if (token.startsWith(prefix)) {
+      return {attr: `data-${kebab(prop)}`, value: token.slice(prefix.length)};
+    }
+  }
+
+  // Otherwise the token must be an enumerated value of one of this target's
+  // visual props, e.g. `.primary` for variant.
+  for (const prop of target.props) {
+    const values = await propValues(prop);
+    if (values.includes(token)) return {attr: `data-${kebab(prop)}`, value: token};
+  }
+  return null;
+}
+
+/**
+ * Enumerated literal values of a component prop, read from its documented
+ * type union (`"'primary' | 'secondary'"`).
+ *
+ * @param {string} coreSrc
+ * @param {string} component
+ * @returns {(prop: string) => Promise<string[]>}
+ */
+function propValueReader(coreSrc, component) {
+  /** @type {Map<string, string[]>|null} */
+  let cache = null;
+  return async prop => {
+    if (!cache) {
+      cache = new Map();
+      try {
+        const doc = /** @type {{props?: Array<{name?: string, type?: unknown}>,
+         *   components?: Array<{props?: Array<{name?: string, type?: unknown}>}>}} */ (
+          await loadComponentDoc(path.join(coreSrc, component, `${component}.doc.mjs`))
+        );
+        const all = [
+          ...(doc?.props ?? []),
+          ...(doc?.components ?? []).flatMap(c => c.props ?? []),
+        ];
+        for (const p of all) {
+          if (!p?.name || typeof p.type !== 'string') continue;
+          const literals = [...p.type.matchAll(/'([^']+)'/g)].map(m => m[1]);
+          if (literals.length > 0) cache.set(p.name, literals);
+        }
+      } catch {
+        /* unreadable doc: no values, so nothing is claimed */
+      }
+    }
+    return cache.get(prop) ?? [];
+  };
+}
 
 /** System token families a theme owns. Redefining these globally escapes it. */
 const SYSTEM_TOKEN_RE =
@@ -111,6 +196,8 @@ function collect(root, test) {
  * @property {string} file
  * @property {number} line
  * @property {string} detail
+ * @property {string} [targetKey] - bare-class only: the `defineTheme` component key
+ * @property {string} [token] - bare-class only: the chained class name
  */
 
 /**
@@ -166,16 +253,20 @@ export function scanConsumerCss(root) {
       });
     }
 
-    // (3) Deprecated bare prop/state classes chained onto a stable class.
+    // (3) Bare classes chained onto a stable class. Whether each one is
+    //     actually a deprecated prop/state class — as opposed to the
+    //     consumer's own — is decided later against the component docs, so
+    //     the clean path never pays to load them.
     for (const sel of src.matchAll(/\.(astryx-[\w-]+)((?:\.[\w-]+)+)/g)) {
       for (const cls of sel[2].split('.').filter(Boolean)) {
         if (cls.startsWith('astryx-')) continue;
-        if (!LEGACY_BARE_CLASSES.has(cls)) continue;
         findings.push({
           kind: 'deprecated-bare-class',
           file,
           line: lineAt(sel.index),
           detail: `.${sel[1]}.${cls}`,
+          targetKey: sel[1].replace(/^astryx-/, ''),
+          token: cls,
         });
       }
     }
@@ -186,7 +277,13 @@ export function scanConsumerCss(root) {
 
 /** StyleX compiler plugins. Swizzled StyleX source is inert without one. */
 const STYLEX_COMPILERS = [
+  // The first-party plugins `astryx docs styling` tells people to install.
+  // <!-- SYNC: packages/cli/assets/docs/styling.doc.mjs (bundler -> plugin table) -->
+  '@stylexjs/webpack-plugin',
+  '@stylexjs/rollup-plugin',
   '@stylexjs/babel-plugin',
+  '@stylexjs/postcss-plugin',
+  // Community and SWC-based transforms.
   'vite-plugin-stylex',
   'unplugin-stylex',
   '@stylexswc/unplugin',
@@ -259,6 +356,52 @@ export function findSwizzled(root) {
   return {dirs, usesStyleX, hasCompiler};
 }
 
+/**
+ * Keep only the bare-class candidates that really are deprecated prop/state
+ * classes, and attach the `data-*` attribute that replaces each one.
+ *
+ * Anything that does not resolve is the consumer's own class chained onto an
+ * Astryx class — a legitimate pattern — and is dropped.
+ *
+ * @param {CssFinding[]} findings
+ * @param {string|null} coreSrc - absolute path to `<core>/src`, or null if unresolvable
+ * @returns {Promise<Array<CssFinding & {replacement?: string}>>}
+ */
+export async function resolveBareClasses(findings, coreSrc) {
+  const candidates = findings.filter(f => f.kind === 'deprecated-bare-class');
+  if (candidates.length === 0) return findings;
+
+  if (!coreSrc || !fs.existsSync(coreSrc)) {
+    // No component docs to check against. Naming an attribute would be a
+    // guess, and flagging without one would be noise, so drop them.
+    return findings.filter(f => f.kind !== 'deprecated-bare-class');
+  }
+
+  const targets = await themingTargets(coreSrc);
+  /** @type {Map<string, ReturnType<typeof propValueReader>>} */
+  const readers = new Map();
+  /** @type {Array<CssFinding & {replacement?: string}>} */
+  const resolved = [];
+
+  for (const f of findings) {
+    if (f.kind !== 'deprecated-bare-class') {
+      resolved.push(f);
+      continue;
+    }
+    const target = f.targetKey ? targets.get(f.targetKey) : undefined;
+    if (!target || !f.token) continue;
+    let reader = readers.get(target.component);
+    if (!reader) {
+      reader = propValueReader(coreSrc, target.component);
+      readers.set(target.component, reader);
+    }
+    const hit = await reflectionFor(target, f.token, reader);
+    if (!hit) continue;
+    resolved.push({...f, replacement: `.${target.className}[${hit.attr}="${hit.value}"]`});
+  }
+  return resolved;
+}
+
 /** @param {CssFinding[]} findings @param {string} kind */
 const byKind = (findings, kind) => findings.filter(f => f.kind === kind);
 
@@ -269,10 +412,12 @@ const at = (f, cwd) => `${path.relative(cwd, f.file) || path.basename(f.file)}:$
  * Check — the app's own CSS steps outside the theme.
  *
  * @param {{cwd: string}} ctx
- * @returns {import('./doctor.type.mjs').DoctorCheck}
+ * @returns {Promise<import('./doctor.type.mjs').DoctorCheck>}
  */
-export function checkCssEscapes(ctx) {
-  const {scanned, findings} = scanConsumerCss(ctx.cwd);
+export async function checkCssEscapes(ctx) {
+  const {scanned, findings: raw} = scanConsumerCss(ctx.cwd);
+  const coreDir = findCoreDir(ctx.cwd);
+  const findings = await resolveBareClasses(raw, coreDir ? path.join(coreDir, 'src') : null);
   if (scanned === 0) {
     return {
       id: 'css-escapes',
@@ -322,8 +467,7 @@ export function checkCssEscapes(ctx) {
     };
   }
 
-  const first = bareClasses[0];
-  const [base, value] = first.detail.slice(1).split('.');
+  const first = /** @type {CssFinding & {replacement: string}} */ (bareClasses[0]);
   return {
     id: 'css-escapes',
     label: 'CSS theming escapes',
@@ -331,7 +475,7 @@ export function checkCssEscapes(ctx) {
     message:
       `${bareClasses.length} selector(s) use deprecated bare prop classes, e.g. ${first.detail} at ` +
       `${at(first, ctx.cwd)}.`,
-    fix: `Target the reflected data attribute instead: .${base}[data-variant="${value}"].`,
+    fix: `Target the reflected data attribute instead: ${first.replacement}.`,
   };
 }
 

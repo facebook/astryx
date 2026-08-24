@@ -12,12 +12,17 @@ import {describe, it, expect, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {
   scanConsumerCss,
   findSwizzled,
   checkCssEscapes,
   checkSwizzled,
+  resolveBareClasses,
 } from './theme-drift.mjs';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+const CORE_SRC = path.join(REPO, 'packages/core/src');
 
 const tmpDirs = [];
 function mkProject(files) {
@@ -54,10 +59,12 @@ describe('scanConsumerCss — negative controls', () => {
     expect(scanConsumerCss(dir).findings).toEqual([]);
   });
 
-  it('does not flag a consumer class chained onto an Astryx class', () => {
-    // `.astryx-card.promo` is the consumer's own class, not a legacy prop class.
+  it('does not flag a consumer class chained onto an Astryx class', async () => {
+    // `.astryx-card.promo` is the consumer's own class. `promo` is not a value
+    // of any Card visual prop, so resolution drops it.
     const dir = mkProject({'src/a.css': '.astryx-card.promo { outline: 1px solid red; }'});
-    expect(scanConsumerCss(dir).findings).toEqual([]);
+    const resolved = await resolveBareClasses(scanConsumerCss(dir).findings, CORE_SRC);
+    expect(resolved).toEqual([]);
   });
 
   it('ignores a token name that only appears inside a comment', () => {
@@ -126,6 +133,50 @@ describe('scanConsumerCss — detection', () => {
     expect(f.detail).toBe('.astryx-button.primary');
   });
 
+  describe('replacement selector names the reflected prop key', () => {
+    const replacementFor = async css => {
+      const dir = mkProject({'src/a.css': css});
+      const [f] = await resolveBareClasses(scanConsumerCss(dir).findings, CORE_SRC);
+      return f?.replacement;
+    };
+
+    it('uses the prop key for an enumerated visual prop value', async () => {
+      // Button.variant is 'primary' | 'secondary' | ...
+      await expect(replacementFor('.astryx-button.primary { color: red; }')).resolves.toBe(
+        '.astryx-button[data-variant="primary"]',
+      );
+    });
+
+    it('uses the state name for a state, not data-variant', async () => {
+      // Pagination renders themeProps('pagination-dot', {active: 'active'}),
+      // so the reflection is [data-active="active"]. Hardcoding data-variant
+      // produced a selector that matches nothing and silently drops the rule.
+      await expect(
+        replacementFor('.astryx-pagination-dot.active { background: red; }'),
+      ).resolves.toBe('.astryx-pagination-dot[data-active="active"]');
+    });
+
+    it('distinguishes size from variant on a target that reflects both', async () => {
+      await expect(replacementFor('.astryx-button.sm { padding: 2px; }')).resolves.toBe(
+        '.astryx-button[data-size="sm"]',
+      );
+    });
+
+    it('drops a token that is neither a state nor a documented prop value', async () => {
+      const dir = mkProject({'src/a.css': '.astryx-button.totally-made-up { color: red; }'});
+      const resolved = await resolveBareClasses(scanConsumerCss(dir).findings, CORE_SRC);
+      expect(resolved).toEqual([]);
+    });
+
+    it('drops everything when the component docs cannot be resolved', async () => {
+      // Naming an attribute without the docs would be a guess; flagging
+      // without one would be noise.
+      const dir = mkProject({'src/a.css': '.astryx-button.primary { color: red; }'});
+      const resolved = await resolveBareClasses(scanConsumerCss(dir).findings, null);
+      expect(resolved).toEqual([]);
+    });
+  });
+
   it('reports the line in the original file, not the comment-stripped one', () => {
     // Stripping comments outright collapses lines and shifts every finding.
     const dir = mkProject({
@@ -136,33 +187,34 @@ describe('scanConsumerCss — detection', () => {
 });
 
 describe('checkCssEscapes', () => {
-  it('skips a project with no stylesheets', () => {
-    const c = checkCssEscapes(ctx(mkProject({'package.json': '{}'})));
+  it('skips a project with no stylesheets', async () => {
+    const c = await checkCssEscapes(ctx(mkProject({'package.json': '{}'})));
     expect(c.status).toBe('info');
   });
 
-  it('passes clean CSS', () => {
+  it('passes clean CSS', async () => {
     const dir = mkProject({'src/a.css': '.x { color: var(--color-text-primary); }'});
-    expect(checkCssEscapes(ctx(dir)).status).toBe('pass');
+    expect((await checkCssEscapes(ctx(dir))).status).toBe('pass');
   });
 
-  it('fails on private vars — matching what `theme build` already rejects', () => {
+  it('fails on private vars — matching what `theme build` already rejects', async () => {
     const dir = mkProject({'src/a.css': '.x { --_card-radius: 0; }'});
-    const c = checkCssEscapes(ctx(dir));
+    const c = await checkCssEscapes(ctx(dir));
     expect(c.status).toBe('fail');
     expect(c.fix).toMatch(/defineTheme/);
   });
 
-  it('warns, not fails, on a global token override', () => {
+  it('warns, not fails, on a global token override', async () => {
     const dir = mkProject({'src/a.css': ':root { --color-accent: #f00; }'});
-    expect(checkCssEscapes(ctx(dir)).status).toBe('warn');
+    expect((await checkCssEscapes(ctx(dir))).status).toBe('warn');
   });
 
-  it('offers the data-attribute replacement for a bare class', () => {
+  it('stays silent on bare classes when the component docs are out of reach', async () => {
+    // A throwaway project cannot resolve core, so nothing can be said about
+    // which attribute replaces the class. Reporting it without a usable fix,
+    // or guessing one, are both worse than saying nothing.
     const dir = mkProject({'src/a.css': '.astryx-badge.success { font-weight: 700; }'});
-    const c = checkCssEscapes(ctx(dir));
-    expect(c.status).toBe('warn');
-    expect(c.fix).toBe('Target the reflected data attribute instead: .astryx-badge[data-variant="success"].');
+    expect((await checkCssEscapes(ctx(dir))).status).toBe('pass');
   });
 });
 
