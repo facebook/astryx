@@ -22,7 +22,7 @@ export default function HoverCardHookUsage() {
         label="Hover profile"
         ref={hoverCard.ref}
         aria-haspopup="dialog"
-        aria-controls={hoverCard.id}
+        aria-controls={hoverCard.isOpen ? hoverCard.id : undefined}
         aria-expanded={hoverCard.isOpen}
       />
       {hoverCard.renderHoverCard(

@@ -273,10 +273,20 @@ export function HoverCard({
       const existingExpanded = firstChild.getAttribute('aria-expanded');
 
       firstChild.setAttribute('aria-haspopup', 'dialog');
-      firstChild.setAttribute(
-        'aria-controls',
-        mergeIds(existingControls, hoverCard.id) ?? '',
-      );
+      // Only point aria-controls at the layer while it is open and in the DOM.
+      // While closed, useLayer leaves only an inert <template> marker, so the
+      // id would reference nothing. DateInput gates it the same way. The
+      // trigger's own aria-controls (if any) is preserved either way.
+      if (hoverCard.isOpen) {
+        firstChild.setAttribute(
+          'aria-controls',
+          mergeIds(existingControls, hoverCard.id) ?? '',
+        );
+      } else if (existingControls) {
+        firstChild.setAttribute('aria-controls', existingControls);
+      } else {
+        firstChild.removeAttribute('aria-controls');
+      }
       firstChild.setAttribute('aria-expanded', String(hoverCard.isOpen));
 
       return () => {
@@ -343,7 +353,7 @@ export function HoverCard({
           ref={hoverCard.ref}
           tabIndex={0}
           aria-haspopup={label ? 'dialog' : undefined}
-          aria-controls={label ? hoverCard.id : undefined}
+          aria-controls={label && hoverCard.isOpen ? hoverCard.id : undefined}
           aria-expanded={label ? hoverCard.isOpen : undefined}
           aria-describedby={label ? undefined : hoverCard.describedBy}
           {...stylex.props(

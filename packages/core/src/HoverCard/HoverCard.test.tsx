@@ -373,7 +373,9 @@ describe('HoverCard', () => {
     );
     const trigger = screen.getByRole('button', {name: 'Trigger'});
     expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
-    expect(trigger).toHaveAttribute('aria-controls');
+    // While closed, the layer is not in the DOM, so aria-controls must not
+    // point at a missing id (see DateInput). It is set once the card opens.
+    expect(trigger).not.toHaveAttribute('aria-controls');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).not.toHaveAttribute('aria-describedby');
   });
@@ -433,15 +435,20 @@ describe('HoverCard', () => {
     );
     const trigger = screen.getByRole('button', {name: 'Trigger'});
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).not.toHaveAttribute('aria-controls');
 
     fireEvent.mouseEnter(trigger);
     await waitFor(() => {
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      // The layer is in the DOM now, so aria-controls points at it.
+      expect(trigger).toHaveAttribute('aria-controls');
     });
 
     fireEvent.mouseLeave(trigger);
     await waitFor(() => {
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      // The layer is gone from the DOM, so aria-controls is cleared.
+      expect(trigger).not.toHaveAttribute('aria-controls');
     });
   });
 
@@ -497,7 +504,8 @@ describe('HoverCard', () => {
     expect(wrapper.tagName).toBe('SPAN');
     expect(wrapper).toHaveAttribute('aria-haspopup', 'dialog');
     expect(wrapper).toHaveAttribute('aria-expanded', 'false');
-    expect(wrapper).toHaveAttribute('aria-controls');
+    // While closed, the layer is not in the DOM, so aria-controls is unset.
+    expect(wrapper).not.toHaveAttribute('aria-controls');
     expect(wrapper).not.toHaveAttribute('aria-describedby');
   });
 
