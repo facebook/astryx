@@ -82,7 +82,7 @@ export const docs = {
     {
       name: 'isLoading',
       type: 'boolean',
-      description: 'Shows a loading spinner and disables interaction. Announces "Loading" via a live region.',
+      description: 'Shows a loading spinner and guards against re-activation while keeping the button focusable (aria-busy + aria-disabled, never native disabled). Announces "Loading" via a live region.',
       default: 'false',
     },
     {
@@ -148,7 +148,7 @@ export const docs = {
       name: 'clickAction',
       type: '(e: MouseEvent) => void | Promise<void>',
       description:
-        'Async click handler. Shows loading state while the returned promise is pending.',
+        'Async click handler. Shows loading state while the returned promise is pending. A rejected promise clears the loading state (so the user can retry) and is reported via devError; handle expected failures inside the action.',
     },
     {
       name: 'href',
@@ -231,7 +231,7 @@ export const docsZh = {
     {name: 'name', type: 'string', description: '表单提交的 HTML name 属性。'},
     {name: 'value', type: 'string | number | readonly string[]', description: '表单提交的 HTML value 属性。'},
     {name: 'form', type: 'string', description: '通过 ID 将按钮与表单元素关联。'},
-    {name: 'isLoading', type: 'boolean', description: '显示加载旋转器并禁用交互。通过实时区域播报"Loading"。', default: 'false'},
+    {name: 'isLoading', type: 'boolean', description: '显示加载旋转器并阻止重复触发，同时保持按钮可聚焦（aria-busy + aria-disabled，而非原生 disabled）。通过实时区域播报"Loading"。', default: 'false'},
     {
       name: 'isDisabled',
       type: 'boolean',
@@ -252,7 +252,7 @@ export const docsZh = {
     {
       name: 'clickAction',
       type: '(e: MouseEvent) => void | Promise<void>',
-      description: '异步点击处理函数。返回的 Promise 处于 pending 状态时显示加载状态。',
+      description: '异步点击处理函数。返回的 Promise 处于 pending 状态时显示加载状态。Promise 被拒绝时清除加载状态（用户可重试），并通过 devError 上报；预期内的失败请在 action 内部处理。',
     },
   ],
   theming: {
@@ -303,7 +303,7 @@ export const docsDense = {
     displayName: 'HTML name for form submission',
     value: 'HTML value for form submission',
     form: 'associates button with form element by ID',
-    isLoading: 'shows spinner+disables interaction; announces via live region',
+    isLoading: 'shows spinner, guards re-activation, stays focusable (aria-busy/aria-disabled, no native disabled); announces via live region',
     icon: 'icon element rendered before label text',
     isIconOnly: 'when true, renders square icon-only button; label becomes aria-label',
     width: "Width of button. Numbers=pixels, strings=as-is (e.g. '100%' for full-width).",
@@ -311,7 +311,7 @@ export const docsDense = {
     endContent: 'trailing icon/badge after label; ignored when isIconOnly; color inherited',
     tooltip: 'tooltip on hover',
     onClick: 'standard click handler; fires before clickAction',
-    clickAction: 'async click handler; shows loading while promise pending',
+    clickAction: 'async click handler; shows loading while promise pending; rejection clears loading (retry works) + devError report',
     isDisabled: 'disables button; uses aria-disabled when tooltip present',
   },
 };

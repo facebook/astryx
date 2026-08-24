@@ -13,6 +13,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from './Button';
+import {ButtonGroup} from '../ButtonGroup/ButtonGroup';
 import {Badge} from '../Badge/Badge';
 import {InternationalizationProvider} from '../i18n';
 
@@ -68,13 +69,16 @@ describe('Button', () => {
   it('shows isLoading state with spinner', () => {
     render(<Button label="Submit" isLoading />);
     const button = screen.getByRole('button');
-    // Button should be disabled when loading
-    expect(button).toBeDisabled();
+    // Busy is announced via aria, never the native disabled attribute — a
+    // natively disabled element cannot hold focus (#4871).
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('sets aria-busy synchronously while clickAction is pending', async () => {
     // The spinner reveal is visually delayed (CSS animation-delay), but the
-    // loading DOM state — aria-busy and disabled — must not be delayed.
+    // loading DOM state — aria-busy and aria-disabled — must not be delayed.
     const user = userEvent.setup();
     let resolveAction: (() => void) | undefined;
     const clickAction = vi.fn(
@@ -88,14 +92,99 @@ describe('Button', () => {
 
     await user.click(button);
     expect(button).toHaveAttribute('aria-busy', 'true');
-    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).not.toHaveAttribute('disabled');
 
     await act(async () => {
       resolveAction?.();
       await Promise.resolve();
     });
     expect(button).not.toHaveAttribute('aria-busy', 'true');
-    expect(button).not.toBeDisabled();
+    expect(button).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('keeps the button focusable while a clickAction is pending (#4871)', async () => {
+    // Busy must never use the native disabled attribute: a natively disabled
+    // element cannot hold focus, so the browser drops focus to <body> the
+    // moment the action starts and a keyboard user loses their place.
+    const user = userEvent.setup();
+    let resolveAction: (() => void) | undefined;
+    const clickAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          resolveAction = resolve;
+        }),
+    );
+    render(<Button label="Save" clickAction={clickAction} />);
+    const button = screen.getByRole('button');
+
+    await user.click(button);
+    // Pending: no native disabled, so the browser never drops focus. (jsdom
+    // does not simulate the focus drop itself, so the attribute check is the
+    // discriminating assertion.)
+    expect(button).not.toHaveAttribute('disabled');
+    button.focus();
+    expect(button).toHaveFocus();
+
+    await act(async () => {
+      resolveAction?.();
+      await Promise.resolve();
+    });
+    // Settled: focus never left, so the user's place is preserved.
+    expect(button).toHaveFocus();
+  });
+
+  it('suppresses keyboard re-activation while a clickAction is pending (#4871)', async () => {
+    // With no native disabled attribute, the keyboard path must be guarded in
+    // the handlers: Enter/Space on the focused busy button must not re-fire
+    // the action, while non-activation keys still reach consumer handlers.
+    const user = userEvent.setup();
+    const handleKeyDown = vi.fn();
+    let resolveAction: (() => void) | undefined;
+    const clickAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          resolveAction = resolve;
+        }),
+    );
+    render(
+      <Button
+        label="Save"
+        clickAction={clickAction}
+        onKeyDown={handleKeyDown}
+      />,
+    );
+    const button = screen.getByRole('button');
+
+    button.focus();
+    await user.keyboard('{Enter}');
+    expect(clickAction).toHaveBeenCalledTimes(1);
+    const keyDownCallsBeforeBusy = handleKeyDown.mock.calls.length;
+
+    // Re-activation while pending is suppressed for both activation keys, and
+    // the suppressed keys do not reach the consumer handler.
+    await user.keyboard('{Enter}');
+    await user.keyboard(' ');
+    expect(clickAction).toHaveBeenCalledTimes(1);
+    expect(handleKeyDown.mock.calls.length).toBe(keyDownCallsBeforeBusy);
+
+    // Non-activation keys still reach the consumer handler while busy.
+    await user.keyboard('{Escape}');
+    expect(handleKeyDown.mock.calls.length).toBe(keyDownCallsBeforeBusy + 1);
+
+    await act(async () => {
+      resolveAction?.();
+      await Promise.resolve();
+    });
+    // Settled: activation works again.
+    await user.keyboard('{Enter}');
+    expect(clickAction).toHaveBeenCalledTimes(2);
+
+    // Settle the second action too so no transition dangles into later tests.
+    await act(async () => {
+      resolveAction?.();
+      await Promise.resolve();
+    });
   });
 
   it('renders the loading spinner with the inherit shade for every variant (#2717)', () => {
@@ -143,6 +232,27 @@ describe('Button', () => {
 
     await user.click(screen.getByRole('button'));
     expect(handleClick).not.toHaveBeenCalled();
+  });
+
+  it('does not fire keyboard activation when loading (#4871)', async () => {
+    // The loading button is focusable (no native disabled), so Enter/Space
+    // must be suppressed in the handlers instead of by the attribute.
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(<Button label="Click me" isLoading onClick={handleClick} />);
+
+    const button = screen.getByRole('button');
+    button.focus();
+    await user.keyboard('{Enter}');
+    await user.keyboard(' ');
+    expect(handleClick).not.toHaveBeenCalled();
+  });
+
+  it('still uses the native disabled attribute for isDisabled (no tooltip)', () => {
+    // #4871 changes busy, not disabled: isDisabled keeps the native attribute
+    // (and with it non-focusability) exactly as before.
+    render(<Button label="Test" isDisabled />);
+    expect(screen.getByRole('button')).toBeDisabled();
   });
 
   it('forwards ref correctly', () => {
@@ -228,9 +338,9 @@ describe('Button', () => {
     );
     // endContent should still be in the DOM
     expect(screen.getByTestId('end')).toBeInTheDocument();
-    // Button should be disabled and have aria-busy
+    // Button announces busy via aria and stays focusable (#4871)
     const button = screen.getByRole('button');
-    expect(button).toBeDisabled();
+    expect(button).not.toHaveAttribute('disabled');
     expect(button).toHaveAttribute('aria-busy', 'true');
   });
 
@@ -491,8 +601,6 @@ describe('Button', () => {
   });
 
   it('exposes aria-busy on the link-rendered button while loading', () => {
-    // Non-interruptible loading disables the button, which falls back to
-    // <button> rendering — so an anchor only shows loading when interruptible.
     render(
       <Button
         label="Docs"
@@ -505,9 +613,242 @@ describe('Button', () => {
     expect(link).toHaveAttribute('aria-busy', 'true');
   });
 
+  it('keeps the anchor while busy instead of swapping to a disabled button (#4871)', () => {
+    // Swapping <a> → <button disabled> mid-action drops focus the same way
+    // native disabled does — the busy anchor must stay an anchor.
+    render(<Button label="Docs" href="https://example.com" isLoading />);
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('aria-busy', 'true');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
   it('does not set aria-busy on the link-rendered button when not loading', () => {
     render(<Button label="Docs" href="https://example.com" />);
     const link = screen.getByRole('link');
     expect(link).not.toHaveAttribute('aria-busy');
+  });
+
+  describe('busy state edge cases (#4871)', () => {
+    const pendingAction = () => {
+      let resolveAction: (() => void) | undefined;
+      const clickAction = vi.fn(
+        async () =>
+          new Promise<void>(resolve => {
+            resolveAction = resolve;
+          }),
+      );
+      const settle = async () =>
+        act(async () => {
+          resolveAction?.();
+          await Promise.resolve();
+        });
+      return {clickAction, settle};
+    };
+
+    it('tooltip + busy: aria-disabled path, Enter suppressed, recovers on settle', async () => {
+      const user = userEvent.setup();
+      const {clickAction, settle} = pendingAction();
+      render(
+        <Button
+          label="Save"
+          tooltip="Saves the draft"
+          clickAction={clickAction}
+        />,
+      );
+      const button = screen.getByRole('button');
+
+      button.focus();
+      await user.keyboard('{Enter}');
+      expect(clickAction).toHaveBeenCalledTimes(1);
+      expect(button).not.toHaveAttribute('disabled');
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+      expect(button).toHaveAttribute('aria-busy', 'true');
+
+      await user.keyboard('{Enter}');
+      expect(clickAction).toHaveBeenCalledTimes(1);
+
+      await settle();
+      expect(button).not.toHaveAttribute('aria-disabled');
+      await user.keyboard('{Enter}');
+      expect(clickAction).toHaveBeenCalledTimes(2);
+      await settle();
+    });
+
+    it('isDisabled + isLoading (no tooltip): native disabled wins over busy', () => {
+      // isBusy deliberately excludes hard-disabled: a button the consumer
+      // disabled stays natively disabled even while showing a spinner.
+      render(<Button label="Save" isDisabled isLoading />);
+      const button = screen.getByRole('button');
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute('aria-busy', 'true');
+      expect(button).not.toHaveAttribute('aria-disabled');
+    });
+
+    it('isDisabled + isLoading + tooltip: aria-disabled path, no handlers fire', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(
+        <Button
+          label="Save"
+          tooltip="Why disabled"
+          isDisabled
+          isLoading
+          onClick={handleClick}
+        />,
+      );
+      const button = screen.getByRole('button');
+      expect(button).not.toHaveAttribute('disabled');
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+      await user.click(button);
+      expect(handleClick).not.toHaveBeenCalled();
+    });
+
+    it('ButtonGroup disabled: child stays natively disabled, busy or not', () => {
+      render(
+        <ButtonGroup label="Actions" isDisabled>
+          <Button label="Copy" />
+          <Button label="Save" isLoading />
+        </ButtonGroup>,
+      );
+      expect(screen.getByRole('button', {name: 'Copy'})).toBeDisabled();
+      expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+    });
+
+    it('ButtonGroup disabled + tooltip on child: aria-disabled path', () => {
+      render(
+        <ButtonGroup label="Actions" isDisabled>
+          <Button label="Copy" tooltip="Nothing selected" />
+        </ButtonGroup>,
+      );
+      const button = screen.getByRole('button', {name: 'Copy'});
+      expect(button).not.toHaveAttribute('disabled');
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('isInterruptible busy: aria-busy without aria-disabled (still interactive)', async () => {
+      const user = userEvent.setup();
+      const {clickAction, settle} = pendingAction();
+      render(
+        <Button label="Toggle" isInterruptible clickAction={clickAction} />,
+      );
+      const button = screen.getByRole('button');
+
+      await user.click(button);
+      expect(button).toHaveAttribute('aria-busy', 'true');
+      // Interruptible is genuinely interactive, so announcing it disabled
+      // would be a lie to AT.
+      expect(button).not.toHaveAttribute('aria-disabled');
+      expect(button).not.toHaveAttribute('disabled');
+      await settle();
+    });
+
+    it('isInterruptible + isDisabled: native disabled wins, clicks dead', async () => {
+      const user = userEvent.setup();
+      const clickAction = vi.fn();
+      render(
+        <Button
+          label="Toggle"
+          isInterruptible
+          isDisabled
+          clickAction={clickAction}
+        />,
+      );
+      const button = screen.getByRole('button');
+      expect(button).toBeDisabled();
+      await user.click(button);
+      expect(clickAction).not.toHaveBeenCalled();
+    });
+
+    it('busy submit button does not submit its form; idle one does', async () => {
+      const user = userEvent.setup();
+      const handleSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+      const {rerender} = render(
+        <form onSubmit={handleSubmit}>
+          <Button label="Save" type="submit" isLoading />
+        </form>,
+      );
+      await user.click(screen.getByRole('button'));
+      expect(handleSubmit).not.toHaveBeenCalled();
+
+      rerender(
+        <form onSubmit={handleSubmit}>
+          <Button label="Save" type="submit" />
+        </form>,
+      );
+      await user.click(screen.getByRole('button'));
+      expect(handleSubmit).toHaveBeenCalledTimes(1);
+    });
+
+    it('isDisabled + href still falls back to a native disabled button', () => {
+      // The disabled-link anti-pattern fallback is unchanged; only busy keeps
+      // the anchor.
+      render(<Button label="Docs" href="https://example.com" isDisabled />);
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+      expect(screen.getByRole('button')).toBeDisabled();
+    });
+
+    it('busy link: focusable, but click activation is swallowed', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(
+        <Button
+          label="Docs"
+          href="https://example.com"
+          isLoading
+          onClick={handleClick}
+        />,
+      );
+      const link = screen.getByRole('link');
+      link.focus();
+      expect(link).toHaveFocus();
+      await user.click(link);
+      expect(handleClick).not.toHaveBeenCalled();
+    });
+
+    it('recovers after a rejected clickAction: busy clears and it fires again', async () => {
+      const user = userEvent.setup();
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      let rejectAction: ((e: Error) => void) | undefined;
+      const clickAction = vi.fn(
+        async () =>
+          new Promise<void>((_resolve, reject) => {
+            rejectAction = reject;
+          }),
+      );
+      render(<Button label="Save" clickAction={clickAction} />);
+      const button = screen.getByRole('button');
+
+      await user.click(button);
+      expect(button).toHaveAttribute('aria-busy', 'true');
+
+      const failure = new Error('save failed');
+      await act(async () => {
+        rejectAction?.(failure);
+        await Promise.resolve();
+      });
+
+      // A failed action must not strand the busy state: the transition
+      // settles, the spinner leaves, and the user can retry. (Without the
+      // catch in the action, isPending sticks and the button is bricked.)
+      expect(button).not.toHaveAttribute('aria-busy', 'true');
+      await user.click(button);
+      expect(clickAction).toHaveBeenCalledTimes(2);
+
+      // The rejection is reported (devError), not swallowed.
+      expect(consoleError).toHaveBeenCalledWith(
+        'Button: clickAction rejected:',
+        failure,
+      );
+
+      // Settle the retry's action too so nothing dangles into later tests.
+      await act(async () => {
+        rejectAction?.(new Error('save failed'));
+        await Promise.resolve();
+      });
+      consoleError.mockRestore();
+    });
   });
 });
