@@ -29,14 +29,14 @@
     "vega-lite": "^6.4.3"
   },
   "devDependencies": {
-    "@lexical/headless": "^0.46.0",
-    "@lexical/markdown": "^0.46.0",
-    "@storybook/addon-docs": "^10.4.6",
-    "@storybook/addon-links": "^10.4.6",
-    "@storybook/react": "^10.4.6",
-    "@storybook/react-vite": "^10.4.6",
+    "@lexical/headless": "^0.49.0",
+    "@lexical/markdown": "^0.49.0",
+    "@storybook/addon-docs": "^10.5.8",
+    "@storybook/addon-links": "^10.5.8",
+    "@storybook/react": "^10.5.8",
+    "@storybook/react-vite": "^10.5.8",
     "@stylexjs/unplugin": "^0.19.0",
     "@astryxdesign/build": "*",
-    "storybook": "^10.4.6"
+    "storybook": "^10.5.8"
   }
 }
