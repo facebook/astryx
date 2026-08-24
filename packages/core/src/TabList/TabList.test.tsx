@@ -1281,4 +1281,32 @@ describe('TabList overflow (scroll)', () => {
     expect(container.querySelectorAll(ARROW)).toHaveLength(0);
     expect(scrollBy).not.toHaveBeenCalled();
   });
+
+  it('shows the reading start of a stop too wide to fit', () => {
+    const {strip} = renderStrip({value: 'a'});
+    const scrollBy = vi.fn();
+    strip.scrollBy = scrollBy;
+    // Wider than the strip, so one end stays hidden either way. Aligning the
+    // end would land a long label on its last words.
+    fakeGeometry(strip, 'c', {stripWidth: 300, tabLeft: 420, tabRight: 800});
+
+    const tab = strip.querySelector<HTMLElement>('[data-tab-value="c"]');
+    fireEvent.focus(tab!, {bubbles: true});
+
+    expect(scrollBy.mock.calls[0][0].left).toBeCloseTo(420);
+  });
+
+  it('shows the reading start of an over-wide stop in RTL too', () => {
+    const {strip} = renderStrip({value: 'a'});
+    const scrollBy = vi.fn();
+    strip.scrollBy = scrollBy;
+    strip.style.direction = 'rtl';
+    fakeGeometry(strip, 'c', {stripWidth: 300, tabLeft: -500, tabRight: -120});
+
+    const tab = strip.querySelector<HTMLElement>('[data-tab-value="c"]');
+    fireEvent.focus(tab!, {bubbles: true});
+
+    // RTL reads from the right edge, so that is the end to bring flush.
+    expect(scrollBy.mock.calls[0][0].left).toBeCloseTo(-420);
+  });
 });

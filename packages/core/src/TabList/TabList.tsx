@@ -399,7 +399,18 @@ export function TabList({
       const inset = parseFloat(getComputedStyle(strip).scrollPaddingLeft) || 0;
       const pastEnd = stopBox.right - (stripBox.right - inset);
       const pastStart = stopBox.left - (stripBox.left + inset);
-      const delta = pastEnd > 0 ? pastEnd : pastStart < 0 ? pastStart : 0;
+      // A stop wider than the space kept clear cannot be shown whole, so show
+      // its reading start, the way `scrollIntoView({inline: 'nearest'})` does.
+      const tooWide = stopBox.width > stripBox.width - 2 * inset;
+      const delta = tooWide
+        ? isRtlElement(strip)
+          ? pastEnd
+          : pastStart
+        : pastEnd > 0
+          ? pastEnd
+          : pastStart < 0
+            ? pastStart
+            : 0;
       if (delta !== 0) {
         // Not an animation: the strip has to arrive already showing the right
         // tab, so this overrides the CSS smooth behaviour arrow presses use.
