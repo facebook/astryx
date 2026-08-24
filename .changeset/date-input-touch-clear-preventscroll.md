@@ -14,6 +14,6 @@ field.
 Measured on the iOS 26 simulator against the live docsite (DateInput —
 Clearable, page at scrollY 2055): synchronous focus → 0, deferred focus → 2055.
 `preventScroll` alone does not fix it; it is kept for the ordinary
-scroll-into-view nudge, which is unwanted for the same reason.
+scroll-into-view nudge, which is unwanted for the same reason (#5350).
 
 @imdreamrunner

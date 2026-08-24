@@ -16,6 +16,6 @@ read.
 
 ```tsx
 useTableSelection({...config, hasRowHighlight: false});
-```
+``` (#5310)
 
 @ernestt

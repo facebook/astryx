@@ -3,7 +3,7 @@
 ---
 
 [feat] ChatMessageList: add an `align` prop for top-aligned message lists
-(#2572).
+(#3933, closes #2572).
 
 - `align?: 'top' | 'bottom'` (default `'bottom'`). `'bottom'` keeps the
   existing behavior: a flex spacer fills free space so a short conversation

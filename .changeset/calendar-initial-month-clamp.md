@@ -15,4 +15,4 @@ The initial month is now today clamped into the window: today when it is inside,
 otherwise whichever bound is nearest. An explicit `focusDate` or a selected value
 still wins, so nothing changes for callers that already say where to look. With
 `numberOfMonths={2}` a past window lands `max` in the right-hand pane, so neither
-pane is entirely out of bounds.
+pane is entirely out of bounds (#5306).

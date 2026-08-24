@@ -11,6 +11,6 @@ reporting `platform: ''` therefore committed to the client-hints branch and got
 `false` without ever reaching the fallback, so on macOS every `mod` combo
 listened for Ctrl and every `<Kbd>` drew Ctrl. Electron and other embedders
 that rewrite the app's user-agent identity ship exactly that. A blank platform
-is now treated as unknown and falls through.
+is now treated as unknown and falls through (#5325).
 
 @Astro-Han

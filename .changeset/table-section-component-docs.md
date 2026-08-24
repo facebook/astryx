@@ -15,6 +15,6 @@ hydration.
 
 The three section components are now documented, listed on `Table`, and named
 in the `children` prop description, in a best practice, and in `TableRow`'s
-example.
+example (#5278).
 
 @AKnassa @rubyycheung

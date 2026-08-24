@@ -14,6 +14,6 @@ table ends up with `<tr>` children and no `<tbody>` at all, and any CSS or
 query aimed at `tbody` silently misses.
 
 The rows now sit in `<TableBody>`, the same element the data-driven `data={...}`
-path renders, so styling, dividers, and column widths are unchanged.
+path renders, so styling, dividers, and column widths are unchanged (#5278).
 
 @AKnassa @rubyycheung

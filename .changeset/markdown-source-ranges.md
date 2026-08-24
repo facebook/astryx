@@ -28,6 +28,6 @@ result gives the same node back.
 
 Blocks nested inside a list item or a blockquote carry no range: their children
 are parsed from text the parser reassembled with markers and `>` prefixes
-removed, so an offset into it would not address the document.
+removed, so an offset into it would not address the document (#5290).
 
 @lexs
