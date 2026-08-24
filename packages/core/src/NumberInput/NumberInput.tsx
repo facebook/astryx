@@ -9,6 +9,7 @@
  * @position Core implementation; consumed by index.ts, tested by NumberInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/NumberInput/numberParser.ts (locale-aware parsing)
  * - /packages/core/src/NumberInput/NumberInput.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/NumberInput/NumberInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/NumberInput/index.ts (exports if types change)
@@ -213,7 +214,9 @@ import {isImeKeyEvent, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useTranslator, useLocale} from '../i18n';
+import {formatEditableNumber, parseLocaleNumber} from './numberParser';
+import type {Locale} from '../i18n';
 
 interface NumberInputPropsBase extends Omit<
   BaseProps,
@@ -426,7 +429,8 @@ export type NumberInputProps =
   NumberInputPropsNonClearable | NumberInputPropsClearable;
 
 /**
- * Parse and validate a string input as a number.
+ * Read the typed or pasted text as a number, then apply the field's
+ * constraints.
  * Returns null if the input is not a valid number or fails validation.
  */
 function parseNumberInput(
@@ -435,15 +439,16 @@ function parseNumberInput(
     min?: number | null;
     max?: number | null;
     isIntegerOnly?: boolean;
+    locale?: Locale;
   },
 ): number | null {
   const trimmed = input.trim();
-  if (trimmed === '' || trimmed === '-') {
+  if (trimmed === '') {
     return null;
   }
 
-  const num = Number(trimmed);
-  if (!Number.isFinite(num)) {
+  const num = parseLocaleNumber(trimmed, options.locale);
+  if (num == null || !Number.isFinite(num)) {
     return null;
   }
 
@@ -599,6 +604,7 @@ export function NumberInput({
   ...rest
 }: NumberInputProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const size = useSize(sizeProp, 'md');
   const id = useId();
@@ -653,6 +659,11 @@ export function NumberInput({
     inputGroup,
   );
 
+  const parseInput = useCallback(
+    (text: string) => parseNumberInput(text, {min, max, isIntegerOnly, locale}),
+    [isIntegerOnly, locale, max, min],
+  );
+
   const formattedValue = useMemo(() => {
     if (value == null) {
       return '';
@@ -669,16 +680,16 @@ export function NumberInput({
     if (value == null) {
       return '';
     }
-    return isFocused ? String(value) : formattedValue;
-  }, [formattedValue, isFocused, pendingInput, value]);
+    return isFocused ? formatEditableNumber(value, locale) : formattedValue;
+  }, [formattedValue, isFocused, locale, pendingInput, value]);
 
   // Check if current pending input is valid (for styling purposes)
   const isInputValid = useMemo(() => {
     if (pendingInput === null || !pendingInput.trim()) {
       return true;
     }
-    return parseNumberInput(pendingInput, {min, max, isIntegerOnly}) !== null;
-  }, [pendingInput, min, max, isIntegerOnly]);
+    return parseInput(pendingInput) !== null;
+  }, [pendingInput, parseInput]);
 
   // Handle input text change - update immediately if valid
   const handleInputChange = useCallback(
@@ -693,12 +704,12 @@ export function NumberInput({
       setPendingInput(newValue);
 
       // If the input is valid, update immediately
-      const parsed = parseNumberInput(newValue, {min, max, isIntegerOnly});
+      const parsed = parseInput(newValue);
       if (parsed !== null && parsed !== value) {
         onChange(parsed);
       }
     },
-    [value, onChange, min, max, isIntegerOnly, isDisabled, isReadOnly],
+    [value, onChange, parseInput, isDisabled, isReadOnly],
   );
 
   // Handle focus
@@ -721,11 +732,7 @@ export function NumberInput({
             onChange(null);
           }
         } else {
-          const parsed = parseNumberInput(pendingInput, {
-            min,
-            max,
-            isIntegerOnly,
-          });
+          const parsed = parseInput(pendingInput);
           if (parsed !== null && parsed !== value) {
             onChange(parsed);
           }
@@ -737,7 +744,7 @@ export function NumberInput({
       setIsFocused(false);
       onBlur?.(e);
     },
-    [pendingInput, value, onChange, min, max, isIntegerOnly, onBlur, hasClear],
+    [pendingInput, value, onChange, parseInput, onBlur, hasClear],
   );
 
   const valueForStepping = useMemo(() => {
@@ -747,10 +754,8 @@ export function NumberInput({
     if (pendingInput.trim() === '') {
       return null;
     }
-    return (
-      parseNumberInput(pendingInput, {min, max, isIntegerOnly}) ?? value ?? null
-    );
-  }, [isIntegerOnly, max, min, pendingInput, value]);
+    return parseInput(pendingInput) ?? value ?? null;
+  }, [parseInput, pendingInput, value]);
 
   const getNextValue = useCallback(
     (direction: StepDirection) =>
@@ -815,11 +820,7 @@ export function NumberInput({
               onChange(null);
             }
           } else {
-            const parsed = parseNumberInput(pendingInput, {
-              min,
-              max,
-              isIntegerOnly,
-            });
+            const parsed = parseInput(pendingInput);
             if (parsed !== null && parsed !== value) {
               onChange(parsed);
             }
@@ -833,9 +834,7 @@ export function NumberInput({
       pendingInput,
       value,
       onChange,
-      min,
-      max,
-      isIntegerOnly,
+      parseInput,
       onEnter,
       onKeyDown,
       hasClear,

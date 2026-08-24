@@ -67,6 +67,8 @@ Approved implementations:
   `.../Timestamp/tooltipEntries.ts` — Timestamp formatting and its
   non-display time-zone validity probe
 - `packages/core/src/PowerSearch/formatFilterValue.ts`
+- `packages/core/src/NumberInput/numberParser.ts` — reads typed and pasted
+  numbers under the field's locale
 - `packages/core/src/i18n/useCollator.ts`
 - `packages/charts/src/formatters.ts`
 
@@ -75,6 +77,7 @@ Named test oracles:
 - `packages/charts/src/formatters.test.ts`
 - `packages/core/src/Calendar/Calendar.test.tsx`
 - `packages/core/src/NumberInput/NumberInput.test.tsx`
+- `packages/core/src/NumberInput/numberParser.test.ts`
 - `packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx`
 - `packages/core/src/Timestamp/tooltipEntries.test.ts`
 - `packages/core/src/PowerSearch/formatFilterValue.test.ts`

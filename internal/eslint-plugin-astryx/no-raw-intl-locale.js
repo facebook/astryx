@@ -111,6 +111,9 @@ const APPROVED_IMPLEMENTATION_FILES = [
   'packages/core/src/Timestamp/formatInstant.ts',
   'packages/core/src/Timestamp/tooltipEntries.ts',
   'packages/core/src/PowerSearch/formatFilterValue.ts',
+  // NumberInput's locale-aware read of typed and pasted text: it derives the
+  // grouping/decimal separators and group sizes from Intl rather than a table.
+  'packages/core/src/NumberInput/numberParser.ts',
   'packages/core/src/i18n/useCollator.ts',
   'packages/charts/src/formatters.ts',
 ];
@@ -119,6 +122,7 @@ const APPROVED_TEST_ORACLE_FILES = [
   'packages/charts/src/formatters.test.ts',
   'packages/core/src/Calendar/Calendar.test.tsx',
   'packages/core/src/NumberInput/NumberInput.test.tsx',
+  'packages/core/src/NumberInput/numberParser.test.ts',
   'packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx',
   'packages/core/src/Timestamp/tooltipEntries.test.ts',
   'packages/core/src/PowerSearch/formatFilterValue.test.ts',
