@@ -162,7 +162,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Forward both status and statusVariant from every column renderer to the rendered Astryx input so field messages use the control’s native accessible tooltip pattern.',
+          'Forward both status and statusVariant from every column renderer to the rendered Astryx input so field messages use the control\'s native accessible tooltip pattern.',
       },
       {
         guidance: true,
@@ -201,7 +201,7 @@ export const docs = {
         name: 'First-record field labels',
         required: true,
         description:
-          'ListInput renders primary-tone column labels without separate table chrome and keeps each rendered control’s own label visually hidden but semantically associated. At wider widths, repeated labels are visually hidden; when fields stack at 640px or narrower, every record shows its field labels.',
+          'ListInput renders primary-tone column labels without separate table chrome and keeps each rendered control\'s own label visually hidden but semantically associated. At wider widths, repeated labels are visually hidden; when fields stack at 640px or narrower, every record shows its field labels.',
       },
       {
         name: 'Record fields',
@@ -237,7 +237,15 @@ export const docs = {
         name: 'Validation messages',
         required: false,
         description:
-          'Explain field-, item-, or list-level errors, warnings, and success states. Field messages use each input’s native tooltip status affordance and do not change row height. Item messages align to the record fields without extending under reorder or remove controls.',
+          'Explain field-, item-, or list-level errors, warnings, and success states. Field messages use each input\'s native tooltip status affordance and do not change row height. Item messages align to the record fields without extending under reorder or remove controls.',
+      },
+    ],
+  },
+  theming: {
+    targets: [
+      {
+        className: 'astryx-list-input',
+        visualProps: ['state', 'reorderable'],
       },
     ],
   },

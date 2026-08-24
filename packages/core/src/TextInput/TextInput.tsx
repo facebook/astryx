@@ -30,13 +30,12 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   sizeVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -44,30 +43,13 @@ import {
   inputStatusFocusWithinStyles,
   type FieldStatusVariant,
 } from '../Field';
-import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {getInputARIA} from '../utils';
 
 const styles = stylex.create({
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
-  },
   input: {
     display: 'block',
     flex: 1,
@@ -89,7 +71,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 
@@ -115,16 +97,18 @@ export type {
   InputStatus as TextInputStatus,
   InputStatusType as TextInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export type TextInputType = 'text' | 'password' | 'email';
 
 export interface TextInputProps extends Omit<
@@ -319,6 +303,7 @@ export function TextInput({
   ...rest
 }: TextInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const size = useSize(sizeProp, 'md');
 
   const id = useId();
@@ -437,7 +422,7 @@ export function TextInput({
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <input
         {...rest}
-        ref={mergeRefs(ref, inputRef)}
+        ref={useMergedRefs(ref, inputRef)}
         id={id}
         name={isDisabled ? undefined : htmlName}
         type={type}
@@ -463,20 +448,17 @@ export function TextInput({
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         aria-describedby={ariaDescribedBy}
-        aria-required={isRequired === true ? 'true' : undefined}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         aria-busy={isBusy || undefined}
         aria-labelledby={ariaLabelledBy}
         {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
       />
       {hasClear && value !== '' && !isDisabled && !isReadOnly && (
-        <button
-          type="button"
+        <InputClearButton
+          label={t('@astryx.textInput.clearLabel', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.textInput.clearLabel', {label})}
-          {...stylex.props(styles.clearButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
+        />
       )}
       {isBusy && <Spinner size="sm" />}
       {statusIcon}

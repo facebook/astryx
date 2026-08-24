@@ -1,5 +1,51 @@
 # @xds/theme-y2k
 
+# 0.5.0
+
+---
+
+# 0.4.7
+
+---
+
+# 0.4.6
+
+---
+
+# 0.4.5
+
+---
+
+# 0.4.4
+
+---
+
+# 0.4.3
+
+#### Fixes
+
+- The `/built` entry now loads under Node ESM and externalized SSR (Vite `--ssr`, Remix / React Router v7): it imports `./icons.mjs` instead of the extensionless `./icons` Node cannot resolve.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+
+---
+
+# 0.4.2
+
+---
+
+# 0.4.1
+
+---
+
+# 0.4.0
+
+---
+
 # 0.3.0
 
 ---

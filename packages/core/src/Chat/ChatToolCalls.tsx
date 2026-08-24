@@ -105,7 +105,10 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1-5'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
     minHeight: '24px',
     paddingBlock: spacingVars['--spacing-0-5'],
@@ -192,18 +195,24 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-0-5'],
   },
   callRowClickable: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     paddingInline: spacingVars['--spacing-1'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-1']})`,
     '@media (hover: hover)': {
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
   callRowToggle: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   statusIcon: {
     position: 'relative',

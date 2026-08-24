@@ -17,7 +17,7 @@
 
 export {Theme} from './Theme';
 export {MediaTheme} from './MediaTheme';
-export type {MediaThemeProps} from './MediaTheme';
+export type {MediaThemeProps, MediaThemeMode} from './MediaTheme';
 export {
   defineTheme,
   generateThemeCSS,
@@ -90,6 +90,7 @@ export {
   spacingDefaults,
   sizeDefaults,
   borderDefaults,
+  focusDefaults,
   radiusDefaults,
   shadowDefaults,
   durationDefaults,
@@ -102,6 +103,7 @@ export {
   spacingVars,
   sizeVars,
   borderVars,
+  focusVars,
   radiusVars,
   shadowVars,
   durationVars,

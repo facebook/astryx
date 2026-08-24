@@ -5,21 +5,22 @@
  * Build-output check: verify every relative specifier in the compiled dist
  * is fully specified (carries an explicit file extension).
  *
- * The packages publish "type": "module" dist, where Node ESM makes
- * extensions mandatory for relative specifiers — strict-ESM consumers (Node
- * itself, Rspack, webpack's `fullySpecified`) refuse to resolve
- * './XDSButton' where './XDSButton.js' is required.
- * babel-plugin-add-extensions rewrites specifiers during compilation; this
- * guard makes sure nothing slips past it into the artifact again (#4569:
- * dynamic `import()` specifiers did exactly that).
+ * These runtime files are consumed as ESM, where relative specifiers need an
+ * explicit extension — strict-ESM consumers (Node itself, Rspack, webpack's
+ * `fullySpecified`) refuse to resolve './XDSButton' where './XDSButton.js' is
+ * required. Different packages use different compilers to produce those
+ * specifiers; this guard makes sure nothing slips into the artifact again
+ * (#4569: dynamic `import()` specifiers did exactly that).
  *
  * Like check-no-dev-jsx.mjs this is a textual scan, not a parse. Comment
  * lines are skipped: dist keeps some JSDoc comments whose usage examples
  * legitimately mention extensionless specifiers. Only runtime files are
  * scanned — the .d.ts surface resolves through TypeScript, not Node.
  *
- * Usage: node ../../scripts/check-fully-specified.mjs   (run from a package
- * root, after the package's dist has been built)
+ * Usage: node <repo-root>/scripts/check-fully-specified.mjs   (run from a
+ * package root, after the package's dist has been built; the relative depth
+ * differs per package — ../../ from packages/*, ../../../ from
+ * packages/themes/*)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -90,6 +91,45 @@ export function findOffenders(distDir) {
   return {checked: files.length, offenders};
 }
 
+/**
+ * Return remediation guidance for the package whose dist is being checked.
+ *
+ * The package name is consulted before the Babel plugin file: a maintained
+ * theme generates its icon import through `astryx theme build`, so the theme
+ * branch stays correct even if such a package later picks up the plugin for
+ * some other part of its build.
+ */
+export function failureGuidance(packageDir) {
+  let packageName = '';
+  try {
+    const packageJson = JSON.parse(
+      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+    );
+    packageName = typeof packageJson.name === 'string' ? packageJson.name : '';
+  } catch {
+    // A package manifest is useful context, not a requirement for the scan.
+  }
+
+  if (packageName.startsWith('@astryxdesign/theme-')) {
+    return (
+      "Fix: check the package's `astryx theme build --icons-specifier` " +
+      'value and any other build step that emitted the reported file.'
+    );
+  }
+
+  if (fs.existsSync(path.join(packageDir, 'babel-plugin-add-extensions.cjs'))) {
+    return (
+      "Fix: make sure the package's babel-plugin-add-extensions.cjs " +
+      'rewrites the syntax form that produced them.'
+    );
+  }
+
+  return (
+    'Fix: update the build step that emitted the reported file so its ' +
+    'relative specifiers include explicit extensions.'
+  );
+}
+
 function main() {
   const distDir = path.resolve(process.cwd(), 'dist');
   if (!fs.existsSync(distDir)) {
@@ -111,10 +151,8 @@ function main() {
     }
     console.error(
       `\n${offenders.length} file(s) ship specifiers without a file ` +
-        'extension. The dist is "type": "module", so Node ESM and ' +
-        'strict-ESM bundlers cannot resolve them (see #4569).\n' +
-        "Fix: make sure the package's babel-plugin-add-extensions.cjs " +
-        'rewrites the syntax form that produced them.',
+        'extension. ESM loaders and strict-ESM bundlers cannot resolve ' +
+        `them (see #4569).\n${failureGuidance(process.cwd())}`,
     );
     process.exit(1);
   }

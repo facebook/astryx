@@ -46,11 +46,12 @@ import {useLayer} from '../Layer';
 import {useScrollOverflow} from '../hooks/useScrollOverflow';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs, rtlStyles} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 /**
  * Imperative control surface for the Carousel, accessed via the `handleRef`
  * prop. Methods drive the same native-scroll machinery as the built-in
@@ -506,7 +507,7 @@ export function Carousel({
 
   return (
     <div
-      ref={mergeRefs(ref, layer.ref as React.Ref<HTMLDivElement>)}
+      ref={useMergedRefs(ref, layer.ref as React.Ref<HTMLDivElement>)}
       data-testid={testId}
       {...htmlProps}
       {...mergeProps(

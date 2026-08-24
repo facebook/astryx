@@ -8,8 +8,8 @@
 
 import type {ReactElement, ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Divider} from '../Divider';
 import {DropdownMenuItem} from './DropdownMenuItem';
+import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
 import {
   spacingVars,
@@ -33,9 +33,6 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
     userSelect: 'none',
-  },
-  divider: {
-    marginBlock: spacingVars['--spacing-1'],
   },
 });
 
@@ -82,13 +79,7 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
     const option = items[i];
 
     if ('type' in option && option.type === 'divider') {
-      elements.push(
-        <Divider
-          key={`divider-${i}`}
-          xstyle={styles.divider}
-          {...themeProps('dropdown-menu-divider')}
-        />,
-      );
+      elements.push(<DropdownMenuDivider key={`divider-${i}`} />);
     } else if ('type' in option && option.type === 'section') {
       elements.push(
         <div

@@ -50,9 +50,10 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useMenuHover} from '../hooks/useMenuHover';
 import {Grid} from '../Grid/Grid';
 import {Icon} from '../Icon';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
@@ -60,6 +61,7 @@ import {useTopNavRenderMode} from './TopNavRenderContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -77,13 +79,16 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color, color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -370,7 +375,9 @@ TopNavMegaMenu.displayName = 'TopNavMegaMenu';
 // DefaultMegaMenu — desktop popover mode
 // =============================================================================
 
-const CLICK_GUARD_MS = 500;
+/** The panel is a grid of links, not `role="menuitem"` rows. */
+const PANEL_ITEM_SELECTOR =
+  'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function DefaultMegaMenu({
   ref,
@@ -382,19 +389,13 @@ function DefaultMegaMenu({
   onOpenChange,
 }: TopNavMegaMenuProps) {
   const slot = useTopNavSlot();
-  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
-  const hoverOpenedAtRef = useRef(0);
-  const stickyRef = useRef(false);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
   }, [onOpenChange]);
 
   const handlePopoverHide = useCallback(() => {
-    hoverOpenedAtRef.current = 0;
-    stickyRef.current = false;
     onOpenChange?.(false);
   }, [onOpenChange]);
 
@@ -430,107 +431,31 @@ function DefaultMegaMenu({
     };
   }, [popover]);
 
-  const clearTimeouts = useCallback(() => {
-    if (showTimeoutRef.current) {
-      clearTimeout(showTimeoutRef.current);
-      showTimeoutRef.current = null;
-    }
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = null;
-    }
-  }, []);
-
-  const scheduleShow = useCallback(() => {
-    clearTimeouts();
-    showTimeoutRef.current = setTimeout(() => {
-      hoverOpenedAtRef.current = Date.now();
-      popover.show({skipAutoFocus: true});
-    }, delay);
-  }, [clearTimeouts, delay, popover]);
-
-  const scheduleHide = useCallback(() => {
-    clearTimeouts();
-    hideTimeoutRef.current = setTimeout(() => {
-      popover.hide();
-    }, hideDelay);
-  }, [clearTimeouts, hideDelay, popover]);
-
-  const focusFirstPanelItem = useCallback(() => {
-    popover.contentRef.current
-      ?.querySelector<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      )
-      ?.focus();
-  }, [popover.contentRef]);
-
-  const handleTriggerMouseEnter = useCallback(() => {
-    clearTimeouts();
-    if (!popover.isOpen) {
-      scheduleShow();
-    }
-  }, [clearTimeouts, popover.isOpen, scheduleShow]);
-
-  const handlePanelMouseEnter = useCallback(() => {
-    clearTimeouts();
-  }, [clearTimeouts]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (!stickyRef.current) {
-      scheduleHide();
-    }
-  }, [scheduleHide]);
-
-  const handleClick = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
-      // Cancel the native invoker toggle so this guard is the single source of
-      // truth for trigger activation. popoverTarget still establishes the
-      // invoker relationship used by native light-dismiss and stacking.
-      event.preventDefault();
-      clearTimeouts();
-
-      if (event.detail === 0) {
-        stickyRef.current = true;
-        hoverOpenedAtRef.current = 0;
-        if (popover.isOpen) {
-          focusFirstPanelItem();
-        } else {
-          popover.show();
-        }
-      } else if (!popover.isOpen) {
-        stickyRef.current = true;
-        popover.show({skipAutoFocus: true});
-      } else if (Date.now() - hoverOpenedAtRef.current < CLICK_GUARD_MS) {
-        // A click that naturally follows a hover-open confirms the open state
-        // instead of toggling the panel shut. From here it behaves like any
-        // other click-open and stays pinned until explicit dismissal.
-        stickyRef.current = true;
-        hoverOpenedAtRef.current = 0;
-      } else {
-        popover.hide();
-        triggerButtonRef.current?.focus();
-      }
-    },
-    [clearTimeouts, focusFirstPanelItem, popover],
-  );
-
-  useEffect(() => {
-    return () => {
-      clearTimeouts();
-    };
-  }, [clearTimeouts]);
+  const {
+    triggerProps: hoverTriggerProps,
+    contentProps,
+    menuRef,
+    setTriggerEl,
+  } = useMenuHover<HTMLDivElement>({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: true,
+    showDelay: delay,
+    hideDelay,
+    itemSelector: PANEL_ITEM_SELECTOR,
+    // Trigger sits outside an auto popover; the invoker relationship exempts it
+    // from light dismiss.
+    popoverId: popover.id,
+  });
 
   return (
     <>
       <button
-        ref={mergeRefs(triggerButtonRef, ref)}
+        ref={useMergedRefs(triggerButtonRef, setTriggerEl, ref)}
         type="button"
         {...popover.triggerProps}
-        // Native invoker prevents trigger light-dismiss.
-        popoverTarget={popover.id}
-        onClick={handleClick}
-        onMouseEnter={handleTriggerMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        {...hoverTriggerProps}
         {...mergeProps(
           themeProps('top-nav-mega-menu'),
           focusOutlineProps.focusVisible(
@@ -551,10 +476,10 @@ function DefaultMegaMenu({
           // role="group" — a mega menu is a browsing grid of links, not an
           // ARIA menu of menuitems (per the WAI-ARIA APG, the menu role is
           // for action menus; link mega menus are the documented anti-case).
+          ref={menuRef}
           role="group"
           aria-label={label}
-          onMouseEnter={handlePanelMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          {...contentProps}
           {...stylex.props(styles.panelContainer)}>
           <div {...stylex.props(styles.panelContent)}>
             {/* Menu items section */}
@@ -602,7 +527,10 @@ function DrawerMegaMenu({
         aria-controls={`${menuId}-items`}
         {...mergeProps(
           themeProps('top-nav-mega-menu', {mode: 'drawer'}),
-          stylex.props(navItemStyles.item, styles.drawerHeader),
+          focusOutlineProps.focusVisible(
+            navItemStyles.item,
+            styles.drawerHeader,
+          ),
         )}>
         {label}
         <Icon

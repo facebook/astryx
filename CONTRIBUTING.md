@@ -477,6 +477,47 @@ summary but don't block. Repro locally with `pnpm rtl:audit -- --filter Avatar`
 (the `--` matters: `pnpm -F` is itself `--filter`). See
 `apps/storybook/rtl-audit/README.md`.
 
+### Modal close visibility guard
+
+The same `pr-a11y` job runs one more Chromium probe
+(`.github/scripts/modal-close-visibility.js`, or `pnpm guard:modal-close`
+against a built Storybook). It opens each modal `<dialog>` surface in the
+list at the top of that script, closes it, and fails if the dialog's computed
+`display` was `none` at the moment `close()` ran.
+
+A dialog hidden while still `:modal` swallows every click on the page, and a
+browser is not obliged to release that when `close()` finally runs — Safari
+26.1 did not (#4290). The ordering comes from a CSS transition, so jsdom
+cannot see it and the unit suites pass either way. Add a target here when a
+component closes a `<dialog>` on a delay.
+
+### Disabled hover guard
+
+A disabled element must never paint a hover state: `:hover` keeps matching a
+disabled control in every engine, so a hover treatment written for the enabled
+element is still painted under the pointer. Guard every self-`:hover` with
+`:hover:where(:not(:disabled,[aria-disabled="true"]))` — `:where()` adds no
+specificity, so the rule weighs the same as before. The `@astryx/no-hover-on-disabled`
+lint rule (autofixable) enforces it at author time; `pnpm guard:disabled-hover
+--storybook-dir apps/storybook/dist` sweeps a built Storybook in Chromium and
+fails on any disabled element whose paint changes under a forced `:hover`.
+
+### Disabled cursor guard
+
+A disabled control must not answer the pointer with an interactive cursor: the
+cursor is the only affordance a pointer user gets before they commit to a
+click. Write every `cursor` so the disabled state takes it back —
+`cursor: {default: 'pointer', ':is(:disabled,[aria-disabled="true"])': 'default'}`
+— including a flat `cursor` inside a `disabled` style, since StyleX merges one
+property at a time and a later declaration replaces the earlier one's
+conditions along with its value. `default` rather than `not-allowed`: a
+disabled control sealed behind `pointer-events: none` shows whatever its
+ancestor shows, so one cursor everywhere beats a stronger one we can only
+paint on some of them. The `@astryx/disabled-cursor` lint rule (autofixable)
+enforces it at author time; `pnpm guard:disabled-cursor --storybook-dir
+apps/storybook/dist` hit-tests every disabled element in a built Storybook in
+Chromium and fails on any other cursor.
+
 ## Versioning & Releases
 
 We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.
@@ -593,8 +634,9 @@ pnpm build
 
 `pnpm lint:strict` runs `pnpm check:repo` first, which covers `check:sync`,
 `check:package-boundaries`, `check:changesets`, `check:demo-media`,
-`check:executable-bits`, `check:cli-structure`, and `check:use-client` — so a
-green `lint:strict` also clears the changeset and `'use client'` gates.
+`check:executable-bits`, `check:cli-structure`, `check:use-client`, and
+`check:i18n-catalog` — so a green `lint:strict` also clears the changeset and
+`'use client'` gates.
 
 Also attach **before/after screenshots for any visual change**, and update the
 Storybook story for anything you added or altered.
@@ -739,6 +781,9 @@ Astryx accepts community translations via Crowdin. To help translate astryx
 into your language, visit <https://crowdin.com/project/astryx>. New locales are
 picked up automatically after a maintainer reviews the auto-generated
 translations PR.
+
+Calendar’s compact weekday labels, such as `Su` and `Mo`, are generated from
+Unicode CLDR data because browsers do not provide that format.
 
 ## Contributor License Agreement ("CLA")
 

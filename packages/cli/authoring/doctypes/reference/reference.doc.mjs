@@ -52,6 +52,20 @@ export const doc = {
       description: "Navigation category: 'guide' or 'foundations'.",
     },
     {
+      name: 'replaces',
+      type: 'string',
+      description:
+        "Name of an existing topic this doc takes the place of. Authored by an integration that serves its own guide instead of the built-in one: on a doc of the same name it swaps the content, and on a doc of another name it also leaves the old name as an alias so `astryx docs <old>` still resolves. Exclusive with `extends`.",
+      example: "'getting-started'",
+    },
+    {
+      name: 'extends',
+      type: 'string',
+      description:
+        'Name of an existing topic this doc merges onto, section by section: a section whose title matches one in the base replaces it, a section the base does not have is appended. For correcting or adding to a topic rather than owning it. Exclusive with `replaces`.',
+      example: "'theme'",
+    },
+    {
       name: 'sections',
       type: 'ReferenceSection[]',
       description:

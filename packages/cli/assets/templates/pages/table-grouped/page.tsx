@@ -37,6 +37,7 @@ import {Divider} from '@astryxdesign/core/Divider';
 import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
 import {
   Table,
+  TableBody,
   TableRow,
   TableCell,
   proportional,
@@ -963,161 +964,167 @@ export default function DataTableTemplate() {
                   />
                 ))}
               </colgroup>
-              {groupKeys.map(key => {
-                const tasks = grouped.get(key);
-                if (!tasks || tasks.length === 0) {
-                  return null;
-                }
-                const isExpanded = expandedGroups.has(key);
+              <TableBody>
+                {groupKeys.map(key => {
+                  const tasks = grouped.get(key);
+                  if (!tasks || tasks.length === 0) {
+                    return null;
+                  }
+                  const isExpanded = expandedGroups.has(key);
 
-                return (
-                  <React.Fragment key={key}>
-                    {groupBy !== 'none' && (
-                      <TableRow
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => toggleGroup(key)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            toggleGroup(key);
-                          }
-                        }}>
-                        <TableCell colSpan={COL_COUNT} style={groupHeaderCell}>
-                          <HStack gap={2} vAlign="center">
-                            <Icon
-                              icon={
-                                isExpanded ? ChevronDownIcon : ChevronRightIcon
-                              }
-                              size="sm"
-                              color="secondary"
-                            />
-                            <Text type="body" weight="bold">
-                              {getGroupLabel(groupBy, key)}
-                            </Text>
-                            <Badge
-                              variant="neutral"
-                              label={String(tasks.length)}
-                            />
-                          </HStack>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {(groupBy === 'none' || isExpanded) &&
-                      tasks.map(task => (
+                  return (
+                    <React.Fragment key={key}>
+                      {groupBy !== 'none' && (
                         <TableRow
-                          key={task.id}
-                          onClick={() => setSelectedTask(task)}>
-                          <TableCell>
-                            <Center axis="horizontal">
-                              <StatusDot
-                                variant={STATUS_DOT_VARIANT[task.status]}
-                                label={STATUS_LABEL[task.status]}
-                              />
-                            </Center>
-                          </TableCell>
-                          <TableCell>
-                            <HStack gap={3} vAlign="center">
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => toggleGroup(key)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              toggleGroup(key);
+                            }
+                          }}>
+                          <TableCell
+                            colSpan={COL_COUNT}
+                            style={groupHeaderCell}>
+                            <HStack gap={2} vAlign="center">
                               <Icon
-                                icon={ChartBarIcon}
+                                icon={
+                                  isExpanded
+                                    ? ChevronDownIcon
+                                    : ChevronRightIcon
+                                }
                                 size="sm"
-                                color={PRIORITY_COLOR[task.priority]}
+                                color="secondary"
                               />
-                              <Text type="supporting" color="secondary">
-                                {task.taskId}
+                              <Text type="body" weight="bold">
+                                {getGroupLabel(groupBy, key)}
                               </Text>
-                              <Text type="body" maxLines={1}>
-                                {task.title}
-                              </Text>
-                              {task.subtitle && (
-                                <Text
-                                  type="body"
-                                  color="secondary"
-                                  maxLines={1}>
-                                  › {task.subtitle}
-                                </Text>
-                              )}
+                              <Badge
+                                variant="neutral"
+                                label={String(tasks.length)}
+                              />
                             </HStack>
                           </TableCell>
-                          <TableCell>
-                            {task.project ? (
-                              <Text type="body" maxLines={1}>
-                                {task.project}
-                              </Text>
-                            ) : (
-                              <Text type="supporting" color="secondary">
-                                —
-                              </Text>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Text type="supporting" color="secondary">
-                              {task.created}
-                            </Text>
-                          </TableCell>
-                          <TableCell>
-                            <Text type="supporting" color="secondary">
-                              {task.updated}
-                            </Text>
-                          </TableCell>
-                          <TableCell>
-                            <Avatar name={task.assignee} size="sm" />
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu
-                              button={{
-                                label: 'Actions',
-                                variant: 'ghost',
-                                size: 'sm',
-                                icon: (
-                                  <Icon
-                                    icon={EllipsisHorizontalIcon}
-                                    size="sm"
-                                  />
-                                ),
-                                isIconOnly: true,
-                              }}
-                              hasChevron={false}
-                              items={[
-                                {
-                                  label: 'Edit issue',
-                                  icon: PencilIcon,
-                                  onClick: () => {},
-                                },
-                                {
-                                  label: 'Assign to...',
-                                  icon: UserIcon,
-                                  onClick: () => {},
-                                },
-                                {
-                                  label: 'Add label',
-                                  icon: TagIcon,
-                                  onClick: () => {},
-                                },
-                                {
-                                  label: 'Duplicate',
-                                  icon: DocumentDuplicateIcon,
-                                  onClick: () => {},
-                                },
-                                {
-                                  label: 'Move to project',
-                                  icon: ArrowRightIcon,
-                                  onClick: () => {},
-                                },
-                                {type: 'divider' as const},
-                                {
-                                  label: 'Delete issue',
-                                  icon: TrashIcon,
-                                  onClick: () => {},
-                                },
-                              ]}
-                            />
-                          </TableCell>
                         </TableRow>
-                      ))}
-                  </React.Fragment>
-                );
-              })}
+                      )}
+                      {(groupBy === 'none' || isExpanded) &&
+                        tasks.map(task => (
+                          <TableRow
+                            key={task.id}
+                            onClick={() => setSelectedTask(task)}>
+                            <TableCell>
+                              <Center axis="horizontal">
+                                <StatusDot
+                                  variant={STATUS_DOT_VARIANT[task.status]}
+                                  label={STATUS_LABEL[task.status]}
+                                />
+                              </Center>
+                            </TableCell>
+                            <TableCell>
+                              <HStack gap={3} vAlign="center">
+                                <Icon
+                                  icon={ChartBarIcon}
+                                  size="sm"
+                                  color={PRIORITY_COLOR[task.priority]}
+                                />
+                                <Text type="supporting" color="secondary">
+                                  {task.taskId}
+                                </Text>
+                                <Text type="body" maxLines={1}>
+                                  {task.title}
+                                </Text>
+                                {task.subtitle && (
+                                  <Text
+                                    type="body"
+                                    color="secondary"
+                                    maxLines={1}>
+                                    › {task.subtitle}
+                                  </Text>
+                                )}
+                              </HStack>
+                            </TableCell>
+                            <TableCell>
+                              {task.project ? (
+                                <Text type="body" maxLines={1}>
+                                  {task.project}
+                                </Text>
+                              ) : (
+                                <Text type="supporting" color="secondary">
+                                  —
+                                </Text>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Text type="supporting" color="secondary">
+                                {task.created}
+                              </Text>
+                            </TableCell>
+                            <TableCell>
+                              <Text type="supporting" color="secondary">
+                                {task.updated}
+                              </Text>
+                            </TableCell>
+                            <TableCell>
+                              <Avatar name={task.assignee} size="sm" />
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu
+                                button={{
+                                  label: 'Actions',
+                                  variant: 'ghost',
+                                  size: 'sm',
+                                  icon: (
+                                    <Icon
+                                      icon={EllipsisHorizontalIcon}
+                                      size="sm"
+                                    />
+                                  ),
+                                  isIconOnly: true,
+                                }}
+                                hasChevron={false}
+                                items={[
+                                  {
+                                    label: 'Edit issue',
+                                    icon: PencilIcon,
+                                    onClick: () => {},
+                                  },
+                                  {
+                                    label: 'Assign to...',
+                                    icon: UserIcon,
+                                    onClick: () => {},
+                                  },
+                                  {
+                                    label: 'Add label',
+                                    icon: TagIcon,
+                                    onClick: () => {},
+                                  },
+                                  {
+                                    label: 'Duplicate',
+                                    icon: DocumentDuplicateIcon,
+                                    onClick: () => {},
+                                  },
+                                  {
+                                    label: 'Move to project',
+                                    icon: ArrowRightIcon,
+                                    onClick: () => {},
+                                  },
+                                  {type: 'divider' as const},
+                                  {
+                                    label: 'Delete issue',
+                                    icon: TrashIcon,
+                                    onClick: () => {},
+                                  },
+                                ]}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </React.Fragment>
+                  );
+                })}
+              </TableBody>
             </Table>
           </LayoutContent>
         }

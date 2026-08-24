@@ -22,7 +22,7 @@ import {useSpeechRecognition} from './useSpeechRecognition';
 // =============================================================================
 
 export interface UseChatDictationOptions {
-  /** BCP-47 language tag. @default navigator.language */
+  /** BCP-47 language tag. @default InternationalizationProvider locale */
   lang?: string;
   /** Whether recognition continues until explicitly stopped. @default true */
   continuous?: boolean;

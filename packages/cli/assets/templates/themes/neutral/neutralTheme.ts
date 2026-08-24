@@ -24,7 +24,8 @@
  *   icon   = T30         / T80
  *   text   = T30         / T80
  *
- * All 9 saturated badge values pass WCAG AA (5.6–9.6 contrast range).
+ * All 9 saturated badge values pass WCAG AA against their label (>= 4.5:1);
+ * `scripts/check-badge-contrast.test.mjs` holds every theme to that.
  *
  * Only overrides tokens that differ from the defaults.
  */
@@ -51,7 +52,9 @@ const neutralSyntax = defineSyntaxTheme({
     tag: ['#89001a', '#ffaeaa'], // red
     attribute: ['#584400', '#eec12f'], // yellow
     property: ['#005348', '#83dac9'], // teal
-    punctuation: ['#a3a3a3', '#525252'], // neutral
+    // #a3a3a3/#525252 (this pair's own disabled-text tone) failed WCAG AA
+    // against the syntax background: 2.42:1 light, 2.53:1 dark. #5386.
+    punctuation: ['#6e6e6e', '#a0a0a0'], // neutral, 4.89:1 / 7.57:1
     background: ['#fafafa', '#0a0a0a'],
   },
 });
@@ -432,10 +435,14 @@ export const neutralTheme = defineTheme({
         color: '#171717',
       },
       'variant:error': {
-        // Light: T55 #e33f4a (palette saturated stop)
+        // Light: T58 #c9303a. The T55 stop #e33f4a pairs with white at only
+        //        4.14:1 — the label is 12px/500, so AA wants 4.5, not the 3:1
+        //        large-text allowance. One tonal step down holds the hue
+        //        (OKLCH H 21.9 -> 22.8, C 0.200 -> 0.189) and reaches 5.29:1.
         // Dark : T60 stop from dark-mode tonal palette of Tailwind red-600
-        //        source #dc2626 (kept on H=27 alarm-red rather than coral)
-        backgroundColor: 'light-dark(#e33f4a, #ff705d)',
+        //        source #dc2626 (kept on H=27 alarm-red rather than coral).
+        //        Dark text on it is 6.60:1 and unchanged.
+        backgroundColor: 'light-dark(#c9303a, #ff705d)',
         color: 'light-dark(#ffffff, #171717)',
       },
 
@@ -500,7 +507,7 @@ export const neutralTheme = defineTheme({
     //
     //   success → badge success bg  (green T45 / dark-ramp T60)
     //   warning → badge warning bg  (yellow T85, same hex both modes)
-    //   error   → badge error bg    (red T55 / dark-ramp T60)
+    //   error   → badge error bg    (red T58 / dark-ramp T60)
     //   accent  → badge info bg     (blue T50 / dark-ramp T60) — the
     //             StatusDot "accent" is the info/attention color, so it
     //             pairs with the info badge rather than --color-accent
@@ -515,7 +522,7 @@ export const neutralTheme = defineTheme({
     statusdot: {
       'variant:success': {backgroundColor: 'light-dark(#198100, #64af4c)'},
       'variant:warning': {backgroundColor: '#ffce2f'},
-      'variant:error': {backgroundColor: 'light-dark(#e33f4a, #ff705d)'},
+      'variant:error': {backgroundColor: 'light-dark(#c9303a, #ff705d)'},
       'variant:accent': {backgroundColor: 'light-dark(#0074e2, #6d9cfe)'},
     },
 
@@ -528,15 +535,17 @@ export const neutralTheme = defineTheme({
     //          to a deep tinted bg + light text rather than locking the
     //          light-mode pastel.
     //
-    // The inner-header *-muted token is forced transparent so the outer
-    // tinted background shows through cleanly.
+    // The inner-header *-muted token carries the tinted background for every
+    // status, info included. A theme override that sets a plain CSS property
+    // instead lands in @layer astryx-theme, which StyleX's @layer priority4
+    // outranks, so `backgroundColor` here would silently do nothing and the
+    // info banner would paint no background at all.
     //
     // Status overrides reference --color-text-{hue} so text/icon colors
     // stay in sync with the palette anchors automatically.
     banner: {
       'status:info': {
-        backgroundColor: 'var(--color-background-blue)',
-        '--color-accent-muted': 'transparent',
+        '--color-accent-muted': 'var(--color-background-blue)',
         '--color-text-primary': 'var(--color-text-blue)',
         '--color-text-secondary': 'var(--color-text-blue)',
         '--color-accent': 'var(--color-text-blue)',
@@ -609,8 +618,8 @@ export const neutralTheme = defineTheme({
         '--color-warning': '#ffce2f',
       },
       'variant:error': {
-        // Red T55 saturated stop (= variant:error badge bg)
-        '--color-error': '#e33f4a',
+        // Red T58 saturated stop (= variant:error badge bg)
+        '--color-error': '#c9303a',
       },
     },
 

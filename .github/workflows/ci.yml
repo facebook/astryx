@@ -9,17 +9,16 @@ name: CI
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ['main']
   merge_group:
 
 permissions: {}
 
 concurrency:
-  group: "ci-${{ github.event.merge_group.head_sha || github.head_ref }}"
+  group: 'ci-${{ github.event.merge_group.head_sha || github.head_ref }}'
   cancel-in-progress: true
 
 jobs:
-
   # Detect docsite-only changes — lets docsite PRs skip heavy jobs
   check-scope:
     if: github.event_name == 'pull_request'
@@ -70,8 +69,14 @@ jobs:
       - name: Generate and test docsite data
         run: pnpm -F @astryxdesign/docsite generate && pnpm -F @astryxdesign/docsite test
 
-  # Lightweight check — does the PR touch any core components?
-  # Gates pr-a11y to avoid unnecessary work
+  # Lightweight check — does the PR touch any published components?
+  # Gates pr-a11y and pr-rtl to avoid unnecessary work.
+  #
+  # Keep the roots and the exclude list in sync with analyze-pr.js: this job
+  # only decides *whether* the downstream audits run, while analyze-pr.js
+  # decides *which* components they audit. When the two disagree the audits
+  # silently no-op — lab components were invisible to both audits until this
+  # job learned about packages/lab/src.
   check-components:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
@@ -101,7 +106,7 @@ jobs:
             echo "has_components=true" >> $GITHUB_OUTPUT
             exit 0
           fi
-          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils|__tests__)/' | head -1)
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ packages/lab/src/ | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1)
           echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
   # Run tests (parallel with build)
@@ -136,6 +141,12 @@ jobs:
       - name: Check token docs are in sync
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/generate-token-docs.mjs --check
+
+      # Fails when the lab readiness manifest claims a check the source tree
+      # contradicts — the report is derived, never hand-maintained.
+      - name: Check lab readiness manifest is current
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm lab:readiness:check
 
       - run: pnpm test
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -442,6 +453,56 @@ jobs:
           name: a11y-report
           path: a11y-report.json
           retention-days: 1
+
+      # A modal <dialog> hidden before close() blocks the whole page in Safari
+      # 26.1 and leaves no trace (#4290). The ordering is produced by a CSS
+      # transition, which jsdom does not run — so the unit suite cannot see it
+      # and this Chromium probe is the guard. Runs after the upload above so an
+      # a11y failure still publishes its report.
+      - name: Run modal close visibility guard
+        run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
+
+      # A public component var can be documented, read, and emitted into the
+      # theme CSS and still be unreachable — an inline write or an unlayered
+      # declaration outranks `@layer astryx-theme` (#4530). jsdom resolves no
+      # cascade, so the unit suites assert on the generated CSS text, which
+      # proves emission and not effect. Chromium is where the promise is
+      # checkable. The source-side wiring half lives in
+      # packages/cli/foundation/discovery/theming-targets.test.mjs.
+      - name: Run theme var reachability guard
+        run: node .github/scripts/theme-var-reachability.js --storybook-dir apps/storybook/dist
+
+  # The layer order Astryx promises is Astryx < theme < product, and which
+  # declaration paints is a cascade fact no jsdom test can settle: the build has
+  # been wrong in both directions inside one week — unsplit, so StyleX outranked
+  # every theme, then wrapped instead of split, so an app's own styles lost to
+  # one. vite.build.test.ts reads the built stylesheet; this renders it.
+  #
+  # Its own job on purpose. pr-a11y, where the sibling Chromium guards live,
+  # runs only when packages/core or packages/lab changed, and what this guards
+  # is packages/build — so hosting it there would skip it on exactly the PRs
+  # that can break it. Gated like `test` instead: everything but docsite-only.
+  theme-layers:
+    needs: [check-scope]
+    if: needs.check-scope.outputs.docsite_only != 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      # The guard imports the plugin's build artifact, the same one a consumer
+      # installs.
+      - name: Build the Vite plugin
+        run: pnpm -F @astryxdesign/build build
+
+      - name: Run theme layer cascade guard
+        run: node .github/scripts/theme-layer-cascade.js
 
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so a PR only pays for the components it touched.

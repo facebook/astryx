@@ -116,6 +116,22 @@ describe('RadioList', () => {
     expect(handleChange).toHaveBeenCalledWith('b');
   });
 
+  it('calls onChange when clicking the description', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <RadioList label="Preference" value="a" onChange={handleChange}>
+        <RadioListItem label="Option A" value="a" description="First option" />
+        <RadioListItem label="Option B" value="b" description="Second option" />
+      </RadioList>,
+    );
+
+    // The whole row delegates surface clicks to the radio, so the description
+    // is a live target — not dead space as it was before.
+    await user.click(screen.getByText('Second option'));
+    expect(handleChange).toHaveBeenCalledWith('b');
+  });
+
   it('disables all radios when group isDisabled is true', () => {
     render(
       <RadioList label="Preference" value="" onChange={() => {}} isDisabled>
@@ -137,7 +153,13 @@ describe('RadioList', () => {
       </RadioList>,
     );
 
-    await user.click(screen.getByLabelText('Option A'));
+    // userEvent honors `pointer-events: none`, so clicking the disabled row's
+    // delegate surface is genuinely blocked (it refuses and throws) rather than
+    // merely ignored by the handler — the guarantee this PR's delegation relies
+    // on.
+    await expect(user.click(screen.getByLabelText('Option A'))).rejects.toThrow(
+      /pointer-events/i,
+    );
     expect(handleChange).not.toHaveBeenCalled();
   });
 
@@ -162,7 +184,13 @@ describe('RadioList', () => {
       </RadioList>,
     );
 
-    await user.click(screen.getByLabelText('Option A'));
+    // userEvent honors `pointer-events: none`, so clicking the disabled row's
+    // delegate surface is genuinely blocked (it refuses and throws) rather than
+    // merely ignored by the handler — the guarantee this PR's delegation relies
+    // on.
+    await expect(user.click(screen.getByLabelText('Option A'))).rejects.toThrow(
+      /pointer-events/i,
+    );
     expect(handleChange).not.toHaveBeenCalled();
   });
 
@@ -645,6 +673,146 @@ describe('RadioList', () => {
       const item = screen.getByTestId('item-a');
       expect(item).toHaveAttribute('id', 'item-a-id');
       expect(item).toHaveAttribute('aria-label', 'First option');
+    });
+  });
+
+  describe('radio-list-item theme target', () => {
+    it('renders astryx-radio-list-item, with its size, on every row', () => {
+      render(
+        <RadioList label="Preference" value="" onChange={() => {}} size="sm">
+          <RadioListItem label="Option A" value="a" data-testid="row-a" />
+          <RadioListItem label="Option B" value="b" data-testid="row-b" />
+        </RadioList>,
+      );
+      for (const testid of ['row-a', 'row-b']) {
+        const row = screen.getByTestId(testid);
+        expect(row).toHaveClass('astryx-radio-list-item');
+        expect(row).toHaveClass('sm');
+        expect(row).toHaveAttribute('data-size', 'sm');
+      }
+    });
+
+    it('carries the selected and disabled states a theme keys on', () => {
+      render(
+        <RadioList label="Preference" value="a" onChange={() => {}}>
+          <RadioListItem label="Option A" value="a" data-testid="selected" />
+          <RadioListItem label="Option B" value="b" data-testid="plain" />
+          <RadioListItem
+            label="Option C"
+            value="c"
+            isDisabled
+            data-testid="disabled"
+          />
+        </RadioList>,
+      );
+      const selected = screen.getByTestId('selected');
+      const plain = screen.getByTestId('plain');
+      const disabled = screen.getByTestId('disabled');
+
+      expect(selected).toHaveClass('selected');
+      expect(selected).toHaveAttribute('data-selected', 'selected');
+      expect(plain).not.toHaveClass('selected');
+      expect(plain).not.toHaveAttribute('data-selected');
+
+      expect(disabled).toHaveClass('disabled');
+      expect(disabled).toHaveAttribute('data-disabled', 'disabled');
+      expect(plain).not.toHaveAttribute('data-disabled');
+    });
+
+    it('rides the painting row element (astryx-item), not a bare layout wrapper', () => {
+      // The row target must sit on the element Item paints — the surface that
+      // renders hover, density padding, and radius — so a theme styling
+      // `radio-list-item`'s background/padding/borderRadius (and its `:hover`)
+      // actually takes effect. Converges with how ListItem lands `list-item`
+      // on the same element as `astryx-item`. The same element also carries
+      // the reflected `data-size`, proving the variant surface moved with it.
+      const {container} = render(
+        <RadioList label="Preference" value="" onChange={() => {}}>
+          <RadioListItem label="Option A" value="a" data-testid="row" />
+        </RadioList>,
+      );
+      const row = screen.getByTestId('row');
+      // A single element carries both the paint class and the theme target.
+      expect(row).toHaveClass('astryx-item');
+      expect(row).toHaveClass('astryx-radio-list-item');
+      expect(row).toHaveAttribute('data-size');
+      // No separate layout wrapper survives outside the painting row: the
+      // target-bearing element is the same one Item renders.
+      expect(
+        container.querySelectorAll('.astryx-radio-list-item'),
+      ).toHaveLength(1);
+    });
+
+    it('keeps the bare default row appearance: zeroed padding/radius, no default background', () => {
+      // The architectural win — the target rides the painting Item — must not
+      // change the DEFAULT look. The painting row zeroes Item's density
+      // padding, its radius, and its interactive hover/press background, so an
+      // unthemed RadioList renders as a flat surface (only the indicator tints
+      // on hover via `indicatorScope`). This matches the appearance before the
+      // target moved onto Item; a theme's `radio-list-item` overrides still win
+      // from the higher `astryx-theme` layer.
+      render(
+        <RadioList label="Preference" value="a" onChange={() => {}}>
+          <RadioListItem label="Selected" value="a" data-testid="selected" />
+          <RadioListItem label="Plain" value="b" data-testid="plain" />
+        </RadioList>,
+      );
+      const cssFor = (className: string): string => {
+        const rules: string[] = [];
+        const walk = (list: CSSRuleList) => {
+          for (const rule of Array.from(list)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const anyRule = rule as any;
+            if (anyRule.cssRules) {
+              walk(anyRule.cssRules);
+            }
+            if (
+              typeof anyRule.cssText === 'string' &&
+              anyRule.cssText.includes(`.${className}`)
+            ) {
+              rules.push(anyRule.cssText);
+            }
+          }
+        };
+        for (const sheet of Array.from(document.styleSheets)) {
+          try {
+            walk(sheet.cssRules);
+          } catch {
+            // cross-origin/inaccessible sheet — skip
+          }
+        }
+        return rules.join('\n');
+      };
+
+      const plain = screen.getByTestId('plain');
+      const atoms = plain.className
+        .split(/\s+/)
+        .filter(c => /^x[a-z0-9]+$/i.test(c));
+      const declarations = atoms.map(cssFor).join('\n');
+
+      // The bare-look declarations land on the painting row.
+      expect(declarations).toMatch(/padding-block:\s*0/);
+      expect(declarations).toMatch(/padding-inline:\s*0/);
+      expect(declarations).toMatch(/border-radius:\s*0/);
+      expect(declarations).toMatch(/background-color:\s*transparent/);
+
+      // No default full-row hover highlight: the flat transparent background
+      // replaces Item's interactive `:hover` overlay, so no hover rule paints
+      // the row's own background. (The indicator still tints via its scope.)
+      expect(declarations).not.toMatch(
+        /:hover[^{]*\{[^}]*background-color:\s*var\(--color-overlay-hover\)/,
+      );
+
+      // No default selected-row background: the selected row differs from the
+      // plain row only by state markers, not by a painted background class.
+      const selected = screen.getByTestId('selected');
+      const selectedAtoms = selected.className
+        .split(/\s+/)
+        .filter(c => /^x[a-z0-9]+$/i.test(c));
+      const selectedDecls = selectedAtoms.map(cssFor).join('\n');
+      expect(selectedDecls).not.toMatch(
+        /background-color:\s*var\(--color-accent-muted\)/,
+      );
     });
   });
 });

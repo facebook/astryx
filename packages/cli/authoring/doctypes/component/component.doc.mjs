@@ -146,7 +146,7 @@ export const doc = {
       name: 'playground',
       type: 'ComponentPlaygroundConfig',
       description:
-        'Interactive-preview config: initial prop `defaults`, `overlay` for modal-only components, and a `wrapper` for context-dependent sub-components.',
+        'Interactive-preview config: initial prop `defaults`, `overlay` for modal-only components, `appShellMobile` for components gated on AppShell mobile context, and a `wrapper` for context-dependent sub-components.',
     },
     {
       name: 'props',

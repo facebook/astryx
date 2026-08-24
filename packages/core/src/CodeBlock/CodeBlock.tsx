@@ -215,7 +215,10 @@ const styles = stylex.create({
     transform: 'rotate(90deg)',
   },
   headerCollapsible: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
     // Restore a keyboard-only focus ring with the standard token/offset so this
     // disclosure control matches the rest of the system (Collapsible, TabMenu);
@@ -813,9 +816,12 @@ export function CodeBlock({
 
   const headerEl = showHeader ? (
     <div
-      {...stylex.props(
-        styles.headerRow,
-        hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
+      {...mergeProps(
+        themeProps('codeblock-header', {size, language, container}),
+        stylex.props(
+          styles.headerRow,
+          hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
+        ),
       )}>
       <div
         role={canCollapse ? 'button' : undefined}
@@ -837,7 +843,11 @@ export function CodeBlock({
           styles.header,
           canCollapse && styles.headerCollapsible,
         )}>
-        <span {...stylex.props(styles.headerTitle)}>
+        <span
+          {...mergeProps(
+            themeProps('codeblock-title', {size, language}),
+            stylex.props(styles.headerTitle),
+          )}>
           {canCollapse && (
             <span {...stylex.props(styles.collapseChevron)}>
               <Icon
