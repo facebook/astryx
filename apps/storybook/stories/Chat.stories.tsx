@@ -629,7 +629,7 @@ export const Alignment: StoryObj = {
             </ChatMessage>
             <ChatMessage
               sender="assistant"
-              avatar={<Avatar name="Navi" size="small" />}>
+              avatar={<Avatar name="Navi" size="sm" />}>
               <ChatMessageBubble>
                 {align === 'top'
                   ? 'Top alignment keeps messages at the top — good for logs and document-style lists.'
