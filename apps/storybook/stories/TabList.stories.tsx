@@ -413,3 +413,61 @@ export const OverflowVisible: Story = {
     );
   },
 };
+
+/**
+ * `role="tablist"` asks for the WAI-ARIA tabs pattern: `role="tablist"` /
+ * `role="tab"`, `aria-selected`, and each tab pointing at the panel it
+ * controls. A screen reader announces "tab 2 of 3, selected" and can move to
+ * the panel it opens. Without it the strip stays a `<nav>` landmark marking
+ * the current tab with `aria-current`.
+ */
+export const TabsPattern: Story = {
+  render: () => {
+    const [value, setValue] = useState('overview');
+    const panels = {
+      overview: 'Everything at a glance.',
+      activity: 'What happened recently.',
+      members: 'Who has access.',
+    };
+    return (
+      <div style={{display: 'grid', gap: '12px', maxWidth: '400px'}}>
+        <TabList
+          value={value}
+          onChange={setValue}
+          role="tablist"
+          aria-label="Project views"
+          hasDivider>
+          <Tab
+            value="overview"
+            label="Overview"
+            id="tab-overview"
+            panelId="panel-overview"
+          />
+          <Tab
+            value="activity"
+            label="Activity"
+            id="tab-activity"
+            panelId="panel-activity"
+          />
+          <Tab
+            value="members"
+            label="Members"
+            id="tab-members"
+            panelId="panel-members"
+          />
+        </TabList>
+        {Object.entries(panels).map(([key, text]) => (
+          <div
+            key={key}
+            id={`panel-${key}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${key}`}
+            tabIndex={0}
+            hidden={key !== value}>
+            {text}
+          </div>
+        ))}
+      </div>
+    );
+  },
+};

@@ -28,7 +28,7 @@ export const docs = {
       {name: '--_tab-indicator-bottom', description: 'Vertical offset of the selected-tab indicator from the tab bottom edge. A host that draws its own bottom divider (Toolbar) sets this so the indicator sits on the divider instead of above it.', default: '-1px', private: true},
     ],
   },
-  description: 'Nav wrapper that provides TabListContext (value, onChange, size) to Tab and TabMenu children.',
+  description: 'Tab strip that provides TabListContext (value, onChange, size) to Tab and TabMenu children; a nav landmark, or the WAI-ARIA tabs pattern where role="tablist" asks for it.',
   props: [
     {
       name: 'value',
@@ -61,6 +61,11 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'role',
+      type: 'AriaRole',
+      description: "ARIA role for the strip. 'tablist' asks for the WAI-ARIA tabs pattern: role=\"tablist\" / role=\"tab\" and aria-selected, with each tab pointing at the panel it controls via its panelId; only tabs may live in a tablist strip, and an href on a tab is ignored there. Left unset, the strip is a nav landmark marking the current tab with aria-current. Any other value is passed through to the element unchanged.",
+    },
+    {
       name: 'overflow',
       type: "'auto' | 'scroll' | 'visible'",
       description: "What happens when the tabs are wider than the strip. 'auto' lets the component choose, which today always scrolls. 'scroll' scrolls the tabs horizontally, with edge fades and arrow affordances for pointers that can hover. 'visible' turns overflow handling off and lets the tabs spill out of the strip. The selected tab is always scrolled back into view.",
@@ -69,7 +74,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Tab and TabMenu items to render inside the nav.',
+      description: 'Tab and TabMenu items to render inside the strip.',
       slotElements: [
         {
           __element: 'Tab',
@@ -98,6 +103,7 @@ export const docs = {
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Leave overflow handling on: a strip narrower than its tabs scrolls, and the selected tab is kept in view. Use TabMenu when you want a curated group of extra options rather than a scrolling strip.' },
       { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
+      { guidance: true, description: 'Reach for role="tablist" when the strip switches panels in place, and give each tab a panelId pointing at the panel it opens: that link is how a screen reader gets from a tab to its content. Leave it off for navigation between views.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
       { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
@@ -119,6 +125,7 @@ export const docsZh = {
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Leave overflow handling on: a strip narrower than its tabs scrolls, and the selected tab is kept in view. Use TabMenu when you want a curated group of extra options rather than a scrolling strip.' },
       { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
+      { guidance: true, description: 'Reach for role="tablist" when the strip switches panels in place, and give each tab a panelId pointing at the panel it opens: that link is how a screen reader gets from a tab to its content. Leave it off for navigation between views.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
       { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
@@ -133,7 +140,7 @@ export const docsZh = {
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'Tab navigation w/ overflow menu support; semantic nav landmark w/ button or anchor tab items.',
+  description: 'Tab strip w/ overflow scrolling; nav landmark by default, WAI-ARIA tabs pattern under role="tablist".',
   usage: {
     description:
       'TabList provides tab-style navigation for organizing content into categorized sections. Use it to let users switch between related views without leaving the page, with overflow items handled by a built-in "more" menu.',
@@ -141,6 +148,7 @@ export const docsDense = {
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Leave overflow handling on: a strip narrower than its tabs scrolls, and the selected tab is kept in view. Use TabMenu when you want a curated group of extra options rather than a scrolling strip.' },
       { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
+      { guidance: true, description: 'Reach for role="tablist" when the strip switches panels in place, and give each tab a panelId pointing at the panel it opens: that link is how a screen reader gets from a tab to its content. Leave it off for navigation between views.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
       { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },

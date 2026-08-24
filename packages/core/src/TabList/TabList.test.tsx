@@ -1310,3 +1310,212 @@ describe('TabList overflow (scroll)', () => {
     expect(scrollBy.mock.calls[0][0].left).toBeCloseTo(-420);
   });
 });
+
+describe('TabList ARIA pattern — role="tablist"', () => {
+  function warnSpy() {
+    return vi.spyOn(console, 'warn').mockImplementation(() => {});
+  }
+
+  it('speaks the tabs pattern: a labelled tablist of tabs with aria-selected', () => {
+    render(
+      <TabList value="b" onChange={() => {}} role="tablist" aria-label="Views">
+        <Tab value="a" label="Alpha" panelId="panel-a" />
+        <Tab value="b" label="Beta" panelId="panel-b" />
+      </TabList>,
+    );
+
+    const tablist = screen.getByRole('tablist', {name: 'Views'});
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(2);
+    expect(tabs.every(tab => tablist.contains(tab))).toBe(true);
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'false');
+    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[1]).toHaveAttribute('aria-controls', 'panel-b');
+    expect(tabs[1]).not.toHaveAttribute('aria-current');
+  });
+
+  it('lets the consumer name the tablist from another element', () => {
+    render(
+      <>
+        <h2 id="views-heading">Project views</h2>
+        <TabList
+          value="a"
+          onChange={() => {}}
+          role="tablist"
+          aria-labelledby="views-heading">
+          <Tab value="a" label="Alpha" panelId="panel-a" />
+        </TabList>
+      </>,
+    );
+
+    expect(screen.getByRole('tablist', {name: 'Project views'})).not.toBeNull();
+  });
+
+  it('renders no navigation landmark around the tabs', () => {
+    const {container} = render(
+      <TabList value="a" onChange={() => {}} role="tablist">
+        <Tab value="a" label="Alpha" panelId="panel-a" />
+      </TabList>,
+    );
+
+    expect(container.querySelector('nav')).toBeNull();
+    expect(screen.queryByRole('navigation')).toBeNull();
+  });
+
+  it('omits aria-controls when a tab has no panel, and says so', () => {
+    const warn = warnSpy();
+    render(
+      <TabList value="a" onChange={() => {}} role="tablist">
+        <Tab value="a" label="Alpha" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('tab')).not.toHaveAttribute('aria-controls');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Tab: a tab in a role="tablist" TabList controls nothing',
+      ),
+    );
+    warn.mockRestore();
+  });
+
+  it('leaves a hand-wired aria-controls alone, and does not ask for a panelId it already has', () => {
+    const warn = warnSpy();
+    render(
+      <TabList value="a" onChange={() => {}} role="tablist">
+        <Tab value="a" label="Alpha" aria-controls="panel-written-by-hand" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('tab')).toHaveAttribute(
+      'aria-controls',
+      'panel-written-by-hand',
+    );
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('ignores href: the tab is a button, and the caller is told', () => {
+    const warn = warnSpy();
+    render(
+      <TabList value="a" onChange={() => {}} role="tablist">
+        <Tab value="a" label="Alpha" panelId="panel-a" href="/alpha" />
+      </TabList>,
+    );
+
+    const tab = screen.getByRole('tab');
+    expect(tab.tagName).toBe('BUTTON');
+    expect(tab).not.toHaveAttribute('href');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Tab: href is ignored in a role="tablist"'),
+    );
+    warn.mockRestore();
+  });
+
+  it('warns about anything in the strip that is not a tab, however it got there', () => {
+    const warn = warnSpy();
+    const showMenu = true;
+    render(
+      <TabList value="a" onChange={() => {}} role="tablist">
+        <Tab value="a" label="Alpha" panelId="panel-a" />
+        {showMenu ? (
+          <div>
+            <TabMenu label="More" options={[{value: 'b', label: 'Beta'}]} />
+          </div>
+        ) : null}
+      </TabList>,
+    );
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('TabList: role="tablist" owns only tabs'),
+    );
+    warn.mockRestore();
+  });
+
+  it('says nothing when the strip holds only tabs with panels', () => {
+    const warn = warnSpy();
+    render(
+      <TabList value="a" onChange={() => {}} role="tablist">
+        <Tab value="a" label="Alpha" panelId="panel-a" />
+        <Tab value="b" label="Beta" panelId="panel-b" />
+      </TabList>,
+    );
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('leaves ArrowDown and ArrowUp to the page', async () => {
+    // A tablist reports itself as horizontal, so the vertical arrows are the
+    // page's to scroll with.
+    const user = userEvent.setup();
+    render(
+      <TabList value="a" onChange={() => {}} role="tablist">
+        <Tab value="a" label="Alpha" panelId="panel-a" />
+        <Tab value="b" label="Beta" panelId="panel-b" />
+      </TabList>,
+    );
+
+    const alpha = screen.getByRole('tab', {name: 'Alpha'});
+    alpha.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(alpha).toHaveFocus();
+  });
+});
+
+describe('TabList ARIA pattern — no role', () => {
+  it('is the navigation landmark it has always been', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <TabList value="a" onChange={() => {}} aria-label="Views">
+        <Tab value="a" label="Alpha" />
+        <Tab value="b" label="Beta" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('navigation', {name: 'Views'})).toBeInTheDocument();
+    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(screen.getByRole('button', {name: 'Alpha'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('drops a panelId and says so: there is no panel relationship to state', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <TabList value="a" onChange={() => {}}>
+        <Tab value="a" label="Alpha" panelId="panel-a" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('button', {name: 'Alpha'})).not.toHaveAttribute(
+      'aria-controls',
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Tab: panelId does nothing outside a role="tablist" TabList',
+      ),
+    );
+    warn.mockRestore();
+  });
+});
+
+describe('TabList ARIA pattern — any other role', () => {
+  it('passes the role through and leaves the tabs on the navigation pattern', () => {
+    const {container} = render(
+      <TabList value="a" onChange={() => {}} role="toolbar">
+        <Tab value="a" label="Alpha" />
+      </TabList>,
+    );
+
+    expect(container.querySelector('nav')).toHaveAttribute('role', 'toolbar');
+    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(screen.getByRole('button', {name: 'Alpha'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+  });
+});
