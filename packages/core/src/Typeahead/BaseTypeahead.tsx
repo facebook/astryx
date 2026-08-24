@@ -692,6 +692,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           e.preventDefault();
           popover.hide();
           break;
+        case 'Tab':
+          // Dismiss here rather than from the blur this press produces:
+          // hiding a top-layer popover during the focusout makes Chrome
+          // abandon the in-flight focus move and drop focus to <body>, so the
+          // user's Tab appears to do nothing. Selector and MultiSelector
+          // already dismiss on this keydown.
+          popover.hide();
+          break;
         case 'Home':
           if (popover.isOpen) {
             e.preventDefault();
