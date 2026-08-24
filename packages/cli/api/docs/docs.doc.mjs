@@ -19,8 +19,8 @@ export const doc = {
     'returns that full ReferenceDoc (with token-ref blocks inlined); a topic ' +
     'plus a section returns the first section whose title contains the ' +
     '(case-insensitive) query. The topic set is the CLI\'s own docs plus the ' +
-    'ones the project\'s configured integrations contribute — including any ' +
-    'topic an integration replaces or extends — so it depends on the cwd. ' +
+    'ones the project\'s configured integrations contribute, including any ' +
+    'topic an integration replaces or extends, so it depends on the cwd. ' +
     'Overlay options select localized or dense variants.',
   importPath: '@astryxdesign/cli/api',
   signature:

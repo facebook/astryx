@@ -109,6 +109,11 @@ export const docs = {
           type: 'boolean',
           description: 'Whether the hover card should be shown on mount. Still dismissible.',
         },
+        {
+          name: 'isOpen',
+          type: 'boolean',
+          description: 'Controlled open state for the hover card.',
+        },
       ],
     },
   ],

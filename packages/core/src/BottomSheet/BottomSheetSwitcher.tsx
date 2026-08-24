@@ -51,7 +51,7 @@ import {
   useFocusTrap,
   useScrollLock,
 } from '../hooks';
-import {composeEventHandlers, mergeProps, mergeRefs} from '../utils';
+import {composeEventHandlers, mergeProps} from '../utils';
 import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
 import {
   BottomSheetSwitcherContext,
@@ -60,6 +60,7 @@ import {
   type BottomSheetSwitcherTransitionEvent,
 } from './BottomSheetSwitcherContext';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   dialog: {
     position: 'fixed',
@@ -621,7 +622,7 @@ export function BottomSheetSwitcher({
       <dialog
         {...props}
         {...dialogPresentationProps}
-        ref={mergeRefs(ref, dialogRef, containerRef)}
+        ref={useMergedRefs(ref, dialogRef, containerRef)}
         aria-label={ariaLabel}
         aria-modal={isModal ? 'true' : undefined}
         onCancel={composeEventHandlers(onCancel, handleCancel)}

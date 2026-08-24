@@ -19,6 +19,7 @@ import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useLayer, type ContextRenderProps} from '../Layer/useLayer';
 import {useFocusTrap} from '../hooks/useFocusTrap';
+import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
@@ -436,34 +437,36 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
           : surfaceProps.className;
 
       return layer.render(
-        <div
-          ref={contentRef}
-          role={role === 'dialog' ? 'dialog' : undefined}
-          aria-modal={role === 'dialog' && isModal ? true : undefined}
-          aria-label={role === 'dialog' ? dialogLabel : undefined}
-          {...mergeProps(
-            {...surfaceProps, className: surfaceClassName},
-            stylex.props(
-              styles.contentWrapper,
-              hasSurface && styles.surface,
-              xstyle,
-            ),
-          )}>
-          {children}
-          {hasCloseButton && (
-            <div
-              {...stylex.props(
-                styles.closeButtonWrapper,
-                rtlStyles.centerInline('100%'),
-              )}>
-              <Button
-                variant="secondary"
-                label={closeButtonLabel}
-                onClick={layer.hide}
-              />
-            </div>
-          )}
-        </div>,
+        <LayerDepthProvider>
+          <div
+            ref={contentRef}
+            role={role === 'dialog' ? 'dialog' : undefined}
+            aria-modal={role === 'dialog' && isModal ? true : undefined}
+            aria-label={role === 'dialog' ? dialogLabel : undefined}
+            {...mergeProps(
+              {...surfaceProps, className: surfaceClassName},
+              stylex.props(
+                styles.contentWrapper,
+                hasSurface && styles.surface,
+                xstyle,
+              ),
+            )}>
+            {children}
+            {hasCloseButton && (
+              <div
+                {...stylex.props(
+                  styles.closeButtonWrapper,
+                  rtlStyles.centerInline('100%'),
+                )}>
+                <Button
+                  variant="secondary"
+                  label={closeButtonLabel}
+                  onClick={layer.hide}
+                />
+              </div>
+            )}
+          </div>
+        </LayerDepthProvider>,
         {...props, xstyle: props?.xstyle},
       );
     },

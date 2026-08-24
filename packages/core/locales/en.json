@@ -1075,6 +1075,10 @@
     "defaultMessage": "Expand row",
     "description": "Screen-reader-only label on the row-expand chevron when the row is currently collapsed. Part of a four-way set with `collapseRow`, `expandAllRows`, `collapseAllRows`."
   },
+  "@astryx.tableRowExpansion.columnHeader": {
+    "defaultMessage": "Row expansion",
+    "description": "Screen-reader-only header for the leading column that holds the per-row expand/collapse chevrons. The column shows no visible label."
+  },
   "@astryx.tableRowExpansion.collapseAllRows": {
     "defaultMessage": "Collapse all rows",
     "description": "Screen-reader-only label on the same header button when every row is expanded. Part of the four-way set."

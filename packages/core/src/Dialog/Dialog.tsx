@@ -33,8 +33,8 @@ import {
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
-import {hasActiveFocusTrapEscape} from '../hooks/useFocusTrap';
-import {isImeKeyEvent} from '../utils/ime';
+import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {
   colorVars,
   radiusVars,
@@ -54,13 +54,14 @@ import {
   overlayPaddingReset,
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {devWarn} from '../utils/devWarning';
 import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
 import type {DialogVariantMap} from './index';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 /**
  * Calculate a directional translate offset for dialog entry animation.
  * Returns a normalized vector from the trigger element toward the viewport
@@ -464,6 +465,8 @@ export function Dialog({
     [titleId, hasConsumerName],
   );
 
+  const mergedDialogRef = useMergedRefs(ref, attachDialog);
+
   // Capture the element that was focused when the dialog opened,
   // for directional animation origin and focus restoration on close.
   const triggerElementRef = useRef<HTMLElement | null>(null);
@@ -523,34 +526,24 @@ export function Dialog({
   // Skip for inline rendering — no modal overlay to compensate for.
   useScrollLock(isOpen && !isInline);
 
-  // Handle Escape key — skip for inline rendering
-  useEffect(() => {
-    if (isInline) {
-      return;
-    }
-    const dialog = dialogRef.current;
-    if (!dialog || !isOpen) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        // Ignore IME composition-cancel, and defer to any popover/menu layered
-        // on top of this dialog so a single Escape closes only the top-most
-        // layer (the popover's own focus trap handles it and stops propagation).
-        if (isImeKeyEvent(event) || hasActiveFocusTrapEscape()) {
-          return;
-        }
-        event.preventDefault();
-        if (allowEscape) {
-          onOpenChange(false);
-        }
-      }
-    };
-
-    dialog.addEventListener('keydown', handleKeyDown);
-    return () => dialog.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isInline, allowEscape, onOpenChange]);
+  // Join the shared layer dismissal stack. The stack owns the Escape listener
+  // and routes each press to the top-most layer, so this dialog does not listen
+  // itself — that is what stops a modal opened from inside another modal (or a
+  // popover opened inside this one) from closing two layers on one press.
+  //
+  // A `required` dialog registers as `block`: it must not be dismissed, and the
+  // press must not fall through and dismiss a layer behind it either.
+  //
+  // Inline mode opts out — it renders dialog content in normal flow, with
+  // nothing layered over anything.
+  const {shouldDismissOnCloseRequest} = useLayerDismissal({
+    isActive: isOpen,
+    isEnabled: !isInline,
+    escapeBehavior: allowEscape ? 'close' : 'block',
+    onDismiss: () => {
+      onOpenChange(false);
+    },
+  });
 
   // Dev-time guardrail: an open modal should always have an accessible name.
   // The header-title check reads the DOM, so this stays in an effect; the ref
@@ -586,12 +579,18 @@ export function Dialog({
     }
   };
 
-  // Handle native cancel event (browser Escape handling)
+  // The native `cancel` event is the browser's own close-watcher firing: an
+  // Android back gesture, or a close request the stack never saw a press for.
+  // Escape presses the stack owns never arrive here — it preventDefault()s
+  // those, which suppresses the close watcher.
+  //
+  // Always preventDefault so the browser cannot close a controlled <dialog>
+  // behind React's back, then answer the request with the stack's own rules:
+  // only the top-most layer dismisses, a `required` dialog swallows it, and
+  // nothing dismisses while an IME composition is in progress.
   const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
     event.preventDefault();
-    // Defer to a popover/menu layered on top of this dialog; it will dismiss
-    // itself on the same Escape press.
-    if (hasActiveFocusTrapEscape()) {
+    if (!shouldDismissOnCloseRequest()) {
       return;
     }
     if (allowEscape) {
@@ -669,7 +668,7 @@ export function Dialog({
           (props as Record<string, unknown>)['data-testid'] as
             string | undefined
         }>
-        {innerContent}
+        <LayerDepthProvider>{innerContent}</LayerDepthProvider>
       </div>
     );
   }
@@ -678,7 +677,7 @@ export function Dialog({
 
   return (
     <dialog
-      ref={mergeRefs(ref, attachDialog)}
+      ref={mergedDialogRef}
       {...safeProps}
       {...mergeProps(
         themeProps('dialog', {variant}),
@@ -717,7 +716,7 @@ export function Dialog({
       // imperatively in `attachDialog`; a consumer-provided aria-labelledby
       // flows through {...safeProps} above and wins.
       {...(purpose === 'required' ? {role: 'alertdialog'} : undefined)}>
-      {innerContent}
+      <LayerDepthProvider>{innerContent}</LayerDepthProvider>
     </dialog>
   );
 }

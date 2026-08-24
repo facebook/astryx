@@ -12,6 +12,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
+import type {ReactNode} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {transformSync} from '@babel/core';
@@ -764,6 +765,25 @@ describe('ButtonGroup', () => {
       ).toHaveFocus();
     });
 
+    it('leaves a link member in the arrow order', async () => {
+      const user = userEvent.setup();
+      render(
+        <ButtonGroup label="Docs actions">
+          <Button label="Save" />
+          <Button label="Docs" href="https://example.com" />
+          <Button label="Print" />
+        </ButtonGroup>,
+      );
+
+      screen.getByRole('button', {name: 'Save'}).focus();
+
+      await user.keyboard('{ArrowRight}');
+      expect(screen.getByRole('link', {name: 'Docs'})).toHaveFocus();
+
+      await user.keyboard('{ArrowRight}');
+      expect(screen.getByRole('button', {name: 'Print'})).toHaveFocus();
+    });
+
     it('still moves between its own members when the group sits inside a popover', async () => {
       const user = userEvent.setup();
       // A group rendered inside a Popover, ContextMenu, HoverCard or Toast has
@@ -794,6 +814,192 @@ describe('ButtonGroup', () => {
 
       await user.keyboard('{Home}');
       expect(button('Copy')).toHaveFocus();
+    });
+  });
+
+  // ===========================================================================
+  // Roving tabindex
+  //
+  // The group is a single tab stop: exactly one enabled member carries
+  // tabindex="0", the rest carry -1, and the stop moves with arrow navigation.
+  // Entering and leaving is asserted through the real tab order as well as the
+  // attribute, because the attribute alone says nothing about a member the
+  // itemSelector missed — such a member stays natively tabbable and quietly
+  // adds a second stop.
+  // ===========================================================================
+  describe('roving tabindex', () => {
+    const tabIndexOf = (name: string) =>
+      screen.getByRole('button', {name}).getAttribute('tabindex');
+
+    const bracketed = (group: ReactNode) => (
+      <>
+        <button type="button">before</button>
+        {group}
+        <button type="button">after</button>
+      </>
+    );
+
+    const clipboard = (
+      <ButtonGroup label="Actions">
+        <Button label="Copy" />
+        <Button label="Cut" />
+        <Button label="Paste" />
+      </ButtonGroup>
+    );
+
+    it('gives the group one tab stop, on the first member', () => {
+      render(clipboard);
+
+      expect(tabIndexOf('Copy')).toBe('0');
+      expect(tabIndexOf('Cut')).toBe('-1');
+      expect(tabIndexOf('Paste')).toBe('-1');
+    });
+
+    it('takes one Tab to enter and one to leave', async () => {
+      const user = userEvent.setup();
+      render(bracketed(clipboard));
+
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'before'})).toHaveFocus();
+
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'Copy'})).toHaveFocus();
+
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'after'})).toHaveFocus();
+    });
+
+    it('moves the tab stop with arrow navigation', async () => {
+      const user = userEvent.setup();
+      render(clipboard);
+
+      screen.getByRole('button', {name: 'Copy'}).focus();
+      await user.keyboard('{ArrowRight}');
+
+      expect(tabIndexOf('Copy')).toBe('-1');
+      expect(tabIndexOf('Cut')).toBe('0');
+    });
+
+    it('never parks the tab stop on a disabled member', () => {
+      render(
+        <ButtonGroup label="Actions">
+          <Button label="Copy" isDisabled />
+          <Button label="Cut" />
+          <Button label="Paste" />
+        </ButtonGroup>,
+      );
+
+      expect(tabIndexOf('Copy')).toBe('-1');
+      expect(tabIndexOf('Cut')).toBe('0');
+    });
+
+    it('repairs the tab stop when the member holding it unmounts', () => {
+      const {rerender} = render(
+        <ButtonGroup label="Actions">
+          <Button label="Copy" />
+          <Button label="Cut" />
+        </ButtonGroup>,
+      );
+      expect(tabIndexOf('Copy')).toBe('0');
+
+      rerender(
+        <ButtonGroup label="Actions">
+          <Button label="Cut" />
+        </ButtonGroup>,
+      );
+
+      expect(tabIndexOf('Cut')).toBe('0');
+    });
+
+    it('repairs the tab stop when the member holding it becomes disabled', () => {
+      const {rerender} = render(
+        <ButtonGroup label="Actions">
+          <Button label="Copy" />
+          <Button label="Cut" />
+        </ButtonGroup>,
+      );
+      expect(tabIndexOf('Copy')).toBe('0');
+
+      rerender(
+        <ButtonGroup label="Actions">
+          <Button label="Copy" isDisabled />
+          <Button label="Cut" />
+        </ButtonGroup>,
+      );
+
+      expect(tabIndexOf('Copy')).toBe('-1');
+      expect(tabIndexOf('Cut')).toBe('0');
+    });
+
+    it('counts a link member as the tab stop', async () => {
+      const user = userEvent.setup();
+      render(
+        bracketed(
+          <ButtonGroup label="Docs actions">
+            <Button label="Docs" href="https://example.com" />
+            <Button label="Print" />
+          </ButtonGroup>,
+        ),
+      );
+
+      expect(
+        screen.getByRole('link', {name: 'Docs'}).getAttribute('tabindex'),
+      ).toBe('0');
+      expect(tabIndexOf('Print')).toBe('-1');
+
+      await user.tab();
+      await user.tab();
+      expect(screen.getByRole('link', {name: 'Docs'})).toHaveFocus();
+
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'after'})).toHaveFocus();
+    });
+
+    it('contributes no tab stop when the whole group is disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        bracketed(
+          <ButtonGroup label="Actions" isDisabled>
+            <Button label="Copy" />
+            <Button label="Cut" />
+          </ButtonGroup>,
+        ),
+      );
+
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'before'})).toHaveFocus();
+
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'after'})).toHaveFocus();
+    });
+
+    it('leaves the tab stop on its own members when a member owns an open menu', async () => {
+      const user = userEvent.setup();
+      render(
+        <ButtonGroup label="Approve action">
+          <Button label="Allow once" />
+          <DropdownMenu
+            hasChevron={false}
+            button={{label: 'Allow options', isIconOnly: true}}
+            items={[{label: 'Allow for 30 minutes'}, {label: 'Always allow'}]}
+          />
+        </ButtonGroup>,
+      );
+
+      const trigger = screen.getByRole('button', {name: /Allow options/});
+      expect(tabIndexOf('Allow once')).toBe('0');
+      expect(trigger.getAttribute('tabindex')).toBe('-1');
+
+      await user.click(trigger);
+
+      // The menu's own items are a different list level (the boundary), so the
+      // group must not stamp them or hand them its tab stop.
+      const item = screen.getByRole('menuitem', {
+        name: 'Allow for 30 minutes',
+        hidden: true,
+      });
+      expect(item.getAttribute('tabindex')).not.toBe('0');
+      expect(tabIndexOf('Allow once')).toBe('0');
     });
   });
 });

@@ -58,7 +58,6 @@ import {
   isImeKeyEvent,
   isTimeInRange,
   mergeProps,
-  mergeRefs,
   getInputARIA,
 } from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -74,6 +73,7 @@ import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   icon: {
     display: 'flex',
@@ -648,7 +648,7 @@ export function TimeInput({
         </VisuallyHidden>
       )}
       <input
-        ref={mergeRefs(ref, inputRef)}
+        ref={useMergedRefs(ref, inputRef)}
         id={id}
         type="text"
         value={displayValue}

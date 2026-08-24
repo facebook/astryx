@@ -16,9 +16,9 @@ export const doc = {
   namespace: 'cli',
   summary: 'Write the annotated theme template into your project',
   description:
-    'Writes theme.template.ts: the annotated reference for the whole theme surface — every ' +
+    'Writes theme.template.ts: the annotated reference for the whole theme surface, covering every ' +
     'defineTheme field, the token families, the component override syntax, and how a theme is ' +
-    'consumed — naming the CLI command that prints the authoritative reference for each. Read ' +
+    'consumed, naming the CLI command that prints the authoritative reference for each. Read ' +
     'it, copy what you need into your own theme file, delete it. Use `theme add <slug>` instead ' +
     'to start from a theme we ship. Leaves an existing file untouched unless --overwrite.',
   fn: 'themeTemplate',
