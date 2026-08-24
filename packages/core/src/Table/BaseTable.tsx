@@ -528,7 +528,12 @@ function BaseTableInner<T extends Record<string, unknown>>({
       {...(ariaRowCount != null ? {'aria-rowcount': ariaRowCount} : null)}
       {...tableRenderProps.htmlProps}
       {...mergeProps(
-        themeProps('base-table'),
+        themeProps('table', undefined, {
+          // `base-table` was a second root on the same <table> element that
+          // `table` names; themes styling it keep working until the next
+          // major.
+          legacyNames: ['base-table'],
+        }),
         stylex.props(...tableRenderProps.xstyle, xstyle),
         [tableRenderProps.htmlProps.className, className]
           .filter(Boolean)

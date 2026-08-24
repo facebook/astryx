@@ -349,8 +349,8 @@ const _augmentationTargetCache = new Map();
  * Resolve a rendered theme class token (the key without `astryx-`) to candidate
  * public core subpaths and interface prefixes that may own its augmentable prop
  * maps. Some tokens are subtargets documented by a parent component
- * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`), and some stable
- * class tokens intentionally omit word separators (`progressbar`, `statusdot`)
+ * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`), and some
+ * deprecated tokens still omit word separators (`progressbar`, `statusdot`)
  * while the public API keeps `ProgressBar`/`StatusDot` casing. Component docs
  * are the source of truth for the target token → owning component relationship.
  *
@@ -428,8 +428,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
 
       // Try the exact rendered token first for documented subtargets such as
       // avatar-status-dot → AvatarStatusDotVariantMap, then the owning public
-      // component name for unhyphenated public casings such as progressbar →
-      // ProgressBarVariantMap/statusdot → StatusDotVariantMap.
+      // component name for the deprecated unhyphenated tokens such as
+      // progressbar → ProgressBarVariantMap/statusdot → StatusDotVariantMap.
       addCandidate(moduleName, toPascalCase(componentName));
       addCandidate(moduleName, moduleName);
       if (Array.isArray(doc?.components)) {

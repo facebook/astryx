@@ -77,12 +77,30 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-progressbar', visualProps: ['variant']},
-      {className: 'astryx-progressbar-fill', visualProps: ['variant']},
-      {className: 'astryx-progressbar-track'},
+      {className: 'astryx-progress-bar', visualProps: ['variant']},
+      {className: 'astryx-progress-bar-fill', visualProps: ['variant']},
+      {className: 'astryx-progress-bar-track'},
+      {
+        className: 'astryx-progress-bar-mark',
+        visualProps: ['variant', 'placement'],
+      },
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {
+        className: 'astryx-progressbar',
+        visualProps: ['variant'],
+        deprecatedFor: 'progress-bar',
+      },
+      {
+        className: 'astryx-progressbar-fill',
+        visualProps: ['variant'],
+        deprecatedFor: 'progress-bar-fill',
+      },
+      {className: 'astryx-progressbar-track', deprecatedFor: 'progress-bar-track'},
       {
         className: 'astryx-progressbar-mark',
         visualProps: ['variant', 'placement'],
+        deprecatedFor: 'progress-bar-mark',
       },
     ],
     vars: [
@@ -182,12 +200,30 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-progressbar', visualProps: ['variant']},
-      {className: 'astryx-progressbar-fill', visualProps: ['variant']},
-      {className: 'astryx-progressbar-track'},
+      {className: 'astryx-progress-bar', visualProps: ['variant']},
+      {className: 'astryx-progress-bar-fill', visualProps: ['variant']},
+      {className: 'astryx-progress-bar-track'},
+      {
+        className: 'astryx-progress-bar-mark',
+        visualProps: ['variant', 'placement'],
+      },
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {
+        className: 'astryx-progressbar',
+        visualProps: ['variant'],
+        deprecatedFor: 'progress-bar',
+      },
+      {
+        className: 'astryx-progressbar-fill',
+        visualProps: ['variant'],
+        deprecatedFor: 'progress-bar-fill',
+      },
+      {className: 'astryx-progressbar-track', deprecatedFor: 'progress-bar-track'},
       {
         className: 'astryx-progressbar-mark',
         visualProps: ['variant', 'placement'],
+        deprecatedFor: 'progress-bar-mark',
       },
     ],
     vars: [
