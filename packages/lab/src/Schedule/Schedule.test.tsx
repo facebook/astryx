@@ -114,9 +114,9 @@ describe('Schedule', () => {
     await waitFor(() => {
       expect(screen.getByText('Visible sync')).toBeInTheDocument();
     });
-    expect(
-      screen.getAllByRole('heading', {level: 3}).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByRole('heading', {level: 3}).length).toBeGreaterThan(
+      0,
+    );
   });
 
   it('renders list day headings at the configured headingLevel (default 3)', async () => {
@@ -133,9 +133,9 @@ describe('Schedule', () => {
     await waitFor(() => {
       expect(screen.getByText('Visible sync')).toBeInTheDocument();
     });
-    expect(
-      screen.getAllByRole('heading', {level: 3}).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByRole('heading', {level: 3}).length).toBeGreaterThan(
+      0,
+    );
   });
 
   it('loads async events with Instant range boundaries', async () => {
@@ -247,6 +247,27 @@ describe('Schedule', () => {
     expect(
       screen.getByText('Design review, Design, all day'),
     ).toBeInTheDocument();
+  });
+
+  it('makes the scrollable monthly grid keyboard-focusable', () => {
+    // The month grid is a horizontal scroll container with no focusable
+    // descendants, so it needs tabindex="0" itself for
+    // scrollable-region-focusable to pass and for keyboard scrolling.
+    render(
+      <Schedule
+        view={createScheduleMonthlyView()}
+        events={events}
+        categories={categories}
+        date={Date.UTC(2026, 4, 13)}
+        focusDate={Date.UTC(2026, 4, 13)}
+        timezoneID="UTC"
+      />,
+    );
+
+    expect(screen.getByRole('grid', {name: 'May 2026'})).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
   });
 
   it('exposes time grid views as ARIA grids', () => {

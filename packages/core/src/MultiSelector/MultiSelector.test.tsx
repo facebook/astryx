@@ -128,6 +128,90 @@ describe('MultiSelector', () => {
     expect(screen.getByText('2 selected')).toBeInTheDocument();
   });
 
+  it('formats the count display with formatValue', () => {
+    render(
+      <MultiSelector
+        label="Spaces"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        formatValue={items => `${items.length} spaces selected`}
+      />,
+    );
+    expect(screen.getByText('2 spaces selected')).toBeInTheDocument();
+  });
+
+  it('passes selected values and resolved labels to formatValue', () => {
+    const formatValue = vi.fn(
+      (items: {value: string; label: string}[]) =>
+        `${items[0].label} and ${items.length - 1} more`,
+    );
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[
+          {value: 'a', label: 'Apple'},
+          {value: 'b', label: 'Banana'},
+        ]}
+        value={['a', 'b']}
+        onChange={() => {}}
+        formatValue={formatValue}
+      />,
+    );
+    expect(formatValue).toHaveBeenCalledWith([
+      {value: 'a', label: 'Apple'},
+      {value: 'b', label: 'Banana'},
+    ]);
+    expect(screen.getByText('Apple and 1 more')).toBeInTheDocument();
+  });
+
+  it('formats the labels display with formatValue', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana', 'Orange']}
+        onChange={() => {}}
+        triggerDisplay="labels"
+        formatValue={items => items.map(item => item.label).join(' & ')}
+      />,
+    );
+    expect(screen.getByText('Apple & Banana & Orange')).toBeInTheDocument();
+  });
+
+  it('ignores formatValue in badges display', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        triggerDisplay="badges"
+        formatValue={() => 'formatted'}
+      />,
+    );
+    expect(screen.queryByText('formatted')).not.toBeInTheDocument();
+    const trigger = within(screen.getByRole('combobox'));
+    expect(trigger.getByText('Apple')).toBeInTheDocument();
+    expect(trigger.getByText('Banana')).toBeInTheDocument();
+  });
+
+  it('shows the placeholder rather than calling formatValue when empty', () => {
+    const formatValue = vi.fn(() => 'formatted');
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        placeholder="Pick fruits..."
+        formatValue={formatValue}
+      />,
+    );
+    expect(screen.getByText('Pick fruits...')).toBeInTheDocument();
+    expect(formatValue).not.toHaveBeenCalled();
+  });
+
   it('shows labels display', () => {
     render(
       <MultiSelector
@@ -1980,6 +2064,27 @@ describe('MultiSelector list structure', () => {
       heading!.compareDocumentPosition(firstOption) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it('hides a standalone divider from the accessibility tree (#4994)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', {type: 'divider'}, 'Banana']}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // role="listbox" only permits option/group children. The divider still
+    // renders role="separator" (unchanged visual/DOM), but must be excluded
+    // from the accessibility tree so it never reaches the listbox's exposed
+    // children (axe aria-required-children).
+    const divider = document.querySelector('[role="separator"]');
+    expect(divider).toBeTruthy();
+    expect(divider).toHaveAttribute('aria-hidden', 'true');
   });
 });
 

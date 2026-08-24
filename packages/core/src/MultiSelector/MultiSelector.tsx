@@ -424,6 +424,11 @@ export type MultiSelectorStatusType = 'warning' | 'error' | 'success';
 
 export type {MultiSelectorStatus};
 
+export interface MultiSelectorSelectedItem {
+  value: string;
+  label: string;
+}
+
 export interface MultiSelectorProps<
   T extends MultiSelectorOptionType = MultiSelectorOptionType,
 > extends Omit<BaseProps, 'onChange' | 'defaultValue'> {
@@ -609,6 +614,17 @@ export interface MultiSelectorProps<
   triggerDisplay?: 'count' | 'labels' | 'badges';
 
   /**
+   * Formats the trigger text when triggerDisplay is 'count' or 'labels'.
+   * Receives the selected items (value plus resolved label, in selection
+   * order) and returns the full trigger text; the count is `items.length`.
+   * Not called when nothing is selected — the placeholder shows instead — and
+   * not called for triggerDisplay 'badges', which renders Badge elements
+   * rather than text.
+   * @default items => `${items.length} selected` for 'count', "A, B, C, +N" for 'labels'
+   */
+  formatValue?: (items: MultiSelectorSelectedItem[]) => string;
+
+  /**
    * Maximum number of badges to show before showing "+N".
    * Only used when triggerDisplay is 'badges'.
    * @default 3
@@ -711,6 +727,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   hasSearch = false,
   searchPlaceholder: searchPlaceholderFromProps,
   triggerDisplay = 'count',
+  formatValue,
   maxBadges = 3,
   renderOption,
   indicatorPosition = 'start',
@@ -1107,12 +1124,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }, [popover.isOpen, highlightedIndex, getItemId]);
 
   // Build trigger display content
-  const selectedLabels = useMemo(() => {
+  const selectedItems = useMemo(() => {
     return optimisticValue.map(v => {
       const item = selectableItems.find(i => i.value === v);
-      return item?.label ?? v;
+      return {value: v, label: item?.label ?? v};
     });
   }, [optimisticValue, selectableItems]);
+
+  const selectedLabels = useMemo(
+    () => selectedItems.map(item => item.label),
+    [selectedItems],
+  );
 
   const renderTriggerContent = useCallback(() => {
     if (optimisticValue.length === 0) {
@@ -1123,7 +1145,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       case 'count':
         return (
           <span {...stylex.props(styles.triggerText)}>
-            {optimisticValue.length} selected
+            {formatValue?.(selectedItems) ??
+              `${optimisticValue.length} selected`}
           </span>
         );
 
@@ -1134,7 +1157,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           remaining > 0
             ? `${displayed.join(', ')}, +${remaining}`
             : displayed.join(', ');
-        return <span {...stylex.props(styles.triggerText)}>{text}</span>;
+        return (
+          <span {...stylex.props(styles.triggerText)}>
+            {formatValue?.(selectedItems) ?? text}
+          </span>
+        );
       }
 
       case 'badges': {
@@ -1154,7 +1181,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         );
       }
     }
-  }, [optimisticValue, triggerDisplay, selectedLabels, placeholder, maxBadges]);
+  }, [
+    optimisticValue,
+    triggerDisplay,
+    selectedItems,
+    selectedLabels,
+    placeholder,
+    formatValue,
+    maxBadges,
+  ]);
 
   // Render search input
   const renderSearch = useCallback(() => {
@@ -1420,8 +1455,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         // A standalone divider between groups would orphan itself once its
         // neighbors are filtered out, so skip it while searching.
         if (!isSearching) {
+          // role="listbox" only permits option/group children; the divider
+          // carries no information the options don't, so it's hidden from
+          // the accessibility tree entirely rather than exposing
+          // role="separator" as a disallowed listbox child (axe
+          // aria-required-children).
           elements.push(
-            <Divider key={`divider-${i}`} xstyle={styles.divider} />,
+            <Divider
+              key={`divider-${i}`}
+              aria-hidden="true"
+              xstyle={styles.divider}
+            />,
           );
         }
       } else if (isSection(option)) {

@@ -419,6 +419,42 @@ describe('DateInput — field parity', () => {
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
+  it('returns focus to the field without letting the page scroll', async () => {
+    // Clearing unmounts the clear button, and focusing another element in the
+    // same task as that unmount makes iOS Safari scroll the document to the
+    // top. Measured on the iOS 26 simulator against the live docsite, field at
+    // scrollY 2055: synchronous focus lands at 0, deferred focus stays at
+    // 2055. `preventScroll` alone does not fix it, so both halves are
+    // asserted: the focus is deferred past the unmount, and it is passed
+    // preventScroll. jsdom implements no scrolling, so the guard is asserted
+    // at the call.
+    vi.useFakeTimers();
+    try {
+      render(
+        <DateInput
+          label="Ship date"
+          value="2026-03-21"
+          hasClear
+          onChange={() => {}}
+        />,
+      );
+      const input = field();
+      const focus = vi.spyOn(input, 'focus');
+
+      fireEvent.click(screen.getByRole('button', {name: /Clear Ship date/}));
+
+      // Not synchronous — that is the whole point.
+      expect(focus).not.toHaveBeenCalled();
+
+      vi.runAllTimers();
+
+      expect(focus).toHaveBeenCalledWith({preventScroll: true});
+      focus.mockRestore();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('does not open the picker until the field is tapped', () => {
     withLayout(() => {
       render(<DateInput label="Ship date" onChange={() => {}} />);

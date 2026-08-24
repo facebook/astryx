@@ -602,6 +602,41 @@ describe('BaseTable', () => {
       expect(calls[0]).toEqual({col: 'name', name: 'Alice'});
     });
 
+    it('isContentSuppressed renders an empty cell and never calls the column renderer', () => {
+      const rendered: string[] = [];
+      const withRenderer: TableColumn<User>[] = [
+        {
+          key: 'name',
+          header: 'Name',
+          renderCell: item => {
+            rendered.push(item.name);
+            return <b>{item.name}</b>;
+          },
+        },
+      ];
+      const plugin: TablePlugin<User> = {
+        transformBodyCell: (props, _column, item) =>
+          item.name === 'Bob' ? {...props, isContentSuppressed: true} : props,
+      };
+      render(
+        <BaseTable data={users} columns={withRenderer} plugins={[plugin]} />,
+      );
+      expect(rendered).toEqual(['Alice', 'Charlie']);
+      const cells = screen.getAllByRole('cell');
+      expect(cells[1]).toBeEmptyDOMElement();
+      expect(cells[0]).toHaveTextContent('Alice');
+    });
+
+    it('isContentSuppressed also suppresses the default renderer', () => {
+      const plugin: TablePlugin<User> = {
+        transformBodyCell: props => ({...props, isContentSuppressed: true}),
+      };
+      render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
+      for (const cell of screen.getAllByRole('cell')) {
+        expect(cell).toBeEmptyDOMElement();
+      }
+    });
+
     it('composes multiple plugins sequentially', () => {
       const plugin1: TablePlugin<User> = {
         transformTable: props => ({

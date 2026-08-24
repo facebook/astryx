@@ -43,6 +43,25 @@ export interface AspectRatioProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
    * The aspect ratio as width/height (e.g., 16/9 = 1.777..., 4/3 = 1.333..., 1 for square).
+   *
+   * The ratio is emitted as a class-level declaration — never an inline
+   * style — so it can be made responsive:
+   * - StyleX consumers pass an `aspect-ratio` rule via `xstyle`, including
+   *   under `@media`/`@container` conditions.
+   * - Plain-CSS/Tailwind consumers override `aspect-ratio` from their own
+   *   (unlayered) rules: the compiled component styles live in the
+   *   `astryx-base` cascade layer, and unlayered CSS wins over layered
+   *   rules regardless of specificity.
+   *
+   * @example
+   * ```
+   * // 3:1 hero that becomes 3:2 when its container stacks
+   * <AspectRatio ratio={3 / 1} className="gallery-hero">…</AspectRatio>
+   *
+   * // CSS: @container gallery (max-width: 720px) {
+   * //   .gallery-hero { aspect-ratio: 3 / 2; }
+   * // }
+   * ```
    */
   ratio: number;
 
@@ -132,6 +151,20 @@ const styles = stylex.create({
   },
 });
 
+// The ratio compiles to a CSS variable + a class-level declaration
+// (aspect-ratio: var(--x)) instead of a raw inline style, so consumer
+// overrides — `xstyle` rules, including ones inside @media/@container
+// queries — can still win. A raw inline `aspect-ratio` would beat any class
+// (same rationale as Grid's dynamic track values). Non-StyleX consumers
+// don't need a dedicated hook: the compiled declaration sits in the
+// `astryx-base` cascade layer, so any unlayered consumer rule wins
+// regardless of specificity.
+const dynamicStyles = stylex.create({
+  ratio: (ratio: number) => ({
+    aspectRatio: ratio,
+  }),
+});
+
 /**
  * AspectRatio component for maintaining a specific aspect ratio for its children.
  *
@@ -146,6 +179,11 @@ const styles = stylex.create({
  * Use `shape="ellipse"` to clip the container into an ellipse — a circle at
  * `ratio={1}` or an oval at other ratios. Both shapes respect the provided
  * `ratio`.
+ *
+ * The ratio is a class-level declaration (not an inline style), so it can be
+ * overridden responsively — via `xstyle` for StyleX consumers, or with a
+ * plain unlayered `aspect-ratio` rule for plain-CSS consumers (component
+ * styles live in the `astryx-base` cascade layer, which unlayered CSS beats).
  *
  * Sizing: the box takes its width from its container and derives its height
  * from the ratio, so it needs an ancestor with a definite width. Two
@@ -188,11 +226,12 @@ export function AspectRatio({
         themeProps('aspect-ratio', {shape}),
         stylex.props(
           styles.container,
+          dynamicStyles.ratio(ratio),
           shape === 'ellipse' && styles.ellipse,
           xstyle,
         ),
         className,
-        {...style, aspectRatio: ratio},
+        style,
       )}
       {...props}>
       {/* The marker attribute carries the fit value so the reset.css child

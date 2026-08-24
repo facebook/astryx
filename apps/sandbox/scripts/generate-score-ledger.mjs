@@ -102,9 +102,46 @@ const ENTRY_KEY_SHAPES = {
   },
 };
 
+/**
+ * The fields `LedgerSection` declares. `pruneEntry` guards the TOP level of an
+ * entry, but a section object is inlined whole, so an undeclared key one level
+ * down reds every build exactly as `regression` did at the top level — a
+ * `changedFrom` note recorded on 2026-08-23 did precisely that. Prune here too.
+ */
+const KNOWN_SECTION_KEYS = new Set([
+  'score',
+  'weight',
+  'state',
+  'note',
+  'blocks',
+  'changedFrom',
+]);
+
 /** Drop keys `LedgerEntry` doesn't declare, or whose shape it rejects. */
 const droppedKeys = new Set();
 const malformedKeys = new Set();
+
+/** Prune each section object to the keys `LedgerSection` declares. */
+function pruneSections(sections) {
+  if (sections == null || typeof sections !== 'object' || Array.isArray(sections)) {
+    return sections;
+  }
+  const kept = {};
+  for (const [id, section] of Object.entries(sections)) {
+    if (section == null || typeof section !== 'object' || Array.isArray(section)) {
+      kept[id] = section;
+      continue;
+    }
+    const kept_section = {};
+    for (const [k, v] of Object.entries(section)) {
+      if (KNOWN_SECTION_KEYS.has(k)) kept_section[k] = v;
+      else droppedKeys.add(`sections.*.${k}`);
+    }
+    kept[id] = kept_section;
+  }
+  return kept;
+}
+
 function pruneEntry(entry) {
   const kept = {};
   for (const [k, v] of Object.entries(entry)) {
@@ -118,7 +155,7 @@ function pruneEntry(entry) {
       if (shape.repair) kept[k] = shape.repair(v);
       continue;
     }
-    kept[k] = v;
+    kept[k] = k === 'sections' ? pruneSections(v) : v;
   }
   return kept;
 }
@@ -157,7 +194,7 @@ if (droppedKeys.size > 0) {
   console.warn(
     `componentScores: the wiki ledger carries ${droppedKeys.size} field(s) LedgerEntry does not declare ` +
       `(${[...droppedKeys].sort().join(', ')}) — dropped from the snapshot. ` +
-      `Add them to LedgerEntry and KNOWN_ENTRY_KEYS to surface them.`,
+      `Add them to LedgerEntry/LedgerSection and the matching KNOWN_*_KEYS set to surface them.`,
   );
 }
 
@@ -197,6 +234,8 @@ export interface LedgerSection {
   weight: number;
   state: 'scored' | 'limited' | 'not_measured' | 'na' | 'unpublished';
   note?: string | null;
+  /** Why this section's score changed from an earlier draft of the same audit. */
+  changedFrom?: string | null;
   blocks?: LedgerBlock[];
 }
 

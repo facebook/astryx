@@ -187,6 +187,17 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
+      name: 'startIcon',
+      type: 'IconType | ReactNode',
+      description: 'Icon displayed at the start of the selector trigger.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: 'Shows a loading spinner in the trigger.',
+      default: 'false',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:

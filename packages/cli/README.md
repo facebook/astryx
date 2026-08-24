@@ -419,6 +419,7 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `theme.list`                | Every bundled theme as a ThemeListEntry[]: each with slug, displayName, description, and a maintained flag.                                                                                                                                        |
 | `theme.add`                 | A scaffold receipt: resolved slug, displayName, maintained flag, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.                                                                                         |
 | `theme.template`            | A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.                                                       |
+| `theme.targets`             | The whole themeable surface: the echoed filter, the component count, and one entry per theming target — {key, className, component, props, states}, where props and states are its legal override keys.                                            |
 | `upgrade.list`              | Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.                                                                                                                         |
 | `upgrade.status`            | A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.                                                                                                                   |
 | `upgrade.run`               | The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.                                                                        |
@@ -580,12 +581,13 @@ export default {
 };
 ```
 
-| Field        | Type     | Purpose                                                               |
-| ------------ | -------- | --------------------------------------------------------------------- |
-| `components` | `string` | Directory holding the package's components and their `.doc.*` files.  |
-| `templates`  | `string` | Directory holding the package's page/block templates.                 |
-| `codemods`   | `string` | Directory holding upgrade codemods run by `astryx upgrade`.           |
-| `issuesUrl`  | `string` | Where "report an issue" links for this package's contributions point. |
+| Field        | Type     | Purpose                                                                           |
+| ------------ | -------- | --------------------------------------------------------------------------------- |
+| `components` | `string` | Directory holding the package's components and their `.doc.*` files.              |
+| `templates`  | `string` | Directory holding the package's page/block templates.                             |
+| `codemods`   | `string` | Directory holding upgrade codemods run by `astryx upgrade`.                       |
+| `docs`       | `string` | Directory of reference docs; each `{topic}.doc.*` becomes a topic the CLI serves. |
+| `issuesUrl`  | `string` | Where "report an issue" links for this package's contributions point.             |
 
 Every field is optional; declare only the roots the package ships. There is no
 factory: write a plain object, and annotate it with the `AstryxIntegration` type

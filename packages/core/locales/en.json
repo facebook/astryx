@@ -563,6 +563,10 @@
     "defaultMessage": "Apply",
     "description": "Primary button label inside a table's filter panel/popover; commits pending filter values. Imperative verb; pairs with `Reset`."
   },
+  "@astryx.table.rowStatus.columnHeader": {
+    "defaultMessage": "Row status",
+    "description": "Screen-reader-only column header for the narrow status-indicator gutter a Table gains from useTableRowStatus. Sighted users see a blank gutter; assistive tech announces this as the column name."
+  },
   "@astryx.table.selection.selectAllRows": {
     "defaultMessage": "Select all rows",
     "description": "Aria label for the \"select all rows\" checkbox in a Table header."
@@ -809,7 +813,15 @@
   },
   "@astryx.table.pagination.label": {
     "defaultMessage": "Table pagination",
-    "description": "Screen-reader-only accessible name for the pagination `<nav>` appended below a data table. Kept separate from `@astryx.pagination.label` so translations may diverge."
+    "description": "Screen-reader-only accessible name for a table's pagination `<nav>` (rendered below and/or above the table per the plugin's position config). Kept separate from `@astryx.pagination.label` so translations may diverge. When position='both', this string is interpolated as the {label} value into `@astryx.table.pagination.labelAbove`/`labelBelow` — keep it compatible with those suffix templates."
+  },
+  "@astryx.table.pagination.labelAbove": {
+    "defaultMessage": "{label} (top)",
+    "description": "Accessible name for the pagination `<nav>` rendered above the table when position='both' renders two navs. `label` is the resolved base label (default \"Table pagination\" or consumer-supplied); the suffix keeps the two same-type landmarks distinguishable."
+  },
+  "@astryx.table.pagination.labelBelow": {
+    "defaultMessage": "{label} (bottom)",
+    "description": "Accessible name for the pagination `<nav>` rendered below the table when position='both' renders two navs. `label` is the resolved base label (default \"Table pagination\" or consumer-supplied); the suffix keeps the two same-type landmarks distinguishable."
   },
   "@astryx.timeInput.placeholder": {
     "defaultMessage": "Select a time",
@@ -1059,6 +1071,10 @@
     "defaultMessage": "Expand row",
     "description": "Screen-reader-only label on the row-expand chevron when the row is currently collapsed. Part of a four-way set with `collapseRow`, `expandAllRows`, `collapseAllRows`."
   },
+  "@astryx.tableRowExpansion.columnHeader": {
+    "defaultMessage": "Row expansion",
+    "description": "Screen-reader-only header for the leading column that holds the per-row expand/collapse chevrons. The column shows no visible label."
+  },
   "@astryx.tableRowExpansion.collapseAllRows": {
     "defaultMessage": "Collapse all rows",
     "description": "Screen-reader-only label on the same header button when every row is expanded. Part of the four-way set."
@@ -1067,29 +1083,33 @@
     "defaultMessage": "Expand all rows",
     "description": "Screen-reader-only label on the header expand-all/collapse-all button when at least one row is collapsed (clicking expands every expandable row). Part of the four-way set."
   },
+  "@astryx.stepper.label": {
+    "defaultMessage": "Progress",
+    "description": "Screen-reader-only fallback name for the Stepper's ordered list of steps, describing the sequence as a whole (e.g. `Progress`). Used as the aria-label when the consumer does not pass a `label`. Singular per ARIA convention."
+  },
   "@astryx.step.goToStep": {
     "defaultMessage": "Go to step {stepNumber, number}: {label}",
-    "description": "Accessible name for a clickable step in the lab Stepper. {stepNumber} is the 1-based position, {label} is the step's visible label."
+    "description": "Accessible name for a clickable step in the Stepper. {stepNumber} is the 1-based position, {label} is the step's visible label."
   },
   "@astryx.step.goToStepWithStatus": {
     "defaultMessage": "Go to step {stepNumber, number}: {label}, {status}",
-    "description": "Accessible name for a clickable lab Stepper step that also carries a status. {status} is one of the translated `step.status.*` words (completed/warning/error). Keep the pattern parallel to `step.goToStep`."
+    "description": "Accessible name for a clickable Stepper step that also carries a status. {status} is one of the translated `step.status.*` words (completed/warning/error). Keep the pattern parallel to `step.goToStep`."
   },
   "@astryx.step.optional": {
     "defaultMessage": "Optional",
-    "description": "Visible indicator appended after a lab Stepper step's label when the step is optional (isOptional). Very short; appears inline after the label text."
+    "description": "Visible indicator appended after a Stepper step's label when the step is optional (isOptional). Very short; appears inline after the label text."
   },
   "@astryx.step.status.completed": {
     "defaultMessage": "completed",
-    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when the step is done (either progress-completed or status=success). Lowercase adjective; it is read mid-sentence after the step label."
+    "description": "Screen-reader-only status word rendered next to a Stepper step label when the step is done (either progress-completed or status=success). Lowercase adjective; it is read mid-sentence after the step label."
   },
   "@astryx.step.status.warning": {
     "defaultMessage": "warning",
-    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=warning. Lowercase noun/adjective; read mid-sentence after the step label."
+    "description": "Screen-reader-only status word rendered next to a Stepper step label when status=warning. Lowercase noun/adjective; read mid-sentence after the step label."
   },
   "@astryx.step.status.error": {
     "defaultMessage": "error",
-    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
+    "description": "Screen-reader-only status word rendered next to a Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
   },
   "@astryx.tableTree.collapseRow": {
     "defaultMessage": "Collapse row",

@@ -16,6 +16,7 @@ export const docs = {
       {guidance: true, description: 'Use `fit="cover"` for images and video so the component sizes the child; the child should not repeat `width`/`height`/`objectFit` styles.'},
       {guidance: true, description: 'Pass one child. With `fit` set, every direct child is stretched to fill the box, so put an overlay or caption inside a single wrapper child rather than passing it as a second child.'},
       {guidance: true, description: 'Describe media children with `alt`, or `alt=""` when the image is decorative. AspectRatio adds no role and no accessible name of its own, so the child carries the whole accessible description.'},
+      {guidance: true, description: 'For a breakpoint-dependent ratio, override the ratio responsively: pass an `aspectRatio` rule via `xstyle` (StyleX), or override `aspect-ratio` from your own unlayered CSS under a `@media`/`@container` rule — component styles live in the `astryx-base` cascade layer, so unlayered consumer CSS wins. Give an `xstyle` rule a `default` branch alongside the conditional one (`{default: 3, \'@container ...\': \'3 / 2\'}`) — with only the conditional branch the ratio is unset outside the query and the box collapses.'},
       {guidance: false, description: 'Use for general layout containers; use standard layout components instead.'},
       {guidance: false, description: 'Nest AspectRatio containers; one level is sufficient.'},
       {guidance: false, description: 'Constrain the height on its own. The width comes from the container, so a `height` or `maxHeight` by itself clamps the box off ratio; pair it with `width: "auto"` to size from the height instead.'},
@@ -30,7 +31,7 @@ export const docs = {
     {
       name: 'ratio',
       type: 'number',
-      description: 'Aspect ratio as width/height (e.g. 16/9, 1).',
+      description: 'Aspect ratio as width/height (e.g. 16/9, 1). Emitted as a class-level declaration (never inline), so `xstyle` rules or unlayered consumer CSS can override it responsively.',
       required: true,
     },
     {
@@ -83,6 +84,7 @@ export const docsZh = {
       {guidance: true, description: 'Use `fit="cover"` for images and video so the component sizes the child; the child should not repeat `width`/`height`/`objectFit` styles.'},
       {guidance: true, description: 'Pass one child. With `fit` set, every direct child is stretched to fill the box, so put an overlay or caption inside a single wrapper child rather than passing it as a second child.'},
       {guidance: true, description: 'Describe media children with `alt`, or `alt=""` when the image is decorative. AspectRatio adds no role and no accessible name of its own, so the child carries the whole accessible description.'},
+      {guidance: true, description: 'For a breakpoint-dependent ratio, override the ratio responsively: pass an `aspectRatio` rule via `xstyle` (StyleX), or override `aspect-ratio` from your own unlayered CSS under a `@media`/`@container` rule — component styles live in the `astryx-base` cascade layer, so unlayered consumer CSS wins. Give an `xstyle` rule a `default` branch alongside the conditional one (`{default: 3, \'@container ...\': \'3 / 2\'}`) — with only the conditional branch the ratio is unset outside the query and the box collapses.'},
       {guidance: false, description: 'Use for general layout containers; use standard layout components instead.'},
       {guidance: false, description: 'Nest AspectRatio containers; one level is sufficient.'},
       {guidance: false, description: 'Constrain the height on its own. The width comes from the container, so a `height` or `maxHeight` by itself clamps the box off ratio; pair it with `width: "auto"` to size from the height instead.'},
@@ -94,7 +96,7 @@ export const docsZh = {
     ],
   },
   props: [
-    {name: 'ratio', type: 'number', description: '宽高比，以宽/高表示（例如 16/9、1）。', required: true},
+    {name: 'ratio', type: 'number', description: '宽高比，以宽/高表示（例如 16/9、1）。以类级声明输出（非内联样式），可通过 `xstyle` 规则或未分层的（unlayered）消费者 CSS 做响应式覆盖。', required: true},
     {
       name: 'shape',
       type: "'rectangle' | 'ellipse'",
@@ -133,6 +135,7 @@ export const docsDense = {
       {guidance: true, description: 'Use `fit="cover"` for images and video so the component sizes the child; the child should not repeat `width`/`height`/`objectFit` styles.'},
       {guidance: true, description: 'Pass one child. With `fit` set, every direct child is stretched to fill the box, so put an overlay or caption inside a single wrapper child rather than passing it as a second child.'},
       {guidance: true, description: 'Describe media children with `alt`, or `alt=""` when the image is decorative. AspectRatio adds no role and no accessible name of its own, so the child carries the whole accessible description.'},
+      {guidance: true, description: 'For a breakpoint-dependent ratio, override the ratio responsively: pass an `aspectRatio` rule via `xstyle` (StyleX), or override `aspect-ratio` from your own unlayered CSS under a `@media`/`@container` rule — component styles live in the `astryx-base` cascade layer, so unlayered consumer CSS wins. Give an `xstyle` rule a `default` branch alongside the conditional one (`{default: 3, \'@container ...\': \'3 / 2\'}`) — with only the conditional branch the ratio is unset outside the query and the box collapses.'},
       {guidance: false, description: 'Use for general layout containers; use standard layout components instead.'},
       {guidance: false, description: 'Nest AspectRatio containers; one level is sufficient.'},
       {guidance: false, description: 'Constrain the height on its own. The width comes from the container, so a `height` or `maxHeight` by itself clamps the box off ratio; pair it with `width: "auto"` to size from the height instead.'},
@@ -144,7 +147,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    ratio: 'width/height ratio (e.g. 16/9, 1)',
+    ratio: 'width/height ratio (e.g. 16/9, 1); class-level declaration (never inline) so xstyle/unlayered-CSS @container overrides win',
     shape: "container shape: 'rectangle' (default) | 'ellipse' (circle at ratio 1)",
     fit: "child layout: 'cover' fill+crop | 'contain' fill+letterbox | 'center' natural size; omitted = child styles itself",
     children: 'content positioned absolutely to fill container',

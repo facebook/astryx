@@ -61,6 +61,17 @@ export const docs = {
       required: true,
     },
     {
+      name: 'labelID',
+      type: 'string',
+      description: 'ID applied to the label element itself for group accessibility.',
+    },
+    {
+      name: 'isGroupLabel',
+      type: 'boolean',
+      description: 'Renders the label as a span for control groups (radiogroup, checkbox list).',
+      default: 'false',
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: 'The input or control to render.',

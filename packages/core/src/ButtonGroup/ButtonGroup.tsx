@@ -172,6 +172,13 @@ export function ButtonGroup({
 
   const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, [tabindex="0"]',
+    // A member's layer renders inline inside the group (useLayer does not
+    // portal it), so a key pressed in an open DropdownMenu bubbles here. The
+    // boundary is the group's own root or any layer, whichever is nearer to
+    // the target. Naming the group's own root is what keeps a group rendered
+    // inside a Popover or Toast working: bailing on any [popover] ancestor
+    // instead would swallow every arrow key it owns.
+    boundarySelector: '[role="group"], [popover]',
     orientation,
   });
 
@@ -187,7 +194,7 @@ export function ButtonGroup({
           ref={mergeRefs(ref, listRef)}
           {...props}
           {...mergeProps(
-            themeProps('button-group', {size, orientation}),
+            themeProps('button-group', {size, orientation, elevation}),
             stylex.props(
               styles.group,
               orientation === 'vertical' && styles.vertical,

@@ -599,6 +599,16 @@ export function TouchDateField({
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isWheelOpen, setIsWheelOpen] = useState(false);
   const scrollerHandleRef = useRef<MonthScrollerHandle | null>(null);
+  // Pending focus handoff from the clear button; see handleClear.
+  const clearFocusTimerRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (clearFocusTimerRef.current != null) {
+        clearTimeout(clearFocusTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const today = useMemo(() => plainDateToday(), []);
   const selectedDate = useMemo(
@@ -708,7 +718,31 @@ export function TouchDateField({
 
   const handleClear = useCallback(() => {
     fireChange(undefined);
-    inputRef.current?.focus();
+    // Focus goes back to the field on the NEXT task, not synchronously.
+    //
+    // Clearing unmounts this button (it only renders while there is a value),
+    // and focusing another element in the same task as that unmount makes iOS
+    // Safari scroll the whole document to the top — the user is thrown from
+    // wherever the field sat to the start of the page. Measured on the iOS 26
+    // simulator against the live docsite, field at scrollY 2055: synchronous
+    // focus lands at 0, deferred focus stays at 2055.
+    //
+    // `preventScroll` alone does NOT fix it (verified: still 0) — this is not
+    // the browser's ordinary scroll-the-focused-element-into-view step, so the
+    // deferral is the load-bearing half. It is kept because the reveal scroll
+    // is real too, and unwanted for the same reason: the field the user just
+    // tapped is already on screen (+12px on a plain page without it).
+    //
+    // Skipping the focus entirely would also stop the scroll, but then focus
+    // dies with the unmounting button and lands on <body>.
+    const field = inputRef.current;
+    if (field == null) {
+      return;
+    }
+    clearFocusTimerRef.current = window.setTimeout(() => {
+      clearFocusTimerRef.current = null;
+      field.focus({preventScroll: true});
+    }, 0);
   }, [fireChange]);
 
   /**
