@@ -114,9 +114,17 @@ tells you to refresh rather than reporting hundreds of regressions.
 ## Determinism
 
 Every shot is taken with animations and transitions forced to their end state,
-carets hidden, a fixed viewport at device scale 1, fonts awaited, and **all
-off-origin requests blocked** — nothing that renders may depend on a CDN being
-up. Theme and colour mode are switched over Storybook's own channel rather than
+carets hidden, a fixed viewport at device scale 1, fonts awaited, **the clock
+frozen at a fixed instant in a fixed timezone**, and **all off-origin requests
+blocked** — nothing that renders may depend on a CDN being up.
+
+The frozen clock is why a story built from `new Date()` — Schedule, Calendar,
+DateRangeInput — does not report `changed` every day. Shots of those stories
+show 13 May 2026, not today; that is the capture's clock, not stale data. The
+instant lives in `lib/capture.mjs` and is recorded in every manifest. Changing
+it changes those shots, so it is a deliberate rebaseline, not a tweak.
+
+Theme and colour mode are switched over Storybook's own channel rather than
 by reloading, which is what keeps 514 shots inside a few minutes;
 `--no-fast-globals` forces a reload per shot if a story's state ever turns out
 to survive the re-render.
