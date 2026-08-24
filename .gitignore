@@ -74,3 +74,11 @@ mise.toml
 
 # Generated i18n artifacts (rebuilt from en.json)
 packages/core/locales/pseudo.json
+
+# Generated lab readiness report (rebuild with `pnpm lab:readiness`).
+# Deliberately not committed: a checked-in snapshot goes stale the moment the
+# source tree moves, and a stale score read as current is what this tooling
+# exists to prevent. CI runs `pnpm lab:readiness:check` instead, which fails
+# when the manifest's claims no longer match the repo.
+apps/storybook/.lab-readiness/
+apps/storybook/.storybook/lab-readiness/

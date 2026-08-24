@@ -8,6 +8,7 @@
   },
   "include": [
     "assets/templates/**/template.doc.mjs",
-    "assets/templates/**/*.doc.mjs"
+    "assets/templates/**/*.doc.mjs",
+    "assets/theme.template.ts"
   ]
 }

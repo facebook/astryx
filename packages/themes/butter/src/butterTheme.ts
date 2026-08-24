@@ -202,8 +202,11 @@ export const butterTheme = defineTheme({
     // Radius
     //   --radius-element drives buttons, badges, inputs — 8px per design
     //   --radius-container drives cards, banners, popovers — 12px per design
+    //   --radius-none and --radius-full are always fixed and must never be
+    //   scaled by a theme (see defineTheme's radius config docs) — 0 and
+    //   9999px respectively, matching @astryxdesign/core's own defaults.
     // =========================================================================
-    '--radius-none': '0.125rem',
+    '--radius-none': '0px',
     '--radius-inner': '0.375rem',
     '--radius-element': '0.5rem', // 8px
     '--radius-container': '0.75rem', // 12px

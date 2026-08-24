@@ -260,6 +260,11 @@ function Detail({prototype}: {prototype: Prototype}) {
   const showTablet = prototype.showTablet ?? false;
   const TabletDemo = prototype.TabletDemo ?? Demo;
   const tabletCaption = prototype.tabletCaption ?? 'Tablet';
+  const tabletTall = prototype.tabletTall ?? false;
+  const AltDemo = prototype.AltDemo;
+  const AltTabletDemo = prototype.AltTabletDemo ?? AltDemo;
+  const altCaption = prototype.altCaption ?? 'Phone · 390px';
+  const altTabletCaption = prototype.altTabletCaption ?? 'Tablet';
   return (
     <div style={{flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex'}}>
       {/* Info panel */}
@@ -373,12 +378,72 @@ function Detail({prototype}: {prototype: Prototype}) {
                   maxWidth: 900,
                 }}>
                 <Text type="supporting">{tabletCaption}</Text>
-                <TabletFrame key={`${prototype.id}-tablet`}>
+                <TabletFrame key={`${prototype.id}-tablet`} tall={tabletTall}>
                   <TabletDemo />
                 </TabletFrame>
               </div>
             )}
           </div>
+          {AltDemo && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 16,
+                width: '100%',
+                paddingTop: 8,
+                marginTop: 8,
+                borderTop: '1px solid var(--color-border-emphasized)',
+              }}>
+              {prototype.altLabel && (
+                <div style={{alignSelf: 'flex-start', maxWidth: 820}}>
+                  <Text type="large" weight="semibold">
+                    {prototype.altLabel}
+                  </Text>
+                </div>
+              )}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 40,
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
+                  width: '100%',
+                }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 10,
+                  }}>
+                  <Text type="supporting">{altCaption}</Text>
+                  <PhoneFrame key={`${prototype.id}-alt-phone`}>
+                    <AltDemo />
+                  </PhoneFrame>
+                </div>
+                {showTablet && AltTabletDemo && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 10,
+                      flex: '1 1 520px',
+                      minWidth: 0,
+                      maxWidth: 900,
+                    }}>
+                    <Text type="supporting">{altTabletCaption}</Text>
+                    <TabletFrame key={`${prototype.id}-alt-tablet`}>
+                      <AltTabletDemo />
+                    </TabletFrame>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {Analysis && (
             <div style={{width: '100%', maxWidth: 820, paddingBottom: 24}}>
               <Analysis />
@@ -420,10 +485,14 @@ export default function MobilePrototypesPage() {
 
   // Arrow keys flip through prototypes (ignored while typing in a demo input).
   useEffect(() => {
-    if (!selected) {return undefined;}
+    if (!selected) {
+      return undefined;
+    }
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') {return;}
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        return;
+      }
       if (e.key === 'ArrowRight' && index < PROTOTYPES.length - 1) {
         select(PROTOTYPES[index + 1].id);
       } else if (e.key === 'ArrowLeft' && index > 0) {

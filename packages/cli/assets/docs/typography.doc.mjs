@@ -44,6 +44,44 @@ export const docs = {
       ],
     },
 
+    // ── Loading Custom Fonts ────────────────────────────────────────────────
+    {
+      title: 'Loading Custom Fonts',
+  category: 'foundations',
+      content: [
+        {
+          type: 'prose',
+          text: 'Astryx never loads font files. defineTheme and the built CSS only set font-family: naming a webfont (Fraunces, JetBrains Mono, and so on) makes every browser look for it, and quietly fall back when the app has not loaded it. `astryx theme build` warns when a theme names families that are neither CSS generics nor common system fonts and prints the snippet to add; loading the font is always the app\'s job.',
+        },
+        {
+          type: 'code',
+          lang: 'html',
+          label: 'Google Fonts — add to your document <head>',
+          code: `<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=JetBrains+Mono&display=swap"
+/>`,
+        },
+        {
+          type: 'code',
+          lang: 'css',
+          label: 'Self-hosted — one @font-face per family and weight',
+          code: `@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces.woff2') format('woff2');
+  font-weight: 400 700; /* variable-font range, or one weight per file */
+  font-display: swap; /* fallback text stays visible while the font loads */
+}`,
+        },
+        {
+          type: 'prose',
+          text: "Always pair a webfont with a real fallback stack (metric-similar system fonts plus a generic) so text stays readable before the font loads and wherever it never does: defineTheme({typography: {heading: {family: 'Fraunces', fallbacks: 'Georgia, serif'}}}).",
+        },
+      ],
+    },
+
     // ── Font Sizes ──────────────────────────────────────────────────────────
     {
       title: 'Font Sizes',

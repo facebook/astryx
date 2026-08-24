@@ -42,7 +42,7 @@ import {
 } from '../Field';
 import {Divider} from '../Divider';
 import {Spinner} from '../Spinner';
-import {TextInput} from '../TextInput';
+import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {CheckboxInput} from '../CheckboxInput';
 import type {IndicatorPosition} from '../Indicator';
 import {Badge} from '../Badge';
@@ -71,8 +71,9 @@ import {
   getSelectableOptions,
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
-import {getInputARIA, mergeProps} from '../utils';
+import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
@@ -102,7 +103,10 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Trigger button — the actual combobox button, visually integrated with the container
   trigger: {
@@ -123,7 +127,10 @@ const styles = stylex.create({
     fontSize: 'inherit',
     lineHeight: 'inherit',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     // The wrapper (inputWrapperStyles.base) renders the focus ring via
     // :focus-within when this button is focused, matching
     // TextInput/NumberInput/Selector. The button must not draw its own
@@ -189,16 +196,17 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': 'none',
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
       ':focus-within': 'none',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -228,7 +236,10 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
   },
 
@@ -245,27 +256,30 @@ const styles = stylex.create({
     minWidth: 'anchor-size(width)',
   },
 
-  // Search field. The inner TextInput owns the border, focus ring, magnifier
-  // (startIcon), and clear button (hasClear); this wrapper only supplies the
-  // dropdown's inline/block padding around it.
-  searchWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-1'],
-  },
-
   // Select-all wrapper
   selectAllWrapper: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
 
-  // Section divider with label
-  sectionDivider: {
-    marginBlock: spacingVars['--spacing-1'],
+  // Section heading. Plain secondary text, no rules — the same treatment
+  // DropdownMenu and CommandPaletteGroup already use for a group heading in a
+  // panel list. A labeled Divider (line–text–line) reads as a separator, and
+  // next to the search row's own divider it stacked two rules a few pixels
+  // apart.
+  sectionHeading: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
   },
 
   // Divider
@@ -281,7 +295,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     width: '100%',
     borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     // Row typography lives here, not on the label span, so a theme override on
     // the row target reaches both the fallback label and renderOption output
     // (a declaration on the span would win over the inherited row value).
@@ -300,7 +317,7 @@ const styles = stylex.create({
   itemDisabled: {
     opacity: 0.5,
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 
   // Decorative checkbox (non-interactive, purely visual)
@@ -406,6 +423,11 @@ export type MultiSelectorVariant = 'input' | 'ghost';
 export type MultiSelectorStatusType = 'warning' | 'error' | 'success';
 
 export type {MultiSelectorStatus};
+
+export interface MultiSelectorSelectedItem {
+  value: string;
+  label: string;
+}
 
 export interface MultiSelectorProps<
   T extends MultiSelectorOptionType = MultiSelectorOptionType,
@@ -592,6 +614,17 @@ export interface MultiSelectorProps<
   triggerDisplay?: 'count' | 'labels' | 'badges';
 
   /**
+   * Formats the trigger text when triggerDisplay is 'count' or 'labels'.
+   * Receives the selected items (value plus resolved label, in selection
+   * order) and returns the full trigger text; the count is `items.length`.
+   * Not called when nothing is selected — the placeholder shows instead — and
+   * not called for triggerDisplay 'badges', which renders Badge elements
+   * rather than text.
+   * @default items => `${items.length} selected` for 'count', "A, B, C, +N" for 'labels'
+   */
+  formatValue?: (items: MultiSelectorSelectedItem[]) => string;
+
+  /**
    * Maximum number of badges to show before showing "+N".
    * Only used when triggerDisplay is 'badges'.
    * @default 3
@@ -694,6 +727,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   hasSearch = false,
   searchPlaceholder: searchPlaceholderFromProps,
   triggerDisplay = 'count',
+  formatValue,
   maxBadges = 3,
   renderOption,
   indicatorPosition = 'start',
@@ -706,6 +740,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   style,
 }: MultiSelectorProps<T>) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.multiSelector.selectPlaceholder');
   const selectAllLabel =
@@ -729,7 +764,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
-  // A typed query shows TextInput's built-in clear (✕) button, which becomes
+  // A typed query shows the search row's clear (✕) button, which becomes
   // the next tab stop after the search input.
   const hasQuery = searchQuery.length > 0;
 
@@ -792,14 +827,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const selectableSet = new Set(selectableItems.map(item => item.value));
       const selectedCount = nextValue.filter(v => selectableSet.has(v)).length;
       if (selectedCount === 0) {
-        announce('Selection cleared');
+        announce(t('@astryx.multiSelector.selectionCleared'));
       } else if (total > 0 && selectedCount === total) {
-        announce('All selected');
+        announce(t('@astryx.multiSelector.allSelected'));
       } else {
-        announce(`${selectedCount} of ${total} selected`);
+        announce(
+          t('@astryx.multiSelector.selectionCount', {
+            count: selectedCount,
+            total,
+          }),
+        );
       }
     },
-    [announce, selectableItems],
+    [announce, selectableItems, t],
   );
 
   // Filter items by search query
@@ -903,11 +943,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
-          ? 'No results found'
-          : `${count} result${count === 1 ? '' : 's'}`,
+          ? t('@astryx.multiSelector.emptySearchResults')
+          : t('@astryx.multiSelector.resultCount', {count}),
       );
     },
-    [announce, selectableItems],
+    [announce, selectableItems, t],
   );
 
   // Handle toggle
@@ -1084,12 +1124,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }, [popover.isOpen, highlightedIndex, getItemId]);
 
   // Build trigger display content
-  const selectedLabels = useMemo(() => {
+  const selectedItems = useMemo(() => {
     return optimisticValue.map(v => {
       const item = selectableItems.find(i => i.value === v);
-      return item?.label ?? v;
+      return {value: v, label: item?.label ?? v};
     });
   }, [optimisticValue, selectableItems]);
+
+  const selectedLabels = useMemo(
+    () => selectedItems.map(item => item.label),
+    [selectedItems],
+  );
 
   const renderTriggerContent = useCallback(() => {
     if (optimisticValue.length === 0) {
@@ -1100,7 +1145,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       case 'count':
         return (
           <span {...stylex.props(styles.triggerText)}>
-            {optimisticValue.length} selected
+            {formatValue?.(selectedItems) ??
+              `${optimisticValue.length} selected`}
           </span>
         );
 
@@ -1111,7 +1157,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           remaining > 0
             ? `${displayed.join(', ')}, +${remaining}`
             : displayed.join(', ');
-        return <span {...stylex.props(styles.triggerText)}>{text}</span>;
+        return (
+          <span {...stylex.props(styles.triggerText)}>
+            {formatValue?.(selectedItems) ?? text}
+          </span>
+        );
       }
 
       case 'badges': {
@@ -1131,7 +1181,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         );
       }
     }
-  }, [optimisticValue, triggerDisplay, selectedLabels, placeholder, maxBadges]);
+  }, [
+    optimisticValue,
+    triggerDisplay,
+    selectedItems,
+    selectedLabels,
+    placeholder,
+    formatValue,
+    maxBadges,
+  ]);
 
   // Render search input
   const renderSearch = useCallback(() => {
@@ -1139,11 +1197,38 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return null;
     }
     return (
-      <div
-        {...stylex.props(styles.searchWrapper)}
-        onKeyDown={e => {
-          // The clear (✕) button lives inside the TextInput, after the input in
-          // DOM order. When it is focused and the user tabs forward there is
+      <PanelSearchInput
+        ref={searchRef}
+        id={searchId}
+        // The search row is the panel's header: a magnifier, a borderless
+        // input, and the shared clear (✕) button. It deliberately does NOT
+        // render a bordered TextInput — the popup is already a bordered
+        // surface, and a field inside it drew a second box within that box.
+        label={t('@astryx.multiSelector.searchOptions')}
+        // Same accessible name the TextInput's built-in clear produced
+        // ("Clear Search options"), so the affordance keeps its name while its
+        // chrome changes.
+        clearLabel={t('@astryx.textInput.clearLabel', {
+          label: t('@astryx.multiSelector.searchOptions'),
+        })}
+        {...themeProps('multi-selector-search')}
+        // When hasSearch is set, focus moves into this input on open, so it —
+        // not the trigger — must be the combobox reporting the highlighted
+        // option via aria-activedescendant (comboboxes-4).
+        role="combobox"
+        aria-expanded={popover.isOpen}
+        aria-controls={listboxId}
+        aria-autocomplete="list"
+        aria-activedescendant={
+          popover.isOpen && highlightedIndex >= 0
+            ? getItemId(highlightedIndex)
+            : undefined
+        }
+        value={searchQuery}
+        onValueChange={handleSearchChange}
+        onContainerKeyDown={e => {
+          // The clear (✕) button lives inside the row, after the input in DOM
+          // order. When it is focused and the user tabs forward there is
           // nothing else in the popup, so dismiss it (Shift+Tab returns to the
           // input natively). Key events originating on the input are handled on
           // the input below; ignore them here so we don't double-dismiss.
@@ -1153,64 +1238,41 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           if (e.key === 'Tab' && !e.shiftKey) {
             onKeyDown(e);
           }
-        }}>
-        <TextInput
-          ref={searchRef}
-          id={searchId}
-          // The search field IS a TextInput: the leading magnifier is its
-          // `startIcon` and the trailing clear (✕) is its built-in `hasClear`
-          // (which resets the value and refocuses the input). We add no bespoke
-          // affordance chrome — the field just looks and behaves like every
-          // other Astryx input.
-          label={t('@astryx.multiSelector.searchOptions')}
-          isLabelHidden
-          startIcon="search"
-          hasClear
-          size="sm"
-          // Fill the dropdown's width (minus the wrapper's inline padding) so
-          // the field is flush end-to-end rather than sized to its content.
-          width="100%"
-          // When hasSearch is set, focus moves into this input on open, so it —
-          // not the trigger — must be the combobox reporting the highlighted
-          // option via aria-activedescendant (comboboxes-4). role + aria-* pass
-          // through to the underlying <input> via BaseProps.
-          role="combobox"
-          aria-expanded={popover.isOpen}
-          aria-controls={listboxId}
-          aria-autocomplete="list"
-          aria-activedescendant={
-            popover.isOpen && highlightedIndex >= 0
-              ? getItemId(highlightedIndex)
-              : undefined
+        }}
+        onKeyDown={e => {
+          // An in-progress IME composition uses these same keys (Enter to
+          // commit the candidate, Escape/Arrows to navigate the candidate
+          // window); the composing keydown fires before compositionend, so
+          // without this guard a Korean/Japanese/Chinese user committing a
+          // syllable with Enter would instead toggle the highlighted option.
+          // See utils/ime.ts.
+          if (isImeKeyEvent(e.nativeEvent)) {
+            return;
           }
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onKeyDown={e => {
-            // Arrow keys navigate options; Enter toggles; Escape closes.
-            // Space and Home/End are left to the input (type a space / move
-            // the caret) per the APG editable combobox; PageUp/PageDown are
-            // the sanctioned substitute for jumping to the first/last option.
-            if (
-              e.key === 'ArrowDown' ||
-              e.key === 'ArrowUp' ||
-              e.key === 'PageUp' ||
-              e.key === 'PageDown' ||
-              e.key === 'Enter' ||
-              e.key === 'Escape'
-            ) {
-              onKeyDown(e);
-              return;
-            }
-            // Tab: when a query is showing the clear (✕) button, forward-tab
-            // moves focus to it (keeping the popup open) so the affordance is
-            // keyboard-reachable. Every other Tab dismisses the popup as usual.
-            if (e.key === 'Tab' && (e.shiftKey || !hasQuery)) {
-              onKeyDown(e);
-            }
-          }}
-          placeholder={searchPlaceholder}
-        />
-      </div>
+          // Arrow keys navigate options; Enter toggles; Escape closes.
+          // Space and Home/End are left to the input (type a space / move
+          // the caret) per the APG editable combobox; PageUp/PageDown are
+          // the sanctioned substitute for jumping to the first/last option.
+          if (
+            e.key === 'ArrowDown' ||
+            e.key === 'ArrowUp' ||
+            e.key === 'PageUp' ||
+            e.key === 'PageDown' ||
+            e.key === 'Enter' ||
+            e.key === 'Escape'
+          ) {
+            onKeyDown(e);
+            return;
+          }
+          // Tab: when a query is showing the clear (✕) button, forward-tab
+          // moves focus to it (keeping the popup open) so the affordance is
+          // keyboard-reachable. Every other Tab dismisses the popup as usual.
+          if (e.key === 'Tab' && (e.shiftKey || !hasQuery)) {
+            onKeyDown(e);
+          }
+        }}
+        placeholder={searchPlaceholder}
+      />
     );
   }, [
     hasSearch,
@@ -1339,12 +1401,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       ? sortedItems.length - 1
       : sortedItems.length;
 
-    // Show select-all only when there are real items to select
+    // Show select-all only when there are real items to select. It reads as
+    // the first row of the list, not a section of its own — no divider under
+    // it (the checkbox column already lines it up with the options below).
     if (hasSelectAll && realItemCount > 0) {
       elements.push(renderItem(sortedItems[0], 0));
-      elements.push(
-        <Divider key="select-all-divider" xstyle={styles.divider} />,
-      );
       cursor = 1;
     } else if (hasSelectAll) {
       // Skip the select-all sentinel when there are no real items
@@ -1394,8 +1455,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         // A standalone divider between groups would orphan itself once its
         // neighbors are filtered out, so skip it while searching.
         if (!isSearching) {
+          // role="listbox" only permits option/group children; the divider
+          // carries no information the options don't, so it's hidden from
+          // the accessibility tree entirely rather than exposing
+          // role="separator" as a disallowed listbox child (axe
+          // aria-required-children).
           elements.push(
-            <Divider key={`divider-${i}`} xstyle={styles.divider} />,
+            <Divider
+              key={`divider-${i}`}
+              aria-hidden="true"
+              xstyle={styles.divider}
+            />,
           );
         }
       } else if (isSection(option)) {
@@ -1413,17 +1483,23 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           sectionItems.push(renderItem(sortedItems[cursor], cursor));
           cursor++;
         }
-        if (option.title) {
-          elements.push(
-            <Divider
-              key={`section-divider-${i}`}
-              label={option.title}
-              xstyle={styles.sectionDivider}
-            />,
-          );
-        }
+        // The heading lives INSIDE the group and is aria-hidden: the group
+        // already carries the title as its accessible name, so exposing the
+        // text again would announce it twice. This also keeps role="listbox"'s
+        // children to option/group only — the old labeled Divider sat in the
+        // listbox as a stray role="separator".
         elements.push(
           <div key={`section-${i}`} role="group" aria-label={option.title}>
+            {option.title && (
+              <div
+                aria-hidden="true"
+                {...mergeProps(
+                  themeProps('multi-selector-section-heading'),
+                  stylex.props(styles.sectionHeading),
+                )}>
+                {option.title}
+              </div>
+            )}
             {sectionItems}
           </div>,
         );
@@ -1512,7 +1588,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           }
           aria-describedby={ariaDescribedBy}
           aria-labelledby={ariaLabelledBy}
-          aria-required={isRequired ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           // With a disabledMessage the trigger keeps focusability via
@@ -1606,16 +1682,40 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       </div>
 
       {popover.render(
-        <div {...stylex.props(styles.dropdown)}>
-          {renderSearch()}
-          <div
-            id={listboxId}
-            role="listbox"
-            aria-multiselectable="true"
-            aria-labelledby={triggerId}>
-            {renderOptions()}
+        hasSearch ? (
+          // With a search row the panel splits: the header stays put while the
+          // options scroll under it, so the field does not slide out of reach
+          // in a long list. Without one the panel is a single scroll container,
+          // exactly as before.
+          <div>
+            {renderSearch()}
+            {/*
+              Separates the header from the options and spans the panel: the
+              search row and the option list each hold their own inline
+              padding, the line does not, so it reads as the panel's own edge.
+            */}
+            <Divider />
+            <div {...stylex.props(styles.dropdown)}>
+              <div
+                id={listboxId}
+                role="listbox"
+                aria-multiselectable="true"
+                aria-labelledby={triggerId}>
+                {renderOptions()}
+              </div>
+            </div>
           </div>
-        </div>,
+        ) : (
+          <div {...stylex.props(styles.dropdown)}>
+            <div
+              id={listboxId}
+              role="listbox"
+              aria-multiselectable="true"
+              aria-labelledby={triggerId}>
+              {renderOptions()}
+            </div>
+          </div>
+        ),
         {
           placement: 'below',
           alignment: 'start',

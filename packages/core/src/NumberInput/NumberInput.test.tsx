@@ -15,6 +15,8 @@ import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InputGroup} from '../InputGroup';
 import {NumberInput} from './NumberInput';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 // FieldStatus announces status messages through the persistent useAnnounce
@@ -1340,6 +1342,24 @@ describe('NumberInput stepping', () => {
     expect(onChange).toHaveBeenLastCalledWith(4);
   });
 
+  it('does not step or commit on a composing keydown (IME)', () => {
+    const onChange = vi.fn();
+    render(<NumberInput label="Amount" value={5} onChange={onChange} />);
+    const input = screen.getByRole('spinbutton');
+
+    // The field is type="text", so an IME composes into it. Enter commits the
+    // candidate and the arrows walk the candidate window; neither should reach
+    // the stepping or commit paths. Both signals a browser may report.
+    fireEvent.keyDown(input, {key: 'ArrowUp', isComposing: true});
+    fireEvent.keyDown(input, {key: 'ArrowDown', keyCode: 229});
+    fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing ArrowUp still steps.
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenLastCalledWith(6);
+  });
+
   it('lets onKeyDown cancel keyboard stepping', () => {
     const onChange = vi.fn();
     const onKeyDown = vi.fn((event: React.KeyboardEvent<HTMLInputElement>) =>
@@ -1725,5 +1745,141 @@ describe('NumberInput readonly theme state', () => {
     );
     const root = container.querySelector('.astryx-number-input');
     expect(root).not.toHaveAttribute('data-readonly');
+  });
+});
+
+describe('NumberInput stepper padding coupling', () => {
+  function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+    const {prose, component} = generateThemeCSS(theme);
+    return [prose, component].filter(Boolean).join('\n\n');
+  }
+
+  // The chains the wrapper and the stepper column both read. Spelled out here
+  // rather than imported so the test pins the actual token names a theme sets:
+  // if the chain is renamed or a level is dropped, this fails.
+  const BLOCK_START =
+    'var(--astryx-number-input-padding-block-start, var(--astryx-number-input-padding, var(--spacing-1)))';
+  const BLOCK_END =
+    'var(--astryx-number-input-padding-block-end, var(--astryx-number-input-padding, var(--spacing-1)))';
+
+  // jsdom re-serializes a var() chain without the spaces after its commas.
+  const noSpace = (value: string) => value.replace(/\s+/g, '');
+
+  it('reads its padding from the public number-input padding tokens', () => {
+    const {container} = render(
+      <NumberInput
+        label="Quantity"
+        value={5}
+        onChange={() => {}}
+        hasNumberSteppers
+      />,
+    );
+    const root = container.querySelector('.astryx-number-input') as HTMLElement;
+    // Read as physical properties: StyleX compiles the block-axis logical
+    // properties to `padding-top`/`padding-bottom` (identical in every
+    // horizontal writing mode). Per side, not through the shared field base's
+    // `paddingBlock` shorthand, so each edge can be cancelled on its own.
+    const wrapper = getComputedStyle(root);
+    expect(noSpace(wrapper.paddingTop)).toBe(noSpace(BLOCK_START));
+    expect(noSpace(wrapper.paddingBottom)).toBe(noSpace(BLOCK_END));
+
+    // The column cancels the wrapper's block padding by reading the same
+    // tokens — not a hardcoded default — so it stays flush when a theme
+    // changes the padding. The column is the stepper buttons' direct parent.
+    const steppers = container.querySelector(
+      'button[aria-label="Increment Quantity"]',
+    )?.parentElement as HTMLElement;
+    const column = getComputedStyle(steppers);
+    expect(noSpace(column.marginTop)).toBe(
+      noSpace(`calc(-1 * ${BLOCK_START})`),
+    );
+    expect(noSpace(column.marginBottom)).toBe(
+      noSpace(`calc(-1 * ${BLOCK_END})`),
+    );
+  });
+
+  // jsdom cannot resolve the @layer cascade, so the generated CSS is the
+  // proof. Each case is a spelling of the SAME declaration: the column has to
+  // track all of them, not just the one the component happened to name.
+  describe('a themed padding reaches the steppers in every spelling', () => {
+    it.each([
+      [
+        'the padding shorthand, two values',
+        {padding: '14px 20px'},
+        [
+          '--astryx-number-input-padding-block-start: 14px',
+          '--astryx-number-input-padding-block-end: 14px',
+          '--astryx-number-input-padding-inline: 20px',
+        ],
+      ],
+      [
+        'the padding shorthand, one value',
+        {padding: '10px'},
+        ['--astryx-number-input-padding: 10px'],
+      ],
+      [
+        'the block/inline longhands',
+        {paddingBlock: '10px', paddingInline: '20px'},
+        [
+          '--astryx-number-input-padding-block-start: 10px',
+          '--astryx-number-input-padding-block-end: 10px',
+          '--astryx-number-input-padding-inline: 20px',
+        ],
+      ],
+      [
+        'a single edge longhand',
+        {paddingBlockStart: '12px'},
+        ['--astryx-number-input-padding-block-start: 12px'],
+      ],
+      [
+        // A single var carrying "4px 12px" would make the column's
+        // calc(-1 * …) invalid and drop the margin outright; the expansion
+        // splits the two values into their own edges instead.
+        'an asymmetric block padding',
+        {paddingBlock: '4px 12px'},
+        [
+          '--astryx-number-input-padding-block-start: 4px',
+          '--astryx-number-input-padding-block-end: 12px',
+        ],
+      ],
+      [
+        // `paddingTop` is `paddingBlockStart` in every horizontal writing
+        // mode, so it normalizes onto the same tokens. The physical inline
+        // pair is deliberately not mapped — see generateThemeRules.
+        'the physical block longhands',
+        {paddingTop: '14px', paddingBottom: '6px'},
+        [
+          '--astryx-number-input-padding-block-start: 14px',
+          '--astryx-number-input-padding-block-end: 6px',
+        ],
+      ],
+    ])('%s', (_label, base, expected) => {
+      const theme = defineTheme({
+        name: 'number-input-padding-spelling-test',
+        components: {'number-input': {base}},
+      });
+      const css = generateThemeTestCSS(theme);
+      for (const declaration of expected) {
+        expect(css).toContain(declaration);
+      }
+      // The expansion consumes the padding: a raw declaration left on the
+      // wrapper is padding the column cannot see, which is the gap itself.
+      expect(css).not.toMatch(
+        /^\s*padding(-block|-inline|-top|-bottom)?(-start|-end)?:/m,
+      );
+    });
+  });
+
+  it('carries a themed border radius to the stepper column corners', () => {
+    // The column's outer corners read --_field-radius. Emitting only
+    // `border-radius` on the wrapper rounds the field and leaves the steppers
+    // at the default radius, which is visible wherever the two differ.
+    const theme = defineTheme({
+      name: 'number-input-radius-test',
+      components: {'number-input': {base: {borderRadius: '2px'}}},
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('--_field-radius: 2px');
+    expect(css).toContain('border-radius: 2px');
   });
 });

@@ -154,9 +154,9 @@ export function sanitizeName(name, options = {}) {
     );
   }
 
-  if (name === '.' || name === '..' || name.startsWith('..')) {
+  if (name === '.' || name === '..' || name.startsWith('.')) {
     throw new PathSafetyError(
-      `Invalid ${label} "${name}": must not be '.' or start with '..'.`,
+      `Invalid ${label} "${name}": must not start with '.'.`,
       'NAME_TRAVERSAL',
     );
   }

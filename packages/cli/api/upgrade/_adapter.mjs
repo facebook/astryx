@@ -27,6 +27,7 @@ import {
 } from '../../assets/codemods/integration-discovery.mjs';
 import {runIntegrationCodemods} from '../../assets/codemods/integration-runner.mjs';
 import {installAgentDocs, inspectAgentDocs} from '../../foundation/agent-docs/agent-docs.mjs';
+import {loadDocsCatalog} from '../docs/_adapter.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {loadIntegrations} from '../../foundation/integrations/integrations.mjs';
@@ -145,9 +146,9 @@ export async function runPostCodemodHooks(hooks, context) {
  * EVERY upgrade path, including the no-codemods short-circuits (#4168).
  *
  * @param {{cwd: string, installedVersion: string, apply: boolean}} ctx
- * @returns {import('./upgrade.type.mjs').AgentDocsSummary}
+ * @returns {Promise<import('./upgrade.type.mjs').AgentDocsSummary>}
  */
-export function refreshAgentDocs({cwd, installedVersion, apply}) {
+export async function refreshAgentDocs({cwd, installedVersion, apply}) {
   const inspection = inspectAgentDocs(cwd, installedVersion);
   /** @type {import('./upgrade.type.mjs').AgentDocsSummary} */
   const summary = {
@@ -186,7 +187,10 @@ export function refreshAgentDocs({cwd, installedVersion, apply}) {
 
   // Apply: rewrite only files that already carry a marker (onlyReplace).
   try {
-    const written = installAgentDocs(cwd, {onlyReplace: true});
+    const written = installAgentDocs(cwd, {
+      onlyReplace: true,
+      topics: (await loadDocsCatalog(cwd)).names(),
+    });
     summary.refreshed = written.length > 0;
     summary.files = written;
     if (summary.refreshed) {

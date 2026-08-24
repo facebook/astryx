@@ -42,7 +42,8 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
@@ -82,7 +83,10 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',
     transitionDuration: {
@@ -98,7 +102,7 @@ const styles = stylex.create({
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     backgroundImage: 'none',
     transform: {
@@ -107,11 +111,11 @@ const styles = stylex.create({
     },
   },
   ariaDisabled: {
+    // The variants' hover treatment already steps aside for
+    // `[aria-disabled]`; `:active` still matches a press on an aria-disabled
+    // button, so that one is suppressed here.
     backgroundImage: {
       default: 'none',
-      ':hover': {
-        '@media (hover: hover)': 'none',
-      },
       ':active': 'none',
     },
   },
@@ -198,7 +202,7 @@ const variants = stylex.create({
     color: colorVars['--color-on-accent'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -209,7 +213,7 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -220,7 +224,7 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -235,7 +239,7 @@ const variants = stylex.create({
     outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -438,8 +442,10 @@ const loadingStyles = stylex.create({
  *
  * Layers always carry the native `popover` attribute (useLayer.tsx), and a
  * popover is never an in-flow member — it is `display: none` until shown, then
- * promoted to the top layer. So "last member" is: no following element sibling
- * that isn't a popover.
+ * promoted to the top layer. Context layers also retain an inert `<template>`
+ * marker so they can re-resolve their JSX position. Neither element is a group
+ * member, so "last member" is: no following element sibling besides those two
+ * pieces of layer infrastructure.
  *
  * Reading it the other way round — marking the *buttons* and testing for a
  * marked sibling — is the trap: it silently reclassifies anything it doesn't
@@ -455,7 +461,7 @@ const loadingStyles = stylex.create({
  * The leading edge still uses `:first-child` — a member's button always precedes
  * its own layer, so the first button is genuinely `:first-child`.
  */
-const IS_LAST_ITEM = ':not(:has(~ *:not([popover])))';
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template)))';
 
 const groupStyles = stylex.create({
   horizontal: {
@@ -752,9 +758,9 @@ export function Button({
       : null;
 
   // Merge the consumer ref with the tooltip hook's trigger ref so both point at
-  // the same element. mergeRefs tolerates undefined, so this is a no-op for the
-  // tooltip side when no tooltip is set.
-  const mergedButtonRef = mergeRefs(
+  // the same element. useMergedRefs tolerates undefined, so this is a no-op for
+  // the tooltip side when no tooltip is set.
+  const mergedButtonRef = useMergedRefs(
     ref,
     tooltip != null ? tooltipHook.ref : undefined,
   );

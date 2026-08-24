@@ -136,6 +136,11 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: 'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
       description: 'Text shown when search returns no results.',
@@ -200,6 +205,22 @@ export const docs = {
       type: 'SizeValue',
       description:
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'tokenOverflowBehavior',
+      type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
+      description: 'Controls how tokens overflow when the container is too narrow.',
+      default: "'none'",
+    },
+    {
+      name: 'onFocus',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Fires when focus enters the tokenizer input.',
+    },
+    {
+      name: 'onBlur',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Fires when focus leaves the tokenizer input.',
     },
     {
       name: 'xstyle',
@@ -369,6 +390,11 @@ export const docsZh = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: '下拉菜单的固定像素宽度。菜单不会小于其锚点宽度。',
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
       description: '\u641c\u7d22\u65e0\u7ed3\u679c\u65f6\u663e\u793a\u7684\u6587\u672c\u3002',
@@ -490,6 +516,7 @@ export const docsDense = {
     labelTooltip: 'Tooltip on label.',
     hasEntriesOnFocus: 'Show bootstrap results on focus before typing.',
     maxMenuItems: 'Max dropdown items to display.',
+    menuWidth: 'Fixed dropdown width in pixels.',
     emptySearchResultsText: 'Text when search returns no results.',
     hasAutoFocus: 'Auto-focus input on mount.',
     size: 'Input+token size.',

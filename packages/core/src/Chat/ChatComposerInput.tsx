@@ -43,7 +43,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, isImeKeyEvent} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
 import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
 import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
@@ -254,6 +254,10 @@ const styles = stylex.create({
   disabled: {
     opacity: 0.5,
     pointerEvents: 'none' as const,
+  },
+  tokenSpan: {
+    display: 'inline-flex',
+    verticalAlign: 'middle',
   },
 });
 
@@ -559,9 +563,8 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
 
       if (e.key === 'Enter' && !e.shiftKey) {
         // Never submit mid-composition — an IME uses Enter to commit a
-        // candidate (e.g. Japanese/Chinese/Korean input), and browsers may
-        // also surface the legacy keyCode 229 for composing keystrokes.
-        if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) {
+        // candidate. See utils/ime.ts for the full rationale.
+        if (isImeKeyEvent(e.nativeEvent)) {
           return;
         }
 
@@ -750,7 +753,7 @@ export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
       data-astryx-token=""
       data-astryx-token-value={token.value}
       contentEditable={false}
-      style={{display: 'inline-flex', verticalAlign: 'baseline'}}>
+      {...stylex.props(styles.tokenSpan)}>
       {isCustomToken(token) ? (
         token.render()
       ) : (

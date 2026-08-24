@@ -156,6 +156,8 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   hasEntriesOnFocus?: boolean;
   /** Max dropdown items. @default 10 */
   maxMenuItems?: number;
+  /** Fixed dropdown width in pixels. Never shrinks below the input width. */
+  menuWidth?: number;
   /** Text shown when no results found. @default 'No results found' */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
@@ -224,7 +226,10 @@ const styles = stylex.create({
     position: 'relative',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
-    cursor: 'text',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     height: 'auto',
   },
   wrapperWithTokens: {
@@ -390,6 +395,7 @@ export function Tokenizer<T extends SearchableItem>({
   placeholder,
   hasEntriesOnFocus,
   maxMenuItems,
+  menuWidth,
   emptySearchResultsText,
   isDisabled = false,
   htmlName,
@@ -600,7 +606,7 @@ export function Tokenizer<T extends SearchableItem>({
         const realItem = base as T;
         const newItems = [...value, realItem];
         onChange(newItems, {item: realItem, type: 'create'});
-        announce(`Added ${createdValue}`);
+        announce(t('@astryx.tokenizer.tokenAdded', {label: createdValue}));
         return;
       }
 
@@ -609,9 +615,9 @@ export function Tokenizer<T extends SearchableItem>({
       }
       const newItems = [...value, item];
       onChange(newItems, {item, type: 'add'});
-      announce(`Added ${item.label}`);
+      announce(t('@astryx.tokenizer.tokenAdded', {label: item.label}));
     },
-    [value, onChange, isAtMax, selectedIds, hasCreate, announce],
+    [value, onChange, isAtMax, selectedIds, hasCreate, announce, t],
   );
 
   // Handle removing an item. Single removal path: both Backspace on an empty
@@ -621,10 +627,10 @@ export function Tokenizer<T extends SearchableItem>({
     (item: T) => {
       const newItems = value.filter(v => v.id !== item.id);
       onChange(newItems, {item, type: 'remove'});
-      announce(`Removed ${item.label}`);
+      announce(t('@astryx.tokenizer.tokenRemoved', {label: item.label}));
       inputRef.current?.focus();
     },
-    [value, onChange, announce],
+    [value, onChange, announce, t],
   );
 
   // Handle clearing all items
@@ -775,6 +781,7 @@ export function Tokenizer<T extends SearchableItem>({
         placeholder={value.length === 0 ? placeholder : ''}
         hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
         maxMenuItems={maxMenuItems}
+        menuWidth={menuWidth}
         emptySearchResultsText={emptySearchResultsText}
         isDisabled={isDisabled}
         isFocusableDisabled={showsDisabledMessage}

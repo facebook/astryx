@@ -20,6 +20,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import {MultiSelector} from './MultiSelector';
 import {Icon} from '../Icon';
+import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
@@ -125,6 +126,90 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByText('2 selected')).toBeInTheDocument();
+  });
+
+  it('formats the count display with formatValue', () => {
+    render(
+      <MultiSelector
+        label="Spaces"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        formatValue={items => `${items.length} spaces selected`}
+      />,
+    );
+    expect(screen.getByText('2 spaces selected')).toBeInTheDocument();
+  });
+
+  it('passes selected values and resolved labels to formatValue', () => {
+    const formatValue = vi.fn(
+      (items: {value: string; label: string}[]) =>
+        `${items[0].label} and ${items.length - 1} more`,
+    );
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[
+          {value: 'a', label: 'Apple'},
+          {value: 'b', label: 'Banana'},
+        ]}
+        value={['a', 'b']}
+        onChange={() => {}}
+        formatValue={formatValue}
+      />,
+    );
+    expect(formatValue).toHaveBeenCalledWith([
+      {value: 'a', label: 'Apple'},
+      {value: 'b', label: 'Banana'},
+    ]);
+    expect(screen.getByText('Apple and 1 more')).toBeInTheDocument();
+  });
+
+  it('formats the labels display with formatValue', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana', 'Orange']}
+        onChange={() => {}}
+        triggerDisplay="labels"
+        formatValue={items => items.map(item => item.label).join(' & ')}
+      />,
+    );
+    expect(screen.getByText('Apple & Banana & Orange')).toBeInTheDocument();
+  });
+
+  it('ignores formatValue in badges display', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        triggerDisplay="badges"
+        formatValue={() => 'formatted'}
+      />,
+    );
+    expect(screen.queryByText('formatted')).not.toBeInTheDocument();
+    const trigger = within(screen.getByRole('combobox'));
+    expect(trigger.getByText('Apple')).toBeInTheDocument();
+    expect(trigger.getByText('Banana')).toBeInTheDocument();
+  });
+
+  it('shows the placeholder rather than calling formatValue when empty', () => {
+    const formatValue = vi.fn(() => 'formatted');
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        placeholder="Pick fruits..."
+        formatValue={formatValue}
+      />,
+    );
+    expect(screen.getByText('Pick fruits...')).toBeInTheDocument();
+    expect(formatValue).not.toHaveBeenCalled();
   });
 
   it('shows labels display', () => {
@@ -352,6 +437,7 @@ describe('MultiSelector', () => {
 
     await user.keyboard('{Tab}');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
   });
 
   it('supports keyboard navigation with ArrowDown/ArrowUp', async () => {
@@ -413,6 +499,37 @@ describe('MultiSelector', () => {
     await user.click(trigger);
     await user.keyboard('{Enter}');
     expect(onChange).toHaveBeenCalledWith(['Apple']);
+  });
+
+  it('does not toggle the highlighted option on a composing Enter (IME)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', h);
+    // Filter to Banana and highlight it so an unguarded Enter would toggle it.
+    await user.type(search, 'ban');
+    await user.keyboard('{ArrowDown}');
+    expect(search).toHaveAttribute('aria-activedescendant');
+
+    // The composing keydown (isComposing / legacy keyCode 229) that commits an
+    // IME candidate must not be read as "toggle the highlighted option".
+    fireEvent.keyDown(search, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(search, {key: 'Enter', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing Enter still toggles the highlighted option.
+    fireEvent.keyDown(search, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(['Banana']);
   });
 
   it('toggles the correct item when selected items are sorted to top', async () => {
@@ -798,56 +915,112 @@ describe('MultiSelector', () => {
     it('announces the match count politely while searching', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={defaultOptions}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSearch
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.resultCount':
+                '{count, number} {count, plural, one {résultat} other {résultats}}',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
       // "an" matches Banana and Orange.
       await user.type(screen.getByRole('combobox', h), 'an');
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('2 results');
+        // The plural branch of a message no catalog supplies.
+        expect(politeRegion()?.textContent).toBe('2 résultats');
       });
     });
 
     it('announces the singular form when one option matches', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={defaultOptions}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSearch
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.resultCount':
+                '{count, number} {count, plural, one {résultat} other {résultats}}',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
-      // "app" matches only Apple. Anchored so it cannot pass on "1 results".
+      // "app" matches only Apple. Exact match, so "1 résultats" would fail.
       await user.type(screen.getByRole('combobox', h), 'app');
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(/^1 result$/);
+        expect(politeRegion()?.textContent).toBe('1 résultat');
       });
     });
 
-    it('announces "No results found" when nothing matches', async () => {
+    it('announces the empty-results message when nothing matches', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={defaultOptions}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSearch
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.multiSelector.emptySearchResults': 'Aucun résultat'},
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
       await user.type(screen.getByRole('combobox', h), 'xyz');
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('No results found');
+        expect(politeRegion()?.textContent).toBe('Aucun résultat');
+      });
+    });
+
+    it('speaks the result count from a provider catalog (plural)', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          messages={{
+            fr: {
+              '@astryx.multiSelector.resultCount': {
+                defaultMessage:
+                  '{count, number} {count, plural, one {résultat} other {résultats}}',
+              },
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      // "an" matches Banana and Orange.
+      await user.type(screen.getByRole('combobox', h), 'an');
+      await waitFor(() => {
+        // Same key through the catalog path rather than `overrides`.
+        expect(politeRegion()?.textContent).toBe('2 résultats');
       });
     });
 
@@ -1159,53 +1332,109 @@ describe('MultiSelector', () => {
     it('announces the selection count politely when toggling an option', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={[...ANNOUNCE_OPTIONS]}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.selectionCount':
+                '{count, number} sur {total, number} sélectionnés',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('combobox'));
       const options = screen.getAllByRole('option', {hidden: true});
       await user.click(options[0]);
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('1 of 3 selected');
+        // Both arguments land, in the order the message asks for them.
+        expect(politeRegion()?.textContent).toBe('1 sur 3 sélectionnés');
       });
     });
 
-    it('announces "All selected" when select-all selects everything', async () => {
+    it('announces the all-selected message when select-all selects everything', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={[...ANNOUNCE_OPTIONS]}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSelectAll
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.multiSelector.allSelected': 'Tout est là'},
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSelectAll
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('combobox'));
       await user.click(screen.getByText('Select all'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('All selected');
+        expect(politeRegion()?.textContent).toBe('Tout est là');
       });
     });
 
-    it('announces "Selection cleared" when clearing', async () => {
+    it('announces the selection-cleared message when clearing', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={[...ANNOUNCE_OPTIONS]}
-          value={['Apple', 'Banana']}
-          onChange={() => {}}
-          hasClear
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.multiSelector.selectionCleared': 'Plus rien'},
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={['Apple', 'Banana']}
+            onChange={() => {}}
+            hasClear
+          />
+        </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('button', {name: 'Clear all Fruit'}));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Selection cleared');
+        expect(politeRegion()?.textContent).toBe('Plus rien');
+      });
+    });
+
+    it('prefers a provider override over the provider catalog', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          messages={{
+            fr: {
+              '@astryx.multiSelector.selectionCount': {
+                defaultMessage: '{count, number} du catalogue',
+              },
+            },
+          }}
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.selectionCount':
+                '{count, number} remplacé',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('combobox'));
+      const options = screen.getAllByRole('option', {hidden: true});
+      await user.click(options[0]);
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('1 remplacé');
       });
     });
   });
@@ -1646,7 +1875,7 @@ describe('MultiSelector clear icon theme target', () => {
     expect(css).toContain('.astryx-multi-selector-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-multi-selector-clear-icon:hover {');
+    expect(css).toContain('.astryx-multi-selector-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -1774,7 +2003,155 @@ describe('MultiSelector indicator (chevron) icon theme target', () => {
   });
 });
 
+describe('MultiSelector list structure', () => {
+  it('does not draw a divider under select-all', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    // Select-all is the first row of the list, not a section of its own. No
+    // option here declares a divider and there is no search row, so the panel
+    // should contain no rule at all.
+    expect(document.querySelectorAll('[role="separator"]')).toHaveLength(0);
+    const [first] = screen.getAllByRole('option', h);
+    expect(first).toHaveTextContent('Select all');
+  });
+
+  it('renders a section title as a plain heading inside the group, not a divider', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[
+          {
+            type: 'section',
+            title: 'Citrus',
+            options: [
+              {value: 'orange', label: 'Orange'},
+              {value: 'lemon', label: 'Lemon'},
+            ],
+          },
+        ]}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // A labeled Divider used to stand in for the heading; it rendered a
+    // role="separator" as a direct child of the listbox and stacked a second
+    // rule under the search row's own.
+    expect(document.querySelectorAll('[role="separator"]')).toHaveLength(0);
+
+    const group = screen.getByRole('group', {name: 'Citrus', ...h});
+    const heading = group.querySelector(
+      '.astryx-multi-selector-section-heading',
+    );
+    expect(heading).toBeTruthy();
+    expect(heading).toHaveTextContent('Citrus');
+    // The group already carries the title as its accessible name, so the
+    // visible heading must not announce it a second time.
+    expect(heading).toHaveAttribute('aria-hidden', 'true');
+    // ...and it precedes the options it heads.
+    const [firstOption] = within(group).getAllByRole('option', h);
+    expect(
+      heading!.compareDocumentPosition(firstOption) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('hides a standalone divider from the accessibility tree (#4994)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', {type: 'divider'}, 'Banana']}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // role="listbox" only permits option/group children. The divider still
+    // renders role="separator" (unchanged visual/DOM), but must be excluded
+    // from the accessibility tree so it never reaches the listbox's exposed
+    // children (axe aria-required-children).
+    const divider = document.querySelector('[role="separator"]');
+    expect(divider).toBeTruthy();
+    expect(divider).toHaveAttribute('aria-hidden', 'true');
+  });
+});
+
 describe('MultiSelector search affordances', () => {
+  it('renders the search row seamlessly — no nested input box, a divider under it', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+    const search = screen.getByRole('combobox', h);
+    // The row is the outer gutter; the input sits inside the rounded field.
+    const row = search.closest('.astryx-multi-selector-search');
+    const field = search.parentElement;
+    if (!row || !field) {
+      throw new Error('search row not found');
+    }
+    // The panel is already a bordered surface: the field inside it must not be
+    // a second bordered box (this used to render a TextInput).
+    expect(row).not.toHaveClass('astryx-text-input');
+    expect(search.closest('.astryx-text-input')).toBeNull();
+    // The field is a rounded box inset from the panel edge, shaped like the
+    // option rows under it — not a full-bleed header strip.
+    expect(field).not.toBe(row);
+    // ...and a divider separates it from the options.
+    const separator = document.querySelector('[role="separator"]');
+    if (!separator) {
+      throw new Error('divider not found');
+    }
+    // Order: row, then divider, then the listbox.
+    expect(
+      row.compareDocumentPosition(separator) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    const listbox = screen.getByRole('listbox', h);
+    expect(
+      separator.compareDocumentPosition(listbox) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('keeps the search row outside the scrolling option list', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    // The options scroll under the header rather than carrying it away, so the
+    // field stays reachable in a long list.
+    const search = screen.getByRole('combobox', h);
+    const listbox = screen.getByRole('listbox', h);
+    expect(listbox.contains(search)).toBe(false);
+  });
+
   it('renders a decorative (aria-hidden) magnifier icon whenever hasSearch is on', async () => {
     const user = userEvent.setup();
     render(
@@ -1788,8 +2165,7 @@ describe('MultiSelector search affordances', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
     const search = screen.getByRole('combobox', h);
-    // The search field is a TextInput; the magnifier is its startIcon, so it
-    // sits inside the input container as a sibling of the <input>.
+    // The magnifier leads the search row, as a sibling of the <input>.
     const wrapper = search.parentElement;
     const magnifier = wrapper?.querySelector('.astryx-icon');
     expect(magnifier).toBeTruthy();

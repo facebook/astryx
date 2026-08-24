@@ -31,7 +31,6 @@ import {
   colorVars,
   sizeVars,
   spacingVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
   borderVars,
@@ -53,11 +52,44 @@ import {getInputARIA} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+
+// Public padding tokens for the `number-input` theme target. A theme writes an
+// ordinary `padding` (in ANY spelling — the shorthand, `paddingBlock`, or a
+// single `paddingBlockStart`) and the pipeline's `container` expansion parses
+// it and emits these normalized per-side tokens; the wrapper and the stepper
+// column both read them, so the column tracks whatever the theme sets instead
+// of assuming the default. Routing through the shared expansion rather than a
+// hand-rolled property→var mapping is what makes every spelling work: a
+// mapping only fires for the exact property name it names.
+//
+// Read order per level: `var(--astryx-…, <next level>)`, terminating at the
+// shared field defaults (NOT the container default --spacing-4, which is a
+// layout metric and would resize every themed field). Built as chained const
+// strings — no function calls — so StyleX can statically analyze them; same
+// shape as the card/section/dialog chains in Layout/container.stylex.ts.
+const FIELD_PAD_BLOCK = spacingVars['--spacing-1'];
+const FIELD_PAD_INLINE = spacingVars['--spacing-2'];
+const padBlockAll = `var(--astryx-number-input-padding, ${FIELD_PAD_BLOCK})`;
+const padInlineAll = `var(--astryx-number-input-padding, ${FIELD_PAD_INLINE})`;
+const padInline = `var(--astryx-number-input-padding-inline, ${padInlineAll})`;
+const padInlineStart = `var(--astryx-number-input-padding-inline-start, ${padInline})`;
+const padInlineEnd = `var(--astryx-number-input-padding-inline-end, ${padInline})`;
+const padBlockStart = `var(--astryx-number-input-padding-block-start, ${padBlockAll})`;
+const padBlockEnd = `var(--astryx-number-input-padding-block-end, ${padBlockAll})`;
 
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
+    // Applied per side rather than through the shared field base's
+    // `paddingBlock`/`paddingInline` shorthands, because the stepper column
+    // has to cancel the block padding edge by edge — an asymmetric
+    // `paddingBlock: 4px 12px` needs two different negative margins.
+    paddingBlockStart: padBlockStart,
+    paddingBlockEnd: padBlockEnd,
+    paddingInlineStart: padInlineStart,
+    paddingInlineEnd: padInlineEnd,
   },
   wrapperWithNumberSteppers: {
     paddingInlineEnd: 0,
@@ -83,7 +115,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
@@ -101,13 +133,18 @@ const styles = stylex.create({
     flexDirection: 'column',
     flexShrink: 0,
     width: spacingVars['--spacing-4'],
-    marginBlock: `calc(-1 * ${spacingVars['--spacing-1']})`,
+    // Cancel the wrapper's block padding edge by edge so the column spans the
+    // field's full height. Reading the same tokens the wrapper applies is what
+    // keeps it flush under a themed padding — including an asymmetric one,
+    // where a single `marginBlock` would be wrong at one end.
+    marginBlockStart: `calc(-1 * ${padBlockStart})`,
+    marginBlockEnd: `calc(-1 * ${padBlockEnd})`,
     borderInlineStartWidth: borderVars['--border-width'],
     borderInlineStartStyle: 'solid',
     borderInlineStartColor: colorVars['--color-border-emphasized'],
     overflow: 'hidden',
-    borderStartEndRadius: radiusVars['--radius-element'],
-    borderEndEndRadius: radiusVars['--radius-element'],
+    borderStartEndRadius: 'var(--_field-radius)',
+    borderEndEndRadius: 'var(--_field-radius)',
   },
   numberStepperButton: {
     boxSizing: 'border-box',
@@ -124,17 +161,20 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
   },
   numberStepperButtonDisabled: {
     color: colorVars['--color-icon-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
     backgroundImage: 'none',
   },
   decrementButton: {
@@ -169,7 +209,7 @@ export type {
   InputStatus as NumberInputStatus,
   InputStatusType as NumberInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {isImeKeyEvent, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -559,6 +599,7 @@ export function NumberInput({
   ...rest
 }: NumberInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const inputLabelID = useId();
@@ -746,6 +787,14 @@ export function NumberInput({
   // Handle keyboard events
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // The field is type="text" for formatted display, so an IME can compose
+      // into it: Enter commits the candidate and the arrows walk the candidate
+      // window. The composing keydown fires before compositionend, so without
+      // this guard those keystrokes would commit or step the value instead.
+      // See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       const hasModifier = e.altKey || e.ctrlKey || e.metaKey || e.shiftKey;
       if (!hasModifier && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         onKeyDown?.(e);
@@ -919,7 +968,7 @@ export function NumberInput({
           value == null || !formatValue ? undefined : formattedValue
         }
         aria-describedby={ariaDescribedBy}
-        aria-required={isRequired === true ? 'true' : undefined}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }

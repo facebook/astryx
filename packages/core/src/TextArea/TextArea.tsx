@@ -22,6 +22,7 @@ import {
   useTransition,
   useRef,
   useCallback,
+  useMemo,
   type ChangeEvent,
   type ClipboardEvent,
   type FocusEvent,
@@ -45,16 +46,19 @@ import {
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {characterCount} from '../utils/characters';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
 const styles = stylex.create({
@@ -105,7 +109,7 @@ const styles = stylex.create({
     resize: 'vertical',
   },
   textareaDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   // Reserve start padding so text clears the start icon.
   // inline inset + 16px icon (sm) + 8px gap
@@ -312,10 +316,13 @@ export interface TextAreaProps extends Omit<
    */
   onPaste?: (e: ClipboardEvent<HTMLTextAreaElement>) => void;
   /**
-   * Maximum number of characters allowed.
-   * When set, displays a character counter below the textarea.
+   * Maximum number of characters allowed, counted as user-perceived
+   * characters — an emoji or flag sequence counts as one. When set,
+   * displays a character counter below the textarea.
    * Does not enforce the limit natively — the counter shows error styling
-   * when exceeded, and the consumer can validate via onChange.
+   * when exceeded, and the consumer can validate via onChange. Validate with
+   * `characterCount` (exported from this package) rather than `value.length`
+   * so enforcement matches the displayed count.
    */
   maxLength?: number;
   /**
@@ -389,6 +396,7 @@ export function TextArea({
 }: TextAreaProps) {
   const size = useSize(sizeProp, 'md');
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const announce = useAnnounce();
   const id = useId();
   const descriptionID = useId();
@@ -482,7 +490,11 @@ export function TextArea({
       return;
     }
     const newValue = e.target.value;
-    announceCounter(newValue.length);
+    // Guarded here, not just inside announceCounter, so textareas without a
+    // maxLength never pay for segmenting the whole value on each keystroke.
+    if (maxLength != null) {
+      announceCounter(characterCount(newValue));
+    }
     onChange?.(newValue, e);
     if (changeAction && !e.defaultPrevented) {
       startTransition(async () => {
@@ -491,6 +503,15 @@ export function TextArea({
       });
     }
   };
+
+  // Counter semantics count user-perceived characters, so an emoji or flag
+  // sequence counts as one character, not its code units.
+  // Only measured when a counter exists — segmentation is O(value length),
+  // and memoized so re-renders that keep the same value skip it entirely.
+  const valueLength = useMemo(
+    () => (maxLength != null ? characterCount(optimisticValue) : 0),
+    [maxLength, optimisticValue],
+  );
 
   const effectivelyDisabled = isDisabled || isBusy;
 
@@ -560,7 +581,7 @@ export function TextArea({
         )}
         <textarea
           {...rest}
-          ref={mergeRefs(ref, textareaRef)}
+          ref={useMergedRefs(ref, textareaRef)}
           id={id}
           name={isDisabled ? undefined : htmlName}
           value={optimisticValue}
@@ -580,10 +601,10 @@ export function TextArea({
           autoFocus={hasAutoFocus}
           data-autofocus={hasAutoFocus || undefined}
           aria-describedby={ariaDescribedBy}
-          aria-required={isRequired && !isOptional ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={
             status?.type === 'error' ||
-            (maxLength != null && optimisticValue.length > maxLength)
+            (maxLength != null && valueLength > maxLength)
               ? 'true'
               : undefined
           }
@@ -614,15 +635,15 @@ export function TextArea({
             id={counterID}
             {...stylex.props(
               styles.counter,
-              optimisticValue.length > maxLength && styles.counterError,
+              valueLength > maxLength && styles.counterError,
             )}>
-            {optimisticValue.length > maxLength && (
+            {valueLength > maxLength && (
               // Non-color cue so the over-limit state isn't conveyed by the red
               // color alone (WCAG 1.4.1). Decorative — the count text and the
               // live-region announcement carry the meaning.
               <Icon icon="warning" size="sm" />
             )}
-            {optimisticValue.length}/{maxLength}
+            {valueLength}/{maxLength}
           </div>
         )}
       </div>

@@ -16,6 +16,7 @@ const integrationSchema = z
     components: z.string().optional(),
     templates: z.string().optional(),
     codemods: z.string().optional(),
+    docs: z.string().optional(),
     issuesUrl: z.string().url().optional(),
   })
   .strict();

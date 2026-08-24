@@ -30,7 +30,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
-import {isImeKeyEvent} from '../hooks/useFocusTrap';
+import {isImeKeyEvent} from '../utils/ime';
 import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
 import {
@@ -41,12 +41,13 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {getKey, mergeProps, mergeRefs} from '../utils';
+import {getKey, groupItems, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Types
 // =============================================================================
@@ -92,6 +93,9 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * @default 10
    */
   maxMenuItems?: number;
+
+  /** Fixed dropdown width in pixels. Never shrinks below the anchor width. */
+  menuWidth?: number;
 
   /**
    * Text shown when no results found.
@@ -215,7 +219,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   dropdown: {
     boxSizing: 'border-box',
@@ -226,6 +230,18 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
+  popoverCustomWidth: (width: number) => ({
+    width: `${width}px`,
+  }),
+  groupHeading: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlockStart: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
+  },
   item: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -233,7 +249,10 @@ const styles = stylex.create({
     width: '100%',
     padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
     backgroundColor: 'transparent',
     border: 'none',
@@ -313,6 +332,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   placeholder: placeholderFromProps,
   hasEntriesOnFocus = false,
   maxMenuItems = 10,
+  menuWidth,
   emptySearchResultsText: emptySearchResultsTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
@@ -449,7 +469,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           announce(
             shown.length === 0
               ? emptySearchResultsText
-              : `${shown.length} ${shown.length === 1 ? 'result' : 'results'}`,
+              : t('@astryx.typeahead.resultCount', {count: shown.length}),
           );
         }
       } catch {
@@ -464,7 +484,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
       }
     },
-    [searchSource, maxMenuItems, showLayer, announce, emptySearchResultsText],
+    [
+      searchSource,
+      maxMenuItems,
+      showLayer,
+      announce,
+      emptySearchResultsText,
+      t,
+    ],
   );
 
   // Perform bootstrap
@@ -681,6 +708,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           e.preventDefault();
           popover.hide();
           break;
+        case 'Tab':
+          // Dismiss here rather than from the blur this press produces:
+          // hiding a top-layer popover during the focusout makes Chrome
+          // abandon the in-flight focus move and drop focus to <body>, so the
+          // user's Tab appears to do nothing. Selector and MultiSelector
+          // already dismiss on this keydown.
+          popover.hide();
+          break;
         case 'Home':
           if (popover.isOpen) {
             e.preventDefault();
@@ -750,7 +785,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   return (
     <>
       <input
-        ref={mergeRefs(ref, inputRef, fallbackAnchorRef)}
+        ref={useMergedRefs(ref, inputRef, fallbackAnchorRef)}
         id={inputId}
         type="text"
         role="combobox"
@@ -825,44 +860,71 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
               {emptySearchResultsText}
             </div>
           ) : (
-            results.map((item, index) => {
-              const itemKey = getKey(item.id, index);
-              const isSelected = itemKey === selectedKey;
-              return (
-                <div
-                  key={itemKey}
-                  id={getItemId(index)}
-                  role="option"
-                  aria-selected={isSelected}
-                  tabIndex={-1}
-                  onClick={() => handleSelect(item)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  {...stylex.props(
-                    styles.item,
-                    itemSizeStyles[size],
-                    index === highlightedIndex && styles.itemHighlighted,
-                    isSelected && styles.itemSelected,
-                  )}>
-                  <span {...stylex.props(styles.itemContent)}>
-                    {renderItem ? (
-                      renderItem(item)
-                    ) : (
-                      <TypeaheadItem item={item} />
+            (() => {
+              let flatIndex = 0;
+              const renderOption = (item: T) => {
+                const index = flatIndex++;
+                const itemKey = getKey(item.id, index);
+                const isSelected = itemKey === selectedKey;
+                return (
+                  <div
+                    key={itemKey}
+                    id={getItemId(index)}
+                    role="option"
+                    aria-selected={isSelected}
+                    tabIndex={-1}
+                    onClick={() => handleSelect(item)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    {...stylex.props(
+                      styles.item,
+                      itemSizeStyles[size],
+                      index === highlightedIndex && styles.itemHighlighted,
+                      isSelected && styles.itemSelected,
+                    )}>
+                    <span {...stylex.props(styles.itemContent)}>
+                      {renderItem ? (
+                        renderItem(item)
+                      ) : (
+                        <TypeaheadItem item={item} />
+                      )}
+                    </span>
+                    {isSelected && (
+                      <Icon icon="check" size="sm" color="primary" />
                     )}
-                  </span>
-                  {isSelected && (
-                    <Icon icon="check" size="sm" color="primary" />
-                  )}
-                </div>
-              );
-            })
+                  </div>
+                );
+              };
+
+              return groupItems(results, {ungroupedFirst: true}).map(group => {
+                const options = group.items.map(renderOption);
+                if (group.heading == null) {
+                  return options;
+                }
+                return (
+                  <div
+                    key={`group-${group.heading}`}
+                    role="group"
+                    aria-label={group.heading}>
+                    <div
+                      aria-hidden="true"
+                      {...stylex.props(styles.groupHeading)}>
+                      {group.heading}
+                    </div>
+                    {options}
+                  </div>
+                );
+              });
+            })()
           )}
         </div>,
         {
           placement: 'below',
           alignment: 'start',
           offset: spacingVars['--spacing-1'],
-          xstyle: styles.popover,
+          xstyle: [
+            styles.popover,
+            menuWidth != null && styles.popoverCustomWidth(menuWidth),
+          ],
         },
       )}
     </>
