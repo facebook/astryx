@@ -850,6 +850,7 @@ says nothing about either. `light-dark()` is where the pattern actually shows up
 in this repo; the others can be added if they start to.
 
 See: https://github.com/facebook/astryx/pull/5321
+
 ### `@astryx/no-raw-color`
 
 Flags a raw colour value — hex, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`,
@@ -948,12 +949,26 @@ The hatch also covers the rule's one known over-reach: a hex-shaped fragment in 
 string that is not a colour (`'#abc'` as a fragment identifier). There are none
 in the repo today.
 
-**Known limitations (intentional false-negatives):** named CSS colours (`red`,
-`rebeccapurple`) are not flagged — a bare word is indistinguishable from any
-other string and the false-positive cost is far higher than the rate at which
-they appear here. Neither is a colour assembled at runtime from parts
-(`'#' + hex`), which would mean evaluating expressions rather than reading
-literals.
+**Known limitations (intentional false-negatives).** Each was probed rather than
+assumed, and none has an instance in the repo except the last:
+
+- **Named CSS colours** (`red`, `rebeccapurple`). A bare word is
+  indistinguishable from any other string and the false-positive cost is far
+  higher than the rate at which they appear here.
+- **A colour assembled at runtime from parts** (`'#' + hex`), which would mean
+  evaluating expressions rather than reading literals.
+- **A percent-encoded colour inside a data URI** —
+  `url("data:image/svg+xml,%3Csvg fill=%22%23ff0000%22/%3E")`. Decoding URIs to
+  look for colours is a different rule.
+- **A `.css` file**, which ESLint never parses. There is one live instance:
+  `packages/core/src/reset.css:291` reads
+  `var(--color-text-secondary, #9ca3af)` — the same defensive-fallback shape as
+  the `Sankey` hits, and it rides with them.
+
+Everything else the rule reaches, and a probe confirms it: a `const`, an object
+property, an array element, an enum member, a computed key, a template
+`boxShadow` in modern space-separated syntax, and an inline `style={{}}` — which
+sits at the very top of the cascade, where a theme has no answer at all.
 
 **Scope:** `warn` in every package that ships component styling. There are 23
 violations on `main` — 20 in lab (`LogStream`'s console palette, `Sankey`'s
