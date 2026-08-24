@@ -205,6 +205,10 @@ const styles = stylex.create({
 });
 ```
 
+Colour is only half-covered here: this rule reads the property name, so it sees
+a literal on `color`/`backgroundColor`/`borderColor` inside `stylex.create()`
+and nothing else. `@astryx/no-raw-color` covers the rest.
+
 ### `@astryx/no-style-only-wrapper`
 
 Flags a `<div>`/`<span>` that exists only to style a single Astryx component.
@@ -846,3 +850,114 @@ says nothing about either. `light-dark()` is where the pattern actually shows up
 in this repo; the others can be added if they start to.
 
 See: https://github.com/facebook/astryx/pull/5321
+### `@astryx/no-raw-color`
+
+Flags a raw colour value — hex, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`,
+`oklab()`, `oklch()`, `color()` — anywhere in component source.
+
+A theme can retint every token a component reads. It cannot reach inside a
+literal. So a colour written into a component is the colour every theme gets,
+including a consumer's own, and the only way to change it is to edit the
+component.
+
+**Bad** — this grey is the same grey in all seven themes:
+
+```ts
+const TINT = '#6b7280';
+boxShadow: `0 1px 2px rgba(0, 0, 0, 0.12)`;
+```
+
+**Good** — the theme decides:
+
+```ts
+const TINT = colorVars['--color-text-secondary'];
+boxShadow: shadowVars['--shadow-sm'];
+```
+
+If no token fits, the value belongs in the theme layer, where `defineTheme`
+gives every theme a way to override it.
+
+#### Why this is not `@astryx/no-hardcoded-styles`
+
+That rule is keyed on the **property name** and only reads values sitting
+directly inside `stylex.create()`, against an anchored pattern. It covers
+`color`, `backgroundColor` and `borderColor`, and nothing else. This one walks
+the literal text instead, so the hiding place stops mattering — these are all
+shapes it catches and the older rule does not:
+
+| shape                                             | example                                                 |
+| ------------------------------------------------- | ------------------------------------------------------- |
+| an argument to another CSS function               | `'light-dark(#fff, #000)'`, `color-mix(…, #1c1c1e 20%)` |
+| behind a `const`, one hop from the style object   | `const TINT = '#00000020'`                              |
+| inside a template literal, `boxShadow` especially | `` `0 1px 2px rgba(0,0,0,.12)` ``                       |
+| a `var()` fallback                                | `'var(--color-text-disabled, #999)'`                    |
+| a JSX attribute                                   | `<circle fill="#fff" />`                                |
+| any other colour property                         | `outlineColor`, `fill`, `stroke`, `caretColor`          |
+| `hsl()` and the modern notations                  | `'oklch(0.7 0.1 200)'`                                  |
+
+The two rules are complementary and both stay on: `no-hardcoded-styles` also
+covers spacing, radius and type, which this one says nothing about.
+
+#### What it stays quiet about
+
+The rule is colour-shaped, so it structurally cannot reach the sanctioned
+non-token values — `0`, `none`, `transparent`, `inherit`, `currentColor` — or
+layout values like `width: '100%'` and a dropdown's `maxHeight: '300px'`. Beyond
+that:
+
+| Location or shape                                                         | Reported? |
+| ------------------------------------------------------------------------- | --------- |
+| Component source under `packages/{core,lab,charts,richtext,vega}/src`     | ✅ yes    |
+| A `theme/` or `themes/` directory (`tokens.stylex`, `defineTheme`)        | ❌ no     |
+| `*.test.*`, `*.spec.*`, `*.stories.*`, `*.doc.*`, `__tests__/`            | ❌ no     |
+| A comment (the rule reads literals, never comments)                       | ❌ no     |
+| A colour assembled from values passed in — `rgba(${r}, ${g}, ${b}, ${a})` | ❌ no     |
+| Every channel from a token — `rgb(var(--r) var(--g) var(--b))`            | ❌ no     |
+| `'rgb('` with no closing parenthesis (a parser's prefix)                  | ❌ no     |
+| `maskImage` and friends, where the colour resolves through alpha          | ❌ no     |
+
+Two of those are worth the detail. A **colour function only counts when its
+arguments carry a literal digit** — that separates authoring a colour from
+building one out of channels handed in, which is how `utils/color.ts` serializes
+and `getChartColors` parses. One literal channel is enough, so
+`hsl(var(--accent-hue), 80%, 50%)` is still a colour this file chose. And a
+**mask** is the one place a colour is not paint: `mask-image` resolves a
+gradient through its alpha channel, so `rgba(0, 0, 0, 0.3)` in one of its stops
+is a 30% opacity stop and the black is discarded — `backgroundImage`, which
+paints the same gradient, is not exempt.
+
+Path exemptions live in the rule source rather than only in `eslint.config.js`,
+so they are testable and a config edit cannot quietly turn the theme layer into
+a violation. That layer has ~200 colour literals and defining them is its job.
+
+#### On `eslint-disable`
+
+**A disable suppresses this rule, deliberately.** The only way to close that
+door is `--no-inline-config`, which is process-wide: it would also void the
+sanctioned disables other rules here rely on, including the deliberately
+unwrapped row in `Table.test.tsx`. There is no way to harden one rule alone.
+
+So the escape hatch stays open and stays _visible_. A disable on this rule means
+someone knowingly wrote a raw colour: it is greppable
+(`git grep no-raw-color -- packages`), it is permanent in the diff, and it is a
+review signal rather than a resolution. A rule with no escape hatch gets evaded
+by moving the literal somewhere the rule cannot see, which is worse — that is
+invisible. The reviewer still owes the finding.
+
+The hatch also covers the rule's one known over-reach: a hex-shaped fragment in a
+string that is not a colour (`'#abc'` as a fragment identifier). There are none
+in the repo today.
+
+**Known limitations (intentional false-negatives):** named CSS colours (`red`,
+`rebeccapurple`) are not flagged — a bare word is indistinguishable from any
+other string and the false-positive cost is far higher than the rate at which
+they appear here. Neither is a colour assembled at runtime from parts
+(`'#' + hex`), which would mean evaluating expressions rather than reading
+literals.
+
+**Scope:** `warn` in every package that ships component styling. There are 23
+violations on `main` — 20 in lab (`LogStream`'s console palette, `Sankey`'s
+`var()` fallbacks), 2 in core, 1 in charts. Each wants a token decision rather
+than a mechanical substitution, so they are tracked separately; promote a
+package to `error` once it reaches zero, the same path
+`no-physical-properties` took.

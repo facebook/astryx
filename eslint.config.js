@@ -290,6 +290,29 @@ export default defineConfig(
       '@astryx/no-light-dark-outside-theme': 'warn',
     },
   },
+  // A colour written into a component is the colour every theme gets — a theme
+  // can retint any token a component reads, but it cannot reach inside a
+  // literal. Core is covered by the token-enforcement block above (which
+  // already excludes packages/core/src/theme/**); this reaches the other
+  // packages that ship component styling, for the same reason the rules above
+  // do. Warn everywhere for now: the 23 violations on main are 20 in lab
+  // (LogStream's console palette, Sankey's var() fallbacks), 2 in core and 1
+  // in charts, and each wants a token decision rather than a mechanical
+  // substitution. Promote to 'error' per package as each reaches zero.
+  {
+    files: [
+      "packages/lab/src/**/*.{ts,tsx}",
+      "packages/charts/src/**/*.{ts,tsx}",
+      "packages/richtext/src/**/*.{ts,tsx}",
+      "packages/vega/src/**/*.{ts,tsx}",
+    ],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-raw-color': 'warn',
+    },
+  },
   // The i18n runtime itself defines the message strings the rest of the
   // package resolves against; a "hardcoded string" check against it would be
   // circular. Turn off @astryx/no-hardcoded-i18n-string just for this dir.
