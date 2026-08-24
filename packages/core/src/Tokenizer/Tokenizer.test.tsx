@@ -94,6 +94,37 @@ const userSource: SearchSource = {
   bootstrap: () => users.slice(0, 3),
 };
 
+describe('Tokenizer minQueryLength', () => {
+  it('forwards the threshold to the typeahead engine', async () => {
+    const search = vi.fn((query: string) =>
+      users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
+    );
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={{search, bootstrap: () => []}}
+        value={[]}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'Al'}});
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(search).not.toHaveBeenCalled();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.change(input, {target: {value: 'Ali'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+});
+
 describe('Tokenizer', () => {
   it('forwards ref to the root field element', () => {
     let root: HTMLDivElement | null = null;

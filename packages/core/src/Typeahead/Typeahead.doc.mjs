@@ -84,6 +84,12 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'minQueryLength',
+      type: 'number',
+      description: 'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
+      default: '1',
+    },
+    {
       name: 'status',
       type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:

@@ -94,6 +94,19 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   maxMenuItems?: number;
 
   /**
+   * Minimum query length before the search source is queried. Below it no
+   * search runs and the menu stays closed, so a remote source is not asked
+   * for a result set that cannot be meaningful yet — and the user does not
+   * see "no results" for a query that was never searched.
+   *
+   * Measured with `String.length` (UTF-16 code units), like every other
+   * length check in the library.
+   *
+   * @default 1 — every non-empty query is searched.
+   */
+  minQueryLength?: number;
+
+  /**
    * Text shown when no results found.
    * @default 'No results found'
    */
@@ -286,6 +299,19 @@ const itemSizeStyles = stylex.create({
 });
 
 // =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * A query that has been typed but is still shorter than the caller's
+ * threshold. An empty query is not "below the minimum" — it is the
+ * untouched state, and `hasEntriesOnFocus` owns what happens there.
+ */
+function isBelowMinQueryLength(query: string, minQueryLength: number): boolean {
+  return query.length > 0 && query.length < minQueryLength;
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -316,6 +342,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   placeholder: placeholderFromProps,
   hasEntriesOnFocus = false,
   maxMenuItems = 10,
+  minQueryLength = 1,
   emptySearchResultsText: emptySearchResultsTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
@@ -515,7 +542,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         clearTimeout(searchTimeoutRef.current);
       }
 
-      if (newQuery.length === 0 && !hasEntriesOnFocus) {
+      // Nothing to search: either the field was emptied, or the query is
+      // still shorter than `minQueryLength`. Both drop stale results and
+      // close the menu — showing the empty state for a query that was never
+      // searched would report "no results" that nobody looked for.
+      if (
+        (newQuery.length === 0 && !hasEntriesOnFocus) ||
+        isBelowMinQueryLength(newQuery, minQueryLength)
+      ) {
         searchGenRef.current++;
         searchSource.cancel?.();
         setResults([]);
@@ -543,6 +577,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     [
       onChangeQuery,
       hasEntriesOnFocus,
+      minQueryLength,
       performSearch,
       performBootstrap,
       popover,
@@ -657,7 +692,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           if (results.length > 0) {
             popover.show();
             setHighlightedIndex(0);
-          } else if (hasEntriesOnFocus) {
+          } else if (
+            hasEntriesOnFocus &&
+            // A below-threshold query was never searched; falling back to the
+            // bootstrap entries here would open a menu of suggestions that
+            // ignore what the user has already typed.
+            !isBelowMinQueryLength(query, minQueryLength)
+          ) {
             void performBootstrap();
           }
         }
@@ -715,7 +756,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       highlightedIndex,
       handleSelect,
       hasEntriesOnFocus,
-      query.length,
+      query,
+      minQueryLength,
       performBootstrap,
       externalOnKeyDown,
     ],

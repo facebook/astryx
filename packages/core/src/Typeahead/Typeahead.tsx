@@ -110,6 +110,13 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
   hasEntriesOnFocus?: boolean;
   /** Max dropdown items. @default 10 */
   maxMenuItems?: number;
+  /**
+   * Minimum query length before the search source is queried. Below it no
+   * search runs and the menu stays closed — useful for remote sources where
+   * one or two characters match too much to be worth fetching.
+   * @default 1
+   */
+  minQueryLength?: number;
   /** Text shown when no results found. @default 'No results found' */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
@@ -247,6 +254,7 @@ export function Typeahead<T extends SearchableItem>({
   placeholder,
   hasEntriesOnFocus,
   maxMenuItems,
+  minQueryLength,
   emptySearchResultsText,
   isDisabled = false,
   disabledMessage,
@@ -466,6 +474,7 @@ export function Typeahead<T extends SearchableItem>({
           placeholder={showToken ? undefined : placeholder}
           hasEntriesOnFocus={hasEntriesOnFocus}
           maxMenuItems={maxMenuItems}
+          minQueryLength={minQueryLength}
           emptySearchResultsText={emptySearchResultsText}
           isDisabled={isDisabled}
           hasAutoFocus={hasAutoFocus}

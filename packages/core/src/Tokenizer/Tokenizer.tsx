@@ -156,6 +156,17 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   hasEntriesOnFocus?: boolean;
   /** Max dropdown items. @default 10 */
   maxMenuItems?: number;
+  /**
+   * Minimum query length before the search source is queried. Below it no
+   * search runs and the menu stays closed — useful for remote sources where
+   * one or two characters match too much to be worth fetching.
+   *
+   * With `hasCreate`, the "Create" entry rides on the search results, so it
+   * also waits for the threshold.
+   *
+   * @default 1
+   */
+  minQueryLength?: number;
   /** Text shown when no results found. @default 'No results found' */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
@@ -393,6 +404,7 @@ export function Tokenizer<T extends SearchableItem>({
   placeholder,
   hasEntriesOnFocus,
   maxMenuItems,
+  minQueryLength,
   emptySearchResultsText,
   isDisabled = false,
   htmlName,
@@ -778,6 +790,7 @@ export function Tokenizer<T extends SearchableItem>({
         placeholder={value.length === 0 ? placeholder : ''}
         hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
         maxMenuItems={maxMenuItems}
+        minQueryLength={minQueryLength}
         emptySearchResultsText={emptySearchResultsText}
         isDisabled={isDisabled}
         isFocusableDisabled={showsDisabledMessage}

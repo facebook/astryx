@@ -61,6 +61,12 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'minQueryLength',
+      type: 'number',
+      description: 'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
+      default: '1',
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
       description: 'Text shown when search returns no results.',
@@ -170,6 +176,12 @@ export const docsZh = {
       default: '10',
     },
     {
+      name: 'minQueryLength',
+      type: 'number',
+      description: '查询搜索源前的最小查询长度。低于该长度不会发起搜索，菜单保持关闭。',
+      default: '1',
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
       description: '搜索无结果时显示的文本。',
@@ -253,6 +265,7 @@ export const docsDense = {
     placeholder: 'Input placeholder.',
     hasEntriesOnFocus: 'Bootstrap results on focus.',
     maxMenuItems: 'Max dropdown items.',
+    minQueryLength: 'Min query length before searching. Menu stays closed below it.',
     emptySearchResultsText: 'Text when no results.',
     isDisabled: 'Whether input disabled.',
     hasAutoFocus: 'Auto-focus on mount.',

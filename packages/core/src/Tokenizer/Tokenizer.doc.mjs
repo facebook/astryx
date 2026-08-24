@@ -136,6 +136,12 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'minQueryLength',
+      type: 'number',
+      description: 'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
+      default: '1',
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
       description: 'Text shown when search returns no results.',
@@ -379,6 +385,12 @@ export const docsZh = {
       default: '10',
     },
     {
+      name: 'minQueryLength',
+      type: 'number',
+      description: 'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
+      default: '1',
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
       description: '\u641c\u7d22\u65e0\u7ed3\u679c\u65f6\u663e\u793a\u7684\u6587\u672c\u3002',
@@ -500,6 +512,7 @@ export const docsDense = {
     labelTooltip: 'Tooltip on label.',
     hasEntriesOnFocus: 'Show bootstrap results on focus before typing.',
     maxMenuItems: 'Max dropdown items to display.',
+    minQueryLength: 'Min query length before searching. Menu stays closed below it.',
     emptySearchResultsText: 'Text when search returns no results.',
     hasAutoFocus: 'Auto-focus input on mount.',
     size: 'Input+token size.',
