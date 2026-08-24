@@ -9,6 +9,7 @@
  * @position Core implementation of spinner loading indicator
  *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Spinner/resolveRingGeometry.ts
  * - /packages/core/src/Spinner/Spinner.doc.mjs
  * - /packages/core/src/Spinner/Spinner.test.tsx
  * - /packages/core/src/Spinner/index.ts
@@ -24,6 +25,7 @@ import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {resolveRingGeometry} from './resolveRingGeometry';
 
 // =============================================================================
 // Constants
@@ -53,18 +55,30 @@ const TRACK_ALPHA: Record<SpinnerShade, number> = {
   inherit: 0.3,
 };
 
-/** Public geometry vars, registered so a themed value reaches the canvas. */
-const GEOMETRY_VARS = ['--spinner-diameter', '--spinner-rail-width'];
+/**
+ * Where the resolved geometry lands: the public var if a theme set one, the
+ * size's default otherwise. These are the names the box and the canvas read —
+ * never the public ones directly. See `sizeStyles` for why.
+ */
+const RESOLVED_DIAMETER = '--_spinner-ring-diameter';
+const RESOLVED_RAIL = '--_spinner-ring-rail';
+const RESOLVED_GEOMETRY_VARS = [RESOLVED_DIAMETER, RESOLVED_RAIL];
 
 let didRegisterVars = false;
 
 /**
- * Register the geometry vars as `<length>`.
+ * Register the resolved geometry vars as `<length>`.
  *
  * Without this their computed value is the *specified* string, so a theme
  * writing `2.5rem` or `calc(2rem + 8px)` reaches the canvas as that text and
  * `parseFloat` silently truncates it to `2.5` / `NaN`. Registered, the
  * computed value is an absolute px length the canvas can use directly.
+ *
+ * Only the resolved vars are registered, and the public ones deliberately are
+ * not: a registered property with an `initialValue` is never
+ * guaranteed-invalid, so `var(--spinner-diameter, <default>)` would stop
+ * falling back the moment `--spinner-diameter` were registered — every
+ * unthemed spinner would draw at the initial `0px`.
  */
 function registerSpinnerVars(): void {
   if (didRegisterVars) {
@@ -77,7 +91,7 @@ function registerSpinnerVars(): void {
   ) {
     return;
   }
-  for (const name of GEOMETRY_VARS) {
+  for (const name of RESOLVED_GEOMETRY_VARS) {
     try {
       CSS.registerProperty({
         name,
@@ -118,10 +132,10 @@ const styles = stylex.create({
     placeItems: 'center',
     overflow: 'hidden',
     verticalAlign: 'middle',
-    // The box and the drawn ring read the same vars, so a themed size moves
-    // both together.
-    width: 'calc(var(--spinner-diameter) + var(--spinner-rail-width) * 2)',
-    height: 'calc(var(--spinner-diameter) + var(--spinner-rail-width) * 2)',
+    // The box and the drawn ring read the same resolved vars, so a themed
+    // size moves both together.
+    width: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_RAIL}) * 2)`,
+    height: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_RAIL}) * 2)`,
     // Hosts that paint a spinner inside a fixed-size control are flex
     // containers (a Switch thumb is 14px at the smallest size), and a flex
     // item's default `flex-shrink: 1` lets the parent compress this box while
@@ -151,22 +165,33 @@ const styles = stylex.create({
 // What each named `size` resolves to. A theme redefines a size by setting the
 // public vars on the size-variant target, e.g.
 // spinner: { 'size:xl': { '--spinner-diameter': '40px' } }.
+//
+// The size's default is written as a `var()` FALLBACK rather than as a
+// declaration of the public var, and that is load-bearing rather than
+// stylistic. StyleX emits custom-property declarations OUTSIDE its cascade
+// layers, while a theme's component overrides are injected into
+// `@layer astryx-theme`; unlayered declarations beat every layer, so a
+// StyleX-declared `--spinner-diameter: 10px` would win over the theme's rule
+// no matter how specific the theme got. Reading the public var with the
+// default as its fallback inverts that: the theme's declaration is the only
+// one of the two, and the default applies exactly when it is absent. It is the
+// same shape the shade colors already use.
 const sizeStyles = stylex.create({
   sm: {
-    '--spinner-diameter': `${SIZES.sm.diameter}px`,
-    '--spinner-rail-width': `${SIZES.sm.border}px`,
+    [RESOLVED_DIAMETER]: `var(--spinner-diameter, ${SIZES.sm.diameter}px)`,
+    [RESOLVED_RAIL]: `var(--spinner-rail-width, ${SIZES.sm.border}px)`,
   },
   md: {
-    '--spinner-diameter': `${SIZES.md.diameter}px`,
-    '--spinner-rail-width': `${SIZES.md.border}px`,
+    [RESOLVED_DIAMETER]: `var(--spinner-diameter, ${SIZES.md.diameter}px)`,
+    [RESOLVED_RAIL]: `var(--spinner-rail-width, ${SIZES.md.border}px)`,
   },
   lg: {
-    '--spinner-diameter': `${SIZES.lg.diameter}px`,
-    '--spinner-rail-width': `${SIZES.lg.border}px`,
+    [RESOLVED_DIAMETER]: `var(--spinner-diameter, ${SIZES.lg.diameter}px)`,
+    [RESOLVED_RAIL]: `var(--spinner-rail-width, ${SIZES.lg.border}px)`,
   },
   xl: {
-    '--spinner-diameter': `${SIZES.xl.diameter}px`,
-    '--spinner-rail-width': `${SIZES.xl.border}px`,
+    [RESOLVED_DIAMETER]: `var(--spinner-diameter, ${SIZES.xl.diameter}px)`,
+    [RESOLVED_RAIL]: `var(--spinner-rail-width, ${SIZES.xl.border}px)`,
   },
 });
 
@@ -311,25 +336,13 @@ export function Spinner({
     const draw = () => {
       const canvasStyle = getComputedStyle(canvas);
 
-      // Registered as <length>, so these are resolved px.
-      const themedDiameter = parseFloat(
-        canvasStyle.getPropertyValue('--spinner-diameter'),
+      // Registered as <length>, so a themed value arrives resolved to px —
+      // see resolveRingGeometry for how each var falls back when it did not.
+      const {diameter, border} = resolveRingGeometry(
+        parseFloat(canvasStyle.getPropertyValue(RESOLVED_DIAMETER)),
+        parseFloat(canvasStyle.getPropertyValue(RESOLVED_RAIL)),
+        SIZES[size],
       );
-      const themedRail = parseFloat(
-        canvasStyle.getPropertyValue('--spinner-rail-width'),
-      );
-      // A zero diameter is never a choice — it means the var never resolved
-      // (no stylesheet yet, or a themed value the registration rejected), so
-      // fall back to the built-in geometry. A zero rail IS a choice: a theme
-      // asking for no visible track gets one, which is why this tests for a
-      // finite number rather than truthiness.
-      const diameter =
-        Number.isFinite(themedDiameter) && themedDiameter > 0
-          ? themedDiameter
-          : SIZES[size].diameter;
-      const border = Number.isFinite(themedRail)
-        ? themedRail
-        : SIZES[size].border;
       const pixelRatio = window.devicePixelRatio || 1;
 
       // Both colors arrive resolved (see trackShadeStyles / arcShadeStyles):
@@ -427,11 +440,11 @@ export function Spinner({
         stylex.props(
           styles.spinner,
           trackShadeStyles[shade],
-          // The geometry defaults ride whichever element carries the theme
-          // target, so a themed value overrides them instead of being shadowed
-          // by them. With a label that target is the wrapping div and the span
-          // inherits from it.
-          !hasLabel && sizeStyles[size],
+          // The size's geometry always rides the span that draws the ring. It
+          // reads the public vars rather than declaring them, so it does not
+          // matter whether the theme target is this element or the wrapper —
+          // either way the value is inherited by the time it is read.
+          sizeStyles[size],
           !hasLabel && xstyle,
         ),
         hasLabel ? undefined : className,
@@ -455,7 +468,7 @@ export function Spinner({
       {...restProps}
       {...mergeProps(
         themeProps('spinner', {size, shade}),
-        stylex.props(styles.wrapper, sizeStyles[size], xstyle),
+        stylex.props(styles.wrapper, xstyle),
         className,
         style,
       )}>
