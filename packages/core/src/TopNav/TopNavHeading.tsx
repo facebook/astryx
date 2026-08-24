@@ -34,7 +34,8 @@ import {Link} from '../Link';
 import {Icon} from '../Icon';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
@@ -363,7 +364,7 @@ export function TopNavHeading({
   // setTriggerEl belongs on the chevron button, not this root: it is the
   // focus-restore target and a <div> cannot take focus. triggerRef stays here
   // because the panel anchors to the whole heading.
-  const setRef = mergeRefs<HTMLElement>(
+  const setRef = useMergedRefs<HTMLElement>(
     rootRef,
     ref,
     menu ? popover.triggerRef : undefined,

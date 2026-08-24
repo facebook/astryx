@@ -15,7 +15,9 @@
  * - no-unguarded-ime-keydown: Flags an onKeyDown on an editable surface that branches on command keys without an IME composition guard (isImeKeyEvent/isComposing)
  * - no-classname-clobber: Flags two className sources on one JSX element — a literal className/style beside {...stylex.props()}, or two spreads that each carry a className (the later one silently wins)
  * - no-hover-on-disabled: Flags a :hover condition that can still match a disabled element (browsers suppress a disabled control's events, not its hover styling)
+ * - require-table-section: Requires TableRow/tr to sit inside TableHeader/TableBody/TableFooter (a row directly inside a table emits <table><tr>, which browsers repair on parse and React does not)
  * - disabled-cursor: Flags a cursor that promises an interaction without giving way to not-allowed on a disabled element
+ * - no-unstable-merged-refs: Flags render-time mergeRefs callbacks and unstable callback inputs to useMergedRefs
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -42,12 +44,14 @@ import focusOutlineSharedRule from './focus-outline-shared.js';
 import noHoverOnDisabledRule from './no-hover-on-disabled.js';
 import disabledCursorRule from './disabled-cursor.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
+import noUnstableMergedRefsRule from './no-unstable-merged-refs.js';
 import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
 import requireBasePropsRule from './require-base-props.js';
 import requireRefPropRule from './require-ref-prop.js';
 import noHardcodedI18nStringRule from './no-hardcoded-i18n-string.js';
 import i18nKeyFormatRule from './i18n-key-format.js';
+import requireTableSectionRule from './require-table-section.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -60,7 +64,10 @@ const STYLE_PROPERTIES = {
     pattern: /^['"]?\d+(\.\d+)?(px|rem|em)['"]?$/,
     tokenVar: 'textSizeVars',
     message: 'Use textSizeVars token instead of hardcoded fontSize',
-    examples: ["textSizeVars['--font-size-xs']", "textSizeVars['--font-size-base']"],
+    examples: [
+      "textSizeVars['--font-size-xs']",
+      "textSizeVars['--font-size-base']",
+    ],
   },
   fontWeight: {
     pattern: /^\d{3}$/,
@@ -81,20 +88,76 @@ const STYLE_PROPERTIES = {
     message: 'Use spacingVars token instead of hardcoded padding',
     examples: ["spacingVars['--spacing-2']"],
   },
-  paddingTop: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  paddingRight: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  paddingBottom: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  paddingLeft: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  paddingBlock: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  paddingInline: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  margin: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginTop: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginRight: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginBottom: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginLeft: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginBlock: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  marginInline: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
-  gap: { pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/, tokenVar: 'spacingVars', message: 'Use spacingVars token' },
+  paddingTop: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  paddingRight: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  paddingBottom: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  paddingLeft: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  paddingBlock: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  paddingInline: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  margin: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginTop: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginRight: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginBottom: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginLeft: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginBlock: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  marginInline: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
+  gap: {
+    pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
+    tokenVar: 'spacingVars',
+    message: 'Use spacingVars token',
+  },
   // Border radius
   borderRadius: {
     pattern: /^['"]?\d+(\.\d+)?(px|rem)['"]?$/,
@@ -124,8 +187,18 @@ const STYLE_PROPERTIES = {
 
 // Properties to skip (these are typically fine as hardcoded values)
 const SKIP_VALUES = [
-  '0', '0px', 'inherit', 'initial', 'unset', 'auto', 'none',
-  '100%', '50%', '0%', 'transparent', 'currentColor',
+  '0',
+  '0px',
+  'inherit',
+  'initial',
+  'unset',
+  'auto',
+  'none',
+  '100%',
+  '50%',
+  '0%',
+  'transparent',
+  'currentColor',
 ];
 
 /**
@@ -164,7 +237,8 @@ const noHardcodedStylesRule = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce usage of Astryx design tokens instead of hardcoded values in StyleX',
+      description:
+        'Enforce usage of Astryx design tokens instead of hardcoded values in StyleX',
       category: 'Best Practices',
       recommended: true,
     },
@@ -179,7 +253,7 @@ const noHardcodedStylesRule = {
           // Allow specific properties to be ignored
           ignore: {
             type: 'array',
-            items: { type: 'string' },
+            items: {type: 'string'},
           },
         },
         additionalProperties: false,
@@ -268,12 +342,14 @@ const plugin = {
     'no-hover-on-disabled': noHoverOnDisabledRule,
     'disabled-cursor': disabledCursorRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
+    'no-unstable-merged-refs': noUnstableMergedRefsRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
     'copyright-header': copyrightHeaderRule,
     'no-raw-console-cli': noRawConsoleCliRule,
     'no-hardcoded-i18n-string': noHardcodedI18nStringRule,
     'i18n-key-format': i18nKeyFormatRule,
+    'require-table-section': requireTableSectionRule,
   },
   configs: {},
 };
@@ -335,11 +411,15 @@ plugin.configs.strict = {
     // honour. Error in both tiers, and autofixable.
     '@astryx/disabled-cursor': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
+    '@astryx/no-unstable-merged-refs': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
     '@astryx/copyright-header': 'error',
     '@astryx/no-hardcoded-i18n-string': 'error',
     '@astryx/i18n-key-format': 'error',
+    // A row directly inside a table is invalid DOM and hydration-unsafe, and
+    // the repo is clean — error in both tiers so it stays that way (#5277).
+    '@astryx/require-table-section': 'error',
   },
 };
 
@@ -389,11 +469,15 @@ plugin.configs.recommended = {
     // honour. Error in both tiers, and autofixable.
     '@astryx/disabled-cursor': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
+    '@astryx/no-unstable-merged-refs': 'error',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',
     '@astryx/copyright-header': 'error',
     '@astryx/no-hardcoded-i18n-string': 'warn',
     '@astryx/i18n-key-format': 'warn',
+    // A row directly inside a table is invalid DOM and hydration-unsafe, and
+    // the repo is clean — error in both tiers so it stays that way (#5277).
+    '@astryx/require-table-section': 'error',
   },
 };
 

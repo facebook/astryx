@@ -67,7 +67,7 @@ import {
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
 } from '../Field';
-import {useInputStatusIcon} from '../hooks';
+import {useInputStatusIcon, useMergedRefs} from '../hooks';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
@@ -96,7 +96,6 @@ import {
   getInputARIA,
   isImeKeyEvent,
   mergeProps,
-  mergeRefs,
   rtlStyles,
   themeProps,
   formatSharedDate,
@@ -557,6 +556,7 @@ export function TouchDateField({
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const mergedInputRef = useMergedRefs(ref, inputRef);
   const inputGroup = useInputGroup();
 
   const [, startTransition] = useTransition();
@@ -1169,7 +1169,7 @@ export function TouchDateField({
         />
       </button>
       <input
-        ref={mergeRefs(ref, inputRef)}
+        ref={mergedInputRef}
         id={id}
         type="text"
         role="combobox"

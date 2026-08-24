@@ -569,6 +569,23 @@ describe('Avatar', () => {
       render(<Avatar name="Ada Lovelace" ref={ref} data-testid="a" />);
       expect(ref.current).toBe(screen.getByTestId('a'));
     });
+
+    it('keeps its merged ref attached across unrelated rerenders', () => {
+      const ref = vi.fn();
+      const {rerender} = render(
+        <Avatar name="Ada Lovelace" size="sm" tooltip={false} ref={ref} />,
+      );
+      const avatar = screen.getByRole('img', {name: 'Ada Lovelace'});
+      expect(ref).toHaveBeenLastCalledWith(avatar);
+      ref.mockClear();
+
+      rerender(
+        <Avatar name="Ada Lovelace" size="lg" tooltip={false} ref={ref} />,
+      );
+
+      expect(ref).not.toHaveBeenCalled();
+      expect(screen.getByRole('img', {name: 'Ada Lovelace'})).toBe(avatar);
+    });
   });
 });
 
