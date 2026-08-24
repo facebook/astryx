@@ -33,6 +33,7 @@ import {
   easeVars,
   typographyVars,
   typeScaleVars,
+  focusVars,
 } from '../theme/tokens.stylex';
 import {FieldLabel} from '../Field/FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
@@ -46,6 +47,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 
 const wrapperSizeStyles = stylex.create({
   sm: {
@@ -134,6 +136,12 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
   },
+  // A hidden label is sr-only, so its wrapper is a zero-width flex item — the
+  // row gap would still be painted beside the track, making the field box
+  // wider than the control it contains. Matches CheckboxInput.
+  containerLabelHidden: {
+    gap: 0,
+  },
   containerSpread: {
     justifyContent: 'space-between',
     width: '100%',
@@ -153,11 +161,34 @@ const styles = stylex.create({
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
+    minInlineSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
+    minBlockSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
+    insetBlockStart: {
+      default: null,
+      '@media (pointer: coarse)': '50%',
+    },
+    insetInlineStart: {
+      default: null,
+      '@media (pointer: coarse)': '50%',
+    },
+    transform: {
+      default: null,
+      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+    },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputBusy: {
     pointerEvents: 'none',
@@ -189,15 +220,22 @@ const styles = stylex.create({
       '@media (forced-colors: active)': 'CanvasText',
     },
   },
+  // The one ring in the system not drawn by focusOutlineStyles. The focusable
+  // input is a sibling of the track, so the condition has to reach the shared
+  // scope marker — and a marker cannot be shared across components without
+  // leaking focus state from an outer one, so it cannot live in the utility.
+  // StyleX also cannot inline a constant imported from another module, so the
+  // values are read from the tokens the utility reads.
   trackFocus: {
     outline: {
       default: 'none',
       [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
+        `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]: '2px',
+      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
+        focusVars['--focus-outline-offset'],
     },
   },
   // State-dependent colors with ancestor hover behavior
@@ -284,11 +322,7 @@ const styles = stylex.create({
 
 export type SwitchLabelPosition = 'start' | 'end';
 
-export type SwitchLabelSpacing =
-  | 'hug'
-  | 'spread'
-  /** @deprecated Use `'hug'` instead. */
-  | 'default';
+export type SwitchLabelSpacing = 'hug' | 'spread';
 
 export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
   /** Ref forwarded to the root element */
@@ -402,8 +436,6 @@ export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
    * Spacing behavior between label and switch.
    * - 'hug': Label and switch are positioned next to each other
    * - 'spread': Label and switch are pushed to opposite ends
-   *
-   * 'default' is a deprecated alias for 'hug'.
    * @default 'hug'
    */
   labelSpacing?: SwitchLabelSpacing;
@@ -475,16 +507,16 @@ export function Switch({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  // Announce the effective required state (form default included) while the
+  // native `required` stays bound to the explicit `isRequired` so a layout
+  // default never switches on browser validation.
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
   const isOn = optimisticValue === true;
-
-  // 'default' is a deprecated alias for 'hug' (#2889).
-  const resolvedLabelSpacing: SwitchLabelSpacing =
-    labelSpacing === 'default' ? 'hug' : labelSpacing;
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the switch row (which already exists) and the
@@ -533,7 +565,9 @@ export function Switch({
         // isDisabled guard in onChange below.
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
+        form={showsDisabledMessage ? '' : undefined}
         required={isRequired}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         onChange={e => {
           if (isDisabled || isBusy) {
             return;
@@ -617,8 +651,7 @@ export function Switch({
       {...mergeProps(
         themeProps('switch-field', {
           labelPosition: labelPosition !== 'end' ? labelPosition : undefined,
-          labelSpacing:
-            resolvedLabelSpacing !== 'hug' ? resolvedLabelSpacing : undefined,
+          labelSpacing: labelSpacing !== 'hug' ? labelSpacing : undefined,
         }),
         stylex.props(width != null && dynamicWidthStyles.width(width), xstyle),
         className,
@@ -637,7 +670,8 @@ export function Switch({
         }}
         {...stylex.props(
           styles.container,
-          resolvedLabelSpacing === 'spread' && styles.containerSpread,
+          isLabelHidden && styles.containerLabelHidden,
+          labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
         )}>
         {' '}
@@ -654,14 +688,13 @@ export function Switch({
         )}
       </div>
       {status?.message && (
-        <div {...stylex.props(styles.statusGap)}>
-          <FieldStatus
-            type={status.type}
-            message={status.message}
-            id={statusMessageID}
-            variant="detached"
-          />
-        </div>
+        <FieldStatus
+          type={status.type}
+          message={status.message}
+          id={statusMessageID}
+          variant="detached"
+          xstyle={styles.statusGap}
+        />
       )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

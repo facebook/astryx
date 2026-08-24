@@ -23,6 +23,7 @@ import userEvent from '@testing-library/user-event';
 import {Typeahead} from './Typeahead';
 import {BaseTypeahead} from './BaseTypeahead';
 import type {SearchSource, SearchableItem} from './types';
+import {InternationalizationProvider} from '../i18n';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -132,21 +133,94 @@ describe('BaseTypeahead', () => {
 
   it('announces the result count to a live region (comboboxes-6)', async () => {
     render(
-      <BaseTypeahead
-        searchSource={fruitSource}
-        value={null}
-        onChange={() => {}}
-        debounceMs={0}
-      />,
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.typeahead.resultCount':
+              '{count, number} {count, plural, one {résultat} other {résultats}}',
+          },
+        }}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </InternationalizationProvider>,
     );
     const input = screen.getByRole('combobox');
+    // "Ap" matches Apple only — the singular ICU branch.
     fireEvent.change(input, {target: {value: 'Ap'}});
 
     await waitFor(() => {
       const region = document.querySelector(
         '[data-astryx-live-region="polite"]',
       );
-      expect(region?.textContent).toMatch(/\d+ results?/);
+      // Exact, so the plural branch ("1 résultats") would fail.
+      expect(region?.textContent).toBe('1 résultat');
+    });
+  });
+
+  it('announces the plural result count', async () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.typeahead.resultCount':
+              '{count, number} {count, plural, one {résultat} other {résultats}}',
+          },
+        }}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </InternationalizationProvider>,
+    );
+    const input = screen.getByRole('combobox');
+    // "err" matches Cherry and Elderberry.
+    fireEvent.change(input, {target: {value: 'err'}});
+
+    await waitFor(() => {
+      const region = document.querySelector(
+        '[data-astryx-live-region="polite"]',
+      );
+      expect(region?.textContent).toBe('2 résultats');
+    });
+  });
+
+  it('speaks the result count from a provider catalog', async () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        messages={{
+          fr: {
+            '@astryx.typeahead.resultCount': {
+              defaultMessage:
+                '{count, number} {count, plural, one {résultat} other {résultats}}',
+            },
+          },
+        }}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </InternationalizationProvider>,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'err'}});
+
+    await waitFor(() => {
+      const region = document.querySelector(
+        '[data-astryx-live-region="polite"]',
+      );
+      // Same key through the catalog path rather than `overrides`.
+      expect(region?.textContent).toBe('2 résultats');
     });
   });
 
@@ -168,6 +242,28 @@ describe('BaseTypeahead', () => {
         '[data-astryx-live-region="polite"]',
       );
       expect(region).toHaveTextContent('No results found');
+    });
+  });
+
+  it('exposes the empty state as a themeable target', async () => {
+    const {container} = render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="No results found"
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'zzzzz'}});
+
+    await waitFor(() => {
+      const emptyState = container.querySelector(
+        '.astryx-typeahead-empty-state',
+      );
+      expect(emptyState).not.toBeNull();
+      expect(emptyState).toHaveTextContent('No results found');
     });
   });
 
@@ -195,6 +291,45 @@ describe('BaseTypeahead', () => {
       // Press Home — should NOT set aria-activedescendant
       fireEvent.keyDown(input, {key: 'Home'});
       expect(input).not.toHaveAttribute('aria-activedescendant');
+    });
+  });
+
+  describe('IME composition guard (#4828)', () => {
+    it('does not select the highlighted result on a composing Enter', async () => {
+      const onChange = vi.fn();
+      render(
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={onChange}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      fireEvent.change(input, {target: {value: 'App'}});
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+      });
+
+      // The browser fires this composing keydown for the Enter that commits
+      // an IME candidate (isComposing: true, or legacy keyCode 229) before
+      // compositionend writes the pending syllable into the input. Without
+      // the guard this both selects the highlighted result AND clears the
+      // input via handleSelect, so the syllable that compositionend then
+      // writes lands in an emptied field instead of being part of the word.
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(onChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('App');
+
+      fireEvent.keyDown(input, {key: 'Enter', keyCode: 229});
+      expect(onChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('App');
+
+      // A real, non-composing Enter still selects normally.
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({label: 'Apple'}),
+      );
     });
   });
 
@@ -735,6 +870,41 @@ describe('Typeahead edit mode', () => {
     // onChange should not have been called — value restored
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it('does not exit edit mode on a composing Escape (IME)', async () => {
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+      />,
+    );
+
+    // Enter edit mode by clicking the token; the input uncollapses and
+    // rejoins the Tab order (tabindex is cleared).
+    const tokenText = screen.getByText(fruits[0].label);
+    fireEvent.click(tokenText.closest('div')!);
+    await act(async () => {
+      await new Promise(r => requestAnimationFrame(r));
+    });
+    const input = screen.getByRole('combobox');
+    expect(input).not.toHaveAttribute('tabindex', '-1');
+
+    // BaseTypeahead invokes this external handler before its own IME guard, so
+    // a composing Escape (isComposing / legacy keyCode 229) — which an IME uses
+    // to cancel the pending candidate — must not exit edit mode here.
+    fireEvent.keyDown(input, {key: 'Escape', isComposing: true});
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex', '-1');
+    fireEvent.keyDown(input, {key: 'Escape', keyCode: 229});
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex', '-1');
+
+    // A real, non-composing Escape still exits edit mode: the token is
+    // restored and the collapsed input drops back out of the Tab order.
+    fireEvent.keyDown(input, {key: 'Escape'});
+    expect(screen.getByRole('combobox')).toHaveAttribute('tabindex', '-1');
+  });
 });
 
 describe('Typeahead collapsed input tab order', () => {
@@ -1038,11 +1208,16 @@ describe('Typeahead disabledMessage', () => {
   });
 });
 
-
 describe('Typeahead statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <Typeahead label="Fruit" searchSource={fruitSource} value={null} onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -1052,7 +1227,14 @@ describe('Typeahead statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <Typeahead label="Fruit" searchSource={fruitSource} value={null} onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',

@@ -6,13 +6,17 @@
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, records, code} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {template as templateApi} from '../../../api/template/template.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {defineCommand} from '../lib/define-command.mjs';
+import {doc as templateCommand} from './template.doc.mjs';
+import {doc as templateFn} from '../../../api/template/template.doc.mjs';
 
 export {discoverTemplates, listTemplates} from '../../../api/template/template.mjs';
 
@@ -37,7 +41,8 @@ export {discoverTemplates, listTemplates} from '../../../api/template/template.m
  *   import('../../../api/template/template.type.mjs').TemplateListResponse |
  *   import('../../../api/template/template.type.mjs').TemplateShowResponse |
  *   import('../../../api/template/template.type.mjs').TemplateSkeletonResponse |
- *   import('../../../api/template/template.type.mjs').TemplateCopyResponse
+ *   import('../../../api/template/template.type.mjs').TemplateCopyResponse |
+ *   import('../../../api/template/template.type.mjs').TemplateCdnResponse
  * )} TemplateResponse
  */
 
@@ -45,19 +50,13 @@ export {discoverTemplates, listTemplates} from '../../../api/template/template.m
  * @param {import('commander').Command} program
  */
 export function registerTemplate(program) {
-  program
-    .command('template [name] [path]')
-    .description('Inject a page or block template')
-    .option('--list', 'List available templates')
-    .option('--type <type>', 'Filter by template type: page or block')
-    .option('--package <pkg>', 'Narrow to templates from a specific package')
-    .option('--skeleton', 'Show layout skeleton with spatial annotations (padding, gap, nesting)')
-    .option('-f, --overwrite', 'Overwrite existing files without prompting')
-    .action(
+  defineCommand(program, templateCommand, {
+    fn: templateFn,
+    action:
       /**
        * @param {string | undefined} name
        * @param {string | undefined} targetPath
-       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, overwrite?: boolean}} options
+       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, cdn?: boolean | string, overwrite?: boolean}} options
        */
       async (name, targetPath, options) => {
       const json = program.opts().json || false;
@@ -85,7 +84,8 @@ export function registerTemplate(program) {
         name &&
         targetPath &&
         !options.list &&
-        !options.skeleton
+        !options.skeleton &&
+        !options.cdn
       ) {
         const collision = await detectTemplateCollision(name, targetPath);
         if (collision && !options.overwrite) {
@@ -105,6 +105,7 @@ export function registerTemplate(program) {
           await templateApi(name, {
             list: options.list,
             skeleton: options.skeleton,
+            cdn: options.cdn,
             type: /** @type {'page' | 'block' | undefined} */ (options.type),
             package: options.package,
             targetPath,
@@ -126,52 +127,82 @@ export function registerTemplate(program) {
         case 'template.list': {
           const pages = result.data.filter(t => t.type === 'page');
           const blocks = result.data.filter(t => t.type === 'block');
+          // Project each entry to its JSON-mirroring fields; the WIP marker is
+          // folded into `name` (as before) and the package is shown only when it
+          // isn't the built-in core package.
           /** @param {import('../../../api/template/template.type.mjs').TemplateListEntry} t */
-          const renderEntry = t => {
-            const status = t.isReady ? '' : ' (WIP)';
-            const pkg =
-              t.package && t.package !== '@astryxdesign/core'
-                ? `  [${t.package}]`
-                : '';
-            humanLog(`  ${t.name}${status}${pkg}`);
-            if (t.description) humanLog(`    ${t.description}`);
-          };
-          if (pages.length > 0) {
-            humanLog('\nPage Templates:\n');
-            for (const t of pages) renderEntry(t);
-          }
-          if (blocks.length > 0) {
-            humanLog('\nBlock Templates:\n');
-            for (const t of blocks) renderEntry(t);
-          }
-          humanLog('\nUsage:');
-          humanLog(`  ${run} template <id> [target-path]     Scaffold page or block`);
-          humanLog(`  ${run} template <id> --skeleton        Layout reference`);
-          humanLog(`  ${run} template --list --type block    List only blocks`);
-          humanLog(`  ${run} template --list --package <pkg> List from one package\n`);
+          const toRow = t => ({
+            name: t.isReady ? t.name : `${t.name} (WIP)`,
+            description: t.description,
+            package:
+              t.package && t.package !== '@astryxdesign/core' ? t.package : '',
+          });
+          const fields = ['name', 'description', 'package'];
+          emit(
+            pages.length > 0 && section('Page Templates'),
+            pages.length > 0 && records(pages.map(toRow), {fields}),
+            blocks.length > 0 && section('Block Templates'),
+            blocks.length > 0 && records(blocks.map(toRow), {fields}),
+            section('Usage'),
+            text(
+              [
+                `${run} template <id> [target-path]     Scaffold page or block`,
+                `${run} template <id> --skeleton        Layout reference`,
+                `${run} template --list --type block    List only blocks`,
+                `${run} template --list --package <pkg> List from one package`,
+                `${run} template --cdn                 CDN starter page, no build step`,
+              ].join('\n'),
+            ),
+          );
           break;
         }
 
         case 'template.skeleton': {
           const {template: tName, description, components, skeleton} = result.data;
-          humanLog(`\n# ${tName}${description ? ' — ' + description : ''}`);
-          humanLog(`# Components: ${components.join(', ')}\n`);
-          humanLog(skeleton);
-          humanLog('');
+          emit(
+            text(
+              `# ${tName}${description ? ' — ' + description : ''}\n` +
+                `# Components: ${components.join(', ')}`,
+            ),
+            code(skeleton),
+          );
           break;
         }
 
         case 'template.show': {
-          humanLog(result.data.source);
+          // Source must survive piping byte-for-byte.
+          emit(code(result.data.source));
           break;
         }
 
         case 'template.copy': {
-          humanLog(`\n✓ Copied template to ${result.data.outputDir}/${result.data.fileName}\n`);
+          emit(
+            text(
+              `Copied template to ${result.data.outputDir}/${result.data.fileName}`,
+            ),
+          );
+          break;
+        }
+
+        case 'template.cdn': {
+          if (!result.data.written) {
+            emit(
+              text(`[skip] ${result.data.path} already exists — left as is.`),
+              text('Pass --overwrite to replace it with a fresh copy.'),
+            );
+            break;
+          }
+          emit(
+            text(`[ok] Wrote ${result.data.path}`),
+            text(
+              `Open it in a browser — no bundler, no install, no build step. Every CDN URL is pinned to ${result.data.version}, and the annotations mark the parts that are load-bearing.`,
+            ),
+          );
           break;
         }
       }
-    });
+    },
+  });
 }
 
 /**

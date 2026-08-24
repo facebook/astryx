@@ -11,20 +11,27 @@
  */
 
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, record, records, list, code} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {discover as discoverApi} from '../../../api/discover/discover.mjs';
+import {Project} from '../../../foundation/config/project.mjs';
+import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {defineCommand} from '../lib/define-command.mjs';
+import {doc as discoverCommand} from './discover.doc.mjs';
+import {doc as discoverFn} from '../../../api/discover/discover.doc.mjs';
+
+// Max components to list inline per package before summarizing with "+N more".
+const MAX_COMPONENTS_SHOWN = 10;
 
 /**
  * @param {import('commander').Command} program
  */
 export function registerDiscover(program) {
-  program
-    .command('discover [query]')
-    .description('Discover external packages and components')
-    .option('--components', 'List components only')
-    .action(
+  defineCommand(program, discoverCommand, {
+    fn: discoverFn,
+    action:
       /**
        * @param {string | undefined} query
        * @param {{components?: boolean}} options
@@ -35,6 +42,16 @@ export function registerDiscover(program) {
       const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
       const run = getCliInvocation();
+
+      // Non-blocking nudge: if any configured integration has validation
+      // issues, print one compact line to stderr pointing at
+      // validate-integration. Best-effort; suppressed in --json mode.
+      try {
+        const project = await Project.load(process.cwd());
+        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+      } catch {
+        // Never let the nudge break the command.
+      }
 
       let result;
       try {
@@ -55,89 +72,80 @@ export function registerDiscover(program) {
       switch (result.type) {
         case 'discover.list': {
           if (result.data.length === 0) {
-            humanLog('');
             if (result.meta && result.meta.configured === false) {
-              humanLog('No integrations configured.');
-              humanLog('');
-              humanLog('Add integration package names to astryx.config.mjs:');
-              humanLog('');
-              humanLog('  export default {');
-              humanLog("    integrations: ['@scope/your-integration'],");
-              humanLog('  };');
+              emit(
+                text('No integrations configured.'),
+                text('Add integration package names to astryx.config.mjs:'),
+                code(
+                  "export default {\n  integrations: ['@scope/your-integration'],\n};",
+                ),
+              );
             } else {
-              humanLog('No external components found in configured integrations.');
+              emit(text('No external components found in configured integrations.'));
             }
-            humanLog('');
-          } else {
-            humanLog('');
-            for (const pkg of result.data) {
-              const count = pkg.components.length;
-              const label = count === 1 ? 'component' : 'components';
-              const heading = pkg.displayName
-                ? pkg.displayName + '  ' + pkg.name + ' (' + count + ' ' + label + ')'
-                : pkg.name + ' (' + count + ' ' + label + ')';
-              humanLog(heading);
-              if (pkg.description) humanLog('  ' + pkg.description);
-
-              if (options.components) {
-                for (const comp of pkg.components) humanLog('  ' + comp);
-              } else {
-                const maxShow = 10;
-                const shown = pkg.components.slice(0, maxShow);
-                const remaining = count - maxShow;
-                const list = shown.join(', ');
-                humanLog(remaining > 0 ? '  ' + list + ', +' + remaining + ' more' : '  ' + list);
-              }
-              humanLog('');
-            }
-            humanLog('Usage:');
-            humanLog(`  ${run} discover <package>            Browse a package`);
-            humanLog(`  ${run} discover <package>/Component  View component docs`);
-            humanLog(`  ${run} discover <search>             Search all packages`);
-            humanLog('');
+            break;
           }
+
+          // One record per package — fields mirror the JSON entry. The default
+          // view summarizes each package's components (first N + "+N more");
+          // --components lists them all (record comma-joins the full array).
+          /** @type {import('../formatters/index.mjs').RecordOptions} */
+          const listOpts = {fields: ['displayName', 'name', 'description', 'components']};
+          if (!options.components) {
+            listOpts.format = {
+              components: (/** @type {string[]} */ comps) => {
+                const shown = comps.slice(0, MAX_COMPONENTS_SHOWN);
+                const remaining = comps.length - MAX_COMPONENTS_SHOWN;
+                return remaining > 0
+                  ? `${shown.join(', ')}, +${remaining} more`
+                  : shown.join(', ');
+              },
+            };
+          }
+          emit(
+            records(result.data, listOpts),
+            text(
+              [
+                'Usage:',
+                `  ${run} discover <package>            Browse a package`,
+                `  ${run} discover <package>/Component  View component docs`,
+                `  ${run} discover <search>             Search all packages`,
+              ].join('\n'),
+            ),
+          );
           break;
         }
 
         case 'discover.detail': {
-          humanLog('');
           const d = result.data;
-          const detailHeading = d.displayName
-            ? d.displayName + '  ' + d.name + ' (' + d.components.length + ' components)'
-            : d.name + ' (' + d.components.length + ' components)';
-          humanLog(detailHeading);
-          if (d.description) humanLog('  ' + d.description);
-          humanLog('');
-          for (const comp of result.data.components) humanLog('  ' + comp);
-          humanLog('');
-          humanLog(`Usage: ${run} discover ` + result.data.name + '/<ComponentName>');
-          humanLog('');
+          emit(
+            record(d, {fields: ['displayName', 'name', 'description', 'components']}),
+            text(`Usage: ${run} discover ${d.name}/<ComponentName>`),
+          );
           break;
         }
 
         case 'discover.detail.doc': {
           const docs = result.data;
-          if (detail === 'brief') {
-            humanLog(formatBrief(docs, docs.name, ''));
-          } else if (detail === 'compact') {
-            humanLog(formatCompact(docs, docs.name, ''));
-          } else {
-            humanLog(formatFull(docs));
-          }
-          humanLog('');
+          const md =
+            detail === 'brief'
+              ? formatBrief(docs, docs.name, '')
+              : detail === 'compact'
+                ? formatCompact(docs, docs.name, '')
+                : formatFull(docs);
+          emit(code(md));
           break;
         }
 
         case 'discover.search': {
-          humanLog('');
-          humanLog('Found ' + result.data.matches.length + ' matches for "' + result.data.query + '":');
-          humanLog('');
-          for (const m of result.data.matches) {
-            humanLog(`  ${run} discover ` + m.package + '/' + m.component);
-          }
-          humanLog('');
+          const {query: q, matches} = result.data;
+          emit(
+            section(`Found ${matches.length} matches for "${q}"`),
+            list(matches.map(m => `${run} discover ${m.package}/${m.component}`)),
+          );
           break;
         }
       }
-    });
+    },
+  });
 }

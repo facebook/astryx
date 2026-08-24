@@ -46,7 +46,7 @@
   },
   "scripts": {
     "prepack": "pnpm build",
-    "build": "rm -rf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
+    "build": "rimraf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
     "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.js",
     "build:css": "node ../../scripts/build-css.mjs --package lab",
     "dev": "babel src --watch --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*\" --config-file ./babel.config.js",
@@ -58,20 +58,9 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.2.0",
+    "@astryxdesign/core": "0.4.7",
     "react": ">=19.0.0",
-    "react-dom": ">=19.0.0",
-    "lexical": "^0.46.0",
-    "@lexical/react": "^0.46.0",
-    "@lexical/markdown": "^0.46.0",
-    "@lexical/headless": "^0.46.0",
-    "@lexical/html": "^0.46.0",
-    "@lexical/link": "^0.46.0",
-    "@lexical/list": "^0.46.0",
-    "@lexical/rich-text": "^0.46.0",
-    "@lexical/selection": "^0.46.0",
-    "@lexical/code": "^0.46.0",
-    "@lexical/utils": "^0.46.0"
+    "react-dom": ">=19.0.0"
   },
   "dependencies": {
     "d3-array": "^3.2.4",
@@ -80,54 +69,9 @@
   },
   "devDependencies": {
     "@astryxdesign/cli": "workspace:*",
-    "@lexical/code": "^0.46.0",
-    "@lexical/headless": "^0.46.0",
-    "@lexical/html": "^0.46.0",
-    "@lexical/link": "^0.46.0",
-    "@lexical/list": "^0.46.0",
-    "@lexical/markdown": "^0.46.0",
-    "@lexical/react": "^0.46.0",
-    "@lexical/rich-text": "^0.46.0",
-    "@lexical/selection": "^0.46.0",
-    "@lexical/utils": "^0.46.0",
     "@types/d3-array": "^3.2.2",
     "@types/d3-scale": "^4.0.9",
     "@types/d3-shape": "^3.1.8",
-    "lexical": "^0.46.0"
-  },
-  "peerDependenciesMeta": {
-    "lexical": {
-      "optional": true
-    },
-    "@lexical/react": {
-      "optional": true
-    },
-    "@lexical/markdown": {
-      "optional": true
-    },
-    "@lexical/headless": {
-      "optional": true
-    },
-    "@lexical/html": {
-      "optional": true
-    },
-    "@lexical/link": {
-      "optional": true
-    },
-    "@lexical/list": {
-      "optional": true
-    },
-    "@lexical/rich-text": {
-      "optional": true
-    },
-    "@lexical/selection": {
-      "optional": true
-    },
-    "@lexical/code": {
-      "optional": true
-    },
-    "@lexical/utils": {
-      "optional": true
-    }
+    "rimraf": "^6.0.1"
   }
 }

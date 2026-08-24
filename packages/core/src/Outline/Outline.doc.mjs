@@ -166,6 +166,8 @@ import {Outline, useOutlineFromMarkdown} from '@astryxdesign/core/Outline';
 
 function MarkdownOutline({markdown}) {
   // Derives {id, label, level} items from headings in the source.
+  // The Markdown component renders the same generated ids on its
+  // headings, so outline links scroll without any extra wiring.
   const items = useOutlineFromMarkdown(markdown);
   return <Outline items={items} />;
 }

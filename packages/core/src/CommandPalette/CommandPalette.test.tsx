@@ -9,6 +9,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
+import {useState} from 'react';
 import {CommandPalette} from './CommandPalette';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
@@ -272,6 +273,88 @@ describe('CommandPalette', () => {
     await waitFor(() =>
       expect(screen.getByText('No results')).toBeInTheDocument(),
     );
+  });
+
+  it('discards a search response that resolves after the palette closed', async () => {
+    // A source whose search resolves only when released, and no cancel()
+    // implementation — closing the palette must invalidate the request itself.
+    const resolvers: ((items: SearchableItem[]) => void)[] = [];
+    const source: SearchSource = {
+      bootstrap: () => [],
+      async search(): Promise<SearchableItem[]> {
+        return new Promise<SearchableItem[]>(resolve => {
+          resolvers.push(resolve);
+        });
+      },
+    };
+
+    function Harness() {
+      const [isOpen, setIsOpen] = useState(true);
+      return (
+        <CommandPalette
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          searchSource={source}
+        />
+      );
+    }
+    render(<Harness />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'a'}});
+    await waitFor(() => expect(resolvers).toHaveLength(1));
+
+    // Close while the search is still in flight.
+    const dialog = screen.getByRole('dialog');
+    const escapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
+    dialog.dispatchEvent(escapeEvent);
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', {hidden: true})).not.toHaveAttribute(
+        'open',
+      ),
+    );
+
+    // The stale response arrives after close — it must not re-commit the
+    // abandoned query/results into the closed palette.
+    await act(async () => {
+      resolvers[0]([{id: 'stale', label: 'Stale item'}]);
+    });
+
+    expect(screen.getByRole('combobox', {hidden: true})).toHaveValue('');
+    expect(screen.queryByText('Stale item')).not.toBeInTheDocument();
+  });
+
+  it('does not move the highlight while typing in the search input', async () => {
+    // The palette's input already filters; letting the shared combobox
+    // typeahead also chase prefixes would drag the highlight — and Enter —
+    // onto a command the user never picked.
+    const gitSource = createStaticSource([
+      {id: 'git-add', label: 'git add'},
+      {id: 'git-commit', label: 'git commit'},
+      {id: 'git-push', label: 'git push'},
+    ]);
+    render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={gitSource}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await waitFor(() =>
+      expect(screen.getByText('git add')).toBeInTheDocument(),
+    );
+
+    fireEvent.keyDown(input, {key: 'g'});
+    fireEvent.keyDown(input, {key: 'i'});
+    fireEvent.keyDown(input, {key: 't'});
+
+    expect(input).not.toHaveAttribute('aria-activedescendant');
   });
 
   describe('screen reader announcements', () => {

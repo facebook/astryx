@@ -17,20 +17,17 @@
 import {init} from '../../../api/init/init.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {cliError} from '../lib/cli-error.mjs';
+import {defineCommand} from '../lib/define-command.mjs';
+import {doc as initCommand} from './init.doc.mjs';
+import {doc as initFn} from '../../../api/init/init.doc.mjs';
 
 /**
  * @param {import('commander').Command} program
  */
 export function registerInit(program) {
-  program
-    .command('init')
-    .description('Initialize the design system in your project')
-    .option('--features <list>', 'Comma-separated features to install (agents, theme, template)')
-    .option('--all', 'Install all features, no prompts')
-    .option('--remove-agents', 'Remove AI agent docs from all agent doc files')
-    .option('--agent <tool>', 'Target AI tool for agent docs: claude, cursor, codex, hermes, all')
-    .option('--agent-docs-path <path...>', 'Explicit file path(s) for agent docs')
-    .action(async (/** @type {import('../../../api/init/init.mjs').InitOptions} */ options) => {
+  defineCommand(program, initCommand, {
+    fn: initFn,
+    action: async (/** @type {import('../../../api/init/init.mjs').InitOptions} */ options) => {
       // init has no --json mode: enable human output (log → stdout via humanLog,
       // warn/error → stderr). humanLog still self-suppresses under a global
       // --json flag, so a JSON envelope can never be corrupted.
@@ -46,5 +43,6 @@ export function registerInit(program) {
         const e = /** @type {import('../../../api/error.mjs').AstryxError} */ (err);
         cliError(e.message, {suggestions: e.suggestions, code: e.code});
       }
-    });
+    },
+  });
 }

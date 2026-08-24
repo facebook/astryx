@@ -106,7 +106,7 @@ describe('TabList', () => {
     );
   });
 
-  it('marks selected tab with aria-current', () => {
+  it('marks selected tab with a generic aria-current, not "page"', () => {
     render(
       <TabList value="home" onChange={() => {}}>
         <Tab value="home" label="Home" />
@@ -116,9 +116,26 @@ describe('TabList', () => {
 
     expect(screen.getByRole('button', {name: 'Home'})).toHaveAttribute(
       'aria-current',
-      'page',
+      'true',
     );
     expect(screen.getByRole('button', {name: 'Settings'})).not.toHaveAttribute(
+      'aria-current',
+    );
+  });
+
+  it('marks a selected link tab with the same generic aria-current', () => {
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" href="/home" />
+        <Tab value="settings" label="Settings" href="/settings" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('link', {name: 'Home'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    expect(screen.getByRole('link', {name: 'Settings'})).not.toHaveAttribute(
       'aria-current',
     );
   });
@@ -148,7 +165,7 @@ describe('TabList', () => {
 
     expect(screen.getByRole('button', {name: 'Home'})).toHaveAttribute(
       'aria-current',
-      'page',
+      'true',
     );
 
     rerender(
@@ -163,7 +180,7 @@ describe('TabList', () => {
     );
     expect(screen.getByRole('button', {name: 'Settings'})).toHaveAttribute(
       'aria-current',
-      'page',
+      'true',
     );
   });
 
@@ -687,10 +704,10 @@ describe('TabMenu', () => {
 
     // Menu items are rendered in DOM (popover controls visibility, hidden from a11y tree)
     expect(
-      screen.getByRole('menuitem', {name: 'Analytics', hidden: true}),
+      screen.getByRole('menuitemradio', {name: 'Analytics', hidden: true}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('menuitem', {name: 'Reports', hidden: true}),
+      screen.getByRole('menuitemradio', {name: 'Reports', hidden: true}),
     ).toBeInTheDocument();
   });
 
@@ -726,7 +743,7 @@ describe('TabMenu', () => {
     await user.click(screen.getByRole('button', {name: /More/}));
 
     // Click the menu item (popover content, hidden from a11y tree in jsdom)
-    const menuItem = screen.getByRole('menuitem', {
+    const menuItem = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
@@ -734,7 +751,7 @@ describe('TabMenu', () => {
     expect(handleChange).toHaveBeenCalledWith('analytics');
   });
 
-  it('marks menu item as selected with aria-current', () => {
+  it('exposes options as menuitemradio and marks the selected tab aria-checked', () => {
     render(
       <TabList value="analytics" onChange={() => {}}>
         <Tab value="home" label="Home" />
@@ -742,18 +759,21 @@ describe('TabMenu', () => {
       </TabList>,
     );
 
-    // Menu items are in DOM (popover content, hidden from a11y tree in jsdom)
-    const analyticsItem = screen.getByRole('menuitem', {
+    // Menu items are in DOM (popover content, hidden from a11y tree in jsdom).
+    // Single-select menu options carry radio semantics (APG menu-button):
+    // role="menuitemradio" + aria-checked, not menuitem + aria-current.
+    const analyticsItem = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
-    expect(analyticsItem).toHaveAttribute('aria-current', 'true');
+    expect(analyticsItem).toHaveAttribute('aria-checked', 'true');
+    expect(analyticsItem).not.toHaveAttribute('aria-current');
 
-    const reportsItem = screen.getByRole('menuitem', {
+    const reportsItem = screen.getByRole('menuitemradio', {
       name: 'Reports',
       hidden: true,
     });
-    expect(reportsItem).not.toHaveAttribute('aria-current');
+    expect(reportsItem).toHaveAttribute('aria-checked', 'false');
   });
 });
 
@@ -774,11 +794,11 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
 
     await user.click(screen.getByRole('button', {name: /More/}));
 
-    const analytics = screen.getByRole('menuitem', {
+    const analytics = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
-    const reports = screen.getByRole('menuitem', {
+    const reports = screen.getByRole('menuitemradio', {
       name: 'Reports',
       hidden: true,
     });
@@ -804,11 +824,11 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
 
     await user.click(screen.getByRole('button', {name: /More/}));
     const menu = screen.getByRole('menu', {hidden: true});
-    const analytics = screen.getByRole('menuitem', {
+    const analytics = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
-    const reports = screen.getByRole('menuitem', {
+    const reports = screen.getByRole('menuitemradio', {
       name: 'Reports',
       hidden: true,
     });
@@ -834,11 +854,11 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
 
     await user.click(screen.getByRole('button', {name: /More/}));
     const menu = screen.getByRole('menu', {hidden: true});
-    const analytics = screen.getByRole('menuitem', {
+    const analytics = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
-    const reports = screen.getByRole('menuitem', {
+    const reports = screen.getByRole('menuitemradio', {
       name: 'Reports',
       hidden: true,
     });
@@ -867,11 +887,11 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
 
     await user.click(screen.getByRole('button', {name: /More/}));
     const menu = screen.getByRole('menu', {hidden: true});
-    const analytics = screen.getByRole('menuitem', {
+    const analytics = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });
-    const exports = screen.getByRole('menuitem', {
+    const exports = screen.getByRole('menuitemradio', {
       name: 'Exports',
       hidden: true,
     });
@@ -894,7 +914,7 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /More/}));
-    const analytics = screen.getByRole('menuitem', {
+    const analytics = screen.getByRole('menuitemradio', {
       name: 'Analytics',
       hidden: true,
     });

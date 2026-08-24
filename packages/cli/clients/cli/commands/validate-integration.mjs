@@ -14,11 +14,15 @@
  * an integration package is not a failure).
  */
 
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, records} from '../formatters/index.mjs';
+import {defineCommand} from '../lib/define-command.mjs';
 import {
   validateIntegration,
   summarizeIssues,
 } from '../../../api/integration/validate-integration.mjs';
+import {doc as validateIntegrationCommand} from './validate-integration.doc.mjs';
+import {doc as validateIntegrationFn} from '../../../api/integration/validateIntegration.doc.mjs';
 
 /**
  * Render a validation result for humans.
@@ -27,21 +31,24 @@ import {
 function printHuman(data) {
   const label =
     data.version != null ? `${data.name}@${data.version}` : data.name;
-  humanLog(`Validating integration: ${label}`);
 
   if (data.issues.length === 0) {
-    humanLog('\n\u2713 No issues found.');
+    emit(
+      section(`Validating integration: ${label}`),
+      text('[ok] No issues found.'),
+    );
     return;
   }
 
-  humanLog('');
-  for (const issue of data.issues) {
-    humanLog(`  ${issue.severity} ${issue.code}: ${issue.message}`);
-  }
-
+  // The issue list is a projection of the JSON: one record per issue, fields
+  // mirroring the JSON keys (severity/code/message).
   const {errors, warnings} = summarizeIssues(data.issues);
-  humanLog(
-    `\n${data.issues.length} issue(s): ${errors} error(s), ${warnings} warning(s)`,
+  emit(
+    section(`Validating integration: ${label}`),
+    records(data.issues, {fields: ['severity', 'code', 'message']}),
+    text(
+      `${data.issues.length} issue(s): ${errors} error(s), ${warnings} warning(s)`,
+    ),
   );
 }
 
@@ -54,21 +61,9 @@ const NO_MANIFEST_GUIDANCE =
  * @param {import('commander').Command} program
  */
 export function registerValidateIntegration(program) {
-  program
-    .command('validate-integration [package]')
-    .description(
-      'Validate an Astryx integration package (manifest + contributions)',
-    )
-    .addHelpText(
-      'after',
-      '\nWith no argument, validates the integration package rooted at the\n' +
-        'current directory. Pass a package name to validate an installed\n' +
-        'integration resolved from ./node_modules.\n\n' +
-        'Exit code:\n' +
-        '  0  no error issues (warnings are allowed) — safe as a CI gate\n' +
-        '  1  one or more error issues\n',
-    )
-    .action(async pkg => {
+  defineCommand(program, validateIntegrationCommand, {
+    fn: validateIntegrationFn,
+    action: async pkg => {
       const json = program.opts().json || false;
 
       const result = await validateIntegration(pkg);
@@ -77,7 +72,7 @@ export function registerValidateIntegration(program) {
         jsonOut(result);
       } else if (result.data.name === null) {
         // No-arg + no local manifest: guidance, not an error.
-        humanLog(NO_MANIFEST_GUIDANCE);
+        emit(text(NO_MANIFEST_GUIDANCE));
       } else {
         printHuman(result.data);
       }
@@ -86,5 +81,14 @@ export function registerValidateIntegration(program) {
       if (errors > 0) {
         process.exitCode = 1;
       }
-    });
+    },
+  }).addHelpText(
+    'after',
+    '\nWith no argument, validates the integration package rooted at the\n' +
+      'current directory. Pass a package name to validate an installed\n' +
+      'integration resolved from ./node_modules.\n\n' +
+      'Exit code:\n' +
+      '  0  no error issues (warnings are allowed) — safe as a CI gate\n' +
+      '  1  one or more error issues\n',
+  );
 }

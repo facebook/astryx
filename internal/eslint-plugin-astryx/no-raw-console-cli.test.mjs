@@ -26,10 +26,11 @@ ruleTester.run('no-raw-console-cli', rule, {
       code: `console.warn('heads up');`,
       filename: '/repo/packages/cli/clients/cli/commands/search.mjs',
     },
-    // humanLog is the sanctioned json-aware stdout primitive
+    // humanLog is allowed OUTSIDE command files — it's the stdout primitive the
+    // formatter sink (emit) and the shared logger are built on.
     {
       code: `import {humanLog} from '../../lib/json.mjs'; humanLog('hi');`,
-      filename: '/repo/packages/cli/clients/cli/commands/search.mjs',
+      filename: '/repo/packages/cli/clients/cli/formatters/index.mjs',
     },
     // Exempt: lib/json.mjs defines the raw writers
     {
@@ -76,6 +77,18 @@ ruleTester.run('no-raw-console-cli', rule, {
         {messageId: 'noRawConsoleLog'},
         {messageId: 'noRawConsoleLog'},
       ],
+    },
+    // Ban #2: humanLog() in a command file must funnel through emit()
+    {
+      code: `humanLog('hi');`,
+      filename: '/repo/packages/cli/clients/cli/commands/search.mjs',
+      errors: [{messageId: 'noHumanLogInCommand'}],
+    },
+    // Ban #2: humanWarn() in a command file — warnings go through cliError()
+    {
+      code: `humanWarn('careful');`,
+      filename: '/repo/packages/cli/clients/cli/commands/build.mjs',
+      errors: [{messageId: 'noHumanLogInCommand'}],
     },
   ],
 });

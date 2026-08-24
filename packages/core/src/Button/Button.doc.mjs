@@ -150,6 +150,28 @@ export const docs = {
       description:
         'Async click handler. Shows loading state while the returned promise is pending.',
     },
+    {
+      name: 'href',
+      type: 'string',
+      description:
+        'When provided, renders the button as a link element (<a> or custom link component).',
+    },
+    {
+      name: 'as',
+      type: 'ComponentType',
+      description:
+        'Custom link component to use when href is provided (e.g. Next.js Link).',
+    },
+    {
+      name: 'target',
+      type: 'string',
+      description: 'HTML target attribute when rendered as a link (e.g. "_blank").',
+    },
+    {
+      name: 'rel',
+      type: 'string',
+      description: 'HTML rel attribute when rendered as a link (e.g. "noopener noreferrer").',
+    },
   ],
   playground: {
     defaults: {
@@ -163,7 +185,7 @@ export const docs = {
     ],
     vars: [
       {name: '--_button-radius', description: 'Border radius', default: 'var(--radius-element)', private: true},
-      {name: '--button-focus-offset', description: 'Focus ring outline offset', default: '3px'},
+      {name: '--button-focus-offset', description: 'Focus ring outline offset', default: 'var(--focus-outline-offset)'},
       {name: '--button-icon-only-aspect', description: 'Aspect ratio for icon-only buttons', default: '1 / 1'},
     ],
     derived: [
@@ -245,7 +267,7 @@ export const docsZh = {
     ],
     vars: [
       {name: '--_button-radius', description: '圆角半径', default: 'var(--radius-element)', private: true},
-      {name: '--button-focus-offset', description: '焦点环轮廓偏移', default: '3px'},
+      {name: '--button-focus-offset', description: '焦点环轮廓偏移', default: 'var(--focus-outline-offset)'},
       {name: '--button-icon-only-aspect', description: '纯图标按钮的宽高比', default: '1 / 1'},
     ],
     derived: [

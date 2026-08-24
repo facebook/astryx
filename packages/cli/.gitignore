@@ -1,9 +1,17 @@
-# Generated ./api type declarations — emitted from the JSDoc in api/**/*.mjs by
-# scripts/sync-api-types.mjs. Not committed (like dist/ in the other packages);
-# regenerated automatically at `prepack` so the published tarball always ships
-# a fresh, in-sync type surface. Run `pnpm sync:api-types` to produce them locally.
+# Generated ./api and ./authoring type declarations — emitted from the JSDoc in
+# api/**/*.mjs and authoring/**/*.mjs by scripts/sync-api-types.mjs. Not committed
+# (like dist/ in the other packages); regenerated automatically at `prepack` so the
+# published tarball always ships a fresh, in-sync type surface. Run
+# `pnpm sync:api-types` to produce them locally.
+#
+# authoring/index.d.ts is deliberately NOT here: it is the hand-curated public
+# barrel (grouped + commented), not an emitted artifact.
 api/**/*.d.mts
 api/*.d.mts
+authoring/**/*.d.mts
+authoring/*.d.mts
+foundation/**/*.d.mts
+foundation/*.d.mts
 .api-verify/
 
 # Transient fixture dir written by authoring-migration.tsc.test.mjs (runs the

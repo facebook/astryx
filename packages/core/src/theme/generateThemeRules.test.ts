@@ -23,6 +23,23 @@ const defaultInput = {
   },
 };
 
+describe('focus outline tokens', () => {
+  it('emits a focus ring override into the theme scope', () => {
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        '--focus-outline-color': '#FF00FF',
+        '--focus-outline-width': '4px',
+      },
+    });
+
+    const {component} = generateThemeCSS(theme);
+
+    expect(component).toContain('--focus-outline-color: #FF00FF;');
+    expect(component).toContain('--focus-outline-width: 4px;');
+  });
+});
+
 describe('generateThemeRules', () => {
   const theme = defineTheme(defaultInput);
   const rules = generateThemeRules(theme);
@@ -141,6 +158,45 @@ describe('generateThemeRules', () => {
     expect(
       pseudoRules.some(rule => rule.includes('.astryx-button:hover')),
     ).toBe(true);
+  });
+
+  // A theme authoring `:hover` is describing the ENABLED control. Without a
+  // guard the rule paints a disabled one too, because browsers suppress a
+  // disabled control's events, not its hover styling — and a theme override
+  // would then reintroduce, on every component at once, the defect the
+  // components' own styles were fixed for.
+  it('keeps a themed :hover off disabled elements', () => {
+    const hoverTheme = defineTheme({
+      name: 'hover-guard',
+      components: {
+        button: {
+          base: {
+            ':hover': {color: 'red'},
+            ':focus-visible': {outline: '2px solid blue'},
+          },
+        },
+      },
+    });
+    const hoverRules = generateThemeRules(hoverTheme);
+    const hoverRule = hoverRules.find(rule => rule.includes(':hover'));
+    expect(hoverRule).toBeDefined();
+    expect(hoverRule).toContain(
+      '.astryx-button:hover:where(:not(:disabled,[aria-disabled="true"]))',
+    );
+    // Every selector in a comma-separated list carries its own guard —
+    // a trailing pseudo does not distribute over a selector list. (Counted,
+    // not split: the guard contains a comma of its own.)
+    const selectorText = String(hoverRule).split('{')[0];
+    const hovers = selectorText.match(/:hover/g) || [];
+    const guards = selectorText.match(/:where\(:not\(:disabled/g) || [];
+    expect(hovers.length).toBeGreaterThan(0);
+    expect(guards.length).toBe(hovers.length);
+    // Other pseudo-classes are untouched: a disabled control can still be
+    // focused (that is the point of aria-disabled), and :focus-visible on it
+    // is correct.
+    const focusRule = hoverRules.find(rule => rule.includes(':focus-visible'));
+    expect(focusRule).toContain('.astryx-button:focus-visible {');
+    expect(focusRule).not.toContain('aria-disabled');
   });
 
   // --- Prose rules ---
@@ -385,46 +441,46 @@ describe('derived var expansion', () => {
     expect(rule).toContain('--_button-radius: 8px');
   });
 
-  it('emits internal vars for avatar fallback typography (base)', () => {
+  it('emits direct rules for avatar fallback background, color, and weight', () => {
     const theme = defineTheme({
-      name: 'test-derived-avatar',
+      name: 'test-avatar-fallback',
       components: {
-        avatar: {
+        'avatar-fallback': {
           base: {
-            fontWeight: 'var(--font-weight-normal)',
-            color: 'var(--color-text-secondary)',
             backgroundColor: 'var(--color-accent-muted)',
+            color: 'var(--color-text-secondary)',
+            fontWeight: 'var(--font-weight-normal)',
           },
         },
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.astryx-avatar'));
+    const rule = rules.find(r => r.includes('.astryx-avatar-fallback'));
     expect(rule).toBeDefined();
-    expect(rule).toContain(
-      '--_avatar-fallback-font-weight: var(--font-weight-normal)',
-    );
-    expect(rule).toContain(
-      '--_avatar-fallback-color: var(--color-text-secondary)',
-    );
-    expect(rule).toContain(
-      '--_avatar-fallback-background: var(--color-accent-muted)',
-    );
+    expect(rule).toContain('background-color: var(--color-accent-muted)');
+    expect(rule).toContain('color: var(--color-text-secondary)');
+    expect(rule).toContain('font-weight: var(--font-weight-normal)');
+    // These are direct class targets now, not internal derived vars.
+    expect(rule).not.toContain('--_avatar-fallback-background');
+    expect(rule).not.toContain('--_avatar-fallback-color');
+    expect(rule).not.toContain('--_avatar-fallback-font-weight');
   });
 
-  it('emits a per-size fallback font-size for avatar (size:sm)', () => {
+  it('emits a direct per-size font-size rule for the avatar fallback target', () => {
     const theme = defineTheme({
-      name: 'test-derived-avatar-size',
+      name: 'test-avatar-fallback-size',
       components: {
-        avatar: {
+        'avatar-fallback': {
           'size:sm': {fontSize: '9px'},
         },
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.astryx-avatar.sm'));
+    const rule = rules.find(r => r.includes('.astryx-avatar-fallback.sm'));
     expect(rule).toBeDefined();
-    expect(rule).toContain('--_avatar-fallback-font-size: 9px');
+    expect(rule).toContain('font-size: 9px');
+    // Direct class target now — no internal derived var.
+    expect(rule).not.toContain('--_avatar-fallback-font-size');
   });
 
   it('does not emit derived vars for components without registry entries', () => {
@@ -475,6 +531,47 @@ describe('derived var expansion', () => {
     expect(rule).toContain('border-radius: 16px');
     expect(rule).toContain('--_card-radius: 16px');
   });
+
+  it('replaces paddingInline with the var for textarea (no raw property)', () => {
+    const theme = defineTheme({
+      name: 'test-derived-textarea',
+      components: {
+        textarea: {
+          base: {paddingInline: 'var(--eps-input-padding-x)'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-textarea'));
+    expect(rule).toBeDefined();
+    // Value flows to the inner <textarea> via the var…
+    expect(rule).toContain(
+      '--_textarea-inline-padding: var(--eps-input-padding-x)',
+    );
+    // …and must NOT land on the flush wrapper, which would re-inset the
+    // full-bleed textarea and push the native resize grip off the corner.
+    expect(rule).not.toContain('padding-inline: var(--eps-input-padding-x)');
+  });
+
+  it('replaces progressbar-mark width/height with vars (no raw properties)', () => {
+    const theme = defineTheme({
+      name: 'test-derived-progressbar-mark',
+      components: {
+        'progressbar-mark': {
+          base: {width: '2px', height: '12px'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-progressbar-mark'));
+    expect(rule).toBeDefined();
+    expect(rule).toContain('--_progressbar-mark-width: 2px');
+    expect(rule).toContain('--_progressbar-mark-height: 12px');
+    // Raw dimensions would be a same-element fight with the mark's StyleX,
+    // which an unlayered consumer build wins — the vars have no competitor.
+    expect(rule).not.toMatch(/[{;]\s*width: 2px/);
+    expect(rule).not.toMatch(/[{;]\s*height: 12px/);
+  });
 });
 
 describe('brutalist-style derived expansion', () => {
@@ -524,5 +621,84 @@ describe('brutalist-style derived expansion', () => {
     expect(rule).toContain('border-radius: 0px');
     expect(rule).toContain('--_dropdown-menu-radius: 0px');
     expect(rule).toContain('--_dropdown-menu-padding: 4px');
+  });
+});
+
+describe('physical padding longhands', () => {
+  const ruleFor = (
+    component: string,
+    base: Record<string, string>,
+    name = 'test-physical-padding',
+  ) =>
+    generateThemeRules(
+      defineTheme({name, components: {[component]: {base}}}),
+    ).find(r => r.includes(`.astryx-${component}`));
+
+  // `padding-top`/`padding-bottom` ARE the block edges in every horizontal
+  // writing mode, so the expansion can normalize them with no direction
+  // assumption. Without that, the padding lands raw on the element and the
+  // component's internals — the NumberInput stepper column, container bleed —
+  // read the default instead of what the theme set.
+  it.each([
+    ['paddingTop', {paddingTop: '14px'}, 'block-start'],
+    ['paddingBottom', {paddingBottom: '14px'}, 'block-end'],
+  ])('routes %s through the container expansion', (_label, base, edge) => {
+    const rule = ruleFor('card', base);
+    expect(rule).toContain(`--astryx-card-padding-${edge}: 14px`);
+    expect(rule).not.toMatch(/[{;]\s*padding-(top|bottom):/);
+  });
+
+  it('normalizes both block edges together, asymmetrically', () => {
+    const rule = ruleFor('number-input', {
+      paddingTop: '14px',
+      paddingBottom: '6px',
+    });
+    expect(rule).toContain('--astryx-number-input-padding-block-start: 14px');
+    expect(rule).toContain('--astryx-number-input-padding-block-end: 6px');
+  });
+
+  it.each(['card', 'dialog', 'section', 'number-input'])(
+    'reaches %s, which expands its padding',
+    component => {
+      expect(ruleFor(component, {paddingTop: '14px'})).toContain(
+        `--astryx-${component}-padding-block-start: 14px`,
+      );
+    },
+  );
+
+  // THE RTL GUARD. `paddingLeft` is inline-start in LTR and inline-end in RTL,
+  // and the tokens are consumed by logical properties, so mapping it would
+  // silently move the padding to the other edge in RTL. It stays physical —
+  // which is what the author wrote — and does not reach the tokens.
+  it('leaves the direction-relative inline pair physical', () => {
+    const rule = ruleFor('card', {paddingLeft: '20px', paddingRight: '8px'});
+    expect(rule).toContain('padding-left: 20px');
+    expect(rule).toContain('padding-right: 8px');
+    expect(rule).not.toContain('--astryx-card-padding-inline');
+  });
+
+  it('expands the block edges while leaving left physical', () => {
+    const rule = ruleFor('card', {paddingTop: '14px', paddingLeft: '20px'});
+    expect(rule).toContain('--astryx-card-padding-block-start: 14px');
+    expect(rule).toContain('padding-left: 20px');
+  });
+
+  // The shorthand-plus-override case was the worst one: the tokens carried
+  // 10px while the element painted 14px on top, so every internal compensated
+  // by the wrong amount.
+  it('lets a physical longhand override the shorthand per edge', () => {
+    const rule = ruleFor('card', {padding: '10px', paddingTop: '14px'});
+    expect(rule).toContain('--astryx-card-padding-block-start: 14px');
+    expect(rule).toContain('--astryx-card-padding-block-end: 10px');
+    expect(rule).toContain('--astryx-card-padding-inline: 10px');
+    expect(rule).not.toMatch(/[{;]\s*padding(-top)?:/);
+  });
+
+  // A `vars` entry carries one value for the whole box, so a single physical
+  // edge must not feed it — only the container expansion takes these.
+  it('does not feed a single edge to a whole-box derived var', () => {
+    const rule = ruleFor('dropdown-menu', {paddingTop: '14px'});
+    expect(rule).toContain('padding-top: 14px');
+    expect(rule).not.toContain('--_dropdown-menu-padding');
   });
 });

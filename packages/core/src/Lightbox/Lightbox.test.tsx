@@ -4,6 +4,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Lightbox} from './Lightbox';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n';
 
 // Mock showModal/close for jsdom
 beforeEach(() => {
@@ -26,6 +27,17 @@ afterEach(() => {
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
 }
+
+// Both position messages, supplied by the test. Overriding the pair means an
+// assertion also proves which of the two keys the component reached for.
+const POSITION_MESSAGES = {
+  fr: {
+    '@astryx.lightbox.mediaPosition':
+      '{alt}, vue {index, number} sur {total, number}',
+    '@astryx.lightbox.imagePosition':
+      'Photo {index, number} sur {total, number}',
+  },
+};
 
 describe('Lightbox', () => {
   it('renders as a dialog element', () => {
@@ -320,47 +332,53 @@ describe('Lightbox', () => {
 
     it('announces the new image and position when navigating next via button', async () => {
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={media}
-          defaultIndex={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={media}
+            defaultIndex={0}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByLabelText('Next'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image B, 2 of 3');
+        expect(politeRegion()?.textContent).toBe('Image B, vue 2 sur 3');
       });
     });
 
     it('announces the new image and position when navigating via arrow keys', async () => {
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={media}
-          defaultIndex={1}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={media}
+            defaultIndex={1}
+          />
+        </InternationalizationProvider>,
       );
       const dialog = document.querySelector('dialog')!;
       fireEvent.keyDown(dialog, {key: 'ArrowRight'});
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image C, 3 of 3');
+        expect(politeRegion()?.textContent).toBe('Image C, vue 3 sur 3');
       });
     });
 
     it('announces the new image and position when navigating prev', async () => {
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={media}
-          defaultIndex={2}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={media}
+            defaultIndex={2}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByLabelText('Previous'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image B, 2 of 3');
+        expect(politeRegion()?.textContent).toBe('Image B, vue 2 sur 3');
       });
     });
 
@@ -370,16 +388,19 @@ describe('Lightbox', () => {
         {src: '/b.jpg', alt: ''},
       ];
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={unlabeled}
-          defaultIndex={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={unlabeled}
+            defaultIndex={0}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByLabelText('Next'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image 2 of 2');
+        // imagePosition, not a mediaPosition with an empty {alt}.
+        expect(politeRegion()?.textContent).toBe('Photo 2 sur 2');
       });
     });
 
@@ -418,6 +439,184 @@ describe('Lightbox', () => {
       );
       await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
       expect(politeRegion()).toBeNull();
+    });
+  });
+
+  describe('keyboard zoom and pan', () => {
+    const media = [
+      {src: '/a.jpg', alt: 'Image A'},
+      {src: '/b.jpg', alt: 'Image B'},
+      {src: '/c.jpg', alt: 'Image C'},
+    ];
+
+    function zoomTarget(): HTMLElement {
+      return screen.getByRole('button', {name: 'Zoom'});
+    }
+
+    it('exposes the image as a focusable zoom toggle when hasZoom is on', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      const target = zoomTarget();
+      expect(target).toHaveAttribute('tabindex', '0');
+      expect(target).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('toggles zoom with Enter on the image', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      const target = zoomTarget();
+      fireEvent.keyDown(target, {key: 'Enter'});
+      expect(target).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.keyDown(target, {key: 'Enter'});
+      expect(target).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('toggles zoom with Space on the image', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      const target = zoomTarget();
+      fireEvent.keyDown(target, {key: ' '});
+      expect(target).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.keyDown(target, {key: ' '});
+      expect(target).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('zooms in with + and out with - from anywhere in the dialog', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      const dialog = document.querySelector('dialog')!;
+      fireEvent.keyDown(dialog, {key: '+'});
+      expect(zoomTarget()).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.keyDown(dialog, {key: '-'});
+      expect(zoomTarget()).toHaveAttribute('aria-pressed', 'false');
+      // `=` (unshifted `+` on most layouts) also zooms in.
+      fireEvent.keyDown(dialog, {key: '='});
+      expect(zoomTarget()).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('pans with arrow keys while zoomed instead of navigating the gallery', () => {
+      const onIndexChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={1}
+          onIndexChange={onIndexChange}
+          hasZoom
+        />,
+      );
+      const dialog = document.querySelector('dialog')!;
+      fireEvent.keyDown(zoomTarget(), {key: 'Enter'});
+      const img = screen.getByAltText('Image B');
+      expect(img.getAttribute('style') ?? '').toContain('translate(0px, 0px)');
+      // ArrowRight reveals content to the right (image shifts left) and must
+      // not fall through to gallery navigation.
+      fireEvent.keyDown(dialog, {key: 'ArrowRight'});
+      expect(onIndexChange).not.toHaveBeenCalled();
+      expect(img.getAttribute('style') ?? '').toContain(
+        'translate(-25px, 0px)',
+      );
+      fireEvent.keyDown(dialog, {key: 'ArrowDown'});
+      expect(img.getAttribute('style') ?? '').toContain(
+        'translate(-25px, -25px)',
+      );
+      fireEvent.keyDown(dialog, {key: 'ArrowLeft'});
+      fireEvent.keyDown(dialog, {key: 'ArrowUp'});
+      expect(img.getAttribute('style') ?? '').toContain('translate(0px, 0px)');
+      expect(onIndexChange).not.toHaveBeenCalled();
+    });
+
+    it('navigates the gallery with arrows when not zoomed, even with hasZoom', () => {
+      const onIndexChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={1}
+          onIndexChange={onIndexChange}
+          hasZoom
+        />,
+      );
+      const dialog = document.querySelector('dialog')!;
+      fireEvent.keyDown(dialog, {key: 'ArrowRight'});
+      expect(onIndexChange).toHaveBeenCalledWith(2);
+    });
+
+    it('announces zoom state changes politely', async () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      fireEvent.keyDown(zoomTarget(), {key: 'Enter'});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Zoomed in');
+      });
+      fireEvent.keyDown(zoomTarget(), {key: 'Enter'});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Zoomed out');
+      });
+    });
+
+    it('has no zoom target or key bindings when hasZoom is off', () => {
+      const onIndexChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={1}
+          onIndexChange={onIndexChange}
+        />,
+      );
+      expect(screen.queryByRole('button', {name: 'Zoom'})).toBeNull();
+      const dialog = document.querySelector('dialog')!;
+      fireEvent.keyDown(dialog, {key: '+'});
+      expect(document.querySelector('[aria-pressed]')).toBeNull();
+      // Arrows still navigate the gallery.
+      fireEvent.keyDown(dialog, {key: 'ArrowRight'});
+      expect(onIndexChange).toHaveBeenCalledWith(2);
+    });
+
+    it('does not expose a zoom target for video items', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/clip.mp4', alt: 'A clip', type: 'video'}}
+          hasZoom
+        />,
+      );
+      expect(screen.queryByRole('button', {name: 'Zoom'})).toBeNull();
     });
   });
 

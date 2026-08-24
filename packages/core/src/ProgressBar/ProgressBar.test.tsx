@@ -1,8 +1,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, beforeAll} from 'vitest';
+import {render, screen, waitFor} from '@testing-library/react';
 import {ProgressBar} from './ProgressBar';
+
+// A labeled mark wraps the tick in a lazily-loaded Tooltip (React.lazy +
+// Suspense). Preload that chunk once so the Tooltip (and its
+// aria-describedby) is present synchronously on first render, keeping these
+// tests deterministic rather than racing the dynamic import's default 1s
+// Suspense timeout.
+beforeAll(async () => {
+  await import('./ProgressBarMarkTooltip');
+});
 
 describe('ProgressBar', () => {
   it('renders with default props', () => {
@@ -275,6 +284,558 @@ describe('ProgressBar', () => {
       expect(css).toMatch(/translateX\(-250%\)/);
       // The animation-name is swapped specifically under `[dir="rtl"]`.
       expect(css).toMatch(/:is\(\[dir="rtl"\][^)]*\)[^{]*\{\s*animation-name:/);
+    });
+  });
+
+  // Target marks
+  describe('target marks', () => {
+    const MARK = '.astryx-progressbar-mark';
+
+    // The StyleX atomic classes on an element, without the stable astryx-*
+    // theme classes and the bare variant/placement tokens — so a comparison
+    // reflects the resolved styles, not the reflected props.
+    function styleClasses(el: HTMLElement): string {
+      return Array.from(el.classList)
+        .filter(c => /^x[a-z0-9]+$/.test(c))
+        .sort()
+        .join(' ');
+    }
+
+    it('renders no mark elements when marks is omitted', () => {
+      const {container} = render(<ProgressBar value={50} label="Progress" />);
+      expect(container.querySelectorAll(MARK)).toHaveLength(0);
+    });
+
+    it('renders no mark elements for an empty marks array', () => {
+      const {container} = render(
+        <ProgressBar value={50} label="Progress" marks={[]} />,
+      );
+      expect(container.querySelectorAll(MARK)).toHaveLength(0);
+    });
+
+    it('renders a mark at the position matching its value', () => {
+      const {container} = render(
+        <ProgressBar
+          value={40}
+          label="Progress"
+          marks={[{value: 80, label: 'M'}]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks).toHaveLength(1);
+      // value 80 of max 100 -> 80% along the track (RTL-safe logical property).
+      expect(marks[0].style.insetInlineStart).toBe('80%');
+    });
+
+    it('positions marks relative to a custom max', () => {
+      const {container} = render(
+        <ProgressBar
+          value={1}
+          max={5}
+          label="Steps"
+          marks={[{value: 4, label: 'M'}]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      // value 4 of max 5 -> 80%.
+      expect(marks[0].style.insetInlineStart).toBe('80%');
+    });
+
+    it('keeps a mark past the current value visible', () => {
+      // A mark beyond the fill still renders — it layers above the fill.
+      const {container} = render(
+        <ProgressBar
+          value={20}
+          label="Progress"
+          marks={[{value: 90, label: 'M'}]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks).toHaveLength(1);
+      expect(marks[0].style.insetInlineStart).toBe('90%');
+    });
+
+    it('renders multiple marks', () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[
+            {value: 25, label: 'M'},
+            {value: 50, label: 'M'},
+            {value: 80, label: 'M'},
+          ]}
+        />,
+      );
+      expect(container.querySelectorAll(MARK)).toHaveLength(3);
+    });
+
+    it('clamps out-of-range mark positions to the track edges', () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[
+            {value: -10, label: 'M'},
+            {value: 150, label: 'M'},
+          ]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks).toHaveLength(2);
+      expect(marks[0].style.insetInlineStart).toBe('0%');
+      expect(marks[1].style.insetInlineStart).toBe('100%');
+    });
+
+    it('drops non-finite mark values', () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[
+            {value: NaN, label: 'M'},
+            {value: Infinity, label: 'M'},
+            {value: 60, label: 'M'},
+          ]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks).toHaveLength(1);
+      expect(marks[0].style.insetInlineStart).toBe('60%');
+    });
+
+    it('does not render marks in indeterminate mode', () => {
+      const {container} = render(
+        <ProgressBar
+          isIndeterminate
+          label="Loading"
+          marks={[{value: 80, label: 'M'}]}
+        />,
+      );
+      expect(container.querySelectorAll(MARK)).toHaveLength(0);
+    });
+
+    // Mark color follows what the mark sits on: inside the filled area it
+    // takes the fill variant's on-color, out on the bare track it takes the
+    // primary text color. The choice is reflected as `data-placement`
+    // (plus `data-variant`, mirroring the fill) so themes can target it and
+    // tests can assert it without reading atomic class names.
+    it('marks the ticks inside the filled area as placed on the fill', () => {
+      const {container} = render(
+        <ProgressBar
+          value={60}
+          label="Progress"
+          marks={[
+            {value: 25, label: 'Behind'},
+            {value: 90, label: 'Ahead'},
+          ]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks[0]).toHaveAttribute('data-placement', 'fill');
+      expect(marks[1]).toHaveAttribute('data-placement', 'track');
+      // Different placements resolve to different color styles.
+      expect(styleClasses(marks[0])).not.toBe(styleClasses(marks[1]));
+    });
+
+    it('treats a mark exactly at the current value as on the fill', () => {
+      const {container} = render(
+        <ProgressBar
+          value={70}
+          label="Progress"
+          marks={[{value: 70, label: 'Goal'}]}
+        />,
+      );
+      expect(container.querySelector(MARK)).toHaveAttribute(
+        'data-placement',
+        'fill',
+      );
+    });
+
+    it('places every mark on the track at zero progress', () => {
+      // With no fill drawn, even a mark at 0 sits on the bare track.
+      const {container} = render(
+        <ProgressBar
+          value={0}
+          label="Progress"
+          marks={[
+            {value: 0, label: 'Start'},
+            {value: 50, label: 'Goal'},
+          ]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks[0]).toHaveAttribute('data-placement', 'track');
+      expect(marks[1]).toHaveAttribute('data-placement', 'track');
+      expect(styleClasses(marks[0])).toBe(styleClasses(marks[1]));
+    });
+
+    it('mirrors the fill variant on marks so the on-color matches the bar', () => {
+      const {container} = render(
+        <ProgressBar
+          value={80}
+          variant="warning"
+          label="Budget used"
+          marks={[
+            {value: 50, label: 'Half'},
+            {value: 95, label: 'Cap'},
+          ]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks[0]).toHaveAttribute('data-variant', 'warning');
+      expect(marks[0]).toHaveAttribute('data-placement', 'fill');
+      expect(marks[1]).toHaveAttribute('data-variant', 'warning');
+      expect(marks[1]).toHaveAttribute('data-placement', 'track');
+    });
+
+    it('uses the disabled variant for marks when the bar is disabled', () => {
+      const {container} = render(
+        <ProgressBar
+          value={80}
+          variant="error"
+          isDisabled
+          label="Canceled"
+          marks={[{value: 50, label: 'Half'}]}
+        />,
+      );
+      expect(container.querySelector(MARK)).toHaveAttribute(
+        'data-variant',
+        'disabled',
+      );
+    });
+
+    it('keeps one plain foreground on both sides for neutral and disabled bars', () => {
+      // The neutral/disabled fill is the muted gray — it carries no semantic
+      // weight and has no on-token, so a mark on it takes the same plain
+      // foreground it would have out on the track.
+      for (const props of [
+        {variant: 'neutral'} as const,
+        {isDisabled: true} as const,
+      ]) {
+        const {container, unmount} = render(
+          <ProgressBar
+            value={60}
+            label="Progress"
+            {...props}
+            marks={[
+              {value: 20, label: 'On fill'},
+              {value: 90, label: 'On track'},
+            ]}
+          />,
+        );
+        const marks = container.querySelectorAll<HTMLElement>(MARK);
+        expect(marks[0]).toHaveAttribute('data-placement', 'fill');
+        expect(marks[1]).toHaveAttribute('data-placement', 'track');
+        expect(styleClasses(marks[0])).toBe(styleClasses(marks[1]));
+        unmount();
+      }
+    });
+
+    it("dims a disabled bar's marks below a live one's", () => {
+      // A disabled bar is deliberately low-emphasis (its label and value text
+      // drop to muted colors), so its marks step down to the secondary
+      // foreground on both sides rather than shouting over the grayed-out
+      // bar. A live neutral bar — same muted gray fill — keeps the
+      // full-contrast primary foreground.
+      const MARKS = [
+        {value: 20, label: 'On fill'},
+        {value: 90, label: 'On track'},
+      ];
+      const {container: live} = render(
+        <ProgressBar value={60} variant="neutral" label="A" marks={MARKS} />,
+      );
+      const {container: off} = render(
+        <ProgressBar value={60} isDisabled label="B" marks={MARKS} />,
+      );
+      const liveMarks = live.querySelectorAll<HTMLElement>(MARK);
+      const offMarks = off.querySelectorAll<HTMLElement>(MARK);
+      expect(styleClasses(offMarks[0])).not.toBe(styleClasses(liveMarks[0]));
+      expect(styleClasses(offMarks[1])).not.toBe(styleClasses(liveMarks[1]));
+    });
+
+    it('recolors marks per variant when they sit on the fill', () => {
+      // Two bars at the same progress with different variants give their
+      // on-fill marks different colors (different atomic classes), while
+      // their on-track marks stay the same divider color.
+      const {container: accent} = render(
+        <ProgressBar
+          value={60}
+          variant="accent"
+          label="A"
+          marks={[
+            {value: 20, label: 'On fill'},
+            {value: 90, label: 'On track'},
+          ]}
+        />,
+      );
+      const {container: error} = render(
+        <ProgressBar
+          value={60}
+          variant="error"
+          label="B"
+          marks={[
+            {value: 20, label: 'On fill'},
+            {value: 90, label: 'On track'},
+          ]}
+        />,
+      );
+      const accentMarks = accent.querySelectorAll<HTMLElement>(MARK);
+      const errorMarks = error.querySelectorAll<HTMLElement>(MARK);
+      expect(styleClasses(accentMarks[0])).not.toBe(
+        styleClasses(errorMarks[0]),
+      );
+      expect(styleClasses(accentMarks[1])).toBe(styleClasses(errorMarks[1]));
+    });
+
+    it('renders every mark as a focusable trigger (label is required, never decorative)', () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'Goal'}]}
+        />,
+      );
+      const mark = container.querySelector<HTMLElement>(MARK)!;
+      // A mark always stands for something meaningful, so it is never
+      // aria-hidden and is always keyboard-focusable to reveal its label.
+      expect(mark).not.toHaveAttribute('aria-hidden');
+      expect(mark).toHaveAttribute('tabindex', '0');
+      // The name comes from the Tooltip (aria-describedby), not a role/label on
+      // the tick itself, so the progressbar's own subtree stays clean.
+      expect(mark).not.toHaveAttribute('role');
+      expect(mark).not.toHaveAttribute('aria-label');
+    });
+
+    it('reveals a labeled mark via a focusable Tooltip trigger', async () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'Goal'}]}
+        />,
+      );
+      // Focusable so keyboard users can reveal the label; named via the
+      // Tooltip's aria-describedby rather than a labeled child of the bar.
+      // The Tooltip loads lazily (Suspense), so re-query the live element and
+      // wait for it to attach aria-describedby.
+      const mark0 = container.querySelector<HTMLElement>(MARK)!;
+      expect(mark0).toHaveAttribute('tabindex', '0');
+      expect(mark0).not.toHaveAttribute('aria-hidden');
+      await waitFor(() =>
+        expect(container.querySelector(MARK)).toHaveAttribute(
+          'aria-describedby',
+        ),
+      );
+      const mark = container.querySelector<HTMLElement>(MARK)!;
+      const tip = document.getElementById(
+        mark.getAttribute('aria-describedby')!,
+      );
+      expect(tip).toHaveTextContent('Goal');
+    });
+
+    it('keeps the progressbar element free of role="img"/aria-label children', () => {
+      // Marks are children of role="progressbar" (unchanged DOM), but a
+      // mark uses a Tooltip (aria-describedby) rather than a
+      // role="img"+aria-label child, so nothing muddies what SRs announce for
+      // the bar.
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'Goal'}]}
+        />,
+      );
+      const progressbar = screen.getByRole('progressbar');
+      // Mark is a child of the progressbar (DOM unchanged from main).
+      expect(progressbar.querySelector(MARK)).not.toBeNull();
+      // But it is not a labeled graphic that pollutes the a11y subtree.
+      expect(progressbar.querySelector('[role="img"]')).toBeNull();
+      expect(progressbar.querySelector('[aria-label]')).toBeNull();
+      expect(container.querySelectorAll(MARK)).toHaveLength(1);
+    });
+
+    it('does not add mark info to the progressbar aria-valuetext', () => {
+      render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'Goal'}]}
+        />,
+      );
+      const progressbar = screen.getByRole('progressbar');
+      expect(progressbar.getAttribute('aria-valuetext')).toBe('50%');
+    });
+
+    it('renders marks as children of the progressbar (unchanged DOM)', () => {
+      // Marks stay children of role="progressbar", after the fill — the same
+      // shape as main. The fill remains the first child.
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'M'}]}
+        />,
+      );
+      const progressbar = screen.getByRole('progressbar');
+      const fill = progressbar.firstElementChild as HTMLElement;
+      expect(fill.style.width).toBe('50%');
+      expect(fill.classList.contains('astryx-progressbar-mark')).toBe(false);
+      const mark = container.querySelector<HTMLElement>(MARK)!;
+      expect(mark.closest('[role="progressbar"]')).toBe(progressbar);
+      expect(container.querySelectorAll(MARK)).toHaveLength(1);
+    });
+
+    it('does not clip marks in determinate mode (track carries no overflow:hidden)', () => {
+      // In determinate mode the track must NOT clip, so a themed taller mark
+      // can overhang the bar. (Indeterminate mode re-adds the clip — covered
+      // separately — but marks are suppressed there, so nothing overhangs.)
+      render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'M'}]}
+        />,
+      );
+      const progressbar = screen.getByRole('progressbar');
+      const trackClass = Array.from(progressbar.classList).find(c =>
+        c.startsWith('x'),
+      );
+      let css = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            css += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      css += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      // The atomic class that would set overflow:hidden must not be applied to
+      // the track. Sanity-check the bar still rendered with a StyleX class.
+      expect(trackClass).toBeDefined();
+      // No rule targeting the track's classes sets overflow:hidden. (StyleX
+      // atomic classes are unique per declaration; if overflow:hidden were on
+      // the track we'd see it applied. We assert the track element's computed
+      // intent by checking no overflow:hidden atomic is in its class list's
+      // rules — simplest robust check: the track style object omits it.)
+      const trackHasOverflowHidden = Array.from(progressbar.classList).some(
+        cls => {
+          const re = new RegExp(
+            `\\.${cls}\\b[^{]*\\{[^}]*overflow:\\s*hidden`,
+            'i',
+          );
+          return re.test(css);
+        },
+      );
+      expect(trackHasOverflowHidden).toBe(false);
+    });
+
+    it('clips the track in indeterminate mode (the sliding fill must not escape)', () => {
+      // Regression: the indeterminate fill slides from translateX -100% to
+      // 250%, deliberately overshooting the track, and relies on the track
+      // clipping it to the visible window. Determinate mode drops the clip so
+      // marks can overhang — indeterminate mode must keep it.
+      render(<ProgressBar isIndeterminate label="Loading" />);
+      const progressbar = screen.getByRole('progressbar');
+      let css = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            css += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      css += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      const trackHasOverflowHidden = Array.from(progressbar.classList).some(
+        cls => {
+          const re = new RegExp(
+            `\\.${cls}\\b[^{]*\\{[^}]*overflow:\\s*hidden`,
+            'i',
+          );
+          return re.test(css);
+        },
+      );
+      expect(trackHasOverflowHidden).toBe(true);
+    });
+
+    it('sizes the mark through the derived vars, so a theme override cannot lose the cascade', () => {
+      // width/height are declared as `var(--_progressbar-mark-*)` and nothing
+      // else declares those vars, so the value a theme sets on the
+      // `progressbar-mark` target lands even in a consumer whose StyleX is
+      // unlayered and would otherwise outrank `@layer astryx-theme`.
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'M'}]}
+        />,
+      );
+      const mark = container.querySelector<HTMLElement>(MARK)!;
+      let css = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            css += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      css += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      const markRules = Array.from(mark.classList)
+        .filter(cls => /^x[a-z0-9]+$/.test(cls))
+        .flatMap(
+          cls =>
+            css.match(new RegExp(`\\.${cls}\\b[^{]*\\{[^}]*\\}`, 'g')) ?? [],
+        );
+      expect(markRules.join('\n')).toMatch(
+        /width:\s*var\(--_progressbar-mark-width,\s*2px\)/,
+      );
+      expect(markRules.join('\n')).toMatch(
+        /height:\s*var\(--_progressbar-mark-height,\s*8px\)/,
+      );
+    });
+
+    it('renders the mark on the stable progressbar-mark target, centered for symmetric overhang', () => {
+      // The mark's width/height/color are directly overridable via the
+      // `progressbar-mark` theme target. It is centered
+      // on the track (translate -50%,-50%) so a themed taller tick overhangs the
+      // bar symmetrically above and below without being clipped.
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'M'}]}
+        />,
+      );
+      const mark = container.querySelector<HTMLElement>(MARK)!;
+      expect(mark.className).toContain('astryx-progressbar-mark');
+      let css = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            css += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      css += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      // Centered so any themed overhang stays symmetric.
+      expect(css).toMatch(/translate\(-50%,\s*-50%\)/);
+      expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
   });
 });

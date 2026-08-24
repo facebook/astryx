@@ -23,7 +23,7 @@ jobs:
   # Detect docsite-only changes — lets docsite PRs skip heavy jobs
   check-scope:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: read
     outputs:
@@ -53,7 +53,7 @@ jobs:
           fi
   # Docsite data extraction tests — always runs, fast (~2s)
   docsite-test:
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -70,12 +70,18 @@ jobs:
       - name: Generate and test docsite data
         run: pnpm -F @astryxdesign/docsite generate && pnpm -F @astryxdesign/docsite test
 
-  # Lightweight check — does the PR touch any core components?
-  # Gates pr-a11y to avoid unnecessary work
+  # Lightweight check — does the PR touch any published components?
+  # Gates pr-a11y and pr-rtl to avoid unnecessary work.
+  #
+  # Keep the roots and the exclude list in sync with analyze-pr.js: this job
+  # only decides *whether* the downstream audits run, while analyze-pr.js
+  # decides *which* components they audit. When the two disagree the audits
+  # silently no-op — lab components were invisible to both audits until this
+  # job learned about packages/lab/src.
   check-components:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: read
     outputs:
@@ -101,13 +107,13 @@ jobs:
             echo "has_components=true" >> $GITHUB_OUTPUT
             exit 0
           fi
-          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils|__tests__)/' | head -1)
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ packages/lab/src/ | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1)
           echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
   # Run tests (parallel with build)
   test:
     needs: [check-scope]
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -137,6 +143,12 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/generate-token-docs.mjs --check
 
+      # Fails when the lab readiness manifest claims a check the source tree
+      # contradicts — the report is derived, never hand-maintained.
+      - name: Check lab readiness manifest is current
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm lab:readiness:check
+
       - run: pnpm test
         if: needs.check-scope.outputs.docsite_only != 'true'
 
@@ -148,7 +160,7 @@ jobs:
   # `build` join below folds their results into the historical check name.
   build-storybook:
     needs: [check-scope]
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     outputs:
@@ -291,7 +303,7 @@ jobs:
   build-sandbox:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     outputs:
@@ -364,7 +376,7 @@ jobs:
   build:
     needs: [build-storybook, build-sandbox]
     if: ${{ !cancelled() && needs.build-storybook.result != 'skipped' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions: {}
     steps:
       - name: Assert parallel builds succeeded
@@ -392,7 +404,7 @@ jobs:
   pr-a11y:
     needs: [build-storybook, check-components]
     if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -443,26 +455,30 @@ jobs:
           path: a11y-report.json
           retention-days: 1
 
-  # RTL semantic audit. Sibling to pr-a11y: where pr-a11y runs the a11y audit
-  # over the built Storybook, pr-rtl runs the RTL audit. It grades components by
-  # comparing their LTR vs RTL render in the same run — no golden screenshots.
-  # Two layers:
-  #   (A) auto-discovery — D1 (icon-mirror) over EVERY core-* story, detecting
-  #       directional icons generically so a NEW component that ships a
-  #       directional glyph without RTL handling is caught automatically.
-  #   (B) curated precision — D2/D3/D4 (order/behavior/overlay) from targets.json.
+      # A modal <dialog> hidden before close() blocks the whole page in Safari
+      # 26.1 and leaves no trace (#4290). The ordering is produced by a CSS
+      # transition, which jsdom does not run — so the unit suite cannot see it
+      # and this Chromium probe is the guard. Runs after the upload above so an
+      # a11y failure still publishes its report.
+      - name: Run modal close visibility guard
+        run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
+
+  # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
+  # analysis.json scoping, so a PR only pays for the components it touched.
+  # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
+  # covers untouched components runs in rtl-weekly.yml.
   #
-  # SOFT / NON-BLOCKING (continue-on-error): a finding surfaces a scorecard in
-  # the job summary but does NOT block the merge. This is intentional — on
-  # current main, auto-discovery legitimately flags the components RTL hasn't
-  # reached yet (labelled [known] via known-not-rtl.json). The suite is observed
-  # for flake over a stability window before it is promoted to a required check.
-  # To promote: drop continue-on-error here and add `pr-rtl` to required checks.
-  # See apps/storybook/rtl-audit/README.md.
+  # Two layers: (A) auto-discovery — D1 icon-mirror + D5 positional-mirror, no
+  # curated selectors; (B) curated D2/D3/D4 from targets.json.
+  #
+  # SOFT / NON-BLOCKING (continue-on-error): findings surface a scorecard in the
+  # job summary but don't block the merge, while the suite is observed for
+  # flake. To promote: drop continue-on-error and add `pr-rtl` to required
+  # checks. See apps/storybook/rtl-audit/README.md.
   pr-rtl:
-    needs: [build-storybook]
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    needs: [build-storybook, check-components]
+    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
+    runs-on: 2-core-ubuntu-arm
     continue-on-error: true
     permissions:
       contents: read
@@ -475,6 +491,11 @@ jobs:
         with:
           install: 'false'
 
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-analysis
+
       - name: Download Storybook artifact
         uses: actions/download-artifact@v8
         with:
@@ -484,18 +505,33 @@ jobs:
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
+      # An empty --filter means "audit everything", so guard the empty case:
+      # has_components can be true while analysis.json resolves to no
+      # components (the two compute component-ness differently).
       - name: Run RTL audit
         id: rtl
         run: |
+          COMPONENTS=$(jq -r '(.newComponents + .modifiedComponents) | join(",")' analysis.json)
+          if [ -z "$COMPONENTS" ]; then
+            echo "No component changes resolved from analysis.json — skipping RTL audit."
+            echo "ran=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Auditing components: $COMPONENTS"
+          echo "ran=true" >> "$GITHUB_OUTPUT"
+          echo "components=$COMPONENTS" >> "$GITHUB_OUTPUT"
           node apps/storybook/rtl-audit/rtl-audit.mjs \
             --storybook-dir apps/storybook/dist \
-            --output rtl-audit-report.json
+            --output rtl-audit-report.json \
+            --filter "$COMPONENTS"
 
       - name: Write scorecard summary
-        if: always()
+        if: always() && steps.rtl.outputs.ran == 'true'
         run: |
           {
             echo "## RTL semantic audit"
+            echo ""
+            echo "Scoped to the components this PR touches: **${{ steps.rtl.outputs.components }}**. The full unfiltered sweep runs weekly — see \`rtl-weekly.yml\`."
             echo ""
             echo "Relationship-based (LTR vs RTL in the same run) — no golden screenshots. **Soft-gated** pending a stability window."
             echo ""
@@ -543,10 +579,6 @@ jobs:
                       if (!(c.fails || []).length) out.push(`| ${c.storyId} | (error) | — | — | ${(c.notes||[]).join("; ")} |`);
                     }
                     out.push("");
-                    if (pm.knownRealPending && pm.knownRealPending.length) {
-                      out.push("> **Known real bug pending a fix branch:** " + pm.knownRealPending.join("; ") + ". This is a genuine RTL bug on `main`, not a false positive — it clears once that branch lands. Soft-gate = non-blocking.");
-                      out.push("");
-                    }
                   } else {
                     out.push("_No positional-mirror FAILs._");
                     out.push("");
@@ -568,7 +600,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload RTL audit report
-        if: always()
+        if: always() && steps.rtl.outputs.ran == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: rtl-audit-report

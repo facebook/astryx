@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   smoke-test:
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -38,3 +38,12 @@ jobs:
 
       - name: API ↔ CLI parity test
         run: node .github/scripts/api-cli-parity-test.mjs --no-baseline
+
+      # The CDN starter page is the only thing we ship that runs with no
+      # bundler and no test double for the CDNs, so it is verified by rendering
+      # it. Needs network access to jsDelivr, esm.sh and the npm registry.
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      - name: CDN starter page smoke test
+        run: node .github/scripts/cdn-template-smoke-test.mjs

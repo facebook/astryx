@@ -35,6 +35,8 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {useTranslator} from '../i18n';
 
 /**
@@ -91,8 +93,8 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   onIndexChange?: (index: number) => void;
   /**
-   * Enable zoom on double-click (images only).
-   * When zoomed, drag to pan.
+   * Enable zoom on double-click, or Enter/Space/`+`/`-` via keyboard
+   * (images only). When zoomed, drag or use arrow keys to pan.
    * @default false
    */
   hasZoom?: boolean;
@@ -156,13 +158,20 @@ const styles = stylex.create({
     cursor: {
       default: 'zoom-in',
       '@media (hover: hover)': 'zoom-in',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
   imageWrapperZoomed: {
-    cursor: 'grab',
+    cursor: {
+      default: 'grab',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   imageWrapperDragging: {
-    cursor: 'grabbing',
+    cursor: {
+      default: 'grabbing',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   image: {
     maxWidth: '100%',
@@ -205,7 +214,12 @@ const styles = stylex.create({
   navButton: {
     position: 'absolute',
     top: '50%',
-    transform: 'translateY(-50%)',
+    // The individual `translate` property, not `transform`: this style now
+    // lands on the Button root, and a `transform` here replaces the Button's
+    // own transform rules — measured: the `scale(0.98)` press feedback stops
+    // firing. `translate` composes with them, reproducing exactly what the
+    // removed wrapper element did (wrapper translated, button scaled).
+    translate: '0 -50%',
     zIndex: 1,
   },
   navPrev: {
@@ -235,11 +249,27 @@ const dynamicStyles = stylex.create({
 });
 
 /**
+ * Pan distance (px) per arrow-key press while zoomed. Offsets move the
+ * viewport in the arrow's direction — pressing ArrowRight reveals content to
+ * the right, so the image itself shifts left (negative x), matching how
+ * scrolling and pointer-drag panning feel.
+ */
+const KEYBOARD_PAN_STEP = 50;
+const KEYBOARD_PAN_OFFSETS: Record<string, [number, number]> = {
+  ArrowLeft: [KEYBOARD_PAN_STEP, 0],
+  ArrowRight: [-KEYBOARD_PAN_STEP, 0],
+  ArrowUp: [0, KEYBOARD_PAN_STEP],
+  ArrowDown: [0, -KEYBOARD_PAN_STEP],
+};
+
+/**
  * A fullscreen overlay for viewing images at full resolution.
  *
  * Supports single image and gallery modes. In gallery mode, provides
  * prev/next navigation via buttons and arrow keys. Optionally supports
- * zoom (double-click to toggle 2x) and pan (drag when zoomed).
+ * zoom (double-click, Enter/Space on the image, or `+`/`-` to toggle 2x)
+ * and pan (drag or arrow keys when zoomed; arrows navigate the gallery
+ * when not zoomed).
  *
  * Uses the native `<dialog>` element with `showModal()` for focus
  * trapping and top-layer placement. Dismiss via Escape, close button,
@@ -356,9 +386,13 @@ export function Lightbox({
       return;
     }
     const item = mediaArray[Math.min(index, mediaArray.length - 1)];
-    const position = `${index + 1} of ${mediaArray.length}`;
-    announce(item?.alt ? `${item.alt}, ${position}` : `Image ${position}`);
-  }, [index, isOpen, announce, mediaArray]);
+    const position = {index: index + 1, total: mediaArray.length};
+    announce(
+      item?.alt
+        ? t('@astryx.lightbox.mediaPosition', {alt: item.alt, ...position})
+        : t('@astryx.lightbox.imagePosition', position),
+    );
+  }, [index, isOpen, announce, mediaArray, t]);
 
   // Open/close dialog
   useIsomorphicLayoutEffect(() => {
@@ -423,9 +457,52 @@ export function Lightbox({
     }
   }, [canNext, index, setIndex]);
 
-  // Keyboard navigation
+  // Zoom: double-click, Enter/Space on the image, or +/- keys toggle 1x ↔ 2x.
+  // Zoom changes are silent to assistive tech (only the transform changes), so
+  // mirror them in the polite live region, including a hint that arrow keys
+  // pan while zoomed.
+  const applyZoom = useCallback(
+    (next: number) => {
+      if (!hasZoom || isVideo || next === zoom) {
+        return;
+      }
+      setZoom(next);
+      setPan({x: 0, y: 0});
+      announce(
+        next > 1
+          ? t('@astryx.lightbox.zoomedIn')
+          : t('@astryx.lightbox.zoomedOut'),
+      );
+    },
+    [hasZoom, isVideo, zoom, announce, t],
+  );
+
+  const handleDoubleClick = useCallback(() => {
+    applyZoom(zoom === 1 ? 2 : 1);
+  }, [applyZoom, zoom]);
+
+  // Keyboard navigation. While zoomed, arrows pan the image (matching common
+  // lightbox conventions); when not zoomed they navigate the gallery.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (hasZoom && !isVideo) {
+        if (e.key === '+' || e.key === '=') {
+          e.preventDefault();
+          applyZoom(2);
+          return;
+        }
+        if (e.key === '-') {
+          e.preventDefault();
+          applyZoom(1);
+          return;
+        }
+        if (zoom > 1 && KEYBOARD_PAN_OFFSETS[e.key] !== undefined) {
+          e.preventDefault();
+          const [dx, dy] = KEYBOARD_PAN_OFFSETS[e.key];
+          setPan(prev => ({x: prev.x + dx, y: prev.y + dy}));
+          return;
+        }
+      }
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         goToPrev();
@@ -434,22 +511,19 @@ export function Lightbox({
         goToNext();
       }
     },
-    [goToPrev, goToNext],
+    [hasZoom, isVideo, zoom, applyZoom, goToPrev, goToNext],
   );
 
-  // Zoom: double-click toggles 1x ↔ 2x
-  const handleDoubleClick = useCallback(() => {
-    if (!hasZoom) {
-      return;
-    }
-    if (zoom === 1) {
-      setZoom(2);
-      setPan({x: 0, y: 0});
-    } else {
-      setZoom(1);
-      setPan({x: 0, y: 0});
-    }
-  }, [hasZoom, zoom]);
+  // Enter/Space on the focused image wrapper (role="button") toggles zoom.
+  const handleImageKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleDoubleClick();
+      }
+    },
+    [handleDoubleClick],
+  );
 
   // Pan: mouse drag when zoomed
   const handlePointerDown = useCallback(
@@ -497,6 +571,7 @@ export function Lightbox({
   }, [isDragging]);
 
   const isZoomed = zoom > 1;
+  const isZoomTarget = hasZoom && !isVideo;
   const imageTransform =
     zoom === 1
       ? null
@@ -521,54 +596,61 @@ export function Lightbox({
       aria-label={currentItem.alt || t('@astryx.lightbox.mediaViewer')}
       {...mergeProps(
         themeProps('lightbox'),
-        stylex.props(styles.dialog, xstyle),
+        stylex.props(styles.dialog, overlayPaddingReset.reset, xstyle),
         className,
         style,
       )}
       {...props}>
       <div ref={containerRef} {...stylex.props(styles.container)}>
         {/* Close button */}
-        <div {...stylex.props(styles.closeButton)}>
-          <IconButton
-            icon={<Icon icon="close" size="sm" color="inherit" />}
-            label={t('@astryx.lightbox.close')}
-            variant="ghost"
-            onClick={handleClose}
-            xstyle={styles.controlButton}
-          />
-        </div>
+        <IconButton
+          icon={<Icon icon="close" size="sm" color="inherit" />}
+          label={t('@astryx.lightbox.close')}
+          variant="ghost"
+          onClick={handleClose}
+          xstyle={[styles.closeButton, styles.controlButton]}
+        />
 
         {/* Gallery nav: prev — stays mounted and is disabled at the start of
             the range so pressing/arrowing to the boundary doesn't unmount the
             focused control and drop focus to <body>. */}
         {isGallery && (
-          <div {...stylex.props(styles.navButton, styles.navPrev)}>
-            <IconButton
-              icon={
-                <span {...stylex.props(rtlStyles.mirror)}>
-                  <Icon icon="chevronLeft" size="sm" color="inherit" />
-                </span>
-              }
-              label={t('@astryx.lightbox.previous')}
-              variant="ghost"
-              isDisabled={!canPrev}
-              onClick={goToPrev}
-              xstyle={styles.controlButton}
-            />
-          </div>
+          <IconButton
+            icon={
+              <Icon
+                icon="chevronLeft"
+                size="sm"
+                color="inherit"
+                xstyle={rtlStyles.mirror}
+              />
+            }
+            label={t('@astryx.lightbox.previous')}
+            variant="ghost"
+            isDisabled={!canPrev}
+            onClick={goToPrev}
+            xstyle={[styles.navButton, styles.navPrev, styles.controlButton]}
+          />
         )}
 
         {/* Media + caption group (centered together) */}
         <div {...stylex.props(styles.mediaGroup)}>
           <div
             ref={imageWrapperRef}
+            // The wrapper is a keyboard-operable zoom toggle when zoom is
+            // enabled: Enter/Space toggles, aria-pressed reflects state.
+            role={isZoomTarget ? 'button' : undefined}
+            tabIndex={isZoomTarget ? 0 : undefined}
+            aria-pressed={isZoomTarget ? isZoomed : undefined}
+            aria-label={isZoomTarget ? t('@astryx.lightbox.zoom') : undefined}
             {...stylex.props(
               styles.imageWrapper,
+              isZoomTarget && focusOutlineStyles.focusVisible,
               !isVideo && hasZoom && !isZoomed && styles.imageWrapperZoomable,
               !isVideo && isZoomed && styles.imageWrapperZoomed,
               !isVideo && isDragging && styles.imageWrapperDragging,
             )}
             onDoubleClick={isVideo ? undefined : handleDoubleClick}
+            onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
             onPointerDown={isVideo ? undefined : handlePointerDown}>
             {isVideo ? (
               <video
@@ -601,20 +683,21 @@ export function Lightbox({
         {/* Gallery nav: next — see "prev" above; stays mounted and disabled at
             the end of the range instead of unmounting. */}
         {isGallery && (
-          <div {...stylex.props(styles.navButton, styles.navNext)}>
-            <IconButton
-              icon={
-                <span {...stylex.props(rtlStyles.mirror)}>
-                  <Icon icon="chevronRight" size="sm" color="inherit" />
-                </span>
-              }
-              label={t('@astryx.lightbox.next')}
-              variant="ghost"
-              isDisabled={!canNext}
-              onClick={goToNext}
-              xstyle={styles.controlButton}
-            />
-          </div>
+          <IconButton
+            icon={
+              <Icon
+                icon="chevronRight"
+                size="sm"
+                color="inherit"
+                xstyle={rtlStyles.mirror}
+              />
+            }
+            label={t('@astryx.lightbox.next')}
+            variant="ghost"
+            isDisabled={!canNext}
+            onClick={goToNext}
+            xstyle={[styles.navButton, styles.navNext, styles.controlButton]}
+          />
         )}
 
         {/* Gallery counter */}

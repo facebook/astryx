@@ -17,11 +17,10 @@
 
 export {Theme} from './Theme';
 export {MediaTheme} from './MediaTheme';
-export type {MediaThemeProps} from './MediaTheme';
+export type {MediaThemeProps, MediaThemeMode} from './MediaTheme';
 export {
   defineTheme,
   generateThemeCSS,
-  generateThemeCSSFlat,
   generateOnMediaCSS,
   generateThemeRules,
   generateThemeRulesSplit,
@@ -91,11 +90,11 @@ export {
   spacingDefaults,
   sizeDefaults,
   borderDefaults,
+  focusDefaults,
   radiusDefaults,
   shadowDefaults,
   durationDefaults,
   easeDefaults,
-  transitionDefaults,
   typographyDefaults,
   textSizeDefaults,
   fontWeightDefaults,
@@ -104,11 +103,11 @@ export {
   spacingVars,
   sizeVars,
   borderVars,
+  focusVars,
   radiusVars,
   shadowVars,
   durationVars,
   easeVars,
-  transitionVars,
   typographyVars,
   textSizeVars,
   fontWeightVars,
@@ -125,7 +124,6 @@ export type {
   ShadowVarName,
   DurationVarName,
   EaseVarName,
-  TransitionVarName,
   TypographyVarName,
   TextSizeVarName,
   FontWeightVarName,
@@ -134,6 +132,19 @@ export type {
 
 export {useTheme, useThemeName, ThemeContext} from './useTheme';
 export type {UseThemeReturn, ThemeContextValue} from './useTheme';
+
+export type {
+  IndicatorComponent,
+  IndicatorFamily,
+  IndicatorFamilyMap,
+  IndicatorMap,
+  IndicatorName,
+  IndicatorNameOfFamily,
+  IndicatorProps,
+  IndicatorRegistry,
+  IndicatorSize,
+  IndicatorState,
+} from '../Indicator';
 export {
   resolveThemeToken,
   resolveThemeTokens,

@@ -80,7 +80,7 @@ const meta: Meta<typeof Timestamp> = {
     },
     hasTooltip: {
       control: 'boolean',
-      description: 'Show tooltip on hover',
+      description: 'Show copyable hover card on hover',
     },
     isTimezoneShown: {
       control: 'boolean',
@@ -188,12 +188,13 @@ export const TimeFormat: Story = {
 };
 
 export const TooltipTimezones: Story = {
-  name: 'Tooltip — multiple time zones',
+  name: 'Hover card — configuration examples',
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
       <div>
         <Text type="supporting" color="secondary">
-          Local + UTC, default format — hover or tab to the timestamp
+          Local + UTC, default format — hover or tab to the timestamp, then copy
+          any row
         </Text>
         <div>
           <Timestamp
@@ -208,7 +209,7 @@ export const TooltipTimezones: Story = {
       </div>
       <div>
         <Text type="supporting" color="secondary">
-          Three labelled zones — the widest case the 300px tooltip holds
+          Three labelled zones — the widest case the card holds
         </Text>
         <div>
           <Timestamp
@@ -254,6 +255,112 @@ export const TooltipTimezones: Story = {
             value="2026-02-19T17:00:00Z"
             format="date_time"
             tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          />
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const CopyableHoverCard: Story = {
+  name: 'Copyable hover card',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <div>
+        <Text type="supporting" color="secondary">
+          Local, UTC, another zone, and Unix seconds — hover or tab, then copy
+          any row
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+              {
+                timezoneID: 'Asia/Tokyo',
+                format: 'date_time',
+                label: 'Tokyo',
+              },
+              {
+                timezoneID: 'UTC',
+                format: 'system_date_time',
+                label: 'ISO (UTC)',
+              },
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          A single UTC entry — one copyable row, on an absolute format that has
+          no hover card of its own
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="date_time"
+            tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          />
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const PerEntryCopyable: Story = {
+  name: 'Per-entry copyable',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <div>
+        <Text type="supporting" color="secondary">
+          Mixed: human-readable rows are read-only; only the machine value opts
+          into a copy button
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+              {
+                timezoneID: 'UTC',
+                format: 'system_date_time',
+                label: 'ISO (UTC)',
+                isCopyable: true,
+              },
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          Fully read-only card — no row opts in, so there is no copy button and
+          no trailing action column
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          Single read-only row with no label — the value sits flush at the
+          leading edge
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[{}]}
           />
         </div>
       </div>

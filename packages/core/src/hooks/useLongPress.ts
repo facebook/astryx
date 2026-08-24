@@ -70,7 +70,12 @@ export function useLongPress(
 
   const onTouchStart = useCallback(
     (e: React.TouchEvent) => {
-      if (disabled || e.touches.length !== 1) {
+      if (disabled) {
+        return;
+      }
+      if (e.touches.length !== 1) {
+        // Multi-touch cancels any pending long-press.
+        clear();
         return;
       }
       const touch = e.touches[0];
@@ -92,7 +97,12 @@ export function useLongPress(
   const onTouchMove = useCallback(
     (e: React.TouchEvent) => {
       const start = startRef.current;
-      if (start == null || e.touches.length !== 1) {
+      if (start == null) {
+        return;
+      }
+      if (e.touches.length !== 1) {
+        // Multi-touch cancels the pending long-press.
+        clear();
         return;
       }
       const touch = e.touches[0];

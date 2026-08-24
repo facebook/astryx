@@ -9,11 +9,11 @@
  *   no-skeleton default) here.
  */
 
-import {pkgOf} from '../_adapter.mjs';
+import {pkgOf} from '../../../foundation/discovery/template-adapter.mjs';
 
 /**
  * Project a discovered template set into the `template.list` envelope.
- * @param {import('../_adapter.mjs').DiscoveredTemplate[]} templates
+ * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate[]} templates
  * @param {{type?: 'page' | 'block', package?: string}} [options]
  * @returns {import('../template.type.mjs').TemplateListResponse}
  */
@@ -27,8 +27,6 @@ export function templateList(templates, options = {}) {
     data: filtered.map(t => ({
       id: t.dirName,
       name: t.name,
-      // `displayName` retained for back-compat with existing consumers.
-      displayName: t.name,
       description: t.description,
       type: t.type,
       package: pkgOf(t),

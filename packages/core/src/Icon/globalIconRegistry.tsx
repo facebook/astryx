@@ -32,6 +32,8 @@ export type IconName =
   | 'chevronDown'
   | 'chevronLeft'
   | 'chevronRight'
+  | 'chevronsLeft'
+  | 'chevronsRight'
   | 'check'
   | 'success'
   | 'error'
@@ -108,12 +110,12 @@ function getThemeIconOverrides(
  * ```
  *
  * Libraries may also register their own extension keys (any string), so a
- * theme can override them the same way it overrides built-in icons:
+ * theme can override them the same way it overrides built-in icons. A library
+ * that ships its own icons registers them by key, then resolves with
+ * `getIcon('richtext:bold')`.
  * @example
  * ```
- * // In a library that ships its own icons:
  * registerIcons({ 'richtext:bold': <MyBoldIcon /> });
- * // resolve with getIcon('richtext:bold')
  * ```
  */
 export function registerIcons(
@@ -189,9 +191,10 @@ export function getIcon(
  * override the key via {@link registerIcons} without the library having to
  * widen the core {@link IconName} union.
  *
+ * The `fallback` is the library default, overridable by a theme registering the
+ * same key (for example `'richtext:bold'`).
  * @example
  * ```
- * // Library default, overridable by a theme registering 'richtext:bold':
  * getExtendedIcon('richtext:bold', <BoldGlyph />)
  * ```
  */

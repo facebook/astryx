@@ -40,6 +40,18 @@ describe('resolveThemeTokens', () => {
     const tokens = resolveThemeTokens(null, {mode: 'light'});
     expect(tokens['--color-text-primary']).toBe('#0A1317');
     expect(tokens['--spacing-1']).toBe('4px');
+    expect(tokens['--border-width']).toBe('1px');
+  });
+
+  it('resolves --border-width when overridden in defineTheme', () => {
+    const arcadeTheme = defineTheme({
+      name: 'arcade',
+      tokens: {
+        '--border-width': '2px',
+      },
+    });
+    const tokens = resolveThemeTokens(arcadeTheme, {mode: 'light'});
+    expect(tokens['--border-width']).toBe('2px');
   });
 
   it('resolves tuple overrides using original input tokens', () => {
@@ -278,5 +290,42 @@ describe('resolveThemeTokens — generated themes end to end', () => {
     // The derived accent tokens resolve to the base accent.
     expect(light['--color-text-accent']).toBe(light['--color-accent']);
     expect(light['--color-icon-accent']).toBe(light['--color-accent']);
+  });
+});
+
+describe('focus outline tokens', () => {
+  it('default to the accent ring from Design Conventions', () => {
+    const tokens = resolveThemeTokens(null, {mode: 'light'});
+
+    expect(tokens['--focus-outline-width']).toBe('2px');
+    expect(tokens['--focus-outline-style']).toBe('solid');
+    expect(tokens['--focus-outline-offset']).toBe('3px');
+    // Tracks the theme's accent unless a theme says otherwise.
+    expect(tokens['--focus-outline-color']).toBe(tokens['--color-accent']);
+  });
+
+  it('follows a theme accent without an explicit focus override', () => {
+    const theme = defineTheme({name: 'brand', color: {accent: '#AA0000'}});
+    const tokens = resolveThemeTokens(theme, {mode: 'light'});
+
+    expect(tokens['--focus-outline-color']).toBe(tokens['--color-accent']);
+    expect(tokens['--focus-outline-color']).not.toContain('var(');
+  });
+
+  it('takes an explicit ring over the accent', () => {
+    const theme = defineTheme({
+      name: 'brand',
+      color: {accent: '#AA0000'},
+      tokens: {
+        '--focus-outline-color': '#00FF00',
+        '--focus-outline-width': '4px',
+        '--focus-outline-offset': '0px',
+      },
+    });
+    const tokens = resolveThemeTokens(theme, {mode: 'light'});
+
+    expect(tokens['--focus-outline-color']).toBe('#00FF00');
+    expect(tokens['--focus-outline-width']).toBe('4px');
+    expect(tokens['--focus-outline-offset']).toBe('0px');
   });
 });

@@ -57,8 +57,16 @@ export interface ScheduleMonthlyViewOptions {
 function ScheduleMonthlyView(
   _props: ScheduleViewComponentProps<ScheduleMonthlyViewOptions>,
 ) {
-  const {events, categories, date, focusDate, timezoneID, range, isLoading, headingLevel} =
-    useScheduleContext();
+  const {
+    events,
+    categories,
+    date,
+    focusDate,
+    timezoneID,
+    range,
+    isLoading,
+    headingLevel,
+  } = useScheduleContext();
   const rangeDate = date.toPlainDate();
   const highlightedDate = focusDate.toPlainDate();
   const currentTime = useCurrentTime();
@@ -76,6 +84,10 @@ function ScheduleMonthlyView(
         role="grid"
         aria-label={formatMonthTitle(rangeDate, timezoneID)}
         aria-readonly
+        // The grid scrolls horizontally at narrow viewports and contains no
+        // focusable descendants, so it must be focusable itself for keyboard
+        // scrolling (axe: scrollable-region-focusable).
+        tabIndex={0}
         {...stylex.props(styles.monthGrid)}>
         <div role="row" {...stylex.props(styles.weekHeader)}>
           {days.slice(0, 7).map((day, index) => (

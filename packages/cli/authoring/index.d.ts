@@ -25,8 +25,12 @@
 // ═══════════════════════════════════════════════════════════════════════
 export type {ComponentDoc} from './doctypes/types'; //   Button.doc.{ts,mjs}
 export type {HookDoc} from './doctypes/types'; //         useToast.doc.{ts,mjs}
+export type {FunctionDoc} from './doctypes/types'; //     search.doc.mjs (hook | api)
 export type {ReferenceDoc} from './doctypes/types'; //    theming.doc.{ts,mjs}
 export type {TemplateDoc} from './doctypes/types'; //     Foo.template.{ts,mjs}
+export type {SchemaDoc} from './doctypes/types'; //       config.doc.mjs (object shape)
+export type {CommandDoc} from './doctypes/types'; //      search.doc.mjs (CLI command)
+export type {EnumDoc} from './doctypes/types'; //         error-codes.doc.mjs (vocabulary)
 export type {AstryxConfig} from './config/type'; //       astryx.config.{ts,mjs}
 export type {AstryxIntegration} from './integration/type'; // astryx.integration.{ts,mjs}
 export type {AstryxCodemod, AstryxConfigCodemod} from './codemod/type'; // codemods/*
@@ -37,8 +41,12 @@ export type {AstryxCodemod, AstryxConfigCodemod} from './codemod/type'; // codem
 export {parseDoc} from './doctypes/parse.mjs';
 export {parseComponent} from './doctypes/component/parse.mjs';
 export {parseHook} from './doctypes/hook/parse.mjs';
+export {parseFunction} from './doctypes/function/parse.mjs';
 export {parseReference} from './doctypes/reference/parse.mjs';
 export {parseTemplate} from './doctypes/template/parse.mjs';
+export {parseSchema} from './doctypes/schema/parse.mjs';
+export {parseCommand} from './doctypes/command/parse.mjs';
+export {parseEnum} from './doctypes/enum/parse.mjs';
 export {parseLegacyDoc} from './doctypes/legacy.mjs';
 export {parseConfig} from './config/parse.mjs';
 export {parseIntegration} from './integration/parse.mjs';
@@ -70,6 +78,10 @@ export type {
   HookParamDoc,
   HookReturnDoc,
   HookTranslationDoc,
+  // function (hooks + CLI/API functions)
+  FunctionReturnDoc,
+  FunctionThrowsDoc,
+  FunctionExampleDoc,
   // reference
   ReferenceSection,
   ReferenceContentBlock,
@@ -77,6 +89,14 @@ export type {
   ReferenceTranslationDoc,
   // template
   TemplateCategory,
+  // schema
+  SchemaFieldDoc,
+  // command
+  CommandArgDoc,
+  CommandOptionDoc,
+  CommandExampleDoc,
+  // enum
+  EnumMemberDoc,
 } from './doctypes/types';
 export type {PostCodemodHook} from './config/type';
 export type {

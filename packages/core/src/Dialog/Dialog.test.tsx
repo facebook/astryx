@@ -9,6 +9,7 @@
  * SYNC: When Dialog.tsx changes, update tests to match new behavior
  */
 
+import {readFileSync} from 'node:fs';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Dialog, resolveDialogPositionOffsets} from './Dialog';
@@ -184,13 +185,83 @@ describe('Dialog', () => {
     });
   });
 
+  describe('responsive sizing', () => {
+    it('keeps the requested width but clamps standard dialogs to container and dynamic viewport gutters', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          width={600}
+          maxHeight="70dvh"
+          aria-label="Sized dialog">
+          Content
+        </Dialog>,
+      );
+
+      const dialog = screen.getByRole('dialog');
+      const inlineStyle = dialog.getAttribute('style') ?? '';
+      expect(inlineStyle).toContain('--x-width: 600px');
+      expect(inlineStyle).toContain(
+        '--x-maxWidth: min(100%, calc(100dvw - var(--spacing-4) - var(--spacing-4)))',
+      );
+      expect(inlineStyle).toContain('--x-maxHeight: 70dvh');
+    });
+
+    it('uses a fullscreen-specific fade animation instead of centered dialog movement', () => {
+      const source = readFileSync(
+        'packages/core/src/Dialog/Dialog.tsx',
+        'utf8',
+      );
+      const standardOpen = source.slice(
+        source.indexOf('  open: {'),
+        source.indexOf('  // Backdrop using ::backdrop'),
+      );
+      const fullscreenOpen = source.slice(
+        source.indexOf('  fullscreenOpen: {'),
+        source.indexOf('  fullscreenSafeArea: {'),
+      );
+      const modalStyleOrder = source.slice(
+        source.indexOf('focusOutlineProps.focusVisible('),
+        source.indexOf(
+          '          xstyle,',
+          source.indexOf('focusOutlineProps.focusVisible('),
+        ),
+      );
+
+      expect(standardOpen).toContain('enterDirectional');
+      expect(fullscreenOpen).toContain('enterFullscreen');
+      expect(fullscreenOpen).not.toContain('enterDirectional');
+      expect(modalStyleOrder.indexOf('styles.open')).toBeLessThan(
+        modalStyleOrder.indexOf('styles.fullscreenOpen'),
+      );
+    });
+
+    it('protects fullscreen content with safe-area padding', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          variant="fullscreen"
+          aria-label="Fullscreen dialog">
+          <div data-testid="child">Content</div>
+        </Dialog>,
+      );
+
+      const wrapper = screen.getByTestId('child').parentElement!;
+      const computed = window.getComputedStyle(wrapper);
+      expect(computed.paddingInlineStart).toContain('safe-area-inset-left');
+      expect(computed.paddingInlineEnd).toContain('safe-area-inset-right');
+      expect(wrapper.parentElement!.tagName).toBe('DIALOG');
+    });
+  });
+
   describe('position prop', () => {
     it('accepts position configuration', () => {
       render(
         <Dialog
           isOpen={true}
           onOpenChange={() => {}}
-          position={{top: 100, right: 20}}>
+          position={{top: 100, end: 20}}>
           Content
         </Dialog>,
       );
@@ -202,7 +273,7 @@ describe('Dialog', () => {
         <Dialog
           isOpen={true}
           onOpenChange={() => {}}
-          position={{top: '10vh', left: '5vw'}}>
+          position={{top: '10vh', start: '5vw'}}>
           Content
         </Dialog>,
       );
@@ -235,61 +306,21 @@ describe('Dialog', () => {
       expect(offsets.insetInlineStart).toBe('20px');
       expect(offsets.insetInlineEnd).toBe('40px');
       // No physical offsets requested → auto.
-      expect(offsets.left).toBe('auto');
-      expect(offsets.right).toBe('auto');
-    });
-
-    it('keeps physical left/right physical — they do NOT mirror', () => {
-      // Physical props are the visual-left / visual-right edge in BOTH LTR and
-      // RTL (unchanged from pre-deprecation).
-      const offsets = resolveDialogPositionOffsets({left: 20, right: 40});
-      expect(offsets.left).toBe('20px');
-      expect(offsets.right).toBe('40px');
-      // insetInlineStart/End default to auto (no logical positioning requested).
-      expect(offsets.insetInlineStart).toBe('auto');
-      expect(offsets.insetInlineEnd).toBe('auto');
     });
 
     it('combines block-axis top/bottom with an inline pair', () => {
       const offsets = resolveDialogPositionOffsets({top: 100, start: 12});
       expect(offsets.top).toBe('100px');
       expect(offsets.insetInlineStart).toBe('12px');
-      // Everything unset falls back to auto — no mirroring for a logical-only
-      // consumer's physical slots.
+      // Everything unset falls back to auto.
       expect(offsets.bottom).toBe('auto');
-      expect(offsets.left).toBe('auto');
-      expect(offsets.right).toBe('auto');
       expect(offsets.insetInlineEnd).toBe('auto');
     });
 
-    it('is non-breaking: physical-only offsets match pre-deprecation output', () => {
-      const offsets = resolveDialogPositionOffsets({top: 100, right: 20});
-      expect(offsets.top).toBe('100px');
-      expect(offsets.right).toBe('20px');
-      expect(offsets.left).toBe('auto');
-      expect(offsets.bottom).toBe('auto');
-      expect(offsets.insetInlineStart).toBe('auto');
-      expect(offsets.insetInlineEnd).toBe('auto');
-    });
-
-    it('passes through string offsets (vw/vh/etc.) for both APIs', () => {
+    it('passes through string offsets (vw/vh/etc.) for logical offsets', () => {
       const logical = resolveDialogPositionOffsets({start: '5vw', end: '10%'});
       expect(logical.insetInlineStart).toBe('5vw');
       expect(logical.insetInlineEnd).toBe('10%');
-
-      const physical = resolveDialogPositionOffsets({left: '5vw', top: '10vh'});
-      expect(physical.left).toBe('5vw');
-      expect(physical.top).toBe('10vh');
-    });
-
-    it('forbids mixing logical and physical inline offsets at compile time', () => {
-      // The union type makes a mixed inline pair a type error — a single dialog
-      // cannot be positioned both logically and physically. These would not
-      // compile (kept as documentation of the enforced contract):
-      // @ts-expect-error start (logical) cannot combine with left (physical)
-      resolveDialogPositionOffsets({start: 5, left: 99});
-      // @ts-expect-error end (logical) cannot combine with right (physical)
-      resolveDialogPositionOffsets({end: 7, right: 88});
     });
   });
 
@@ -499,6 +530,30 @@ describe('Dialog', () => {
 
       expect(before).toHaveFocus();
       before.remove();
+    });
+  });
+
+  describe('container padding isolation', () => {
+    it('resets container padding custom properties on the root dialog element', () => {
+      render(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          Content
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const computed = window.getComputedStyle(dialog);
+      expect(
+        computed.getPropertyValue('--container-padding-inline-start'),
+      ).toBe('0px');
+      expect(computed.getPropertyValue('--container-padding-inline-end')).toBe(
+        '0px',
+      );
+      expect(computed.getPropertyValue('--container-padding-block-start')).toBe(
+        '0px',
+      );
+      expect(computed.getPropertyValue('--container-padding-block-end')).toBe(
+        '0px',
+      );
     });
   });
 });

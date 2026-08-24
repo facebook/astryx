@@ -117,7 +117,10 @@ const styles = stylex.create({
     height: spacingVars['--spacing-5'],
     paddingInline: spacingVars['--spacing-4'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
   },
   toggleCollapsed: {},
@@ -157,8 +160,8 @@ const styles = stylex.create({
     gridColumn: 1,
     justifySelf: 'center',
     alignSelf: 'start',
-    width: '20px',
-    height: '2px',
+    width: spacingVars['--spacing-5'],
+    height: spacingVars['--spacing-0-5'],
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: {
       default: colorVars['--color-icon-secondary'],

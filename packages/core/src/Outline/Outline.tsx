@@ -42,6 +42,7 @@ import type {BaseProps} from '../BaseProps';
 import {useScrollSpy} from './useScrollSpy';
 import type {OutlineItem} from './types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 export type {OutlineItem} from './types';
@@ -189,7 +190,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     boxSizing: 'border-box',
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     display: 'flex',
     fontWeight: fontWeightVars['--font-weight-normal'],
     outline: 'none',
@@ -202,7 +206,7 @@ const styles = stylex.create({
     width: '100%',
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
         color: colorVars['--color-text-primary'],
@@ -210,10 +214,6 @@ const styles = stylex.create({
     },
     ':active': {
       backgroundColor: colorVars['--color-overlay-pressed'],
-    },
-    ':focus-visible': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: 2,
     },
   },
   activeLink: {
@@ -473,7 +473,7 @@ export function Outline({
                     active: isActive ? 'active' : null,
                     level: item.level,
                   }),
-                  stylex.props(
+                  focusOutlineProps.focusVisible(
                     styles.link,
                     densityStyles[density],
                     getIndentStyle(item.level),

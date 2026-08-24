@@ -30,7 +30,7 @@ export default function TopNavMegaMenuBlock() {
         <TopNavHeading
           heading="My App"
           logo={<NavIcon icon={<Icon icon={CubeIcon} size="sm" />} />}
-          href="#"
+          headingHref="#"
         />
       }
       startContent={
@@ -75,7 +75,7 @@ export default function TopNavMegaMenuBlock() {
               <TopNavMegaMenuFeaturedCard
                 title="What's new in v4.0"
                 description="AI-powered analytics and real-time collaboration."
-                image="https://lookaside.facebook.com/assets/astryx/light-working-horizontal-1.png"
+                image="/template-assets/light-working-horizontal-1.png"
                 imageAlt="Team collaboration"
                 linkLabel="Read the announcement"
                 linkHref="#announcement"

@@ -46,7 +46,7 @@
   },
   "scripts": {
     "prepack": "pnpm build",
-    "build": "rm -rf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
+    "build": "rimraf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
     "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.js",
     "build:css": "node ../../scripts/build-css.mjs --package charts",
     "dev": "babel src --watch --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*\" --config-file ./babel.config.js",
@@ -58,7 +58,7 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.2.0",
+    "@astryxdesign/core": "0.4.7",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
   },
@@ -70,6 +70,7 @@
   "devDependencies": {
     "@astryxdesign/cli": "workspace:*",
     "@types/d3-scale": "^4.0.9",
-    "@types/d3-shape": "^3.1.8"
+    "@types/d3-shape": "^3.1.8",
+    "rimraf": "^6.0.1"
   }
 }

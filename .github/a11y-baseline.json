@@ -4,77 +4,12 @@
   "generatedAt": "2026-07-31T09:21:12.717Z",
   "entries": [
     {
-      "key": "AppShell::Auto Height::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Controlled Collapse::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Full Featured::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Playground::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Side Nav Only::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Top Nav Only::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Top Nav With Side Nav::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::With Banner::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::With Mobile Nav::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "Avatar::Default::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "Avatar::Initials Fallback::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AvatarGroup::Initials Fallback::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
       "key": "Badge::Status Labels::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
       "key": "Badge::Variants::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "Banner::Collapsible Content (Expanded)::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
@@ -359,11 +294,6 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "CodeEditor::With Max Height::scrollable-region-focusable",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/scrollable-region-focusable?application=playwright"
-    },
-    {
       "key": "CodeEditor::With Placeholder::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
@@ -374,19 +304,9 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "CodeEditorPerf::Stress Test::scrollable-region-focusable",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/scrollable-region-focusable?application=playwright"
-    },
-    {
       "key": "CodeEditorPerf::Typing Latency::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "CodeEditorPerf::Typing Latency::scrollable-region-focusable",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/scrollable-region-focusable?application=playwright"
     },
     {
       "key": "CodeEditorTheme::All Themes Gallery::color-contrast",
@@ -734,11 +654,6 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "Outline::Scroll Spy::scrollable-region-focusable",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/scrollable-region-focusable?application=playwright"
-    },
-    {
       "key": "OverflowList::With Badges::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
@@ -775,6 +690,11 @@
     },
     {
       "key": "ProgressBar::Disabled::color-contrast",
+      "impact": "serious",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
+    },
+    {
+      "key": "ProgressBar::Marks Across Variants::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
@@ -869,11 +789,6 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "Schedule::Monthly::scrollable-region-focusable",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/scrollable-region-focusable?application=playwright"
-    },
-    {
       "key": "Schedule::View Selector Plugin::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
@@ -924,12 +839,12 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "Stack::Scrollable::scrollable-region-focusable",
+      "key": "Stepper::Edge — Disabled Steps::color-contrast",
       "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/scrollable-region-focusable?application=playwright"
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "Stepper::Edge — Disabled Steps::color-contrast",
+      "key": "Stepper::Slots — endContent (trailing badges)::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
@@ -977,16 +892,6 @@
       "key": "TableGroupedRows::Initially Collapsed::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "TableRowStatus::Default::empty-table-header",
-      "impact": "minor",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/empty-table-header?application=playwright"
-    },
-    {
-      "key": "TableRowStatus::Raw Colors::empty-table-header",
-      "impact": "minor",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/empty-table-header?application=playwright"
     },
     {
       "key": "TableTree::Default::aria-conditional-attr",

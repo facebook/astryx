@@ -11,45 +11,54 @@
  */
 
 import {runChecks} from '../../../api/doctor/doctor.mjs';
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, records, text} from '../formatters/index.mjs';
+import {defineCommand} from '../lib/define-command.mjs';
+import {doc as doctorCommand} from './doctor.doc.mjs';
+import {doc as doctorFn} from '../../../api/doctor/doctor.doc.mjs';
 
-/** Status → human glyph (monochrome, matching the rest of the CLI). */
-const GLYPH = {
-  pass: '\u2713', // ✓
-  warn: '\u26a0', // ⚠
-  fail: '\u2717', // ✗
-  info: '\u2139', // ℹ
+/** Status -> ASCII token (plain, matching the rest of the CLI). */
+const STATUS = {
+  pass: '[ok]',
+  warn: '[warn]',
+  fail: '[fail]',
+  info: '[info]',
 };
 
+/** @param {string} status */
+function statusToken(status) {
+  return STATUS[/** @type {keyof typeof STATUS} */ (status)] ?? status;
+}
+
 /**
- * Render the report as a human-readable checklist.
+ * Render the report as a human-readable checklist. Each check is a record whose
+ * fields mirror the JSON (status/label/message/fix); the status glyph is an
+ * ASCII token so the output is byte-deterministic in any terminal.
  * @param {import('../../../api/doctor/doctor.mjs').DoctorReport} report
  */
 function printHuman(report) {
-  humanLog('astryx doctor — diagnosing your setup\n');
-  for (const check of report.checks) {
-    const glyph = GLYPH[check.status] ?? '\u00b7';
-    humanLog(`  ${glyph} ${check.label}`);
-    humanLog(`      ${check.message}`);
-    if (check.fix) {
-      humanLog(`      \u2192 fix: ${check.fix}`);
-    }
-  }
-
   const {pass, warn, fail, info} = report.summary;
-  humanLog('');
-  humanLog(
-    `Summary: ${pass} passed, ${warn} warning${warn === 1 ? '' : 's'}, ` +
-      `${fail} failure${fail === 1 ? '' : 's'}` +
-      (info ? `, ${info} info` : ''),
+  const closing =
+    fail > 0
+      ? 'Some checks failed. Address the items marked [fail] above.'
+      : warn > 0
+        ? 'No failures — but review the [warn] warnings above when you can.'
+        : 'All checks passed. Your XDS setup looks healthy.';
+
+  emit(
+    section('astryx doctor — diagnosing your setup'),
+    records(report.checks, {
+      fields: ['status', 'label', 'message', 'fix'],
+      labels: {label: 'check'},
+      format: {status: statusToken},
+    }),
+    text(
+      `Summary: ${pass} passed, ${warn} warning${warn === 1 ? '' : 's'}, ` +
+        `${fail} failure${fail === 1 ? '' : 's'}` +
+        (info ? `, ${info} info` : ''),
+    ),
+    text(closing),
   );
-  if (fail > 0) {
-    humanLog('\nSome checks failed. Address the items marked \u2717 above.');
-  } else if (warn > 0) {
-    humanLog('\nNo failures — but review the \u26a0 warnings above when you can.');
-  } else {
-    humanLog('\nAll checks passed. Your XDS setup looks healthy.');
-  }
 }
 
 /**
@@ -57,16 +66,9 @@ function printHuman(report) {
  * @param {import('commander').Command} program
  */
 export function registerDoctor(program) {
-  program
-    .command('doctor')
-    .description('Diagnose your XDS setup and report problems with fixes')
-    .addHelpText(
-      'after',
-      '\nExit code:\n' +
-        '  0  no failures (warnings are allowed) — safe as a CI gate\n' +
-        '  1  one or more checks failed\n',
-    )
-    .action(async () => {
+  defineCommand(program, doctorCommand, {
+    fn: doctorFn,
+    action: async () => {
       const json = program.opts().json || false;
       const report = await runChecks();
       const hasFailure = report.summary.fail > 0;
@@ -81,5 +83,11 @@ export function registerDoctor(program) {
       if (hasFailure) {
         process.exitCode = 1;
       }
-    });
+    },
+  }).addHelpText(
+    'after',
+    '\nExit code:\n' +
+      '  0  no failures (warnings are allowed) — safe as a CI gate\n' +
+      '  1  one or more checks failed\n',
+  );
 }

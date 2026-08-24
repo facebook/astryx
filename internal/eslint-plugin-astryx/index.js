@@ -9,6 +9,13 @@
  * - boolean-prop-naming: Enforces is/has prefix on boolean props in *Props interfaces
  * - docblock-example-format: Enforces @example blocks use ``` fenced code on a separate line
  * - no-raw-paragraph: Disallows components from rendering a <p> by default (render <div> so any content composes)
+ * - no-style-only-wrapper: Disallows div/span wrappers that only style a single Astryx component (use xstyle)
+ * - no-nullish-jsx-guard: Flags `!= null` JSX render guards for rendered values (use isRenderable so false/''/true slots don't leak an empty element)
+ * - no-raw-intl-locale: Forbids raw Intl formatting/comparison outside the approved i18n infrastructure boundary, and navigator.language(s) as a locale source
+ * - no-unguarded-ime-keydown: Flags an onKeyDown on an editable surface that branches on command keys without an IME composition guard (isImeKeyEvent/isComposing)
+ * - no-classname-clobber: Flags two className sources on one JSX element — a literal className/style beside {...stylex.props()}, or two spreads that each carry a className (the later one silently wins)
+ * - no-hover-on-disabled: Flags a :hover condition that can still match a disabled element (browsers suppress a disabled control's events, not its hover styling)
+ * - disabled-cursor: Flags a cursor that promises an interaction without giving way to not-allowed on a disabled element
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -19,12 +26,21 @@ import booleanPropNamingRule from './boolean-prop-naming.js';
 import presentationalComponentRule from './presentational-component.js';
 import docblockExampleFormatRule from './docblock-example-format.js';
 import noStylexNullOverrideRule from './no-stylex-null-override.js';
+import noStyleOnlyWrapperRule from './no-style-only-wrapper.js';
+import noWrapperTransformRule from './no-wrapper-transform.js';
 import noReactIntrospectionRule from './no-react-introspection.js';
 import noClassnameClobberRule from './no-classname-clobber.js';
 import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
 import noRawParagraphRule from './no-raw-paragraph.js';
+import noNullishJsxGuardRule from './no-nullish-jsx-guard.js';
+import noRawIntlLocaleRule from './no-raw-intl-locale.js';
+import noUnguardedImeKeydownRule from './no-unguarded-ime-keydown.js';
 import noBorderShorthandRule from './no-border-shorthand.js';
 import noPhysicalPropertiesRule from './no-physical-properties.js';
+import focusOutlineKeyboardOnlyRule from './focus-outline-keyboard-only.js';
+import focusOutlineSharedRule from './focus-outline-shared.js';
+import noHoverOnDisabledRule from './no-hover-on-disabled.js';
+import disabledCursorRule from './disabled-cursor.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
@@ -236,12 +252,21 @@ const plugin = {
     'presentational-component': presentationalComponentRule,
     'docblock-example-format': docblockExampleFormatRule,
     'no-stylex-null-override': noStylexNullOverrideRule,
+    'no-style-only-wrapper': noStyleOnlyWrapperRule,
+    'no-wrapper-transform': noWrapperTransformRule,
     'no-react-introspection': noReactIntrospectionRule,
     'no-classname-clobber': noClassnameClobberRule,
     'no-hardcoded-anchor': noHardcodedAnchorRule,
     'no-raw-paragraph': noRawParagraphRule,
+    'no-nullish-jsx-guard': noNullishJsxGuardRule,
+    'no-raw-intl-locale': noRawIntlLocaleRule,
+    'no-unguarded-ime-keydown': noUnguardedImeKeydownRule,
     'no-border-shorthand': noBorderShorthandRule,
     'no-physical-properties': noPhysicalPropertiesRule,
+    'focus-outline-keyboard-only': focusOutlineKeyboardOnlyRule,
+    'focus-outline-shared': focusOutlineSharedRule,
+    'no-hover-on-disabled': noHoverOnDisabledRule,
+    'disabled-cursor': disabledCursorRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
@@ -264,13 +289,51 @@ plugin.configs.strict = {
     '@astryx/presentational-component': 'error',
     '@astryx/docblock-example-format': 'error',
     '@astryx/no-stylex-null-override': 'error',
+    // Migration in progress: ~25 wrappers in packages/core predate this rule
+    // (Carousel, Lightbox, MobileNav, Pagination, PowerSearch, Switch, TopNav,
+    // Table/rowExpansion). Warn in both tiers until they move to xstyle, then
+    // flip to 'error' here to prevent regressions — the same path
+    // no-physical-properties took.
+    '@astryx/no-style-only-wrapper': 'warn',
+    '@astryx/no-wrapper-transform': 'error',
     '@astryx/no-react-introspection': 'error',
-    '@astryx/no-classname-clobber': 'error',
+    // Widened to catch two spreads that each carry a className, which is how
+    // astryx-breadcrumb-item-menu-trigger came to render on no element at
+    // all. That one violation is the only one in the repo and its fix is
+    // open in PR #5332 — warn until that lands, then flip both tiers back
+    // to 'error'.
+    '@astryx/no-classname-clobber': 'warn',
     '@astryx/no-hardcoded-anchor': 'error',
     '@astryx/no-raw-paragraph': 'error',
+    // Rolled out as a warning even in strict mode: core still has ~36 existing
+    // `slot != null && <El>{slot}</El>` guards to migrate to isRenderable().
+    // Kept as 'warn' so it surfaces everywhere (including CI) without failing
+    // the build; promote to 'error' once core is migrated (see issue #2538).
+    '@astryx/no-nullish-jsx-guard': 'warn',
+    '@astryx/no-raw-intl-locale': 'error',
+    // All editable command-key handlers in core now guard IME composition
+    // (Selector, MultiSelector, DateInput, DateTimeInput, TimeInput, and
+    // Typeahead's edit-mode Escape were fixed alongside this rule); error to
+    // prevent regressions (see issue #4892).
+    '@astryx/no-unguarded-ime-keydown': 'error',
     '@astryx/no-border-shorthand': 'error',
     // RTL physical→logical migration complete; errors to prevent regressions.
     '@astryx/no-physical-properties': 'error',
+    // A focus outline drawn for pointer users is an accessibility defect, and
+    // core is clean — error in both tiers so it stays that way.
+    '@astryx/focus-outline-keyboard-only': 'error',
+    // Core and lab draw every ring from the shared utility; error so the one
+    // themeable definition stays the only one.
+    '@astryx/focus-outline-shared': 'error',
+    // A disabled control that lights up under the pointer promises a click it
+    // will not honour, and `:hover` matches a disabled element in every
+    // engine. Error in both tiers: core and lab are clean, and the fix is
+    // autofixable.
+    '@astryx/no-hover-on-disabled': 'error',
+    // The cursor is the affordance a pointer user reads before they click; a
+    // disabled control answering with `pointer` promises a click it will not
+    // honour. Error in both tiers, and autofixable.
+    '@astryx/disabled-cursor': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
@@ -291,13 +354,40 @@ plugin.configs.recommended = {
     '@astryx/presentational-component': 'error',
     '@astryx/docblock-example-format': 'warn',
     '@astryx/no-stylex-null-override': 'warn',
+    '@astryx/no-style-only-wrapper': 'warn',
+    '@astryx/no-wrapper-transform': 'error',
     '@astryx/no-react-introspection': 'error',
-    '@astryx/no-classname-clobber': 'error',
+    // Widened to catch two spreads that each carry a className, which is how
+    // astryx-breadcrumb-item-menu-trigger came to render on no element at
+    // all. That one violation is the only one in the repo and its fix is
+    // open in PR #5332 — warn until that lands, then flip both tiers back
+    // to 'error'.
+    '@astryx/no-classname-clobber': 'warn',
     '@astryx/no-hardcoded-anchor': 'warn',
     '@astryx/no-raw-paragraph': 'warn',
+    '@astryx/no-nullish-jsx-guard': 'warn',
+    '@astryx/no-raw-intl-locale': 'error',
+    // IME composition migration complete; error to prevent regressions
+    // (see strict config above and issue #4892).
+    '@astryx/no-unguarded-ime-keydown': 'error',
     '@astryx/no-border-shorthand': 'warn',
     // RTL physical→logical migration complete; errors to prevent regressions.
     '@astryx/no-physical-properties': 'error',
+    // A focus outline drawn for pointer users is an accessibility defect, and
+    // core is clean — error in both tiers so it stays that way.
+    '@astryx/focus-outline-keyboard-only': 'error',
+    // Core and lab draw every ring from the shared utility; error so the one
+    // themeable definition stays the only one.
+    '@astryx/focus-outline-shared': 'error',
+    // A disabled control that lights up under the pointer promises a click it
+    // will not honour, and `:hover` matches a disabled element in every
+    // engine. Error in both tiers: core and lab are clean, and the fix is
+    // autofixable.
+    '@astryx/no-hover-on-disabled': 'error',
+    // The cursor is the affordance a pointer user reads before they click; a
+    // disabled control answering with `pointer` promises a click it will not
+    // honour. Error in both tiers, and autofixable.
+    '@astryx/disabled-cursor': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',

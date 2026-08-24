@@ -183,9 +183,12 @@ function TableRowInner<T extends Record<string, unknown>>({
     );
 
     const isDefaultRenderer = !col.renderCell;
-    const rawContent = isDefaultRenderer
-      ? defaultCellRenderer(item, col.key)
-      : (col.renderCell?.(item) ?? null);
+    let rawContent: ReactNode = null;
+    if (!cellRenderProps.isContentSuppressed) {
+      rawContent = isDefaultRenderer
+        ? defaultCellRenderer(item, col.key)
+        : (col.renderCell?.(item) ?? null);
+    }
 
     // In truncate mode, wrap default-rendered string content in
     // <Text maxLines={1}> for smart tooltips that only appear
@@ -242,6 +245,17 @@ function TableRowInner<T extends Record<string, unknown>>({
       {rowRenderProps.children}
     </RowComponent>
   );
+
+  // afterRow: plugins (e.g. row expansion) can append a full-width detail
+  // panel `<tr>` after the row. Rendered as a sibling fragment.
+  if (rowRenderProps.afterRow) {
+    return (
+      <>
+        {row}
+        {rowRenderProps.afterRow}
+      </>
+    );
+  }
 
   return row;
 }
@@ -331,7 +345,6 @@ function BaseTableInner<T extends Record<string, unknown>>({
   idKey,
   plugins: pluginsProp,
   children,
-  tableProps: userTableProps,
   textOverflow = 'wrap',
   scrollWrapper: ScrollWrapper,
   emptyState,
@@ -394,7 +407,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
 
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
-    htmlProps: {...userTableProps},
+    htmlProps: {},
     xstyle: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
   } satisfies TableRenderProps);
 
@@ -498,8 +511,8 @@ function BaseTableInner<T extends Record<string, unknown>>({
   const hasData = data != null && data.length > 0;
   const hasColumns = resolvedColumns.length > 0;
 
-  // Style precedence: deprecated tableProps.style < consumer style < the
-  // computed column min-width (structural — derived from column defs, so it
+  // Style precedence: consumer style < the computed column min-width
+  // (structural — derived from column defs, so it
   // must win when present; when absent, a consumer minWidth survives).
   const tableStyle: React.CSSProperties = {
     ...tableRenderProps.htmlProps.style,

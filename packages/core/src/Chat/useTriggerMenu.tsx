@@ -110,10 +110,6 @@ const styles = stylex.create({
   popoverSurface: {
     minWidth: '180px',
   },
-  popoverGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
   item: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -121,7 +117,10 @@ const styles = stylex.create({
     width: '100%',
     padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
     backgroundColor: 'transparent',
     border: 'none',
@@ -711,7 +710,8 @@ export function useTriggerMenu(
       {
         placement: 'above',
         alignment: 'start',
-        xstyle: [styles.popoverSurface, styles.popoverGap],
+        offset: spacingVars['--spacing-1'],
+        xstyle: styles.popoverSurface,
       },
     );
   }, [popover, listboxId, state, selectItem, getItemId, t]);

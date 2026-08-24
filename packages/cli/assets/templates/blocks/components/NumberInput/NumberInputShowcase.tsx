@@ -14,6 +14,8 @@ export default function NumberInputShowcase() {
         placeholder="Enter quantity"
         value={value}
         onChange={setValue}
+        formatValue={number => `${number} items`}
+        hasNumberSteppers
       />
     </div>
   );

@@ -44,8 +44,7 @@ export const chocolateTheme = defineTheme({
     },
     heading: {
       family: 'Fraunces',
-      fallbacks:
-        'Georgia, "Times New Roman", Times, serif',
+      fallbacks: 'Georgia, "Times New Roman", Times, serif',
       weights: {3: 'bold', 4: 'bold'},
     },
     code: {
@@ -177,8 +176,11 @@ export const chocolateTheme = defineTheme({
 
     // =========================================================================
     // Radius — soft and rounded
+    //   --radius-none and --radius-full are always fixed and must never be
+    //   scaled by a theme (see defineTheme's radius config docs) — 0 and
+    //   9999px respectively, matching @astryxdesign/core's own defaults.
     // =========================================================================
-    '--radius-none': '0.125rem',
+    '--radius-none': '0px',
     '--radius-inner': '0.375rem',
     '--radius-element': '0.625rem',
     '--radius-container': '0.75rem',
@@ -188,12 +190,9 @@ export const chocolateTheme = defineTheme({
     // =========================================================================
     // Shadows — warm-toned
     // =========================================================================
-    '--shadow-low':
-      '0 2px 4px #4a35200D, 0 4px 8px #4a35201A',
-    '--shadow-med':
-      '0 2px 4px #4a35200D, 0 4px 12px #4a35201A',
-    '--shadow-high':
-      '0 4px 6px #4a35201A, 0 12px 24px #4a352026',
+    '--shadow-low': '0 2px 4px #4a35200D, 0 4px 8px #4a35201A',
+    '--shadow-med': '0 2px 4px #4a35200D, 0 4px 12px #4a35201A',
+    '--shadow-high': '0 4px 6px #4a35201A, 0 12px 24px #4a352026',
     '--shadow-inset-hover': 'inset 0px 0px 0px 2px #8C592730',
     '--shadow-inset-selected': 'inset 0px 0px 0px 2px #8C592750',
     '--shadow-inset-success': 'inset 0px 0px 0px 2px #70990050',

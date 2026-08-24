@@ -81,8 +81,8 @@ describe('Slider', () => {
   });
 
   it.each([
-    {value: 150, expectedValue: 100, expectedPosition: '100%'},
-    {value: -50, expectedValue: 0, expectedPosition: '0%'},
+    {value: 150, expectedValue: 100, expectedPosition: 'calc(100% - 10px)'},
+    {value: -50, expectedValue: 0, expectedPosition: 'calc(0% + 10px)'},
   ])(
     'clamps a controlled value of $value to $expectedValue',
     ({value, expectedValue, expectedPosition}) => {
@@ -90,8 +90,44 @@ describe('Slider', () => {
       const slider = screen.getByRole('slider');
       expect(slider).toHaveAttribute('aria-valuenow', String(expectedValue));
       // Thumb positions via the logical `inset-inline-start` so it mirrors
-      // under RTL (see RTL Phase 4). In LTR this resolves to the left edge.
+      // under RTL (see RTL Phase 4), offset by half a thumb so the extremes
+      // stay inside the component box.
       expect(slider).toHaveStyle({insetInlineStart: expectedPosition});
+    },
+  );
+
+  // Regression: #5050 — at min/max the thumb centred on the container edge,
+  // so half of it (10px of a 20px thumb) hung outside the component.
+  it.each([
+    {value: 0, position: 'calc(0% + 10px)'},
+    {value: 50, position: 'calc(50% + 0px)'},
+    {value: 100, position: 'calc(100% - 10px)'},
+  ])(
+    'insets the thumb at value $value so it stays in bounds',
+    ({value, position}) => {
+      render(<Slider label="Volume" value={value} min={0} max={100} />);
+      expect(screen.getByRole('slider')).toHaveStyle({
+        insetInlineStart: position,
+      });
+    },
+  );
+
+  it.each([
+    {value: 0, position: 'calc(0% + 10px)'},
+    {value: 100, position: 'calc(100% - 10px)'},
+  ])(
+    'insets a vertical thumb at value $value so it stays in bounds',
+    ({value, position}) => {
+      render(
+        <Slider
+          label="Volume"
+          value={value}
+          min={0}
+          max={100}
+          orientation="vertical"
+        />,
+      );
+      expect(screen.getByRole('slider')).toHaveStyle({bottom: position});
     },
   );
 
@@ -580,22 +616,23 @@ describe('Slider', () => {
       />,
     );
     const track = screen.getByRole('slider').parentElement!;
-    track.getBoundingClientRect = () =>
-      ({
-        left: 0,
-        top: 0,
-        right: 200,
-        bottom: 20,
-        width: 200,
-        height: 20,
-        x: 0,
-        y: 0,
-        toJSON: () => {},
-      });
+    track.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
 
-    // Click at 25% of the track from the left (x=50 of 200) → value 25 in LTR.
+    // Click at x=50 of a 200px track. The thumb's travel is the track minus
+    // half a thumb at each end (180px from x=10), so the fraction is
+    // (50 - 10) / 180 → value 22.
     fireEvent.pointerDown(track, {clientX: 50, clientY: 10, pointerId: 1});
-    expect(handleChange).toHaveBeenLastCalledWith(25);
+    expect(handleChange).toHaveBeenLastCalledWith(22);
   });
 
   it('mirrors a track click to the RTL value when the track is rtl', () => {
@@ -611,18 +648,17 @@ describe('Slider', () => {
       />,
     );
     const track = screen.getByRole('slider').parentElement!;
-    track.getBoundingClientRect = () =>
-      ({
-        left: 0,
-        top: 0,
-        right: 200,
-        bottom: 20,
-        width: 200,
-        height: 20,
-        x: 0,
-        y: 0,
-        toJSON: () => {},
-      });
+    track.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
 
     // Force the track's computed direction to rtl (isRtlElement reads this).
     const realGetComputedStyle = window.getComputedStyle;
@@ -635,11 +671,11 @@ describe('Slider', () => {
         return realGetComputedStyle(el, pseudo ?? undefined);
       });
 
-    // Same physical click at 25% from the left (x=50). Under RTL the inline
-    // start is the right edge, so fraction = (right - x)/width = 150/200 = 0.75
-    // → value 75 (the mirror of the LTR value 25).
+    // Same physical click at x=50. Under RTL the inline start is the right
+    // edge, so the fraction is (right - 10 - x) / 180 = 140/180 → value 78
+    // (the mirror of the LTR value 22).
     fireEvent.pointerDown(track, {clientX: 50, clientY: 10, pointerId: 1});
-    expect(handleChange).toHaveBeenLastCalledWith(75);
+    expect(handleChange).toHaveBeenLastCalledWith(78);
 
     gcsSpy.mockRestore();
   });

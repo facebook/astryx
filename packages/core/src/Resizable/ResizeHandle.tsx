@@ -17,6 +17,10 @@
  * Pill placement uses a single stylex dynamic style that accepts a direction
  * multiplier (-1 or 1). The pill element has its own themeProps
  * ('resize-handle-pill') so themes can target size/shape directly.
+ *
+ * While the panel is collapsed, aria-valuenow is clamped to aria-valuemin
+ * (a value below the minimum is invalid per WCAG 4.1.2) and a localized
+ * "Collapsed" aria-valuetext announces the real state.
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -30,6 +34,7 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {ResizableProps} from './useResizable';
 import {themeProps} from '../utils/themeProps';
@@ -90,14 +95,6 @@ const styles = stylex.create({
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: null,
-      ':focus-visible': spacingVars['--spacing-0-5'],
-    },
   },
   // Overlay mode — absolutely positioned inside the parent panel
   // instead of being a sibling in flex flow. Used when the handle
@@ -122,12 +119,18 @@ const styles = stylex.create({
   horizontal: {
     width: 1,
     height: '100%',
-    cursor: 'col-resize',
+    cursor: {
+      default: 'col-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   vertical: {
     height: 1,
     width: '100%',
-    cursor: 'row-resize',
+    cursor: {
+      default: 'row-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   noDividerHorizontal: {
     backgroundColor: 'transparent',
@@ -158,13 +161,19 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     top: 0,
     bottom: 0,
-    cursor: 'col-resize',
+    cursor: {
+      default: 'col-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   hitAreaVertical: {
     height: spacingVars['--spacing-4'],
     insetInlineStart: 0,
     insetInlineEnd: 0,
-    cursor: 'row-resize',
+    cursor: {
+      default: 'row-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Centered grab zone (pillPlacement 'center' / no bias): sit the hit area on
   // the divider itself. Inline centering comes from rtlStyles.centerInline at
@@ -222,16 +231,22 @@ const dynamicStyles = stylex.create({
   // directions because the pill's own offset is physical. Mixing the previous
   // divider-relative `50%` anchor with a percentage translate stranded the grab
   // zone to one side under RTL; this construction keeps it on the pill.
+  //
+  // Only the offset axis is translated. Unlike the pill — a small box anchored
+  // at the divider's midpoint, so it needs a −50% self-shift to centre — the
+  // grab zone is STRETCHED along the handle by hitAreaHorizontal/Vertical's
+  // 0/0 insets, so it is already in place on that axis. A percentage there
+  // would displace it by half the handle's own length, growing with the panel.
   hitAreaOffsetX: (dir: number) => ({
     insetInlineStart: 0,
     transform: {
-      default: `translate(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px), -50%)`,
-      ':is([dir="rtl"] *)': `translate(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) + 6.5px), -50%)`,
+      default: `translateX(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px))`,
+      ':is([dir="rtl"] *)': `translateX(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) + 6.5px))`,
     },
   }),
   hitAreaOffsetY: (dir: number) => ({
     insetBlockStart: 0,
-    transform: `translate(-50%, calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px))`,
+    transform: `translateY(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px))`,
   }),
   pillOffsetX: (dir: number) => ({
     insetInlineStart: 0,
@@ -514,12 +529,23 @@ export function ResizeHandle({
   }, []);
 
   // --- ARIA ---
-  const ariaValueNow = resizable ? resizable._size : undefined;
+  // When collapsed the panel's real size (0) sits below aria-valuemin, which
+  // is invalid per WCAG 4.1.2. Clamp aria-valuenow to the minimum and announce
+  // the true state via aria-valuetext instead; the valuetext is removed as
+  // soon as the panel expands so the numeric value reads again.
+  const isCollapsed = resizable?._isCollapsed ?? false;
+  const ariaValueNow = resizable
+    ? isCollapsed
+      ? Math.max(resizable._size, resizable._minSizePx)
+      : resizable._size
+    : undefined;
   const ariaValueMin = resizable ? resizable._minSizePx : undefined;
   const ariaValueMax =
     resizable && resizable._maxSizePx !== Infinity
       ? resizable._maxSizePx
       : undefined;
+  const ariaValueText =
+    resizable && isCollapsed ? t('@astryx.resizable.collapsed') : undefined;
 
   return (
     <div
@@ -529,6 +555,7 @@ export function ResizeHandle({
       aria-valuenow={ariaValueNow}
       aria-valuemin={ariaValueMin}
       aria-valuemax={ariaValueMax}
+      aria-valuetext={ariaValueText}
       aria-label={label}
       aria-disabled={isDisabled || undefined}
       tabIndex={isDisabled ? -1 : 0}
@@ -538,7 +565,7 @@ export function ResizeHandle({
       data-resizing={isDragging || undefined}
       {...mergeProps(
         themeProps('resize-handle'),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.handle,
           isOverlay && styles.overlay,
           isOverlay &&

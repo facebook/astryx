@@ -27,7 +27,6 @@ const PACKAGE_RENAMES = new Map([
   ['@xds/theme-butter', '@astryxdesign/theme-butter'],
   ['@xds/theme-chocolate', '@astryxdesign/theme-chocolate'],
   ['@xds/theme-daily', '@astryxdesign/theme-neutral'],
-  ['@xds/theme-default', '@astryxdesign/theme-neutral'],
   ['@xds/theme-gothic', '@astryxdesign/theme-gothic'],
   ['@xds/theme-matcha', '@astryxdesign/theme-matcha'],
   ['@xds/theme-neutral', '@astryxdesign/theme-neutral'],
@@ -52,19 +51,16 @@ function rewriteLiteral(/** @type {any} */ node) {
   return true;
 }
 
-// @xds/theme-default and @xds/theme-daily both collapse to
-// @astryxdesign/theme-neutral, whose exported theme binding is `neutralTheme`
-// (not `defaultTheme`). When we rewrite an import from one of those packages,
-// remap a `defaultTheme` named import to `neutralTheme`, aliasing back to the
-// original local name so downstream usages keep working unchanged:
-//   import {defaultTheme} from '@xds/theme-default'
+// @xds/theme-daily collapses to @astryxdesign/theme-neutral, whose exported
+// theme binding is `neutralTheme` (not `defaultTheme`). When we rewrite an
+// import from that package, remap a `defaultTheme` named import to
+// `neutralTheme`, aliasing back to the original local name so downstream usages
+// keep working unchanged:
+//   import {defaultTheme} from '@xds/theme-daily'
 //     -> import {neutralTheme as defaultTheme} from '@astryxdesign/theme-neutral'
 // An already-aliased `{defaultTheme as x}` just has its imported name remapped.
 const THEME_EXPORT_RENAMES = new Map([['defaultTheme', 'neutralTheme']]);
-const COLLAPSED_THEME_SOURCES = new Set([
-  '@xds/theme-default',
-  '@xds/theme-daily',
-]);
+const COLLAPSED_THEME_SOURCES = new Set(['@xds/theme-daily']);
 
 function isCollapsedThemeSource(/** @type {any} */ value) {
   if (typeof value !== 'string') return false;
@@ -128,7 +124,7 @@ export default function transformer(file, api) {
 
   root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     // Remap collapsed-theme export names BEFORE rewriting the source specifier
-    // (the check keys off the original @xds/theme-default|daily path).
+    // (the check keys off the original @xds/theme-daily path).
     if (isCollapsedThemeSource(path.node.source.value)) {
       hasChanges = remapThemeExportNames(path, j) || hasChanges;
     }

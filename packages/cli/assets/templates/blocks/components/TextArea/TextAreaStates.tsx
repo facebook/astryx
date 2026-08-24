@@ -20,7 +20,7 @@ export default function TextAreaStates() {
       />
       <TextArea
         label="Disabled field"
-        value="This field is read-only and cannot be edited."
+        value="This field is disabled and cannot be edited."
         onChange={() => {}}
         isDisabled
       />

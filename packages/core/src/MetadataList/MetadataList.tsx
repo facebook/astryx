@@ -146,7 +146,10 @@ const styles = stylex.create({
     background: 'none',
     border: 'none',
     padding: `${spacingVars['--spacing-2']} 0`,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: colorVars['--color-accent'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
@@ -155,6 +158,12 @@ const styles = stylex.create({
     textAlign: 'start',
     alignSelf: 'flex-start',
   },
+});
+
+// A fixed numeric column count (and a custom label width) is only known at
+// runtime, so it comes from a dynamic style rather than a static rule.
+const dynamicStyles = stylex.create({
+  gridTemplate: (gridTemplateColumns: string) => ({gridTemplateColumns}),
 });
 
 // =============================================================================
@@ -241,20 +250,32 @@ export function MetadataList({
     return styles.gridMulti;
   };
 
-  // For numeric columns > 1 with side labels, use inline style for dynamic grid
-  const dynamicGridStyle =
-    !isHorizontal &&
-    labelConfig.position === 'start' &&
-    typeof columns === 'number' &&
-    columns > 1
-      ? {gridTemplateColumns: `repeat(${columns}, auto 1fr)`}
-      : !isHorizontal &&
-          labelConfig.position === 'start' &&
-          labelConfig.width != null
-        ? {
-            gridTemplateColumns: `${typeof labelConfig.width === 'number' ? `${labelConfig.width}px` : labelConfig.width} 1fr`,
-          }
-        : undefined;
+  // The grid template for a fixed numeric column count, or for a custom label
+  // width. Both are runtime values, so they resolve to a dynamic style below.
+  // The track shape depends on the label position: stacked labels put a whole
+  // item in one cell, while side labels split each item into a label track and
+  // a value track.
+  const getGridTemplateColumns = () => {
+    if (isHorizontal) {
+      return null;
+    }
+    const isStacked = labelConfig.position === 'top';
+    if (typeof columns === 'number' && columns > 1) {
+      return isStacked
+        ? `repeat(${columns}, 1fr)`
+        : `repeat(${columns}, auto 1fr)`;
+    }
+    // A custom label width only applies to the label track of side labels.
+    if (!isStacked && labelConfig.width != null) {
+      const width =
+        typeof labelConfig.width === 'number'
+          ? `${labelConfig.width}px`
+          : labelConfig.width;
+      return `${width} 1fr`;
+    }
+    return null;
+  };
+  const gridTemplateColumns = getGridTemplateColumns();
 
   return (
     <MetadataListContext value={contextValue}>
@@ -273,9 +294,12 @@ export function MetadataList({
         {titleContent}
         <dl
           id={contentId}
-          {...mergeProps(stylex.props(styles.dl, getGridStyle()), {
-            style: dynamicGridStyle,
-          })}>
+          {...stylex.props(
+            styles.dl,
+            getGridStyle(),
+            gridTemplateColumns != null &&
+              dynamicStyles.gridTemplate(gridTemplateColumns),
+          )}>
           {visibleChildren}
         </dl>
         {isExceedMax && (

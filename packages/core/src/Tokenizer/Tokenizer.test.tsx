@@ -16,6 +16,16 @@ import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
+import {InternationalizationProvider} from '../i18n';
+
+// Test-supplied announcement strings: the assertions below depend on no
+// catalog, and no hardcoded English in the component can satisfy them.
+const TOKEN_MESSAGES = {
+  fr: {
+    '@astryx.tokenizer.tokenAdded': 'Ajouté : {label}',
+    '@astryx.tokenizer.tokenRemoved': 'Retiré : {label}',
+  },
+};
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -980,12 +990,14 @@ describe('Tokenizer', () => {
     it('announces removal politely on Backspace with an empty input', async () => {
       const onChange = vi.fn();
       render(
-        <Tokenizer
-          label="Members"
-          searchSource={userSource}
-          value={[users[0], users[1]]}
-          onChange={onChange}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[users[0], users[1]]}
+            onChange={onChange}
+          />
+        </InternationalizationProvider>,
       );
       const input = screen.getByRole('combobox');
       fireEvent.keyDown(input, {key: 'Backspace'});
@@ -994,35 +1006,39 @@ describe('Tokenizer', () => {
         type: 'remove',
       });
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Removed Bob');
+        expect(politeRegion()?.textContent).toBe('Retiré : Bob');
       });
     });
 
     it("announces removal politely when clicking a token's remove button", async () => {
       render(
-        <Tokenizer
-          label="Members"
-          searchSource={userSource}
-          value={[users[0], users[1]]}
-          onChange={() => {}}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[users[0], users[1]]}
+            onChange={() => {}}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByRole('button', {name: 'Remove Alice'}));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Removed Alice');
+        expect(politeRegion()?.textContent).toBe('Retiré : Alice');
       });
     });
 
     it('announces addition politely when selecting a search result', async () => {
       render(
-        <Tokenizer
-          label="Members"
-          searchSource={userSource}
-          value={[]}
-          onChange={() => {}}
-          hasEntriesOnFocus
-          debounceMs={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[]}
+            onChange={() => {}}
+            hasEntriesOnFocus
+            debounceMs={0}
+          />
+        </InternationalizationProvider>,
       );
       const input = screen.getByRole('combobox');
       fireEvent.focus(input);
@@ -1031,7 +1047,7 @@ describe('Tokenizer', () => {
       });
       fireEvent.click(screen.getByText('Alice'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Added Alice');
+        expect(politeRegion()?.textContent).toBe('Ajouté : Alice');
       });
     });
 
@@ -1041,14 +1057,16 @@ describe('Tokenizer', () => {
         bootstrap: () => [],
       };
       render(
-        <Tokenizer
-          label="Tags"
-          searchSource={emptySource}
-          value={[]}
-          onChange={() => {}}
-          hasCreate
-          debounceMs={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Tags"
+            searchSource={emptySource}
+            value={[]}
+            onChange={() => {}}
+            hasCreate
+            debounceMs={0}
+          />
+        </InternationalizationProvider>,
       );
       const input = screen.getByRole('combobox');
       await act(async () => {
@@ -1059,7 +1077,7 @@ describe('Tokenizer', () => {
       });
       fireEvent.click(screen.getByText('Create "new-tag"'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Added new-tag');
+        expect(politeRegion()?.textContent).toBe('Ajouté : new-tag');
       });
     });
 
@@ -1137,11 +1155,16 @@ describe('Tokenizer', () => {
   });
 });
 
-
 describe('Tokenizer statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <Tokenizer label="Members" searchSource={userSource} value={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -1151,11 +1174,48 @@ describe('Tokenizer statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <Tokenizer label="Members" searchSource={userSource} value={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
       'detached',
     );
+  });
+});
+
+describe('Tokenizer disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const root = container.querySelector('.astryx-tokenizer');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const root = container.querySelector('.astryx-tokenizer');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 });

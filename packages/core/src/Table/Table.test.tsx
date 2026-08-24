@@ -95,6 +95,12 @@ describe('columnUtils', () => {
     it('handles single character', () => {
       expect(capitalize('a')).toBe('A');
     });
+
+    it('uppercases an astral-plane letter without splitting it (#4759)', () => {
+      // Deseret 𐐨 (U+10428) uppercases to 𐐀 (U+10400); charAt(0) would grab
+      // half the surrogate pair and leave the string unchanged.
+      expect(capitalize('\u{10428}pple')).toBe('\u{10400}pple');
+    });
   });
 
   describe('generateColumns', () => {
@@ -401,20 +407,6 @@ describe('BaseTable', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLTableElement));
   });
 
-  it('passes tableProps to the table element', () => {
-    render(
-      <BaseTable
-        data={users}
-        columns={columns}
-        tableProps={{'aria-label': 'Users table'}}
-      />,
-    );
-    expect(screen.getByRole('table')).toHaveAttribute(
-      'aria-label',
-      'Users table',
-    );
-  });
-
   describe('root element styling props (#3679)', () => {
     it('applies className to the table element', () => {
       render(<Table data={users} columns={columns} className="custom-table" />);
@@ -446,27 +438,6 @@ describe('BaseTable', () => {
       expect(table).toHaveAttribute('data-analytics', 'tables');
     });
 
-    it('composes with deprecated tableProps, direct props winning conflicts', () => {
-      render(
-        <Table
-          data={users}
-          columns={columns}
-          className="direct"
-          style={{opacity: 1}}
-          tableProps={{
-            className: 'legacy',
-            style: {color: 'red', opacity: 0.5},
-          }}
-        />,
-      );
-      const table = screen.getByRole('table');
-      expect(table.className).toContain('legacy');
-      expect(table.className).toContain('direct');
-      // Direct style wins the conflicting key; non-conflicting legacy survives.
-      expect(table.style.opacity).toBe('1');
-      expect(table.style.color).toBe('red');
-    });
-
     it('keeps the computed column min-width over a consumer style.minWidth', () => {
       const {tableMinWidth} = resolveColumnWidths(columns);
       render(
@@ -481,20 +452,6 @@ describe('BaseTable', () => {
       const plain: TableColumn<User>[] = [{key: 'name'}, {key: 'age'}];
       render(<Table data={users} columns={plain} style={{minWidth: '10px'}} />);
       expect(screen.getByRole('table').style.minWidth).toBe('10px');
-    });
-
-    it('direct id and aria attributes beat the same keys in tableProps', () => {
-      render(
-        <Table
-          data={users}
-          columns={columns}
-          id="direct-id"
-          aria-label="Direct"
-          tableProps={{id: 'legacy-id', 'aria-label': 'Legacy'}}
-        />,
-      );
-      const table = screen.getByRole('table', {name: 'Direct'});
-      expect(table.id).toBe('direct-id');
     });
 
     it('keeps the astryx theme classes alongside a consumer className', () => {
@@ -542,6 +499,37 @@ describe('BaseTable', () => {
         <BaseTable data={users} columns={columns} className="custom-table" />,
       );
       expect(screen.getByRole('table').className).toContain('custom-table');
+    });
+  });
+
+  describe('TableRow styling props', () => {
+    it('applies className and style to the row inside a Table', () => {
+      render(
+        <Table>
+          <tbody>
+            <TableRow className="custom-row" style={{opacity: 0.9}}>
+              <TableCell>Cell</TableCell>
+            </TableRow>
+          </tbody>
+        </Table>,
+      );
+      const row = screen.getByRole('row');
+      expect(row.className).toContain('custom-row');
+      expect(row.className).toContain('astryx-table-row');
+      expect(row.style.opacity).toBe('0.9');
+    });
+
+    it('applies className to a standalone row (no table context)', () => {
+      render(
+        <table>
+          <tbody>
+            <TableRow className="custom-row">
+              <td>Cell</td>
+            </TableRow>
+          </tbody>
+        </table>,
+      );
+      expect(screen.getByRole('row').className).toContain('custom-row');
     });
   });
 
@@ -612,6 +600,41 @@ describe('BaseTable', () => {
       // 3 rows * 3 columns = 9 calls
       expect(calls).toHaveLength(9);
       expect(calls[0]).toEqual({col: 'name', name: 'Alice'});
+    });
+
+    it('isContentSuppressed renders an empty cell and never calls the column renderer', () => {
+      const rendered: string[] = [];
+      const withRenderer: TableColumn<User>[] = [
+        {
+          key: 'name',
+          header: 'Name',
+          renderCell: item => {
+            rendered.push(item.name);
+            return <b>{item.name}</b>;
+          },
+        },
+      ];
+      const plugin: TablePlugin<User> = {
+        transformBodyCell: (props, _column, item) =>
+          item.name === 'Bob' ? {...props, isContentSuppressed: true} : props,
+      };
+      render(
+        <BaseTable data={users} columns={withRenderer} plugins={[plugin]} />,
+      );
+      expect(rendered).toEqual(['Alice', 'Charlie']);
+      const cells = screen.getAllByRole('cell');
+      expect(cells[1]).toBeEmptyDOMElement();
+      expect(cells[0]).toHaveTextContent('Alice');
+    });
+
+    it('isContentSuppressed also suppresses the default renderer', () => {
+      const plugin: TablePlugin<User> = {
+        transformBodyCell: props => ({...props, isContentSuppressed: true}),
+      };
+      render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
+      for (const cell of screen.getAllByRole('cell')) {
+        expect(cell).toBeEmptyDOMElement();
+      }
     });
 
     it('composes multiple plugins sequentially', () => {
@@ -885,6 +908,33 @@ describe('Table', () => {
     it('renders with spacious density', () => {
       render(<Table data={users} columns={columns} density="spacious" />);
       expect(screen.getAllByRole('row')).toHaveLength(4);
+    });
+
+    it('reflects density as data-density on cells and header cells (theme hook)', () => {
+      // The density lives in internal StyleX classes, so cells expose it as a
+      // data-density attribute on the stable astryx-table-cell /
+      // astryx-table-header-cell targets. This lets a theme override padding
+      // per density (e.g. hold the inline inset while varying the block) via
+      // `defineTheme` — the padding split is otherwise unreachable.
+      const {rerender} = render(
+        <Table data={users} columns={columns} density="spacious" />,
+      );
+      const cell = screen.getAllByRole('cell')[0];
+      const header = screen.getAllByRole('columnheader')[0];
+      expect(cell.className).toContain('astryx-table-cell');
+      expect(cell).toHaveAttribute('data-density', 'spacious');
+      expect(header.className).toContain('astryx-table-header-cell');
+      expect(header).toHaveAttribute('data-density', 'spacious');
+
+      rerender(<Table data={users} columns={columns} density="compact" />);
+      expect(screen.getAllByRole('cell')[0]).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
+      expect(screen.getAllByRole('columnheader')[0]).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
     });
   });
 

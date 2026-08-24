@@ -4,7 +4,7 @@
 
 /**
  * @file Avatar.tsx
- * @input Uses React, HTMLAttributes, ReactNode, useState; useTooltip
+ * @input Uses React, HTMLAttributes, ReactNode, useState, useRef; useTooltip
  *   (Tooltip hook) for the optional name-on-hover tooltip; useTranslator (i18n)
  * @output Exports Avatar component, AvatarProps, AvatarSize types
  * @position Core implementation; consumed by index.ts
@@ -12,13 +12,14 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Avatar/Avatar.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Avatar/index.ts (exports if types change)
+ * - /packages/core/src/Avatar/AvatarStatusLabelContext.ts (the status label ref)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
  *
  * Last synced props: alt, fallbackSrc, name, size, src, status, href, as, target, rel, onClick
  */
 
-import {isValidElement, useMemo, useState, type ReactNode} from 'react';
+import {isValidElement, useMemo, useRef, useState, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -28,13 +29,20 @@ import {
   radiusVars,
 } from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
+import {
+  AvatarStatusLabelContext,
+  type AvatarStatusLabelTarget,
+} from './AvatarStatusLabelContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {firstCharacter} from '../utils/characters';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTooltip} from '../Tooltip/useTooltip';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {useTranslator} from '../i18n';
+import {useTranslator, type TranslatorFn} from '../i18n';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -111,16 +119,17 @@ const styles = stylex.create({
     position: 'relative',
     display: 'inline-flex',
     flexShrink: 0,
-    // The wrapper is not clipped (so the status dot can overflow), so it must be
-    // rounded itself: a themed fallback background lands on `.astryx-avatar` (the
-    // class-bearing wrapper) as well as the internal var, and an unrounded
-    // wrapper would show that fill as square corners behind the circular content.
+    // The wrapper carries the avatar's box as well as its radius, so a theme
+    // rule on the `.astryx-avatar` target reaches both: the size the `size`
+    // visual prop selects on is set here, and the content below fills it.
     borderRadius: radiusVars['--radius-full'],
   },
   content: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+    height: '100%',
     borderRadius: radiusVars['--radius-full'],
     overflow: 'hidden',
     userSelect: 'none',
@@ -136,14 +145,15 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: '100%',
     height: '100%',
-    // Fallback surface (initials + default icon). Each property reads an
-    // Avatar-scoped internal var so a theme can re-scope the fallback wash and
-    // initials weight/color without forking; the defaults reproduce today's
-    // exact output. See derivedVarRegistry (avatar) + Avatar.doc.mjs theming.
-    backgroundColor: `var(--_avatar-fallback-background, ${colorVars['--color-neutral']})`,
-    color: `var(--_avatar-fallback-color, ${colorVars['--color-text-secondary']})`,
+    // Fallback surface (initials + default icon). Background, text color,
+    // weight, and per-size font size are all themed directly via the stable
+    // `.astryx-avatar-fallback` class target (font size through its size
+    // variant, `.astryx-avatar-fallback.<size>`), so the defaults here are
+    // plain values with no internal-var seam. See Avatar.doc.mjs theming.
+    backgroundColor: colorVars['--color-neutral'],
+    color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-family-body'],
-    fontWeight: `var(--_avatar-fallback-font-weight, ${fontWeightVars['--font-weight-medium']})`,
+    fontWeight: fontWeightVars['--font-weight-medium'],
     textTransform: 'uppercase',
   },
   status: {
@@ -152,16 +162,6 @@ const styles = stylex.create({
   // Visible focus ring for the name-tooltip tab stop, matching the repo-wide
   // focus-visible outline treatment (see Timestamp, Token, Thumbnail). Only
   // applied when a tooltip is active so keyboard users can reveal it.
-  focusable: {
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
   // Reset the intrinsic styling of the interactive element (<a>/<button>) so it
   // is a transparent, correctly-sized wrapper around the avatar visuals. The
   // element carries the focus-visible accent ring for keyboard users.
@@ -175,25 +175,12 @@ const styles = stylex.create({
     color: 'inherit',
     font: 'inherit',
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     // Match the avatar's circular shape so the focus ring hugs it.
     borderRadius: radiusVars['--radius-full'],
-    outlineWidth: {
-      default: 0,
-      ':focus-visible': 2,
-    },
-    outlineStyle: {
-      default: 'none',
-      ':focus-visible': 'solid',
-    },
-    outlineColor: {
-      default: null,
-      ':focus-visible': colorVars['--color-accent'],
-    },
-    outlineOffset: {
-      default: 0,
-      ':focus-visible': 2,
-    },
   },
 });
 
@@ -205,13 +192,12 @@ const dynamicStyles = stylex.create({
     width: size,
     height: size,
   }),
-  // Initials font size defaults to the proportional `size × ratio` scale but is
-  // reachable via the `--_avatar-fallback-font-size` derived var, so a theme can
-  // set a per-size type scale (e.g. `components.avatar['size:sm']`).
+  // Initials font size defaults to the proportional `size × ratio` scale. It's
+  // a StyleX dynamic style, so the value lands via a class (not an inline
+  // property) — a theme's `.astryx-avatar-fallback.<size>` rule in the theme
+  // layer overrides it per size tier, no internal var needed.
   fontSize: (size: number) => ({
-    fontSize: `var(--_avatar-fallback-font-size, ${
-      size * INITIALS_FONT_SIZE_RATIO
-    }px)`,
+    fontSize: `${size * INITIALS_FONT_SIZE_RATIO}px`,
   }),
   statusPosition: (size: number) => ({
     bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
@@ -276,6 +262,9 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
   /**
    * The size of the avatar. A named size (`xsm` 20px, `sm` 24px, `md` 36px,
    * `lg` 48px, `xl` 128px) or a specific pixel value.
+   *
+   * Inside an `AvatarGroup` the group's `size` wins: a group sizes its members
+   * uniformly, so this prop is ignored there.
    * @default 'md'
    */
   size?: AvatarSize;
@@ -287,10 +276,14 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
    * Content displayed in the corner of the avatar.
    * Typically used for status indicators or badges.
    *
-   * When the element carries a string `label` prop (as `AvatarStatusDot`
-   * does), the label is composed into the avatar's accessible name
-   * (e.g. "Jane Doe, Online") so assistive tech can reach the status —
-   * the `role="img"` root prunes descendant semantics (WCAG 4.1.2).
+   * `AvatarStatusDot` reports its own `label` to the avatar, which composes
+   * it into the avatar's accessible name (e.g. "Jane Doe, Online") so
+   * assistive tech can reach the status: the `role="img"` root prunes
+   * descendant semantics (WCAG 4.1.2). Reporting goes through context, so it
+   * still works when the dot sits inside a wrapper component of your own. A
+   * custom status element that is not an `AvatarStatusDot` names itself the
+   * same way, by rendering an `AvatarStatusDot` or by carrying a string
+   * `label` prop.
    */
   status?: ReactNode;
   /**
@@ -352,20 +345,22 @@ function getInitials(name: string): string {
     return '';
   }
   if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase();
+    return firstCharacter(words[0]).toUpperCase();
   }
-  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+  return (
+    firstCharacter(words[0]) + firstCharacter(words[words.length - 1])
+  ).toUpperCase();
 }
 
 /**
  * Reads the accessible status label off the `status` element, when it
- * exposes one. `AvatarStatusDot`'s `label` prop is the canonical source,
- * but any custom status element with a string `label` prop participates.
+ * exposes one.
  *
- * The avatar root is `role="img"`, which prunes ALL descendant semantics
- * from the accessibility tree — a label inside the status subtree is never
- * announced on its own. Composing it into the avatar's own accessible name
- * is the only way the status reaches assistive tech (WCAG 4.1.2).
+ * Only sees a literal `label` prop on the element the consumer passes, so a
+ * consumer's own wrapper around the dot hides it — that case comes in through
+ * `AvatarStatusLabelContext` instead. Kept because it answers the first
+ * render, before any report has landed, and because it tracks a label that
+ * changes on an element that does not report at all.
  */
 function getStatusLabel(status: ReactNode): string | undefined {
   if (!isValidElement(status)) {
@@ -373,6 +368,68 @@ function getStatusLabel(status: ReactNode): string | undefined {
   }
   const {label} = status.props as {label?: unknown};
   return typeof label === 'string' && label !== '' ? label : undefined;
+}
+
+/**
+ * The string when it carries something, `undefined` when it is absent or
+ * blank. An empty accessible name is meaningless, so a blank reads as
+ * absent, the way Icon treats `label=""`.
+ */
+function meaningful(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined;
+}
+
+/**
+ * Derives the root's ARIA attributes from the resolved accessible name,
+ * following Icon's `getIconA11yProps`.
+ *
+ * - A name → meaningful image: `role="img"` + `aria-label`.
+ * - No name → decorative: `role="presentation"` + `aria-hidden="true"`, rather
+ *   than announcing a meaningless generic "Avatar" (obs-9).
+ *
+ * The result is spread BEFORE `{...props}` on every root so an explicit
+ * `aria-label` / `role` / `aria-hidden` from the consumer always wins.
+ */
+function getAvatarA11yProps(
+  accessibleName: string | undefined,
+):
+  | {role: 'img'; 'aria-label': string}
+  | {role: 'presentation'; 'aria-hidden': 'true'} {
+  return accessibleName != null && accessibleName !== ''
+    ? {role: 'img', 'aria-label': accessibleName}
+    : {role: 'presentation', 'aria-hidden': 'true'};
+}
+
+/**
+ * The avatar's accessible name: its own name, the status label, or the two
+ * composed ("Jane Doe, Online"). Used both by render and by the commit-phase
+ * update, so the two can never compose differently.
+ */
+function composeAccessibleName(
+  t: TranslatorFn,
+  nameLabel: string | undefined,
+  statusLabel: string | undefined,
+): string | undefined {
+  if (nameLabel && statusLabel) {
+    return t('@astryx.avatar.nameWithStatus', {
+      name: nameLabel,
+      status: statusLabel,
+    });
+  }
+  return nameLabel || statusLabel;
+}
+
+/** Sets an attribute, or removes it when the value is absent. */
+function setAttributeOrRemove(
+  element: HTMLElement,
+  name: string,
+  value: string | undefined,
+): void {
+  if (value == null) {
+    element.removeAttribute(name);
+  } else {
+    element.setAttribute(name, value);
+  }
 }
 
 /**
@@ -401,7 +458,7 @@ function DefaultIcon({size}: {size: number}) {
  * ```
  * <Avatar src="/user.jpg" name="John Doe" />
  * <Avatar name="Jane Smith" size="xl" />
- * <Avatar src="/user.jpg" status={<OnlineIndicator />} />
+ * <Avatar src="/user.jpg" status={<AvatarStatusDot variant="success" label="Online" />} />
  * <Avatar name="jsmith" tooltip="Jane Smith, Staff Engineer" />
  * <Avatar name="Jane" tooltip={false} />
  * <Avatar src="/user.jpg" name="John Doe" href="/users/john" />
@@ -438,8 +495,13 @@ export function Avatar({
   const showImage = src && erroredSrc !== src;
   const showFallbackImage =
     !showImage && fallbackSrc && erroredFallbackSrc !== fallbackSrc;
-  const showInitials = !showImage && !showFallbackImage && name;
-  const showIcon = !showImage && !showFallbackImage && !name;
+  // A whitespace-only string carries no identity. Without this it produces no
+  // initials (getInitials trims to nothing) and no default icon (a space is
+  // truthy), leaving an empty plate behind a blank accessible name.
+  const meaningfulName = meaningful(name);
+  const meaningfulAlt = meaningful(alt);
+  const showInitials = !showImage && !showFallbackImage && meaningfulName;
+  const showIcon = !showImage && !showFallbackImage && !meaningfulName;
 
   // A meaningful accessible name comes from `alt`/`name`, composed with the
   // status element's `label` when one is present ("Jane Doe, Online") — the
@@ -450,16 +512,22 @@ export function Avatar({
   // it as `presentation`/`aria-hidden` rather than announcing a meaningless
   // generic "Avatar" (obs-9).
   const t = useTranslator();
-  const nameLabel = alt || name;
-  const statusLabel = getStatusLabel(status);
-  const accessibleName =
-    nameLabel && statusLabel
-      ? t('@astryx.avatar.nameWithStatus', {
-          name: nameLabel,
-          status: statusLabel,
-        })
-      : nameLabel || statusLabel;
-  const isDecorative = !accessibleName;
+  const nameLabel = meaningfulAlt || meaningfulName;
+  // This render can only see a label introspected off a directly-passed
+  // element. A status inside a consumer's own wrapper reports through the ref
+  // below, in the commit phase, and lands on the root element from there.
+  const accessibleName = composeAccessibleName(
+    t,
+    nameLabel,
+    getStatusLabel(status),
+  );
+  const a11yProps = getAvatarA11yProps(accessibleName);
+  // An `<a>`/`<button>` root carries its own role and must not be hidden, so
+  // only the name transfers. Spread before `{...props}` for the same
+  // consumer-wins precedence as the static root.
+  const a11yLabelProps = accessibleName
+    ? {'aria-label': accessibleName}
+    : undefined;
   const avatarGroup = useAvatarGroup();
   const resolvedSize = avatarGroup?.size ?? size;
   const numericSize = useMemo(() => resolveSize(resolvedSize), [resolvedSize]);
@@ -475,7 +543,7 @@ export function Avatar({
       ? undefined
       : typeof tooltip === 'string'
         ? tooltip
-        : name;
+        : meaningfulName;
   const trimmedTooltip = tooltipContent?.trim();
   const showTooltip = trimmedTooltip != null && trimmedTooltip !== '';
   // Whether the tooltip text is a consumer-authored override (a custom string)
@@ -496,8 +564,8 @@ export function Avatar({
     isEnabled: showTooltip,
   });
   // The tooltip ref attaches to whichever root element renders (static or
-  // interactive), so the tooltip works for link/button avatars too.
-  const rootRef = mergeRefs(ref, showTooltip ? tooltipHook.ref : undefined);
+  // interactive), so the tooltip works for link/button avatars too. The root
+  // ref itself is assembled below, once the element swap is resolved.
   const describedByProp =
     showTooltip && isCustomTooltip
       ? {
@@ -516,21 +584,80 @@ export function Avatar({
   const isInteractive = renderAsLink || renderAsButton;
   const LinkComponent = useLinkComponent(as);
 
-  // An interactive control with no accessible name is an unacceptable control
-  // name. Warn in the same client-safe way sibling components do (Field,
-  // Timestamp, Popover) — a plain `console.warn`, never gated on `process.env`
-  // (which is not available on the client in this codebase).
-  if (isInteractive && !accessibleName) {
-    console.warn(
-      'Avatar: an interactive avatar (with `href` or `onClick`) needs a ' +
-        'meaningful accessible name. Pass `alt` or `name`.',
-    );
-  }
+  // An interactive control needs an identity of its own. A status label is not
+  // one: it composes into the accessible name, so `<Avatar href status={<dot
+  // label="Online" />} />` resolves a name that reads as legitimate and says
+  // nothing about who the link points at. Only `alt`/`name` count, or a
+  // consumer's own `aria-label`/`aria-labelledby` escape hatch, which wins
+  // over the derived props below.
+  const consumerName =
+    meaningful(props['aria-label']) ?? meaningful(props['aria-labelledby']);
+  useDevWarning(
+    'Avatar',
+    'an interactive avatar (with `href` or `onClick`) needs a meaningful ' +
+      'accessible name. Pass `alt` or `name`.',
+    isInteractive && !nameLabel && consumerName == null,
+  );
+
+  // A status inside a consumer's own wrapper is invisible to render: the dot
+  // writes its label into this ref from its own callback ref, in the commit
+  // phase. A ref write cannot re-render, so the composed name is written
+  // straight onto the root element instead — still before paint, and with no
+  // second render.
+  const statusLabelRef = useRef<AvatarStatusLabelTarget>({
+    label: undefined,
+    update: null,
+  });
+  // A fresh callback ref every render, so React reattaches it on every commit
+  // and the name is recomposed after React has written this render's props.
+  // `update` covers the other direction: a label that changes while the avatar
+  // itself does not re-render.
+  const nameRef = (element: HTMLElement | null) => {
+    if (element == null) {
+      return;
+    }
+    const target = statusLabelRef.current;
+    target.update = () => {
+      const composed = composeAccessibleName(
+        t,
+        nameLabel,
+        meaningful(target.label) ?? getStatusLabel(status),
+      );
+      // A consumer's own ARIA wins here exactly as it does in render, where
+      // the derived props spread before `{...props}`.
+      if (props['aria-label'] == null) {
+        setAttributeOrRemove(element, 'aria-label', composed);
+      }
+      // An `<a>`/`<button>` root carries its own role and must not be hidden,
+      // so only the name transfers there.
+      if (!isInteractive) {
+        if (props.role == null) {
+          element.setAttribute('role', composed ? 'img' : 'presentation');
+        }
+        if (props['aria-hidden'] == null) {
+          setAttributeOrRemove(
+            element,
+            'aria-hidden',
+            composed ? undefined : 'true',
+          );
+        }
+      }
+    };
+    target.update();
+    return () => {
+      target.update = null;
+    };
+  };
+  const rootRef = mergeRefs(
+    ref,
+    showTooltip ? tooltipHook.ref : undefined,
+    nameRef,
+  );
 
   // The inner visuals are identical across the static and interactive variants.
   const visualContent = (
     <>
-      <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
+      <div {...stylex.props(styles.content)}>
         {showImage && (
           <img
             src={src}
@@ -549,15 +676,22 @@ export function Avatar({
         )}
         {showInitials && (
           <div
-            {...stylex.props(
-              styles.fallback,
-              dynamicStyles.fontSize(numericSize),
+            {...mergeProps(
+              themeProps('avatar-fallback', {size: resolvedSize}),
+              stylex.props(
+                styles.fallback,
+                dynamicStyles.fontSize(numericSize),
+              ),
             )}>
-            {getInitials(name)}
+            {getInitials(meaningfulName)}
           </div>
         )}
         {showIcon && (
-          <div {...stylex.props(styles.fallback)}>
+          <div
+            {...mergeProps(
+              themeProps('avatar-fallback', {size: resolvedSize}),
+              stylex.props(styles.fallback),
+            )}>
             <DefaultIcon size={numericSize} />
           </div>
         )}
@@ -580,10 +714,10 @@ export function Avatar({
   // `<a>`/`<button>` and the static `<div>` carry the exact same box.
   const rootStylexProps = mergeProps(
     themeProps('avatar', {size: resolvedSize}),
-    stylex.props(
+    focusOutlineProps.focusVisible(
       styles.wrapper,
+      dynamicStyles.size(numericSize),
       isInteractive && styles.interactive,
-      !isInteractive && showTooltip && !avatarGroup && styles.focusable,
       avatarGroup && groupStyles.ring,
       avatarGroup && groupStyles.overlap,
       avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),
@@ -607,13 +741,13 @@ export function Avatar({
     // it up while ignoring nested buttons in a custom status/badge slot.
     rootElement = (
       <LinkComponent
+        {...a11yLabelProps}
         {...interactivePassthrough}
         {...describedByProp}
         ref={rootRef as React.Ref<HTMLAnchorElement>}
         href={href}
         target={target}
         rel={rel}
-        aria-label={accessibleName}
         data-avatar-item=""
         data-testid={testId}
         onClick={onClick}
@@ -624,11 +758,11 @@ export function Avatar({
   } else if (renderAsButton) {
     rootElement = (
       <button
+        {...a11yLabelProps}
         {...interactivePassthrough}
         {...describedByProp}
         ref={rootRef}
         type="button"
-        aria-label={accessibleName}
         data-avatar-item=""
         data-testid={testId}
         onClick={onClick}
@@ -639,11 +773,9 @@ export function Avatar({
   } else {
     rootElement = (
       <div
+        {...a11yProps}
         {...props}
         ref={rootRef}
-        role={isDecorative ? 'presentation' : 'img'}
-        aria-label={isDecorative ? undefined : accessibleName}
-        aria-hidden={isDecorative || undefined}
         // The root is a div[role="img"], not natively focusable. When a name
         // tooltip is active, add a tab stop so keyboard users can reveal it
         // (WCAG 1.4.13 / 2.1.1) — matching Timestamp/Button. Suppressed inside
@@ -658,7 +790,11 @@ export function Avatar({
   }
 
   const avatarElement = (
-    <AvatarSizeContext value={numericSize}>{rootElement}</AvatarSizeContext>
+    <AvatarSizeContext value={numericSize}>
+      <AvatarStatusLabelContext value={statusLabelRef}>
+        {rootElement}
+      </AvatarStatusLabelContext>
+    </AvatarSizeContext>
   );
 
   // Always return the same structure so the avatar keeps its position in the

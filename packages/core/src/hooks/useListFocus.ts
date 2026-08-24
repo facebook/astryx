@@ -14,6 +14,8 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
+ * - /packages/core/src/hooks/useListFocus.doc.mjs
+ * - /packages/core/src/hooks/useListFocus.test.tsx
  */
 
 import {useCallback, useRef} from 'react';
@@ -64,7 +66,9 @@ export interface UseListFocusOptions {
   wrap?: boolean;
 
   /**
-   * Callback when Escape key is pressed.
+   * Callback when Escape key is pressed. Supplying it also makes the list
+   * consume the key (`preventDefault`); without it Escape passes through to
+   * the surrounding layer.
    */
   onEscape?: () => void;
 
@@ -82,14 +86,15 @@ export interface UseListFocusOptions {
   hasHomeEnd?: boolean;
 
   /**
-   * Whether the list is in a right-to-left context. When true, ArrowLeft and
-   * ArrowRight are swapped so horizontal navigation follows visual direction.
-   * Only affects horizontal (`'horizontal'`/`'both'`) navigation.
+   * @deprecated Direction is auto-detected from the container's computed
+   * `direction` — omit this. The explicit override is redundant (there's no
+   * valid reason to force RTL arrows in an LTR context) and will be removed in
+   * an upcoming major.
    *
-   * When omitted, the direction is auto-detected from the container's computed
-   * `direction` (read lazily on keydown, only for horizontal arrow keys), so
-   * lists inside `dir="rtl"` subtrees flip automatically. Pass an explicit
-   * boolean to override detection.
+   * When set, forces whether the list is right-to-left: ArrowLeft/ArrowRight
+   * are swapped so horizontal navigation follows visual direction. When
+   * omitted (preferred), the direction is auto-detected from the container's
+   * computed `direction` (read lazily on keydown, horizontal arrows only).
    * @default undefined (auto-detect from the container)
    */
   isRtl?: boolean;
@@ -276,7 +281,8 @@ function shouldDeferToCaret(target: EventTarget | null, key: string): boolean {
  * - ArrowUp/ArrowLeft: Move to previous item (wraps to last)
  * - Home: Move to first item
  * - End: Move to last item
- * - Escape: Custom callback (e.g., close menu)
+ * - Escape: runs `onEscape` and consumes the key. With no `onEscape` the key
+ *   is left alone, so a surrounding layer can still dismiss on it.
  *
  * By default the hook only *moves* focus and leaves `tabindex` management to
  * the caller. Opt into {@link UseListFocusOptions.hasRovingTabIndex} for a hook
@@ -556,12 +562,15 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
         return;
       }
 
-      // Escape is handled regardless of orientation. Preserve the historical
-      // behavior of always consuming Escape here (preventDefault) so consumers
-      // that relied on it are unaffected.
+      // Escape is handled regardless of orientation, but only *consumed* when
+      // a handler asked for it: a list with no dismissal to perform must leave
+      // the key to whatever host layer does have one, and those defer to
+      // `defaultPrevented` (see `useFocusTrap`) or to the native popover.
       if (e.key === 'Escape') {
-        e.preventDefault();
-        onEscape?.();
+        if (onEscape) {
+          e.preventDefault();
+          onEscape();
+        }
         return;
       }
 

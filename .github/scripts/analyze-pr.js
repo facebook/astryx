@@ -30,11 +30,15 @@ const STORYBOOK_STORIES = 'apps/storybook/stories';
 //
 // layout:
 //   'nested' — components live in per-component dirs: src/<Name>/... (core, lab)
-//   'flat'   — components live as single files:       src/<Name>.tsx (charts)
+//   'flat'   — components live as single files:       src/<Name>.tsx (charts,
+//              richtext). The score-ledger's canonical predicate narrows a flat
+//              package to its documented component(s) downstream, so listing
+//              the internal helpers here is harmless — they get filtered out.
 const PACKAGES = [
   { name: '@astryxdesign/core', dir: 'packages/core', layout: 'nested' },
   { name: '@astryxdesign/lab', dir: 'packages/lab', layout: 'nested' },
   { name: '@astryxdesign/charts', dir: 'packages/charts', layout: 'flat' },
+  { name: '@astryxdesign/richtext', dir: 'packages/richtext', layout: 'flat' },
 ];
 
 const pkgSrc = (pkg) => `${pkg.dir}/src`;

@@ -67,13 +67,25 @@ export const ComponentDocKindSchema = z
   })
   .passthrough();
 
-/** New-format stamped function/hook doc (`type: 'function'`). */
+/** Return entry for the generalized function doc: `name` is optional so CLI/API
+ *  functions can document their `{type, data}` envelope entries (which have no
+ *  field name), while hooks keep listing named return fields. */
+const FunctionReturnSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    type: z.string().min(1, 'return type is required'),
+    description: z.string(),
+  })
+  .passthrough();
+
+/** New-format stamped function doc (`type: 'function'`) — hooks and CLI/API
+ *  functions alike (the discriminant and schema are shared). */
 export const FunctionDocKindSchema = z
   .object({
     ...BaseDocFields,
     type: z.literal('function'),
     params: z.array(ParamSchema),
-    returns: z.array(ReturnSchema),
+    returns: z.array(FunctionReturnSchema),
   })
   .passthrough();
 
@@ -82,6 +94,137 @@ export const GenericDocKindSchema = z
   .object({
     ...BaseDocFields,
     type: z.literal('generic'),
+    // Declared rather than left to the passthrough: these two are read by
+    // docs discovery to resolve one topic against another, so a non-string
+    // should fail at the load boundary, not halfway through resolution.
+    replaces: z.string().optional(),
+    extends: z.string().optional(),
+  })
+  .passthrough();
+
+/** Recursive field descriptor for a SchemaDoc (objects nest via `fields`). The
+ *  explicit cast breaks the self-referential type inference (TS7022) that the
+ *  authoring-contract `checkJs` pass would otherwise flag. */
+const SchemaFieldSchema =
+  /** @type {import('zod').ZodType<import('./schema/type').SchemaFieldDoc>} */ (
+    z.lazy(() =>
+      z
+        .object({
+          name: z.string().min(1, 'field name is required'),
+          // `{error}` covers a missing (undefined) type; `.min(1)` covers an
+          // empty string — both give the same author-friendly message.
+          type: z
+            .string({error: 'field type is required'})
+            .min(1, 'field type is required'),
+          description: z.string(),
+          required: z.boolean().optional(),
+          default: z.string().optional(),
+          example: z.string().optional(),
+          deprecated: z.string().optional(),
+          fields: z.array(SchemaFieldSchema).optional(),
+        })
+        .passthrough(),
+    )
+  );
+
+/** New stamped schema doc (`type: 'schema'`) — documents an authored object. */
+export const SchemaDocKindSchema = z
+  .object({
+    type: z.literal('schema'),
+    name: z.string().min(1, 'name is required'),
+    displayName: z.string().min(1, 'displayName is required'),
+    description: z.string(),
+    namespace: z.string().optional(),
+    aliases: z.array(z.string()).optional(),
+    appliesTo: z.string().optional(),
+    fields: z.array(SchemaFieldSchema),
+    examples: z
+      .array(z.object({label: z.string().optional(), code: z.string()}).passthrough())
+      .optional(),
+    notes: z.array(z.unknown()).optional(),
+  })
+  .passthrough();
+
+/** New stamped command doc (`type: 'command'`) — a function's terminal binding;
+ *  references a FunctionDoc via `fn`. */
+export const CommandDocKindSchema = z
+  .object({
+    type: z.literal('command'),
+    name: z.string().min(1, 'name is required'),
+    displayName: z.string().min(1, 'displayName is required'),
+    summary: z.string(),
+    description: z.string().optional(),
+    namespace: z.string().optional(),
+    aliases: z.array(z.string()).optional(),
+    fn: z.string().optional(),
+    args: z
+      .array(
+        z
+          .object({
+            name: z.string().min(1),
+            param: z.string().optional(),
+            description: z.string().optional(),
+            required: z.boolean().optional(),
+            variadic: z.boolean().optional(),
+          })
+          .passthrough(),
+      )
+      .optional(),
+    options: z
+      .array(
+        z
+          .object({
+            flag: z.string().min(1),
+            param: z.string().optional(),
+            description: z.string().optional(),
+            choices: z.array(z.string()).optional(),
+            default: z
+              .union([z.string(), z.boolean(), z.array(z.string())])
+              .optional(),
+            cliOnly: z.boolean().optional(),
+          })
+          .passthrough(),
+      )
+      .optional(),
+    subcommands: z.array(z.string()).optional(),
+    examples: z
+      .array(
+        z
+          .object({
+            label: z.string().optional(),
+            cli: z.string(),
+            output: z.string().optional(),
+          })
+          .passthrough(),
+      )
+      .optional(),
+    exitCodes: z
+      .array(z.object({code: z.number(), when: z.string()}).passthrough())
+      .optional(),
+    related: z.array(z.string()).optional(),
+    notes: z.array(z.unknown()).optional(),
+  })
+  .passthrough();
+
+/** New stamped enum doc (`type: 'enum'`) — a closed vocabulary (error codes,
+ *  response-type discriminants). */
+export const EnumDocKindSchema = z
+  .object({
+    type: z.literal('enum'),
+    name: z.string().min(1, 'name is required'),
+    displayName: z.string().min(1, 'displayName is required'),
+    description: z.string(),
+    namespace: z.string().optional(),
+    aliases: z.array(z.string()).optional(),
+    members: z.array(
+      z
+        .object({
+          value: z.string().min(1, 'member value is required'),
+          description: z.string(),
+          deprecated: z.string().optional(),
+        })
+        .passthrough(),
+    ),
   })
   .passthrough();
 

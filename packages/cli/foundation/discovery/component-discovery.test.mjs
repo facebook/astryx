@@ -19,7 +19,6 @@ import {
   findComponentReadme,
   findComponentSource,
   resolveImportPath,
-  discoverExternalComponents,
   discoverExternalComponentsGrouped,
   findExternalComponentDoc,
   discoverIntegrationComponents,
@@ -172,9 +171,6 @@ describe('external package discovery', () => {
     return docs;
   }
 
-  it('discoverExternalComponents returns a sorted flat list (deprecated)', () => {
-    expect(discoverExternalComponents(buildExternalDocs())).toEqual(['AppShell', 'Diff', 'Secret', 'SideNav']);
-  });
 
   it('discoverExternalComponentsGrouped groups + drops hidden', () => {
     expect(discoverExternalComponentsGrouped(buildExternalDocs())).toEqual({
@@ -190,7 +186,6 @@ describe('external package discovery', () => {
   });
 
   it('returns empty for a missing docs dir (guarded)', () => {
-    expect(discoverExternalComponents('/no/such/dir')).toEqual([]);
     expect(discoverExternalComponentsGrouped('/no/such/dir')).toEqual({});
     expect(findExternalComponentDoc('/no/such/dir', 'X')).toBeNull();
   });
