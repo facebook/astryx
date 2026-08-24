@@ -5,8 +5,9 @@ them against an accepted baseline, and answers one question before a release
 goes out: **did anything change on screen, and did we mean it?**
 
 Not part of PR CI — it costs minutes, not seconds. It runs once a day
-(`.github/workflows/release-gate.yml`, 07:10 PT) ahead of the 08:00 PT release
-cut, and on demand.
+(`.github/workflows/release-gate.yml`, 06:00 PT) ahead of the 08:00 PT release
+cut, and on demand. The two-hour margin is for the a11y leg, which audits every
+story and has taken ~57 minutes; the visual leg is ~15.
 
 ## Why it exists
 
