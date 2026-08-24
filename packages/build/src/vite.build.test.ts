@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Runs a REAL Vite production build of a fixture app and asserts on the
- * stylesheet it emits.
+ * @file Runs REAL Vite production builds of fixture apps and asserts on the
+ * stylesheets they emit.
  *
  * The unit tests in vite.test.ts check the plugin's wiring, and they passed
  * while the build shipped a version that wrapped every StyleX rule — Astryx's
@@ -11,8 +11,18 @@
  * `astryx-base` they lose to one. Only the built artifact shows it, so this
  * builds one.
  *
- * The fixture is the case the split exists for: it renders an Astryx component
- * AND authors its own StyleX in the same tree.
+ * Two shapes, because StyleX emits through two different paths:
+ *
+ *   `layer-split`        the app imports a stylesheet, so the bundle has a CSS
+ *                        asset and StyleX appends to it in `generateBundle`
+ *   `layer-split-nocss`  the app imports none, so StyleX writes its own file in
+ *                        `writeBundle`, outside Rollup's graph
+ *
+ * The second is the one that was missing, and it hid two defects: the split did
+ * not run there at all, and the file StyleX writes is not linked by any page.
+ *
+ * What none of this can prove is which declaration actually paints — that is a
+ * cascade fact, and it lives in .github/scripts/theme-layer-cascade.js.
  */
 
 import {describe, it, expect, beforeAll, afterAll} from 'vitest';
@@ -26,21 +36,20 @@ import {astryxStylex} from './vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../..');
-const FIXTURE = path.join(__dirname, '../__fixtures__/layer-split');
+const FIXTURES = path.resolve(__dirname, '../__fixtures__');
 const CORE_SRC = path.join(REPO_ROOT, 'packages/core/src');
 
 /** The class prefixes @astryxdesign/build/babel assigns per origin. */
 const LIBRARY_CLASS = /\.astryx[a-z0-9]{5,}/g;
 const PRODUCT_CLASS = /\.x[a-z0-9]{5,}/g;
 
-let css: string;
-let html: string;
-let outDir: string;
+type Built = {css: string; cssName: string; html: string; outDir: string};
 
-beforeAll(async () => {
-  outDir = mkdtempSync(path.join(tmpdir(), 'astryx-layer-split-'));
+async function buildFixture(name: string): Promise<Built> {
+  const root = path.join(FIXTURES, name);
+  const outDir = mkdtempSync(path.join(tmpdir(), `astryx-${name}-`));
   await build({
-    root: FIXTURE,
+    root,
     logLevel: 'error',
     build: {outDir, emptyOutDir: true},
     resolve: {alias: {'@astryxdesign/core': CORE_SRC}},
@@ -61,18 +70,18 @@ beforeAll(async () => {
   });
 
   const assets = path.join(outDir, 'assets');
-  const cssFile = readdirSync(assets).find(f => f.endsWith('.css'));
-  if (!cssFile) throw new Error(`no stylesheet emitted into ${assets}`);
-  css = readFileSync(path.join(assets, cssFile), 'utf-8');
-  html = readFileSync(path.join(outDir, 'index.html'), 'utf-8');
-}, 180_000);
+  const cssName = readdirSync(assets).find(f => f.endsWith('.css'));
+  if (!cssName) throw new Error(`no stylesheet emitted into ${assets}`);
+  return {
+    css: readFileSync(path.join(assets, cssName), 'utf-8'),
+    cssName,
+    html: readFileSync(path.join(outDir, 'index.html'), 'utf-8'),
+    outDir,
+  };
+}
 
-afterAll(() => {
-  if (outDir) rmSync(outDir, {recursive: true, force: true});
-});
-
-/** The slice of the stylesheet inside a given top-level layer block. */
-function layerBlock(name: string): string {
+/** The slice of a stylesheet inside a given top-level layer block. */
+function layerBlock(css: string, name: string): string {
   const start = css.indexOf(`@layer ${name} {`);
   expect(
     start,
@@ -86,13 +95,16 @@ function layerBlock(name: string): string {
   throw new Error(`@layer ${name} is unterminated`);
 }
 
-describe('a production build separates Astryx and product styles by layer', () => {
+/** Both shapes must satisfy the same contract, so both run the same checks. */
+function itSplitsCorrectly(get: () => Built) {
   it('declares the layer order the split depends on', () => {
-    expect(html).toContain('@layer reset, astryx-base, astryx-theme, product;');
+    expect(get().html).toContain(
+      '@layer reset, astryx-base, astryx-theme, product;',
+    );
   });
 
   it("puts Astryx's own rules in the library layer", () => {
-    const library = layerBlock('astryx-base');
+    const library = layerBlock(get().css, 'astryx-base');
     expect(library.match(LIBRARY_CLASS)?.length ?? 0).toBeGreaterThan(50);
     // The fixture's Button pulls in real component CSS, so a token it styles
     // with is a fact about this block rather than about class-name shape.
@@ -103,8 +115,9 @@ describe('a production build separates Astryx and product styles by layer', () =
   // app's own StyleX in astryx-base, below `astryx-theme`, so a theme could
   // silently restyle code the theme has no business reaching.
   it("puts the app's own rules in the product layer, not the library one", () => {
-    const product = layerBlock('product');
-    const library = layerBlock('astryx-base');
+    const {css} = get();
+    const product = layerBlock(css, 'product');
+    const library = layerBlock(css, 'astryx-base');
 
     expect(product).toContain('11px');
     expect(library).not.toContain('11px');
@@ -114,9 +127,10 @@ describe('a production build separates Astryx and product styles by layer', () =
   });
 
   it('leaves no StyleX rule outside the two layers', () => {
+    const {css} = get();
     const outside = css
-      .replace(layerBlock('astryx-base'), '')
-      .replace(layerBlock('product'), '');
+      .replace(layerBlock(css, 'astryx-base'), '')
+      .replace(layerBlock(css, 'product'), '');
     expect(outside).not.toContain('@layer priority');
   });
 
@@ -124,6 +138,42 @@ describe('a production build separates Astryx and product styles by layer', () =
   // output means running the same pass, or the build quietly loses the prefixes
   // the original had.
   it('keeps the vendor prefixing StyleX applies', () => {
-    expect(css).toContain('-webkit-');
+    expect(get().css).toContain('-webkit-');
+  });
+
+  it('links the stylesheet from the page', () => {
+    const {html, cssName} = get();
+    expect(html).toContain(cssName);
+    expect(html.split(cssName).length - 1, 'linked more than once').toBe(1);
+  });
+}
+
+describe('a production build separates Astryx and product styles by layer', () => {
+  describe('when the app imports a stylesheet of its own', () => {
+    let built: Built;
+    beforeAll(async () => {
+      built = await buildFixture('layer-split');
+    }, 180_000);
+    afterAll(
+      () => built && rmSync(built.outDir, {recursive: true, force: true}),
+    );
+
+    itSplitsCorrectly(() => built);
+  });
+
+  // StyleX has no bundle asset to append to here, so it writes its own file in
+  // `writeBundle` — outside Rollup's graph, which is why Vite emits no `<link>`
+  // for it. Every assertion below failed before this case was handled: the
+  // stylesheet was unsplit AND the page loaded no styles at all.
+  describe('when the app imports no stylesheet at all', () => {
+    let built: Built;
+    beforeAll(async () => {
+      built = await buildFixture('layer-split-nocss');
+    }, 180_000);
+    afterAll(
+      () => built && rmSync(built.outDir, {recursive: true, force: true}),
+    );
+
+    itSplitsCorrectly(() => built);
   });
 });

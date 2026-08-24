@@ -358,11 +358,15 @@ function buildLayerSplitPlugin(
     __stylexGetSharedStore?: () => {rulesById: Map<string, unknown[]>};
     __stylexCollectCss?: () => string;
   };
+  let base = '/';
 
   return {
     name: 'astryx-build-layer-split',
     apply: 'build',
     enforce: 'post',
+    configResolved(config) {
+      base = config.base ?? '/';
+    },
     writeBundle(outputOptions) {
       const rulesById = stylex.__stylexGetSharedStore?.().rulesById;
       if (!rulesById || rulesById.size === 0) return;
@@ -380,9 +384,11 @@ function buildLayerSplitPlugin(
         : outputOptions.file
           ? path.dirname(outputOptions.file)
           : null;
+      // `write: false` builds keep everything in memory; there is nothing to
+      // patch and nothing was shipped, so this is not a failure.
       if (!outDir || !fs.existsSync(outDir)) return;
 
-      let patched = false;
+      const patched: string[] = [];
       for (const file of listCssFiles(outDir)) {
         const css = fs.readFileSync(file, 'utf-8');
         const at = css.lastIndexOf(merged);
@@ -391,10 +397,10 @@ function buildLayerSplitPlugin(
           file,
           css.slice(0, at) + split + css.slice(at + merged.length),
         );
-        patched = true;
+        patched.push(file);
       }
 
-      if (!patched) {
+      if (patched.length === 0) {
         this.error(
           'astryx-build-layer-split: StyleX emitted rules but its CSS block ' +
             `was not found in any stylesheet under ${outDir}, so Astryx and ` +
@@ -403,7 +409,10 @@ function buildLayerSplitPlugin(
             'theme. This usually means the StyleX plugin version changed how ' +
             'it emits CSS.',
         );
+        return;
       }
+
+      linkOrphanStylesheets(outDir, patched, base);
     },
   };
 }
@@ -417,6 +426,62 @@ function listCssFiles(dir: string): string[] {
     else if (entry.name.endsWith('.css')) out.push(full);
   }
   return out;
+}
+
+/** Every `.html` file under a directory, recursively. */
+function listHtmlFiles(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...listHtmlFiles(full));
+    else if (entry.name.endsWith('.html')) out.push(full);
+  }
+  return out;
+}
+
+/**
+ * Link a stylesheet the build wrote but no page loads.
+ *
+ * When an app imports no CSS of its own, StyleX has no bundle asset to append
+ * to, so it writes `assets/stylex.css` itself — outside Rollup's graph, which
+ * means Vite's HTML plugin never learns about it and emits no `<link>`. The app
+ * ships every Astryx style correctly split into layers, and a completely
+ * unstyled page. Importing any stylesheet hides it, which is why it survives:
+ * the moment a project has one line of its own CSS the symptom disappears.
+ *
+ * Only orphans are linked. A stylesheet already referenced by a page is Vite's,
+ * and touching it would duplicate the load. A build with no HTML at all —
+ * library mode — is left alone: its consumer imports the CSS themselves.
+ */
+function linkOrphanStylesheets(
+  outDir: string,
+  cssFiles: string[],
+  base: string,
+): void {
+  const pages = listHtmlFiles(outDir);
+  if (pages.length === 0) return;
+
+  const orphans = cssFiles.filter(css => {
+    const name = path.basename(css);
+    return !pages.some(page => fs.readFileSync(page, 'utf-8').includes(name));
+  });
+  if (orphans.length === 0) return;
+
+  const links = orphans
+    .map(css => {
+      const href =
+        base.replace(/\/$/, '') +
+        '/' +
+        path.relative(outDir, css).split(path.sep).join('/');
+      return `<link rel="stylesheet" crossorigin href="${href}">`;
+    })
+    .join('\n    ');
+
+  for (const page of pages) {
+    const html = fs.readFileSync(page, 'utf-8');
+    if (!html.includes('</head>')) continue;
+    fs.writeFileSync(page, html.replace('</head>', `  ${links}\n  </head>`));
+  }
 }
 
 /**
