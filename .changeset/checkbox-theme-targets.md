@@ -2,5 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] CheckboxInput and the checkbox indicator now expose stable theme targets for their inner elements — `astryx-checkbox-input-slot` (the control's box slot) and `astryx-checkbox-input-control` (the native `<input>`), plus `astryx-checkbox-indicator-check` and `astryx-checkbox-indicator-dash` for the two marks, mirroring the existing `astryx-radio-indicator-dot`. All four reflect `size`. The slot and the native input were the only elements in CheckboxInput's tree carrying no `themeProps`, so a theme resizing the control had to reach them with `input[type='checkbox']` and `:has(> input[type='checkbox'])`. Purely additive; no visual change.
+[feat] The checkbox indicator now exposes stable theme targets for its two marks — `astryx-checkbox-indicator-check` (the checkmark) and `astryx-checkbox-indicator-dash` (the indeterminate bar) — mirroring the existing `astryx-radio-indicator-dot`. Both reflect `size`. A theme restyling the mark itself (stroke weight, colour, the dash's proportions) previously had to reach it with `.astryx-checkbox-indicator > svg` and `> span`, which are element-and-order selectors that break silently on any restructure. Purely additive; no visual change.
+
 @freddymeta
