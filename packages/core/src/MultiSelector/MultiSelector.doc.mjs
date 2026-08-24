@@ -104,10 +104,10 @@ export const docs = {
           default: "'count'",
         },
         {
-          name: 'formatTriggerCount',
-          type: '(count: number) => string',
+          name: 'formatValue',
+          type: '(items: {value: string; label: string}[]) => string',
           description:
-            'Formats the trigger text when triggerDisplay="count". Receives the selected count and returns the full trigger text.',
+            'Formats the trigger text when triggerDisplay="count" or "labels". Receives the selected items (value plus resolved label); the count is items.length. Not used by triggerDisplay="badges".',
         },
         {
           name: 'maxBadges',
@@ -290,6 +290,8 @@ export const docsZh = {
         placeholder: '未选择值时显示的占位文本。',
         size: '选择器的尺寸变体。',
         triggerDisplay: '在触发器中显示选中项的方式。',
+        formatValue:
+          '格式化 triggerDisplay="count" 或 "labels" 时的触发器文本。接收选中项（value 及解析后的 label），数量为 items.length。triggerDisplay="badges" 不使用此属性。',
         maxBadges:
           '显示"+N"之前的最大徽章数。仅适用于 triggerDisplay="badges"。',
         hasSelectAll: '是否显示全选复选框。',
@@ -426,8 +428,8 @@ export const docsDense = {
         variant:
           'visual trigger style: input bordered control or ghost toolbar control',
         triggerDisplay: 'how to show selected in trigger',
-        formatTriggerCount:
-          'formats count-mode trigger text; receives selected count',
+        formatValue:
+          'formats count/labels trigger text; receives selected items',
         maxBadges: 'max badges before "+N"; badges mode only',
         hasSelectAll: 'show select-all checkbox',
         selectAllLabel: 'select-all label',
