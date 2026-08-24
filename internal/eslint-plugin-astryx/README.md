@@ -970,9 +970,18 @@ property, an array element, an enum member, a computed key, a template
 `boxShadow` in modern space-separated syntax, and an inline `style={{}}` — which
 sits at the very top of the cascade, where a theme has no answer at all.
 
-**Scope:** `warn` in every package that ships component styling. There are 23
+**Scope:** `warn` in `packages/{core,lab,charts,richtext,vega}/src`. There are 23
 violations on `main` — 20 in lab (`LogStream`'s console palette, `Sankey`'s
-`var()` fallbacks), 2 in core, 1 in charts. Each wants a token decision rather
+`var()` fallbacks), 2 in core, 1 in charts.
+
+**Not in scope, deliberately:** `packages/cli/assets/templates/**`, which the
+CLI scaffolds into a consumer's app. The rule finds **194** there (102 in
+`blocks`, 92 in `pages`) if pointed at it. A raw colour in a template a consumer
+copies is a real finding — the rubric calls a literal _presented as the
+recommended way to style a component_ a docs-quality problem — but many of those
+194 are showcase content demonstrating a colour on purpose, so turning it on
+there is a triage decision of its own rather than a consequence of this rule
+existing. Each wants a token decision rather
 than a mechanical substitution, so they are tracked separately; promote a
 package to `error` once it reaches zero, the same path
 `no-physical-properties` took.

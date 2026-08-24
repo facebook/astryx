@@ -82,6 +82,17 @@ ruleTester.run('no-raw-color', rule, {
       filename: IN_COMPONENT,
       code: 'const s = stylex.create({a: {maskImage: `linear-gradient(to right, transparent, rgba(0,0,0,0.3) 2px, black)`}});',
     },
+    // Still the mask's value when it is picked by a ternary or defaulted with
+    // `??` — the exemption follows the value, not its syntactic position.
+    {
+      filename: IN_COMPONENT,
+      code: `const s = stylex.create({a: {
+        maskImage: isStart
+          ? 'linear-gradient(to right, transparent, rgba(0,0,0,0.3))'
+          : 'linear-gradient(to left, transparent, rgba(0,0,0,0.3))',
+        WebkitMaskImage: custom ?? 'linear-gradient(to right, rgba(0,0,0,0.3), black)',
+      }});`,
+    },
     // The theme layer is where a colour value is written.
     {
       filename: 'packages/core/src/theme/tokens.stylex.ts',
@@ -90,6 +101,12 @@ ruleTester.run('no-raw-color', rule, {
     {
       filename: 'packages/themes/chocolate/src/index.ts',
       code: `export default defineTheme({tokens: {'--color-shadow': '#4a35201A'}});`,
+    },
+    // A CLI template's theme is a theme author's own input, which is the thing
+    // the template exists to demonstrate.
+    {
+      filename: 'packages/cli/assets/templates/app/themes/brand.ts',
+      code: `export default defineTheme({tokens: {'--color-accent': '#7c3aed'}});`,
     },
     // A theming story MUST use literals — a theme author writes literals, and
     // that is precisely what the story demonstrates.
@@ -206,6 +223,20 @@ ruleTester.run('no-raw-color', rule, {
         caretColor: 'rgb(28, 28, 30)',
       }});`,
       errors: [{messageId: 'rawColor'}, {messageId: 'rawColor'}, {messageId: 'rawColor'}],
+    },
+    // The theme exemption is matched by POSITION, not by directory name: a
+    // `theme/` a component happens to nest inside itself is component source.
+    // This is the boundary, and it is pinned from both sides — the two valid
+    // cases above are the real theme layer.
+    {
+      filename: 'packages/core/src/Chat/theme/bubbleColors.ts',
+      code: `export const BUBBLE_TINT = '#1c1c1e';`,
+      errors: one,
+    },
+    {
+      filename: 'packages/core/src/Widget/themes/local.ts',
+      code: `export const LOCAL = '#1c1c1e';`,
+      errors: one,
     },
     // backgroundImage paints the same gradient a mask discards.
     {

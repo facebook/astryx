@@ -61,11 +61,20 @@
 import path from 'node:path';
 
 /**
- * Directory names that ARE the theme layer, where writing a colour value is
- * the entire job: `packages/core/src/theme/**` (`tokens.stylex.ts`,
- * `defineTheme`) and the shipped theme packages under `packages/themes/**`.
+ * The theme layer, matched by POSITION rather than by directory name. A
+ * `theme/` anywhere would exempt any file a component happened to put in one,
+ * in a rule whose whole claim is that a colour cannot hide — so this anchors to
+ * the two places the layer actually is: a package's own `src/theme/**`
+ * (`tokens.stylex.ts`, `defineTheme`, the expanders) and the shipped theme
+ * packages under `packages/themes/**`. A `themes/` directory inside a CLI
+ * template is a third, and is matched for the same reason: its job is to
+ * demonstrate theme values.
  */
-const THEME_DIRECTORIES = new Set(['theme', 'themes']);
+const THEME_LAYER = [
+  /(^|\/)packages\/themes\//,
+  /(^|\/)src\/theme\//,
+  /(^|\/)templates\/[^/]*\/?themes?\//,
+];
 
 /**
  * File kinds that demonstrate or assert on colour rather than shipping it. A
@@ -86,9 +95,10 @@ function isExemptFile(filename) {
   if (NON_SHIPPING_FILE.test(basename)) {
     return true;
   }
-  return segments.some(
-    segment => THEME_DIRECTORIES.has(segment) || TEST_DIRECTORIES.has(segment),
-  );
+  if (segments.some(segment => TEST_DIRECTORIES.has(segment))) {
+    return true;
+  }
+  return THEME_LAYER.some(pattern => pattern.test(normalized));
 }
 
 /**
@@ -159,8 +169,20 @@ const ALPHA_ONLY_PROPERTIES = new Set([
 
 /** Is this literal the value of a property whose colour channel is discarded? */
 function isAlphaOnlyValue(node) {
-  const parent = node.parent;
-  if (parent?.type !== 'Property' || parent.value !== node) {
+  // Step out through the expressions a value can sit inside and still BE the
+  // property's value — a ternary picking one of two gradients, a `??` default.
+  let current = node;
+  let parent = current.parent;
+  while (
+    parent &&
+    ((parent.type === 'ConditionalExpression' &&
+      (parent.consequent === current || parent.alternate === current)) ||
+      (parent.type === 'LogicalExpression' && parent.right === current))
+  ) {
+    current = parent;
+    parent = current.parent;
+  }
+  if (parent?.type !== 'Property' || parent.value !== current) {
     return false;
   }
   const key = parent.key?.name ?? parent.key?.value;
