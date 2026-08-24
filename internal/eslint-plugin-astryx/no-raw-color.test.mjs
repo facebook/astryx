@@ -93,6 +93,34 @@ ruleTester.run('no-raw-color', rule, {
         WebkitMaskImage: custom ?? 'linear-gradient(to right, rgba(0,0,0,0.3), black)',
       }});`,
     },
+    // StyleX's conditional object, which is how TabList.tsx:261 writes its
+    // fade — the gradient is the value of `default` inside the value of
+    // `maskImage`, two levels below the key that names it.
+    {
+      filename: IN_COMPONENT,
+      code: `const s = stylex.create({a: {
+        maskImage: {
+          default: 'linear-gradient(to right, transparent, rgba(0,0,0,0.3))',
+          ':is([dir="rtl"] *)': 'linear-gradient(to left, transparent, rgba(0,0,0,0.3))',
+        },
+      }});`,
+    },
+    // The other mask spellings, each pinned so dropping one fails something.
+    {
+      filename: IN_COMPONENT,
+      code: `const s = stylex.create({a: {
+        mask: 'linear-gradient(rgba(0,0,0,0.3), black)',
+        WebkitMask: 'linear-gradient(rgba(0,0,0,0.3), black)',
+        maskBorderSource: 'linear-gradient(rgba(0,0,0,0.3), black)',
+        WebkitMaskBoxImage: 'linear-gradient(rgba(0,0,0,0.3), black)',
+      }});`,
+    },
+    // A sandbox page demonstrates a theme, exactly as a story does — named in
+    // the rubric's own exceptions note.
+    {
+      filename: 'packages/core/src/Widget/Widget.sandbox.tsx',
+      code: `const demo = defineTheme({tokens: {'--color-accent': '#7c3aed'}});`,
+    },
     // The theme layer is where a colour value is written.
     {
       filename: 'packages/core/src/theme/tokens.stylex.ts',
@@ -238,13 +266,25 @@ ruleTester.run('no-raw-color', rule, {
       code: `export const LOCAL = '#1c1c1e';`,
       errors: one,
     },
-    // backgroundImage paints the same gradient a mask discards.
+    // backgroundImage paints the same gradient a mask discards — including
+    // through the same conditional object and the same ternary, so the walk
+    // cannot be exempting on shape rather than on the property it lands on.
     {
       filename: IN_COMPONENT,
       code: `const s = stylex.create({a: {
         backgroundImage: 'linear-gradient(to right, transparent, rgba(0, 0, 0, 0.3))',
       }});`,
       errors: one,
+    },
+    {
+      filename: IN_COMPONENT,
+      code: `const s = stylex.create({a: {
+        backgroundImage: {
+          default: 'linear-gradient(to right, transparent, rgba(0, 0, 0, 0.3))',
+          ':hover': isOn ? 'linear-gradient(#fff, #000)' : 'none',
+        },
+      }});`,
+      errors: [{messageId: 'rawColor'}, {messageId: 'rawColor'}],
     },
   ],
 });

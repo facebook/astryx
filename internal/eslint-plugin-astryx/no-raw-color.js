@@ -163,33 +163,50 @@ function hasRawColor(text) {
 const ALPHA_ONLY_PROPERTIES = new Set([
   'mask',
   'maskImage',
-  'maskMode',
   'maskBorderSource',
   'WebkitMask',
   'WebkitMaskImage',
   'WebkitMaskBoxImage',
 ]);
 
-/** Is this literal the value of a property whose colour channel is discarded? */
+/**
+ * Is this literal a value of a property whose colour channel is discarded?
+ *
+ * The walk climbs to the nearest STYLE property rather than the nearest
+ * property, because a value can sit several nodes below the one that names it:
+ * a ternary picking one of two gradients, a `??` default, and — the shape this
+ * repo actually writes — StyleX's conditional object, where the gradient is the
+ * value of `default` inside the value of `maskImage`
+ * (`TabList.tsx:261` and `Carousel.tsx:187`). Everything under a `maskImage`
+ * key is a mask value, so finding that key anywhere up the chain is the answer.
+ *
+ * Only the node types a value can nest inside are traversed, so the walk stops
+ * at the first thing that is not one and can never wander out of the style
+ * object.
+ */
 function isAlphaOnlyValue(node) {
-  // Step out through the expressions a value can sit inside and still BE the
-  // property's value — a ternary picking one of two gradients, a `??` default.
   let current = node;
-  let parent = current.parent;
-  while (
-    parent &&
-    ((parent.type === 'ConditionalExpression' &&
-      (parent.consequent === current || parent.alternate === current)) ||
-      (parent.type === 'LogicalExpression' && parent.right === current))
-  ) {
+  for (let parent = current.parent; parent; parent = current.parent) {
+    if (parent.type === 'Property' && parent.value === current) {
+      const key = parent.key?.name ?? parent.key?.value;
+      if (ALPHA_ONLY_PROPERTIES.has(key)) {
+        return true;
+      }
+      current = parent;
+      continue;
+    }
+    const nests =
+      parent.type === 'ObjectExpression' ||
+      (parent.type === 'ArrayExpression' && parent.elements.includes(current)) ||
+      (parent.type === 'ConditionalExpression' &&
+        (parent.consequent === current || parent.alternate === current)) ||
+      (parent.type === 'LogicalExpression' && parent.right === current);
+    if (!nests) {
+      return false;
+    }
     current = parent;
-    parent = current.parent;
   }
-  if (parent?.type !== 'Property' || parent.value !== current) {
-    return false;
-  }
-  const key = parent.key?.name ?? parent.key?.value;
-  return ALPHA_ONLY_PROPERTIES.has(key);
+  return false;
 }
 
 const PLACEHOLDER = '\u0000';
