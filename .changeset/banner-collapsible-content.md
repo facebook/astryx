@@ -25,14 +25,20 @@ boolean-or-config convention `SideNav.collapsible` set, and backed by the shared
 **The default is unchanged** — a banner that never mentioned `defaultIsExpanded`
 behaves exactly as it did. The breaking part is the prop itself:
 `defaultIsExpanded` is removed in favour of the config, which is a type error at
-every call site rather than a silent change.
+every JSX call site that names it.
 
 **Codemod:** `npx astryx upgrade --codemod banner-collapsible-content`
 
 It rewrites `defaultIsExpanded` to `collapsible={{defaultIsOpen: true}}` and
 drops `defaultIsExpanded={false}`, which is now the default. Banners that never
-set the prop are left alone. `defaultIsExpanded` inside a props object (a
-Storybook `args`, for instance) is out of the transform's scope — the removed
-prop makes those a type error, so the compiler finds them.
+set the prop are left alone.
+
+**One case the codemod and the compiler both miss: a spread.**
+`defaultIsExpanded` inside a props object is out of the transform's scope. A
+props object in a typed position still fails to compile — but an inferred one
+that is spread, `<Banner {...args} />`, does not, because TypeScript does not
+excess-property-check a spread. The prop then falls through to the DOM and the
+banner quietly starts collapsed. **Grep for `defaultIsExpanded` after running
+the codemod** and migrate any spread sites by hand.
 
 @freddymeta
