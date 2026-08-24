@@ -8,7 +8,10 @@ import {
 } from './parser';
 import type {BlockNode, ParseOptions} from './parser';
 
-function generateAIResponse(paragraphs: number): string {
+function generateAIResponse(
+  paragraphs: number,
+  {codeBlocks = true}: {codeBlocks?: boolean} = {},
+): string {
   const sections: string[] = [];
   for (let i = 0; i < paragraphs; i++) {
     const mod = i % 6;
@@ -20,7 +23,9 @@ function generateAIResponse(paragraphs: number): string {
         break;
       case 1:
         sections.push(
-          '```typescript\nfunction process(data: Record<string, unknown>[]) {\n  return data.filter(item => item.valid)\n    .map(item => transform(item))\n    .reduce((acc, val) => merge(acc, val), {});\n}\n```',
+          codeBlocks
+            ? '```typescript\nfunction process(data: Record<string, unknown>[]) {\n  return data.filter(item => item.valid)\n    .map(item => transform(item))\n    .reduce((acc, val) => merge(acc, val), {});\n}\n```'
+            : `Paragraph ${i} continues the explanation with a second block of prose, keeping the block mix realistic without opening a fence.`,
         );
         break;
       case 2:
@@ -100,8 +105,10 @@ function blocksBuiltPerChunk(
   return built;
 }
 
-const median = (values: number[]): number =>
-  [...values].sort((a, b) => a - b)[Math.floor((values.length - 1) / 2)];
+const percentile = (values: number[], p: number): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+};
 
 const sum = (values: number[]): number => values.reduce((a, b) => a + b, 0);
 
@@ -248,7 +255,10 @@ describe('parseMarkdownIncremental cache', () => {
   it('builds a bounded number of blocks per chunk however long the document is', () => {
     const chunkSize = 50;
     const medians = [50, 200, 500].map(paragraphs =>
-      median(blocksBuiltPerChunk(generateAIResponse(paragraphs), chunkSize)),
+      percentile(
+        blocksBuiltPerChunk(generateAIResponse(paragraphs), chunkSize),
+        0.5,
+      ),
     );
     console.log(
       `  median blocks built per chunk (50/200/500 paragraphs): ${medians.join('/')}`,
@@ -256,6 +266,28 @@ describe('parseMarkdownIncremental cache', () => {
     // A chunk re-parses its unsettled tail, not the document — so the typical
     // chunk's cost is a constant, and a 10x longer document does not move it.
     expect(medians).toEqual([2, 2, 2]);
+  });
+
+  it('bounds the p95 chunk, not just the median one, at every document length', () => {
+    const chunkSize = 50;
+    const p95s = [50, 200, 500].map(paragraphs =>
+      percentile(
+        blocksBuiltPerChunk(
+          generateAIResponse(paragraphs, {codeBlocks: false}),
+          chunkSize,
+        ),
+        0.95,
+      ),
+    );
+    console.log(
+      `  p95 blocks built per chunk (50/200/500 paragraphs): ${p95s.join('/')}`,
+    );
+    // The median above cannot see a cache that holds for the typical chunk and
+    // collapses on a minority of them — p50-flat, still O(N). Fence-free takes
+    // out the worse of the two paths that still dump the whole cache on main
+    // (#5378); the other is live at ~2% of chunks, which puts the cliff just
+    // under p98 — so p95 is the bound with margin rather than the highest one.
+    expect(p95s).toEqual([3, 3, 3]);
   });
 
   it('keeps the cache when source ranges are asked for', () => {
