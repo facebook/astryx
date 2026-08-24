@@ -489,8 +489,16 @@ export function ToastViewport({
       {children}
       <div
         ref={viewportRef}
-        role="region"
-        aria-label={t('@astryx.toast.viewport')}
+        // A landmark only while it holds something. An empty viewport is an
+        // empty named region in every screen reader's landmark list, and
+        // `LayerProvider` mounts one for every app whether or not a toast is
+        // ever shown — so a second viewport (a dialog's, or one a story or a
+        // sub-tree mounts to configure it) made two identically named
+        // landmarks, which is an axe `landmark-unique` violation and a real
+        // navigation annoyance. F6 still reaches it either way: the handler
+        // works off the ref, not the role.
+        role={hasToasts ? 'region' : undefined}
+        aria-label={hasToasts ? t('@astryx.toast.viewport') : undefined}
         tabIndex={-1}
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.

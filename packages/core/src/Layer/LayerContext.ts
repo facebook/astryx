@@ -14,6 +14,7 @@
  */
 
 import {createContext, use} from 'react';
+import type {ToastRenderFn} from '../Toast/types';
 
 /**
  * Toast configuration passed through the layer provider.
@@ -30,6 +31,13 @@ export interface LayerToastConfig {
     start?: number;
     end?: number;
   };
+  /**
+   * Renders the entire visible surface of every toast, replacing Astryx's
+   * card — see `ToastViewport`'s `renderToast`. Set it here when the app
+   * mounts its viewport through `LayerProvider` or `AppShell`, which is the
+   * usual case; the viewport prop is for a viewport you mount yourself.
+   */
+  renderToast?: ToastRenderFn;
 }
 
 /**

@@ -257,10 +257,29 @@ describe('Toast blur timer pause', () => {
 describe('ToastViewport region ARIA', () => {
   it('exposes the notifications region without a prohibited aria-modal', () => {
     renderViewport(<ShowToastButton />);
+    act(() => {
+      fireEvent.click(screen.getByText('Trigger'));
+    });
     const region = screen.getByRole('region', {name: 'Notifications'});
     // aria-modal is only valid on role="dialog"/"alertdialog"; a region must
     // not declare it (axe: aria-allowed-attr).
     expect(region).not.toHaveAttribute('aria-modal');
+  });
+
+  it('is not a landmark until it holds a toast', () => {
+    // An empty viewport used to be an empty named region in every screen
+    // reader's landmark list. LayerProvider mounts one for every app whether
+    // a toast is ever shown, so a second viewport — a dialog's, or one a
+    // sub-tree mounts to configure it — produced two identically named
+    // landmarks (axe: landmark-unique).
+    renderViewport(<ShowToastButton />);
+    expect(screen.queryByRole('region')).not.toBeInTheDocument();
+    act(() => {
+      fireEvent.click(screen.getByText('Trigger'));
+    });
+    expect(
+      screen.getByRole('region', {name: 'Notifications'}),
+    ).toBeInTheDocument();
   });
 });
 
