@@ -100,9 +100,14 @@ export interface LayerStackEntry {
    */
   depth: number;
   /**
-   * Monotonic open order; breaks ties between unrelated layers. Keyed to
-   * `token`, not to the registration, because a layer re-registers whenever its
-   * behavior or depth changes and must not overtake the layers above it.
+   * Monotonic registration order; breaks ties between unrelated layers. For a
+   * layer that registers when it opens this is open order; a hover layer
+   * registers at mount and answers `isPresent` instead, so for two of those it
+   * is mount order rather than which one appeared first.
+   *
+   * Keyed to `token`, not to the registration, because a layer re-registers
+   * whenever its behavior or depth changes and must not overtake the layers
+   * above it.
    */
   seq: number;
   behavior: LayerEscapeBehavior;

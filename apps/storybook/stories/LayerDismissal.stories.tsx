@@ -522,15 +522,9 @@ function MobileNavAloneExample() {
 export const MobileNavAlone: Story = {render: () => <MobileNavAloneExample />};
 
 /**
- * A non-modal bottom sheet with a hover tip showing inside it. The standalone
- * sheet is the one family not on the shared stack yet, so it still owns its own
- * Escape: the press closes the sheet, and the tip goes with the content it was
- * anchored to. That is two layers on one press — the exception this stack
- * exists to remove, and it closes when the sheet migrates.
- *
- * What this story pins today is the narrower promise: a tip being up must not
- * stop the sheet from closing, which is what happened when
- * `hasActiveFocusTrapEscape()` counted every layer instead of focus traps only.
+ * A hover tip inside a non-modal bottom sheet. `BottomSheet` handles Escape
+ * itself rather than through the shared stack, so one press closes the sheet
+ * and the tip goes with it. A tip being up does not stop the sheet closing.
  */
 function SheetWithHoverTipExample() {
   const [activeSheet, setActiveSheet] = useState<string | null>(null);
@@ -549,9 +543,9 @@ function SheetWithHoverTipExample() {
         <BottomSheet sheetId="details" label="Details" height="hug">
           <VStack gap={3} xstyle={sheetStyles.body}>
             <Text type="body">
-              Hover the button to show the tip, then press Escape. The sheet
-              closes — this sheet is not on the shared stack yet, so the press
-              takes it and the tip together.
+              Hover the button to show the tip, then press Escape. BottomSheet
+              handles Escape itself, so one press closes the sheet and the tip
+              goes with it.
             </Text>
             <Tooltip content="A hover tip, showing">
               <Button label="Hover me" variant="secondary" />
