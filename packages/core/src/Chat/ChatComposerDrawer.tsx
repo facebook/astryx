@@ -7,8 +7,8 @@
  * @input Uses React, StyleX, theme tokens
  * @output Exports ChatComposerDrawer component
  * @position Collapsible drawer panel for ChatComposer.
- *   Supports expanded (full content) and collapsed (count + label) states
- *   with fade animation and grid-template-rows height transition.
+ *   Supports expanded (full content) and collapsed (default or caller-composed
+ *   summary) states with fade animation and grid-template-rows height transition.
  *   The collapse toggle exposes aria-expanded + aria-controls linking it to
  *   the content region (disclosure pattern).
  *
@@ -51,10 +51,18 @@ export interface ChatComposerDrawerProps extends BaseProps<HTMLDivElement> {
    */
   count?: number;
   /**
-   * Label shown next to the count in collapsed state.
+   * Label shown next to the count in the default collapsed summary and used to
+   * name the expand/collapse action.
    * @default 'Items'
    */
   label?: string;
+  /**
+   * Visual content for the canonical Collapsed summary anatomy part. Replaces
+   * the complete default Badge and label when count enables collapse. The
+   * component keeps this content presentation-only and owns disclosure
+   * semantics and accessible naming.
+   */
+  collapsedSummary?: ReactNode;
   /**
    * Whether the drawer is collapsed.
    * Uncontrolled by default (internal toggle).
@@ -115,8 +123,8 @@ const styles = stylex.create({
     borderStartEndRadius: radiusVars['--radius-chat'],
   },
 
-  // Toggle row — both the bar handle and badge+label live in the
-  // same grid cell so they crossfade without layout shift.
+  // Toggle row — both the collapsed summary and bar handle live in the same
+  // grid cell so they crossfade without layout shift.
   toggleRow: {
     display: 'grid',
     gridTemplateColumns: '1fr',
@@ -137,6 +145,7 @@ const styles = stylex.create({
     justifySelf: 'start',
     display: 'inline-flex',
     alignItems: 'center',
+    pointerEvents: 'none',
     height: spacingVars['--spacing-5'],
     gap: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-full'],
@@ -234,6 +243,7 @@ export function ChatComposerDrawer({
   children,
   count,
   label: labelFromProps,
+  collapsedSummary,
   isCollapsed: controlledCollapsed,
   defaultIsCollapsed = false,
   onCollapsedChange,
@@ -303,12 +313,20 @@ export function ChatComposerDrawer({
             }
           }}>
           <div
+            aria-hidden="true"
+            inert
             {...stylex.props(
               styles.toggleContent,
               !isCollapsed && styles.toggleContentHidden,
             )}>
-            <Badge variant="neutral" label={count} />
-            <span {...stylex.props(styles.collapseLabel)}>{label}</span>
+            {collapsedSummary === undefined ? (
+              <>
+                <Badge variant="neutral" label={count} />
+                <span {...stylex.props(styles.collapseLabel)}>{label}</span>
+              </>
+            ) : (
+              collapsedSummary
+            )}
           </div>
           <div
             {...stylex.props(
