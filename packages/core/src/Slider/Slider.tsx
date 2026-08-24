@@ -40,13 +40,14 @@ import {Tooltip} from '../Tooltip/Tooltip';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
-import {mergeProps, mergeRefs, rtlStyles} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Types
 // =============================================================================
@@ -184,18 +185,34 @@ const styles = stylex.create({
       '@media (pointer: coarse)': '24px',
     },
     width: '100%',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   trackContainerVertical: {
     width: THUMB_SIZE,
     height: 160,
+    // Same tap target, rotated: the vertical track is the thing you press, and
+    // it is only THUMB_SIZE (20px) wide. `minBlockSize` above floors the
+    // horizontal track's short axis; here the short axis is the inline one
+    // (the block size is already 160px), so floor that instead. The rail,
+    // fill, marks and thumb all center on the inline 50%, so they stay put;
+    // only the invisible tappable area grows. Desktop is unchanged.
+    minInlineSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
     flexDirection: 'column',
     justifyContent: 'center',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   trackContainerDisabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   track: {
     position: 'absolute',
@@ -241,7 +258,10 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: 'none',
-    cursor: 'grab',
+    cursor: {
+      default: 'grab',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
   },
   thumbHorizontal: {
@@ -258,14 +278,14 @@ const styles = stylex.create({
   thumbHover: {
     backgroundColor: {
       default: colorVars['--color-accent'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
   },
   thumbDisabled: {
     backgroundColor: colorVars['--color-background-muted'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   textValue: {
     fontFamily: typographyVars['--font-family-body'],
@@ -945,7 +965,7 @@ export function Slider({ref, ...props}: SliderProps) {
             />
           ))}
         <div
-          ref={mergeRefs(ref, trackRef, disabledMessageTooltip.ref)}
+          ref={useMergedRefs(ref, trackRef, disabledMessageTooltip.ref)}
           {...(isRange
             ? {role: 'group', 'aria-labelledby': labelID}
             : undefined)}

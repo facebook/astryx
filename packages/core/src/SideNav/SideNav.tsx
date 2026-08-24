@@ -32,7 +32,7 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {
   SideNavCollapseContext,
   type SideNavCollapseState,
@@ -49,6 +49,7 @@ import {themeProps} from '../utils/themeProps';
 import {SizeProvider} from '../SizeContext/SizeContext';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Constants
 // =============================================================================
@@ -349,6 +350,7 @@ export function SideNav({
     useState(defaultIsCollapsed);
   const collapsed = isControlled ? controlledCollapsed : uncontrolledCollapsed;
   const navRef = useRef<HTMLElement>(null);
+  const mergedNavRef = useMergedRefs(ref, navRef);
   const collapseStateRef = useRef<SideNavCollapseState>({
     isCollapsed: collapsed,
     toggle: () => {},
@@ -517,7 +519,7 @@ export function SideNav({
 
   const navElement = (
     <nav
-      ref={mergeRefs(ref, navRef)}
+      ref={mergedNavRef}
       role="navigation"
       aria-label={t('@astryx.sideNav.label')}
       data-testid={testId}

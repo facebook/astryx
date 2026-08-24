@@ -218,6 +218,16 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'Use variant="ghost" with a startIcon for a toolbar trigger. Use alignment="end" when a wide surface should align its end edge to the trigger.',
+      },
+      {
+        guidance: true,
+        description:
+          'For staged editors, keep draft state in the composed content and call the provided onChange helper only from Apply. Cancel or dismiss without committing.',
+      },
+      {
+        guidance: true,
+        description:
           'Compose content from the right accessible structure: RadioList for a simple choice, Calendar/date inputs for dates, TreeList or a searchable list for hierarchy, a custom grid for 2D arrow navigation.',
       },
       {

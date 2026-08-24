@@ -22,6 +22,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
  * - /packages/core/src/BottomSheet/index.ts
@@ -50,7 +51,8 @@ import {
   useFocusTrap,
   useScrollLock,
 } from '../hooks';
-import {composeEventHandlers, mergeProps, mergeRefs} from '../utils';
+import {composeEventHandlers, mergeProps} from '../utils';
+import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -58,6 +60,7 @@ import {
   type BottomSheetSwitcherTransitionEvent,
 } from './BottomSheetSwitcherContext';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   dialog: {
     position: 'fixed',
@@ -101,6 +104,14 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': {
         transitionDuration: '0.01s',
       },
+    },
+  },
+  // The flow's dim leaves with its last panel. Same rule, same reasoning, as
+  // a standalone sheet's -- see `scrimClosing` in BottomSheet.tsx. A handoff
+  // between two sheets is not a close, and keeps the entrance curve.
+  scrimClosing: {
+    '::backdrop': {
+      transitionTimingFunction: 'linear',
     },
   },
 });
@@ -593,6 +604,7 @@ export function BottomSheetSwitcher({
     styles.dialog,
     isFlowVisible && styles.dialogOpen,
     hasScrim && styles.scrim,
+    hasScrim && isFlowVisible && activeSheet == null && styles.scrimClosing,
     !hasScrim && styles.dialogNonModal,
     xstyle,
   );
@@ -610,7 +622,7 @@ export function BottomSheetSwitcher({
       <dialog
         {...props}
         {...dialogPresentationProps}
-        ref={mergeRefs(ref, dialogRef, containerRef)}
+        ref={useMergedRefs(ref, dialogRef, containerRef)}
         aria-label={ariaLabel}
         aria-modal={isModal ? 'true' : undefined}
         onCancel={composeEventHandlers(onCancel, handleCancel)}
@@ -620,6 +632,8 @@ export function BottomSheetSwitcher({
           ? {role: 'alertdialog'}
           : undefined)}>
         {children}
+        {/* A modal flow's ::backdrop already answers Safari's edge sampler. */}
+        {hasScrim ? null : <BottomSheetEdgeTint />}
       </dialog>
     </BottomSheetSwitcherContext>
   );

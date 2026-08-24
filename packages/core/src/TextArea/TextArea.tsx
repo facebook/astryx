@@ -46,17 +46,19 @@ import {
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {characterCount} from '../utils/characters';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
 const styles = stylex.create({
@@ -107,7 +109,7 @@ const styles = stylex.create({
     resize: 'vertical',
   },
   textareaDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   // Reserve start padding so text clears the start icon.
   // inline inset + 16px icon (sm) + 8px gap
@@ -394,6 +396,7 @@ export function TextArea({
 }: TextAreaProps) {
   const size = useSize(sizeProp, 'md');
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const announce = useAnnounce();
   const id = useId();
   const descriptionID = useId();
@@ -578,7 +581,7 @@ export function TextArea({
         )}
         <textarea
           {...rest}
-          ref={mergeRefs(ref, textareaRef)}
+          ref={useMergedRefs(ref, textareaRef)}
           id={id}
           name={isDisabled ? undefined : htmlName}
           value={optimisticValue}
@@ -598,7 +601,7 @@ export function TextArea({
           autoFocus={hasAutoFocus}
           data-autofocus={hasAutoFocus || undefined}
           aria-describedby={ariaDescribedBy}
-          aria-required={isRequired && !isOptional ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={
             status?.type === 'error' ||
             (maxLength != null && valueLength > maxLength)

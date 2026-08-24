@@ -9,7 +9,7 @@
  * SYNC: When DateRangeInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -710,5 +710,85 @@ describe('DateRangeInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-date-range-input');
     expect(root).not.toHaveAttribute('data-disabled');
+  });
+});
+
+describe('DateRangeInput range-span forwarding', () => {
+  // Pin "today" so the popover opens on a known month and the day buttons we
+  // query are guaranteed to render.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-05T12:00:00Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // The calendar renders in the top layer; jsdom keeps day buttons in the DOM
+  // but role queries skip them, so reach them by their machine-readable
+  // data-date (ISO) attribute — the same approach Calendar's own tests use.
+  const dayButton = (iso: string): HTMLButtonElement | null =>
+    document.querySelector<HTMLButtonElement>(`button[data-date="${iso}"]`);
+
+  it('forwards maxRangeSpan so the window caps after a start is picked', () => {
+    render(
+      <DateRangeInput
+        label="Reporting period"
+        value={null}
+        onChange={() => {}}
+        maxRangeSpan={7}
+      />,
+    );
+
+    fireEvent.click(getButton('Open calendar'));
+
+    // Before a start is picked, a far-off day is selectable.
+    expect(dayButton('2026-01-20')).not.toBeDisabled();
+
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+
+    // A 7-day window spans start ± 6 days: Jan 16 is the edge, Jan 17 is out.
+    expect(dayButton('2026-01-16')).not.toBeDisabled();
+    expect(dayButton('2026-01-17')).toBeDisabled();
+  });
+
+  it('disables a preset whose range violates the span cap', () => {
+    const presets = [
+      {
+        label: 'Last 3 days',
+        getRange: (): DateRange => ({
+          start: '2026-01-08',
+          end: '2026-01-10',
+        }),
+      },
+      {
+        label: 'Last 30 days',
+        getRange: (): DateRange => ({
+          start: '2025-12-12',
+          end: '2026-01-10',
+        }),
+      },
+    ];
+    const handleChange = vi.fn();
+    render(
+      <DateRangeInput
+        label="Reporting period"
+        value={null}
+        onChange={handleChange}
+        maxRangeSpan={7}
+        presets={presets}
+      />,
+    );
+
+    fireEvent.click(getButton('Open calendar'));
+
+    // The 3-day preset fits the 7-day cap; the 30-day preset can't be committed.
+    const withinCap = getButton('Last 3 days');
+    const overCap = getButton('Last 30 days');
+    expect(withinCap).not.toBeDisabled();
+    expect(overCap).toBeDisabled();
+
+    fireEvent.click(overCap);
+    expect(handleChange).not.toHaveBeenCalled();
   });
 });

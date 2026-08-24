@@ -1638,10 +1638,16 @@ export function ListInput<T>({
                               itemName,
                               position: index + 1,
                             })}
-                            tooltip={t('@astryx.listInput.removeItem', {
-                              itemName,
-                              position: index + 1,
-                            })}
+                            tooltip={
+                              isDisabled || isLoading
+                                ? t('@astryx.listInput.removeUnavailable', {
+                                    itemName,
+                                  })
+                                : t('@astryx.listInput.removeItem', {
+                                    itemName,
+                                    position: index + 1,
+                                  })
+                            }
                             icon={<Icon icon="close" size="sm" />}
                             variant="ghost"
                             size="md"

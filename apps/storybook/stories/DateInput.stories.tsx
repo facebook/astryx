@@ -11,6 +11,28 @@ const meta: Meta<typeof DateInput> = {
   title: 'Core/DateInput',
   component: DateInput,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A date field that fits the pointer it is used with. Every story ' +
+          'below shows the pointer surface — a text input you can type into ' +
+          'with a calendar in a popover — because that is the right answer ' +
+          'for the mouse you are reading this with.\n\n' +
+          'Where the primary pointer is a finger (`pointer: coarse`), the ' +
+          'same component renders a picker built for one instead: a bottom ' +
+          'sheet of months swiped sideways, with month and year wheels ' +
+          'behind the header title, and no text entry (the keyboard would ' +
+          'cover the sheet it is meant to fill in). Same props either way — ' +
+          'there is nothing to opt into.\n\n' +
+          '**Seeing the touch surface:** open any story below on a phone or ' +
+          'tablet, or in a device-emulated tab reporting a coarse pointer. ' +
+          'Every one of them renders it — they are the same stories, and ' +
+          'that is the point. There is no separate touch story because there ' +
+          'is no separate thing to adopt.',
+      },
+    },
+  },
   argTypes: {
     label: {
       control: 'text',

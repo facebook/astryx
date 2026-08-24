@@ -67,6 +67,24 @@ describe('useHotkeys', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('reads a blank userAgentData.platform as unknown, not as non-Apple', () => {
+    // Builds that rewrite their client-hints identity expose the key with an
+    // empty value; navigator.platform is the only surface left that answers.
+    vi.stubGlobal('navigator', {
+      userAgentData: {platform: ''},
+      platform: 'MacIntel',
+    });
+    const onPress = vi.fn();
+    renderHook(() => useHotkeys([{keys: 'mod+k', onPress}]));
+
+    press('k', {ctrlKey: true});
+    expect(onPress).not.toHaveBeenCalled();
+
+    const event = press('k', {metaKey: true});
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(onPress).toHaveBeenCalledWith(event);
+  });
+
   it('does not fire a bare key when modifiers are held', () => {
     stubApplePlatform();
     const onPress = vi.fn();

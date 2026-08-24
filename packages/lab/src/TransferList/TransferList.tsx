@@ -17,6 +17,7 @@
 import {
   Fragment,
   useCallback,
+  useEffect,
   useId,
   useLayoutEffect,
   useMemo,
@@ -27,12 +28,13 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {createPortal, flushSync} from 'react-dom';
+import {flushSync} from 'react-dom';
 import type {BaseProps} from '@astryxdesign/core';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Item} from '@astryxdesign/core/Item';
+import {useLayer} from '@astryxdesign/core/Layer';
 import {List} from '@astryxdesign/core/List';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
@@ -280,12 +282,12 @@ const styles = stylex.create({
     color: colorVars['--color-text-accent'],
     backgroundImage: {
       default: 'none',
-      ':hover': 'none',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': 'none',
       ':active': 'none',
     },
     textDecoration: {
       default: 'none',
-      ':hover': 'underline',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': 'underline',
     },
     fontSize: typeScaleVars['--text-body-size'],
     fontWeight: typeScaleVars['--text-body-weight'],
@@ -345,10 +347,10 @@ const styles = stylex.create({
 });
 
 const dynamicStyles = stylex.create({
-  dragPreview: (x: number, y: number, width: number) => ({
-    width,
-    transform: `translate3d(${x}px, ${y}px, 0)`,
-  }),
+  // Only the width is dynamic here. The layer owns the placement: it reads the
+  // same viewport coordinates as `position: fixed` insets, which is what
+  // getBoundingClientRect gives us.
+  dragPreview: (width: number) => ({width}),
 });
 
 function moveItem<T>(
@@ -435,6 +437,11 @@ export function TransferList<T extends string = string>({
   const availablePanelRef = useRef<HTMLDivElement | null>(null);
   const selectedRowRefs = useRef(new Map<T, HTMLElement>());
   const dragPreviewRef = useRef<HTMLDivElement | null>(null);
+  // The ghost that follows the pointer is a layer, not a portal into body.
+  // Its coordinates come from getBoundingClientRect, so they are viewport
+  // relative; the top layer is the only host that reads them that way from
+  // any scroll position and still paints above a Popover or open dialog.
+  const dragPreviewLayer = useLayer({mode: 'fixed'});
   const currentValueRef = useRef<readonly T[]>(value);
   const reorderSessionRef = useRef<ReorderSession<T> | null>(null);
   const suppressClickRef = useRef(false);
@@ -1010,11 +1017,15 @@ export function TransferList<T extends string = string>({
           width: reorderSession.previewWidth,
         }
       : null;
-  const dragPreviewPortalTarget =
-    typeof document === 'undefined'
-      ? null
-      : (rootRef.current?.closest<HTMLElement>('[popover], dialog[open]') ??
-        document.body);
+  const isDraggingPreview = dragPreviewPosition != null;
+  const {show: showDragPreview, hide: hideDragPreview} = dragPreviewLayer;
+  useEffect(() => {
+    if (!isDraggingPreview) {
+      return undefined;
+    }
+    showDragPreview();
+    return hideDragPreview;
+  }, [isDraggingPreview, showDragPreview, hideDragPreview]);
 
   const reorderControl = (option: TransferListOption<T>) => {
     if (!isReorderable) {
@@ -1304,8 +1315,8 @@ export function TransferList<T extends string = string>({
           </div>
         </div>
       </div>
-      {dragPreviewPosition != null && dragPreviewPortalTarget != null
-        ? createPortal(
+      {dragPreviewPosition != null
+        ? dragPreviewLayer.render(
             <div
               ref={dragPreviewRef}
               aria-hidden="true"
@@ -1313,14 +1324,10 @@ export function TransferList<T extends string = string>({
               {...stylex.props(
                 reorderStyles.preview,
                 styles.dragPreviewContainer,
-                dynamicStyles.dragPreview(
-                  dragPreviewPosition.x,
-                  dragPreviewPosition.y,
-                  dragPreviewPosition.width,
-                ),
+                dynamicStyles.dragPreview(dragPreviewPosition.width),
               )}
             />,
-            dragPreviewPortalTarget,
+            {x: dragPreviewPosition.x, y: dragPreviewPosition.y},
           )
         : null}
     </div>

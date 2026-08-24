@@ -50,7 +50,7 @@ afterEach(() => {
 describe('Drawer', () => {
   it('renders children when open', () => {
     render(
-      <Drawer isOpen onClose={() => {}} label="Host details">
+      <Drawer isOpen onOpenChange={() => {}} label="Host details">
         Drawer content
       </Drawer>,
     );
@@ -60,7 +60,7 @@ describe('Drawer', () => {
 
   it('does not show when isOpen is false', () => {
     render(
-      <Drawer isOpen={false} onClose={() => {}} label="Host details">
+      <Drawer isOpen={false} onOpenChange={() => {}} label="Host details">
         Hidden content
       </Drawer>,
     );
@@ -71,7 +71,7 @@ describe('Drawer', () => {
 
   it('applies the accessible label', () => {
     render(
-      <Drawer isOpen onClose={() => {}} label="Host details">
+      <Drawer isOpen onOpenChange={() => {}} label="Host details">
         Content
       </Drawer>,
     );
@@ -81,7 +81,7 @@ describe('Drawer', () => {
   describe('modal vs non-modal', () => {
     it('opens with showModal() and aria-modal by default (hasScrim)', () => {
       render(
-        <Drawer isOpen onClose={() => {}} label="Details">
+        <Drawer isOpen onOpenChange={() => {}} label="Details">
           Content
         </Drawer>,
       );
@@ -92,7 +92,7 @@ describe('Drawer', () => {
 
     it('opens with show() and no aria-modal when hasScrim is false', () => {
       render(
-        <Drawer isOpen onClose={() => {}} label="Details" hasScrim={false}>
+        <Drawer isOpen onOpenChange={() => {}} label="Details" hasScrim={false}>
           Content
         </Drawer>,
       );
@@ -103,85 +103,127 @@ describe('Drawer', () => {
   });
 
   describe('Escape key', () => {
-    it('calls onClose on Escape keydown', () => {
-      const handleClose = vi.fn();
+    it('calls onOpenChange(false) on Escape keydown', () => {
+      const handleOpenChange = vi.fn();
       render(
-        <Drawer isOpen onClose={handleClose} label="Details">
+        <Drawer isOpen onOpenChange={handleOpenChange} label="Details">
           Content
         </Drawer>,
       );
       fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
-      expect(handleClose).toHaveBeenCalledTimes(1);
+      expect(handleOpenChange).toHaveBeenCalledWith(false);
     });
 
-    it('calls onClose on Escape in non-modal mode (no native cancel)', () => {
-      const handleClose = vi.fn();
+    it('calls onOpenChange(false) on Escape in non-modal mode (no native cancel)', () => {
+      const handleOpenChange = vi.fn();
       render(
-        <Drawer isOpen onClose={handleClose} label="Details" hasScrim={false}>
+        <Drawer
+          isOpen
+          onOpenChange={handleOpenChange}
+          label="Details"
+          hasScrim={false}>
           Content
         </Drawer>,
       );
       fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
-      expect(handleClose).toHaveBeenCalledTimes(1);
+      expect(handleOpenChange).toHaveBeenCalledWith(false);
     });
 
-    it('prevents the native cancel event and routes through onClose', () => {
-      const handleClose = vi.fn();
+    it('prevents the native cancel event and routes through onOpenChange(false)', () => {
+      const handleOpenChange = vi.fn();
       render(
-        <Drawer isOpen onClose={handleClose} label="Details">
+        <Drawer isOpen onOpenChange={handleOpenChange} label="Details">
           Content
         </Drawer>,
       );
       const cancelEvent = new Event('cancel', {cancelable: true});
       fireEvent(screen.getByRole('dialog'), cancelEvent);
-      expect(handleClose).toHaveBeenCalledTimes(1);
+      expect(handleOpenChange).toHaveBeenCalledWith(false);
       expect(cancelEvent.defaultPrevented).toBe(true);
     });
 
     it('ignores other keys', () => {
-      const handleClose = vi.fn();
+      const handleOpenChange = vi.fn();
       render(
-        <Drawer isOpen onClose={handleClose} label="Details">
+        <Drawer isOpen onOpenChange={handleOpenChange} label="Details">
           Content
         </Drawer>,
       );
       fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Enter'});
-      expect(handleClose).not.toHaveBeenCalled();
+      expect(handleOpenChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('consumer event handlers', () => {
+    it('composes a consumer onKeyDown with built-in Escape handling', () => {
+      const handleKeyDown = vi.fn();
+      const handleOpenChange = vi.fn();
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={handleOpenChange}
+          label="Details"
+          onKeyDown={handleKeyDown}>
+          Content
+        </Drawer>,
+      );
+      fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
+      expect(handleKeyDown).toHaveBeenCalledTimes(1);
+      expect(handleOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('lets a consumer preventDefault opt out of built-in Escape handling', () => {
+      const handleOpenChange = vi.fn();
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={handleOpenChange}
+          label="Details"
+          onKeyDown={event => event.preventDefault()}>
+          Content
+        </Drawer>,
+      );
+      fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
+      expect(handleOpenChange).not.toHaveBeenCalled();
     });
   });
 
   describe('scrim click', () => {
-    it('calls onClose when the ::backdrop (dialog element itself) is clicked', () => {
-      const handleClose = vi.fn();
+    it('calls onOpenChange(false) when the ::backdrop (dialog element itself) is clicked', () => {
+      const handleOpenChange = vi.fn();
       render(
-        <Drawer isOpen onClose={handleClose} label="Details">
+        <Drawer isOpen onOpenChange={handleOpenChange} label="Details">
           Content
         </Drawer>,
       );
       fireEvent.click(screen.getByRole('dialog'));
-      expect(handleClose).toHaveBeenCalledTimes(1);
+      expect(handleOpenChange).toHaveBeenCalledWith(false);
     });
 
     it('does not close when drawer content is clicked', () => {
-      const handleClose = vi.fn();
+      const handleOpenChange = vi.fn();
       render(
-        <Drawer isOpen onClose={handleClose} label="Details">
+        <Drawer isOpen onOpenChange={handleOpenChange} label="Details">
           <button type="button">Inside</button>
         </Drawer>,
       );
       fireEvent.click(screen.getByRole('button', {name: 'Inside'}));
-      expect(handleClose).not.toHaveBeenCalled();
+      expect(handleOpenChange).not.toHaveBeenCalled();
     });
 
     it('does not close on self-click when non-modal (no scrim to click)', () => {
-      const handleClose = vi.fn();
+      const handleOpenChange = vi.fn();
       render(
-        <Drawer isOpen onClose={handleClose} label="Details" hasScrim={false}>
+        <Drawer
+          isOpen
+          onOpenChange={handleOpenChange}
+          label="Details"
+          hasScrim={false}>
           Content
         </Drawer>,
       );
       fireEvent.click(screen.getByRole('dialog'));
-      expect(handleClose).not.toHaveBeenCalled();
+      expect(handleOpenChange).not.toHaveBeenCalled();
     });
   });
 
@@ -193,10 +235,7 @@ describe('Drawer', () => {
           <button type="button" onClick={() => setIsOpen(true)}>
             Open inspector
           </button>
-          <Drawer
-            isOpen={isOpen}
-            onClose={() => setIsOpen(false)}
-            label="Inspector">
+          <Drawer isOpen={isOpen} onOpenChange={setIsOpen} label="Inspector">
             <button type="button" onClick={() => setIsOpen(false)}>
               Close inspector
             </button>
@@ -271,7 +310,7 @@ describe('Drawer', () => {
 
   it('focuses the element with data-autofocus on open', () => {
     render(
-      <Drawer isOpen onClose={() => {}} label="Details">
+      <Drawer isOpen onOpenChange={() => {}} label="Details">
         <button type="button">First</button>
         <button type="button" data-autofocus>
           Second
@@ -283,7 +322,7 @@ describe('Drawer', () => {
 
   it('renders the side as a data attribute for theming', () => {
     render(
-      <Drawer isOpen onClose={() => {}} label="Details" side="start">
+      <Drawer isOpen onOpenChange={() => {}} label="Details" side="start">
         Content
       </Drawer>,
     );
@@ -291,11 +330,11 @@ describe('Drawer', () => {
   });
 
   describe('sides', () => {
-    it.each(['start', 'end', 'top', 'bottom'] as const)(
+    it.each(['start', 'end'] as const)(
       'renders side="%s" with the matching data attribute',
       side => {
         render(
-          <Drawer isOpen onClose={() => {}} label="Details" side={side}>
+          <Drawer isOpen onOpenChange={() => {}} label="Details" side={side}>
             Content
           </Drawer>,
         );
@@ -304,10 +343,10 @@ describe('Drawer', () => {
     );
   });
 
-  describe('size', () => {
+  describe('width', () => {
     it('applies the default 400px inline budget', () => {
       render(
-        <Drawer isOpen onClose={() => {}} label="Details">
+        <Drawer isOpen onOpenChange={() => {}} label="Details">
           Content
         </Drawer>,
       );
@@ -318,7 +357,7 @@ describe('Drawer', () => {
 
     it('accepts a number of pixels', () => {
       render(
-        <Drawer isOpen onClose={() => {}} label="Details" size={320}>
+        <Drawer isOpen onOpenChange={() => {}} label="Details" width={320}>
           Content
         </Drawer>,
       );
@@ -329,74 +368,76 @@ describe('Drawer', () => {
 
     it('accepts any CSS length string', () => {
       render(
-        <Drawer isOpen onClose={() => {}} label="Details" size="50%">
+        <Drawer isOpen onOpenChange={() => {}} label="Details" width="50%">
           Content
         </Drawer>,
       );
       expect(screen.getByRole('dialog').getAttribute('style')).toContain('50%');
     });
 
-    it('applies the size to the block axis for sheets', () => {
+    it('preserves a 56px page reveal without exceeding the width budget on mobile', () => {
+      render(
+        <Drawer isOpen onOpenChange={() => {}} label="Details">
+          Content
+        </Drawer>,
+      );
+      // Desktop budget and mobile cap are both emitted as custom properties;
+      // the media query itself is compiled CSS that jsdom cannot evaluate,
+      // so assert both values reach the element.
+      const style = screen.getByRole('dialog').getAttribute('style') ?? '';
+      expect(style).toContain('400px');
+      expect(style).toContain('min(400px, calc(100dvw - 56px))');
+    });
+
+    it('covers the full viewport on mobile with isFullWidthOnMobile', () => {
       render(
         <Drawer
           isOpen
-          onClose={() => {}}
+          onOpenChange={() => {}}
           label="Details"
-          side="bottom"
-          size="40dvh">
+          isFullWidthOnMobile>
           Content
         </Drawer>,
       );
-      expect(screen.getByRole('dialog').getAttribute('style')).toContain(
-        '40dvh',
-      );
-    });
-
-    it('sheets stretch to full viewport width (regression: UA width: fit-content left the sheet content-width in a corner)', () => {
-      render(
-        <Drawer isOpen onClose={() => {}} label="Details" side="bottom">
-          Content
-        </Drawer>,
-      );
-      // The explicit width: 100dvw lives in the static bottom side style —
-      // insetInline: 0 alone loses to the dialog UA stylesheet's
-      // `width: fit-content`. jsdom can't resolve class-compiled CSS, so
-      // assert the side style class is applied; the declaration itself is
-      // covered by the source and visual verification.
-      const className = screen.getByRole('dialog').getAttribute('class') ?? '';
-      expect(className).toContain('Drawer__styles.bottom');
+      const style = screen.getByRole('dialog').getAttribute('style') ?? '';
+      expect(style).toContain('100dvw');
+      expect(style).not.toContain('100dvw - 56px');
     });
   });
 
   describe('close button', () => {
     it('renders a close button by default when modal', () => {
-      const handleClose = vi.fn();
+      const handleOpenChange = vi.fn();
       render(
-        <Drawer isOpen onClose={handleClose} label="Details">
+        <Drawer isOpen onOpenChange={handleOpenChange} label="Details">
           Content
         </Drawer>,
       );
       const closeButton = screen.getByRole('button', {name: 'Close'});
       fireEvent.click(closeButton);
-      expect(handleClose).toHaveBeenCalledTimes(1);
+      expect(handleOpenChange).toHaveBeenCalledWith(false);
     });
 
-    it('does not render a close button by default when non-modal', () => {
+    it('renders a close button by default when non-modal', () => {
+      const handleOpenChange = vi.fn();
       render(
-        <Drawer isOpen onClose={() => {}} label="Details" hasScrim={false}>
+        <Drawer
+          isOpen
+          onOpenChange={handleOpenChange}
+          label="Details"
+          hasScrim={false}>
           Content
         </Drawer>,
       );
-      expect(
-        screen.queryByRole('button', {name: 'Close'}),
-      ).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', {name: 'Close'}));
+      expect(handleOpenChange).toHaveBeenCalledWith(false);
     });
 
     it('hides the close button with hasCloseButton={false}', () => {
       render(
         <Drawer
           isOpen
-          onClose={() => {}}
+          onOpenChange={() => {}}
           label="Details"
           hasCloseButton={false}>
           Content
@@ -407,11 +448,11 @@ describe('Drawer', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('shows the close button on a non-modal drawer with hasCloseButton', () => {
+    it('keeps the close button when hasCloseButton is explicitly true in non-modal mode', () => {
       render(
         <Drawer
           isOpen
-          onClose={() => {}}
+          onOpenChange={() => {}}
           label="Details"
           hasScrim={false}
           hasCloseButton>
@@ -422,131 +463,24 @@ describe('Drawer', () => {
     });
   });
 
-  describe('collapse to rail', () => {
-    it('renders a full-size expand button with the label when collapsed', () => {
-      render(
-        <Drawer
-          isOpen
-          onClose={() => {}}
-          label="Inspector"
-          hasScrim={false}
-          isCollapsed
-          onCollapsedChange={() => {}}>
-          Content
-        </Drawer>,
-      );
-      const expandButton = screen.getByRole('button', {
-        name: 'Expand Inspector',
-      });
-      expect(expandButton).toHaveTextContent('Inspector');
-      // Close/collapse controls are hidden while collapsed.
-      expect(
-        screen.queryByRole('button', {name: 'Collapse Inspector'}),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', {name: 'Close'}),
-      ).not.toBeInTheDocument();
-    });
-
-    it('calls onCollapsedChange(false) when the rail is clicked', () => {
-      const handleCollapsedChange = vi.fn();
-      render(
-        <Drawer
-          isOpen
-          onClose={() => {}}
-          label="Inspector"
-          hasScrim={false}
-          isCollapsed
-          onCollapsedChange={handleCollapsedChange}>
-          Content
-        </Drawer>,
-      );
-      fireEvent.click(screen.getByRole('button', {name: 'Expand Inspector'}));
-      expect(handleCollapsedChange).toHaveBeenCalledWith(false);
-    });
-
-    it('renders a collapse toggle while expanded when onCollapsedChange is provided', () => {
-      const handleCollapsedChange = vi.fn();
-      render(
-        <Drawer
-          isOpen
-          onClose={() => {}}
-          label="Inspector"
-          hasScrim={false}
-          isCollapsed={false}
-          onCollapsedChange={handleCollapsedChange}>
-          Content
-        </Drawer>,
-      );
-      fireEvent.click(screen.getByRole('button', {name: 'Collapse Inspector'}));
-      expect(handleCollapsedChange).toHaveBeenCalledWith(true);
-    });
-
-    it('dev-warns and ignores isCollapsed on a modal drawer', () => {
-      const consoleWarn = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {});
-      try {
-        render(
-          <Drawer
-            isOpen
-            onClose={() => {}}
-            label="Inspector"
-            isCollapsed
-            onCollapsedChange={() => {}}>
-            Content
-          </Drawer>,
-        );
-        expect(consoleWarn).toHaveBeenCalledWith(
-          expect.stringContaining('Drawer:'),
-        );
-        expect(
-          screen.queryByRole('button', {name: 'Expand Inspector'}),
-        ).not.toBeInTheDocument();
-      } finally {
-        consoleWarn.mockRestore();
-      }
-    });
-
-    it('dev-warns and ignores isCollapsed on a sheet', () => {
-      const consoleWarn = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {});
-      try {
-        render(
-          <Drawer
-            isOpen
-            onClose={() => {}}
-            label="Inspector"
-            side="bottom"
-            hasScrim={false}
-            isCollapsed
-            onCollapsedChange={() => {}}>
-            Content
-          </Drawer>,
-        );
-        expect(consoleWarn).toHaveBeenCalledWith(
-          expect.stringContaining('Drawer:'),
-        );
-        expect(
-          screen.queryByRole('button', {name: 'Expand Inspector'}),
-        ).not.toBeInTheDocument();
-      } finally {
-        consoleWarn.mockRestore();
-      }
-    });
-  });
-
   describe('LIFO stacking', () => {
     it('Escape only closes the last-opened drawer', () => {
       const closeFirst = vi.fn();
       const closeSecond = vi.fn();
       render(
         <>
-          <Drawer isOpen onClose={closeFirst} label="First" hasScrim={false}>
+          <Drawer
+            isOpen
+            onOpenChange={closeFirst}
+            label="First"
+            hasScrim={false}>
             First content
           </Drawer>
-          <Drawer isOpen onClose={closeSecond} label="Second" hasScrim={false}>
+          <Drawer
+            isOpen
+            onOpenChange={closeSecond}
+            label="Second"
+            hasScrim={false}>
             Second content
           </Drawer>
         </>,
@@ -563,7 +497,7 @@ describe('Drawer', () => {
       fireEvent.keyDown(screen.getByRole('dialog', {name: 'Second'}), {
         key: 'Escape',
       });
-      expect(closeSecond).toHaveBeenCalledTimes(1);
+      expect(closeSecond).toHaveBeenCalledWith(false);
       expect(closeFirst).not.toHaveBeenCalled();
     });
 
@@ -574,14 +508,14 @@ describe('Drawer', () => {
         <>
           <Drawer
             isOpen={outerOpen}
-            onClose={() => setOuterOpen(false)}
+            onOpenChange={setOuterOpen}
             label="Outer"
             hasScrim={false}>
             Outer content
           </Drawer>
           <Drawer
             isOpen={innerOpen}
-            onClose={() => setInnerOpen(false)}
+            onOpenChange={setInnerOpen}
             label="Inner"
             hasScrim={false}>
             Inner content
@@ -614,23 +548,55 @@ describe('Drawer', () => {
       const closeFirst = vi.fn();
       const {rerender} = render(
         <>
-          <Drawer isOpen onClose={closeFirst} label="First" hasScrim={false}>
+          <Drawer
+            isOpen
+            onOpenChange={closeFirst}
+            label="First"
+            hasScrim={false}>
             First content
           </Drawer>
-          <Drawer isOpen onClose={() => {}} label="Second" hasScrim={false}>
+          <Drawer
+            isOpen
+            onOpenChange={() => {}}
+            label="Second"
+            hasScrim={false}>
             Second content
           </Drawer>
         </>,
       );
       rerender(
-        <Drawer isOpen onClose={closeFirst} label="First" hasScrim={false}>
+        <Drawer isOpen onOpenChange={closeFirst} label="First" hasScrim={false}>
           First content
         </Drawer>,
       );
       fireEvent.keyDown(screen.getByRole('dialog', {name: 'First'}), {
         key: 'Escape',
       });
-      expect(closeFirst).toHaveBeenCalledTimes(1);
+      expect(closeFirst).toHaveBeenCalledWith(false);
+    });
+  });
+
+  describe('container padding isolation', () => {
+    it('resets container padding custom properties on the root dialog element', () => {
+      render(
+        <Drawer isOpen onClose={() => {}} label="Details">
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const computed = window.getComputedStyle(dialog);
+      expect(
+        computed.getPropertyValue('--container-padding-inline-start'),
+      ).toBe('0px');
+      expect(computed.getPropertyValue('--container-padding-inline-end')).toBe(
+        '0px',
+      );
+      expect(computed.getPropertyValue('--container-padding-block-start')).toBe(
+        '0px',
+      );
+      expect(computed.getPropertyValue('--container-padding-block-end')).toBe(
+        '0px',
+      );
     });
   });
 });

@@ -58,7 +58,6 @@ import {
   isImeKeyEvent,
   isTimeInRange,
   mergeProps,
-  mergeRefs,
   getInputARIA,
 } from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -67,12 +66,14 @@ import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   icon: {
     display: 'flex',
@@ -101,7 +102,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
@@ -347,6 +348,7 @@ export function TimeInput({
   ref,
 }: TimeInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -646,7 +648,7 @@ export function TimeInput({
         </VisuallyHidden>
       )}
       <input
-        ref={mergeRefs(ref, inputRef)}
+        ref={useMergedRefs(ref, inputRef)}
         id={id}
         type="text"
         value={displayValue}
@@ -664,7 +666,7 @@ export function TimeInput({
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         aria-describedby={ariaDescribedBy}
-        aria-required={isRequired === true ? 'true' : undefined}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }

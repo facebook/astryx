@@ -18,12 +18,19 @@
 import {useCallback, useRef, type ReactElement, type ReactNode} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
-import {useHoverCard, type HoverCardFocusTrigger} from './useHoverCard';
+import {
+  useHoverCard,
+  type HoverCardFocusTrigger,
+  type HoverCardTouchTrigger,
+} from './useHoverCard';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import type {BaseProps} from '../BaseProps';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 
-export type {HoverCardFocusTrigger} from './useHoverCard';
+export type {
+  HoverCardFocusTrigger,
+  HoverCardTouchTrigger,
+} from './useHoverCard';
 
 const styles = stylex.create({
   wrapperContents: {
@@ -89,6 +96,17 @@ export interface HoverCardProps extends Pick<
   focusTrigger?: HoverCardFocusTrigger;
 
   /**
+   * What a tap does on a touch pointer, where there is no hover:
+   * - `auto`: tap opens the card, unless the trigger performs an action of its
+   *   own (a button, a link, a form control) — that tap belongs to the control
+   * - `tap`: tap always opens the card, even on a trigger that acts
+   * - `none`: touch never opens the card
+   *
+   * @default 'auto'
+   */
+  touchTrigger?: HoverCardTouchTrigger;
+
+  /**
    * Whether the hover card is enabled.
    * When false, hover/focus triggers are disabled.
    *
@@ -126,6 +144,12 @@ export interface HoverCardProps extends Pick<
    * - `true`: force-show the hover card (hover/focus hide is suppressed)
    * - `false`: force-hide the hover card
    * - `undefined`: uncontrolled — hover/focus triggers manage visibility
+   *
+   * A controlled hover card still takes Escape when it is the top-most layer,
+   * and answers by calling `onOpenChange(false)` without hiding itself —
+   * closing is your update's decision, exactly as for a controlled Dialog.
+   * Ignore the call and the card stays, and so does the press: nothing
+   * underneath dismisses.
    */
   isOpen?: boolean;
 
@@ -174,6 +198,7 @@ export function HoverCard({
   delay = 300,
   hideDelay = 200,
   focusTrigger = 'auto',
+  touchTrigger = 'auto',
   isEnabled = true,
   label,
   onOpenChange,
@@ -206,6 +231,7 @@ export function HoverCard({
     delay,
     hideDelay,
     focusTrigger,
+    touchTrigger,
     isEnabled,
     label,
     isOpen,

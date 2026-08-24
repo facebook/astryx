@@ -46,16 +46,20 @@ import {
   typeScaleVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
-import {mergeRefs} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
-import {formatFilterValue} from './formatFilterValue';
+import {
+  formatFilterValue,
+  formatDateAbsoluteCompact,
+} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
 import {truncateCharacters} from '../utils/characters';
 import {useTranslator} from '../i18n';
+import {useLocale} from '../i18n/useLocale';
+import type {Locale} from '../i18n/types';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -70,6 +74,7 @@ import type {
   PowerSearchComponents,
 } from './types';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Icon mapping for typeahead entries
 // =============================================================================
@@ -104,7 +109,12 @@ const tokenValueStyles = stylex.create({
 const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
-    minWidth: 400,
+    // Floor for comfortable editing, yielding when the available inline
+    // space cannot fit it, so the editor stays on-screen at narrow viewport
+    // widths (#4761). Percentages resolve against the position-area region
+    // (anchor start edge to viewport end), falling back to the viewport
+    // where area sizing is not honored.
+    minWidth: `min(400px, calc(100% - ${spacingVars['--spacing-4']}))`,
   },
 });
 
@@ -131,10 +141,12 @@ function PowerSearchTokenValue({
   operatorValue,
   filterValue,
   maxLength,
+  locale,
 }: {
   operatorValue: OperatorValue;
   filterValue: FilterValue;
   maxLength: number;
+  locale: Locale;
 }) {
   switch (filterValue.type) {
     case 'empty':
@@ -276,12 +288,10 @@ function PowerSearchTokenValue({
       );
 
     case 'date_absolute': {
-      const date = new Date(filterValue.unixSeconds * 1000);
-      const formatted = new Intl.DateTimeFormat(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }).format(date);
+      const formatted = formatDateAbsoluteCompact(
+        filterValue.unixSeconds,
+        locale,
+      );
       return (
         <span {...stylex.props(tokenValueStyles.value)}>
           {truncateString(formatted, maxLength)}
@@ -556,6 +566,7 @@ export function PowerSearch({
   const config = useInternalConfig(configProp);
   const searchSource = usePowerSearchSource(config);
   const t = useTranslator();
+  const locale = useLocale();
   const label = labelFromProps ?? t('@astryx.powersearch.label');
   const placeholder =
     placeholderFromProps ?? t('@astryx.powersearch.placeholder');
@@ -625,6 +636,7 @@ export function PowerSearch({
             filter.value,
             maxTokenLength,
             t,
+            locale,
             timezoneID,
           )
         : '';
@@ -644,7 +656,7 @@ export function PowerSearch({
         },
       };
     });
-  }, [filters, config, maxTokenLength, timezoneID, t]);
+  }, [filters, config, maxTokenLength, timezoneID, t, locale]);
 
   // Handle tokenizer onChange (field selected from typeahead)
   const handleTokenizerChange = useCallback(
@@ -820,6 +832,7 @@ export function PowerSearch({
             operatorValue={operator.value}
             filterValue={filter.value}
             maxLength={adjustedMaxLength}
+            locale={locale}
           />
         ) : undefined;
 
@@ -858,6 +871,7 @@ export function PowerSearch({
       config,
       configProp,
       maxTokenLength,
+      locale,
       size,
       isReadOnly,
       isDisabled,
@@ -1020,7 +1034,10 @@ export function PowerSearch({
   return (
     <>
       <div
-        ref={mergeRefs(ref, popover.triggerRef as React.Ref<HTMLDivElement>)}
+        ref={useMergedRefs(
+          ref,
+          popover.triggerRef as React.Ref<HTMLDivElement>,
+        )}
         {...themeProps('power-search')}>
         <Tokenizer
           handleRef={tokenizerRef}

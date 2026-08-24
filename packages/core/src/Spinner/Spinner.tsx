@@ -4,7 +4,7 @@
 
 /**
  * @file Spinner.tsx
- * @input Uses React, StyleX, canvas rendering
+ * @input Uses React, StyleX, SVG rendering
  * @output Exports Spinner component, SpinnerProps, SpinnerSize, SpinnerShade types
  * @position Core implementation of spinner loading indicator
  *
@@ -16,10 +16,9 @@
  * - /packages/cli/assets/templates/blocks/components/Spinner/ (showcase blocks)
  */
 
-import {useEffect, useId, useRef, type ReactNode} from 'react';
+import {useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {durationVars, spacingVars} from '../theme/tokens.stylex';
-import {useTheme} from '../theme/useTheme';
+import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
@@ -29,10 +28,11 @@ import {themeProps} from '../utils/themeProps';
 // Constants
 // =============================================================================
 
-/** How much of the circle the active arc covers (as a fraction of 2π) */
-const SPREAD = 0.75;
-/** Where the active arc starts (as a fraction of 2π) */
-const START_POINT = 1.5;
+/**
+ * Fraction of the ring the moving arc covers. The canvas ring this replaces
+ * swept 135deg, not the 270deg its constant's comment claimed.
+ */
+const ARC_FRACTION = 0.375;
 
 const SIZES = {
   sm: {diameter: 10, border: 2},
@@ -40,6 +40,61 @@ const SIZES = {
   lg: {diameter: 18, border: 3},
   xl: {diameter: 28, border: 4},
 };
+
+/** `onMedia` keeps the 77/255 its token's `4D` hex suffix used to encode. */
+const TRACK_OPACITY = {
+  default: 1,
+  subtle: 1,
+  onMedia: 77 / 255,
+  inherit: 0.3,
+};
+
+/**
+ * Pin every ring's rotation to the document timeline's origin instead of its
+ * own start time, so spinners mounted seconds apart turn in phase.
+ *
+ * Setting `startTime` is exact where arithmetic on a clock read is not: a
+ * negative `animation-delay` computed at mount is only as good as the gap
+ * between reading the clock and the frame the animation starts in, which at
+ * 10x CPU throttling measured 116deg of drift.
+ *
+ * Rings are collected and pinned in one frame because `getAnimations()`
+ * resolves style and `startTime` dirties it again, so pinning them one at a
+ * time makes each mount re-force what the previous one invalidated — 53 style
+ * recalcs for 38 spinners against 19 batched.
+ */
+const pendingRings = new Set<SVGSVGElement>();
+let flushScheduled = false;
+
+function pinRingsToTimelineOrigin(): void {
+  flushScheduled = false;
+  const animations: Animation[] = [];
+  for (const svg of pendingRings) {
+    animations.push(...svg.getAnimations());
+  }
+  pendingRings.clear();
+  for (const animation of animations) {
+    animation.startTime = 0;
+  }
+}
+
+function syncRotationPhase(
+  svg: SVGSVGElement | null,
+): (() => void) | undefined {
+  // jsdom implements no Web Animations, and this runs in every consumer's
+  // component tests.
+  if (svg == null || typeof svg.getAnimations !== 'function') {
+    return undefined;
+  }
+  pendingRings.add(svg);
+  if (!flushScheduled) {
+    flushScheduled = true;
+    requestAnimationFrame(pinRingsToTimelineOrigin);
+  }
+  return () => {
+    pendingRings.delete(svg);
+  };
+}
 
 // =============================================================================
 // Animation
@@ -67,7 +122,7 @@ const styles = stylex.create({
     overflow: 'hidden',
     verticalAlign: 'middle',
   },
-  canvas: {
+  ring: {
     backfaceVisibility: 'hidden',
     display: 'block',
     willChange: 'transform',
@@ -82,6 +137,33 @@ const styles = stylex.create({
     animationName: rotation,
     animationTimingFunction: 'linear',
   },
+  circle: {
+    fill: 'none',
+    strokeLinecap: 'round',
+  },
+});
+
+const arcStyles = stylex.create({
+  default: {stroke: colorVars['--color-accent']},
+  subtle: {stroke: colorVars['--color-text-secondary']},
+  onMedia: {stroke: colorVars['--color-on-dark']},
+  inherit: {stroke: 'currentColor'},
+});
+
+const trackStyles = stylex.create({
+  default: {
+    stroke: colorVars['--color-track'],
+    strokeOpacity: TRACK_OPACITY.default,
+  },
+  subtle: {
+    stroke: colorVars['--color-track'],
+    strokeOpacity: TRACK_OPACITY.subtle,
+  },
+  onMedia: {
+    stroke: colorVars['--color-on-dark'],
+    strokeOpacity: TRACK_OPACITY.onMedia,
+  },
+  inherit: {stroke: 'currentColor', strokeOpacity: TRACK_OPACITY.inherit},
 });
 
 // =============================================================================
@@ -100,7 +182,7 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
    * - 'sm': 10px diameter
    * - 'md': 14px diameter
    * - 'lg': 18px diameter
-   * - 'xl': 36px diameter
+   * - 'xl': 28px diameter
    * @default 'md'
    */
   size?: SpinnerSize;
@@ -141,7 +223,7 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
 // =============================================================================
 
 /**
- * An animated loading indicator. Available in three sizes and two color shades.
+ * An animated loading indicator. Available in four sizes and four color shades.
  *
  * @example
  * ```
@@ -164,97 +246,11 @@ export function Spinner({
   ref,
   ...restProps
 }: SpinnerProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const {tokens: themeTokens} = useTheme();
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas == null) {
-      return;
-    }
-
-    const context = canvas.getContext('2d');
-    if (!context) {
-      return;
-    }
-
-    const {border, diameter} = SIZES[size];
-    const pixelRatio = window.devicePixelRatio || 1;
-
-    // Resolve colors from theme tokens (useTheme handles light/dark resolution).
-    // - default → accent ring on a track tuned to body luminance
-    // - subtle  → secondary text color, less prominent
-    // - onMedia → on-dark color, with a translucent track for photos/video
-    // - inherit → the inherited currentColor, so the ring matches the parent's
-    //   resolved foreground (e.g. a button's variant text color)
-    const inheritedColor =
-      shade === 'inherit' ? getComputedStyle(canvas).color : null;
-    const activeColor =
-      shade === 'inherit'
-        ? (inheritedColor as string)
-        : shade === 'onMedia'
-          ? themeTokens['--color-on-dark']
-          : shade === 'subtle'
-            ? themeTokens['--color-text-secondary']
-            : themeTokens['--color-accent'];
-    // Track derives from --color-on-dark for onMedia (with a 30% alpha so the
-    // ring reads against arbitrary backgrounds) and from --color-track for the
-    // body-luminance shades. For inherit, the track is the same currentColor
-    // drawn at reduced alpha via globalAlpha (see below). All branches are
-    // fully theme-driven.
-    const backgroundColor =
-      shade === 'inherit'
-        ? (inheritedColor as string)
-        : shade === 'onMedia'
-          ? `${themeTokens['--color-on-dark']}4D`
-          : themeTokens['--color-track'];
-
-    const cssSize = diameter + border * 2;
-
-    // Round to an even number of device pixels so the center stays on a whole
-    // pixel (avoids rotation jitter); keep CSS size pinned to cssSize (#2732).
-    const rawFrameSize = Math.round(cssSize * pixelRatio);
-    const frameSize = rawFrameSize + (rawFrameSize % 2);
-
-    const scale = frameSize / cssSize;
-    const radius = (diameter / 2) * scale;
-    const lineWidth = border * scale;
-
-    canvas.height = canvas.width = frameSize;
-    canvas.style.width = canvas.style.height = cssSize + 'px';
-
-    context.lineCap = 'round';
-    context.lineWidth = lineWidth;
-
-    const center = frameSize / 2;
-
-    // Background circle (full ring, faded). For the inherit shade the track is
-    // the same currentColor as the arc, so fade it via globalAlpha (the
-    // computed color is an opaque rgb() string with no alpha channel to tweak).
-    context.beginPath();
-    context.arc(center, center, radius, 0, 2 * Math.PI);
-    context.strokeStyle = backgroundColor;
-    if (shade === 'inherit') {
-      context.globalAlpha = 0.3;
-    }
-    context.stroke();
-    context.globalAlpha = 1;
-
-    // Active arc (partial ring, colored)
-    context.beginPath();
-    context.arc(
-      center,
-      center,
-      radius,
-      START_POINT * Math.PI,
-      ((START_POINT + SPREAD) % 2) * Math.PI,
-    );
-    context.strokeStyle = activeColor;
-    context.stroke();
-  }, [shade, size, themeTokens]);
-
   const {border, diameter} = SIZES[size];
   const frameSize = diameter + border * 2;
+  const center = frameSize / 2;
+  const circumference = Math.PI * diameter;
+  const arcLength = circumference * ARC_FRACTION;
   const hasLabel = label != null;
   const labelId = useId();
 
@@ -283,7 +279,30 @@ export function Spinner({
         hasLabel ? undefined : className,
         {...(hasLabel ? {} : style), width: frameSize, height: frameSize},
       )}>
-      <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
+      <svg
+        ref={syncRotationPhase}
+        width={frameSize}
+        height={frameSize}
+        viewBox={`0 0 ${frameSize} ${frameSize}`}
+        aria-hidden="true"
+        {...stylex.props(styles.ring)}>
+        <circle
+          cx={center}
+          cy={center}
+          r={diameter / 2}
+          strokeWidth={border}
+          {...stylex.props(styles.circle, trackStyles[shade])}
+        />
+        <circle
+          cx={center}
+          cy={center}
+          r={diameter / 2}
+          strokeWidth={border}
+          strokeDasharray={`${arcLength} ${circumference - arcLength}`}
+          transform={`rotate(-90 ${center} ${center})`}
+          {...stylex.props(styles.circle, arcStyles[shade])}
+        />
+      </svg>
     </span>
   );
 

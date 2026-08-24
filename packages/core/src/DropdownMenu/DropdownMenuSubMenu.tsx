@@ -96,7 +96,10 @@ const triggerStyles = stylex.create({
       ':focus': colorVars['--color-overlay-hover'],
     },
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     outline: 'none',
   },
@@ -107,7 +110,7 @@ const triggerStyles = stylex.create({
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   caret: {
     display: 'flex',
@@ -473,20 +476,17 @@ export function DropdownMenuSubMenu(
   );
 
   const endAffordance = hasSpinner ? (
-    <span
-      {...mergeProps(
-        themeProps('dropdown-menu-indicator-icon'),
-        stylex.props(triggerStyles.caret),
-      )}>
+    <span {...stylex.props(triggerStyles.caret)}>
       <Spinner size="sm" />
     </span>
   ) : (
-    <span
-      {...mergeProps(
-        themeProps('dropdown-menu-indicator-icon'),
-        stylex.props(triggerStyles.caret),
-      )}>
-      <Icon icon="chevronRight" size="sm" color="secondary" />
+    <span {...stylex.props(triggerStyles.caret)}>
+      <Icon
+        icon="chevronRight"
+        size="sm"
+        color="secondary"
+        {...themeProps('dropdown-menu-indicator-icon')}
+      />
     </span>
   );
 

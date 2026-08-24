@@ -3,10 +3,9 @@
 # Crowdin download — pull translated locale files from Crowdin and open a PR
 # against main.
 #
-# TRIGGER: workflow_dispatch ONLY for now, so a maintainer can smoke-test the
-# full flow (download → prettier → PR) before we automate it. A follow-up PR
-# will add a cron schedule once we're confident the PR that comes out looks
-# right end-to-end.
+# TRIGGER: nightly plus manual dispatch. Each run downloads nonempty translated
+# locale files and opens (or updates) a reviewable PR; when nothing changed,
+# create-pull-request is a no-op.
 #
 # Why not use Crowdin's built-in PR creation? Its PR flow is limited (title/
 # body/labels), so we let the Crowdin action land translations on a staging
@@ -17,6 +16,9 @@ name: Crowdin Download
 
 on:
   workflow_dispatch:
+  schedule:
+    # 06:00 UTC — overnight in US time zones; opens a PR only when translations changed.
+    - cron: '0 6 * * *'
 
 permissions: {}
 
@@ -104,10 +106,14 @@ jobs:
             echo "No translated locale files present; nothing to normalize."
           fi
 
+      - name: Generate Calendar CLDR weekdays
+        run: pnpm generate:cldr-weekdays
+
       # peter-evans/create-pull-request@v7.0.11 — pinned by SHA per repo policy.
       - name: Open translations PR
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
+          token: ${{ secrets.CROWDIN_PR_TOKEN }}
           branch: l10n/crowdin
           base: main
           title: 'chore(i18n): translations update from Crowdin'

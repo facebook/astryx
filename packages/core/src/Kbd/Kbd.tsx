@@ -124,8 +124,9 @@ function getServerPlatformSnapshot(): boolean {
 
 /**
  * Detects whether the current platform is macOS/iOS.
- * Prefers the User-Agent Client Hints API when available (modern Chrome/Edge),
- * falls back to navigator.platform (deprecated but universally supported).
+ * Prefers the User-Agent Client Hints API when it names a platform (modern
+ * Chrome/Edge), falls back to navigator.platform (deprecated but universally
+ * supported) when it is absent or blank.
  */
 function detectMac(): boolean {
   if (typeof navigator === 'undefined') {
@@ -134,7 +135,13 @@ function detectMac(): boolean {
   // Prefer User-Agent Client Hints API (not deprecated)
   const uaData = 'userAgentData' in navigator ? navigator.userAgentData : null;
   if (uaData && typeof uaData === 'object' && 'platform' in uaData) {
-    return /mac/i.test((uaData as {platform: string}).platform ?? '');
+    const uaPlatform = (uaData as {platform?: unknown}).platform;
+    // A blank platform is no answer, not a negative one. Builds that rewrite
+    // their client-hints identity ship '', so fall through rather than
+    // reading it as "not Apple".
+    if (typeof uaPlatform === 'string' && uaPlatform.trim() !== '') {
+      return /mac/i.test(uaPlatform);
+    }
   }
   // Fallback: navigator.platform (deprecated but still shipped everywhere)
   return /Mac|iPhone|iPad|iPod/.test(navigator.platform ?? '');

@@ -5,6 +5,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import {Markdown} from './Markdown';
 import type {MarkdownInlinePlugin} from './Markdown';
+import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
 
 describe('Markdown', () => {
   it('renders with role="document"', () => {
@@ -21,6 +22,83 @@ describe('Markdown', () => {
     render(<Markdown>{'# Heading 1\n\n## Heading 2'}</Markdown>);
     expect(screen.getByText('Heading 1').tagName).toBe('H1');
     expect(screen.getByText('Heading 2').tagName).toBe('H2');
+  });
+
+  describe('heading ids', () => {
+    // Outline's documented contract: an outline item id "should match the
+    // target heading element id". Markdown renders the ids that
+    // useOutlineFromMarkdown derives, so hash navigation resolves.
+    it('renders generated id attributes on headings', () => {
+      render(<Markdown>{'# Overview\n\ncontent\n\n# Installation'}</Markdown>);
+      expect(screen.getByText('Overview')).toHaveAttribute('id', 'overview');
+      expect(screen.getByText('Installation')).toHaveAttribute(
+        'id',
+        'installation',
+      );
+    });
+
+    it('disambiguates duplicate headings with numeric suffixes', () => {
+      render(<Markdown>{'# Setup\n\n# Setup\n\n# Setup'}</Markdown>);
+      const ids = screen.getAllByText('Setup').map(el => el.id);
+      expect(ids).toEqual(['setup', 'setup-1', 'setup-2']);
+    });
+
+    it('renders ids matching parseOutlineFromMarkdown for the same source', () => {
+      // Parity invariant: every id the outline derives must resolve to a
+      // rendered heading with that exact id — including slugified formatting,
+      // duplicate numbering, the empty-slug fallback, and code-fence decoys.
+      const source = [
+        '# **Bold** and _italic_ text',
+        '## Setup',
+        '## Setup',
+        '### !!!',
+        '```',
+        '# not a heading',
+        '```',
+        '## The `useState` hook',
+      ].join('\n\n');
+      const {container} = render(<Markdown>{source}</Markdown>);
+      const outline = parseOutlineFromMarkdown(source);
+      expect(outline.length).toBe(5);
+      for (const item of outline) {
+        const target = container.querySelector(`[id="${item.id}"]`);
+        expect(target, `no rendered heading with id "${item.id}"`).not.toBe(
+          null,
+        );
+        expect(target!.tagName).toMatch(/^H[1-6]$/);
+        expect(target!.textContent?.trim()).toBe(item.label);
+      }
+    });
+
+    it('passes the generated id to a custom heading component', () => {
+      const received: (string | undefined)[] = [];
+      render(
+        <Markdown
+          components={{
+            heading: ({children, id}: {children: ReactNode; id?: string}) => {
+              received.push(id);
+              return <h2 id={id}>{children}</h2>;
+            },
+          }}>
+          {'# Overview\n\n# Overview'}
+        </Markdown>,
+      );
+      expect(received).toEqual(['overview', 'overview-1']);
+    });
+
+    it('does not assign ids to headings nested inside blockquotes', () => {
+      // parseOutlineFromMarkdown only lists top-level headings. If nested
+      // headings consumed slugs too, duplicate numbering would drift and
+      // outline links would land on the wrong heading.
+      const source = '> # Quoted\n\n# Quoted';
+      const {container} = render(<Markdown>{source}</Markdown>);
+      const outline = parseOutlineFromMarkdown(source);
+      expect(outline.map(i => i.id)).toEqual(['quoted']);
+      const [nested, topLevel] = screen.getAllByText('Quoted');
+      expect(container.querySelector('blockquote')).toContainElement(nested);
+      expect(nested).not.toHaveAttribute('id');
+      expect(topLevel).toHaveAttribute('id', 'quoted');
+    });
   });
 
   it('renders paragraphs as block <div> (never <p>) for composition safety', () => {

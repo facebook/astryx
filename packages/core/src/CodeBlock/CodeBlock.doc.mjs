@@ -96,6 +96,12 @@ export const docs = {
       description: 'Per-instance syntax theme override. Shorthand for wrapping the block in <SyntaxTheme theme={...}>. Accepts a preset from @astryxdesign/core/theme/syntax or a theme created with defineSyntaxTheme(). Defaults to the nearest SyntaxTheme ancestor or the theme-level syntax colors.',
     },
     {
+      name: 'highlightMode',
+      type: "'auto' | 'ranges' | 'spans'",
+      description: 'Syntax highlighting rendering mode.',
+      default: "'auto'",
+    },
+    {
       name: 'isCollapsible',
       type: 'boolean',
       description: 'Allow collapsing the code body into just the header bar. Starts expanded; the header becomes clickable to toggle. Only shows the toggle when the code exceeds collapsibleThreshold lines.',
