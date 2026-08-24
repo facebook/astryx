@@ -130,6 +130,10 @@ const elevationStyles = stylex.create({
  * Children automatically detect the group via context and apply position-aware
  * styles in pure CSS.
  *
+ * The group is a single tab stop: arrow keys move between members along the
+ * orientation, Home/End jump to the ends, focus wraps, and disabled members are
+ * skipped (the APG roving tabindex technique, via `useListFocus`).
+ *
  * Members that render their own layer — a Button with a `tooltip`, or a
  * DropdownMenu — compose correctly, including as the trailing member.
  *
@@ -166,12 +170,16 @@ export function ButtonGroup({
   ref,
   'data-testid': testId,
   onKeyDown,
+  onFocus,
   ...props
 }: ButtonGroupProps): ReactNode {
   const size = useSize(sizeProp, 'md');
 
-  const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({
-    itemSelector: 'button, [tabindex="0"]',
+  const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
+    // Roving rewrites `tabindex` on every item, so the selector cannot key off
+    // a value: `[tabindex="0"]` would drop each member the moment it is
+    // stamped -1. `a[href]` catches a Button rendered with `href`.
+    itemSelector: 'button, a[href], [tabindex]',
     // A member's layer renders inline inside the group (useLayer does not
     // portal it), so a key pressed in an open DropdownMenu bubbles here. The
     // boundary is the group's own root or any layer, whichever is nearer to
@@ -180,6 +188,7 @@ export function ButtonGroup({
     // instead would swallow every arrow key it owns.
     boundarySelector: '[role="group"], [popover]',
     orientation,
+    hasRovingTabIndex: true,
   });
 
   const contextValue = useMemo(
@@ -207,6 +216,7 @@ export function ButtonGroup({
           role="group"
           aria-label={label}
           onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
+          onFocus={composeEventHandlers(onFocus, handleFocus)}
           aria-disabled={isDisabled || undefined}
           data-testid={testId}>
           {children}
