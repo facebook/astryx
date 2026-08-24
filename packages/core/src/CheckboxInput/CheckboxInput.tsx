@@ -406,7 +406,10 @@ export function CheckboxInput({
           !isDisabled && indicatorScope,
         )}>
         <div
-          {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}
+          {...mergeProps(
+            themeProps('checkbox-input-slot', {size}),
+            stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size]),
+          )}
           {...focusProps}>
           <input
             {...rest}
@@ -450,10 +453,13 @@ export function CheckboxInput({
             aria-describedby={ariaDescribedBy}
             aria-invalid={status?.type === 'error' ? true : undefined}
             aria-busy={isBusy || undefined}
-            {...stylex.props(
-              styles.input,
-              wrapperSizeStyles[size],
-              isDisabled && styles.inputDisabled,
+            {...mergeProps(
+              themeProps('checkbox-input-control', {size}),
+              stylex.props(
+                styles.input,
+                wrapperSizeStyles[size],
+                isDisabled && styles.inputDisabled,
+              ),
             )}
           />
           {/*
