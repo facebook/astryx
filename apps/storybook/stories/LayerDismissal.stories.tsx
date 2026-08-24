@@ -672,19 +672,14 @@ function PurposeFlipsWhileOpenExample() {
             <LayoutContent>
               <VStack gap={3}>
                 <Text type="body">
-                  Open the second modal, then flip this one to required. This
-                  one re-registers, and must not overtake the modal opened after
-                  it — Escape should still close the second.
+                  Open the second modal, then flip this one to required from
+                  inside it. This one re-registers, and must not overtake the
+                  modal opened after it — Escape should still close the second.
                 </Text>
                 <Button
                   label="Open second modal"
                   variant="primary"
                   onClick={() => setIsSecondOpen(true)}
-                />
-                <Button
-                  label="Make first required"
-                  variant="secondary"
-                  onClick={() => setIsFirstRequired(true)}
                 />
               </VStack>
 
@@ -702,7 +697,14 @@ function PurposeFlipsWhileOpenExample() {
                   }
                   content={
                     <LayoutContent>
-                      <Text type="body">Escape closes this one.</Text>
+                      <VStack gap={3}>
+                        <Text type="body">Escape closes this one.</Text>
+                        <Button
+                          label="Make first required"
+                          variant="secondary"
+                          onClick={() => setIsFirstRequired(true)}
+                        />
+                      </VStack>
                     </LayoutContent>
                   }
                 />
