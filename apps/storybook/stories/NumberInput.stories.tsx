@@ -151,6 +151,9 @@ export const PasteFormattedNumber: Story = {
               placeholder="Paste a formatted number"
               value={deDE}
               onChange={setDeDE}
+              formatValue={value =>
+                new Intl.NumberFormat('de-DE').format(value)
+              }
               hasClear
             />
             <p data-testid="de-committed">Committed: {String(deDE)}</p>
