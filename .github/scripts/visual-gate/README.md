@@ -116,9 +116,28 @@ Every shot is taken with animations and transitions forced to their end state,
 carets hidden, a fixed viewport at device scale 1, fonts awaited, and **all
 off-origin requests blocked** — nothing that renders may depend on a CDN being
 up. Theme and colour mode are switched over Storybook's own channel rather than
-by reloading, which is what keeps 522 shots inside a few minutes;
+by reloading, which is what keeps 514 shots inside a few minutes;
 `--no-fast-globals` forces a reload per shot if a story's state ever turns out
 to survive the re-render.
+
+## Where the images live
+
+| what                                        | where                                          | size / retention     |
+| ------------------------------------------- | ---------------------------------------------- | -------------------- |
+| baseline PNGs                               | `gh-pages:visual-gate/baseline/`               | ~10 MB, permanent    |
+| reports (changed shots only)                | `gh-pages:visual-gate/<run_id>/` and `latest/` | last 20 runs, pruned |
+| full capture (what a promotion copies from) | Actions artifact `visual-capture`              | 14 days              |
+
+Nothing lands in `main`.
+
+**gh-pages is shared, and it is rebuilt as an orphan commit.** `deploy.yml`
+materializes only `storybook`, `sandbox` and `assets`, and carries every other
+path forward by SHA — `visual-gate/` survives by that mechanism, exactly as
+`pr/` and `reports/` do. **Never add `visual-gate` to that sparse-checkout
+set**: paths inside the cone are wiped and republished on every deploy, which
+would destroy the baseline and silently disarm the gate. `cleanup-previews.yml`
+only removes `pr/<number>/` and legacy 7-hex directories, so it does not touch
+it either.
 
 ## Files
 
