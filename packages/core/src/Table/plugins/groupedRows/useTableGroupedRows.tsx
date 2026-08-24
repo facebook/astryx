@@ -126,15 +126,27 @@ const styles = stylex.create({
   },
   headerCell: {
     paddingBlock: spacingVars['--spacing-2'],
-    // No inline start padding so the chevron aligns with the table's leading
-    // edge (Ernest review #1).
-    paddingInlineStart: spacingVars['--spacing-1'],
+    // The start gutter lives on headerInner instead, so that it travels with
+    // the heading when the heading pins. Left here, the heading would sit one
+    // gutter in at rest and jump flush the moment it stuck.
+    paddingInlineStart: 0,
     paddingInlineEnd: spacingVars['--spacing-3'],
   },
+  // The cell spans every column, so on a table scrolled sideways the heading
+  // would slide out of view while the columns it names stay pinned. Sticking
+  // the inner row to the start edge keeps the chevron and the label together
+  // and on screen. `fit-content` because a flex child would otherwise stretch
+  // to the cell's full width and have nothing to slide within.
   headerInner: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
+    insetInlineStart: 0,
+    position: 'sticky',
+    width: 'fit-content',
+    // No inline start padding on the cell, so the chevron aligns with the
+    // table's leading edge (Ernest review #1).
+    paddingInlineStart: spacingVars['--spacing-1'],
   },
   // Standalone chevron button with no heavy chrome (transparent, borderless,
   // zero padding) so the icon sits flush with the start of the table
