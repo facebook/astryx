@@ -530,6 +530,33 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.dragOffset).toBe(40);
     });
 
+    /**
+     * A finger is never still. Tapping a control inside the sheet drifts a
+     * pixel or two, and with no slop that drift promoted to a sheet drag —
+     * which wrote `transition: none` onto the panel across the release, so the
+     * close the tap triggered cut instead of animating. That is the "the sheet
+     * closes with no animation" report: only on a tap, and only on a tap
+     * inside the sheet (the scrim never arms a drag).
+     */
+    it('treats a few pixels of finger drift as a tap, not a drag', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const body = makeBody(0); // at the top, where a pull-down would promote
+      bodyDown(hook, 0, 0, body);
+      bodyMove(hook, 3, 40, body); // the drift of a finger tapping a button
+      expect(hook.result.current.isDragging).toBe(false);
+      // and nothing suppressed the panel's transition, so a close that lands
+      // now still animates
+      expect(hook.result.current.contentProps.style.transition).toBeUndefined();
+    });
+
+    it('still promotes once the pull passes the tap slop', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const body = makeBody(0);
+      bodyDown(hook, 0, 0, body);
+      bodyMove(hook, 9, 40, body); // just past the 8px slop
+      expect(hook.result.current.isDragging).toBe(true);
+    });
+
     it('does not hijack scrolling when the body is scrolled down', () => {
       const {hook} = setup({snapHeights: () => [200]});
       const body = makeBody(120); // scrolled, not at the top

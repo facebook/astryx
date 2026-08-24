@@ -14,6 +14,11 @@ export interface AstryxIntegration {
   templates?: string;
   /** Relative path to the codemods root (resolved to absolute). */
   codemods?: string;
+  /** Relative path to the reference-docs (topics) root (resolved to
+   *  absolute). Every `{topic}.doc.{ts,mjs,js}` under it is a topic the CLI
+   *  serves from `astryx docs`, alongside the built-in ones. A topic may also
+   *  `replace` or `extend` a built-in topic; see the ReferenceDoc type. */
+  docs?: string;
   /** Where to file issues/feedback for this integration. */
   issuesUrl?: string;
 }

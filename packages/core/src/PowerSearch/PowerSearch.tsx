@@ -46,7 +46,6 @@ import {
   typeScaleVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
-import {mergeRefs} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
@@ -75,6 +74,7 @@ import type {
   PowerSearchComponents,
 } from './types';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Icon mapping for typeahead entries
 // =============================================================================
@@ -109,7 +109,12 @@ const tokenValueStyles = stylex.create({
 const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
-    minWidth: 400,
+    // Floor for comfortable editing, yielding when the available inline
+    // space cannot fit it, so the editor stays on-screen at narrow viewport
+    // widths (#4761). Percentages resolve against the position-area region
+    // (anchor start edge to viewport end), falling back to the viewport
+    // where area sizing is not honored.
+    minWidth: `min(400px, calc(100% - ${spacingVars['--spacing-4']}))`,
   },
 });
 
@@ -1029,7 +1034,10 @@ export function PowerSearch({
   return (
     <>
       <div
-        ref={mergeRefs(ref, popover.triggerRef as React.Ref<HTMLDivElement>)}
+        ref={useMergedRefs(
+          ref,
+          popover.triggerRef as React.Ref<HTMLDivElement>,
+        )}
         {...themeProps('power-search')}>
         <Tokenizer
           handleRef={tokenizerRef}

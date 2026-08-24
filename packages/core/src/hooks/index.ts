@@ -56,6 +56,8 @@ export type {UseTypeaheadOptions, UseTypeaheadReturn} from './useTypeahead';
 
 export {useMediaQuery} from './useMediaQuery';
 
+export {useMergedRefs} from './useMergedRefs';
+
 export {useOverflow} from './useOverflow';
 export type {UseOverflowOptions, UseOverflowReturn} from './useOverflow';
 

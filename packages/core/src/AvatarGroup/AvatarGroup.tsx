@@ -28,7 +28,7 @@ import {useId, useMemo, useState, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import {resolveSize, type AvatarSize} from '../Avatar';
 import * as stylex from '@stylexjs/stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {AvatarGroupContext} from './AvatarGroupContext';
 import {themeProps} from '../utils/themeProps';
@@ -37,6 +37,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {VisuallyHidden} from '../VisuallyHidden';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const OVERLAP_RATIO = 0.25;
 
 export interface AvatarGroupProps extends BaseProps<HTMLDivElement> {
@@ -48,7 +49,9 @@ export interface AvatarGroupProps extends BaseProps<HTMLDivElement> {
    */
   children: ReactNode;
   /**
-   * Size applied to all avatars via context.
+   * Size applied to all avatars via context. This wins over each child
+   * Avatar's own `size` prop, including when it is left at the default, so
+   * set the size here rather than on the children.
    * @default 'md'
    */
   size?: AvatarSize;
@@ -141,7 +144,7 @@ export function AvatarGroup({
     <AvatarGroupContext value={contextValue}>
       <div
         {...props}
-        ref={mergeRefs(ref, listRef)}
+        ref={useMergedRefs(ref, listRef)}
         role="group"
         aria-label={ariaLabel}
         aria-describedby={describedBy}

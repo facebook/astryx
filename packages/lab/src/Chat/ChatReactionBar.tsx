@@ -124,7 +124,10 @@ const styles = stylex.create({
       },
     },
     backgroundColor: colorVars['--color-background-muted'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     fontFamily: typographyVars['--font-family-body'],
     boxSizing: 'border-box',
     transitionProperty: 'border-color, background-color',
@@ -177,7 +180,10 @@ const styles = stylex.create({
     },
     backgroundColor: colorVars['--color-background-muted'],
     color: colorVars['--color-icon-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     boxSizing: 'border-box',
     fontSize: 15,
     lineHeight: typeScaleVars['--text-supporting-leading'],

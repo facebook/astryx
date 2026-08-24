@@ -70,7 +70,10 @@ const styles = stylex.create({
     },
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   trigger: {
     display: 'flex',
@@ -90,7 +93,10 @@ const styles = stylex.create({
     fontSize: 'inherit',
     lineHeight: 'inherit',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
     borderRadius: radiusVars['--radius-element'],
   },
@@ -178,7 +184,7 @@ const styles = stylex.create({
     height: sizeVars['--size-element-lg'],
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 

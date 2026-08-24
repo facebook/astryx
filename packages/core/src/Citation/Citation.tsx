@@ -99,7 +99,10 @@ const styles = stylex.create({
     minWidth: 0,
   },
   labelInteractive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   labelHover: {
     backgroundColor: {
@@ -137,7 +140,10 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   numberInteractive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   numberHover: {
     backgroundColor: {

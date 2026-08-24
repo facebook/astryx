@@ -47,7 +47,7 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
@@ -61,6 +61,7 @@ import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -145,7 +146,10 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
@@ -181,7 +185,10 @@ const styles = stylex.create({
     fontWeight: 'inherit',
     lineHeight: 'inherit',
     textAlign: 'start',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // No border and no background: `usePopover` paints the panel this renders
   // into. Drawing a second surface here put square corners inside its rounded
@@ -402,6 +409,7 @@ export function SideNavItem({
     hasCloseButton: false,
     dialogLabel: t('@astryx.sideNavItem.submenuLabel', {label}),
   });
+  const mergedTriggerRef = useMergedRefs(ref, popover.triggerRef);
 
   // Collapse state for items with children
   const itemCollapsibleConfig = useMemo(
@@ -518,7 +526,7 @@ export function SideNavItem({
       return (
         <div {...stylex.props(styles.root, xstyle)}>
           <button
-            ref={mergeRefs(ref, popover.triggerRef)}
+            ref={mergedTriggerRef}
             type="button"
             {...rest}
             {...hoverTriggerProps}

@@ -51,7 +51,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Astryx never loads font files. defineTheme and the built CSS only set font-family — naming a webfont (Fraunces, JetBrains Mono, …) makes every browser look for it, and quietly fall back when the app has not loaded it. `astryx theme build` warns when a theme names families that are neither CSS generics nor common system fonts and prints the snippet to add; loading the font is always the app\'s job.',
+          text: 'Astryx never loads font files. defineTheme and the built CSS only set font-family: naming a webfont (Fraunces, JetBrains Mono, and so on) makes every browser look for it, and quietly fall back when the app has not loaded it. `astryx theme build` warns when a theme names families that are neither CSS generics nor common system fonts and prints the snippet to add; loading the font is always the app\'s job.',
         },
         {
           type: 'code',
@@ -77,7 +77,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "Always pair a webfont with a real fallback stack — metric-similar system fonts plus a generic — so text stays readable before the font loads and wherever it never does: defineTheme({typography: {heading: {family: 'Fraunces', fallbacks: 'Georgia, serif'}}}).",
+          text: "Always pair a webfont with a real fallback stack (metric-similar system fonts plus a generic) so text stays readable before the font loads and wherever it never does: defineTheme({typography: {heading: {family: 'Fraunces', fallbacks: 'Georgia, serif'}}}).",
         },
       ],
     },

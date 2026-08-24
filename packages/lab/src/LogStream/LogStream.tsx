@@ -190,7 +190,10 @@ const styles = stylex.create({
     borderInlineWidth: 0,
     fontFamily: typographyVars['--font-family-code'],
     fontSize: textSizeVars['--font-size-sm'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     backgroundColor: {
       default: 'transparent',
       ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
@@ -296,7 +299,10 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-code'],
     fontSize: textSizeVars['--font-size-sm'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     boxShadow: shadowVars['--shadow-med'],
   },
   jumpToLatestTerminal: {

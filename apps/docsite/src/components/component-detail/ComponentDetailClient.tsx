@@ -15,6 +15,7 @@ import {CodeExampleBlock} from '../CodeExampleBlock';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {ShowcasePreview} from './ShowcasePreview';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
+import {Anatomy} from './Anatomy';
 import {BestPractices} from './BestPractices';
 import {Theming} from './Theming';
 import {HookSignature} from './HookSignature';
@@ -106,6 +107,12 @@ function OverviewContent({
             width="100%"
             hasCopyButton
           />
+
+          {/* Anatomy before best practices, matching the CLI's section order
+              in clients/cli/lib/component-format.mjs. */}
+          {comp.usage.anatomy && comp.usage.anatomy.length > 0 && (
+            <Anatomy elements={comp.usage.anatomy} />
+          )}
 
           {comp.usage.bestPractices && comp.usage.bestPractices.length > 0 && (
             <BestPractices practices={comp.usage.bestPractices} />

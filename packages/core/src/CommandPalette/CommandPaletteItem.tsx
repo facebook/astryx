@@ -14,7 +14,7 @@
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {
   colorVars,
@@ -27,6 +27,7 @@ import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const HOVER_HOVER = '@media (hover: hover)';
 
 const styles = stylex.create({
@@ -43,7 +44,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start' as const,
     outline: 'none',
     userSelect: 'none',
@@ -63,7 +67,7 @@ const styles = stylex.create({
   },
   itemDisabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   itemSelected: {
     backgroundColor: colorVars['--color-accent-muted'],
@@ -188,7 +192,7 @@ export function CommandPaletteItem({
 
   return (
     <div
-      ref={mergeRefs(ref, itemRef)}
+      ref={useMergedRefs(ref, itemRef)}
       {...props}
       id={ctx && itemIndex >= 0 ? ctx.getItemId(itemIndex) : undefined}
       role="option"

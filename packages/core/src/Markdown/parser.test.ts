@@ -1,8 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {parseMarkdown, parseInline} from './parser';
-import type {InlineNode} from './parser';
+import {
+  createIncrementalState,
+  parseInline,
+  parseMarkdown,
+  parseMarkdownIncremental,
+} from './parser';
+import type {BlockNode, InlineNode} from './parser';
 
 describe('parseInline', () => {
   it('parses plain text', () => {
@@ -1207,5 +1212,143 @@ describe('link reference definitions', () => {
     const {links, blocks} = paragraphLinks('an array like [1, 2, 3] here');
     expect(links).toEqual([]);
     expect(blocks[0].type).toBe('paragraph');
+  });
+});
+
+describe('sourceRanges', () => {
+  const slice = (source: string, block: BlockNode) =>
+    block.range == null
+      ? null
+      : source.slice(block.range.start, block.range.end);
+
+  it('is off by default', () => {
+    const [block] = parseMarkdown('# Title');
+    expect(block.range).toBeUndefined();
+  });
+
+  it('addresses a block with named start and end offsets', () => {
+    const source = 'One.\n\nTwo.';
+    const [, second] = parseMarkdown(source, {sourceRanges: true});
+    expect(second.range).toEqual({start: 6, end: 10});
+  });
+
+  it('gives every top-level block the source it came from', () => {
+    const source = [
+      '# Title',
+      '',
+      'A paragraph that',
+      'wraps onto two lines.',
+      '',
+      '- one',
+      '- two',
+      '',
+      '```js',
+      'const x = 1;',
+      '```',
+      '',
+      '| a | b |',
+      '| --- | --- |',
+      '| 1 | 2 |',
+      '',
+      '> quoted',
+      '',
+      '---',
+    ].join('\n');
+    const blocks = parseMarkdown(source, {sourceRanges: true});
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      '# Title',
+      'A paragraph that\nwraps onto two lines.',
+      '- one\n- two',
+      '```js\nconst x = 1;\n```',
+      '| a | b |\n| --- | --- |\n| 1 | 2 |',
+      '> quoted',
+      '---',
+    ]);
+  });
+
+  it('reports offsets into the input, not into the link-definition-stripped text', () => {
+    // The definition lines are removed before the block loop runs, so a naive
+    // offset would drift by their length for everything after them.
+    const source = [
+      '[ref]: https://example.com',
+      '',
+      'See [the docs][ref].',
+      '',
+      'Another paragraph.',
+    ].join('\n');
+    const blocks = parseMarkdown(source, {sourceRanges: true});
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      'See [the docs][ref].',
+      'Another paragraph.',
+    ]);
+  });
+
+  it('reports absolute offsets when the document is parsed incrementally', () => {
+    const source = ['# Title', '', 'One.', '', 'Two.', '', 'Three.'].join('\n');
+    const state = createIncrementalState();
+    let blocks: BlockNode[] = [];
+    for (let end = 1; end <= source.length; end++) {
+      blocks = parseMarkdownIncremental(source.slice(0, end), state, {
+        sourceRanges: true,
+      });
+    }
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      '# Title',
+      'One.',
+      'Two.',
+      'Three.',
+    ]);
+  });
+
+  it('keeps the blank lines an unterminated fence owns', () => {
+    // Mid-stream the closing fence has not arrived, and the blank lines are
+    // part of the code, not spacing between blocks.
+    const source = '```\ncode\n\n';
+    const [block] = parseMarkdown(source, {sourceRanges: true});
+    // The whole thing: the fence consumed those lines as code.
+    expect(slice(source, block)).toBe(source);
+  });
+
+  it('slices to something that re-parses to the same block', () => {
+    // The property a consumer actually needs, and the one that says the
+    // offsets are right: what the range points at is the block.
+    const check = (source: string) => {
+      for (const block of parseMarkdown(source, {sourceRanges: true})) {
+        const {range: _range, ...node} = block;
+        expect(parseMarkdown(slice(source, block)!)).toEqual([node]);
+      }
+    };
+    check('# Title\n\nA paragraph.\n\n- one\n- two\n\n> quoted');
+    // CRLF: the parser keeps the `\r` in its own content, so the range does
+    // too rather than slicing to text that parses differently.
+    check('# Title\r\n\r\nA paragraph.\r\n');
+  });
+
+  it('re-parses when the caller flips the option on an existing state', () => {
+    const source = 'One.\n\nTwo.\n\nThree.';
+    const state = createIncrementalState();
+    const without = parseMarkdownIncremental(source, state);
+    expect(without.every(b => b.range == null)).toBe(true);
+    const with_ = parseMarkdownIncremental(source, state, {
+      sourceRanges: true,
+    });
+    expect(with_.map(b => slice(source, b))).toEqual([
+      'One.',
+      'Two.',
+      'Three.',
+    ]);
+    const back = parseMarkdownIncremental(source, state);
+    expect(back.every(b => b.range == null)).toBe(true);
+  });
+
+  it('spans both halves of a list the incremental parser merged', () => {
+    const source = '1. one\n\n1. two';
+    const state = createIncrementalState();
+    parseMarkdownIncremental('1. one\n\n', state, {sourceRanges: true});
+    const blocks = parseMarkdownIncremental(source, state, {
+      sourceRanges: true,
+    });
+    expect(blocks).toHaveLength(1);
+    expect(slice(source, blocks[0])).toBe(source);
   });
 });

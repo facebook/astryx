@@ -136,7 +136,10 @@ const styles = stylex.create({
     minWidth: 0,
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -149,7 +152,7 @@ const styles = stylex.create({
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     pointerEvents: 'none' as const,
   },
@@ -166,7 +169,10 @@ const styles = stylex.create({
   },
   invisibleButton: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     outline: 'none',
@@ -181,7 +187,10 @@ const styles = stylex.create({
     position: 'relative',
     padding: 0,
     marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-1']})`,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-full'],
     width: '16px',
     height: '16px',

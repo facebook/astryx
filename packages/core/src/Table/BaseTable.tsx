@@ -183,9 +183,12 @@ function TableRowInner<T extends Record<string, unknown>>({
     );
 
     const isDefaultRenderer = !col.renderCell;
-    const rawContent = isDefaultRenderer
-      ? defaultCellRenderer(item, col.key)
-      : (col.renderCell?.(item) ?? null);
+    let rawContent: ReactNode = null;
+    if (!cellRenderProps.isContentSuppressed) {
+      rawContent = isDefaultRenderer
+        ? defaultCellRenderer(item, col.key)
+        : (col.renderCell?.(item) ?? null);
+    }
 
     // In truncate mode, wrap default-rendered string content in
     // <Text maxLines={1}> for smart tooltips that only appear

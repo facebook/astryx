@@ -19,10 +19,15 @@
  * - `::backdrop` pseudo-element
  * - Body scroll lock
  * - Focus trapping
- * - Escape key handling via `cancel` event
+ *
+ * Escape is owned by the shared dismissal stack (`useLayerDismissal`), so a
+ * drawer opened over another layer takes the press and nothing behind it
+ * closes. The native `cancel` event still handles the dismissals the browser
+ * starts itself, such as the Android back gesture.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
+ * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
  * - /packages/core/src/hooks/scrollbarGutter.ts (shared scroll-lock gutter)
  * - /packages/cli/assets/templates/blocks/components/MobileNav/ (showcase blocks)
  */
@@ -52,12 +57,15 @@ import {
   holdScrollbarGutter,
   type ScrollbarGutterHold,
 } from '../hooks/scrollbarGutter';
-import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
+import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -536,13 +544,28 @@ export function MobileNav({
     };
   }, []);
 
-  // Handle native cancel event (Escape key) — prevent default and route through onOpenChange
+  const {shouldDismissOnCloseRequest} = useLayerDismissal({
+    isActive: isOpen,
+    onDismiss: () => onOpenChange(false),
+  });
+
+  // The native `cancel` event is the browser's own close-watcher firing: an
+  // Android back gesture, or a close request the stack never saw a press for.
+  // Escape presses the stack owns never arrive here — it preventDefault()s
+  // those, which suppresses the close watcher.
+  //
+  // Always preventDefault so the browser cannot close a controlled <dialog>
+  // behind React's back, then answer with the stack's own rules: top-most
+  // only, and never while an IME composition is in progress.
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
+      if (!shouldDismissOnCloseRequest()) {
+        return;
+      }
       onOpenChange(false);
     },
-    [onOpenChange],
+    [onOpenChange, shouldDismissOnCloseRequest],
   );
 
   // Handle clicks on the dialog backdrop area (outside the drawer)
@@ -561,7 +584,7 @@ export function MobileNav({
 
   return (
     <dialog
-      ref={mergeRefs(ref, dialogRef)}
+      ref={useMergedRefs(ref, dialogRef)}
       id={dialogId}
       {...mergeProps(
         themeProps('mobile-nav', {side: resolvedSide}),
@@ -586,38 +609,41 @@ export function MobileNav({
       }
       onClick={composeEventHandlers(onClickProp, handleDialogClick)}
       onCancel={handleCancel}>
-      {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
-      <div
-        tabIndex={-1}
-        {...stylex.props(
-          styles.drawer,
-          dynamicStyles.width(width),
-          isStart && styles.drawerStart,
-          isStart && isOpen && styles.drawerStartOpen,
-          !isStart && styles.drawerEnd,
-          !isStart && isOpen && styles.drawerEndOpen,
-        )}>
-        {/* Header — content + close button */}
-        <div {...stylex.props(styles.header, !header && styles.headerNoTitle)}>
-          {typeof header === 'string' ? (
-            <Heading level={2} xstyle={styles.headerText}>
-              {header}
-            </Heading>
-          ) : (
-            (header ?? null)
-          )}
-          <Button
-            variant="ghost"
-            label={t('@astryx.mobileNav.closeNavigation')}
-            icon={<Icon icon="close" color="inherit" />}
-            onClick={() => onOpenChange(false)}
-            isIconOnly
-          />
-        </div>
+      <LayerDepthProvider>
+        {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
+        <div
+          tabIndex={-1}
+          {...stylex.props(
+            styles.drawer,
+            dynamicStyles.width(width),
+            isStart && styles.drawerStart,
+            isStart && isOpen && styles.drawerStartOpen,
+            !isStart && styles.drawerEnd,
+            !isStart && isOpen && styles.drawerEndOpen,
+          )}>
+          {/* Header — content + close button */}
+          <div
+            {...stylex.props(styles.header, !header && styles.headerNoTitle)}>
+            {typeof header === 'string' ? (
+              <Heading level={2} xstyle={styles.headerText}>
+                {header}
+              </Heading>
+            ) : (
+              (header ?? null)
+            )}
+            <Button
+              variant="ghost"
+              label={t('@astryx.mobileNav.closeNavigation')}
+              icon={<Icon icon="close" color="inherit" />}
+              onClick={() => onOpenChange(false)}
+              isIconOnly
+            />
+          </div>
 
-        {/* Scrollable content */}
-        <div {...stylex.props(styles.content)}>{children}</div>
-      </div>
+          {/* Scrollable content */}
+          <div {...stylex.props(styles.content)}>{children}</div>
+        </div>
+      </LayerDepthProvider>
     </dialog>
   );
 }

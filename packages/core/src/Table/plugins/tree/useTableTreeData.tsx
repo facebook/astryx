@@ -242,7 +242,10 @@ const treeStyles = stylex.create({
     background: 'transparent',
     border: 'none',
     borderRadius: radiusVars['--radius-inner'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: colorVars['--color-icon-secondary'],
     transitionProperty: 'color, background-color',
     transitionDuration: '150ms',
@@ -296,7 +299,10 @@ const treeStyles = stylex.create({
   },
   /** Whole-row-click expansion: signal the row is interactive. */
   clickableRow: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
 });
 

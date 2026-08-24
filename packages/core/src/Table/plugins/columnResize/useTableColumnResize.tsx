@@ -207,7 +207,10 @@ const handleStyles = stylex.create({
     // Wide transparent hit area; the visible indicator uses ::after to span
     // the full handle height independently of the border box.
     width: '8px',
-    cursor: 'ew-resize',
+    cursor: {
+      default: 'ew-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
     touchAction: 'none',
     userSelect: 'none',
