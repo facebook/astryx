@@ -575,7 +575,11 @@ export function TextArea({
           style,
         )}>
         {startIcon && (
-          <span {...stylex.props(styles.startIcon)}>
+          <span
+            {...mergeProps(
+              themeProps('textarea-start-icon', {size}),
+              stylex.props(styles.startIcon),
+            )}>
             {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
           </span>
         )}
@@ -609,23 +613,30 @@ export function TextArea({
               : undefined
           }
           aria-busy={isBusy || undefined}
-          {...stylex.props(
-            styles.textarea,
-            textareaSizeStyles[size],
-            isDisabled && styles.textareaDisabled,
-            Boolean(startIcon) && styles.textareaWithStartIcon,
-            // Reserve trailing space only when the end slot actually renders
-            // something (spinner or on-field status icon). The `detached`
-            // status variant suppresses the on-field icon — its glyph lives in
-            // the message box below — so reserving here would inset the text
-            // for an icon that never appears.
-            (isBusy || statusIcon != null) && styles.textareaWithStatus,
-            isBusy && statusIcon != null && styles.textareaWithBusyStatus,
-            maxLength != null && styles.textareaWithCounter,
+          {...mergeProps(
+            themeProps('textarea-control', {size}),
+            stylex.props(
+              styles.textarea,
+              textareaSizeStyles[size],
+              isDisabled && styles.textareaDisabled,
+              Boolean(startIcon) && styles.textareaWithStartIcon,
+              // Reserve trailing space only when the end slot actually renders
+              // something (spinner or on-field status icon). The `detached`
+              // status variant suppresses the on-field icon — its glyph lives
+              // in the message box below — so reserving here would inset the
+              // text for an icon that never appears.
+              (isBusy || statusIcon != null) && styles.textareaWithStatus,
+              isBusy && statusIcon != null && styles.textareaWithBusyStatus,
+              maxLength != null && styles.textareaWithCounter,
+            ),
           )}
         />
         {(isBusy || statusIcon) && (
-          <span {...stylex.props(styles.endSlot)}>
+          <span
+            {...mergeProps(
+              themeProps('textarea-end-slot'),
+              stylex.props(styles.endSlot),
+            )}>
             {isBusy && <Spinner size="sm" />}
             {statusIcon}
           </span>
@@ -633,9 +644,12 @@ export function TextArea({
         {maxLength != null && (
           <div
             id={counterID}
-            {...stylex.props(
-              styles.counter,
-              valueLength > maxLength && styles.counterError,
+            {...mergeProps(
+              themeProps('textarea-counter'),
+              stylex.props(
+                styles.counter,
+                valueLength > maxLength && styles.counterError,
+              ),
             )}>
             {valueLength > maxLength && (
               // Non-color cue so the over-limit state isn't conveyed by the red
