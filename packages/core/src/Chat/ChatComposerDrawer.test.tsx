@@ -58,4 +58,14 @@ describe('ChatComposerDrawer', () => {
       'true',
     );
   });
+
+  it('renders count and label as plain text in collapsed state', () => {
+    render(
+      <ChatComposerDrawer count={3} label="Attachments" defaultIsCollapsed>
+        <span>Drawer content</span>
+      </ChatComposerDrawer>,
+    );
+
+    expect(screen.getByText('3 Attachments')).toBeInTheDocument();
+  });
 });

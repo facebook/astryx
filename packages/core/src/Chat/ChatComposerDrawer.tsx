@@ -28,7 +28,6 @@ import {
   easeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {Badge} from '../Badge';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -300,8 +299,9 @@ export function ChatComposerDrawer({
               styles.toggleContent,
               !isCollapsed && styles.toggleContentHidden,
             )}>
-            <Badge variant="neutral" label={count} />
-            <span {...stylex.props(styles.collapseLabel)}>{label}</span>
+            <span {...stylex.props(styles.collapseLabel)}>
+              {count} {label}
+            </span>
           </div>
           <div
             {...stylex.props(
