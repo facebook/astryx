@@ -158,7 +158,7 @@ export default function ShellTopNav() {
                   <MegaFeatured
                     title="The Autumn Edit"
                     description="Layering staples in warm, earthy tones."
-                    image="https://lookaside.facebook.com/assets/astryx/texture-beige-horizontal-1.png"
+                    image="/template-assets/texture-beige-horizontal-1.png"
                     imageAlt="Autumn collection lookbook"
                     linkLabel="Shop the edit"
                     linkHref="#autumn-edit"
@@ -172,7 +172,7 @@ export default function ShellTopNav() {
                   <MegaFeatured
                     title="Meet Studio Mara"
                     description="Modern tailoring, made to last."
-                    image="https://lookaside.facebook.com/assets/astryx/texture-beige-horizontal-2.png"
+                    image="/template-assets/texture-beige-horizontal-2.png"
                     imageAlt="Studio Mara lookbook"
                     linkLabel="Discover the label"
                     linkHref="#studio-mara"

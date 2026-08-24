@@ -299,11 +299,22 @@ export function detectStylingSystem(targetDir) {
  * configured (see {@link detectStylingSystem}) so the agent never reaches for a
  * styling path that isn't compiled here.
  *
+ * `topics` is the project's doc-topic list. Passing it is what puts an
+ * integration's topics — including one it contributed in place of a built-in —
+ * in front of the agent by name; without it the block falls back to the CLI's
+ * own topics, because resolving a project's catalog is async and this is not.
+ *
+ * Either way the list now includes the hyphenated topics. The fallback scan
+ * matched `\w+`, which does not match `-`, so five real topics were missing
+ * from every block ever written — `getting-started` and `cli-integrations`
+ * among them. An agent cannot ask for a topic it was never told about, and
+ * `getting-started` is the one it should reach for first.
+ *
  * @param {string} version
- * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string}} [options]
+ * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[]}} [options]
  * @returns {string}
  */
-export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css'} = {}) {
+export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css', topics} = {}) {
   const run = invocation;
   const lines = [MARKER_START];
 
@@ -341,10 +352,9 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
 
   // Rules — the top error-preventers.
   lines.push('RULES:');
-  lines.push('- No <div> — components do all layout/spacing. Full page → AppShell; sidebar nav → SideNav.');
-  lines.push('- Frame first: pick the shell (AppShell / Layout+LayoutPanel) and budget regions in px BEFORE writing content (`astryx docs layout`).');
-  lines.push('- Dense data = rows (Table, List/Item) edge-to-edge — never Card-wrapped list items. Card = dashboard widgets, galleries, settings groups only.');
-  lines.push('- Status → StatusDot/Token; Badge only for counts and enumerated states, never decoration.');
+  lines.push('- No <div> — components do all layout/spacing, page frame included.');
+  lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.');
+  lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
   // utilities need Tailwind). Tokens are always the source of truth.
@@ -355,7 +365,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   } else {
     lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
   }
-  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent via `astryx theme` — never override --color-* in :root.');
+  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx theme template` for a custom one) — never override --color-* in :root.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.
@@ -378,13 +388,18 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   lines.push(`  component --list   ${componentCount} components by category`);
   lines.push('  template --list    page + block recipes');
   const docsDir = path.join(CLI_ROOT, 'assets', 'docs');
-  if (fs.existsSync(docsDir)) {
-    const topics = fs.readdirSync(docsDir)
-      .map(f => f.match(/^(\w+)\.doc\.mjs$/))
-      .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
-      .map(m => m[1])
-      .sort();
-    if (topics.length > 0) lines.push(`  docs <topic>       ${topics.join(', ')}`);
+  const resolvedTopics =
+    topics ??
+    (fs.existsSync(docsDir)
+      ? fs
+          .readdirSync(docsDir)
+          .map(f => f.match(/^([\w-]+)\.doc\.mjs$/))
+          .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
+          .map(m => m[1])
+          .sort()
+      : []);
+  if (resolvedTopics.length > 0) {
+    lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
   }
   lines.push('  swizzle <Name>     eject component source for deep customization');
   lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
@@ -567,14 +582,17 @@ export function removeAgentDocs(targetDir) {
  * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'hermes', 'all'
  * @param {string[]} [options.paths] - Explicit paths (overrides agent/auto-detect)
  * @param {boolean} [options.onlyReplace] - Only update files that already have Astryx markers (for upgrades)
+ * @param {string[]} [options.topics] - Doc topics to list in the block; defaults
+ *   to the CLI's own. Pass the project's catalog (`(await project.docs()).names()`)
+ *   so an integration's topics reach the agent.
  * @returns {string[]} List of files written
  */
-export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false} = {}) {
+export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false, topics} = {}) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const invocation = getCliInvocation(targetDir);
   const stylingSystem = detectStylingSystem(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem});
+  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem, topics});
   /** @type {string[]} */
   const written = [];
 

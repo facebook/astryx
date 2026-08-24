@@ -14,8 +14,19 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: true, description: 'Give every nav slot an accessible name. AppShell renders TopNav and SideNav as separate navigation landmarks, and a screen reader lists them by name, so pass `label` to each one.'},
+      {guidance: true, description: 'Start the page heading inside `children`. AppShell owns the skip link, the banner landmark and the main landmark, but it renders no heading, so the first heading in the content area is the page h1.'},
       {guidance: false, description: "Nest one AppShell inside another; it's the outermost layout frame."},
       {guidance: false, description: 'Use for sub-page layouts; use Layout for content areas within AppShell.'},
+      {guidance: false, description: 'Add your own skip link or <main> element. AppShell already renders both, and a second main landmark makes the first ambiguous.'},
+    ],
+    anatomy: [
+      {name: 'Skip link', required: true, description: 'First focusable element on the page. Visually hidden until focused, then moves focus to the main content area.'},
+      {name: 'Banner', required: false, description: 'The banner slot, for system-wide announcements. Renders above the top nav, inside the banner landmark.'},
+      {name: 'Top navigation', required: false, description: 'The topNav slot, typically TopNav. Below the mobile breakpoint it becomes a compact bar carrying the nav toggle.'},
+      {name: 'Side navigation', required: false, description: 'The sideNav slot, typically SideNav. Inline above the breakpoint, moved into the mobile drawer below it.'},
+      {name: 'Main content', required: true, description: 'children, rendered in the main landmark. Scrolls internally when height is fill, and with the page when it is auto.'},
+      {name: 'Mobile nav drawer', required: false, description: 'Generated below the breakpoint from the nav slots unless mobileNav disables or replaces it. A modal dialog: it traps focus and returns focus to the toggle on close.'},
     ],
   },
   props: [
@@ -192,8 +203,11 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: true, description: 'Give every nav slot an accessible name: TopNav and SideNav are separate navigation landmarks, so pass `label` to each.'},
+      {guidance: true, description: 'Start the page heading inside `children`: AppShell owns the skip link, banner, and main landmarks but renders no heading, so the first content heading is the page h1.'},
       {guidance: false, description: "Nest one AppShell inside another; it's the outermost layout frame."},
       {guidance: false, description: 'Use for sub-page layouts; use Layout for content areas within AppShell.'},
+      {guidance: false, description: 'Add your own skip link or <main>; AppShell renders both, and a second main landmark makes the first ambiguous.'},
     ],
   },
   propDescriptions: {

@@ -58,7 +58,6 @@ const STATIC_EXPORTS = {
     types: './src/astryx.css.d.ts',
     default: './dist/astryx.css',
   },
-  './astryx.umd.js': './dist/astryx.umd.js',
   './tailwind-theme.css': {
     types: './src/tailwind-theme.css.d.ts',
     default: './src/tailwind-theme.css',

@@ -42,7 +42,7 @@ export const doc = {
       name: 'fileExtensions',
       type: 'string[]',
       description:
-        'File extensions this codemod applies to. Code codemods only — a ' +
+        'File extensions this codemod applies to. Code codemods only; a ' +
         'config codemod always targets astryx.config.*.',
       example: "['.tsx', '.ts']",
     },
@@ -140,7 +140,7 @@ export const doc = {
       type: 'prose',
       text:
         "The config-codemod variant (type: 'config') carries the same fields " +
-        'as a code codemod except fileExtensions — it always targets the ' +
+        'as a code codemod except fileExtensions: it always targets the ' +
         'astryx.config.* file rather than a set of source files.',
     },
     {

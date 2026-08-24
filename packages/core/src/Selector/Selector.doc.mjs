@@ -24,10 +24,24 @@ export const docs = {
       {
         className: 'astryx-selector',
         visualProps: ['variant', 'size', 'status'],
+        states: ['disabled'],
       },
       {className: 'astryx-selector-option'},
-      {className: 'astryx-selector-clear-icon'},
+      {
+        className: 'astryx-selector-option-row',
+        visualProps: ['size'],
+        states: ['selected', 'disabled'],
+      },
+      {className: 'astryx-selector-search'},
+      {className: 'astryx-selector-section-heading'},
+      {className: 'astryx-selector-empty-state'},
+      {
+        className: 'astryx-selector-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
       {className: 'astryx-selector-indicator-icon', states: ['state']},
+      {className: 'astryx-selector-check'},
+      {className: 'astryx-selector-popup'},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
@@ -42,7 +56,7 @@ export const docs = {
       name: 'options',
       type: 'SelectorOption[]',
       description:
-        'Array of items: strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
+        'Array of items: strings, objects with value/label/description/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
       required: true,
     },
     {
@@ -154,10 +168,34 @@ export const docs = {
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
     },
     {
+      name: 'renderValue',
+      type: '(option: SelectorOptionData) => ReactNode',
+      description:
+        'Custom render function for the selected option inside the closed trigger. The trigger is sized by padding, so it is the size token for a one-line value (28/32/36) and exactly one text line taller for a two-line one (48/52/56) — always on the 4px rhythm, always aligned with the buttons and inputs beside it. Inside an InputGroup the group owns the row height: a SelectorOption folds onto one line and ellipsizes, and any taller node is cut off at the row.',
+    },
+    {
+      name: 'indicatorPosition',
+      type: "'start' | 'end'",
+      description:
+        'Which edge of the option row carries the selected mark. start reserves a mark column ahead of every label so they stay aligned, the way a native menu does; end is the house convention shared with Typeahead and CommandPalette.',
+      default: "'end'",
+    },
+    {
       name: 'width',
       type: 'SizeValue',
       description:
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'startIcon',
+      type: 'IconType | ReactNode',
+      description: 'Icon displayed at the start of the selector trigger.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: 'Shows a loading spinner in the trigger.',
+      default: 'false',
     },
     {
       name: 'xstyle',
@@ -169,7 +207,7 @@ export const docs = {
   components: [{name: 'SelectorOption'}],
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,
@@ -271,7 +309,7 @@ export const docs = {
 export const docsZh = {
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,
@@ -363,7 +401,7 @@ export const docsZh = {
 export const docsDense = {
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,

@@ -45,7 +45,7 @@ export const doc = {
     {
       type: 'integration.validate',
       description:
-        'The result envelope: `data.name` and `data.version` of the validated package (both null when no local manifest is found), plus `data.issues` — an AstryxIntegrationIssue[] of {code, severity: `warning` | `error`, message}.',
+        'The result envelope: `data.name` and `data.version` of the validated package (both null when no local manifest is found), plus `data.issues`, an AstryxIntegrationIssue[] of {code, severity: `warning` | `error`, message}.',
     },
   ],
   examples: [

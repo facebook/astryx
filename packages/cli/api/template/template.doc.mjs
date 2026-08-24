@@ -17,12 +17,14 @@ export const doc = {
     'One entry point for the template family: with no name it lists the discovered ' +
     "templates; with a name it returns that template's source, a layout skeleton, or " +
     'scaffolds it into the project. Templates are discovered across core, external ' +
-    'packages, and integrations, so the same id can appear in more than one place — ' +
-    'narrow an ambiguous name with type and/or package.',
+    'packages, and integrations, so the same id can appear in more than one place; ' +
+    'narrow an ambiguous name with type and/or package. The cdn option writes the ' +
+    'annotated no-build-step CDN starter page, which ships as an asset rather than as ' +
+    'a discovered template.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'template(name?: string, options?: TemplateOptions): Promise<TemplateListResponse | TemplateShowResponse | TemplateSkeletonResponse | TemplateCopyResponse>',
-  keywords: ['template', 'scaffold', 'page', 'block', 'skeleton', 'starter'],
+    'template(name?: string, options?: TemplateOptions): Promise<TemplateListResponse | TemplateShowResponse | TemplateSkeletonResponse | TemplateCopyResponse | TemplateCdnResponse>',
+  keywords: ['template', 'scaffold', 'page', 'block', 'skeleton', 'starter', 'cdn', 'esm', 'importmap', 'no-build'],
   params: [
     {
       name: 'name',
@@ -41,6 +43,13 @@ export const doc = {
       type: 'boolean',
       description:
         'Return a compact layout skeleton (structural tags with spatial annotations) instead of the full source.',
+      default: 'false',
+    },
+    {
+      name: 'options.cdn',
+      type: 'boolean | string',
+      description:
+        'Write the annotated no-build-step CDN starter page instead of resolving a template. Answers before discovery, so no name is involved; pass a string to use it as the destination path.',
       default: 'false',
     },
     {
@@ -102,6 +111,11 @@ export const doc = {
       description:
         'A receipt after scaffolding the template into the project: the template id, output directory, written file name, and file count.',
     },
+    {
+      type: 'template.cdn',
+      description:
+        'A write receipt for the CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+    },
   ],
   throws: [
     {
@@ -110,7 +124,7 @@ export const doc = {
     },
     {
       code: 'ERR_AMBIGUOUS_TEMPLATE',
-      when: 'the name matches more than one template across kinds/packages — narrow it with type and/or package',
+      when: 'the name matches more than one template across kinds/packages; narrow it with type and/or package',
     },
     {
       code: 'ERR_NO_SOURCE',
@@ -135,6 +149,10 @@ export const doc = {
     {
       label: 'Scaffold into the project',
       code: "await template('dashboard', {targetPath: './app/page.tsx'});",
+    },
+    {
+      label: 'CDN starter page',
+      code: 'await template(undefined, {cdn: true});',
     },
   ],
   command: 'template',

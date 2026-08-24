@@ -46,7 +46,7 @@ export const doc = {
     {
       name: 'experimental',
       type: '{ xle?: { components?: Record<string, XleComponent> } }',
-      description: 'Unstable features — may change without a breaking bump.',
+      description: 'Unstable features; may change without a breaking bump.',
       fields: [
         {
           name: 'experimental.xle.components',

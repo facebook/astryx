@@ -12,6 +12,7 @@
  * xds --json template <name>               -> template.show
  * xds --json template <name> --skeleton    -> template.skeleton
  * xds --json template <name> [path]        -> template.copy
+ * xds --json template --cdn [path]         -> template.cdn
  * (unknown template)                        -> CLIError
  */
 
@@ -70,11 +71,22 @@
  */
 
 /**
+ * xds --json template --cdn [path]
+ * `written: false` with `reason: 'exists'` is a success: the command is safe to
+ * re-run, and an edited page is the consumer's file to keep. `version` is the
+ * Astryx version every CDN URL in the file was pinned to.
+ * @typedef {object} TemplateCdnResponse
+ * @property {'template.cdn'} type
+ * @property {{path: string, version: string, written: boolean, reason: 'exists' | null}} data
+ */
+
+/**
  * Options for `template()`.
  * @typedef {object} TemplateOptions
  * @property {boolean} [list]
  * @property {boolean} [skeleton]
  * @property {boolean} [show]
+ * @property {boolean | string} [cdn] Write the no-build-step CDN starter page instead of resolving a template. A string is used as the destination path.
  * @property {'page' | 'block'} [type] Filter templates by kind: 'page' or 'block'. Only applies to list views.
  * @property {string} [package] Narrow to templates from a specific package (id-only lookups across packages are ambiguous).
  * @property {string} [targetPath]

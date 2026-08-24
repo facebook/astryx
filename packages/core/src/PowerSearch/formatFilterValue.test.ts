@@ -31,7 +31,15 @@ const fmt = (
   maxLength = 20,
   timezoneID?: string,
 ): string =>
-  formatFilterValue({} as never, operator, value, maxLength, t, timezoneID);
+  formatFilterValue(
+    {} as never,
+    operator,
+    value,
+    maxLength,
+    t,
+    'en-US',
+    timezoneID,
+  );
 
 const ELLIPSIS = '…';
 
@@ -62,11 +70,45 @@ describe('formatFilterValue', () => {
         'abcde',
       );
     });
+
+    it('truncates by characters, never splitting an emoji (#4759)', () => {
+      // Four surrogate-pair emoji: 8 code units, 4 user-perceived characters.
+      // The exact-string assertion also proves no surrogate pair was split.
+      const out = fmt(
+        {type: 'string'},
+        {type: 'string', value: '\u{1F600}'.repeat(4)},
+        3,
+      );
+      expect(out).toBe('\u{1F600}'.repeat(2) + ELLIPSIS);
+    });
+
+    it('keeps multi-unit characters within maxLength intact (#4759)', () => {
+      // Three emoji are 6 code units but only 3 user-perceived characters.
+      expect(
+        fmt(
+          {type: 'string'},
+          {type: 'string', value: '\u{1F600}'.repeat(3)},
+          3,
+        ),
+      ).toBe('\u{1F600}'.repeat(3));
+    });
   });
 
   describe('integer / float', () => {
+    it('formats the same number differently when the locale changes', () => {
+      const args = [
+        {} as never,
+        {type: 'float'} as OperatorValue,
+        {type: 'float', value: 1234.5} as FilterValue,
+        40,
+        t,
+      ] as const;
+      expect(formatFilterValue(...args, 'en-US')).toBe('1,234.5');
+      expect(formatFilterValue(...args, 'de-DE')).toBe('1.234,5');
+    });
+
     it('formats an integer with locale grouping', () => {
-      const expected = new Intl.NumberFormat().format(1234567);
+      const expected = new Intl.NumberFormat('en-US').format(1234567);
       expect(
         fmt({type: 'integer'}, {type: 'integer', value: 1234567}, 40),
       ).toBe(expected);

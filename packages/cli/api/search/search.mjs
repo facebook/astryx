@@ -30,10 +30,8 @@
  * sorts above an incidental mention.
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {findCoreDir, CLI_ROOT} from '../../foundation/fs/paths.mjs';
+import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
   findComponentReadme,
@@ -42,10 +40,9 @@ import {
 import {discoverHooks, findHookDoc} from '../../foundation/discovery/hook-discovery.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
+import {loadDocsCatalog, loadTopicDoc} from '../docs/_adapter.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
-
-const DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
 
 /**
  * A search candidate gathered from one content domain. Extra underscore-
@@ -424,17 +421,31 @@ async function gatherHooks(coreDir) {
 
 /**
  * Build doc-topic candidates: topic name + description + section prose.
+ *
+ * Reads the project's catalog rather than the CLI's own docs directory, so a
+ * topic an integration contributed (or replaced) is searchable exactly like a
+ * built-in one — otherwise the replacement is served by `astryx docs` but
+ * invisible to the command whose job is finding it.
+ * @param {string} cwd
  * @returns {Promise<Candidate[]>}
  */
-async function gatherDocs() {
-  if (!fs.existsSync(DOCS_DIR)) return [];
+async function gatherDocs(cwd) {
   /** @type {Candidate[]} */
   const candidates = [];
-  for (const file of fs.readdirSync(DOCS_DIR)) {
-    const match = file.match(/^([\w-]+)\.doc\.mjs$/);
-    if (!match) continue;
-    const topic = match[1];
-    const doc = await loadModuleDoc(path.join(DOCS_DIR, file));
+  let entries;
+  try {
+    entries = (await loadDocsCatalog(cwd)).entries();
+  } catch {
+    return candidates;
+  }
+  for (const entry of entries) {
+    let doc = null;
+    try {
+      doc = await loadTopicDoc(entry);
+    } catch {
+      // A topic that cannot be loaded is reported by the commands that own
+      // integration issues; search just cannot index it.
+    }
     let description = '';
     /** @type {string[]} */
     const prose = [];
@@ -449,11 +460,11 @@ async function gatherDocs() {
     }
     candidates.push({
       domain: 'doc',
-      name: topic,
+      name: entry.name,
       keywords: [],
       description,
       prose,
-      _title: doc?.title || topic,
+      _title: doc?.title || entry.title || entry.name,
     });
   }
   return candidates;
@@ -602,7 +613,7 @@ export async function search(query, options = {}) {
   const [components, hooks, docTopics, templates] = await Promise.all([
     wants('component') ? gatherComponents(coreDir) : [],
     wants('hook') ? gatherHooks(coreDir) : [],
-    wants('doc') ? gatherDocs() : [],
+    wants('doc') ? gatherDocs(cwd) : [],
     wants('template') ? gatherTemplates(cwd) : [],
   ]);
 

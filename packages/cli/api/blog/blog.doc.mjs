@@ -14,7 +14,7 @@ export const doc = {
   displayName: 'blog()',
   summary: 'List blog posts, or read one, from the published RSS feed.',
   description:
-    'Reads the design system blog the same way any feed reader does — over the ' +
+    'Reads the design system blog the same way any feed reader does, over the ' +
     "published RSS feed, never the blog's source files. With no slug it lists every " +
     "post parsed from the feed; with a slug it reads that post's full plaintext body " +
     'via the .txt alternate the feed advertises. Both envelopes carry feedUrl so a ' +
@@ -35,7 +35,7 @@ export const doc = {
     {
       type: 'blog.list',
       description:
-        'The feed URL plus every post parsed from the feed — each with slug, title, description, date, type, authors, link, and its plaintext URL.',
+        'The feed URL plus every post parsed from the feed, each with slug, title, description, date, type, authors, link, and its plaintext URL.',
     },
     {
       type: 'blog.detail',

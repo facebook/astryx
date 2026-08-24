@@ -12,6 +12,9 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {TopNavRenderContext} from './TopNavRenderContext';
 import {TopNavMenu} from './TopNavMenu';
 
 const mockItems = [
@@ -169,5 +172,43 @@ describe('keyboard navigation (APG menu pattern)', () => {
     const menu = screen.getByRole('menu', {hidden: true});
     fireEvent.keyDown(menu, {key: 'Escape'});
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+// =============================================================================
+// The shared focus ring (#4654) — see the note in SideNav.test.tsx: jsdom will
+// not derive `:focus-visible` here, so what is pinned is that the focusable
+// element composes the shared utility's classes rather than falling back to
+// the browser's own outline.
+// =============================================================================
+
+const sharedFocusRingClasses = stylex
+  .props(focusOutlineStyles.focusVisible)
+  .className!.split(' ');
+
+function expectSharedFocusRing(el: Element) {
+  const classes = el.className.split(' ');
+  for (const c of sharedFocusRingClasses) {
+    expect(classes).toContain(c);
+  }
+}
+
+describe('TopNavMenu — drawer focus ring', () => {
+  it('draws the shared ring on the drawer section header', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMenu label="Products" items={mockItems} />
+      </TopNavRenderContext>,
+    );
+    expectSharedFocusRing(screen.getByRole('button', {name: /Products/}));
+  });
+
+  it('draws the shared ring on a drawer item', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMenu label="Products" items={mockItems} />
+      </TopNavRenderContext>,
+    );
+    expectSharedFocusRing(screen.getByRole('link', {name: /Analytics/}));
   });
 });

@@ -13,12 +13,15 @@ export const doc = {
   name: 'docs',
   displayName: 'docs()',
   summary:
-    'Read the reference docs — list every topic, one topic, or a single section of a topic.',
+    'Read the reference docs: list every topic, one topic, or a single section of a topic.',
   description:
     'Routes on its arguments: no topic lists every reference-doc topic; a topic ' +
     'returns that full ReferenceDoc (with token-ref blocks inlined); a topic ' +
     'plus a section returns the first section whose title contains the ' +
-    '(case-insensitive) query. Overlay options select localized or dense variants.',
+    '(case-insensitive) query. The topic set is the CLI\'s own docs plus the ' +
+    'ones the project\'s configured integrations contribute — including any ' +
+    'topic an integration replaces or extends — so it depends on the cwd. ' +
+    'Overlay options select localized or dense variants.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'docs(topic?: string, section?: string, options?: DocsOptions): Promise<DocsListResponse | DocsDetailResponse | DocsDetailSectionResponse>',
@@ -60,12 +63,18 @@ export const doc = {
       type: 'boolean',
       description: 'Return the token-efficient dense doc variant.',
     },
+    {
+      name: 'options.cwd',
+      type: 'string',
+      description:
+        "Project directory whose configured integrations contribute topics. Defaults to process.cwd(); an unreadable config falls back to the CLI's own topics.",
+    },
   ],
   returns: [
     {
       type: 'docs.list',
       description:
-        'All available reference-doc topics as DocsListEntry[] ({topic, description}), in discovery order.',
+        'All available reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order.',
     },
     {
       type: 'docs.detail',
@@ -75,7 +84,7 @@ export const doc = {
     {
       type: 'docs.detail.section',
       description:
-        'A single ReferenceSection of the topic — the first whose title contains the section query.',
+        'A single ReferenceSection of the topic: the first whose title contains the section query.',
     },
   ],
   throws: [

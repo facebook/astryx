@@ -87,6 +87,47 @@ describe('linkifyComponents', () => {
     expect(linkifyComponents('`Button`', names)).toBe('`Button`');
     expect(linkifyComponents('[Button](/x)', names)).toBe('[Button](/x)');
   });
+
+  it('skips a name anywhere inside a code span, not just against the ticks', () => {
+    const names = ['Theme', 'Button'];
+    expect(linkifyComponents('Wrap your app in `<Theme>`.', names)).toBe(
+      'Wrap your app in `<Theme>`.',
+    );
+    expect(linkifyComponents("`import {Button} from 'x'`", names)).toBe(
+      "`import {Button} from 'x'`",
+    );
+  });
+
+  it('skips a name anywhere inside an existing link, not just against the brackets', () => {
+    const names = ['Button'];
+    const codeLabel = '[`<Button>`](/components/Button)';
+    expect(linkifyComponents(codeLabel, names)).toBe(codeLabel);
+    const inHref = '[the docs](/components/Button)';
+    expect(linkifyComponents(inHref, names)).toBe(inHref);
+  });
+
+  it('skips names inside fenced code blocks', () => {
+    const names = ['Button'];
+    const md = ['```tsx', '<Button label="Save" />', '```'].join('\n');
+    expect(linkifyComponents(md, names)).toBe(md);
+  });
+
+  it('still links the prose around a skipped span', () => {
+    const names = ['Button', 'Card'];
+    expect(linkifyComponents('A Card wraps `<Button>` here', names)).toBe(
+      'A [Card](/components/Card) wraps `<Button>` here',
+    );
+  });
+
+  it('emits a monospace label when asked, and a plain one by default', () => {
+    const names = ['Button'];
+    expect(linkifyComponents('Use Button', names, {monospace: true})).toBe(
+      'Use [`Button`](/components/Button)',
+    );
+    expect(linkifyComponents('Use Button', names)).toBe(
+      'Use [Button](/components/Button)',
+    );
+  });
 });
 
 describe('stripTitle', () => {

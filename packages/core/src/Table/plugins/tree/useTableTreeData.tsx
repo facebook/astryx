@@ -42,7 +42,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, spacingVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
-import {mergeRefs, rtlStyles} from '../../../utils';
+import {mergeRefs} from '../../../utils';
 import type {
   TablePlugin,
   TableColumn,
@@ -242,7 +242,10 @@ const treeStyles = stylex.create({
     background: 'transparent',
     border: 'none',
     borderRadius: radiusVars['--radius-inner'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: colorVars['--color-icon-secondary'],
     transitionProperty: 'color, background-color',
     transitionDuration: '150ms',
@@ -251,22 +254,34 @@ const treeStyles = stylex.create({
     // Match IconButton ghost hover: subtle overlay background
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
     },
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       color: colorVars['--color-icon-primary'],
     },
   },
-  chevron: {
-    display: 'inline-flex',
+  chevronIcon: {
     transitionProperty: 'transform',
     transitionDuration: '150ms',
-    transform: 'rotate(0deg)',
   },
-  chevronExpanded: {
-    transform: 'rotate(90deg)',
+  // The RTL mirror is folded into each state's transform rather than living on
+  // a parent span. Both are `transform`, so on one element the later value
+  // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
+  // exactly as the nested elements did, while leaving a single element to
+  // carry the glyph's theme target.
+  chevronIconCollapsed: {
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
+  },
+  chevronIconExpanded: {
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
   },
   /** Keeps leaf content aligned with expandable siblings. */
   leafSpacer: {
@@ -284,7 +299,10 @@ const treeStyles = stylex.create({
   },
   /** Whole-row-click expansion: signal the row is interactive. */
   clickableRow: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
 });
 
@@ -314,15 +332,19 @@ function TreeExpander({
           : t('@astryx.tableTree.expandRow')
       }
       aria-expanded={isExpanded}>
-      <span {...stylex.props(rtlStyles.mirror)}>
-        <span
-          {...stylex.props(
-            treeStyles.chevron,
-            isExpanded && treeStyles.chevronExpanded,
-          )}>
-          <Icon icon="chevronRight" size="xsm" />
-        </span>
-      </span>
+      <Icon
+        icon="chevronRight"
+        size="xsm"
+        // The rotation rides on the glyph rather than a wrapper span so the
+        // theme target below reaches both the mark and its open/closed
+        // transform.
+        xstyle={[
+          treeStyles.chevronIcon,
+          isExpanded
+            ? treeStyles.chevronIconExpanded
+            : treeStyles.chevronIconCollapsed,
+        ]}
+      />
     </button>
   );
 }
@@ -363,15 +385,18 @@ function TreeExpandAllToggle({
           : t('@astryx.tableTree.expandAllRows')
       }
       aria-expanded={allExpanded}>
-      <span {...stylex.props(rtlStyles.mirror)}>
-        <span
-          {...stylex.props(
-            treeStyles.chevron,
-            allExpanded && treeStyles.chevronExpanded,
-          )}>
-          <Icon icon="chevronRight" size="xsm" />
-        </span>
-      </span>
+      <Icon
+        icon="chevronRight"
+        size="xsm"
+        // Same one-element treatment as the row expander: the glyph carries
+        // both the rotation and the theme target.
+        xstyle={[
+          treeStyles.chevronIcon,
+          allExpanded
+            ? treeStyles.chevronIconExpanded
+            : treeStyles.chevronIconCollapsed,
+        ]}
+      />
     </button>
   );
 }

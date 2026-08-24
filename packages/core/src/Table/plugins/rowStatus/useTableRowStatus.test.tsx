@@ -44,12 +44,18 @@ function Harness({
 }
 
 describe('useTableRowStatus', () => {
-  it('prepends a narrow status column with an empty header', () => {
+  it('names the status column header for assistive technology', () => {
     render(<Harness />);
-    const headers = screen.getAllByRole('columnheader');
-    // Status column is first; its header is empty.
-    expect(headers[0]).toHaveAttribute('data-column-key', '__rowStatus');
-    expect(headers[0].textContent).toBe('');
+    // The gutter looks blank but its th carries a visually hidden name.
+    const header = screen.getByRole('columnheader', {name: 'Row status'});
+    expect(header).toHaveAttribute('data-column-key', '__rowStatus');
+    // Status column is first.
+    expect(screen.getAllByRole('columnheader')[0]).toBe(header);
+    // The name must come from the clipped VisuallyHidden span — bare th text
+    // would be a visible header on what should stay a blank gutter.
+    const hiddenText = within(header).getByText('Row status');
+    expect(hiddenText.tagName).toBe('SPAN');
+    expect(hiddenText.className).not.toBe('');
   });
 
   it('renders a labeled dot for rows with a status', () => {
@@ -131,8 +137,8 @@ describe('useTableRowStatus', () => {
 
   it('renders the status header with empty data and no indicators', () => {
     render(<Harness rows={[]} />);
-    const headers = screen.getAllByRole('columnheader');
-    expect(headers[0]).toHaveAttribute('data-column-key', '__rowStatus');
+    const header = screen.getByRole('columnheader', {name: 'Row status'});
+    expect(header).toHaveAttribute('data-column-key', '__rowStatus');
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 });

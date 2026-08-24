@@ -43,7 +43,7 @@ export const doc = {
       name: 'group',
       type: 'string',
       description:
-        'Optional group for sidebar/docs organization — same as ComponentDoc.group.',
+        'Optional group for sidebar/docs organization; same as ComponentDoc.group.',
     },
     {
       name: 'keywords',
@@ -117,7 +117,7 @@ export const doc = {
     {
       name: 'usage',
       type: 'UsageDoc',
-      description: 'Usage documentation — description and best practices.',
+      description: 'Usage documentation: description and best practices.',
       required: true,
       fields: [
         {
@@ -190,7 +190,7 @@ export const docs = {
   notes: [
     {
       type: 'prose',
-      text: "A hook's discriminant is `type: 'function'` — HookDoc and FunctionDoc share the generalized function kind. HookDoc is the hook-flavored view: named `returns` fields and a required `usage` block.",
+      text: "A hook's discriminant is `type: 'function'`: HookDoc and FunctionDoc share the generalized function kind. HookDoc is the hook-flavored view: named `returns` fields and a required `usage` block.",
     },
     {
       type: 'prose',

@@ -16,7 +16,7 @@ export const doc = {
   summary: 'Scaffold a bundled theme into a project as editable source.',
   description:
     "Copies a bundled theme's source (from the CLI's templates/themes/<slug>) into the " +
-    "consumer's project so they own it — no theme package needed. Writes are staged to temp " +
+    "consumer's project so they own it, no theme package needed. Writes are staged to temp " +
     'files then renamed, rolling back partials on failure so a failed write never leaves a ' +
     'half-written theme. Returns a theme.add receipt describing where the files landed and how ' +
     'to import them.',

@@ -3,9 +3,17 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
+import {InputGroup} from '@astryxdesign/core/InputGroup';
 import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
-import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
+import {RadioIndicator} from '@astryxdesign/core/Indicator';
+import {
+  UserIcon,
+  CogIcon,
+  BellIcon,
+  LockClosedIcon,
+  GlobeAltIcon,
+} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Selector> = {
   title: 'Core/Selector',
@@ -402,6 +410,85 @@ export const CustomRender: Story = {
   },
 };
 
+// Two-line options: description on the data, and the trigger seam
+export const OptionDescriptions: Story = {
+  render: () => {
+    const visibility = [
+      {
+        value: 'private',
+        label: 'Private',
+        icon: LockClosedIcon,
+        description: 'Only members can access this space and its content.',
+      },
+      {
+        value: 'public',
+        label: 'Public',
+        icon: GlobeAltIcon,
+        description: 'Anyone at the company can find and join this space.',
+      },
+    ];
+    const [condensed, setCondensed] = useState<string | undefined>('private');
+    const [oneLine, setOneLine] = useState<string | undefined>('private');
+    const [full, setFull] = useState<string | undefined>('private');
+    const [grouped, setGrouped] = useState<string | undefined>('private');
+    return (
+      <div style={{display: 'grid', gap: 24}}>
+        <Selector
+          label="Visibility (default trigger)"
+          options={visibility}
+          value={condensed}
+          onChange={setCondensed}
+          data-testid="condensed"
+        />
+        <Selector
+          label="Visibility (renderValue, one line)"
+          options={visibility}
+          value={oneLine}
+          onChange={setOneLine}
+          data-testid="one-line"
+          renderValue={option => (
+            <SelectorOption
+              icon={option.icon}
+              label={option.label ?? option.value}
+            />
+          )}
+        />
+        <Selector
+          label="Visibility (renderValue)"
+          options={visibility}
+          value={full}
+          onChange={setFull}
+          data-testid="full"
+          renderValue={option => (
+            <SelectorOption
+              icon={option.icon}
+              label={option.label ?? option.value}
+              description={option.description}
+            />
+          )}
+        />
+        <InputGroup label="Visibility">
+          <Selector
+            label="Visibility (in a group)"
+            isLabelHidden
+            options={visibility}
+            value={grouped}
+            onChange={setGrouped}
+            renderValue={option => (
+              <SelectorOption
+                icon={option.icon}
+                label={option.label ?? option.value}
+                description={option.description}
+              />
+            )}
+          />
+          <Button label="Save" />
+        </InputGroup>
+      </div>
+    );
+  },
+};
+
 // Size variants
 export const SizeVariants: Story = {
   render: () => {
@@ -745,6 +832,40 @@ export const PlacementAbove: Story = {
   },
 };
 
+export const Placements: Story = {
+  render: () => {
+    const [below, setBelow] = useState('Banana');
+    const [start, setStart] = useState('Banana');
+    const [end, setEnd] = useState('Banana');
+    const options = ['Apple', 'Banana', 'Cherry', 'Date'];
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
+        <Selector
+          label="placement=below"
+          options={options}
+          value={below}
+          onChange={v => setBelow(v)}
+          placement="below"
+        />
+        <Selector
+          label="placement=start"
+          options={options}
+          value={start}
+          onChange={v => setStart(v)}
+          placement="start"
+        />
+        <Selector
+          label="placement=end"
+          options={options}
+          value={end}
+          onChange={v => setEnd(v)}
+          placement="end"
+        />
+      </div>
+    );
+  },
+};
+
 export const StatusVariantComparison: Story = {
   render: () => {
     const [a, setA] = useState<string | undefined>();
@@ -834,6 +955,82 @@ export const ThemedIcons: Story = {
           hasClear
         />
       </Theme>
+    );
+  },
+};
+
+/**
+ * Swap the single-selection indicator for a radio.
+ *
+ * `check` is the indicator every single-selection mark draws, so replacing it
+ * once in the theme reaches this Selector — and any other component that marks
+ * "this one is chosen" — without touching a call site.
+ *
+ * Note what the default check could never do: an unselected row draws an
+ * **empty circle**. The mark is rendered in every state and told which state to
+ * draw, so an indicator that has an unselected form can show it.
+ */
+const radioSelectionTheme = defineTheme({
+  name: 'radio-selection-demo',
+  indicators: {check: RadioIndicator},
+});
+
+export const RadioSelectionIndicator: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Banana');
+    return (
+      <Theme theme={radioSelectionTheme} mode="light">
+        <Selector
+          label="Single selection drawn as a radio"
+          options={['Apple', 'Banana', 'Cherry']}
+          value={value}
+          onChange={setValue}
+          isDefaultOpen
+        />
+      </Theme>
+    );
+  },
+};
+
+/**
+ * The same Selector with no theme, for comparison: a checkmark on the selected
+ * row, and nothing at all on the others.
+ */
+export const DefaultSelectionIndicator: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Banana');
+    return (
+      <Selector
+        label="Single selection drawn as a check (default)"
+        options={['Apple', 'Banana', 'Cherry']}
+        value={value}
+        onChange={setValue}
+        isDefaultOpen
+      />
+    );
+  },
+};
+
+/**
+ * `indicatorPosition="start"` moves the mark to the leading edge, the way a
+ * native menu marks its chosen row.
+ *
+ * The column is reserved on every row, not just the chosen one, so the labels
+ * stay on one line — the default check draws nothing when unchecked, and
+ * without the column only the chosen label would be indented.
+ */
+export const StartIndicatorPosition: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Banana');
+    return (
+      <Selector
+        label="Mark at the start"
+        options={['Apple', 'Banana', 'Cherry']}
+        value={value}
+        onChange={setValue}
+        indicatorPosition="start"
+        isDefaultOpen
+      />
     );
   },
 };

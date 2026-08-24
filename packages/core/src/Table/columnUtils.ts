@@ -13,6 +13,7 @@
 
 import type {CSSProperties, ReactNode} from 'react';
 import type {TableColumn, ProportionalWidth, PixelWidth} from './types';
+import {firstCharacter} from '../utils/characters';
 
 /** Default minimum width (in px) for proportional columns. */
 export const DEFAULT_MIN_COLUMN_WIDTH = 120;
@@ -168,7 +169,8 @@ export function capitalize(str: string): string {
   if (str.length === 0) {
     return str;
   }
-  return str.charAt(0).toUpperCase() + str.slice(1);
+  const first = firstCharacter(str);
+  return first.toUpperCase() + str.slice(first.length);
 }
 
 /**

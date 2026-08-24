@@ -184,3 +184,55 @@ export const WithDropdownMenu: Story = {
     </ButtonGroup>
   ),
 };
+
+/**
+ * Disabled members: the whole group via `isDisabled`, and a single member
+ * disabling itself inside an enabled group.
+ */
+export const Disabled: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
+      <ButtonGroup label="Clipboard actions" isDisabled>
+        <Button label="Copy" />
+        <Button label="Cut" />
+        <Button label="Paste" />
+      </ButtonGroup>
+      <ButtonGroup label="History">
+        <Button label="Undo" />
+        <Button label="Redo" isDisabled />
+      </ButtonGroup>
+    </div>
+  ),
+};
+
+/**
+ * The connected buttons share one surface, so the shadow sits on the group and
+ * lifts them together.
+ */
+export const Elevation: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: 24, alignItems: 'center'}}>
+      {(['none', 'low', 'med', 'high'] as const).map(elevation => (
+        <ButtonGroup key={elevation} label={elevation} elevation={elevation}>
+          <Button label="Copy" />
+          <Button label="Paste" />
+        </ButtonGroup>
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * Long labels in a narrow container. Members neither wrap nor truncate, so a
+ * group whose labels are wider than its container overflows it.
+ */
+export const LongLabels: Story = {
+  render: () => (
+    <div style={{width: 280}}>
+      <ButtonGroup label="Review actions">
+        <Button label="Approve and merge immediately" />
+        <Button label="Request changes" />
+      </ButtonGroup>
+    </div>
+  ),
+};

@@ -36,7 +36,11 @@ const clipStyle: CSSProperties = {
 // 3 columns on desktop, dropping straight to 1 column below 720px (no 2-col
 // middle state). minmax(0, 1fr) (not 1fr) so tracks split evenly and ignore the
 // images' intrinsic min-width. The hero spans 2 columns on desktop, then fills
-// the row once it's single-column.
+// the row once it's single-column — and switches from 3:1 to 3:2 with a plain
+// aspect-ratio override. AspectRatio's ratio is a class-level declaration in
+// @layer astryx-base, and this <style> tag is unlayered, so the override wins
+// regardless of specificity — every stacked tile is uniform without rendering
+// the hero twice.
 const GALLERY_CSS = `
 .mixed-gallery-grid {
   display: grid;
@@ -52,6 +56,7 @@ const GALLERY_CSS = `
   }
   .mixed-gallery-hero {
     grid-column: 1 / -1;
+    aspect-ratio: 3 / 2;
   }
 }
 `;
@@ -66,23 +71,23 @@ interface GalleryImage {
 // All landscape photos so the uniform 3:2 / 3:1 tiles crop cleanly.
 const IMAGES: GalleryImage[] = [
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png',
+    src: '/template-assets/illustrative-horizontal-1.png',
     title: 'Going places',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-home-horizontal-1.png',
+    src: '/template-assets/light-home-horizontal-1.png',
     title: 'Making memories',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-lifestyle-horizontal-1.png',
+    src: '/template-assets/light-lifestyle-horizontal-1.png',
     title: 'Being free',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-working-horizontal-2.png',
+    src: '/template-assets/light-working-horizontal-2.png',
     title: 'Getting it done',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
+    src: '/template-assets/light-scene-horizontal-1.png',
     title: 'Finding calm',
   },
 ];
@@ -134,9 +139,13 @@ export default function MixedGalleryTemplate() {
                 of three. Every tile is 3:2 except the hero, which is 3:1 so that
                 (being 2 columns wide) it matches the row height exactly. All
                 rows are therefore the same height. Responsive via @container:
-                3 columns → 1 column at ≤720px. */}
+                3 columns → 1 column at ≤720px, where the hero drops to 3:2 so
+                the stacked tiles are uniform. */}
             <div className="mixed-gallery-grid">
-              {/* Hero — spans 2 columns; 3:1 keeps it level with the sidebar */}
+              {/* Hero — spans 2 columns; 3:1 keeps it level with the sidebar.
+                  Stacked, the unlayered aspect-ratio override switches it to
+                  3:2 (see GALLERY_CSS) — one element, no duplicate hero
+                  markup. */}
               <GalleryCard
                 image={IMAGES[0]}
                 ratio={3 / 1}

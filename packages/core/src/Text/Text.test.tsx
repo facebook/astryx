@@ -6,7 +6,7 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {Text} from './Text';
 import type {TextType} from './Text';
 import type {TextColor} from '../theme/types';
@@ -21,6 +21,28 @@ describe('Text', () => {
     it('renders children correctly', () => {
       render(<Text type="body">Hello World</Text>);
       expect(screen.getByText('Hello World')).toBeInTheDocument();
+    });
+
+    it('keeps a forwarded ref attached across rerenders', () => {
+      const ref = vi.fn();
+      const {rerender} = render(
+        <Text ref={ref} type="body">
+          Before
+        </Text>,
+      );
+
+      const element = screen.getByText('Before');
+      expect(ref).toHaveBeenLastCalledWith(element);
+      ref.mockClear();
+
+      rerender(
+        <Text ref={ref} type="body">
+          After
+        </Text>,
+      );
+
+      expect(ref).not.toHaveBeenCalled();
+      expect(screen.getByText('After')).toBe(element);
     });
 
     it('renders as span by default', () => {

@@ -41,7 +41,8 @@ export {discoverTemplates, listTemplates} from '../../../api/template/template.m
  *   import('../../../api/template/template.type.mjs').TemplateListResponse |
  *   import('../../../api/template/template.type.mjs').TemplateShowResponse |
  *   import('../../../api/template/template.type.mjs').TemplateSkeletonResponse |
- *   import('../../../api/template/template.type.mjs').TemplateCopyResponse
+ *   import('../../../api/template/template.type.mjs').TemplateCopyResponse |
+ *   import('../../../api/template/template.type.mjs').TemplateCdnResponse
  * )} TemplateResponse
  */
 
@@ -55,7 +56,7 @@ export function registerTemplate(program) {
       /**
        * @param {string | undefined} name
        * @param {string | undefined} targetPath
-       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, overwrite?: boolean}} options
+       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, cdn?: boolean | string, overwrite?: boolean}} options
        */
       async (name, targetPath, options) => {
       const json = program.opts().json || false;
@@ -83,7 +84,8 @@ export function registerTemplate(program) {
         name &&
         targetPath &&
         !options.list &&
-        !options.skeleton
+        !options.skeleton &&
+        !options.cdn
       ) {
         const collision = await detectTemplateCollision(name, targetPath);
         if (collision && !options.overwrite) {
@@ -103,6 +105,7 @@ export function registerTemplate(program) {
           await templateApi(name, {
             list: options.list,
             skeleton: options.skeleton,
+            cdn: options.cdn,
             type: /** @type {'page' | 'block' | undefined} */ (options.type),
             package: options.package,
             targetPath,
@@ -147,6 +150,7 @@ export function registerTemplate(program) {
                 `${run} template <id> --skeleton        Layout reference`,
                 `${run} template --list --type block    List only blocks`,
                 `${run} template --list --package <pkg> List from one package`,
+                `${run} template --cdn                 CDN starter page, no build step`,
               ].join('\n'),
             ),
           );
@@ -175,6 +179,23 @@ export function registerTemplate(program) {
           emit(
             text(
               `Copied template to ${result.data.outputDir}/${result.data.fileName}`,
+            ),
+          );
+          break;
+        }
+
+        case 'template.cdn': {
+          if (!result.data.written) {
+            emit(
+              text(`[skip] ${result.data.path} already exists — left as is.`),
+              text('Pass --overwrite to replace it with a fresh copy.'),
+            );
+            break;
+          }
+          emit(
+            text(`[ok] Wrote ${result.data.path}`),
+            text(
+              `Open it in a browser — no bundler, no install, no build step. Every CDN URL is pinned to ${result.data.version}, and the annotations mark the parts that are load-bearing.`,
             ),
           );
           break;

@@ -15,8 +15,8 @@ export const doc = {
   namespace: 'cli',
   summary: 'Diagnose your XDS setup and report problems with fixes',
   description:
-    'Runs read-only diagnostics — Node version, @astryxdesign/core install and version ' +
-    'alignment, installed themes, config validity, agent docs, and the package manager — ' +
+    'Runs read-only diagnostics: Node version, @astryxdesign/core install and version ' +
+    'alignment, installed themes, config validity, agent docs, and the package manager, ' +
     'and reports pass/warn/fail with an actionable fix for each problem. Safe as a CI gate.',
   fn: 'doctor',
   examples: [
