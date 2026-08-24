@@ -575,11 +575,7 @@ export function TextArea({
           style,
         )}>
         {startIcon && (
-          <span
-            {...mergeProps(
-              themeProps('textarea-start-icon', {size}),
-              stylex.props(styles.startIcon),
-            )}>
+          <span {...stylex.props(styles.startIcon)}>
             {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
           </span>
         )}
@@ -632,11 +628,7 @@ export function TextArea({
           )}
         />
         {(isBusy || statusIcon) && (
-          <span
-            {...mergeProps(
-              themeProps('textarea-end-slot'),
-              stylex.props(styles.endSlot),
-            )}>
+          <span {...stylex.props(styles.endSlot)}>
             {isBusy && <Spinner size="sm" />}
             {statusIcon}
           </span>
