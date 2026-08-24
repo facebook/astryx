@@ -81,7 +81,7 @@ const THEME_LAYER = [
  * theming story MUST use literals — a theme author writes literals, and that is
  * precisely what the story is showing.
  */
-const NON_SHIPPING_FILE = /\.(test|spec|stories|doc)\./;
+const NON_SHIPPING_FILE = /\.(test|spec|stories|doc|sandbox)\./;
 
 const TEST_DIRECTORIES = new Set(['__tests__', '__mocks__']);
 
@@ -161,9 +161,12 @@ function hasRawColor(text) {
  * gradient through alpha, so the RGB in one of its stops never paints.
  */
 const ALPHA_ONLY_PROPERTIES = new Set([
+  'mask',
   'maskImage',
-  'WebkitMaskImage',
+  'maskMode',
   'maskBorderSource',
+  'WebkitMask',
+  'WebkitMaskImage',
   'WebkitMaskBoxImage',
 ]);
 

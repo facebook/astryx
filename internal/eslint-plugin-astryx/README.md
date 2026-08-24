@@ -915,7 +915,7 @@ that:
 | A colour assembled from values passed in — `rgba(${r}, ${g}, ${b}, ${a})` | ❌ no     |
 | Every channel from a token — `rgb(var(--r) var(--g) var(--b))`            | ❌ no     |
 | `'rgb('` with no closing parenthesis (a parser's prefix)                  | ❌ no     |
-| `maskImage` and friends, where the colour resolves through alpha          | ❌ no     |
+| `mask`/`maskImage`/`maskMode` and friends — colour resolves through alpha | ❌ no     |
 
 Two of those are worth the detail. A **colour function only counts when its
 arguments carry a literal digit** — that separates authoring a colour from
@@ -933,10 +933,14 @@ a violation. That layer has ~200 colour literals and defining them is its job.
 
 #### On `eslint-disable`
 
-**A disable suppresses this rule, deliberately.** The only way to close that
-door is `--no-inline-config`, which is process-wide: it would also void the
-sanctioned disables other rules here rely on, including the deliberately
-unwrapped row in `Table.test.tsx`. There is no way to harden one rule alone.
+**A disable suppresses this rule, deliberately.** The only mechanism that would
+close the door is `noInlineConfig`, and it **cannot be scoped to one rule** —
+verified: under `linterOptions: {noInlineConfig: true}`, a file disabling both
+`@astryx/no-raw-color` and `no-unused-vars` reports both again. It _is_ scopable
+by `files` glob, so the choice on offer is never "harden this rule" but "void
+every inline disable in this directory", which takes the sanctioned ones with it
+— the deliberately unwrapped row `require-table-section` documents, and the
+`no-nullish-jsx-guard` migration sites.
 
 So the escape hatch stays open and stays _visible_. A disable on this rule means
 someone knowingly wrote a raw colour: it is greppable
