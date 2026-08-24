@@ -21,11 +21,21 @@ export const docs = {
   ],
   usage: {
     description:
-      'AlertDialog asks the user to confirm a destructive or irreversible action before it happens. Use it for things like deleting content, revoking access, or discarding unsaved changes.\n\nFor cases where you want to show an alert without managing open state, use the `useImperativeAlertDialog` hook: call `alert.show(options)` and render `alert.element` in your tree.',
+      'AlertDialog asks the user to confirm a destructive or irreversible action before it happens. Use it for things like deleting content, revoking access, or discarding unsaved changes.\n\nIt implements the WAI-ARIA APG [Alert Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): `role="alertdialog"`, a title linked by `aria-labelledby`, a consequence description linked by `aria-describedby`, focus moved into the dialog on open and returned to the trigger on close, and no dismissal by clicking outside. Escape cancels.\n\nFor cases where you want to show an alert without managing open state, use the `useImperativeAlertDialog` hook: call `alert.show(options)` and render `alert.element` in your tree.',
     bestPractices: [
       {guidance: true, description: 'Make the action button label specific: "Delete project" is better than "OK" or "Confirm".'},
       {guidance: true, description: 'Describe what will happen in the description so the user knows the consequences before confirming.'},
+      {guidance: true, description: 'Keep the cancel button first: it takes initial focus, so the least destructive choice is the one already selected when the dialog opens.'},
       {guidance: false, description: 'Use AlertDialog for non-destructive actions; use a standard Dialog instead.'},
+      {guidance: false, description: 'Rely on color alone to signal danger; the action label itself should say what will happen.'},
+      {guidance: false, description: 'Close the dialog from onAction before the work finishes; hold it open with isActionLoading and call onOpenChange(false) when the action settles.'},
+    ],
+    anatomy: [
+      {name: 'Title', required: true, description: 'The question being asked. Renders as a level-2 heading and labels the dialog via aria-labelledby.'},
+      {name: 'Description', required: true, description: 'What will happen if the user confirms. Linked to the dialog via aria-describedby.'},
+      {name: 'Cancel button', required: true, description: 'Ghost button that dismisses without acting. Takes initial focus, and Escape does the same thing.'},
+      {name: 'Action button', required: true, description: 'The confirming action. Destructive by default; shows a spinner while isActionLoading is set.'},
+      {name: 'Backdrop', required: true, description: 'Overlay behind the dialog that blocks page interaction. Clicking it does not dismiss.'},
     ],
   },
   // Intentionally a contained isInline preview, not playground.overlay: the
@@ -107,7 +117,7 @@ export const docs = {
       name: 'isInline',
       type: 'boolean',
       default: 'false',
-      description: 'Renders alert dialog content inline without modal behavior. For documentation previews and showcases only.',
+      description: 'Renders alert dialog content inline without modal behavior. For documentation previews and showcases only. Not being a modal, the inline path renders role="group" instead of role="alertdialog".',
     },
   ],
   components: [
@@ -125,11 +135,14 @@ export const docsDense = {
   description: 'Confirms destructive/irreversible action before it happens (delete, revoke access, discard unsaved changes).',
   usage: {
     description:
-      'AlertDialog confirms destructive/irreversible action (delete, revoke access, discard changes). To show w/o managing open state, use useImperativeAlertDialog hook: call alert.show(options) + render alert.element in tree.',
+      'AlertDialog confirms destructive/irreversible action (delete, revoke access, discard changes). Implements WAI-ARIA APG Alert Dialog pattern (https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): role="alertdialog", aria-labelledby title, aria-describedby description, focus into dialog on open + back to trigger on close, no outside-click dismissal, Escape cancels. To show w/o managing open state, use useImperativeAlertDialog hook: call alert.show(options) + render alert.element in tree.',
     bestPractices: [
       {guidance: true, description: 'Make action button label specific: "Delete project" > "OK"/"Confirm".'},
       {guidance: true, description: 'Describe consequences in description so user knows outcome before confirming.'},
+      {guidance: true, description: 'Keep cancel first: it takes initial focus, so least destructive choice is preselected.'},
       {guidance: false, description: 'Use AlertDialog for non-destructive actions; use standard Dialog instead.'},
+      {guidance: false, description: 'Rely on color alone for danger; the action label should say what happens.'},
+      {guidance: false, description: 'Close from onAction before work finishes; hold open w/ isActionLoading, call onOpenChange(false) when it settles.'},
     ],
   },
 };

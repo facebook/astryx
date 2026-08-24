@@ -14,7 +14,7 @@ export const doc = {
   displayName: 'ReferenceDoc',
   namespace: 'authoring',
   description:
-    'The doc-type for a reference/topic doc — tokens, principles, theming, patterns, ' +
+    'The doc-type for a reference/topic doc: tokens, principles, theming, patterns, ' +
     'accessibility, migration guides. Unlike ComponentDoc it is not tied to a component: ' +
     'drop a `.doc.mjs` in the docs directory and it shows up in `astryx docs`. Content is ' +
     'built from ordered sections of mixed content blocks.',
@@ -50,6 +50,20 @@ export const doc = {
       name: 'category',
       type: 'string',
       description: "Navigation category: 'guide' or 'foundations'.",
+    },
+    {
+      name: 'replaces',
+      type: 'string',
+      description:
+        "Name of an existing topic this doc takes the place of. Authored by an integration that serves its own guide instead of the built-in one: on a doc of the same name it swaps the content, and on a doc of another name it also leaves the old name as an alias so `astryx docs <old>` still resolves. Exclusive with `extends`.",
+      example: "'getting-started'",
+    },
+    {
+      name: 'extends',
+      type: 'string',
+      description:
+        'Name of an existing topic this doc merges onto, section by section: a section whose title matches one in the base replaces it, a section the base does not have is appended. For correcting or adding to a topic rather than owning it. Exclusive with `replaces`.',
+      example: "'theme'",
     },
     {
       name: 'sections',
@@ -120,7 +134,7 @@ export const docs = {
   notes: [
     {
       type: 'prose',
-      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock — a discriminated union. New block types can be added without breaking existing docs. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
+      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. New block types can be added without breaking existing docs. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
     },
     {
       type: 'code',
@@ -140,7 +154,7 @@ export const docs = {
     },
     {
       type: 'prose',
-      text: "A section may set `previewType` to render a visual preview column for token tables — one of 'swatch' | 'shadow-box' | 'radius-box' | 'spacing-bar' | 'size-bar' | 'border-line' | 'duration-bar' | 'easing-curve' | 'font-sample'.",
+      text: "A section may set `previewType` to render a visual preview column for token tables: one of 'swatch' | 'shadow-box' | 'radius-box' | 'spacing-bar' | 'size-bar' | 'border-line' | 'duration-bar' | 'easing-curve' | 'font-sample'.",
     },
   ],
 };

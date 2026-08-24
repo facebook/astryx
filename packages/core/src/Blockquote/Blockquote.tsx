@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file Blockquote.tsx
  * @input Uses React, stylex, spacing and color tokens
@@ -19,7 +17,7 @@ import type {ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
 export interface BlockquoteProps extends BaseProps<HTMLQuoteElement> {
@@ -28,7 +26,8 @@ export interface BlockquoteProps extends BaseProps<HTMLQuoteElement> {
   /** Content of the blockquote */
   children: ReactNode;
   /**
-   * Optional attribution for the quote. Rendered in a <footer> with <cite>.
+   * Optional attribution for the quote. Rendered in a `<cite>` element after
+   * the quoted content.
    */
   cite?: ReactNode;
 }
@@ -40,6 +39,7 @@ const styles = stylex.create({
     borderInlineStartColor: colorVars['--color-border-emphasized'],
     paddingInlineStart: spacingVars['--spacing-4'],
     color: colorVars['--color-text-secondary'],
+    overflowWrap: 'break-word',
     marginInlineStart: 0,
     marginInlineEnd: 0,
     marginBlockStart: 0,
@@ -57,8 +57,8 @@ const styles = stylex.create({
 /**
  * Blockquote component for displaying quoted content.
  *
- * Renders a semantic `<blockquote>` with an accent-colored left border
- * and secondary text color, matching the Astryx visual language.
+ * Renders a semantic `<blockquote>` with an inline-start rule and secondary
+ * text color, matching the Astryx visual language.
  *
  * @example
  * ```
@@ -85,11 +85,11 @@ export function Blockquote({
       )}
       {...props}>
       {children}
-      {cite != null && (
-        <footer>
-          <cite {...stylex.props(styles.cite)}>{cite}</cite>
-        </footer>
-      )}
+      {/*
+        A bare <cite>, never wrapped in <footer>: <blockquote> is a sectioning
+        root, so a <footer> inside it maps to a contentinfo document landmark.
+      */}
+      {isRenderable(cite) && <cite {...stylex.props(styles.cite)}>{cite}</cite>}
     </blockquote>
   );
 }

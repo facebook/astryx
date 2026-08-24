@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file AspectRatio.tsx
  * @input Uses React, stylex
@@ -113,6 +111,10 @@ export interface AspectRatioProps extends BaseProps<HTMLDivElement> {
   /**
    * Content to render inside the aspect ratio container.
    * The child element will be positioned absolutely to fill the container.
+   *
+   * Pass a single child. With `fit` set, every direct child is stretched to
+   * fill the box, so a second child is laid out below the first and clipped
+   * out of view; compose an overlay or caption inside one wrapper child.
    */
   children: ReactNode;
 }
@@ -182,6 +184,15 @@ const dynamicStyles = stylex.create({
  * overridden responsively — via `xstyle` for StyleX consumers, or with a
  * plain unlayered `aspect-ratio` rule for plain-CSS consumers (component
  * styles live in the `astryx-base` cascade layer, which unlayered CSS beats).
+ *
+ * Sizing: the box takes its width from its container and derives its height
+ * from the ratio, so it needs an ancestor with a definite width. Two
+ * consequences are worth knowing. Constraining only the height (`height` or
+ * `maxHeight`) clamps the box without releasing the width, so the rendered
+ * ratio no longer matches `ratio`; pass `width: 'auto'` alongside to size from
+ * the height instead. And in a shrink-to-fit parent (`inline-flex`,
+ * `width: fit-content`, a floated box) it contributes no intrinsic width and
+ * collapses to zero.
  *
  * @example
  * ```

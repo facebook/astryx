@@ -3,6 +3,13 @@
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {EmptyState} from './EmptyState';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
+
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 
 describe('EmptyState', () => {
   it('renders with title', () => {
@@ -147,5 +154,60 @@ describe('EmptyState', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Clear filters')).toBeInTheDocument();
     expect(screen.getByText('Go back')).toBeInTheDocument();
+  });
+
+  describe('theming targets', () => {
+    it('puts astryx-empty-state-title on the title heading', () => {
+      render(<EmptyState title="No results" />);
+      const heading = screen.getByRole('heading', {name: 'No results'});
+      expect(heading).toHaveClass('astryx-empty-state-title');
+    });
+
+    it('puts astryx-empty-state-description on the description', () => {
+      render(
+        <EmptyState title="No results" description="Try another search." />,
+      );
+      const description = screen.getByText('Try another search.');
+      expect(description).toHaveClass('astryx-empty-state-description');
+    });
+
+    it('reflects the compact variant on the title and description targets', () => {
+      render(
+        <EmptyState
+          title="No results"
+          description="Try another search."
+          isCompact
+        />,
+      );
+      expect(screen.getByRole('heading', {name: 'No results'})).toHaveAttribute(
+        'data-variant',
+        'compact',
+      );
+      expect(screen.getByText('Try another search.')).toHaveAttribute(
+        'data-variant',
+        'compact',
+      );
+    });
+
+    it('exposes the title and description as themeable defineTheme targets', () => {
+      // jsdom can't resolve the @layer cascade, so this asserts the targets are
+      // reachable by a theme via the sanctioned defineTheme channel — replacing
+      // the structural `> div:has(> :is(h1..h6))` heading-detection selectors a
+      // consumer would otherwise need to restyle the title and description.
+      const theme = defineTheme({
+        name: 'empty-state-target-test',
+        components: {
+          'empty-state-title': {
+            base: {fontSize: 'var(--text-large-size)'},
+          },
+          'empty-state-description': {
+            base: {color: 'var(--color-text-secondary)'},
+          },
+        },
+      });
+      const css = generateThemeTestCSS(theme);
+      expect(css).toContain('.astryx-empty-state-title');
+      expect(css).toContain('.astryx-empty-state-description');
+    });
   });
 });

@@ -27,7 +27,7 @@ export const doc = {
       name: 'raw',
       type: 'unknown',
       description:
-        'The CLI stdout to parse — a JSON string, or an object that was already parsed.',
+        'The CLI stdout to parse: a JSON string, or an object that was already parsed.',
       required: true,
     },
     {
@@ -42,7 +42,7 @@ export const doc = {
     {
       type: 'any',
       description:
-        'The parsed envelope, guaranteed at runtime to carry the requested `type`. The published signature is untyped — cast to the matching *Response type for typed access.',
+        'The parsed envelope, guaranteed at runtime to carry the requested `type`. The published signature is untyped; cast to the matching *Response type for typed access.',
     },
   ],
   throws: [

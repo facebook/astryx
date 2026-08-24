@@ -25,8 +25,11 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {createPortal} from 'react-dom';
 import {addAnchorName, removeAnchorName} from './anchorName';
-import {typographyVars} from '../theme/tokens.stylex';
+import {resolveLayerPortalTarget} from './layerHost';
+import {typeScaleVars, typographyVars} from '../theme/tokens.stylex';
+import {overlayPaddingReset} from '../Layout/padding.stylex';
 
 const styles = stylex.create({
   // Base reset for all layers
@@ -42,7 +45,12 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     overflow: 'visible',
+    // A layer is hosted wherever its trigger happens to sit, so type that is
+    // inherited rather than declared makes the same component render at a
+    // different size in different callers.
     fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     // Override browser default [popover] background (canvas color)
     backgroundColor: 'transparent',
   },
@@ -50,6 +58,18 @@ const styles = stylex.create({
   fixed: {
     position: 'fixed',
   },
+  // Clearance from the anchor. Set on BOTH edges of the placement axis, not
+  // just the one facing the anchor: `position-try-fallbacks` can flip the
+  // layer to the opposite side at paint time, and a single-edge margin then
+  // lands on the far side and the gap vanishes (#4803).
+  offsetBlock: (offset: string) => ({
+    marginBlockStart: offset,
+    marginBlockEnd: offset,
+  }),
+  offsetInline: (offset: string) => ({
+    marginInlineStart: offset,
+    marginInlineEnd: offset,
+  }),
 });
 
 /**
@@ -95,6 +115,20 @@ export interface ContextRenderProps {
    */
   alignment?: LayerAlignment;
   /**
+   * Clearance between the layer and its anchor, as a CSS length (a number is
+   * treated as `px`). Applied along the placement axis and flip-safe, so the
+   * gap survives a `position-try-fallbacks` flip to the opposite side.
+   *
+   * Layers sit flush by default: the hook zeroes the UA margins so anchor
+   * positioning has a clean box, and clearance is a deliberate choice per
+   * surface. `var(--spacing-1)` is the system's standard clearance.
+   *
+   * Ignored when `positioning` is `'custom'` — that mode owns its own insets.
+   *
+   * @default 0
+   */
+  offset?: number | string;
+  /**
    * ARIA role applied to the popover container (e.g. `'tooltip'`). Lets
    * consumers complete the ARIA pattern and gives test tooling a stable,
    * non-hashed selector for the layer.
@@ -123,12 +157,11 @@ export interface ContextRenderProps {
   /**
    * HTML tag to render the popover container as.
    *
-   * Defaults to `'div'`. Pass `'span'` when the layer must render inline-safe
-   * markup — e.g. a `HoverCard` wrapping inline text inside a `<p>`. A `<span>`
-   * is phrasing content, so it stays put in the DOM tree instead of being
-   * reparented out of a paragraph by the HTML parser, which keeps server and
-   * client markup identical. The Popover API and CSS anchor positioning work
-   * the same on either tag.
+   * Defaults to `'div'`. Context layers render an inert `<template>` marker at
+   * the JSX position. The marker's parent is checked before the requested
+   * container mounts there or portals outside ancestors that cannot safely
+   * contain it. The marker remains available to detect a new parent if the
+   * render call moves. With `lazyMount`, the first check waits until `show()`.
    *
    * @default 'div'
    */
@@ -196,6 +229,15 @@ interface BaseLayerOptions {
  */
 export interface ContextLayerOptions extends BaseLayerOptions {
   mode: 'context';
+  /**
+   * Defer mounting the final layer and resolving its inline/portal position
+   * until `show()` is requested. Hiding unmounts it while the inert marker
+   * remains at the JSX position. Use this when rich content must never enter
+   * an unsafe ancestor, even briefly, and does not need to exist while closed.
+   *
+   * @default false
+   */
+  lazyMount?: boolean;
 }
 
 /**
@@ -284,16 +326,55 @@ export interface FixedLayerReturn {
   render: (children: ReactNode, props: FixedRenderProps) => ReactNode;
 }
 
+function toCssLength(value: number | string): string {
+  return typeof value === 'number' ? `${value}px` : value;
+}
+
+interface ContextLayerMount {
+  /** Null means the marker's parent is safe and the layer stays inline. */
+  portalTarget: HTMLElement | null;
+  /** Logical writing context lost when moving outside an unsafe ancestor. */
+  portalStyle: React.CSSProperties;
+}
+
+function readPortalWritingContext(
+  element: HTMLElement,
+  portalTarget: HTMLElement,
+): React.CSSProperties {
+  const view = element.ownerDocument.defaultView;
+  if (!view) {
+    return {};
+  }
+  const sourceStyle = view.getComputedStyle(element);
+  const targetStyle = view.getComputedStyle(portalTarget);
+
+  // Do not snapshot custom properties here. The portal target is the closest
+  // safe ancestor, so theme variables continue to inherit and update there.
+  // These two properties can be set on the unsafe chain itself and directly
+  // affect the logical anchor-positioning keywords used by the layer. Only
+  // override values the portal would actually lose; matching values should
+  // keep inheriting from the target so later direction changes remain live.
+  return {
+    ...(sourceStyle.direction !== targetStyle.direction && {
+      direction: sourceStyle.direction as React.CSSProperties['direction'],
+    }),
+    ...(sourceStyle.writingMode !== targetStyle.writingMode && {
+      writingMode:
+        sourceStyle.writingMode as React.CSSProperties['writingMode'],
+    }),
+  };
+}
+
 /**
  * Map logical placement/alignment to a CSS position-area value.
  *
  * Uses the self-* logical keyword family: the inline axis resolves against
- * the popover's own inherited direction (the layer renders inside the
- * trigger's subtree, so it inherits `direction` and mirrors in RTL with no
- * JS). The block axis is direction-neutral but must come from the same
- * keyword family — mixing physical `top` with `self-inline-*` produces an
- * invalid position-area (computes to `none`, which pins the popover to the
- * viewport corner because styles.base zeroes the UA margins).
+ * the popover's own direction (inherited inline or preserved when portaled),
+ * so it mirrors in RTL without placement-specific JS. The block axis is
+ * direction-neutral but must come from the same keyword family — mixing
+ * physical `top` with `self-inline-*` produces an invalid position-area
+ * (computes to `none`, which pins the popover to the viewport corner because
+ * styles.base zeroes the UA margins).
  *
  * Note the plain logical family (`inline-start`, no `self-`) is NOT a
  * substitute: it resolves against the containing block — the page root for
@@ -376,39 +457,122 @@ export function useLayer(
   options: ContextLayerOptions | FixedLayerOptions,
 ): ContextLayerReturn | FixedLayerReturn {
   const {mode, onShow, onHide, lightDismiss = false} = options;
+  const lazyMount = mode === 'context' ? (options.lazyMount ?? false) : false;
   const id = useId();
   const anchorId = `--astryx-layer-${id.replace(/:/g, '')}`;
 
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLElement | null>(null);
+  // The DOM element on which the current logical open state was applied.
+  // A portal target change replaces the popover element; retaining the old
+  // reference lets the ref callback recognize and reopen its replacement.
+  const openedPopoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  // Context layers place a persistent inert marker at their real JSX position.
+  // Its parent tells us whether the final layer can stay inline or needs a
+  // corrective portal, including after the render call moves.
+  const sentinelRef = useRef<HTMLTemplateElement | null>(null);
+  const contextMountRef = useRef<ContextLayerMount | null>(null);
+  const [contextMount, setContextMount] = useState<ContextLayerMount | null>(
+    null,
+  );
+  // A show() that arrives before the final layer mounts is replayed when its
+  // popover ref attaches.
+  const pendingShowRef = useRef(false);
 
   // Ref mirrors isOpen for synchronous reads inside show/hide.
   // State drives re-renders; the ref lets the imperative calls avoid
   // stale-closure reads of the previous isOpen value.
   const isOpenRef = useRef(false);
 
-  const show = useCallback(() => {
-    const popover = popoverRef.current;
-    if (popover && !isOpenRef.current) {
-      // Finding infra-4: the Popover API is unsupported on Safari <17 and
-      // Firefox <125. On those browsers `showPopover` does not exist, so
-      // calling it unconditionally throws a TypeError and the layer never
-      // opens. Guard behind a feature check; when the API is missing, fall
-      // back to plain visibility (the [popover] attribute is inert there, so
-      // the element sits in normal flow) so the layer still becomes visible.
-      if (typeof popover.showPopover === 'function') {
-        popover.showPopover();
-      } else {
-        popover.style.display = 'block';
+  const showPopoverElement = useCallback((popover: HTMLElement) => {
+    // Finding infra-4: the Popover API is unsupported on Safari <17 and
+    // Firefox <125. On those browsers `showPopover` does not exist, so fall
+    // back to plain visibility instead of throwing.
+    if (typeof popover.showPopover === 'function') {
+      // The trigger is passed as the popover's invoker `source`: a layer
+      // hosted away from its trigger then still takes its sequential focus
+      // order (and its popover nesting) from the trigger rather than from its
+      // own DOM position. Browsers without the option ignore it.
+      popover.showPopover({source: triggerRef.current ?? undefined});
+    } else {
+      popover.style.display = 'block';
+    }
+    openedPopoverRef.current = popover;
+  }, []);
+
+  const isCurrentContextPopover = useCallback(
+    (popover: HTMLElement): boolean => {
+      if (mode !== 'context') {
+        return true;
       }
+      const mount = contextMountRef.current;
+      if (mount === null) {
+        return false;
+      }
+      const expectedParent =
+        mount.portalTarget ?? sentinelRef.current?.parentElement ?? null;
+      return popover.parentElement === expectedParent;
+    },
+    [mode],
+  );
+
+  const requestContextMount = useCallback(() => {
+    if (mode !== 'context') {
+      return;
+    }
+
+    const sentinel = sentinelRef.current;
+    const inlineParent = sentinel?.parentElement ?? null;
+    if (!sentinel || !inlineParent) {
+      return;
+    }
+
+    const portalTarget = resolveLayerPortalTarget(inlineParent);
+    const mount: ContextLayerMount = {
+      portalTarget,
+      portalStyle: portalTarget
+        ? readPortalWritingContext(sentinel, portalTarget)
+        : {},
+    };
+    contextMountRef.current = mount;
+    setContextMount(mount);
+  }, [mode]);
+
+  const clearContextMount = useCallback(() => {
+    if (mode !== 'context' || !lazyMount) {
+      return;
+    }
+    contextMountRef.current = null;
+    setContextMount(null);
+  }, [mode, lazyMount]);
+
+  const show = useCallback(() => {
+    // A context popover left over until React commits a previous hide must not
+    // be reopened. The synchronous mount ref is the source of truth.
+    const candidate = popoverRef.current;
+    const popover =
+      candidate && isCurrentContextPopover(candidate) ? candidate : null;
+    if (!popover) {
+      pendingShowRef.current = true;
+      requestContextMount();
+      return;
+    }
+    if (!isOpenRef.current) {
+      showPopoverElement(popover);
       isOpenRef.current = true;
       setIsOpen(true);
       onShow?.();
     }
-  }, [onShow]);
+  }, [
+    onShow,
+    requestContextMount,
+    showPopoverElement,
+    isCurrentContextPopover,
+  ]);
 
   const hide = useCallback(() => {
+    pendingShowRef.current = false;
     if (isOpenRef.current) {
       const el = popoverRef.current;
       // See finding infra-4 note in `show`: mirror the same guard on hide so
@@ -420,11 +584,13 @@ export function useLayer(
           el.style.display = 'none';
         }
       }
+      openedPopoverRef.current = null;
       isOpenRef.current = false;
       setIsOpen(false);
       onHide?.();
     }
-  }, [onHide]);
+    clearContextMount();
+  }, [onHide, clearContextMount]);
 
   // Ref for trigger element (context mode only)
   const ref: RefCallback<HTMLElement> | undefined =
@@ -458,12 +624,14 @@ export function useLayer(
     (e: Event) => {
       const toggleEvent = e as ToggleEvent;
       if (toggleEvent.newState === 'closed' && isOpenRef.current) {
+        openedPopoverRef.current = null;
         isOpenRef.current = false;
         setIsOpen(false);
         onHide?.();
+        clearContextMount();
       }
     },
-    [onHide],
+    [onHide, clearContextMount],
   );
 
   // Ref callback for popover element — sets up the `toggle` listener.
@@ -501,8 +669,40 @@ export function useLayer(
     (el: HTMLElement | null) => {
       popoverRef.current = el;
       bindToggleListener(el, handleToggle);
+      if (el && pendingShowRef.current) {
+        pendingShowRef.current = false;
+        show();
+      } else if (
+        el &&
+        isOpenRef.current &&
+        openedPopoverRef.current !== el &&
+        isCurrentContextPopover(el)
+      ) {
+        // Changing a portal target remounts the popover. Preserve the logical
+        // open state without firing onShow again for the replacement element.
+        showPopoverElement(el);
+      }
     },
-    [handleToggle, bindToggleListener],
+    [
+      handleToggle,
+      bindToggleListener,
+      show,
+      showPopoverElement,
+      isCurrentContextPopover,
+    ],
+  );
+
+  const sentinelRefCallback = useCallback(
+    (el: HTMLTemplateElement | null) => {
+      sentinelRef.current = el;
+      if (el && (!lazyMount || pendingShowRef.current || isOpenRef.current)) {
+        // The render call may have moved while the hook stayed mounted.
+        // Resolve again from the newly attached marker rather than reusing a
+        // portal target from its previous JSX position.
+        requestContextMount();
+      }
+    },
+    [lazyMount, requestContextMount],
   );
 
   // Re-bind when the handler identity changes while the element stays mounted,
@@ -526,10 +726,20 @@ export function useLayer(
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
+      // Keep the marker mounted after resolving the layer. Apart from giving
+      // us the real JSX parent on first show, this lets its ref report when a
+      // persistent hook's render call moves to a different host.
+      const sentinel = <template ref={sentinelRefCallback} />;
+
+      if (contextMount === null) {
+        return <>{sentinel}</>;
+      }
+
       const {
         placement = 'above',
         alignment = 'center',
         positioning = 'anchor',
+        offset,
         role,
         'aria-label': ariaLabel,
         xstyle,
@@ -555,15 +765,27 @@ export function useLayer(
               ),
             };
 
-      const stylexResult = stylex.props(styles.base, xstyle);
+      const offsetStyle =
+        positioning === 'anchor' && offset
+          ? placement === 'above' || placement === 'below'
+            ? styles.offsetBlock(toCssLength(offset))
+            : styles.offsetInline(toCssLength(offset))
+          : null;
+
+      const stylexResult = stylex.props(
+        styles.base,
+        overlayPaddingReset.reset,
+        offsetStyle,
+        xstyle,
+      );
       const combinedClassName = extraClassName
         ? `${extraClassName} ${stylexResult.className ?? ''}`
         : stylexResult.className;
 
-      // Render as the requested tag. A `span` keeps the layer phrasing content
-      // so it is valid (and stays put on hydration) inside inline contexts like
-      // a `<p>`; `div` remains the default for block layers.
-      return (
+      // The marker gives us the actual JSX parent without mounting arbitrary
+      // children there. Safe positions preserve the existing DOM order and
+      // cascade; unsafe positions use the nearest corrective portal target.
+      const layer = (
         <Container
           ref={popoverRefCallback}
           id={id}
@@ -571,14 +793,35 @@ export function useLayer(
           aria-label={ariaLabel}
           popover={lightDismiss ? 'auto' : 'manual'}
           className={combinedClassName}
-          style={{...stylexResult.style, ...anchorStyle, ...extraStyle}}
+          style={{
+            ...stylexResult.style,
+            ...anchorStyle,
+            ...contextMount.portalStyle,
+            ...extraStyle,
+          }}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}>
           {children}
         </Container>
       );
+
+      return (
+        <>
+          {sentinel}
+          {contextMount.portalTarget
+            ? createPortal(layer, contextMount.portalTarget)
+            : layer}
+        </>
+      );
     },
-    [anchorId, id, lightDismiss, popoverRefCallback],
+    [
+      anchorId,
+      contextMount,
+      id,
+      lightDismiss,
+      popoverRefCallback,
+      sentinelRefCallback,
+    ],
   );
 
   // Render function for fixed mode
@@ -598,7 +841,12 @@ export function useLayer(
         left: x,
       };
 
-      const stylexResult = stylex.props(styles.base, styles.fixed, xstyle);
+      const stylexResult = stylex.props(
+        styles.base,
+        overlayPaddingReset.reset,
+        styles.fixed,
+        xstyle,
+      );
       const combinedClassName = extraClassName
         ? `${extraClassName} ${stylexResult.className ?? ''}`
         : stylexResult.className;

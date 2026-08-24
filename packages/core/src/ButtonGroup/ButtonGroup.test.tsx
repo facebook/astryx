@@ -202,9 +202,9 @@ describe('ButtonGroup', () => {
   // Trailing radius (issue #2508)
   //
   // The trailing end cap cannot be keyed off `:last-child`: members render an
-  // invisible layer AFTER their button (tooltip'd Button, DropdownMenu), and
-  // useLayer renders it inline rather than portaling it, so the layer steals the
-  // slot. See IS_LAST_ITEM in Button.tsx.
+  // invisible layer infrastructure AFTER their button (tooltip'd Button,
+  // DropdownMenu), and useLayer renders a marker plus the layer inline when the
+  // host is safe, so they steal the slot. See IS_LAST_ITEM in Button.tsx.
   //
   // HOW THESE TESTS CATCH THE BUG
   // jsdom applies no StyleX CSS, so a DOM-only test cannot prove which rule
@@ -219,7 +219,9 @@ describe('ButtonGroup', () => {
   describe('trailing radius (#2508)', () => {
     /** The group members, in DOM order (excludes invisible layer siblings). */
     const items = (group: HTMLElement): Element[] =>
-      Array.from(group.querySelectorAll(':scope > *:not([popover])'));
+      Array.from(
+        group.querySelectorAll(':scope > *:not([popover]):not(template)'),
+      );
 
     // -- Compiled CSS, read from the source -----------------------------------
 
@@ -375,6 +377,7 @@ describe('ButtonGroup', () => {
           // .stylex.ts file it compiles to a mangled selector like `[x13pbwiz]`
           // that matches nothing in the DOM.
           expect(selector).toContain('[popover]');
+          expect(selector).toContain('template');
         }
       },
     );

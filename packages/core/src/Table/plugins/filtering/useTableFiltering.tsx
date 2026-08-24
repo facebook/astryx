@@ -362,7 +362,10 @@ const filterStyles = stylex.create({
   triggerButton: {
     background: 'none',
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',

@@ -99,6 +99,18 @@ export const docs = {
       description: 'Custom constraint functions to disable specific dates.',
     },
     {
+      name: 'maxRangeSpan',
+      type: 'number',
+      description:
+        'Maximum days a selected range may span, counting both endpoints (`7` = a 7-day window, start + 6). Once a start is picked, days beyond this distance are disabled so the range cannot stretch past the cap. Rolling window relative to the start; for fixed calendar bounds use `min`/`max`. Constrains selection only; it never rewrites a `value` already wider than the cap (flag that with `status`).',
+    },
+    {
+      name: 'minRangeSpan',
+      type: 'number',
+      description:
+        'Minimum days a selected range must span, counting both endpoints (`2` forbids a single-day range). Once a start is picked, days closer than this are disabled. Defaults to 1 (same-day start and end allowed).',
+    },
+    {
       name: 'presets',
       type: 'Array<DateRangePreset>',
       description:
@@ -146,6 +158,13 @@ export const docs = {
       default: '2',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description:
+        'First day of week in the calendar. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
+      default: '0',
+    },
+    {
       name: 'width',
       type: 'SizeValue',
       description:
@@ -159,9 +178,9 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-range-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-range-input', visualProps: ['size', 'status'], states: ['disabled']},
       {className: 'astryx-date-range-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-range-input-clear-icon'},
+      {className: 'astryx-date-range-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
   usage: {
@@ -306,6 +325,10 @@ export const docsDense = {
     min: 'min selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
     max: 'max selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
     dateConstraints: 'custom constraint fns to disable dates',
+    maxRangeSpan:
+      'max days a range may span, both endpoints counted (7 = a 7-day window); caps the window from the picked start. Selection-only; does not rewrite an over-wide value',
+    minRangeSpan:
+      'min days a range must span, both endpoints counted (2 forbids a single-day range); default 1',
     presets: 'preset ranges as quick-select options',
     hasClear: 'clear button when range is set (default true)',
     placeholder: 'placeholder when empty',
@@ -314,6 +337,7 @@ export const docsDense = {
     statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
+    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     changeAction:
       'async action fired after onChange; drives optimistic UI updates via useTransition',
     isLoading: 'loading state; disables interaction + shows a spinner',

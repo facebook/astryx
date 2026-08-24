@@ -13,10 +13,12 @@ import {Switch} from '@astryxdesign/core/Switch';
 import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
 import {Tooltip} from '@astryxdesign/core/Tooltip';
 import {Icon} from '@astryxdesign/core/Icon';
+import {Banner} from '@astryxdesign/core/Banner';
 import {expandRadiusScale, expandTypeScale} from '@astryxdesign/core/theme';
 import {ColorSwatch} from './ColorSwatch';
 import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import {FONT_OPTIONS, RATIO_OPTIONS, UNIFIED_PRESETS} from './constants';
+import {getConcentricityWarning} from './helpers';
 
 const styles = stylex.create({
   fullWidthField: {width: '100%'},
@@ -270,6 +272,21 @@ export function BaseStylesPanel({
     return sm === md - 4 && lg === md + 4 ? md : null;
   })();
 
+  // Concentricity couples the radius and spacing bases. Warn — never block —
+  // when they diverge, reading the same values the two controls display. #958
+  const shownRadius = radiusMatch ?? radiusBase;
+  const shownSpacing = spacingMatch ?? spacingBase;
+  const radiusWarning = getConcentricityWarning(
+    'radius',
+    shownRadius,
+    shownSpacing,
+  );
+  const spacingWarning = getConcentricityWarning(
+    'spacing',
+    shownRadius,
+    shownSpacing,
+  );
+
   return (
     <VStack gap={5}>
       {/* Color */}
@@ -499,44 +516,62 @@ export function BaseStylesPanel({
 
       {/* Shape & Layout */}
       <VStack gap={4}>
-        <ScaleControl
-          label="Corner Radius"
-          tooltip={`Linear scale: inner = ${radiusMatch ?? radiusBase}px, element = ${(radiusMatch ?? radiusBase) * 2}px, container = ${(radiusMatch ?? radiusBase) * 3}px, page = ${Math.round((radiusMatch ?? radiusBase) * 7)}px.`}
-          controlLabel="Radius"
-          options={[
-            {label: 'S', value: '2'},
-            {label: 'M', value: '4'},
-            {label: 'L', value: '6'},
-            {label: 'XL', value: '12'},
-          ]}
-          toggleValue={radiusMatch != null ? String(radiusMatch) : null}
-          onToggle={v => onApplyRadiusScale(Number(v))}
-          numberValue={radiusMatch ?? null}
-          onNumber={v => onApplyRadiusScale(v)}
-          min={0}
-          max={18}
-          step={2}
-          units="px"
-        />
-        <ScaleControl
-          label="Spacing"
-          tooltip={`Linear scale: step N = ${spacingMatch ?? spacingBase}px × N.`}
-          controlLabel="Spacing"
-          options={[
-            {label: 'S', value: '2'},
-            {label: 'M', value: '4'},
-            {label: 'L', value: '6'},
-            {label: 'XL', value: '8'},
-          ]}
-          toggleValue={spacingMatch != null ? String(spacingMatch) : null}
-          onToggle={v => onApplySpacingScale(Number(v))}
-          numberValue={spacingMatch ?? null}
-          onNumber={v => onApplySpacingScale(v)}
-          min={0}
-          max={16}
-          step={2}
-          units="px"
-        />
+        <VStack gap={2}>
+          <ScaleControl
+            label="Corner Radius"
+            tooltip={`Linear scale: inner = ${shownRadius}px, element = ${shownRadius * 2}px, container = ${shownRadius * 3}px, page = ${Math.round(shownRadius * 7)}px.`}
+            controlLabel="Radius"
+            options={[
+              {label: 'S', value: '2'},
+              {label: 'M', value: '4'},
+              {label: 'L', value: '6'},
+              {label: 'XL', value: '8'},
+            ]}
+            toggleValue={radiusMatch != null ? String(radiusMatch) : null}
+            onToggle={v => onApplyRadiusScale(Number(v))}
+            numberValue={radiusMatch ?? null}
+            onNumber={v => onApplyRadiusScale(v)}
+            min={0}
+            max={18}
+            step={2}
+            units="px"
+          />
+          {radiusWarning && (
+            <Banner
+              status="warning"
+              title={radiusWarning.title}
+              description={radiusWarning.description}
+            />
+          )}
+        </VStack>
+        <VStack gap={2}>
+          <ScaleControl
+            label="Spacing"
+            tooltip={`Linear scale: step N = ${shownSpacing}px × N.`}
+            controlLabel="Spacing"
+            options={[
+              {label: 'S', value: '2'},
+              {label: 'M', value: '4'},
+              {label: 'L', value: '6'},
+              {label: 'XL', value: '8'},
+            ]}
+            toggleValue={spacingMatch != null ? String(spacingMatch) : null}
+            onToggle={v => onApplySpacingScale(Number(v))}
+            numberValue={spacingMatch ?? null}
+            onNumber={v => onApplySpacingScale(v)}
+            min={0}
+            max={16}
+            step={2}
+            units="px"
+          />
+          {spacingWarning && (
+            <Banner
+              status="warning"
+              title={spacingWarning.title}
+              description={spacingWarning.description}
+            />
+          )}
+        </VStack>
         <ScaleControl
           label="Element Size"
           tooltip={`sm = ${(sizeMatch ?? sizeBase) - 4}px, md = ${sizeMatch ?? sizeBase}px, lg = ${(sizeMatch ?? sizeBase) + 4}px.`}

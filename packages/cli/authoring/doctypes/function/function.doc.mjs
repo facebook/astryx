@@ -41,7 +41,7 @@ export const doc = {
       name: 'kind',
       type: "'hook' | 'api'",
       description:
-        'Which flavor — drives docsite sectioning; inferred from importPath if omitted.',
+        'Which flavor; drives docsite sectioning; inferred from importPath if omitted.',
     },
     {
       name: 'summary',
@@ -127,7 +127,7 @@ export const doc = {
         {
           name: 'returns[].name',
           type: 'string',
-          description: 'Field name (hooks) — omit for API envelope entries.',
+          description: 'Field name (hooks); omit for API envelope entries.',
         },
         {
           name: 'returns[].type',
@@ -191,7 +191,7 @@ export const doc = {
       name: 'usage',
       type: 'UsageDoc',
       description:
-        'Usage documentation (hooks) — description, best practices, anatomy. Same shape as HookDoc.usage.',
+        'Usage documentation (hooks): description, best practices, anatomy. Same shape as HookDoc.usage.',
     },
     {
       name: 'command',

@@ -61,6 +61,13 @@ export const docs = {
       description:
         'Derives a human-readable identity for a row; the row checkbox\'s hidden label becomes `Select ${getRowLabel(item)}` so screen readers announce which row each checkbox selects. Falls back to "Select row" when omitted.',
     },
+    {
+      name: 'hasRowHighlight',
+      type: 'boolean',
+      description:
+        'Paints checked rows with the accent wash. Set false when the surrounding UI already uses row background to mean something else (a row open in a detail panel, say) — the wash is an inline style, so it cannot be overridden from userland. Only the background is dropped: aria-selected is still set on checked rows either way.',
+      default: 'true',
+    },
   ],
   examples: [
     {
@@ -82,6 +89,21 @@ const selectionPlugin = useTableSelection({
   idKey="id"
   plugins={{selection: selectionPlugin}}
 />;
+`,
+    },
+    {
+      label: 'Opt out of the checked-row wash',
+      code: `
+// This table already uses row background to mean "open in the detail
+// panel". Turning the selection wash off keeps that meaning unambiguous;
+// the checkbox and aria-selected still carry the selection.
+const selectionPlugin = useTableSelection({
+  getIsItemSelected: item => selectedIds.has(item.id),
+  onSelectItem: ({item, isSelected}) => toggle(item.id, isSelected),
+  onSelectAll: ({isAllSelected}) => selectAll(isAllSelected),
+  getIsAllSelected: () => selectedIds.size === users.length,
+  hasRowHighlight: false,
+});
 `,
     },
   ],
@@ -142,6 +164,13 @@ export const docsZh = {
       description:
         '为行派生人类可读的标识；行复选框的隐藏标签变为 `Select ${getRowLabel(item)}`，让屏幕阅读器播报每个复选框选择的是哪一行。省略时回退为 "Select row"。',
     },
+    {
+      name: 'hasRowHighlight',
+      type: 'boolean',
+      description:
+        '为选中的行绘制强调色背景。当周围的界面已用行背景表达其他含义（例如该行已在详情面板中打开）时设为 false —— 该背景是内联样式，无法从业务代码覆盖。仅去掉背景：无论如何选中的行仍会设置 aria-selected。',
+      default: 'true',
+    },
   ],
 };
 
@@ -164,5 +193,7 @@ export const docsDense = {
       'Returns whether row checkbox is interactive; disabled rows show disabled checkbox.',
     getRowLabel:
       'Derives row identity for the checkbox\'s hidden label: `Select ${getRowLabel(item)}`. Falls back to "Select row" when omitted.',
+    hasRowHighlight:
+      'false => skip the accent wash on checked rows (inline style, not overridable from userland). aria-selected is unaffected. Defaults to true.',
   },
 };

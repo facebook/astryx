@@ -30,6 +30,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {isImeKeyEvent} from '../utils/ime';
 import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
 import {
@@ -214,7 +215,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   dropdown: {
     boxSizing: 'border-box',
@@ -225,10 +226,6 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
-  popoverGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
   item: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -236,7 +233,10 @@ const styles = stylex.create({
     width: '100%',
     padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
     backgroundColor: 'transparent',
     border: 'none',
@@ -452,7 +452,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           announce(
             shown.length === 0
               ? emptySearchResultsText
-              : `${shown.length} ${shown.length === 1 ? 'result' : 'results'}`,
+              : t('@astryx.typeahead.resultCount', {count: shown.length}),
           );
         }
       } catch {
@@ -467,7 +467,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
       }
     },
-    [searchSource, maxMenuItems, showLayer, announce, emptySearchResultsText],
+    [
+      searchSource,
+      maxMenuItems,
+      showLayer,
+      announce,
+      emptySearchResultsText,
+      t,
+    ],
   );
 
   // Perform bootstrap
@@ -630,6 +637,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       externalOnKeyDown?.(e);
       if (e.defaultPrevented) {
+        return;
+      }
+
+      // An IME candidate window uses Enter to commit the composition and
+      // Escape/ArrowUp/ArrowDown/Home/End to navigate its own candidates.
+      // Without this guard, a composing Enter both fires handleSelect AND
+      // clears the input via handleSelect's setQuery(''), so the IME's
+      // subsequent compositionend then writes the still-pending syllable
+      // into the freshly-cleared field -- producing a second, spurious
+      // selection on the next real Enter.
+      if (isImeKeyEvent(e.nativeEvent)) {
         return;
       }
 
@@ -809,7 +827,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             stylex.props(styles.dropdown),
           )}>
           {results.length === 0 && hasSearched ? (
-            <div {...stylex.props(styles.emptyState)}>
+            <div
+              {...mergeProps(
+                themeProps('typeahead-empty-state'),
+                stylex.props(styles.emptyState),
+              )}>
               {emptySearchResultsText}
             </div>
           ) : (
@@ -849,7 +871,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: [styles.popover, styles.popoverGap],
+          offset: spacingVars['--spacing-1'],
+          xstyle: styles.popover,
         },
       )}
     </>

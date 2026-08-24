@@ -96,6 +96,12 @@ export const docs = {
       description: 'Per-instance syntax theme override. Shorthand for wrapping the block in <SyntaxTheme theme={...}>. Accepts a preset from @astryxdesign/core/theme/syntax or a theme created with defineSyntaxTheme(). Defaults to the nearest SyntaxTheme ancestor or the theme-level syntax colors.',
     },
     {
+      name: 'highlightMode',
+      type: "'auto' | 'ranges' | 'spans'",
+      description: 'Syntax highlighting rendering mode.',
+      default: "'auto'",
+    },
+    {
       name: 'isCollapsible',
       type: 'boolean',
       description: 'Allow collapsing the code body into just the header bar. Starts expanded; the header becomes clickable to toggle. Only shows the toggle when the code exceeds collapsibleThreshold lines.',
@@ -142,6 +148,12 @@ export const docs = {
     targets: [
       {className: 'astryx-code', visualProps: ['color']},
       {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-codeblock-header', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-codeblock-title', visualProps: ['size', 'language']},
+      {className: 'astryx-codeblock-copy-button'},
+    ],
+    vars: [
+      {name: '--_codeblock-gutter-width', description: 'Width of the line-number gutter, computed from the digit count of the last line so the code column starts at a stable offset.', default: '2ch', private: true},
     ],
   },
   usage: {

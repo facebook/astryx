@@ -4,30 +4,31 @@
 
 /**
  * @file useTableRowExpansion.tsx
- * @input React, StyleX, Icon, Table types
- * @output Exports useTableRowExpansion hook + config/state types
- * @position Row-expansion plugin; consumed by Table via plugins prop
- * @deprecated Superseded by the tree plugin (useTableTreeData +
- *   useTableTreeState). Kept for back-compat; new tree tables should use the
- *   tree plugin. See the migration guide on useTableRowExpansion.
+ * @input React, StyleX, Icon, Table types, i18n (useTranslator)
+ * @output Exports useTableRowExpansion hook + config type
+ * @position Row-expansion plugin (detail panel); consumed by Table via plugins prop
+ *
+ * Expands a full-width detail panel below a row, rendered by the consumer's
+ * `renderExpanded(item)`. For hierarchical/tree tables (child rows that reuse
+ * the parent columns) use `useTableTreeData` + `useTableTreeState` instead.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/index.ts (exports)
+ * - /packages/core/src/Table/useTableRowExpansion.doc.mjs
  */
 
-import {useCallback, useMemo, useRef, type ReactNode} from 'react';
+import {useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
-import {rtlStyles} from '../../../utils';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator} from '../../../i18n';
+import {rtlStyles} from '../../../utils';
 import type {
   TablePlugin,
   TableColumn,
-  BodyCellRenderProps,
   BodyRowRenderProps,
-  HeaderCellRenderProps,
+  BodyCellRenderProps,
 } from '../../types';
 
 // =============================================================================
@@ -35,253 +36,29 @@ import type {
 // =============================================================================
 
 /**
- * Configuration for useTableRowExpansion (inherited-columns mode).
+ * Configuration for useTableRowExpansion (detail-panel mode).
  *
- * Child rows use the same columns as their parents, with indentation on the
- * first content column. The consumer provides a **flat** data array (use
- * {@link useTableRowExpansionState} to flatten a tree) and a `getDepth`
- * function so the plugin knows each row's nesting level.
+ * The consumer owns expansion state; the plugin provides the chevron UI, the
+ * full-width detail panel rendered below an expanded row, and a right-click
+ * "Expand/Collapse row" action.
  */
 export interface UseTableRowExpansionConfig<T extends Record<string, unknown>> {
   /** Set of currently-expanded row keys. */
   expandedKeys: Set<string>;
-  /** Called when a row's expansion is toggled. */
+  /** Called with a row key when its expansion is toggled. */
   onToggle: (key: string) => void;
   /** Derive a stable unique key from a row item. */
   getRowKey: (item: T) => string;
-  /** Return the children of a row (used to determine expandability). */
-  getChildren: (item: T) => T[];
-  /** Return the depth of a row in the hierarchy (0 = top-level). */
-  getDepth?: (item: T) => number;
-  /** Optionally control which rows are expandable. @default checks getChildren length */
-  getIsItemExpandable?: (item: T) => boolean;
   /**
-   * When true, clicking anywhere on the row toggles expansion (in addition to
-   * the chevron button). @default false — only the chevron triggers expansion.
+   * Render the detail content shown in a full-width panel below the row when
+   * it is expanded. Receives the row's item.
    */
-  hasRowClickExpansion?: boolean;
+  renderExpanded: (item: T) => ReactNode;
   /**
-   * State of the expand-all toggle in the header. `true` = all expanded,
-   * `false` = all collapsed, `'indeterminate'` = mixed. When provided
-   * (together with `onToggleExpandAll`), the header cell shows a toggle button.
-   */
-  isAllExpanded?: boolean | 'indeterminate';
-  /** Called when the expand-all header toggle is clicked. */
-  onToggleExpandAll?: (expand: boolean) => void;
-}
-
-/**
- * Configuration for {@link useTableRowExpansionState}.
- *
- * Mirrors the shape of {@link useTableSelectionState}: you own the
- * `expandedKeys` set (via `useState`), and the hook derives everything the
- * plugin needs — the flattened `data`, per-row depth, expand/collapse
- * handlers, and the expand-all toggle state.
- */
-export interface UseTableRowExpansionStateConfig<
-  T extends Record<string, unknown>,
-> {
-  /** The full, un-flattened tree. */
-  baseData: T[];
-  /** Return the children of a row. Leaf rows return an empty array. */
-  getChildren: (item: T) => T[];
-  /** Derive a stable unique key from a row item. */
-  getRowKey: (item: T) => string;
-  /**
-   * Should this row be expandable? Rows that return `false` never show a
-   * chevron and are skipped by expand-all. @default rows with children
+   * Control which rows are expandable. Non-expandable rows show no chevron, no
+   * context-menu action, and never render a panel. @default all rows expandable
    */
   getIsItemExpandable?: (item: T) => boolean;
-  /** Controlled set of currently-expanded row keys. */
-  expandedKeys: Set<string>;
-  /** Setter for the controlled expanded keys. */
-  setExpandedKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
-}
-
-export interface UseTableRowExpansionStateResult<
-  T extends Record<string, unknown>,
-> {
-  /** The flattened, currently-visible rows. Pass to `<Table data>`. */
-  data: T[];
-  /** Ready-to-use config for {@link useTableRowExpansion}. */
-  expansionConfig: UseTableRowExpansionConfig<T>;
-}
-
-/**
- * Manages row-expansion state and derives the config for
- * {@link useTableRowExpansion}.
- *
- * @deprecated Use `useTableTreeState` (with `useTableTreeData`) instead. The
- * tree plugin covers the same affordances (expand-all header control,
- * whole-row click) with a cycle guard and per-row fine-grained re-render. See
- * the migration guide on `useTableRowExpansion` (`astryx component
- * useTableRowExpansion --detail full`) for the before/after and config
- * mapping.
- *
- * @example
- * ```
- * const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
- * const {data, expansionConfig} = useTableRowExpansionState({
- *   baseData: tree,
- *   getChildren: item => item.children ?? [],
- *   getRowKey: item => item.id,
- *   expandedKeys,
- *   setExpandedKeys,
- * });
- * const expansion = useTableRowExpansion(expansionConfig);
- * <Table data={data} columns={columns} idKey="id" plugins={{expansion}} />;
- * ```
- */
-export function useTableRowExpansionState<T extends Record<string, unknown>>({
-  baseData,
-  getChildren,
-  getRowKey,
-  getIsItemExpandable,
-  expandedKeys,
-  setExpandedKeys,
-}: UseTableRowExpansionStateConfig<T>): UseTableRowExpansionStateResult<T> {
-  const isExpandable = useCallback(
-    (item: T): boolean =>
-      getIsItemExpandable
-        ? getIsItemExpandable(item)
-        : getChildren(item).length > 0,
-    [getIsItemExpandable, getChildren],
-  );
-
-  const depthMap = useMemo(() => {
-    const map = new Map<string, number>();
-    // Ancestor keys on the current walk path — guards against cyclic data.
-    const path = new Set<string>();
-    function walk(items: T[], depth: number) {
-      for (const item of items) {
-        const key = getRowKey(item);
-        if (path.has(key)) {
-          continue; // cyclic edge — skip
-        }
-        map.set(key, depth);
-        if (expandedKeys.has(key)) {
-          path.add(key);
-          walk(getChildren(item), depth + 1);
-          path.delete(key);
-        }
-      }
-    }
-    walk(baseData, 0);
-    return map;
-  }, [baseData, getChildren, getRowKey, expandedKeys]);
-
-  const data = useMemo(() => {
-    const result: T[] = [];
-    // Ancestor keys on the current walk path — guards against cyclic data.
-    const path = new Set<string>();
-    function walk(items: T[]) {
-      for (const item of items) {
-        const key = getRowKey(item);
-        if (path.has(key)) {
-          continue; // cyclic edge — skip
-        }
-        result.push(item);
-        if (expandedKeys.has(key)) {
-          path.add(key);
-          walk(getChildren(item));
-          path.delete(key);
-        }
-      }
-    }
-    walk(baseData);
-    return result;
-  }, [baseData, getChildren, getRowKey, expandedKeys]);
-
-  // Every expandable key across the whole tree (drives expand-all).
-  const allExpandableKeys = useMemo(() => {
-    const keys: string[] = [];
-    // Ancestor keys on the current walk path — guards against cyclic data.
-    const path = new Set<string>();
-    function walk(items: T[]) {
-      for (const item of items) {
-        const key = getRowKey(item);
-        if (path.has(key)) {
-          continue; // cyclic edge — skip
-        }
-        if (isExpandable(item)) {
-          keys.push(key);
-          path.add(key);
-          walk(getChildren(item));
-          path.delete(key);
-        }
-      }
-    }
-    walk(baseData);
-    return keys;
-  }, [baseData, getChildren, getRowKey, isExpandable]);
-
-  const getDepth = useCallback(
-    (item: T) => depthMap.get(getRowKey(item)) ?? 0,
-    [depthMap, getRowKey],
-  );
-
-  const onToggle = useCallback(
-    (key: string) => {
-      setExpandedKeys(prev => {
-        const next = new Set(prev);
-        if (next.has(key)) {
-          next.delete(key);
-        } else {
-          next.add(key);
-        }
-        return next;
-      });
-    },
-    [setExpandedKeys],
-  );
-
-  const isAllExpanded: boolean | 'indeterminate' = useMemo(() => {
-    if (allExpandableKeys.length === 0) {
-      return false;
-    }
-    const expandedCount = allExpandableKeys.filter(k =>
-      expandedKeys.has(k),
-    ).length;
-    if (expandedCount === 0) {
-      return false;
-    }
-    if (expandedCount === allExpandableKeys.length) {
-      return true;
-    }
-    return 'indeterminate';
-  }, [allExpandableKeys, expandedKeys]);
-
-  const onToggleExpandAll = useCallback(
-    (expand: boolean) => {
-      setExpandedKeys(expand ? new Set(allExpandableKeys) : new Set());
-    },
-    [setExpandedKeys, allExpandableKeys],
-  );
-
-  const expansionConfig = useMemo(
-    (): UseTableRowExpansionConfig<T> => ({
-      expandedKeys,
-      onToggle,
-      getRowKey,
-      getChildren,
-      getDepth,
-      getIsItemExpandable,
-      isAllExpanded,
-      onToggleExpandAll,
-    }),
-    [
-      expandedKeys,
-      onToggle,
-      getRowKey,
-      getChildren,
-      getDepth,
-      getIsItemExpandable,
-      isAllExpanded,
-      onToggleExpandAll,
-    ],
-  );
-
-  return {data, expansionConfig};
 }
 
 // =============================================================================
@@ -290,95 +67,91 @@ export function useTableRowExpansionState<T extends Record<string, unknown>>({
 
 const EXPANSION_COLUMN_WIDTH = {type: 'pixel' as const, value: 40};
 
-/** Indentation applied per depth level, in pixels. */
-const INDENT_PER_DEPTH = 24;
-
 const expansionStyles = stylex.create({
   chevronButton: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '24px',
-    height: '24px',
+    width: spacingVars['--spacing-6'],
+    height: spacingVars['--spacing-6'],
     background: 'transparent',
     border: 'none',
     borderRadius: radiusVars['--radius-inner'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: colorVars['--color-icon-secondary'],
-    transitionProperty: 'transform, color, background-color',
+    transitionProperty: 'transform, color',
     transitionDuration: '150ms',
     padding: 0,
-    flexShrink: '0',
-    // Match IconButton ghost hover: subtle overlay background
+    // Match IconButton ghost hover: subtle overlay background.
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
     },
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       color: colorVars['--color-icon-primary'],
     },
   },
+  // The RTL mirror is folded into each state's transform rather than living
+  // on a parent span, matching TreeListItem's chevron (both are `transform`,
+  // so on one element the later value would win).
   chevronExpanded: {
-    transform: 'rotate(90deg)',
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
   },
-  chevronIcon: {
-    display: 'inline-flex',
-    transitionProperty: 'transform',
-    transitionDuration: '150ms',
+  chevronCollapsed: {
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
   },
-  indentedCell: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
+  expandedRow: {
+    backgroundColor: colorVars['--color-background-muted'],
   },
-  indent: (px: number) => ({
-    paddingInlineStart: `${px}px`,
-  }),
-  placeholder: {
-    display: 'inline-block',
-    width: '24px',
-    height: '24px',
-    flexShrink: '0',
-  },
-  clickableRow: {
-    cursor: 'pointer',
+  expandedCell: {
+    paddingBlock: spacingVars['--spacing-4'],
+    paddingInline: spacingVars['--spacing-5'],
   },
 });
 
 // =============================================================================
-// Chevron
+// Chevron Cell
 // =============================================================================
 
 function ExpansionChevron({
   isExpanded,
   onToggle,
-  ariaLabel,
 }: {
   isExpanded: boolean;
   onToggle: () => void;
-  ariaLabel: string;
 }) {
+  const t = useTranslator();
   return (
     <button
       type="button"
-      {...stylex.props(expansionStyles.chevronButton)}
+      {...stylex.props(
+        expansionStyles.chevronButton,
+        isExpanded
+          ? expansionStyles.chevronExpanded
+          : expansionStyles.chevronCollapsed,
+      )}
       onClick={e => {
         e.stopPropagation();
         onToggle();
       }}
-      aria-label={ariaLabel}
+      aria-label={
+        isExpanded
+          ? t('@astryx.tableRowExpansion.collapseRow')
+          : t('@astryx.tableRowExpansion.expandRow')
+      }
       aria-expanded={isExpanded}>
-      <span {...stylex.props(rtlStyles.mirror)}>
-        <span
-          {...stylex.props(
-            expansionStyles.chevronIcon,
-            isExpanded && expansionStyles.chevronExpanded,
-          )}>
-          <Icon icon="chevronRight" size="xsm" />
-        </span>
-      </span>
+      <Icon icon="chevronRight" size="xsm" />
     </button>
   );
 }
@@ -388,33 +161,48 @@ function ExpansionChevron({
 // =============================================================================
 
 /**
- * Returns a TablePlugin implementing expandable rows with inherited columns.
+ * Returns a TablePlugin that expands a full-width detail panel below a row.
  *
- * @deprecated Use `useTableTreeData` (with `useTableTreeState`) instead. The
- * tree plugin covers the same affordances (expand-all header control,
- * whole-row click) with a cycle guard and per-row fine-grained re-render. See
- * the migration guide on this hook's docs (`astryx component
- * useTableRowExpansion --detail full`) for the before/after and config
- * mapping.
+ * The consumer owns the `expandedKeys` set (via `useState`); the plugin adds
+ * a leading chevron column, a right-click expand/collapse action, and renders
+ * `renderExpanded(item)` in a full-width panel below each expanded row.
+ *
+ * For hierarchical data (child rows sharing the parent columns) use
+ * `useTableTreeData` + `useTableTreeState` instead.
+ *
+ * @example
+ * ```
+ * const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+ * const expansion = useTableRowExpansion({
+ *   expandedKeys,
+ *   onToggle: key =>
+ *     setExpandedKeys(prev => {
+ *       const next = new Set(prev);
+ *       next.has(key) ? next.delete(key) : next.add(key);
+ *       return next;
+ *     }),
+ *   getRowKey: item => item.id,
+ *   renderExpanded: item => <OrderDetails order={item} />,
+ * });
+ * <Table data={data} columns={columns} idKey="id" plugins={{expansion}} />;
+ * ```
  */
 export function useTableRowExpansion<T extends Record<string, unknown>>(
   config: UseTableRowExpansionConfig<T>,
 ): TablePlugin<T> {
-  const t = useTranslator();
   const {
     expandedKeys,
     onToggle,
     getRowKey,
-    getChildren,
-    getDepth,
+    renderExpanded,
     getIsItemExpandable,
-    hasRowClickExpansion = false,
-    isAllExpanded,
-    onToggleExpandAll,
   } = config;
 
-  // Track the first non-plugin column key for indentation.
-  const firstUserColumnKeyRef = useRef<string | null>(null);
+  const t = useTranslator();
+
+  // Final rendered column count, captured in transformColumns (pipeline step
+  // 1) and read in transformBodyRow for the detail panel's colSpan.
+  const columnCountRef = useRef(1);
 
   const expansionColumn = useMemo(
     (): TableColumn<T> => ({
@@ -423,168 +211,45 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       width: EXPANSION_COLUMN_WIDTH,
       resizable: false,
       renderCell: (item: T) => {
-        // Child rows (depth > 0) show their chevron inline in the first user
-        // column instead — don't double up here.
-        const depth = getDepth ? getDepth(item) : 0;
-        if (depth > 0) {
-          return null;
-        }
-
-        const key = getRowKey(item);
         const expandable = getIsItemExpandable
           ? getIsItemExpandable(item)
-          : getChildren(item).length > 0;
+          : true;
         if (!expandable) {
           return null;
         }
-        const isExpanded = expandedKeys.has(key);
+        const key = getRowKey(item);
         return (
           <ExpansionChevron
-            isExpanded={isExpanded}
+            isExpanded={expandedKeys.has(key)}
             onToggle={() => onToggle(key)}
-            ariaLabel={
-              isExpanded
-                ? t('@astryx.tableRowExpansion.collapseRow')
-                : t('@astryx.tableRowExpansion.expandRow')
-            }
           />
         );
       },
     }),
-    [
-      expandedKeys,
-      onToggle,
-      getRowKey,
-      getChildren,
-      getIsItemExpandable,
-      getDepth,
-      t,
-    ],
+    [expandedKeys, onToggle, getRowKey, getIsItemExpandable],
   );
 
   return useMemo(
     (): TablePlugin<T> => ({
       transformColumns(columns: TableColumn<T>[]) {
-        // Track the first user column for indentation.
-        const firstUserCol = columns.find(c => !c.key.startsWith('__'));
-        firstUserColumnKeyRef.current = firstUserCol?.key ?? null;
-
-        // Wrap the first user column's renderCell to add depth indentation +
-        // an inline chevron for child rows. This is the inherited-columns
-        // pattern: child rows use the same columns but indent their first
-        // content cell.
-        const wrappedColumns = columns.map(col => {
-          if (col.key !== firstUserColumnKeyRef.current) {
-            return col;
-          }
-          const originalRenderCell = col.renderCell;
-          return {
-            ...col,
-            renderCell: (item: T): ReactNode => {
-              const depth = getDepth ? getDepth(item) : 0;
-              const originalContent = originalRenderCell
-                ? originalRenderCell(item)
-                : String(
-                    ((item as Record<string, unknown>)[col.key] as
-                      string | number | null | undefined) ?? '',
-                  );
-
-              if (depth === 0) {
-                return originalContent;
-              }
-
-              const indent = (depth - 1) * INDENT_PER_DEPTH;
-              const key = getRowKey(item);
-              const isExpanded = expandedKeys.has(key);
-              const expandable = getIsItemExpandable
-                ? getIsItemExpandable(item)
-                : getChildren(item).length > 0;
-
-              const chevron = expandable ? (
-                <ExpansionChevron
-                  isExpanded={isExpanded}
-                  onToggle={() => onToggle(key)}
-                  ariaLabel={
-                    isExpanded
-                      ? t('@astryx.tableRowExpansion.collapseRow')
-                      : t('@astryx.tableRowExpansion.expandRow')
-                  }
-                />
-              ) : (
-                <span {...stylex.props(expansionStyles.placeholder)} />
-              );
-
-              return (
-                <div
-                  {...stylex.props(
-                    expansionStyles.indentedCell,
-                    indent > 0 && expansionStyles.indent(indent),
-                  )}>
-                  {chevron}
-                  {originalContent}
-                </div>
-              );
-            },
-          };
-        });
-
-        return [expansionColumn, ...wrappedColumns];
-      },
-
-      transformHeaderCell(
-        props: HeaderCellRenderProps,
-        column: TableColumn<T>,
-      ): HeaderCellRenderProps {
-        if (column.key !== '__expansion') {
-          return props;
-        }
-
-        // Show expand-all toggle when the consumer provides the state + callback.
-        if (isAllExpanded !== undefined && onToggleExpandAll) {
-          const allExpanded = isAllExpanded === true;
-          return {
-            ...props,
-            content: (
-              <button
-                type="button"
-                {...stylex.props(expansionStyles.chevronButton)}
-                onClick={() => onToggleExpandAll(!allExpanded)}
-                aria-label={
-                  allExpanded
-                    ? t('@astryx.tableRowExpansion.collapseAllRows')
-                    : t('@astryx.tableRowExpansion.expandAllRows')
-                }>
-                <span {...stylex.props(rtlStyles.mirror)}>
-                  <span
-                    {...stylex.props(
-                      expansionStyles.chevronIcon,
-                      allExpanded && expansionStyles.chevronExpanded,
-                    )}>
-                    <Icon icon="chevronRight" size="xsm" />
-                  </span>
-                </span>
-              </button>
-            ),
-          };
-        }
-
-        return {...props, content: null};
+        const withExpansion = [expansionColumn, ...columns];
+        columnCountRef.current = withExpansion.length;
+        return withExpansion;
       },
 
       transformBodyCell(
         props: BodyCellRenderProps,
-        column: TableColumn<T>,
+        _column: TableColumn<T>,
         item: T,
       ): BodyCellRenderProps {
-        // Contribute "Expand/Collapse row" context-menu action on every cell
-        // so right-clicking anywhere in the row shows the option.
+        // Contribute the expand/collapse action on every cell; BaseTable
+        // aggregates them into one menu per row. Skip non-expandable rows.
         const expandable = getIsItemExpandable
           ? getIsItemExpandable(item)
-          : getChildren(item).length > 0;
+          : true;
         if (!expandable) {
           return props;
         }
-
         const key = getRowKey(item);
         const isExpanded = expandedKeys.has(key);
         return {
@@ -598,13 +263,14 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                 ? t('@astryx.tableRowExpansion.collapseRow')
                 : t('@astryx.tableRowExpansion.expandRow'),
               icon: (
-                <span {...stylex.props(rtlStyles.mirror)}>
-                  <Icon
-                    icon={isExpanded ? 'chevronDown' : 'chevronRight'}
-                    size="xsm"
-                    aria-hidden
-                  />
-                </span>
+                <Icon
+                  icon={isExpanded ? 'chevronDown' : 'chevronRight'}
+                  size="xsm"
+                  aria-hidden
+                  // chevronDown needs no mirroring; chevronRight (collapsed,
+                  // pointing toward the reveal direction) does.
+                  xstyle={!isExpanded && rtlStyles.mirror}
+                />
               ),
               onSelect: () => onToggle(key),
             },
@@ -613,38 +279,50 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       },
 
       transformBodyRow(props: BodyRowRenderProps, item: T): BodyRowRenderProps {
-        if (!hasRowClickExpansion) {
-          return props;
-        }
         const expandable = getIsItemExpandable
           ? getIsItemExpandable(item)
-          : getChildren(item).length > 0;
+          : true;
         if (!expandable) {
           return props;
         }
         const key = getRowKey(item);
+        if (!expandedKeys.has(key)) {
+          return props;
+        }
+
+        const panel = (
+          <tr
+            key={`${key}-expanded`}
+            {...stylex.props(expansionStyles.expandedRow)}>
+            <td
+              colSpan={columnCountRef.current}
+              {...stylex.props(expansionStyles.expandedCell)}>
+              {renderExpanded(item)}
+            </td>
+          </tr>
+        );
+
         return {
           ...props,
-          htmlProps: {
-            ...props.htmlProps,
-            onClick: () => onToggle(key),
-          },
-          xstyle: [...props.xstyle, expansionStyles.clickableRow],
+          afterRow: props.afterRow ? (
+            <>
+              {props.afterRow}
+              {panel}
+            </>
+          ) : (
+            panel
+          ),
         };
       },
     }),
     [
       expandedKeys,
       getRowKey,
-      onToggle,
-      getChildren,
-      getDepth,
+      renderExpanded,
       getIsItemExpandable,
-      hasRowClickExpansion,
-      isAllExpanded,
-      onToggleExpandAll,
-      expansionColumn,
+      onToggle,
       t,
+      expansionColumn,
     ],
   );
 }

@@ -92,6 +92,24 @@ const config: StorybookConfig = {
               '@astryxdesign/charts': [
                 path.join(rootDir, 'packages/charts/src'),
               ],
+              '@astryxdesign/richtext/*': [
+                path.join(rootDir, 'packages/richtext/src/*'),
+              ],
+              '@astryxdesign/richtext': [
+                path.join(rootDir, 'packages/richtext/src'),
+              ],
+              '@astryxdesign/theme-butter/*': [
+                path.join(rootDir, 'packages/themes/butter/src/*'),
+              ],
+              '@astryxdesign/theme-chocolate/*': [
+                path.join(rootDir, 'packages/themes/chocolate/src/*'),
+              ],
+              '@astryxdesign/theme-gothic/*': [
+                path.join(rootDir, 'packages/themes/gothic/src/*'),
+              ],
+              '@astryxdesign/theme-matcha/*': [
+                path.join(rootDir, 'packages/themes/matcha/src/*'),
+              ],
               '@astryxdesign/theme-neutral/*': [
                 path.join(rootDir, 'packages/themes/neutral/src/*'),
               ],
@@ -120,6 +138,26 @@ const config: StorybookConfig = {
           '@astryxdesign/core': path.resolve(rootDir, 'packages/core/src'),
           '@astryxdesign/lab': path.resolve(rootDir, 'packages/lab/src'),
           '@astryxdesign/charts': path.resolve(rootDir, 'packages/charts/src'),
+          '@astryxdesign/richtext': path.resolve(
+            rootDir,
+            'packages/richtext/src',
+          ),
+          '@astryxdesign/theme-butter': path.resolve(
+            rootDir,
+            'packages/themes/butter/src/source.ts',
+          ),
+          '@astryxdesign/theme-chocolate': path.resolve(
+            rootDir,
+            'packages/themes/chocolate/src/source.ts',
+          ),
+          '@astryxdesign/theme-gothic': path.resolve(
+            rootDir,
+            'packages/themes/gothic/src/source.ts',
+          ),
+          '@astryxdesign/theme-matcha': path.resolve(
+            rootDir,
+            'packages/themes/matcha/src/source.ts',
+          ),
           '@astryxdesign/theme-neutral': path.resolve(
             rootDir,
             'packages/themes/neutral/src/source.ts',

@@ -46,6 +46,14 @@ describe('generateCompressedIndex', () => {
     expect(result).toMatch(/never override --color-/);
   });
 
+  it('sends frame choice to the layout doc rather than naming a shell', () => {
+    const result = generateCompressedIndex('1.0.0');
+    const frameRule = result.split('\n').find(l => l.includes('Frame first'));
+    expect(frameRule).toContain('astryx docs layout');
+    expect(result).not.toMatch(/AppShell/);
+    expect(frameRule).not.toMatch(/https?:/);
+  });
+
   it('includes the post-generation self-check rule', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toContain('SELF-CHECK before you finish');
@@ -108,6 +116,44 @@ describe('generateCompressedIndex', () => {
     expect(result).toContain('npx @astryxdesign/cli <cmd>');
     // The header defines the mapping; the bare "run every command as `npx astryx`" footgun must be absent.
     expect(result).not.toContain('npx astryx <cmd>');
+  });
+
+  /** The `docs <topic>  a, b, c` line of the block. */
+  function topicLine(block) {
+    return (
+      block.split('\n').find(line => line.trimStart().startsWith('docs <topic>')) ?? ''
+    );
+  }
+
+  it('names the hyphenated topics, which the scan used to drop', () => {
+    // The fallback scan matched `\w+`, which does not match `-`, so five real
+    // topics were missing from every block ever written. An agent cannot ask
+    // for a topic it was never told about, and `getting-started` — the one it
+    // should reach for first — was one of them.
+    const line = topicLine(generateCompressedIndex('1.0.0'));
+    for (const topic of [
+      'getting-started',
+      'cli-integrations',
+      'browser-support',
+      'styling-libraries',
+      'working-with-ai',
+    ]) {
+      expect(line).toContain(topic);
+    }
+  });
+
+  it('lists the topics it is given, so an integration’s reach the agent', () => {
+    const line = topicLine(
+      generateCompressedIndex('1.0.0', {topics: ['tokens', 'deploying']}),
+    );
+    expect(line).toContain('tokens, deploying');
+    // The project's catalog replaces the built-in scan rather than adding to it:
+    // a topic an integration replaced must not also be listed under its old name.
+    expect(line).not.toContain('typography');
+  });
+
+  it('omits the line entirely when the project has no topics', () => {
+    expect(topicLine(generateCompressedIndex('1.0.0', {topics: []}))).toBe('');
   });
 });
 

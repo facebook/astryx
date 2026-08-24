@@ -40,7 +40,7 @@ export const docs = {
             'Keep illustrations consistent in style across the product.',
             'Use simple, flat illustrations that work in both light and dark mode.',
             'Size illustrations proportionally to the container, typically 120\u2013240px.',
-            'Center illustrations with supporting text below.',
+            'Place illustrations centered with supporting text below.',
           ],
         },
         {
@@ -59,7 +59,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Center illustrations inside Center with supporting text stacked below. Typical illustration sizes range from 120px for inline empty states to 240px for full-page onboarding screens. Always pair the illustration with a heading and optional body text to explain what the user should do next.',
+          text: 'Place illustrations inside Center with supporting text stacked below. Typical illustration sizes range from 120px for inline empty states to 240px for full-page onboarding screens. Always pair the illustration with a heading and optional body text to explain what the user should do next.',
         },
         {
           type: 'code',

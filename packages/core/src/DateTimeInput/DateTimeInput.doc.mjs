@@ -174,6 +174,13 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description:
+        'First day of week in the calendar. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
+      default: '0',
+    },
+    {
       name: 'width',
       type: 'SizeValue',
       description:
@@ -188,7 +195,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-time-input', visualProps: ['size', 'status'], states: ['disabled']},
       {
         className: 'astryx-date-time-input-date-segment',
         visualProps: ['size', 'status'],
@@ -197,6 +204,8 @@ export const docs = {
         className: 'astryx-date-time-input-time-segment',
         visualProps: ['size', 'status'],
       },
+      {className: 'astryx-date-time-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-time-input-clock-icon'},
     ],
   },
   usage: {
@@ -478,6 +487,12 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description: '日历中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
+      default: '0',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -486,7 +501,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-time-input', visualProps: ['size', 'status'], states: ['disabled']},
       {
         className: 'astryx-date-time-input-date-segment',
         visualProps: ['size', 'status'],
@@ -495,6 +510,8 @@ export const docsZh = {
         className: 'astryx-date-time-input-time-segment',
         visualProps: ['size', 'status'],
       },
+      {className: 'astryx-date-time-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-time-input-clock-icon'},
     ],
   },
 };
@@ -577,6 +594,7 @@ export const docsDense = {
     status: 'error/warning/success status w/ message',
     labelTooltip: 'tooltip text via info icon at label end',
     numberOfMonths: 'months shown simultaneously in calendar',
+    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };

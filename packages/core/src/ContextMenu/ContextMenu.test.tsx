@@ -14,6 +14,7 @@ import userEvent from '@testing-library/user-event';
 import {ContextMenu} from './ContextMenu';
 import {
   ContextMenuItem,
+  ContextMenuDivider,
   ContextMenuCheckboxItem,
   ContextMenuRadioGroup,
   ContextMenuRadioItem,
@@ -348,6 +349,27 @@ describe('ContextMenu items', () => {
   });
 });
 
+describe('ContextMenu destructive variant', () => {
+  it('forwards a destructive item variant to the shared menu item', () => {
+    render(
+      <ContextMenu
+        items={[
+          {label: 'Delete', variant: 'destructive', onClick: () => {}},
+          {label: 'Rename', onClick: () => {}},
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveAttribute('data-variant', 'destructive');
+    expect(
+      screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+    ).not.toHaveAttribute('data-variant');
+  });
+});
+
 describe('ContextMenu sections', () => {
   it('renders section with title', () => {
     render(
@@ -446,6 +468,25 @@ describe('ContextMenu compound mode', () => {
     );
 
     expect(screen.getByTestId('shortcut')).toHaveTextContent('⌘X');
+  });
+
+  it('renders the menu divider surface through the ContextMenu alias', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <ContextMenuItem label="Cut" onClick={() => {}} />
+            <ContextMenuDivider />
+            <ContextMenuItem label="Delete" onClick={() => {}} />
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    expect(screen.getByRole('separator', {hidden: true})).toHaveClass(
+      'astryx-dropdown-menu-divider',
+    );
   });
 
   it('calls onClick when compound item is clicked', async () => {

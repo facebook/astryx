@@ -114,9 +114,9 @@ export const brandTheme = defineTheme({
           type: 'list',
           style: 'ordered',
           items: [
-            'Add the name to IconName type in packages/core/src/Icon/globalIconRegistry.tsx',
-            'Add the default SVG to packages/core/src/Icon/defaultIcons.tsx',
-            'Add a row to the Available Names table in packages/cli/docs/icons.doc.mjs',
+            'Add the name to IconName type in `packages/core/src/Icon/globalIconRegistry.tsx`',
+            'Add the default SVG to `packages/core/src/Icon/defaultIcons.tsx`',
+            'Add a row to the Available Names table in `packages/cli/assets/docs/icons.doc.mjs`',
           ],
         },
       ],

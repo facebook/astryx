@@ -71,6 +71,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Makes the textarea read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only textarea is not dimmed and stays in the tab order. isDisabled takes precedence when both are set.',
+      default: 'false',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -98,7 +105,7 @@ export const docs = {
       name: 'maxLength',
       type: 'number',
       description:
-        'Maximum number of characters allowed. When set, a character counter (current/max) is displayed inside the input container, anchored to the bottom-right beneath the text. Does not enforce the limit natively; when exceeded the counter turns red and shows a warning icon (a non-color cue), and screen-reader users hear the remaining/over-limit count announced.',
+        'Maximum number of characters allowed, counted as user-perceived characters: an emoji or flag sequence counts as one. When set, a character counter (current/max) is displayed inside the input container, anchored to the bottom-right beneath the text. Does not enforce the limit natively; when exceeded the counter turns red and shows a warning icon (a non-color cue), and screen-reader users hear the remaining/over-limit count announced. Consumers validating the limit should count with characterCount (exported from the package) so enforcement matches the displayed count.',
     },
     {
       name: 'status',
@@ -179,7 +186,19 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-textarea', visualProps: ['size', 'status']},
+      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
+    ],
+    vars: [
+      {
+        name: '--_textarea-inline-padding',
+        description:
+          "Inline padding of the textarea's text. The wrapper stays flush (padding: 0) so the native resize grip sits in the true corner; this var carries the inset on the inner <textarea>, and the start icon, status/spinner, and character counter align to it.",
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {property: 'paddingInline', vars: ['--_textarea-inline-padding'], replaces: true},
     ],
   },
   usage: {
@@ -257,6 +276,13 @@ export const docsZh = {
       name: 'isDisabled',
       type: 'boolean',
       description: '禁用文本域，阻止交互。',
+      default: 'false',
+    },
+    {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        '将文本域设为只读：值以完整不透明度显示并仍随表单提交，但无法编辑。与 isDisabled 不同，只读文本域不会变暗，并保留在 Tab 顺序中。同时设置时 isDisabled 优先。',
       default: 'false',
     },
     {
@@ -355,7 +381,19 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-textarea', visualProps: ['size', 'status']},
+      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
+    ],
+    vars: [
+      {
+        name: '--_textarea-inline-padding',
+        description:
+          '文本域文本的行内内边距。外层容器保持无内边距（padding: 0），使原生缩放手柄位于真正的角落；该变量在内部 <textarea> 上承载内边距，起始图标、状态/加载指示器和字符计数器都与之对齐。',
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {property: 'paddingInline', vars: ['--_textarea-inline-padding'], replaces: true},
     ],
   },
   usage: {
@@ -402,6 +440,8 @@ export const docsDense = {
     isOptional: 'Shows "Optional" indicator. Mutually exclusive w/ isRequired.',
     isRequired: 'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
     isDisabled: 'Disables textarea, prevents interaction.',
+    isReadOnly:
+      'Read-only: value visible + still submits, but not editable. Unlike isDisabled: not dimmed, stays in tab order.',
     disabledMessage:
       'Explains why textarea is disabled. With isDisabled, shows tooltip on hover/focus + keeps textarea focusable via aria-disabled (field becomes read-only). Use instead of wrapping a disabled TextArea in Tooltip.',
     isLoading: 'Loading state w/ spinner inside input.',

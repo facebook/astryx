@@ -54,13 +54,25 @@ const menuItemStyles = stylex.create({
       ':focus': colorVars['--color-overlay-hover'],
     },
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     outline: 'none',
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
+  },
+  destructive: {
+    // Only recolor the text/icon; the hover / focus background stays the shared
+    // neutral overlay from `root` so the hover state matches every other menu
+    // item. The root color covers the label/description via the Item custom
+    // properties (and any bare text). Semantic error tokens keep it theme-aware.
+    color: colorVars['--color-error'],
+    '--_item-label-color': colorVars['--color-error'],
+    '--_item-description-color': colorVars['--color-error'],
   },
 });
 
@@ -91,6 +103,19 @@ export interface DropdownMenuItemProps extends Pick<
   isDisabled?: boolean;
   /** Additional content to render after the label/description. */
   endContent?: ReactNode;
+  /**
+   * Whether activating the item closes the menu. Set `false` for an action
+   * that reports its result on the item itself (a copy row swapping to
+   * "Copied"), matching the checkbox and radio items, which already decide
+   * this for themselves.
+   * @default true
+   */
+  hasCloseOnSelect?: boolean;
+  /**
+   * Visual variant. `'destructive'` renders the label, description, and icon in
+   * the error color for dangerous actions (e.g. Delete). @default 'default'
+   */
+  variant?: 'default' | 'destructive';
 }
 
 /**
@@ -103,7 +128,7 @@ export interface DropdownMenuItemProps extends Pick<
  * ```
  * <DropdownMenu button={{ label: 'Actions' }}>
  *   <DropdownMenuItem icon={PencilIcon} label="Edit" onClick={handleEdit} />
- *   <DropdownMenuItem label="Delete" endContent={<Badge label="⌘D" />} onClick={handleDelete} />
+ *   <DropdownMenuItem label="Delete" variant="destructive" onClick={handleDelete} />
  * </DropdownMenu>
  * ```
  */
@@ -114,6 +139,8 @@ export function DropdownMenuItem({
   onClick,
   isDisabled = false,
   endContent,
+  hasCloseOnSelect = true,
+  variant = 'default',
   xstyle,
   className,
   style,
@@ -122,17 +149,21 @@ export function DropdownMenuItem({
   const menuSize = ctx?.menuSize ?? 'md';
 
   const handleClick = useCallback(() => {
-    if (isDisabled || !onClick) {
+    if (isDisabled) {
       return;
     }
-    onClick();
-    ctx?.closeMenu();
-  }, [isDisabled, onClick, ctx]);
+    onClick?.();
+    if (hasCloseOnSelect) {
+      ctx?.closeMenu();
+    }
+  }, [isDisabled, onClick, hasCloseOnSelect, ctx]);
 
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
     [isDisabled],
   );
+
+  const isDestructive = variant === 'destructive';
 
   return (
     <Item
@@ -141,7 +172,10 @@ export function DropdownMenuItem({
       onPointerMove={handlePointerMove}
       startContent={
         icon
-          ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
+          ? renderIconSlot(icon, {
+              size: 'sm',
+              color: isDestructive ? 'error' : 'secondary',
+            })
           : undefined
       }
       label={label}
@@ -152,13 +186,20 @@ export function DropdownMenuItem({
       xstyle={[
         menuItemStyles.root,
         itemSizeStyles[menuSize],
+        isDestructive && menuItemStyles.destructive,
         isDisabled && menuItemStyles.disabled,
         xstyle,
       ]}
-      {...mergeProps(themeProps('dropdown-menu-item', {size: menuSize}), {
-        className,
-        style,
-      })}
+      {...mergeProps(
+        themeProps('dropdown-menu-item', {
+          size: menuSize,
+          variant: isDestructive ? 'destructive' : null,
+        }),
+        {
+          className,
+          style,
+        },
+      )}
     />
   );
 }

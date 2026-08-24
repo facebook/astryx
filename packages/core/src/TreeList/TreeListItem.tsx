@@ -24,8 +24,9 @@ import {
   easeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {useIcon} from '../Icon';
-import {mergeProps, rtlStyles} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {Icon} from '../Icon';
+import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
@@ -51,14 +52,6 @@ const styles = stylex.create({
     // redeclares these vars (default: 'none' / '0'), so a descendant row's
     // default shadows an ancestor's active value — the ring can never leak
     // past the nearest containing treeitem, however deep the tree nests.
-    '--_tree-focus-outline': {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--_tree-focus-outline-offset': {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   childGroup: {
     margin: 0,
@@ -70,6 +63,17 @@ const styles = stylex.create({
   },
   rowWrapper: {
     position: 'relative',
+    // Inter-row gap. Half the public `--tree-list-row-gap` lever sits above and
+    // half below the row box; because this is PADDING (not margin) it cannot
+    // collapse, so adjacent rows end up a full gap apart — and it rides the
+    // `rowWrapper`, which carries no theme target, so the paintable
+    // `tree-list-item` stays a pure paint seam (layout lives off it). The <li>s
+    // stay contiguous — the gap is padding INSIDE each <li>, not space between
+    // them — so the per-<li> connector guide can still span it and read as a
+    // continuous line (see TreeListBranches). The lever's default is a subtle
+    // `--spacing-0-5` (2px, set on the tree-list root); a theme widens or closes
+    // it via the `tree-list` target.
+    paddingBlock: 'calc(var(--tree-list-row-gap, 0px) / 2)',
   },
   contentWrapper: {
     borderRadius: radiusVars['--radius-element'],
@@ -77,7 +81,8 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
-    outline: 'none',
+    // No `outline: 'none'` here: this element receives the shared focus ring,
+    // which already defaults to none, and the shorthand would erase it.
     overflow: 'hidden',
     position: 'relative',
     boxSizing: 'border-box',
@@ -90,33 +95,23 @@ const styles = stylex.create({
     marginInlineStart: 'var(--_tree-indent, 0px)',
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
   },
-  focusVisibleOutline: {
-    outline: {
-      // Reads the row's own --_tree-focus-outline (published on the <li> in
-      // `wrapper`), which resolves to the nearest containing treeitem only.
-      default: 'var(--_tree-focus-outline, none)',
-      // Also support inner focusable actions.
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: 'var(--_tree-focus-outline-offset, 0)',
-      ':has(:focus-visible)': '2px',
-    },
-  },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     pointerEvents: 'none' as const,
   },
@@ -125,7 +120,10 @@ const styles = stylex.create({
   },
   invisibleButton: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     display: 'flex',
@@ -138,7 +136,10 @@ const styles = stylex.create({
   },
   invisibleAnchor: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     display: 'flex',
@@ -182,7 +183,10 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     height: spacingVars['--spacing-4'],
     fontSize: spacingVars['--spacing-4'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     border: 'none',
     background: 'none',
     padding: 0,
@@ -199,7 +203,10 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     height: spacingVars['--spacing-4'],
     fontSize: spacingVars['--spacing-4'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
     marginInlineStart: spacingVars['--spacing-1'],
@@ -207,15 +214,34 @@ const styles = stylex.create({
   },
   chevronSvg: {
     display: 'flex',
+    // The chevron column is sized in spacing tokens by the button/container
+    // around it (--spacing-4 = 16px), not on Icon's rem scale, so the glyph's
+    // box is pinned to that same token. Icon's `sm` (1rem) only coincides with
+    // 16px at a 16px root font-size; drifting off the token would knock the
+    // glyph out of its 16px column.
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
+    fontSize: spacingVars['--spacing-4'],
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
+  // The RTL mirror is folded into each state's transform rather than living on
+  // a parent span. Both are `transform`, so on one element the later value
+  // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
+  // exactly as the nested elements did, while leaving a single element to
+  // carry the glyph's theme target.
   chevronExpanded: {
-    transform: 'rotate(90deg)',
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
   },
   chevronCollapsed: {
-    transform: 'rotate(0deg)',
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
   },
 });
 
@@ -273,6 +299,16 @@ export interface TreeListItemInternalProps {
   isDisabled?: boolean;
   isSelected?: boolean;
   hasChildren: boolean;
+  /**
+   * Whether the tree contains at least one expandable item anywhere (i.e. a
+   * caret exists somewhere to align labels under). A leaf reserves the chevron
+   * column — the extra offset that lines its label up past an expandable
+   * ancestor/sibling's caret — whenever this is true, so it stays indented
+   * beyond its parent's label. Only a fully flat tree (no expandable items at
+   * all) has no caret to align under, so its rows sit flush (no chevron-column
+   * offset). Computed once for the whole tree by TreeList.
+   */
+  hasExpandableItems: boolean;
   nestedLevel: number;
   isLast: boolean;
   ancestorsIsLast: ReadonlyArray<boolean>;
@@ -315,6 +351,7 @@ export function TreeListItem({
   isDisabled = false,
   isSelected = false,
   hasChildren,
+  hasExpandableItems,
   nestedLevel,
   isLast,
   ancestorsIsLast,
@@ -328,7 +365,6 @@ export function TreeListItem({
   isTabbable,
 }: TreeListItemInternalProps) {
   const t = useTranslator();
-  const chevronRightIcon = useIcon('chevronRight');
   const labelId = useId();
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
@@ -367,15 +403,19 @@ export function TreeListItem({
 
   // Per-level indent distance. The per-level step is the public, themeable
   // `--tree-list-indent` lever (default `--spacing-4`, set on the tree-list
-  // root). Leaves add a fixed chevron-column offset (chevron width + gap) so
-  // their labels line up with sibling parents' labels; that offset is tied to
+  // root). A leaf adds a fixed chevron-column offset (chevron width + gap) so
+  // its label lines up past an expandable ancestor/sibling's caret — but ONLY
+  // when the tree actually contains an expandable item somewhere. In a fully
+  // flat tree there is no caret to align under, so the offset is pointless and
+  // every row sits flush, like a parent at that level. That offset is tied to
   // the chevron's own dimensions, not the indent step, so it does not scale
   // with the lever. Published as the private `--_tree-indent` and consumed by
   // `contentWrapper`'s stylesheet `margin-inline-start` (kept out of the inline
   // style so the theme layer can override it — see #4308).
-  const indentDistance = hasChildren
-    ? `calc(${nestedLevel} * var(--tree-list-indent))`
-    : `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+  const reservesChevronColumn = !hasChildren && hasExpandableItems;
+  const indentDistance = reservesChevronColumn
+    ? `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`
+    : `calc(${nestedLevel} * var(--tree-list-indent))`;
   const indentStyle: IndentStyle = {'--_tree-indent': indentDistance};
 
   const labelAndDescription = (
@@ -406,16 +446,24 @@ export function TreeListItem({
     </>
   );
 
+  // <Icon> renders the glyph's span itself — carrying the pre-existing
+  // astryx-icon target — so the rotation rides on that same element instead of
+  // an extra wrapper: a theme can still restyle the mark and its open/closed
+  // transform through one selector.
   const chevronIcon = (
-    <span {...stylex.props(rtlStyles.mirror)}>
-      <span
-        {...stylex.props(
-          styles.chevronSvg,
-          isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
-        )}>
-        {chevronRightIcon}
-      </span>
-    </span>
+    <Icon
+      icon="chevronRight"
+      // Nearest size to the 16px chevron column; `chevronSvg` re-pins the exact
+      // box because the column is spacing-token-sized, not rem-sized.
+      size="sm"
+      // The button/container owns the chevron color (--color-icon-secondary);
+      // inheriting keeps that as the single source.
+      color="inherit"
+      xstyle={[
+        styles.chevronSvg,
+        isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
+      ]}
+    />
   );
 
   const chevron = hasChildren ? (
@@ -521,7 +569,7 @@ export function TreeListItem({
       data-tree-id={id}
       data-tree-level={nestedLevel + 1}
       data-tree-disabled={isDisabled || undefined}
-      {...stylex.props(styles.wrapper)}>
+      {...focusOutlineProps.publishFocusVisibleVars(styles.wrapper)}>
       {variant !== 'noGuides' && (
         <div {...stylex.props(styles.treeBranches)}>
           <TreeListBranches
@@ -539,16 +587,20 @@ export function TreeListItem({
               selected: isSelected ? 'selected' : null,
               disabled: isDisabled ? 'disabled' : null,
             }),
-            stylex.props(
-              styles.contentWrapper,
-              densityStyles[density],
-              (isInteractive || (hasChildren && onClick == null)) &&
-                styles.interactive,
-              (isInteractive || (hasChildren && onClick == null)) &&
-                styles.focusVisibleOutline,
-              isDisabled && styles.disabled,
-              isSelected && styles.selected,
-            ),
+            isInteractive || (hasChildren && onClick == null)
+              ? focusOutlineProps.focusWithinOrPublished(
+                  styles.contentWrapper,
+                  densityStyles[density],
+                  styles.interactive,
+                  isDisabled && styles.disabled,
+                  isSelected && styles.selected,
+                )
+              : stylex.props(
+                  styles.contentWrapper,
+                  densityStyles[density],
+                  isDisabled && styles.disabled,
+                  isSelected && styles.selected,
+                ),
           )}
           style={indentStyle}
           onClick={handleClick}>

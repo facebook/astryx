@@ -17,7 +17,7 @@
 
 export {Theme} from './Theme';
 export {MediaTheme} from './MediaTheme';
-export type {MediaThemeProps} from './MediaTheme';
+export type {MediaThemeProps, MediaThemeMode} from './MediaTheme';
 export {
   defineTheme,
   generateThemeCSS,
@@ -90,6 +90,7 @@ export {
   spacingDefaults,
   sizeDefaults,
   borderDefaults,
+  focusDefaults,
   radiusDefaults,
   shadowDefaults,
   durationDefaults,
@@ -102,6 +103,7 @@ export {
   spacingVars,
   sizeVars,
   borderVars,
+  focusVars,
   radiusVars,
   shadowVars,
   durationVars,
@@ -130,6 +132,19 @@ export type {
 
 export {useTheme, useThemeName, ThemeContext} from './useTheme';
 export type {UseThemeReturn, ThemeContextValue} from './useTheme';
+
+export type {
+  IndicatorComponent,
+  IndicatorFamily,
+  IndicatorFamilyMap,
+  IndicatorMap,
+  IndicatorName,
+  IndicatorNameOfFamily,
+  IndicatorProps,
+  IndicatorRegistry,
+  IndicatorSize,
+  IndicatorState,
+} from '../Indicator';
 export {
   resolveThemeToken,
   resolveThemeTokens,
