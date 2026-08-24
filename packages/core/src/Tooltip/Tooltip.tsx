@@ -146,6 +146,10 @@ export interface TooltipProps {
    * - `true`: force-show the tooltip (hover/focus hide is suppressed)
    * - `false`: force-hide the tooltip
    * - `undefined`: uncontrolled — hover/focus triggers manage visibility
+   *
+   * A controlled tooltip also stops taking Escape: the system cannot dismiss
+   * something whose visibility you are holding, so the press falls through to
+   * whatever is underneath — a Dialog hosting it will close instead.
    */
   isOpen?: boolean;
 
