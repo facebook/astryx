@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-
 /**
  * verify-exports.mjs
  *
@@ -23,6 +22,11 @@
  * #4569 (`await import('@astryxdesign/core/Text')` succeeds on the unfixed bytes
  * even though the Tooltip specifier inside it is broken). Catching that needs a
  * static scan; see scripts/check-fully-specified.mjs.
+ *
+ * Coverage follows what actually ships, not what `private` says: `canaryOnly`
+ * packages are published to the `@canary` dist-tag, and their runtime entry is
+ * reached through `default`. Skipping both is why #5000 shipped an unimportable
+ * dist past this gate (#5132).
  *
  * Exit code 1 if any exports are broken.
  */
@@ -47,9 +51,9 @@ const SKIP_CONDITIONS = new Set(['source']);
 /**
  * Find all package.json files in packages/ (including nested workspaces like packages/themes/*)
  */
-function findPackageJsons() {
+function findPackageJsons(root) {
   const results = [];
-  const packagesDir = join(rootDir, 'packages');
+  const packagesDir = join(root, 'packages');
 
   function walk(dir, depth = 0) {
     if (depth > 2) return;
@@ -112,101 +116,154 @@ function checkWildcard(pkgDir, exportValue) {
  * ESM targets worth actually importing. `.cjs` and `require`-condition targets
  * are skipped (loading CJS here would fire side effects under a different
  * module system), as are type declarations and assets, which Node cannot import
- * as modules anyway. `default` targets are deliberately outside this probe:
- * many are browser-focused, and evaluating every default entry would broaden
- * this packaging check beyond the explicit ESM import surface it protects.
+ * as modules anyway.
+ *
+ * `default` is probed when it is the export's real ESM entry. It is not always:
+ * Node takes the first matching condition, so a `default` declared beside an
+ * `import` is the fallback for some other consumer, and a `default` nested
+ * under `require` is CJS. Everything else reaching `default` is what a
+ * consumer's `import` resolves to — for core, charts, lab and richtext it is
+ * the *only* runtime condition, so leaving it unprobed meant their entry points
+ * were never loaded (#5132). Non-module targets stay out either way: the
+ * extension filter, not the condition name, is what excludes a stylesheet or a
+ * JSON asset.
+ *
+ * The `import`-sibling check is sibling-scoped, so a `default` alongside a
+ * nested `node: {import: ...}` is still probed even though Node would resolve
+ * the `node` branch first. That is intentional: such a `default` is what
+ * non-Node consumers load, and only module-resolution failures are reported
+ * (see RESOLUTION_CODES), so an environment-specific runtime error in one
+ * cannot fail this gate. No workspace manifest uses that shape today.
  */
 const IMPORTABLE = /\.(js|mjs)$/;
-const NON_PROBED_CONDITIONS = new Set(['types', 'require', 'default']);
-
-/** Targets collected during the existence pass, imported afterwards. */
-const importTargets = [];
+const NON_PROBED_CONDITIONS = new Set(['types', 'require']);
 
 /**
- * Recursively check an exports map value.
- * Handles string paths, conditional objects, and nested structures.
+ * Whether a target that exists on disk is one this gate should import.
+ *
+ * `conditions` is the chain of export conditions above it, outermost first;
+ * `siblings` are the condition keys declared alongside it.
  */
-function checkExportsValue(pkgDir, pkgName, exportKey, value, parentCondition) {
-  const errors = [];
+function isProbeableTarget(value, conditions, siblings) {
+  if (!IMPORTABLE.test(value)) return false;
+  // A `require` or `types` anywhere above this target rules it out, not just
+  // immediately above it — a `default` nested inside `require` is still CJS.
+  if (conditions.some(condition => NON_PROBED_CONDITIONS.has(condition))) {
+    return false;
+  }
+  if (conditions.at(-1) === 'default' && siblings.has('import')) return false;
+  return true;
+}
 
-  if (typeof value === 'string') {
-    const isWildcard =
-      exportKey.split('*').length === 2 && value.split('*').length === 2;
-    const ok = isWildcard ? checkWildcard(pkgDir, value) : checkFile(pkgDir, value);
-    if (!ok) {
-      const label = parentCondition
-        ? `exports["${exportKey}"].${parentCondition}`
-        : `exports["${exportKey}"]`;
-      errors.push(`  ✗ ${label} → ${value} (${isWildcard ? 'no files match pattern' : 'file not found'})`);
-    } else if (
-      !isWildcard &&
-      IMPORTABLE.test(value) &&
-      !NON_PROBED_CONDITIONS.has(parentCondition)
-    ) {
-      importTargets.push({
+/**
+ * Whether a package's published artifacts are in scope for this gate.
+ *
+ * `private: true` normally means workspace-only — nothing is published, so
+ * there is no consumer for a broken export to reach. `astryx.canaryOnly`
+ * packages are the exception: they carry `private: true` purely as npm's hard
+ * guarantee against a stable publish, and the release workflow strips it in its
+ * ephemeral checkout to publish them on the `@canary` dist-tag. Those do ship,
+ * so they get the same checks.
+ *
+ * This is deliberately the same predicate the canary publish loop uses —
+ * `(!p.private || p.astryx?.canaryOnly)` in .github/workflows/release.yml — and
+ * it tests `canaryOnly` for truthiness for the same reason. A stricter test here
+ * (`=== true`) would let a package the publisher ships go unverified, which is
+ * the hole this gate exists to close. Whatever release.yml publishes, this
+ * checks.
+ */
+export function isPublishedPackage(pkg) {
+  return !pkg.private || Boolean(pkg.astryx?.canaryOnly);
+}
+
+/**
+ * Walk one package's exports map. Reports targets that do not exist, and
+ * collects the ESM targets worth importing.
+ */
+export function checkPackageExports(pkgDir, pkgName, exportsMap) {
+  const errors = [];
+  const targets = [];
+
+  const labelFor = (exportKey, conditions) =>
+    conditions.length > 0
+      ? `exports["${exportKey}"].${conditions.join('.')}`
+      : `exports["${exportKey}"]`;
+
+  function walk(exportKey, value, conditions, siblings) {
+    if (typeof value === 'string') {
+      const isWildcard =
+        exportKey.split('*').length === 2 && value.split('*').length === 2;
+      const ok = isWildcard
+        ? checkWildcard(pkgDir, value)
+        : checkFile(pkgDir, value);
+      if (!ok) {
+        errors.push(
+          `  ✗ ${labelFor(exportKey, conditions)} → ${value} (${isWildcard ? 'no files match pattern' : 'file not found'})`,
+        );
+        return;
+      }
+      if (isWildcard || !isProbeableTarget(value, conditions, siblings)) return;
+      targets.push({
         pkgName,
-        label: parentCondition
-          ? `exports["${exportKey}"].${parentCondition}`
-          : `exports["${exportKey}"]`,
+        label: labelFor(exportKey, conditions),
         value,
         abs: resolve(pkgDir, value),
       });
+      return;
     }
-  } else if (typeof value === 'object' && value !== null) {
-    for (const [condition, conditionValue] of Object.entries(value)) {
-      if (SKIP_CONDITIONS.has(condition)) continue;
-      errors.push(
-        ...checkExportsValue(pkgDir, pkgName, exportKey, conditionValue, condition),
-      );
+
+    if (typeof value === 'object' && value !== null) {
+      const keys = new Set(Object.keys(value));
+      for (const [condition, conditionValue] of Object.entries(value)) {
+        if (SKIP_CONDITIONS.has(condition)) continue;
+        walk(exportKey, conditionValue, [...conditions, condition], keys);
+      }
     }
   }
 
-  return errors;
+  for (const [exportKey, value] of Object.entries(exportsMap)) {
+    walk(exportKey, value, [], new Set());
+  }
+
+  return {errors, targets};
 }
 
-// --- Main ---
+/**
+ * Run the existence pass over every published package under `root`/packages.
+ * Returns one result per checked package and the import targets collected from
+ * all of them. Reports nothing — the caller prints.
+ */
+export function verifyExports(root) {
+  const results = [];
+  const targets = [];
 
-const packageJsons = findPackageJsons();
-let totalErrors = 0;
-let packagesChecked = 0;
+  for (const pkgJsonPath of findPackageJsons(root)) {
+    const pkgDir = dirname(pkgJsonPath);
+    const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
 
-for (const pkgJsonPath of packageJsons) {
-  const pkgDir = dirname(pkgJsonPath);
-  const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
+    if (!isPublishedPackage(pkg)) continue;
 
-  // Skip private packages
-  if (pkg.private) continue;
+    const errors = [];
 
-  const errors = [];
-
-  // Check top-level fields (main, module, types)
-  for (const field of TOP_LEVEL_FIELDS) {
-    if (pkg[field] && !checkFile(pkgDir, pkg[field])) {
-      errors.push(`  ✗ ${field} → ${pkg[field]} (file not found)`);
+    // Check top-level fields (main, module, types)
+    for (const field of TOP_LEVEL_FIELDS) {
+      if (pkg[field] && !checkFile(pkgDir, pkg[field])) {
+        errors.push(`  ✗ ${field} → ${pkg[field]} (file not found)`);
+      }
     }
+
+    // Check exports map
+    if (pkg.exports && typeof pkg.exports === 'object') {
+      const exports = checkPackageExports(pkgDir, pkg.name, pkg.exports);
+      errors.push(...exports.errors);
+      targets.push(...exports.targets);
+    }
+
+    results.push({name: pkg.name, path: pkgJsonPath, errors});
   }
 
-  // Check exports map
-  if (pkg.exports && typeof pkg.exports === 'object') {
-    for (const [exportKey, exportValue] of Object.entries(pkg.exports)) {
-      errors.push(...checkExportsValue(pkgDir, pkg.name, exportKey, exportValue));
-    }
-  }
-
-  packagesChecked++;
-
-  if (errors.length > 0) {
-    console.error(`\n❌ ${pkg.name} (${pkgJsonPath})`);
-    for (const error of errors) {
-      console.error(error);
-    }
-    totalErrors += errors.length;
-  } else {
-    console.log(`✓ ${pkg.name}`);
-  }
+  return {results, targets};
 }
-
-console.log(`\n${packagesChecked} packages checked.`);
 
 // Second pass: actually load each runtime ESM target. A target can exist and
 // still be unresolvable — see #4620, where every theme's `./built` entry was
@@ -227,53 +284,98 @@ const RESOLUTION_CODES = new Set([
 /** Sentinel exit code, distinct from anything an executable entry might use. */
 const IMPORT_FAILED = 9;
 
-let importFailures = 0;
+/**
+ * Import each target in a child process. Returns the ones that failed for a
+ * module-resolution reason, as `{...target, code}`.
+ */
+export function probeImportTargets(targets) {
+  const failures = [];
 
-for (const target of importTargets) {
-  const probe =
-    `import(${JSON.stringify(pathToFileURL(target.abs).href)})` +
-    `.then(() => process.exit(0))` +
-    `.catch(e => { process.stderr.write(String((e && e.code) || (e && e.name) || e)); process.exit(${IMPORT_FAILED}); })`;
+  for (const target of targets) {
+    const probe =
+      `import(${JSON.stringify(pathToFileURL(target.abs).href)})` +
+      `.then(() => process.exit(0))` +
+      `.catch(e => { process.stderr.write(String((e && e.code) || (e && e.name) || e)); process.exit(${IMPORT_FAILED}); })`;
 
-  const run = spawnSync(process.execPath, ['--input-type=module', '-e', probe], {
-    encoding: 'utf-8',
-    timeout: 20_000,
-    stdio: ['ignore', 'ignore', 'pipe'],
-  });
+    const run = spawnSync(
+      process.execPath,
+      ['--input-type=module', '-e', probe],
+      {
+        encoding: 'utf-8',
+        timeout: 20_000,
+        stdio: ['ignore', 'ignore', 'pipe'],
+      },
+    );
 
-  // Anything other than our sentinel is the module's own business: an
-  // executable entry that printed help and exited 0, or one that failed for a
-  // reason unrelated to packaging. Only resolution defects concern us here.
-  if (run.status !== IMPORT_FAILED) continue;
+    // Anything other than our sentinel is the module's own business: an
+    // executable entry that printed help and exited 0, or one that failed for a
+    // reason unrelated to packaging. Only resolution defects concern us here.
+    if (run.status !== IMPORT_FAILED) continue;
 
-  const code = (run.stderr || '').trim().split('\n')[0];
-  if (!RESOLUTION_CODES.has(code)) continue;
+    const code = (run.stderr || '').trim().split('\n')[0];
+    if (!RESOLUTION_CODES.has(code)) continue;
 
-  if (importFailures === 0) {
+    failures.push({...target, code});
+  }
+
+  return failures;
+}
+
+function main() {
+  const {results, targets} = verifyExports(rootDir);
+  let totalErrors = 0;
+
+  for (const {name, path: pkgJsonPath, errors} of results) {
+    if (errors.length > 0) {
+      console.error(`\n❌ ${name} (${pkgJsonPath})`);
+      for (const error of errors) {
+        console.error(error);
+      }
+      totalErrors += errors.length;
+    } else {
+      console.log(`✓ ${name}`);
+    }
+  }
+
+  console.log(`\n${results.length} packages checked.`);
+
+  const importFailures = probeImportTargets(targets);
+
+  if (importFailures.length > 0) {
     console.error('\n❌ Export targets that exist but cannot be imported:\n');
+    for (const failure of importFailures) {
+      console.error(
+        `  ✗ ${failure.pkgName} ${failure.label} → ${failure.value}`,
+      );
+      console.error(`      ${failure.code}`);
+    }
+  } else if (targets.length > 0) {
+    console.log(`${targets.length} ESM export target(s) imported cleanly.`);
   }
-  console.error(`  ✗ ${target.pkgName} ${target.label} → ${target.value}`);
-  console.error(`      ${code}`);
-  importFailures++;
-}
 
-if (importFailures === 0 && importTargets.length > 0) {
-  console.log(`${importTargets.length} ESM export target(s) imported cleanly.`);
-}
+  const failures = totalErrors + importFailures.length;
 
-const failures = totalErrors + importFailures;
-
-if (failures > 0) {
-  if (totalErrors > 0) {
-    console.error(`\n${totalErrors} broken export(s) found. Fix the paths above.`);
-  }
-  if (importFailures > 0) {
-    console.error(
-      `\n${importFailures} export target(s) exist but fail to load. A consumer importing ` +
-        `them from Node gets the same error.`,
+  if (failures > 0) {
+    if (totalErrors > 0) {
+      console.error(
+        `\n${totalErrors} broken export(s) found. Fix the paths above.`,
+      );
+    }
+    if (importFailures.length > 0) {
+      console.error(
+        `\n${importFailures.length} export target(s) exist but fail to load. A consumer importing ` +
+          `them from Node gets the same error.`,
+      );
+    }
+    process.exit(1);
+  } else {
+    console.log(
+      'All exports resolve to existing files; probed ESM targets load cleanly.',
     );
   }
-  process.exit(1);
-} else {
-  console.log('All exports resolve to existing files; probed ESM targets load cleanly.');
+}
+
+// Run as a script, but stay importable for unit tests.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
 }
