@@ -604,31 +604,6 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "ListInput::Empty Mailing List::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
-      "key": "ListInput::Expense Allocations::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
-      "key": "ListInput::Family Member Declaration::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
-      "key": "ListInput::Responsive Family Member Declaration::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
-      "key": "ListInput::Responsive Itinerary::aria-allowed-attr",
-      "impact": "critical",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-allowed-attr?application=playwright"
-    },
-    {
       "key": "LogStream::Controlled Follow::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"

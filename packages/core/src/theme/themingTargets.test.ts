@@ -19,13 +19,15 @@
  * and a documented class nothing renders is a selector that silently matches
  * nothing in a theme author's CSS.
  *
- * SCOPE — the `docs` block is checked PACKAGE-WIDE, across `@astryxdesign/core`
- * and `@astryxdesign/lab`. Package-wide rather than per-directory because a
- * class is legitimately rendered in one directory and documented in another:
- * `Code/` and `Heading/` ship no doc of their own (CodeBlock and Text document
- * them), and `hooks/useInputStatusIcon` renders `astryx-input-status-icon`,
- * which Field documents. Across both packages because `packages/lab` renders 10
- * targets of its own and was never scanned.
+ * SCOPE — the `docs` block is checked PACKAGE-WIDE, across `@astryxdesign/core`,
+ * `@astryxdesign/lab` and `@astryxdesign/richtext`. Package-wide rather than
+ * per-directory because a class is legitimately rendered in one directory and
+ * documented in another: `Code/` and `Heading/` ship no doc of their own
+ * (CodeBlock and Text document them), and `hooks/useInputStatusIcon` renders
+ * `astryx-input-status-icon`, which Field documents. Across all three packages
+ * because only core was ever scanned, while lab renders 9 targets of its own
+ * and richtext one whose reflected props went undocumented. `@astryxdesign/
+ * charts` is deliberately absent: it renders no theme target at all.
  *
  * The `docsZh` block stays a PER-DIRECTORY check: only some components carry a
  * zh translation, so a package-wide set would report every untranslated
@@ -58,6 +60,10 @@ const SRC_DIR = join(__dirname, '..');
 const PACKAGES = [
   {name: '@astryxdesign/core', src: SRC_DIR},
   {name: '@astryxdesign/lab', src: resolve(__dirname, '../../../lab/src')},
+  {
+    name: '@astryxdesign/richtext',
+    src: resolve(__dirname, '../../../richtext/src'),
+  },
 ];
 
 // ---------------------------------------------------------------------------
