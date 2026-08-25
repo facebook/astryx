@@ -90,6 +90,20 @@ export const docs = {
       default: "'Search...'",
     },
     {
+      name: 'emptyText',
+      type: 'ReactNode',
+      description:
+        'Content shown in the dropdown panel when there are no options to show.',
+      default: "'No options'",
+    },
+    {
+      name: 'emptySearchText',
+      type: 'ReactNode',
+      description:
+        'Content shown in the dropdown panel when a search query matches no options.',
+      default: "'No results found'",
+    },
+    {
       name: 'placeholder',
       type: 'string',
       description: 'Placeholder text shown when no value is selected.',

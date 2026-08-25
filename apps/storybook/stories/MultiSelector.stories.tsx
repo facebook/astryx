@@ -182,6 +182,42 @@ export const Searchable: Story = {
   decorators: [Story => <Story />],
 };
 
+// Empty states
+export const EmptyStates: Story = {
+  render: () => {
+    const [a, setA] = useState<string[]>([]);
+    const [b, setB] = useState<string[]>([]);
+    const [c, setC] = useState<string[]>([]);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
+        <MultiSelector
+          label="No options (default)"
+          options={[]}
+          value={a}
+          onChange={setA}
+        />
+        <MultiSelector
+          label="No options (custom)"
+          options={[]}
+          value={b}
+          onChange={setB}
+          emptyText="No countries loaded yet"
+        />
+        <MultiSelector
+          label="Search for xyz (custom)"
+          options={['Canada', 'France', 'Japan']}
+          value={c}
+          onChange={setC}
+          hasSearch
+          emptySearchText="Nothing matches that country"
+        />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
 // Trigger display modes
 export const TriggerModes: Story = {
   render: () => {

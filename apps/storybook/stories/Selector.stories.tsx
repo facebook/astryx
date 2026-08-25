@@ -374,6 +374,42 @@ export const Searchable: Story = {
   },
 };
 
+// Empty states
+export const EmptyStates: Story = {
+  render: () => {
+    const [a, setA] = useState<string | undefined>(undefined);
+    const [b, setB] = useState<string | undefined>(undefined);
+    const [c, setC] = useState<string | undefined>(undefined);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
+        <Selector
+          label="No options (default)"
+          options={[]}
+          value={a}
+          onChange={v => setA(v)}
+        />
+        <Selector
+          label="No options (custom)"
+          options={[]}
+          value={b}
+          onChange={v => setB(v)}
+          emptyText="No fruit in season yet"
+        />
+        <Selector
+          label="Search for xyz (custom)"
+          options={['Apple', 'Banana', 'Cherry']}
+          value={c}
+          onChange={v => setC(v)}
+          hasSearch
+          emptySearchText="Nothing matches that fruit"
+        />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
 // Custom render
 export const CustomRender: Story = {
   render: args => {

@@ -605,6 +605,18 @@ export interface MultiSelectorProps<
   searchPlaceholder?: string;
 
   /**
+   * Content shown in the panel when there are no options to show.
+   * @default 'No options'
+   */
+  emptyText?: ReactNode;
+
+  /**
+   * Content shown in the panel when a search query matches no options.
+   * @default 'No results found'
+   */
+  emptySearchText?: ReactNode;
+
+  /**
    * How to display selected items in the trigger.
    * - 'count': "3 selected"
    * - 'labels': "Name, Email, +3"
@@ -726,6 +738,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   selectAllLabel: selectAllLabelFromProps,
   hasSearch = false,
   searchPlaceholder: searchPlaceholderFromProps,
+  emptyText: emptyTextFromProps,
+  emptySearchText: emptySearchTextFromProps,
   triggerDisplay = 'count',
   formatValue,
   maxBadges = 3,
@@ -747,6 +761,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     selectAllLabelFromProps ?? t('@astryx.multiSelector.selectAll');
   const searchPlaceholder =
     searchPlaceholderFromProps ?? t('@astryx.multiSelector.searchPlaceholder');
+  const emptyText = emptyTextFromProps ?? t('@astryx.multiSelector.empty');
+  const emptySearchText =
+    emptySearchTextFromProps ?? t('@astryx.multiSelector.emptySearch');
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
     variant === 'ghost' && statusVariant === 'attached'
@@ -1425,7 +1442,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             themeProps('multi-selector-empty-state'),
             stylex.props(styles.emptyState),
           )}>
-          No results found
+          {searchQuery ? emptySearchText : emptyText}
         </div>,
       );
       return elements;
@@ -1515,7 +1532,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     flushPending();
 
     return elements;
-  }, [options, renderItem, sortedItems, searchQuery, hasSelectAll]);
+  }, [
+    options,
+    renderItem,
+    sortedItems,
+    searchQuery,
+    hasSelectAll,
+    emptyText,
+    emptySearchText,
+  ]);
 
   // The detached message box renders its own leading status icon, so the
   // on-field icon would duplicate it — keep the chevron indicator instead.

@@ -943,6 +943,69 @@ describe('Selector', () => {
       expect(empty).toHaveAttribute('role', 'presentation');
     });
 
+    it('renders emptySearchText in place of the default message', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      const listbox = screen.getByRole('listbox', h);
+      expect(
+        within(listbox).getByText('Nothing like that here'),
+      ).toBeInTheDocument();
+      expect(
+        within(listbox).queryByText('No results found'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('renders emptyText, not emptySearchText, with no options and no query', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[]}
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+      const listbox = screen.getByRole('listbox', h);
+      expect(within(listbox).getByText('No options')).toBeInTheDocument();
+      expect(
+        within(listbox).queryByText('Nothing like that here'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('renders emptyText when there are no options and no search input', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[]}
+          onChange={() => {}}
+          emptyText="Add a fruit first"
+        />,
+      );
+      // Without hasSearch the trigger itself is the combobox.
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      const listbox = screen.getByRole('listbox', h);
+      expect(
+        within(listbox).getByText('Add a fruit first'),
+      ).toBeInTheDocument();
+    });
+
     it('calls onChange when selecting a filtered option', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();

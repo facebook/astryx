@@ -649,6 +649,18 @@ interface SelectorPropsBase<
   searchPlaceholder?: string;
 
   /**
+   * Content shown in the panel when there are no options to show.
+   * @default 'No options'
+   */
+  emptyText?: ReactNode;
+
+  /**
+   * Content shown in the panel when a search query matches no options.
+   * @default 'No results found'
+   */
+  emptySearchText?: ReactNode;
+
+  /**
    * Position placement relative to the trigger.
    *
    * Omit to use the selector's default selected-item overlay behavior: the
@@ -794,6 +806,8 @@ export function Selector<T extends SelectorOptionType>(
     indicatorPosition = 'end',
     hasSearch = false,
     searchPlaceholder: searchPlaceholderFromProps,
+    emptyText: emptyTextFromProps,
+    emptySearchText: emptySearchTextFromProps,
     placement,
     isDefaultOpen = false,
     'data-testid': testId,
@@ -808,6 +822,9 @@ export function Selector<T extends SelectorOptionType>(
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const searchPlaceholder =
     searchPlaceholderFromProps ?? t('@astryx.selector.searchPlaceholder');
+  const emptyText = emptyTextFromProps ?? t('@astryx.selector.empty');
+  const emptySearchText =
+    emptySearchTextFromProps ?? t('@astryx.selector.emptySearch');
   const hasClear = hasClearProp === true;
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
@@ -1313,8 +1330,9 @@ export function Selector<T extends SelectorOptionType>(
   const renderOptions = useCallback(() => {
     const isSearching = hasSearch && Boolean(searchQuery);
 
-    // Nothing matched across every group/option: show the empty state.
-    if (isSearching && filteredItems.length === 0) {
+    // Nothing to show — either the query matched nothing, or no options were
+    // given at all. Both render the same slot with different copy.
+    if (filteredItems.length === 0) {
       // role="presentation" keeps the message out of the listbox's
       // accessibility tree (role="listbox" only permits option/group
       // children); the no-results outcome is announced via the
@@ -1327,7 +1345,7 @@ export function Selector<T extends SelectorOptionType>(
             themeProps('selector-empty-state'),
             stylex.props(styles.emptyState),
           )}>
-          No results found
+          {isSearching ? emptySearchText : emptyText}
         </div>,
       ];
     }
@@ -1401,7 +1419,15 @@ export function Selector<T extends SelectorOptionType>(
     }
 
     return elements;
-  }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
+  }, [
+    options,
+    renderItem,
+    hasSearch,
+    searchQuery,
+    filteredItems,
+    emptyText,
+    emptySearchText,
+  ]);
 
   // The detached message box renders its own leading status icon, so the
   // on-field icon would duplicate it — keep the chevron indicator instead.
