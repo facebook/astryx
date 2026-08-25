@@ -1677,6 +1677,9 @@ export function Markdown({
   // NOTE: must stay above the `display === 'inline'` early return below —
   // hooks cannot be conditional.
   const headingIdMap = useMemo(() => {
+    // Incremental parsing keeps the blocks array stable while replacing its
+    // tail, so streamed text is the version signal for this derived map.
+    void smoothedText;
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
@@ -1689,7 +1692,7 @@ export function Markdown({
       }
     }
     return map;
-  }, [display, blocks]);
+  }, [display, blocks, smoothedText]);
 
   const inlineNodes = useMemo(() => {
     if (display !== 'inline') {
@@ -1713,17 +1716,17 @@ export function Markdown({
     return Math.min(Math.ceil(duration / tickMs), 12);
   }, [token]);
 
-  const prevBlocksRef = useRef<BlockNode[]>([]);
-  const prevInlineNodesRef = useRef<InlineNode[]>([]);
+  const prevTextLengthRef = useRef(0);
   const boundariesRef = useRef<number[]>([]);
   const smoothedLen = smoothedText.length;
   const boundaries = useMemo(() => {
+    void display; // dep trigger when switching inline/block rendering
     void smoothedLen; // dep trigger
-    const prevLen =
-      display === 'inline'
-        ? countInlineTextLength(prevInlineNodesRef.current)
-        : countBlockTextLength(prevBlocksRef.current);
-    const next = computeBoundaries(boundariesRef.current, prevLen, maxSpans);
+    const next = computeBoundaries(
+      boundariesRef.current,
+      prevTextLengthRef.current,
+      maxSpans,
+    );
     boundariesRef.current = next;
     return next;
   }, [display, smoothedLen, maxSpans]);
@@ -1766,9 +1769,8 @@ export function Markdown({
       </span>
     );
 
-    // Store current inline nodes for next render's boundary calculation.
-    prevInlineNodesRef.current = inlineNodes;
-    prevBlocksRef.current = [];
+    // Store current inline length for next render's boundary calculation.
+    prevTextLengthRef.current = countInlineTextLength(inlineNodes);
 
     return renderedInline;
   }
@@ -1810,11 +1812,11 @@ export function Markdown({
     </div>
   );
 
-  // Store current blocks for next render's boundary calculation.
-  // This ref write is safe under StrictMode: both invocations produce the same
-  // blocks (same smoothedText → same useMemo result), so both write the same value.
-  prevBlocksRef.current = blocks;
-  prevInlineNodesRef.current = [];
+  // Store the length rather than the mutable incremental result array: the
+  // parser updates that array's tail in place on the next streamed chunk.
+  // This ref write is safe under StrictMode: both invocations parse the same
+  // smoothedText and therefore write the same value.
+  prevTextLengthRef.current = countBlockTextLength(blocks);
 
   return rendered;
 }

@@ -1580,8 +1580,82 @@ export interface IncrementalState {
   linkDefsKey?: string;
 }
 
+type IncrementalWork = {
+  /** Characters copied into the tail line array. */
+  readonly splitCharacters: number;
+  /** Tail lines visited by fence and blank-boundary detection. */
+  readonly boundaryLines: number;
+  /** Characters visited while collecting document-global definitions. */
+  readonly definitionCharacters: number;
+  /** Entries replaced in the stable result array. */
+  readonly renderedBlocks: number;
+};
+
+type IncrementalCache = {
+  /** Character offset immediately after the immutable settled prefix. */
+  settledEnd: number;
+  /** Definitions whose complete block is in the settled prefix. */
+  settledLinkDefs: Map<string, string>;
+  /** Definitions still in the mutable tail on the preceding call. */
+  tailLinkDefs: ReadonlyMap<string, string>;
+  /** The effective document-global definitions used by slice parses. */
+  linkDefs: ReadonlyMap<string, string>;
+  linkDefsKey: string;
+  /** Stable array handed back on every call; only its mutable suffix changes. */
+  result: BlockNode[];
+  renderedSettledBlocks: number;
+  work: IncrementalWork;
+};
+
+const incrementalCaches = new WeakMap<IncrementalState, IncrementalCache>();
+
+function makeIncrementalCache(state: IncrementalState): IncrementalCache {
+  const {defs} = extractLinkDefinitions(state.settledText);
+  const cache: IncrementalCache = {
+    settledEnd: state.settledText.length,
+    settledLinkDefs: new Map(defs),
+    tailLinkDefs: new Map(),
+    linkDefs: defs,
+    linkDefsKey: linkDefsSignature(defs),
+    result: [...state.settledBlocks],
+    renderedSettledBlocks: state.settledBlocks.length,
+    work: {
+      splitCharacters: 0,
+      boundaryLines: 0,
+      definitionCharacters: 0,
+      renderedBlocks: 0,
+    },
+  };
+  incrementalCaches.set(state, cache);
+  return cache;
+}
+
 export function createIncrementalState(): IncrementalState {
-  return {prevInput: '', settledText: '', settledBlocks: [], settledUpTo: 0};
+  const state: IncrementalState = {
+    prevInput: '',
+    settledText: '',
+    settledBlocks: [],
+    settledUpTo: 0,
+  };
+  makeIncrementalCache(state);
+  return state;
+}
+
+/**
+ * Deterministic work counters for the most recent incremental parse.
+ * @internal Exported from this module for performance regression tests only.
+ */
+export function getIncrementalParseWork(
+  state: IncrementalState,
+): IncrementalWork {
+  return (
+    incrementalCaches.get(state)?.work ?? {
+      splitCharacters: 0,
+      boundaryLines: 0,
+      definitionCharacters: 0,
+      renderedBlocks: 0,
+    }
+  );
 }
 
 /**
@@ -1912,6 +1986,91 @@ function mergeSettledBlocks(
   return [...prev, ...delta];
 }
 
+/** Append a newly-settled slice without copying the already-settled prefix. */
+function appendSettledBlocks(prev: BlockNode[], delta: BlockNode[]): void {
+  if (delta.length === 0) {
+    return;
+  }
+  if (prev.length === 0) {
+    prev.push(...delta);
+    return;
+  }
+  const prevLast = prev[prev.length - 1];
+  const deltaFirst = delta[0];
+  if (
+    prevLast.type === 'list' &&
+    deltaFirst.type === 'list' &&
+    prevLast.ordered === deltaFirst.ordered &&
+    prevLast.delimiter === deltaFirst.delimiter
+  ) {
+    prev[prev.length - 1] = {
+      type: 'list',
+      ordered: prevLast.ordered,
+      start: prevLast.start,
+      delimiter: prevLast.delimiter,
+      loose: true,
+      items: [...prevLast.items, ...deltaFirst.items],
+      ...(prevLast.range != null && deltaFirst.range != null
+        ? {range: {start: prevLast.range.start, end: deltaFirst.range.end}}
+        : null),
+    };
+    prev.push(...delta.slice(1));
+    return;
+  }
+  prev.push(...delta);
+}
+
+function sameUnsettledDefinitions(
+  previous: ReadonlyMap<string, string>,
+  next: ReadonlyMap<string, string>,
+  settled: ReadonlyMap<string, string>,
+): boolean {
+  for (const [label, destination] of previous) {
+    if (!settled.has(label) && next.get(label) !== destination) {
+      return false;
+    }
+  }
+  for (const [label, destination] of next) {
+    if (!settled.has(label) && previous.get(label) !== destination) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function resetIncrementalCache(
+  state: IncrementalState,
+  cache: IncrementalCache,
+): void {
+  state.prevInput = '';
+  state.settledText = '';
+  state.settledBlocks = [];
+  state.settledUpTo = 0;
+  state.linkDefsKey = undefined;
+  cache.settledEnd = 0;
+  cache.settledLinkDefs.clear();
+  cache.tailLinkDefs = new Map();
+  cache.linkDefs = new Map();
+  cache.linkDefsKey = '';
+  cache.result.length = 0;
+  cache.renderedSettledBlocks = 0;
+  cache.work = {
+    splitCharacters: 0,
+    boundaryLines: 0,
+    definitionCharacters: 0,
+    renderedBlocks: 0,
+  };
+}
+
+/**
+ * Parse one cumulative snapshot of a streaming Markdown document.
+ *
+ * A state belongs to one stream: callers may rewrite its unsettled tail, but
+ * must create a new state before changing text that has already settled. The
+ * returned array is likewise owned by that state and updated in place on the
+ * next call so work stays proportional to the mutable tail; copy it if a
+ * historical snapshot must be retained.
+ */
 export function parseMarkdownIncremental(
   input: string,
   state: IncrementalState,
@@ -1928,6 +2087,9 @@ export function parseMarkdownIncremental(
   arg?: ReadonlySet<string> | ParseOptions,
 ): BlockNode[] {
   const opts = resolveOptions(arg);
+  const cache = incrementalCaches.get(state) ?? makeIncrementalCache(state);
+  let reparseSettled = false;
+
   // Invalidate cache when the autolink or sourceRanges option flips — cached
   // settled blocks were parsed with the previous setting and would otherwise
   // be reused unchanged.
@@ -1935,50 +2097,86 @@ export function parseMarkdownIncremental(
     state.autolink !== opts.autolink ||
     Boolean(state.sourceRanges) !== Boolean(opts.sourceRanges)
   ) {
-    state.prevInput = '';
-    state.settledText = '';
-    state.settledBlocks = [];
-    state.settledUpTo = 0;
+    reparseSettled = true;
     state.autolink = opts.autolink;
     state.sourceRanges = opts.sourceRanges;
   }
   if (input === '') {
-    state.prevInput = '';
-    state.settledText = '';
-    state.settledBlocks = [];
-    state.settledUpTo = 0;
-    state.linkDefsKey = undefined;
-    return [];
+    resetIncrementalCache(state, cache);
+    return cache.result;
   }
 
-  // Link reference definitions are document-global and usually stream in
-  // (as a footer) after the references that use them, so collect them from the
-  // whole input and pass them into every slice parse. When the set changes,
-  // invalidate the settled cache so already-settled references re-resolve.
-  const {defs: linkDefs} = extractLinkDefinitions(input);
-  const linkDefsKey = linkDefsSignature(linkDefs);
-  if (state.linkDefsKey !== linkDefsKey) {
-    state.prevInput = '';
-    state.settledText = '';
-    state.settledBlocks = [];
-    state.settledUpTo = 0;
-    state.linkDefsKey = linkDefsKey;
+  // A state owns one stream. The mutable tail may be rewritten (for example
+  // by trimStreamingArtifacts), but text that has crossed a blank-line
+  // boundary is immutable. A shorter input cannot contain that prefix, so
+  // start a new stream. Callers making an arbitrary document edit likewise
+  // create a fresh state.
+  if (input.length < cache.settledEnd) {
+    resetIncrementalCache(state, cache);
+    state.autolink = opts.autolink;
+    state.sourceRanges = opts.sourceRanges;
   }
+
+  // All four recurring costs are confined to the mutable suffix: splitting,
+  // fence/boundary detection, definition collection, and result replacement.
+  // An open fence simply keeps the suffix growing until its closing marker.
+  const oldSettledEnd = cache.settledEnd;
+  const tailRaw = input.slice(oldSettledEnd);
+  const tailLines = tailRaw.split('\n');
+  const {boundary, openFence} = findSettledBoundary(tailLines);
+  const settledDelta =
+    boundary >= 0 ? tailLines.slice(0, boundary).join('\n') : '';
+  const nextSettledEnd = oldSettledEnd + settledDelta.length;
+  const unsettledInput = input.slice(nextSettledEnd);
+
+  // Promote definitions only when their entire block becomes immutable.
+  // Tail definitions are re-collected because the tail is allowed to change.
+  // Changes that affect the effective set intentionally reparse settled
+  // blocks: document-global references may precede their footer definition.
+  let definitionsChanged = false;
+  if (settledDelta !== '') {
+    const {defs: deltaDefs} = extractLinkDefinitions(settledDelta);
+    for (const [label, destination] of deltaDefs) {
+      if (!cache.settledLinkDefs.has(label)) {
+        cache.settledLinkDefs.set(label, destination);
+        if (cache.linkDefs.get(label) !== destination) {
+          definitionsChanged = true;
+        }
+      }
+    }
+  }
+  const {defs: tailLinkDefs} = extractLinkDefinitions(unsettledInput);
+  if (
+    !sameUnsettledDefinitions(
+      cache.tailLinkDefs,
+      tailLinkDefs,
+      cache.settledLinkDefs,
+    )
+  ) {
+    definitionsChanged = true;
+  }
+  cache.tailLinkDefs = tailLinkDefs;
+
+  if (definitionsChanged) {
+    // Later entries are overwritten, so settled (earlier) definitions win.
+    cache.linkDefs = new Map([...tailLinkDefs, ...cache.settledLinkDefs]);
+    cache.linkDefsKey = linkDefsSignature(cache.linkDefs);
+    reparseSettled = true;
+  }
+  state.linkDefsKey = cache.linkDefsKey;
   const parseOpts: ResolvedOptions =
-    linkDefs.size > 0 ? {...opts, linkDefs} : opts;
+    cache.linkDefs.size > 0 ? {...opts, linkDefs: cache.linkDefs} : opts;
 
-  const lines = input.split('\n');
-  const {boundary, openFence} = findSettledBoundary(lines);
-
-  if (boundary < 0) {
-    // Nothing settled yet — no blank line, or a fence opened before the first
-    // one — so there is no prefix to keep and the whole input is re-parsed.
-    state.prevInput = input;
-    return parseMarkdownImpl(input, parseOpts);
+  if (settledDelta !== '') {
+    state.settledText += settledDelta;
+    state.settledUpTo += settledDelta.split('\n').length - 1;
+    if (oldSettledEnd === 0) {
+      state.settledUpTo++;
+    }
+    cache.settledEnd = nextSettledEnd;
   }
 
-  const settledText = lines.slice(0, boundary).join('\n');
-  const unsettledRaw = lines.slice(boundary).join('\n').trim();
+  const unsettledRaw = unsettledInput.trim();
   // Structural trimming holds back lines that look like an incomplete list or
   // table, which inside a fence is ordinary code: a TypeScript union or a `- `
   // would disappear from the code block as it streams.
@@ -1986,25 +2184,15 @@ export function parseMarkdownIncremental(
     ? unsettledRaw
     : trimUnsettledStructural(unsettledRaw);
 
-  let settledBlocks: BlockNode[];
-
-  if (settledText === state.settledText) {
-    // Settled portion unchanged — reuse cached blocks
-    settledBlocks = state.settledBlocks;
-  } else if (
-    state.settledText.length > 0 &&
-    settledText.startsWith(state.settledText)
-  ) {
-    // Settled portion grew — parse only the new delta
-    const delta = settledText.slice(state.settledText.length);
-    const deltaBlocks = parseMarkdownImpl(
-      delta,
-      atOffset(parseOpts, state.settledText.length),
+  if (reparseSettled) {
+    state.settledBlocks = state.settledText
+      ? parseMarkdownImpl(state.settledText, parseOpts)
+      : [];
+  } else if (settledDelta !== '') {
+    appendSettledBlocks(
+      state.settledBlocks,
+      parseMarkdownImpl(settledDelta, atOffset(parseOpts, oldSettledEnd)),
     );
-    settledBlocks = mergeSettledBlocks(state.settledBlocks, deltaBlocks);
-  } else {
-    // Content before the boundary changed — full re-parse of settled portion
-    settledBlocks = parseMarkdownImpl(settledText, parseOpts);
   }
 
   // The unsettled tail is trimmed before parsing, so its offset in the
@@ -2014,7 +2202,7 @@ export function parseMarkdownIncremental(
   // ranges were asked for: this runs on every streamed chunk.
   const unsettledStart =
     unsettledText && opts.sourceRanges
-      ? input.indexOf(unsettledText, settledText.length)
+      ? input.indexOf(unsettledText, cache.settledEnd)
       : -1;
   const unsettledBlocks = unsettledText
     ? parseMarkdownImpl(
@@ -2025,12 +2213,28 @@ export function parseMarkdownIncremental(
       )
     : [];
 
-  state.settledText = settledText;
-  state.settledBlocks = settledBlocks;
-  state.settledUpTo = boundary;
   state.prevInput = input;
 
-  return mergeSettledBlocks(settledBlocks, unsettledBlocks);
+  // Keep the returned array itself stable. At most the previous last settled
+  // block is revisited because it may merge with a same-style list in the
+  // mutable tail; every earlier entry is an immutable prefix.
+  const replaceFrom = reparseSettled
+    ? 0
+    : Math.max(0, cache.renderedSettledBlocks - 1);
+  cache.result.length = replaceFrom;
+  const renderedSuffix = mergeSettledBlocks(
+    state.settledBlocks.slice(replaceFrom),
+    unsettledBlocks,
+  );
+  cache.result.push(...renderedSuffix);
+  cache.renderedSettledBlocks = state.settledBlocks.length;
+  cache.work = {
+    splitCharacters: tailRaw.length,
+    boundaryLines: tailLines.length,
+    definitionCharacters: settledDelta.length + unsettledInput.length,
+    renderedBlocks: renderedSuffix.length,
+  };
+  return cache.result;
 }
 
 // ---------------------------------------------------------------------------

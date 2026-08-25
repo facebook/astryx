@@ -5,6 +5,7 @@ import {
   parseMarkdown,
   parseMarkdownIncremental,
   createIncrementalState,
+  getIncrementalParseWork,
 } from './parser';
 import type {BlockNode, ParseOptions} from './parser';
 
@@ -247,6 +248,49 @@ describe('parseMarkdown performance', () => {
 // integers that come out the same on a loaded CI box as on an idle laptop,
 // unlike the wall-clock budgets above.
 describe('parseMarkdownIncremental cache', () => {
+  it('bounds every whole-input operation by the unsettled tail', () => {
+    const section =
+      'Fixed-length paragraph with enough text to cross a stream boundary.\n\n';
+    const worstWork = (sections: number) => {
+      const state = createIncrementalState();
+      const worst = {
+        splitCharacters: 0,
+        boundaryLines: 0,
+        definitionCharacters: 0,
+        renderedBlocks: 0,
+      };
+      let input = '';
+      for (let i = 0; i < sections; i++) {
+        input += section;
+        parseMarkdownIncremental(input, state);
+        const work = getIncrementalParseWork(state);
+        worst.splitCharacters = Math.max(
+          worst.splitCharacters,
+          work.splitCharacters,
+        );
+        worst.boundaryLines = Math.max(worst.boundaryLines, work.boundaryLines);
+        worst.definitionCharacters = Math.max(
+          worst.definitionCharacters,
+          work.definitionCharacters,
+        );
+        worst.renderedBlocks = Math.max(
+          worst.renderedBlocks,
+          work.renderedBlocks,
+        );
+      }
+      return worst;
+    };
+
+    const short = worstWork(20);
+    const long = worstWork(200);
+    console.log(
+      `  worst tail work (20/200 sections): ${JSON.stringify(short)} / ${JSON.stringify(long)}`,
+    );
+    // Ten times the document length does not change splitting, boundary
+    // scanning, definition collection, or result-array replacement work.
+    expect(long).toEqual(short);
+  });
+
   it('builds a bounded number of blocks per chunk however long the document is', () => {
     const chunkSize = 50;
     const medians = [50, 200, 500].map(paragraphs =>

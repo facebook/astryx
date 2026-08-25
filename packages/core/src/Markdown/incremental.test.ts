@@ -209,6 +209,48 @@ describe('parseMarkdownIncremental', () => {
     expect(state.settledBlocks).toBe(cachedBlocks);
   });
 
+  it('updates one result array while preserving its immutable block prefix', () => {
+    const state = createIncrementalState();
+    const first = parseMarkdownIncremental(
+      '# Stable\n\nFirst paragraph\n\nTail',
+      state,
+    );
+    const stableHeading = first[0];
+
+    const second = parseMarkdownIncremental(
+      '# Stable\n\nFirst paragraph\n\nTail grows',
+      state,
+    );
+
+    expect(second).toBe(first);
+    expect(second[0]).toBe(stableHeading);
+    expect(second).toEqual(
+      parseMarkdown('# Stable\n\nFirst paragraph\n\nTail grows'),
+    );
+  });
+
+  it('keeps the prefix settled while a long fence streams and closes', () => {
+    const state = createIncrementalState();
+    const prefix = '# Stable\n\n';
+    const fence = '```ts\nconst a = 1;\n\nconst b = 2;';
+    let stableHeading: BlockNode | undefined;
+
+    for (let end = 1; end <= fence.length; end++) {
+      const blocks = parseMarkdownIncremental(
+        prefix + fence.slice(0, end),
+        state,
+      );
+      stableHeading ??= blocks[0];
+      expect(blocks[0]).toBe(stableHeading);
+      expect(state.settledText).toBe('# Stable');
+    }
+
+    const complete = `${prefix}${fence}\n\`\`\`\n\nAfter`;
+    const blocks = parseMarkdownIncremental(complete, state);
+    expect(blocks[0]).toBe(stableHeading);
+    expect(blocks).toEqual(parseMarkdown(complete));
+  });
+
   it('tracks settledText correctly', () => {
     const state = createIncrementalState();
     parseMarkdownIncremental('# Hello\n\nWorld', state);
@@ -698,5 +740,18 @@ describe('parseMarkdownIncremental link reference definitions', () => {
       state,
     );
     expect(firstLinkHref(after)).toBe('/docs');
+  });
+
+  it('keeps first-definition-wins when definitions move into the settled prefix', () => {
+    const state = createIncrementalState();
+    const first = 'See [d].\n\n[d]: /first\n\nMiddle paragraph\n\n[d]: /second';
+    expect(firstLinkHref(parseMarkdownIncremental(first, state))).toBe(
+      '/first',
+    );
+
+    const complete = `${first}\n\nAfter`;
+    const blocks = parseMarkdownIncremental(complete, state);
+    expect(blocks).toEqual(parseMarkdown(complete));
+    expect(firstLinkHref(blocks)).toBe('/first');
   });
 });
