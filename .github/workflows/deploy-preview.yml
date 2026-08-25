@@ -12,7 +12,10 @@
 # Safety: this NEVER checks out or runs PR-controlled code. It only downloads
 # the pre-built static artifacts (storybook-<hash>, sandbox-<hash>) that CI
 # already produced and copies them into gh-pages. Do not add checkout of the PR
-# head or execution of PR code here.
+# head or execution of PR code here. The deploy target is derived from the
+# workflow_run payload: the PR number is resolved from the run's head commit
+# and the artifacts are addressed by that commit's hash, so artifact contents
+# never decide where a preview lands.
 
 name: Deploy PR Preview
 
@@ -26,8 +29,8 @@ permissions: {}
 # Serialize preview deploys per source branch (≈ per PR). Two pushes to the same
 # PR shouldn't race each other's gh-pages push; cross-PR and main-deploy conflicts
 # are handled by the retry loop below. head_branch is the only PR-stable key
-# available in workflow_run context (the PR number isn't known until we parse the
-# artifact). Not cancel-in-progress: let an in-flight deploy finish its push.
+# available at concurrency-group time (the PR number is resolved inside the job).
+# Not cancel-in-progress: let an in-flight deploy finish its push.
 concurrency:
   group: "pr-preview-${{ github.event.workflow_run.head_branch }}"
   cancel-in-progress: false
@@ -51,29 +54,50 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Parse PR metadata
+      - name: Resolve PR from the CI run
         id: parse
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
-          # The pr-analysis artifact (with pr-meta.json) is only produced for
-          # non-docsite-only PRs. Absent -> nothing to deploy, exit quietly.
+          # The pr-analysis artifact is only produced for non-docsite-only PRs.
+          # Absent -> nothing to deploy, exit quietly. It is used purely as a
+          # "this run built previews" signal — the PR number and artifact hash
+          # both come from the run payload below, not from the artifact.
           if [ ! -f pr-analysis/pr-meta.json ]; then
             echo "No pr-meta.json — docsite-only or skipped PR, nothing to deploy."
             echo "deploy=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          PR_NUMBER="$(jq -r '.prNumber // ""' pr-analysis/pr-meta.json)"
-          SHORT_HASH="$(jq -r '.shortHash // ""' pr-analysis/pr-meta.json)"
+          # The artifacts are named after the head commit that CI built
+          # (storybook-<short>, sandbox-<short>), which for a pull_request run
+          # is exactly workflow_run.head_sha.
+          SHORT_HASH="${HEAD_SHA:0:7}"
 
-          # Validate PR number is digits and hash is hex — these name a
-          # gh-pages path and artifacts, so reject anything unexpected.
+          # Resolve the PR by the run's own head repo + branch — fork heads
+          # are invisible to commits/{sha}/pulls, and most previews on
+          # gh-pages are fork PRs (same shape as review-clear.yml). A run
+          # whose previews were built but whose PR cannot be found is a bug
+          # worth a red X, not a silent green skip.
+          PR_JSON="$(gh api "repos/${{ github.repository }}/pulls?head=${HEAD_OWNER}:${HEAD_BRANCH}&state=open&per_page=100")"
+          PR_NUMBER="$(printf '%s' "$PR_JSON" | jq -r '.[0].number // empty')"
+          PR_HEAD="$(printf '%s' "$PR_JSON" | jq -r '.[0].head.sha // empty')"
+
           if ! echo "$PR_NUMBER" | grep -qE '^[0-9]+$'; then
-            echo "::error::Invalid or missing PR number in metadata"
+            echo "::error::No open PR for ${HEAD_OWNER}:${HEAD_BRANCH} (run head ${HEAD_SHA}) — previews were built but cannot be attributed."
             exit 1
           fi
-          if ! echo "$SHORT_HASH" | grep -qE '^[0-9a-f]{7,40}$'; then
-            echo "::error::Invalid or missing short hash in metadata"
-            exit 1
+
+          # Staleness guard: if the PR's current head is no longer this run's
+          # head (force-push, new commits), this run's preview is outdated —
+          # skip cleanly; the newer run deploys.
+          if [ "$PR_HEAD" != "$HEAD_SHA" ]; then
+            echo "::warning::PR #${PR_NUMBER} head moved on (${PR_HEAD} != ${HEAD_SHA}) — skipping this stale preview; the newer run deploys."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
