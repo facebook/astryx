@@ -56,6 +56,8 @@ const EXPANDABLE_ROLES = new Set([
   'treeitem',
 ]);
 
+const BUTTON_INPUT_TYPES = new Set(['button', 'submit', 'reset', 'image']);
+
 // Deliberately partial, and unlisted elements are read as role-less: dropping
 // aria-expanded where it might have been legal costs an AT user a state they
 // can still infer, whereas emitting it where it is illegal is a critical
@@ -72,6 +74,16 @@ function supportsAriaExpanded(el: HTMLElement): boolean {
     case 'A':
     case 'AREA':
       return el.hasAttribute('href');
+    case 'INPUT':
+      // The button-flavoured input types map to role="button"; every other
+      // type maps to a textbox-family role, which does not take it.
+      return BUTTON_INPUT_TYPES.has(
+        (el as HTMLInputElement).type?.toLowerCase(),
+      );
+    case 'SELECT':
+      // combobox when it is a single-line picker, listbox otherwise; both
+      // support aria-expanded.
+      return true;
     default:
       return false;
   }

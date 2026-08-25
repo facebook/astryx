@@ -440,6 +440,18 @@ describe('HoverCard', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('keeps aria-expanded on triggers whose implicit role supports it', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <input type="button" value="Trigger" />
+      </HoverCard>,
+    );
+    expect(screen.getByRole('button')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
   it('keeps aria-describedby on the trigger when no label is provided', () => {
     render(
       <HoverCard content={<span>Card content</span>}>
