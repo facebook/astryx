@@ -63,9 +63,14 @@ function getLocaleNumberSymbols(locale: Locale | undefined) {
   return symbols;
 }
 
-const DECIMAL_DIGIT = /\p{Nd}/u;
-const LETTER = /\p{L}/u;
-const CURRENCY = /\p{Sc}/u;
+// Built at runtime rather than written as literals: Babel's
+// transform-unicode-property-regex rewrites a `\p{...}` regex LITERAL into an
+// enumerated character class, and the copy bundled with Next rejects the
+// General_Category short names, failing the sandbox build. Property escapes are
+// ES2018 and need no transform in any browser this package supports.
+const DECIMAL_DIGIT = new RegExp('\\p{Nd}', 'u');
+const LETTER = new RegExp('\\p{L}', 'u');
+const CURRENCY = new RegExp('\\p{Sc}', 'u');
 // Zero-width joiners, bidi isolates and the BOM Excel prepends.
 const INVISIBLES = /[\u200B-\u200D\u200E\u200F\u061C\u2066-\u2069\uFEFF]/g;
 // Hyphen last: inside the character class this builds, a leading one would
