@@ -1100,6 +1100,7 @@ const INITIAL_SAVED_VIEWS: SavedView[] = [
 function useInfiniteBatches<T>(
   items: readonly T[],
   pageSize: number,
+  getGroupKey?: ((item: T) => string) | null,
 ): {
   data: T[];
   hasNext: boolean;
@@ -1117,6 +1118,33 @@ function useInfiniteBatches<T>(
     setLoadedCount(pageSize);
   }, [items, pageSize]);
 
+  // A cut that lands mid-section leaves that section half-filled, and a reader
+  // has no way to tell one that is still arriving from one that is genuinely
+  // short — so the rows they can see are not a section they can trust. Carry
+  // the cut to the end of whichever section it lands in. Sections are
+  // contiguous because `results` sorts by group first, so this walks the tail
+  // of one section and stops.
+  const visibleCount = useMemo(() => {
+    if (loadedCount >= items.length) {
+      return items.length;
+    }
+    if (getGroupKey == null) {
+      return loadedCount;
+    }
+    const openKey = getGroupKey(items[loadedCount - 1]);
+    let end = loadedCount;
+    while (end < items.length && getGroupKey(items[end]) === openKey) {
+      end++;
+    }
+    return end;
+  }, [getGroupKey, items, loadedCount]);
+
+  // The next batch counts from what is on screen, not from the raw cut, so
+  // rows a snap already pulled in are not paid for twice. Held in a ref to
+  // keep loadNext stable — it is an effect dependency of the sentinel.
+  const visibleCountRef = useRef(visibleCount);
+  visibleCountRef.current = visibleCount;
+
   const loadNext = useCallback((count: number) => {
     if (inFlightRef.current) {
       return;
@@ -1125,15 +1153,18 @@ function useInfiniteBatches<T>(
     setIsLoadingNext(true);
     // Stands in for the network round trip Relay would make here.
     setTimeout(() => {
-      setLoadedCount(loaded => loaded + count);
+      setLoadedCount(visibleCountRef.current + count);
       setIsLoadingNext(false);
       inFlightRef.current = false;
     }, 500);
   }, []);
 
-  const data = useMemo(() => items.slice(0, loadedCount), [items, loadedCount]);
+  const data = useMemo(
+    () => items.slice(0, visibleCount),
+    [items, visibleCount],
+  );
 
-  return {data, hasNext: loadedCount < items.length, isLoadingNext, loadNext};
+  return {data, hasNext: visibleCount < items.length, isLoadingNext, loadNext};
 }
 
 /**
@@ -1935,29 +1966,11 @@ export default function TableFilterTemplate() {
     });
   }, [applyFilters, filters, groupField, isGrouped, query, sort]);
 
-  /**
-   * How many rows each section holds in the whole result set, not just in the
-   * batch on screen. The grouping hook can only count what it is handed, so
-   * left to itself a section reads "6 jobs" and silently becomes "10 jobs" as
-   * the reader scrolls — a number that looks like a total but is a progress
-   * meter. Only the page holding the result set can answer this, which is why
-   * the hook takes it from here rather than working it out.
-   */
-  const groupTotals = useMemo(() => {
-    const totals = new Map<string, number>();
-    if (!isGrouped) {
-      return totals;
-    }
-    for (const job of results) {
-      const key = String(job[groupField]);
-      totals.set(key, (totals.get(key) ?? 0) + 1);
-    }
-    return totals;
-  }, [groupField, isGrouped, results]);
-
-  const getGroupTotal = useCallback(
-    (groupKey: string) => groupTotals.get(groupKey),
-    [groupTotals],
+  // Grouped, the page unit is the section; flat, it is the row. Passing the
+  // key only while grouping keeps an ungrouped view on even page sizes.
+  const batchGroupKey = useMemo(
+    () => (isGrouped ? (job: ServiceJob) => String(job[groupField]) : null),
+    [groupField, isGrouped],
   );
 
   const {
@@ -1965,7 +1978,7 @@ export default function TableFilterTemplate() {
     hasNext,
     isLoadingNext,
     loadNext,
-  } = useInfiniteBatches(results, PAGE_SIZE);
+  } = useInfiniteBatches(results, PAGE_SIZE, batchGroupKey);
 
   // The sentinel sits under the last row; when it scrolls into view the next
   // batch loads. The root stays the viewport so this works whether the page
@@ -2256,18 +2269,16 @@ export default function TableFilterTemplate() {
    * labels already, which is what the fallback covers.
    */
   const renderGroupHeader = useCallback(
-    // `count` is the batch on screen, `total` the result set — the plugin
-    // reconciles the two from getGroupTotal, so the section still filling at
-    // the bottom reads "6 of 10" until its last batch arrives.
-    (groupKey: string, count: number, _collapsed: boolean, total: number) => (
+    // `count` is the whole section, not a running tally: batches stop on
+    // section boundaries, so a section is only ever rendered complete.
+    (groupKey: string, count: number) => (
       // The plugin lays its header out as a flex row, so two siblings need
       // no wrapper — and Text renders a span, which the span around it can
       // hold.
       <>
         <Text type="label">{VALUE_LABELS[groupKey] ?? groupKey}</Text>
         <Text type="supporting" color="secondary">
-          {count < total ? `${count} of ${total}` : total}{' '}
-          {total === 1 ? 'job' : 'jobs'}
+          {count} {count === 1 ? 'job' : 'jobs'}
         </Text>
       </>
     ),
@@ -2279,16 +2290,14 @@ export default function TableFilterTemplate() {
     data: groupedRows,
     idKey: groupRowKey,
   } = useTableGroupedRows<ServiceJob>({
-    // Only the loaded batch is grouped, so the next batch folds into a section
-    // on arrival; getGroupTotal is what keeps the heading honest meanwhile.
-    // With grouping off the hook is handed nothing, so it flattens nothing and
-    // its plugin goes unused.
+    // The hook groups the loaded batch, and the batch always ends on a section
+    // boundary, so every section it sees is entire. With grouping off it is
+    // handed nothing, so it flattens nothing and its plugin goes unused.
     data: isGrouped ? rows : NO_ROWS,
     groupBy,
     collapsedGroups,
     onToggleGroup: toggleGroup,
     renderGroupHeader,
-    getGroupTotal,
     getRowKey,
     groupOrder: GROUP_ORDERS[groupField],
   });
