@@ -255,6 +255,18 @@ jobs:
           path: apps/storybook/dist/
           retention-days: 30
 
+      # pr-visual reads each theme's built source to learn which targets that
+      # theme styles — a theme's component map is what defineTheme returns, not
+      # a literal in its source. This job has already built them; shipping the
+      # artifact keeps that job on a download instead of a second full build.
+      - name: Upload built themes
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: themes-${{ steps.urls.outputs.short_hash }}
+          path: packages/themes/*/dist/
+          retention-days: 1
+
       - name: Analyze components
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: |
@@ -560,6 +572,12 @@ jobs:
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
+
+      - name: Download built themes
+        uses: actions/download-artifact@v8
+        with:
+          name: themes-${{ needs.build-storybook.outputs.short_hash }}
+          path: packages/themes
 
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
