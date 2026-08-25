@@ -855,6 +855,9 @@ export function Selector<T extends SelectorOptionType>(
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
+  // Mirrors searchQuery for the seed path, which runs before focus reaches the
+  // input and so cannot read the rendered state.
+  const searchQueryRef = useRef('');
   // A typed query shows the search row's clear (✕) button, which becomes
   // the next tab stop after the search input.
   const hasQuery = searchQuery.length > 0;
@@ -942,6 +945,7 @@ export function Selector<T extends SelectorOptionType>(
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
+    searchQueryRef.current = '';
     resetTypeaheadRef.current();
     // Clear any lingering result count when the popover closes so stale status
     // text does not linger in the a11y tree.
@@ -970,15 +974,23 @@ export function Selector<T extends SelectorOptionType>(
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
 
-  // Announce the filtered result count from the query-change handler (matching
+  // Announce the filtered result count from the query-change handlers (matching
   // BaseTypeahead) rather than a reactive effect: computing the count for the
   // next query here fires the announcement exactly once per keystroke and does
-  // not re-speak on unrelated re-renders.
-  const handleSearchChange = useCallback(
+  // not re-speak on unrelated re-renders. Split out from handleSearchChange so
+  // the type-to-open seed below reaches the same live region — a query the user
+  // typed is a query however it arrived.
+  const announceSearchResults = useCallback(
     (nextQuery: string) => {
-      setSearchQuery(nextQuery);
       if (nextQuery.length === 0) {
         // Emptying the query clears the region rather than announcing a count.
+        announce('');
+        return;
+      }
+      // While isLoading the panel deliberately shows nothing, so announcing a
+      // result would put a claim in the one channel the screen has gone quiet
+      // for.
+      if (isLoading) {
         announce('');
         return;
       }
@@ -989,7 +1001,16 @@ export function Selector<T extends SelectorOptionType>(
           : t('@astryx.selector.resultCount', {count}),
       );
     },
-    [announce, selectableItems, emptySearchAnnouncement, t],
+    [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
+  );
+
+  const handleSearchChange = useCallback(
+    (nextQuery: string) => {
+      setSearchQuery(nextQuery);
+      searchQueryRef.current = nextQuery;
+      announceSearchResults(nextQuery);
+    },
+    [announceSearchResults],
   );
 
   // Calculate offset to position selected item over trigger. Explicit
@@ -1027,10 +1048,20 @@ export function Selector<T extends SelectorOptionType>(
   }, [onChange, changeAction, startTransition, setOptimisticValue]);
 
   // Type-to-find appends to the query rather than replacing it: characters
-  // typed before focus reaches the search input must not be dropped.
-  const appendSearchQuery = useCallback((char: string) => {
-    setSearchQuery(query => query + char);
-  }, []);
+  // typed before focus reaches the search input must not be dropped. The ref
+  // is what makes that safe without a state updater — it advances
+  // synchronously, so a second character seeded in the same tick still sees
+  // the first, and the announcement can be computed here rather than inside a
+  // setState callback.
+  const appendSearchQuery = useCallback(
+    (char: string) => {
+      const nextQuery = searchQueryRef.current + char;
+      searchQueryRef.current = nextQuery;
+      setSearchQuery(nextQuery);
+      announceSearchResults(nextQuery);
+    },
+    [announceSearchResults],
+  );
 
   const commitValue = useCallback(
     (newValue: string) => {

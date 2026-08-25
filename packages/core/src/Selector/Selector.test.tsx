@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -1033,11 +1034,74 @@ describe('Selector', () => {
       );
       await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
 
+      // useAnnounce writes on the next animation frame, so an immediate read
+      // would pass whether or not anything was announced.
+      await act(
+        async () =>
+          void (await new Promise(resolve => requestAnimationFrame(resolve))),
+      );
+
       // The options have not arrived, so "No options" would be a claim the
       // component cannot make; the trigger's spinner carries the state.
       const listbox = screen.getByRole('listbox', h);
       expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
       expect(politeRegion()?.textContent ?? '').toBe('');
+    });
+
+    it('announces nothing while isLoading, matching the silent panel', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          isLoading
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      // useAnnounce writes on the next animation frame, so an immediate read
+      // would pass whether or not anything was announced.
+      await act(
+        async () =>
+          void (await new Promise(resolve => requestAnimationFrame(resolve))),
+      );
+
+      // The panel is deliberately blank while loading; the live region is the
+      // only channel left, so a result there would be a claim the screen
+      // refuses to make.
+      const listbox = screen.getByRole('listbox', h);
+      expect(
+        within(listbox).queryByText('Nothing like that here'),
+      ).not.toBeInTheDocument();
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    });
+
+    it('announces the seeded query from type-to-open', async () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      // Typing on the closed trigger opens the popup and seeds the query. That
+      // path bypasses the search input's own change handler, so it has to
+      // announce for itself.
+      const trigger = screen.getByRole('button', {name: 'Fruit'});
+      trigger.focus();
+      fireEvent.keyDown(trigger, {key: 'z'});
+
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+      );
     });
 
     it('renders emptyText when there are no options and no search input', async () => {

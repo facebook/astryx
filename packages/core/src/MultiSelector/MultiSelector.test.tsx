@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -1014,10 +1015,51 @@ describe('MultiSelector', () => {
 
     await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
 
+    // useAnnounce writes on the next animation frame, so an immediate read
+    // would pass whether or not anything was announced.
+    await act(
+      async () =>
+        void (await new Promise(resolve => requestAnimationFrame(resolve))),
+    );
+
     // The options have not arrived, so "No options" would be a claim the
     // component cannot make; the trigger's spinner carries the state.
     const listbox = screen.getByRole('listbox', h);
     expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
+    expect(politeRegion()?.textContent ?? '').toBe('');
+  });
+
+  it('announces nothing while isLoading, matching the silent panel', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        isLoading
+        emptySearchText="Nothing like that here"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    // useAnnounce writes on the next animation frame, so an immediate read
+    // would pass whether or not anything was announced.
+    await act(
+      async () =>
+        void (await new Promise(resolve => requestAnimationFrame(resolve))),
+    );
+
+    // The panel is deliberately blank while loading; the live region is the
+    // only channel left, so a result there would be a claim the screen
+    // refuses to make.
+    const listbox = screen.getByRole('listbox', h);
+    expect(
+      within(listbox).queryByText('Nothing like that here'),
+    ).not.toBeInTheDocument();
     expect(politeRegion()?.textContent ?? '').toBe('');
   });
 

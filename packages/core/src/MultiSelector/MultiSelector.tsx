@@ -977,6 +977,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         announce('');
         return;
       }
+      // While isLoading the panel deliberately shows nothing, so announcing a
+      // result would put a claim in the one channel the screen has gone quiet
+      // for.
+      if (isLoading) {
+        announce('');
+        return;
+      }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
@@ -984,7 +991,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           : t('@astryx.multiSelector.resultCount', {count}),
       );
     },
-    [announce, selectableItems, emptySearchAnnouncement, t],
+    [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
   );
 
   // Handle toggle
