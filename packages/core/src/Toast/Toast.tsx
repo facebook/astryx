@@ -27,6 +27,7 @@ import type {
 } from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {devWarn} from '../utils/devWarning';
 
 const styles = stylex.create({
   root: {
@@ -218,8 +219,32 @@ export function Toast({
       label={t('@astryx.toast.dismiss')}
       onClick={handleDismiss}
       isIconOnly
+      // Marks the control so the dev check below can tell whether a custom
+      // layout actually placed it. Not a theming target — `astryx-button`
+      // already is one.
+      data-astryx-toast-dismiss=""
     />
   );
+
+  // A toast that does not auto-hide has exactly one exit, and `renderContent`
+  // is free to drop it on the floor. Warn rather than police it: per the API
+  // conventions a component renders what it is given, and an auto-hiding toast
+  // without a close is a legitimate choice. This is only the case that traps
+  // someone — the toast stays on screen, announced, with no way out.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (renderContent == null || isAutoHide) {
+      return;
+    }
+    if (rootRef.current?.querySelector('[data-astryx-toast-dismiss]') == null) {
+      devWarn(
+        'Toast',
+        'renderContent did not render `dismissButton`, and this toast does ' +
+          'not auto-hide — it cannot be dismissed. Place `dismissButton` ' +
+          'somewhere in your layout, or set `isAutoHide`.',
+      );
+    }
+  }, [renderContent, isAutoHide]);
 
   const isError = type === 'error';
   // The surface is *usually* dark in light mode and light in dark mode, but a
@@ -230,6 +255,7 @@ export function Toast({
 
   return (
     <div
+      ref={rootRef}
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
       aria-atomic="true"

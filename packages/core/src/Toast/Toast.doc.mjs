@@ -70,13 +70,11 @@ export const docs = {
       name: 'renderContent',
       type: '(toast: ToastContentRenderProps) => ReactNode',
       description:
-        "Replaces the content of this toast's card with your own layout. Astryx keeps the card, its astryx-toast theme target, the live-region role and the auto-hide timer, and hands the renderer the message, the endContent and its own dismiss Button to place — so the close stays themeable, translated and correctly named rather than something a custom layout has to rebuild. Per-toast: an app shares one layout by wrapping useToast and passing it on every call, while a toast raised by library code that never passes it renders as an ordinary Astryx toast. The argument is {body, endContent, dismissButton, type, isAutoHide, autoHideDuration, dismiss}, where type is 'info' | 'error'.",
+        "Replaces the content of this toast's card with your own layout. Astryx keeps the card, its astryx-toast theme target, the live-region role and the auto-hide timer, and hands the renderer the message, the endContent and its own dismiss Button to place — so the close stays themeable, translated and correctly named rather than something a custom layout has to rebuild. Per-toast: an app shares one layout by wrapping useToast and passing it on every call, while a toast raised by library code that never passes it renders as an ordinary Astryx toast. A layout may leave dismissButton out, but a toast that neither auto-hides nor places it has no way to close and warns in development. The argument is {body, endContent, dismissButton, type, isAutoHide, autoHideDuration, dismiss}, where type is 'info' | 'error'.",
     },
   ],  theming: {
     targets: [
       {className: 'astryx-toast', visualProps: ['type']},
-      {className: 'astryx-toast-viewport', visualProps: ['position']},
-      {className: 'astryx-toast-item'},
     ],
   },
 
@@ -118,7 +116,7 @@ export const docsZh = {
     collisionBehavior: '当已存在相同 uniqueID 的 toast 时的行为。',
     onHide: '当 toast 被移除时触发的回调。',
     renderContent:
-      "用你自己的布局替换该 toast 卡片内部的内容。Astryx 保留卡片本身、astryx-toast 主题目标、实时区域角色以及自动关闭计时器，并把消息、endContent 和它自己的关闭 Button 交给渲染函数放置——因此关闭控件仍然可主题化、已翻译且具备正确的无障碍名称，无需自行重建。按 toast 单独设置：应用可通过封装 useToast 并在每次调用时传入来共享同一套布局；而由库代码发起、从不传入该参数的 toast 会渲染为普通的 Astryx toast。传入参数为 {body, endContent, dismissButton, type, isAutoHide, autoHideDuration, dismiss}，其中 type 为 'info' | 'error'。",
+      "用你自己的布局替换该 toast 卡片内部的内容。Astryx 保留卡片本身、astryx-toast 主题目标、实时区域角色以及自动关闭计时器，并把消息、endContent 和它自己的关闭 Button 交给渲染函数放置——因此关闭控件仍然可主题化、已翻译且具备正确的无障碍名称，无需自行重建。按 toast 单独设置：应用可通过封装 useToast 并在每次调用时传入来共享同一套布局；而由库代码发起、从不传入该参数的 toast 会渲染为普通的 Astryx toast。布局可以不放置 dismissButton，但既不自动关闭又不放置它的 toast 将无法关闭，在开发环境下会发出警告。传入参数为 {body, endContent, dismissButton, type, isAutoHide, autoHideDuration, dismiss}，其中 type 为 'info' | 'error'。",
   },
   usage: {
     description:

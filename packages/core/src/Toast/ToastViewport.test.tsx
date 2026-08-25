@@ -26,8 +26,6 @@ import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {ToastViewport} from './ToastViewport';
 import {useToast} from './useToast';
 import type {ToastOptions} from './types';
-import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSS} from '../theme/generateThemeRules';
 
 // Spy on the announcement sink so tests can prove a toast is announced exactly
 // once. The mock wraps the real useAnnounce, so the singleton live regions are
@@ -650,37 +648,80 @@ describe('toast timer lifecycle (#3589)', () => {
     });
   });
 
-  // The two chrome targets. A renderer replaces the toast's surface but not
-  // the stack around it — the gap between toasts, the clip box, the entry
-  // transition — and until now that chrome was reachable only through
-  // structural selectors like `[data-toast-id] > div`. These assert the theme
-  // pipeline routes an override to the class the viewport actually renders;
-  // that the classes are on the right elements is covered in a browser.
-  describe('chrome theming targets', () => {
-    const cssFor = (
-      components: Parameters<typeof defineTheme>[0]['components'],
-    ) =>
-      generateThemeCSS(defineTheme({name: 'toast-chrome', components}))
-        .component;
+  // A toast that does not auto-hide has exactly one exit, and a layout is
+  // free to drop `dismissButton` on the floor. The component renders what it
+  // is given — but this is the combination that traps someone, so it warns.
+  describe('a layout that drops the dismiss', () => {
+    const NO_CLOSE: ToastOptions = {
+      body: 'Stuck',
+      type: 'error', // errors do not auto-hide
+      renderContent: toast => <div>{toast.body}</div>,
+    };
 
-    it('routes a viewport override to the stack container', () => {
-      expect(cssFor({'toast-viewport': {base: {padding: '24px'}}})).toContain(
-        '.astryx-toast-viewport {',
-      );
+    it('warns when a sticky toast is left with no way to close', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        renderViewport(
+          <ShowToastButton options={NO_CLOSE} triggerLabel="Show" />,
+        );
+        act(() => {
+          fireEvent.click(screen.getByText('Show'));
+        });
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('cannot be dismissed'),
+        );
+      } finally {
+        warn.mockRestore();
+      }
     });
 
-    it('scopes a viewport override to one position', () => {
-      // Asserting the whole selector: the same rule on the bare target would
-      // re-pad all four corners, which is the bug a position variant avoids.
-      expect(
-        cssFor({'toast-viewport': {'position:topEnd': {padding: '24px'}}}),
-      ).toContain('.astryx-toast-viewport.topEnd {');
+    it('stays quiet when the layout places it', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        renderViewport(
+          <ShowToastButton
+            options={{
+              ...NO_CLOSE,
+              renderContent: toast => (
+                <div>
+                  {toast.body}
+                  {toast.dismissButton}
+                </div>
+              ),
+            }}
+            triggerLabel="Show"
+          />,
+        );
+        act(() => {
+          fireEvent.click(screen.getByText('Show'));
+        });
+        expect(warn).not.toHaveBeenCalledWith(
+          expect.stringContaining('cannot be dismissed'),
+        );
+      } finally {
+        warn.mockRestore();
+      }
     });
 
-    it('routes a stacked-item override to each toast wrapper', () => {
-      expect(
-        cssFor({'toast-item': {base: {paddingBlockEnd: '16px'}}}),
-      ).toContain('.astryx-toast-item {');
+    it('stays quiet when the toast auto-hides', () => {
+      // No close is a legitimate choice for a toast that leaves on its own.
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        renderViewport(
+          <ShowToastButton
+            options={{...NO_CLOSE, type: 'info', isAutoHide: true}}
+            triggerLabel="Show"
+          />,
+        );
+        act(() => {
+          fireEvent.click(screen.getByText('Show'));
+        });
+        expect(warn).not.toHaveBeenCalledWith(
+          expect.stringContaining('cannot be dismissed'),
+        );
+      } finally {
+        warn.mockRestore();
+      }
     });
   });
 });

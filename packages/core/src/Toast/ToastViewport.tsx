@@ -20,7 +20,6 @@ import {useAnnounce} from '../hooks/useAnnounce';
 import {Toast} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
-import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
@@ -445,11 +444,9 @@ export function ToastViewport({
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.
         popover={isTopLayer ? 'manual' : undefined}
-        {...mergeProps(
-          themeProps('toast-viewport', {position}),
-          stylex.props(styles.viewport, posStyle),
-          Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
-        )}>
+        {...mergeProps(stylex.props(styles.viewport, posStyle), {
+          style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
+        })}>
         {visibleToasts.map(entry => {
           const o = entry.options;
           const type = o.type ?? 'info';
@@ -460,13 +457,10 @@ export function ToastViewport({
             <div
               key={entry.id}
               data-toast-id={entry.id}
-              {...mergeProps(
-                themeProps('toast-item'),
-                stylex.props(
-                  styles.toastWrapper,
-                  gapStyle,
-                  isExiting && styles.toastWrapperExiting,
-                ),
+              {...stylex.props(
+                styles.toastWrapper,
+                gapStyle,
+                isExiting && styles.toastWrapperExiting,
               )}
               onTransitionEnd={
                 isExiting

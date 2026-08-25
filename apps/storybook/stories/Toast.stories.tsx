@@ -399,7 +399,7 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
 }
 
 // =============================================================================
-// Custom body (renderContent)
+// Custom content (renderContent)
 // =============================================================================
 
 // A product with its own notification layout passes `renderContent` on the
@@ -445,7 +445,7 @@ const renderProductContent = (toast: ToastContentRenderProps) => (
 );
 
 export const CustomContent: StoryObj = {
-  name: 'Custom body (renderContent)',
+  name: 'Custom content (renderContent)',
   render: function CustomContentStory() {
     const toast = useToast();
     return (

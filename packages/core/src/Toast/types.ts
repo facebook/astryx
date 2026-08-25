@@ -42,7 +42,8 @@ export interface ToastOptions {
    * live-region role and the auto-hide timer — and hands the renderer this
    * toast's message, its `endContent`, and Astryx's own dismiss `Button` to
    * place. The close therefore stays a real Astryx `Button`: themed,
-   * translated, correctly named, and impossible for a layout to forget.
+   * translated and correctly named — a layout positions it rather than
+   * rebuilding it.
    *
    * Per-toast rather than app-wide on purpose. An app that wants every one of
    * its toasts to share a layout wraps `useToast()` once and passes this on
@@ -74,8 +75,8 @@ export type ToastDismissFn = () => void;
  * a ghost icon `Button` carrying the translated `@astryx.toast.dismiss` label
  * — and hands it over as an element to place. So it stays a real Astryx
  * `Button`: themeable through `astryx-button` like every other, named in the
- * user's language, and impossible for a custom layout to forget or mislabel.
- * The layout is the consumer's; the control is not.
+ * user's language, and impossible for a custom layout to mislabel. The layout
+ * is the consumer's; the control is not.
  */
 export interface ToastContentRenderProps {
   /** Primary message content, as passed to `showToast`. */
@@ -83,9 +84,9 @@ export interface ToastContentRenderProps {
   /** Trailing content, as passed to `showToast`. Place it in your layout. */
   endContent?: ReactNode;
   /**
-   * Astryx's dismiss control, ready to place. Render it somewhere — it is the
-   * toast's only pointer affordance, and on an error toast (which does not
-   * auto-hide) its only exit at all.
+   * Astryx's dismiss control, ready to place. Leaving it out is allowed — an
+   * auto-hiding toast closes itself — but a toast that neither auto-hides nor
+   * renders this has no exit at all, and warns in development.
    */
   dismissButton: ReactNode;
   /** Resolved toast type — `'error'` also makes the live region assertive. */
