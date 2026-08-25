@@ -380,6 +380,7 @@ export const EmptyStates: Story = {
     const [a, setA] = useState<string | undefined>(undefined);
     const [b, setB] = useState<string | undefined>(undefined);
     const [c, setC] = useState<string | undefined>(undefined);
+    const [d, setD] = useState<string | undefined>(undefined);
     return (
       <div
         style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
@@ -403,6 +404,13 @@ export const EmptyStates: Story = {
           onChange={v => setC(v)}
           hasSearch
           emptySearchText="Nothing matches that fruit"
+        />
+        <Selector
+          label="Loading (no message)"
+          options={[]}
+          value={d}
+          onChange={v => setD(v)}
+          isLoading
         />
       </div>
     );

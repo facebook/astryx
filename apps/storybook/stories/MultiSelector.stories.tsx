@@ -188,6 +188,7 @@ export const EmptyStates: Story = {
     const [a, setA] = useState<string[]>([]);
     const [b, setB] = useState<string[]>([]);
     const [c, setC] = useState<string[]>([]);
+    const [d, setD] = useState<string[]>([]);
     return (
       <div
         style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
@@ -211,6 +212,13 @@ export const EmptyStates: Story = {
           onChange={setC}
           hasSearch
           emptySearchText="Nothing matches that country"
+        />
+        <MultiSelector
+          label="Loading (no message)"
+          options={[]}
+          value={d}
+          onChange={setD}
+          isLoading
         />
       </div>
     );
