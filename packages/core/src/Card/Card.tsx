@@ -177,14 +177,6 @@ export type {SizeValue} from '../utils/types';
 export interface CardProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
-   * CSS class name(s) appended to the root element.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
-  /**
    * Width of the card.
    * Numbers are treated as pixels, strings are used as-is.
    */
@@ -217,7 +209,13 @@ export interface CardProps extends BaseProps<HTMLDivElement> {
   /**
    * Internal padding of the card using the spacing scale.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
-   * @default 4 (16px)
+   *
+   * Omit it and the card takes the theme's card padding instead of a step:
+   * every shipped theme but `butter` sets that to spacing step 3, so an
+   * explicit `padding={4}` is wider than the default, not equal to it.
+   *
+   * @default the theme's card padding (spacing step 3 in the default theme;
+   * spacing step 4 with no theme)
    */
   padding?: SpacingStep;
 
@@ -300,7 +298,7 @@ export function Card({
     <div
       ref={ref}
       {...mergeProps(
-        themeProps('card', {variant}),
+        themeProps('card', {variant, elevation}),
         stylex.props(
           styles.card,
           variantStyles[variant],

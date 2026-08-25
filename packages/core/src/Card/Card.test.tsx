@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {createRef} from 'react';
 import {describe, it, expect} from 'vitest';
 import {render} from '@testing-library/react';
 import {Card} from './Card';
@@ -10,17 +11,52 @@ describe('Card', () => {
     expect(getByText('Hello')).toBeInTheDocument();
   });
 
-  it('renders astryx-* class names for theme targeting', () => {
-    const {container} = render(<Card>Content</Card>);
-    const root = container.firstElementChild!;
+  it('forwards ref to the rendered element', () => {
+    const ref = createRef<HTMLDivElement>();
+    const {container} = render(<Card ref={ref}>C</Card>);
+    expect(ref.current).toBe(container.firstElementChild);
+  });
+
+  it('spreads unknown props onto the same element that carries the theme target', () => {
+    const {getByTestId} = render(
+      <Card data-testid="card" id="promo" aria-label="Promotion">
+        C
+      </Card>,
+    );
+    const root = getByTestId('card');
+    expect(root).toHaveAttribute('id', 'promo');
+    expect(root).toHaveAttribute('aria-label', 'Promotion');
     expect(root.className).toContain('astryx-card');
   });
 
-  it('renders transparent variant with variant class', () => {
-    const {container} = render(<Card variant="transparent">Content</Card>);
+  it('merges a consumer className instead of replacing the theme target', () => {
+    const {container} = render(<Card className="promo">C</Card>);
     const root = container.firstElementChild!;
     expect(root.className).toContain('astryx-card');
-    expect(root.className).toContain('transparent');
+    expect(root.className).toContain('promo');
+  });
+
+  it('reflects variant as a theme data attribute', () => {
+    const {container} = render(<Card variant="muted">C</Card>);
+    expect(container.firstElementChild).toHaveAttribute(
+      'data-variant',
+      'muted',
+    );
+  });
+
+  it('reflects elevation as a theme data attribute', () => {
+    const {container} = render(<Card elevation="high">C</Card>);
+    expect(container.firstElementChild).toHaveAttribute(
+      'data-elevation',
+      'high',
+    );
+  });
+
+  it('defaults to the default variant at rest elevation', () => {
+    const {container} = render(<Card>C</Card>);
+    const root = container.firstElementChild!;
+    expect(root).toHaveAttribute('data-variant', 'default');
+    expect(root).toHaveAttribute('data-elevation', 'none');
   });
 
   it('applies a distinct class for each elevation level', () => {
@@ -28,18 +64,7 @@ describe('Card', () => {
       const {container} = render(<Card elevation={elevation}>C</Card>);
       return container.firstElementChild!.className;
     };
-    const none = classFor('none');
-    const low = classFor('low');
-    const med = classFor('med');
-    const high = classFor('high');
-    expect(new Set([none, low, med, high]).size).toBe(4);
-  });
-
-  it('defaults to flat (elevation none) — same class as explicit none', () => {
-    const {container: defaultContainer} = render(<Card>C</Card>);
-    const {container: noneContainer} = render(<Card elevation="none">C</Card>);
-    expect(defaultContainer.firstElementChild!.className).toBe(
-      noneContainer.firstElementChild!.className,
-    );
+    const classes = (['none', 'low', 'med', 'high'] as const).map(classFor);
+    expect(new Set(classes).size).toBe(4);
   });
 });
