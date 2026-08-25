@@ -135,8 +135,8 @@ export type {
   ToastOptions,
   ToastDismissFn,
   ShowToastFn,
-  ToastBodyRenderProps,
-  ToastBodyRenderFn,
+  ToastContentRenderProps,
+  ToastContentRenderFn,
 } from './Toast';
 
 // Popover component and hook

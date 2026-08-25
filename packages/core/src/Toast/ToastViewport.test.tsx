@@ -488,17 +488,17 @@ describe('toast timer lifecycle (#3589)', () => {
     }
   });
 
-  // `renderBody` rides the `showToast` options and replaces the content of
+  // `renderContent` rides the `showToast` options and replaces the content of
   // that toast's card. What matters to a consumer is the handover: the pieces
   // the layout needs must arrive rather than being dropped; the dismiss must
   // stay Astryx's own control so a layout cannot mislabel it or lose it; and
   // a toast that does NOT pass one must be untouched, because that is the
   // library-raised case the app cannot reach.
-  describe('renderBody', () => {
+  describe('renderContent', () => {
     const STRIPED: ToastOptions = {
       body: 'Toast A',
-      renderBody: toast => (
-        <div data-testid="custom-body">
+      renderContent: toast => (
+        <div data-testid="custom-content">
           {toast.body}
           {toast.endContent}
           {toast.dismissButton}
@@ -511,11 +511,11 @@ describe('toast timer lifecycle (#3589)', () => {
       act(() => {
         fireEvent.click(screen.getByText('Show'));
       });
-      expect(screen.getByTestId('custom-body')).toHaveTextContent('Toast A');
+      expect(screen.getByTestId('custom-content')).toHaveTextContent('Toast A');
     });
 
     it('leaves a toast that did not ask for one alone', () => {
-      // The library-raised case: code that never passes `renderBody` keeps
+      // The library-raised case: code that never passes `renderContent` keeps
       // Astryx's own layout, intact and dismissible, rather than inheriting a
       // layout written for someone else's payload.
       renderViewport(
@@ -538,7 +538,7 @@ describe('toast timer lifecycle (#3589)', () => {
         }),
       ).toBeInTheDocument();
       expect(
-        within(plain as HTMLElement).queryByTestId('custom-body'),
+        within(plain as HTMLElement).queryByTestId('custom-content'),
       ).not.toBeInTheDocument();
     });
 
@@ -551,7 +551,7 @@ describe('toast timer lifecycle (#3589)', () => {
         fireEvent.click(screen.getByText('Show'));
       });
       expect(
-        within(screen.getByTestId('custom-body')).getByRole('button', {
+        within(screen.getByTestId('custom-content')).getByRole('button', {
           name: 'Dismiss notification',
         }),
       ).toBeInTheDocument();
@@ -598,7 +598,7 @@ describe('toast timer lifecycle (#3589)', () => {
         fireEvent.click(screen.getByText('Show'));
       });
       expect(
-        within(screen.getByTestId('custom-body')).getByRole('button', {
+        within(screen.getByTestId('custom-content')).getByRole('button', {
           name: 'Undo',
         }),
       ).toBeInTheDocument();
@@ -615,7 +615,7 @@ describe('toast timer lifecycle (#3589)', () => {
               body: 'Fleeting',
               autoHideDuration: 3000,
               onHide,
-              renderBody: toast => {
+              renderContent: toast => {
                 seen.push({
                   isAutoHide: toast.isAutoHide,
                   autoHideDuration: toast.autoHideDuration,

@@ -12,8 +12,8 @@ export type {
   ToastOptions,
   ToastDismissFn,
   ShowToastFn,
-  ToastBodyRenderProps,
-  ToastBodyRenderFn,
+  ToastContentRenderProps,
+  ToastContentRenderFn,
 } from './types';
 
 // Exported for LayerProvider integration

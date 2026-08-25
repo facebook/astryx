@@ -4,7 +4,10 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {useState, useRef} from 'react';
 import {useToast, ToastViewport} from '@astryxdesign/core/Toast';
-import type {ToastType, ToastBodyRenderProps} from '@astryxdesign/core/Toast';
+import type {
+  ToastType,
+  ToastContentRenderProps,
+} from '@astryxdesign/core/Toast';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Card} from '@astryxdesign/core/Card';
@@ -16,7 +19,7 @@ import {
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 
-// The custom toast layout used by the `renderBody` story below.
+// The custom toast layout used by the `renderContent` story below.
 const cardStyles = stylex.create({
   row: {
     display: 'flex',
@@ -396,10 +399,10 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
 }
 
 // =============================================================================
-// Custom body (renderBody)
+// Custom body (renderContent)
 // =============================================================================
 
-// A product with its own notification layout passes `renderBody` on the
+// A product with its own notification layout passes `renderContent` on the
 // `showToast` call. Astryx keeps the card — surface, `astryx-toast` theme
 // target, live-region role, auto-hide timer — and hands over the message, the
 // `endContent`, and its own dismiss `Button`.
@@ -411,12 +414,12 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
 //
 // Note there is no second `ToastViewport` here: the story's toasts go through
 // the app-level one, exactly as a product's would.
-function ProductToastBody({
+function ProductToastContent({
   type,
   body,
   endContent,
   dismissButton,
-}: ToastBodyRenderProps) {
+}: ToastContentRenderProps) {
   return (
     <div {...stylex.props(cardStyles.row)}>
       <div
@@ -434,16 +437,16 @@ function ProductToastBody({
 
 // An app shares one layout across its toasts by wrapping the hook once —
 // which is also what keeps a library's toast out of it: code that calls
-// `useToast()` directly never passes `renderBody`, so it renders as an
+// `useToast()` directly never passes `renderContent`, so it renders as an
 // ordinary Astryx toast rather than inheriting a layout built for someone
 // else's payload.
-const renderProductBody = (toast: ToastBodyRenderProps) => (
-  <ProductToastBody {...toast} />
+const renderProductContent = (toast: ToastContentRenderProps) => (
+  <ProductToastContent {...toast} />
 );
 
-export const CustomBody: StoryObj = {
-  name: 'Custom body (renderBody)',
-  render: function CustomBodyStory() {
+export const CustomContent: StoryObj = {
+  name: 'Custom body (renderContent)',
+  render: function CustomContentStory() {
     const toast = useToast();
     return (
       <Stack direction="horizontal" gap={2} wrap="wrap">
@@ -452,7 +455,7 @@ export const CustomBody: StoryObj = {
           onClick={() => {
             toast({
               body: 'Your changes have been saved.',
-              renderBody: renderProductBody,
+              renderContent: renderProductContent,
             });
           }}
         />
@@ -463,7 +466,7 @@ export const CustomBody: StoryObj = {
             toast({
               body: 'Row deleted.',
               endContent: <Button variant="ghost" size="sm" label="Undo" />,
-              renderBody: renderProductBody,
+              renderContent: renderProductContent,
             });
           }}
         />
@@ -474,12 +477,12 @@ export const CustomBody: StoryObj = {
             toast({
               body: 'Could not reach the server.',
               type: 'error',
-              renderBody: renderProductBody,
+              renderContent: renderProductContent,
             });
           }}
         />
         <Button
-          label="Without renderBody"
+          label="Without renderContent"
           variant="ghost"
           onClick={() => {
             toast({body: 'A toast from code that knows nothing about it.'});
@@ -492,7 +495,7 @@ export const CustomBody: StoryObj = {
     docs: {
       description: {
         story:
-          "`renderBody` on the `showToast` options replaces the content of that toast's card with your own layout — here a leading status stripe. Astryx keeps the card and the transport, and hands over the message, the `endContent` and its own dismiss `Button`, so the close stays themed, translated and correctly named. The last button omits `renderBody`, showing what a toast raised by code that has never heard of this layout looks like: an ordinary Astryx toast, intact and dismissible.",
+          "`renderContent` on the `showToast` options replaces the content of that toast's card with your own layout — here a leading status stripe. Astryx keeps the card and the transport, and hands over the message, the `endContent` and its own dismiss `Button`, so the close stays themed, translated and correctly named. The last button omits `renderContent`, showing what a toast raised by code that has never heard of this layout looks like: an ordinary Astryx toast, intact and dismissible.",
       },
     },
   },

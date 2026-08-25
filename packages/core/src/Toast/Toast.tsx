@@ -20,7 +20,11 @@ import {
 import {mergeProps} from '../utils';
 import {useTheme} from '../theme';
 import {MediaTheme} from '../theme/MediaTheme';
-import type {ToastType, ToastDismissReason, ToastBodyRenderFn} from './types';
+import type {
+  ToastType,
+  ToastDismissReason,
+  ToastContentRenderFn,
+} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -51,7 +55,7 @@ const styles = stylex.create({
   variantDefault: {
     backgroundColor: colorVars['--color-background-inverted'],
   },
-  inner: {
+  layout: {
     display: 'flex',
     alignItems: 'flex-start',
     gap: spacingVars['--spacing-3'],
@@ -88,9 +92,9 @@ export interface ToastProps {
   onDismiss: (reason: ToastDismissReason) => void;
   /**
    * Replaces the content of the toast's card — see `ToastViewport`'s
-   * `renderBody`, which is where an app normally sets this.
+   * `renderContent`, which is where an app normally sets this.
    */
-  renderBody?: ToastBodyRenderFn;
+  renderContent?: ToastContentRenderFn;
 }
 
 /**
@@ -121,7 +125,7 @@ export function Toast({
   autoHideDuration,
   isExiting = false,
   onDismiss,
-  renderBody,
+  renderContent,
 }: ToastProps) {
   const t = useTranslator();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -202,7 +206,7 @@ export function Toast({
     onDismiss('manual');
   }, [onDismiss]);
 
-  // Built here rather than inside the default layout so `renderBody` can be
+  // Built here rather than inside the default layout so `renderContent` can be
   // handed the very same control: a custom layout gets Astryx's close, with
   // its translated label and its `astryx-button` theming, instead of having
   // to rebuild one and get those right itself.
@@ -242,8 +246,8 @@ export function Toast({
         ),
       )}>
       <MediaTheme mode="auto" fallback={fallbackMediaMode}>
-        {renderBody ? (
-          renderBody({
+        {renderContent ? (
+          renderContent({
             body,
             endContent,
             dismissButton,
@@ -253,7 +257,7 @@ export function Toast({
             dismiss: handleDismiss,
           })
         ) : (
-          <div {...stylex.props(styles.inner)}>
+          <div {...stylex.props(styles.layout)}>
             <div {...stylex.props(styles.content)}>{body}</div>
 
             <div {...stylex.props(styles.endContent)}>

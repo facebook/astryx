@@ -50,7 +50,7 @@ export interface ToastOptions {
    * wrapper then renders as an ordinary Astryx toast — intact, dismissible —
    * rather than inheriting a layout written for someone else's payload.
    */
-  renderBody?: ToastBodyRenderFn;
+  renderContent?: ToastContentRenderFn;
 
   /** Unique identifier for deduplication. */
   uniqueID?: string;
@@ -67,8 +67,8 @@ export interface ToastOptions {
 export type ToastDismissFn = () => void;
 
 /**
- * What a `renderBody` function receives: one toast's content, plus the two
- * controls Astryx has already built for it.
+ * What a `renderContent` function receives: one toast's message and trailing
+ * slot, plus the dismiss control Astryx has already built for it.
  *
  * `dismissButton` is the point of the whole thing. Astryx renders the close —
  * a ghost icon `Button` carrying the translated `@astryx.toast.dismiss` label
@@ -77,7 +77,7 @@ export type ToastDismissFn = () => void;
  * user's language, and impossible for a custom layout to forget or mislabel.
  * The layout is the consumer's; the control is not.
  */
-export interface ToastBodyRenderProps {
+export interface ToastContentRenderProps {
   /** Primary message content, as passed to `showToast`. */
   body: ReactNode;
   /** Trailing content, as passed to `showToast`. Place it in your layout. */
@@ -104,9 +104,11 @@ export interface ToastBodyRenderProps {
 
 /**
  * Renders the content of one toast inside Astryx's card — see
- * `ToastOptions.renderBody`.
+ * `ToastOptions.renderContent`.
  */
-export type ToastBodyRenderFn = (toast: ToastBodyRenderProps) => ReactNode;
+export type ToastContentRenderFn = (
+  toast: ToastContentRenderProps,
+) => ReactNode;
 
 /** Function returned by useToast to show toasts. */
 export type ShowToastFn = (options: ToastOptions) => ToastDismissFn;
