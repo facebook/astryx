@@ -222,13 +222,13 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Dialog: 'dialog',
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
-  HoverCard: 'hovercard',
+  HoverCard: 'hover-card',
   NumberInput: 'number-input',
   Popover: 'popover',
-  ProgressBar: 'progressbar-mark',
+  ProgressBar: 'progress-bar-mark',
   Section: 'section',
   SegmentedControl: 'segmented-control',
-  TextArea: 'textarea',
+  TextArea: 'text-area',
 };
 
 /**
@@ -417,6 +417,21 @@ describe('getDerivedVars', () => {
 
   it('returns empty for unknown component', () => {
     expect(getDerivedVars('unknown', 'borderRadius')).toEqual([]);
+  });
+
+  it('resolves a deprecated key to the entries of the key that replaced it', () => {
+    // A theme written against the old spelling still selects the element (the
+    // component emits both classes), so its derived vars must still expand —
+    // otherwise the rule lands and the var half of it silently does nothing.
+    expect(getDerivedVars('hovercard', 'borderRadius')).toEqual(
+      getDerivedVars('hover-card', 'borderRadius'),
+    );
+    expect(getDerivedVars('textarea', 'paddingInline')).toEqual(
+      getDerivedVars('text-area', 'paddingInline'),
+    );
+    expect(getDerivedVars('progressbar-mark', 'width')).toEqual(
+      getDerivedVars('progress-bar-mark', 'width'),
+    );
   });
 
   it('returns empty for unregistered property', () => {

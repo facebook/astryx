@@ -34,6 +34,7 @@ describe('themeTargets (api/theme/targets)', () => {
     expect(data.targets.map(t => t.key)).toEqual([
       'switch',
       'switch-field',
+      'switch-label',
       'switch-thumb',
     ]);
   }, 60_000);

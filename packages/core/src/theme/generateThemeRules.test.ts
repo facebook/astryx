@@ -702,3 +702,40 @@ describe('physical padding longhands', () => {
     expect(rule).not.toContain('--_dropdown-menu-padding');
   });
 });
+
+describe('renamed theme targets', () => {
+  // The renamed targets emit both classes, so a rule written against either
+  // key selects the element. What is easy to miss is the derived-var half: a
+  // key the registry does not know still emits a rule, minus every var the
+  // component actually reads — the same silent nothing a misspelled key gives.
+  it('expands derived vars for a renamed key and its deprecated spelling', () => {
+    const rules = (component: string, styles: Record<string, string>) =>
+      generateThemeRules(
+        defineTheme({
+          name: `test-renamed-${component}`,
+          components: {[component]: {base: styles}},
+        }),
+      ).join('\n');
+
+    const hoverCard = rules('hover-card', {borderRadius: '9px'});
+    expect(hoverCard).toContain('.astryx-hover-card');
+    expect(hoverCard).toContain('--_hovercard-radius: 9px');
+    expect(rules('hovercard', {borderRadius: '9px'})).toContain(
+      '--_hovercard-radius: 9px',
+    );
+
+    const textArea = rules('text-area', {paddingInline: '11px'});
+    expect(textArea).toContain('.astryx-text-area');
+    expect(textArea).toContain('--_textarea-inline-padding: 11px');
+    expect(rules('textarea', {paddingInline: '11px'})).toContain(
+      '--_textarea-inline-padding: 11px',
+    );
+
+    const mark = rules('progress-bar-mark', {width: '3px'});
+    expect(mark).toContain('.astryx-progress-bar-mark');
+    expect(mark).toContain('--_progressbar-mark-width: 3px');
+    expect(rules('progressbar-mark', {width: '3px'})).toContain(
+      '--_progressbar-mark-width: 3px',
+    );
+  });
+});

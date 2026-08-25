@@ -19,6 +19,7 @@
  * - disabled-cursor: Flags a cursor that promises an interaction without giving way to not-allowed on a disabled element
  * - no-unstable-merged-refs: Flags render-time mergeRefs callbacks and unstable callback inputs to useMergedRefs
  * - no-light-dark-outside-theme: Flags CSS light-dark() in component source (a light/dark decision belongs to the theme layer, where a token pair reaches both schemes in every theme)
+ * - no-raw-color: Flags a raw colour value (hex, rgb(), hsl(), oklch(), …) anywhere in component source, including inside light-dark()/color-mix(), behind a const, in a template literal, or as a var() fallback — the shapes no-hardcoded-styles cannot see
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -54,6 +55,7 @@ import noHardcodedI18nStringRule from './no-hardcoded-i18n-string.js';
 import i18nKeyFormatRule from './i18n-key-format.js';
 import requireTableSectionRule from './require-table-section.js';
 import noLightDarkOutsideThemeRule from './no-light-dark-outside-theme.js';
+import noRawColorRule from './no-raw-color.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -353,6 +355,7 @@ const plugin = {
     'i18n-key-format': i18nKeyFormatRule,
     'require-table-section': requireTableSectionRule,
     'no-light-dark-outside-theme': noLightDarkOutsideThemeRule,
+    'no-raw-color': noRawColorRule,
   },
   configs: {},
 };
@@ -428,6 +431,14 @@ plugin.configs.strict = {
     // sticky-column fix in this commit, so it errors in both tiers. (Lab
     // warns — see the lab block in eslint.config.js.)
     '@astryx/no-light-dark-outside-theme': 'error',
+    // A colour a theme cannot reach is the colour every theme gets. This is
+    // the whole of T1 where `no-hardcoded-styles` only reaches literals sitting
+    // directly on `color`/`backgroundColor`/`borderColor` inside
+    // `stylex.create()`. Warn in both tiers while the 23 existing violations
+    // are cleaned up (2 in core, 1 in charts, 20 in lab — see the plugin
+    // README); promote to 'error' per package as each one reaches zero, the
+    // same path no-physical-properties took.
+    '@astryx/no-raw-color': 'warn',
   },
 };
 
@@ -491,6 +502,14 @@ plugin.configs.recommended = {
     // sticky-column fix in this commit, so it errors in both tiers. (Lab
     // warns — see the lab block in eslint.config.js.)
     '@astryx/no-light-dark-outside-theme': 'error',
+    // A colour a theme cannot reach is the colour every theme gets. This is
+    // the whole of T1 where `no-hardcoded-styles` only reaches literals sitting
+    // directly on `color`/`backgroundColor`/`borderColor` inside
+    // `stylex.create()`. Warn in both tiers while the 23 existing violations
+    // are cleaned up (2 in core, 1 in charts, 20 in lab — see the plugin
+    // README); promote to 'error' per package as each one reaches zero, the
+    // same path no-physical-properties took.
+    '@astryx/no-raw-color': 'warn',
   },
 };
 

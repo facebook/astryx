@@ -16,7 +16,10 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-hovercard'},
+      {className: 'astryx-hover-card'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-hovercard', deprecatedFor: 'hover-card'},
     ],
     vars: [
       {name: '--_hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)', private: true},
@@ -144,7 +147,10 @@ export const docsZh = {
   displayName: 'Hover Card',
   theming: {
     targets: [
-      {className: 'astryx-hovercard'},
+      {className: 'astryx-hover-card'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-hovercard', deprecatedFor: 'hover-card'},
     ],
     vars: [
       {name: '--_hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)', private: true},

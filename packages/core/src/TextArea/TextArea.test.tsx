@@ -1155,3 +1155,14 @@ describe('TextArea readonly theme state', () => {
     expect(root).not.toHaveAttribute('data-readonly');
   });
 });
+
+describe('TextArea theme target names', () => {
+  it('renders the deprecated class beside the current one', () => {
+    const {container} = render(
+      <TextArea label="Notes" value="" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-text-area');
+    expect(root).not.toBeNull();
+    expect(root).toHaveClass('astryx-textarea');
+  });
+});

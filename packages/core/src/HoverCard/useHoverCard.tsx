@@ -605,7 +605,11 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       props?: Omit<ContextRenderProps, 'positioning'>,
     ): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
-      const themeClassName = themeProps('hovercard').className;
+      const themeClassName = themeProps('hover-card', undefined, {
+        // `hovercard` ran the compound name together; themes styling it keep
+        // working until the next major.
+        legacyNames: ['hovercard'],
+      }).className;
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,

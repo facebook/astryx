@@ -147,10 +147,16 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-code', visualProps: ['color']},
-      {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container']},
-      {className: 'astryx-codeblock-header', visualProps: ['size', 'language', 'container']},
-      {className: 'astryx-codeblock-title', visualProps: ['size', 'language']},
-      {className: 'astryx-codeblock-copy-button'},
+      {className: 'astryx-code-block', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-code-block-header', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-code-block-title', visualProps: ['size', 'language']},
+      {className: 'astryx-code-block-copy-button'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container'], deprecatedFor: 'code-block'},
+      {className: 'astryx-codeblock-header', visualProps: ['size', 'language', 'container'], deprecatedFor: 'code-block-header'},
+      {className: 'astryx-codeblock-title', visualProps: ['size', 'language'], deprecatedFor: 'code-block-title'},
+      {className: 'astryx-codeblock-copy-button', deprecatedFor: 'code-block-copy-button'},
     ],
     vars: [
       {name: '--_codeblock-gutter-width', description: 'Width of the line-number gutter, computed from the digit count of the last line so the code column starts at a stable offset.', default: '2ch', private: true},
