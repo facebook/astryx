@@ -55,9 +55,10 @@ const TRACK_OPACITY: Record<SpinnerShade, number> = {
 };
 
 /**
- * Where the resolved geometry lands: the public var if a theme set one, the
- * size's default otherwise. These are the names the box and the ring read —
- * never the public ones directly. See `sizeStyles` for why.
+ * Where the resolved geometry lands: the public var, resolved into a registered
+ * `<length>` the `calc()`s below can do arithmetic on. The box and the ring
+ * read these; the public vars are declared once, on the element carrying the
+ * theme target, by `sizeStyles`.
  */
 const RESOLVED_DIAMETER = '--_spinner-ring-diameter';
 const RESOLVED_RAIL = '--_spinner-ring-rail';
@@ -80,11 +81,12 @@ let didRegisterVars = false;
  * rail of `0` hides the arc along with the track; an arc with no track behind
  * it is `--spinner-track-color: transparent`.
  *
- * Only the resolved vars are registered, and the public ones deliberately are
- * not: a registered property with an `initialValue` is never
- * guaranteed-invalid, so `var(--spinner-diameter, <default>)` would stop
- * falling back the moment `--spinner-diameter` were registered — every
- * unthemed spinner would draw at the initial `0px`.
+ * Only these private vars are registered. The four public ones deliberately
+ * are not: a registered property has an `initial-value`, so every element in
+ * the document would report a value for it — and
+ * `.github/scripts/theme-var-reachability.js` finds a var's declaring element
+ * by exactly that test, so registering them would point the guard at `<html>`
+ * and report a var no theme can select.
  */
 function registerSpinnerVars(): void {
   if (didRegisterVars) {
@@ -197,6 +199,13 @@ const styles = stylex.create({
     placeItems: 'center',
     overflow: 'hidden',
     verticalAlign: 'middle',
+    // The public geometry vars, resolved into the registered `<length>` pair
+    // the arithmetic below needs. Reading them here rather than in each
+    // `calc()` keeps one place where a themed value enters the component, and
+    // it is the span that reads them whether the theme target is the span or
+    // the wrapper — a custom property inherits either way.
+    [RESOLVED_DIAMETER]: 'var(--spinner-diameter)',
+    [RESOLVED_RAIL]: 'var(--spinner-rail-width)',
     // The box and the drawn ring read the same resolved vars, so a themed
     // size moves both together.
     width: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_RAIL}) * 2)`,
@@ -237,73 +246,79 @@ const styles = stylex.create({
     r: `calc(var(${RESOLVED_DIAMETER}) / 2)`,
     strokeWidth: `var(${RESOLVED_RAIL})`,
   },
+  // The two ring colors ride `stroke` directly, read off the public vars the
+  // shade declares. The paint comes from the cascade, so every notation a
+  // theme can write — `var()`, `color-mix()`, and the `currentColor` the
+  // inherit shade is built on — resolves where it is used, and a color changed
+  // after mount repaints instead of going stale.
+  arc: {stroke: 'var(--spinner-color)'},
+  track: {stroke: 'var(--spinner-track-color)'},
 });
 
-// What each named `size` resolves to. A theme redefines a size by setting the
-// public vars on the size-variant target, e.g.
+// What each named `size` and `shade` resolve to. Both groups DECLARE the four
+// public vars, on the element that carries the `spinner` theme target, and
+// everything downstream reads them — so a theme's `@layer astryx-theme` rule
+// against `.astryx-spinner.xl` overrides the default the same way it does for
+// `--tree-list-indent` or `--button-focus-offset`, e.g.
 // spinner: { 'size:xl': { '--spinner-diameter': '40px' } }.
 //
-// The size's default is written as a `var()` FALLBACK rather than as a
-// declaration of the public var, and that is load-bearing rather than
-// stylistic. StyleX emits custom-property declarations OUTSIDE its cascade
-// layers, while a theme's component overrides are injected into
-// `@layer astryx-theme`; unlayered declarations beat every layer, so a
-// StyleX-declared `--spinner-diameter: 10px` would win over the theme's rule
-// no matter how specific the theme got. Reading the public var with the
-// default as its fallback inverts that: the theme's declaration is the only
-// one of the two, and the default applies exactly when it is absent. It is the
-// same shape the shade colors already use.
+// Declaring is only safe because #5410 moved the compiled StyleX CSS inside
+// `@layer astryx-base`. Before it, StyleX emitted custom-property
+// declarations at priority 0 and therefore OUTSIDE its layers, and an
+// unlayered declaration beats every layer — so a StyleX-declared
+// `--spinner-diameter: 10px` shadowed the theme's own rule no matter how
+// specific the theme got. An earlier revision of this component worked around
+// that by never declaring the public var and reading it with the default as a
+// `var()` fallback; that is no longer necessary, and the fallback shape has a
+// cost of its own — with nothing declaring the var,
+// `theme-var-reachability.js` cannot find an element to check, so a documented
+// var reads as unreachable.
 const sizeStyles = stylex.create({
   sm: {
-    [RESOLVED_DIAMETER]: `var(--spinner-diameter, ${SIZES.sm.diameter}px)`,
-    [RESOLVED_RAIL]: `var(--spinner-rail-width, ${SIZES.sm.border}px)`,
+    '--spinner-diameter': `${SIZES.sm.diameter}px`,
+    '--spinner-rail-width': `${SIZES.sm.border}px`,
   },
   md: {
-    [RESOLVED_DIAMETER]: `var(--spinner-diameter, ${SIZES.md.diameter}px)`,
-    [RESOLVED_RAIL]: `var(--spinner-rail-width, ${SIZES.md.border}px)`,
+    '--spinner-diameter': `${SIZES.md.diameter}px`,
+    '--spinner-rail-width': `${SIZES.md.border}px`,
   },
   lg: {
-    [RESOLVED_DIAMETER]: `var(--spinner-diameter, ${SIZES.lg.diameter}px)`,
-    [RESOLVED_RAIL]: `var(--spinner-rail-width, ${SIZES.lg.border}px)`,
+    '--spinner-diameter': `${SIZES.lg.diameter}px`,
+    '--spinner-rail-width': `${SIZES.lg.border}px`,
   },
   xl: {
-    [RESOLVED_DIAMETER]: `var(--spinner-diameter, ${SIZES.xl.diameter}px)`,
-    [RESOLVED_RAIL]: `var(--spinner-rail-width, ${SIZES.xl.border}px)`,
+    '--spinner-diameter': `${SIZES.xl.diameter}px`,
+    '--spinner-rail-width': `${SIZES.xl.border}px`,
   },
 });
 
-// The two ring colors. Each shade's token is the fallback of the public var
-// rather than a declaration of it, for exactly the reason `sizeStyles`
-// explains. They ride `stroke` directly: the paint comes off the cascade, so
-// every notation a theme can write — `var()`, `color-mix()`, and the
-// `currentColor` the inherit shade is built on — resolves where it is used and
-// a color changed after mount repaints instead of going stale.
-const arcStyles = stylex.create({
-  default: {stroke: `var(--spinner-color, ${colorVars['--color-accent']})`},
-  subtle: {
-    stroke: `var(--spinner-color, ${colorVars['--color-text-secondary']})`,
-  },
-  onMedia: {stroke: `var(--spinner-color, ${colorVars['--color-on-dark']})`},
-  inherit: {stroke: 'var(--spinner-color, currentColor)'},
-});
-
-const trackStyles = stylex.create({
+const shadeStyles = stylex.create({
   default: {
-    stroke: `var(--spinner-track-color, ${colorVars['--color-track']})`,
-    strokeOpacity: TRACK_OPACITY.default,
+    '--spinner-color': colorVars['--color-accent'],
+    '--spinner-track-color': colorVars['--color-track'],
   },
   subtle: {
-    stroke: `var(--spinner-track-color, ${colorVars['--color-track']})`,
-    strokeOpacity: TRACK_OPACITY.subtle,
+    '--spinner-color': colorVars['--color-text-secondary'],
+    '--spinner-track-color': colorVars['--color-track'],
   },
   onMedia: {
-    stroke: `var(--spinner-track-color, ${colorVars['--color-on-dark']})`,
-    strokeOpacity: TRACK_OPACITY.onMedia,
+    '--spinner-color': colorVars['--color-on-dark'],
+    '--spinner-track-color': colorVars['--color-on-dark'],
   },
   inherit: {
-    stroke: 'var(--spinner-track-color, currentColor)',
-    strokeOpacity: TRACK_OPACITY.inherit,
+    '--spinner-color': 'currentColor',
+    '--spinner-track-color': 'currentColor',
   },
+});
+
+// The track's alpha is a property, not a color: it composites over whatever
+// color the shade or the theme supplies. `77 / 255` is the `4D` the onMedia
+// token's hex used to carry.
+const trackOpacityStyles = stylex.create({
+  default: {strokeOpacity: TRACK_OPACITY.default},
+  subtle: {strokeOpacity: TRACK_OPACITY.subtle},
+  onMedia: {strokeOpacity: TRACK_OPACITY.onMedia},
+  inherit: {strokeOpacity: TRACK_OPACITY.inherit},
 });
 
 // =============================================================================
@@ -419,11 +434,13 @@ export function Spinner({
         hasLabel ? '' : themeProps('spinner', {size, shade}),
         stylex.props(
           styles.spinner,
-          // The size's geometry always rides the span that draws the ring. It
-          // reads the public vars rather than declaring them, so it does not
-          // matter whether the theme target is this element or the wrapper —
-          // either way the value is inherited by the time it is read.
-          sizeStyles[size],
+          // The defaults are declared on whichever element carries the theme
+          // target, and only there: when a label moves the target to the
+          // wrapper, this span must inherit the wrapper's value rather than
+          // declare its own, which would shadow a theme's override with the
+          // default it is trying to replace.
+          !hasLabel && sizeStyles[size],
+          !hasLabel && shadeStyles[shade],
           !hasLabel && xstyle,
         ),
         hasLabel ? undefined : className,
@@ -441,7 +458,11 @@ export function Spinner({
           cy={center}
           r={diameter / 2}
           strokeWidth={border}
-          {...stylex.props(styles.circle, trackStyles[shade])}
+          {...stylex.props(
+            styles.circle,
+            styles.track,
+            trackOpacityStyles[shade],
+          )}
         />
         <circle
           cx={center}
@@ -453,7 +474,7 @@ export function Spinner({
           pathLength={circumference}
           strokeDasharray={`${arcLength} ${circumference - arcLength}`}
           transform={`rotate(-90 ${center} ${center})`}
-          {...stylex.props(styles.circle, arcStyles[shade])}
+          {...stylex.props(styles.circle, styles.arc)}
         />
       </svg>
     </span>
@@ -470,7 +491,12 @@ export function Spinner({
       {...restProps}
       {...mergeProps(
         themeProps('spinner', {size, shade}),
-        stylex.props(styles.wrapper, xstyle),
+        stylex.props(
+          styles.wrapper,
+          sizeStyles[size],
+          shadeStyles[shade],
+          xstyle,
+        ),
         className,
         style,
       )}>
