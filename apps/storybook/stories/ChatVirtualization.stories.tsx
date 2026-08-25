@@ -13,11 +13,12 @@
  * Why: an unvirtualized transcript degrades with history length, and the
  * cost center is UPDATES, not passive scrolling (scrolling a static list is
  * compositor-cheap either way): streaming a reply re-renders every mounted
- * row, and with 3000 messages mounted this story measures ~8fps for the
- * duration of the stream (144Hz machine), while the windowed list holds the
- * machine's full frame rate with a couple dozen rows in the DOM. Flip the
- * `virtualized` control at messageCount=3000 and send a message to feel the
- * difference; the status pill shows mounted rows and a live fps counter.
+ * row, and with 3000 messages mounted the baseline story measures ~8fps for
+ * the duration of the stream (144Hz machine), while the windowed list holds
+ * the machine's full frame rate with a couple dozen rows in the DOM. Send a
+ * message here, then send one in the "Unvirtualized Baseline" story at the
+ * same messageCount to feel the difference; the status pill shows mounted
+ * rows and a live fps counter in both.
  *
  * The virtualizer owns follow-at-end (scroll up during a stream to
  * disengage; the scroll button re-engages declaratively) and read-position
@@ -303,15 +304,10 @@ function VirtScrollButton({
 }
 
 // =============================================================================
-// Story
+// Shared demo shell: corpus + composer + streamed reply. The two stories are
+// the two arms — same machinery, virtualization fixed per story so the
+// comparison is a story switch, not a control that turns the subject off.
 // =============================================================================
-
-type StoryArgs = {
-  messageCount: number;
-  virtualized: boolean;
-  endThreshold: number;
-  streamSpeed: 'relaxed' | 'default' | 'fast';
-};
 
 const STREAM_SPEEDS = {
   relaxed: {intervalMs: 50, minChunk: 1, maxChunk: 3},
@@ -319,150 +315,240 @@ const STREAM_SPEEDS = {
   fast: {intervalMs: 10, minChunk: 6, maxChunk: 14},
 } as const;
 
-export const ThousandsOfMessages: StoryObj<StoryArgs> = {
+type StreamSpeed = keyof typeof STREAM_SPEEDS;
+
+function TranscriptDemo({
+  virtualized,
+  messageCount,
+  streamSpeed,
+  endThreshold = 24,
+  startAtTop = false,
+}: {
+  virtualized: boolean;
+  messageCount: number;
+  streamSpeed: StreamSpeed;
+  endThreshold?: number;
+  startAtTop?: boolean;
+}) {
+  const [messages, setMessages] = useState<DemoMessage[]>(() =>
+    makeCorpus(messageCount),
+  );
+  const [isStreaming, setIsStreaming] = useState(false);
+  const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const virtApiRef = useRef<ChatVirtualizerHandle | null>(null);
+  const scrollElRef = useRef<HTMLElement | null>(null);
+
+  // Rebuild the corpus when the control changes.
+  const countRef = useRef(messageCount);
+  useEffect(() => {
+    if (countRef.current !== messageCount) {
+      countRef.current = messageCount;
+      clearInterval(streamRef.current);
+      setIsStreaming(false);
+      setMessages(makeCorpus(messageCount));
+    }
+  }, [messageCount]);
+  useEffect(() => () => clearInterval(streamRef.current), []);
+
+  // startAtTop demos the OTHER half of the imperative API: anchorToKey pins
+  // the first row to the viewport top (log-reading mode — the stream grows
+  // below without moving the viewport; the scroll button re-engages follow).
+  // Declaring before the scroller attaches is fine: the declaration is a
+  // mode, not a scroll action, and it lands on the attach commit. Flipping
+  // the control live jumps between the two declarations.
+  const firstIdRef = useRef<string | null>(null);
+  firstIdRef.current = messages[0]?.id ?? null;
+  const startAtTopSeen = useRef(false);
+  useEffect(() => {
+    if (!virtualized) {
+      return;
+    }
+    if (startAtTop) {
+      if (firstIdRef.current !== null) {
+        virtApiRef.current?.anchorToKey(firstIdRef.current);
+      }
+      startAtTopSeen.current = true;
+    } else if (startAtTopSeen.current) {
+      virtApiRef.current?.scrollToDistanceFromBottomPx(0);
+    }
+  }, [startAtTop, virtualized]);
+
+  const speed = STREAM_SPEEDS[streamSpeed];
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
+  const handleSubmit = useCallback((value: string) => {
+    const base = Date.now();
+    const userId = `u-${base}`;
+    const replyId = `a-${base}`;
+    setMessages(prev => [
+      ...prev,
+      {
+        id: userId,
+        role: 'user',
+        text: value || 'Show me the streaming follow behavior.',
+      },
+      {id: replyId, role: 'assistant', text: ''},
+    ]);
+    setIsStreaming(true);
+    let charIdx = 0;
+    const {intervalMs, minChunk, maxChunk} = speedRef.current;
+    streamRef.current = setInterval(() => {
+      charIdx +=
+        minChunk + Math.floor(Math.random() * (maxChunk - minChunk + 1));
+      const done = charIdx >= STREAM_REPLY.length;
+      const text = done ? STREAM_REPLY : STREAM_REPLY.slice(0, charIdx);
+      setMessages(prev => prev.map(m => (m.id === replyId ? {...m, text} : m)));
+      if (done) {
+        clearInterval(streamRef.current);
+        setIsStreaming(false);
+      }
+    }, intervalMs);
+  }, []);
+
+  return (
+    <div {...stylex.props(styles.wrapper)}>
+      <div {...stylex.props(styles.controls)}>
+        <Text type="supporting" color="secondary">
+          {virtualized
+            ? 'Send a message, then scroll up mid-stream and back down — ' +
+              'compare with the "Unvirtualized Baseline" story.'
+            : 'Same corpus and stream, no virtualization — send a message ' +
+              'at 3000 rows and watch the fps counter.'}
+        </Text>
+        <StatusPill
+          total={messages.length}
+          virtualized={virtualized}
+          isStreaming={isStreaming}
+        />
+      </div>
+      <ChatLayout
+        {...(virtualized
+          ? {
+              scrollButton: (
+                <VirtScrollButton
+                  apiRef={virtApiRef}
+                  getScrollEl={() => scrollElRef.current}
+                />
+              ),
+            }
+          : {})}
+        composer={
+          <ChatComposer
+            onSubmit={handleSubmit}
+            placeholder="Send a message to stream a reply…"
+            isStopShown={isStreaming}
+          />
+        }>
+        {virtualized ? (
+          <VirtualizedMessages
+            messages={messages}
+            isStreaming={isStreaming}
+            apiRef={virtApiRef}
+            scrollElRef={scrollElRef}
+            endThreshold={endThreshold}
+          />
+        ) : (
+          <ChatMessageList isStreaming={isStreaming}>
+            {messages.map(msg => (
+              <ChatMessage key={msg.id} sender={msg.role}>
+                {msg.role === 'user' ? (
+                  <ChatMessageBubble>
+                    <Markdown density="compact">{msg.text}</Markdown>
+                  </ChatMessageBubble>
+                ) : (
+                  <Markdown density="compact">{msg.text}</Markdown>
+                )}
+              </ChatMessage>
+            ))}
+          </ChatMessageList>
+        )}
+      </ChatLayout>
+    </div>
+  );
+}
+
+// =============================================================================
+// Stories
+// =============================================================================
+
+const sharedArgTypes = {
+  messageCount: {
+    control: {type: 'select' as const},
+    options: [100, 1000, 3000],
+  },
+  streamSpeed: {
+    control: {type: 'select' as const},
+    options: ['relaxed', 'default', 'fast'],
+    description:
+      'Chunk cadence of the streamed reply. `fast` stresses the ' +
+      'follow machinery: disengage mid-stream, scroll back, re-engage.',
+  },
+};
+
+type VirtualizedArgs = {
+  messageCount: number;
+  endThreshold: number;
+  streamSpeed: StreamSpeed;
+  startAtTop: boolean;
+};
+
+export const ThousandsOfMessages: StoryObj<VirtualizedArgs> = {
   name: 'Thousands of Messages',
   args: {
     messageCount: 3000,
-    virtualized: true,
     endThreshold: 24,
     streamSpeed: 'default',
+    startAtTop: false,
   },
   argTypes: {
-    messageCount: {
-      control: {type: 'select'},
-      options: [100, 1000, 3000],
-    },
-    virtualized: {control: 'boolean'},
-    streamSpeed: {
-      control: {type: 'select'},
-      options: ['relaxed', 'default', 'fast'],
-      description:
-        'Chunk cadence of the streamed reply. `fast` stresses the ' +
-        'follow machinery: disengage mid-stream, scroll back, re-engage.',
-    },
+    ...sharedArgTypes,
     endThreshold: {
       control: {type: 'select'},
       options: [1, 24, 96],
       description:
-        'Virtualized arm only: how close to the bottom (px) a scroll must ' +
-        "land to re-engage follow. At 1 (TanStack Virtual's default), " +
-        'stopping "visually at the bottom" — trackpad inertia, fractional ' +
-        'row heights — often leaves follow silently disengaged while a ' +
-        "stream grows below; 24 is a production chat transcript's value.",
+        'How close to the bottom (px) a scroll must land to re-engage ' +
+        'follow. At 1 (TanStack Virtual\'s default), stopping "visually at ' +
+        'the bottom" — trackpad inertia, fractional row heights — often ' +
+        'leaves follow silently disengaged while a stream grows below; 24 ' +
+        "is a production chat transcript's value.",
+    },
+    startAtTop: {
+      control: 'boolean',
+      description:
+        'Open the transcript at its first row via the anchorToKey handle ' +
+        '(log-reading mode): streamed content grows below without moving ' +
+        'the viewport, and the scroll button re-engages follow. Flipping ' +
+        'this live jumps between the two declarations.',
     },
   },
-  render: args => {
-    const [messages, setMessages] = useState<DemoMessage[]>(() =>
-      makeCorpus(args.messageCount),
-    );
-    const [isStreaming, setIsStreaming] = useState(false);
-    const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
-    const virtApiRef = useRef<ChatVirtualizerHandle | null>(null);
-    const scrollElRef = useRef<HTMLElement | null>(null);
+  render: args => (
+    <TranscriptDemo
+      virtualized
+      messageCount={args.messageCount}
+      streamSpeed={args.streamSpeed}
+      endThreshold={args.endThreshold}
+      startAtTop={args.startAtTop}
+    />
+  ),
+};
 
-    // Rebuild the corpus when the control changes.
-    const countRef = useRef(args.messageCount);
-    useEffect(() => {
-      if (countRef.current !== args.messageCount) {
-        countRef.current = args.messageCount;
-        clearInterval(streamRef.current);
-        setIsStreaming(false);
-        setMessages(makeCorpus(args.messageCount));
-      }
-    }, [args.messageCount]);
-    useEffect(() => () => clearInterval(streamRef.current), []);
+type BaselineArgs = {
+  messageCount: number;
+  streamSpeed: StreamSpeed;
+};
 
-    const speed = STREAM_SPEEDS[args.streamSpeed];
-    const speedRef = useRef(speed);
-    speedRef.current = speed;
-    const handleSubmit = useCallback((value: string) => {
-      const base = Date.now();
-      const userId = `u-${base}`;
-      const replyId = `a-${base}`;
-      setMessages(prev => [
-        ...prev,
-        {
-          id: userId,
-          role: 'user',
-          text: value || 'Show me the streaming follow behavior.',
-        },
-        {id: replyId, role: 'assistant', text: ''},
-      ]);
-      setIsStreaming(true);
-      let charIdx = 0;
-      const {intervalMs, minChunk, maxChunk} = speedRef.current;
-      streamRef.current = setInterval(() => {
-        charIdx +=
-          minChunk + Math.floor(Math.random() * (maxChunk - minChunk + 1));
-        const done = charIdx >= STREAM_REPLY.length;
-        const text = done ? STREAM_REPLY : STREAM_REPLY.slice(0, charIdx);
-        setMessages(prev =>
-          prev.map(m => (m.id === replyId ? {...m, text} : m)),
-        );
-        if (done) {
-          clearInterval(streamRef.current);
-          setIsStreaming(false);
-        }
-      }, intervalMs);
-    }, []);
-
-    const virtualized = args.virtualized;
-    return (
-      <div {...stylex.props(styles.wrapper)}>
-        <div {...stylex.props(styles.controls)}>
-          <Text type="supporting" color="secondary">
-            Send a message, then scroll up mid-stream and back down — or try the
-            same with `virtualized` off at 3000 messages.
-          </Text>
-          <StatusPill
-            total={messages.length}
-            virtualized={virtualized}
-            isStreaming={isStreaming}
-          />
-        </div>
-        <ChatLayout
-          {...(virtualized
-            ? {
-                scrollButton: (
-                  <VirtScrollButton
-                    apiRef={virtApiRef}
-                    getScrollEl={() => scrollElRef.current}
-                  />
-                ),
-              }
-            : {})}
-          composer={
-            <ChatComposer
-              onSubmit={handleSubmit}
-              placeholder="Send a message to stream a reply…"
-              isStopShown={isStreaming}
-            />
-          }>
-          {virtualized ? (
-            <VirtualizedMessages
-              messages={messages}
-              isStreaming={isStreaming}
-              apiRef={virtApiRef}
-              scrollElRef={scrollElRef}
-              endThreshold={args.endThreshold}
-            />
-          ) : (
-            <ChatMessageList isStreaming={isStreaming}>
-              {messages.map(msg => (
-                <ChatMessage key={msg.id} sender={msg.role}>
-                  {msg.role === 'user' ? (
-                    <ChatMessageBubble>
-                      <Markdown density="compact">{msg.text}</Markdown>
-                    </ChatMessageBubble>
-                  ) : (
-                    <Markdown density="compact">{msg.text}</Markdown>
-                  )}
-                </ChatMessage>
-              ))}
-            </ChatMessageList>
-          )}
-        </ChatLayout>
-      </div>
-    );
+export const UnvirtualizedBaseline: StoryObj<BaselineArgs> = {
+  name: 'Unvirtualized Baseline',
+  args: {
+    messageCount: 3000,
+    streamSpeed: 'default',
   },
+  argTypes: sharedArgTypes,
+  render: args => (
+    <TranscriptDemo
+      virtualized={false}
+      messageCount={args.messageCount}
+      streamSpeed={args.streamSpeed}
+    />
+  ),
 };
