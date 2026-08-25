@@ -650,6 +650,8 @@ export {
   generateThemeCSS,
   type ThemeRulesSplit,
   type ThemeCSSOutput,
+  type ThemeCSSOptions,
+  type ThemeCSSDiagnostic,
 } from './generateThemeRules';
 
 // =============================================================================

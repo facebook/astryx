@@ -206,6 +206,114 @@ describe('themeBuild() — receipt', () => {
   });
 });
 
+describe('themeBuild() — dropped declarations reach the receipt', () => {
+  // Core's generator refuses a declaration whose value would end it early
+  // (an unquoted `;` or brace, an unclosed string/comment/url). The runtime
+  // says so on the console; a build has a receipt, so every drop must land in
+  // `warnings` — a programmatic caller otherwise sees `warnings: []` while the
+  // CSS silently omits a value the generated JS still carries.
+  it('reports every dropped declaration, from every generator path, in warnings', async () => {
+    const themeFile = path.join(tmpDir, 'dropped.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'dropped',
+        tokens: {
+          '--color-bg': '#0a0a0a } body { background: url(https://example.com/token) ',
+        },
+        components: {
+          button: {
+            'variant:secondary': {
+              backgroundColor: 'red; background-image: url(https://example.com/component)',
+              ':hover': {color: '"https://example.com/pseudo'},
+            },
+          },
+        },
+        onDark: {
+          tokens: {'--color-bg': 'url(https://example.com/dark'},
+        },
+        adaptations: {
+          rules: [
+            {
+              when: {pointer: 'coarse'},
+              value: {tokens: {'--color-bg': 'red /* https://example.com/adaptation'}},
+            },
+          ],
+        },
+      };\n`,
+    );
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let result;
+    try {
+      result = await themeBuild('dropped.mjs', {}, {cwd: tmpDir});
+      // Drops are collected, not printed: the programmatic API stays silent.
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+
+    const css = fs.readFileSync(path.join(tmpDir, 'dropped.css'), 'utf8');
+    expect(css).not.toContain('example.com');
+
+    const warnings = result?.data.warnings ?? [];
+    expect(warnings).toHaveLength(5);
+    expect(warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(
+          /^Declaration dropped "--color-bg" in tokens: an unquoted "}" would close the rule/,
+        ),
+        expect.stringMatching(
+          /^Declaration dropped "background-color" in components\.button\["variant:secondary"\]: an unquoted ";" would end the declaration/,
+        ),
+        expect.stringMatching(
+          /^Declaration dropped "color" in components\.button\["variant:secondary"\]\[":hover"\]: an unclosed " string/,
+        ),
+        expect.stringMatching(
+          /^Declaration dropped "--color-bg" in onDark\.tokens: an unclosed url\(/,
+        ),
+        expect.stringMatching(
+          /^Declaration dropped "--color-bg" in adaptations\[0\]\.tokens: an unclosed \/\* comment/,
+        ),
+      ]),
+    );
+    for (const w of warnings) {
+      expect(w).toContain('The generated CSS omits it');
+    }
+  });
+
+  it('keeps valid CSS that carries semicolons, and reports nothing', async () => {
+    const themeFile = path.join(tmpDir, 'kept.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'kept',
+        tokens: {'--font-family-body': 'Gill\\\\ Sans, "Segoe;UI", serif /* ; */'},
+        components: {
+          button: {
+            'variant:secondary': {
+              backgroundImage: 'URL(data:image/svg+xml;base64,PHN2Zz4=)',
+              WebkitLineClamp: '2',
+            },
+          },
+        },
+      };\n`,
+    );
+
+    const result = await themeBuild('kept.mjs', {}, {cwd: tmpDir});
+    const css = fs.readFileSync(path.join(tmpDir, 'kept.css'), 'utf8');
+
+    expect(css).toContain(
+      '--font-family-body: Gill\\ Sans, "Segoe;UI", serif /* ; */;',
+    );
+    expect(css).toContain(
+      'background-image: URL(data:image/svg+xml;base64,PHN2Zz4=);',
+    );
+    expect(css).toContain('-webkit-line-clamp: 2;');
+    expect(result?.data.warnings).toEqual([]);
+  });
+});
+
 describe('themeBuild() — nothing to build', () => {
   it('returns null and writes nothing when the generator yields no CSS', async () => {
     const themeFile = path.join(tmpDir, 'empty.mjs');
