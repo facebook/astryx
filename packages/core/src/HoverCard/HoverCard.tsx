@@ -33,10 +33,13 @@ export type {
 } from './useHoverCard';
 
 // `aria-haspopup` and `aria-controls` are global, so any trigger may carry
-// them. `aria-expanded` is not: ARIA 1.2 supports it on this set of roles only,
-// and on anything else it is invalid and user agents ignore it. The same rule
-// is applied in Chat/useTriggerMenu.tsx, which only emits the combobox
-// attributes once the element is actually a combobox.
+// them. `aria-expanded` is not. This is the ARIA 1.2 "Supported States and
+// Properties" list for it — deliberately the narrow reading: axe accepts the
+// attribute on rather more roles, since it also allows every subclass of these,
+// so a role outside this set is not necessarily a violation. Widening it is
+// safe; the set is a floor, not the spec's ceiling. The same rule is applied in
+// Chat/useTriggerMenu.tsx, which only emits the combobox attributes once the
+// element is actually a combobox.
 const EXPANDABLE_ROLES = new Set([
   'application',
   'button',
