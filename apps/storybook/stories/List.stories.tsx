@@ -150,8 +150,9 @@ export const EdgeAligned: Story = {
           "isEdgeAligned cancels the items' built-in horizontal inset " +
           'with a matching negative margin so row text aligns flush with ' +
           'full-bleed siblings like the heading above. The cancelling ' +
-          'margin tracks density (8px for compact/balanced, 12px for ' +
-          'spacious).',
+          'margin reads the same variable the items derive their inline ' +
+          'padding from, so it tracks density and theme padding overrides ' +
+          'automatically.',
       },
     },
   },

@@ -22,6 +22,10 @@ export const docs = {
     vars: [
       {name: '--_item-label-color', description: 'Color of the label line. Unset by default (the label uses the primary text token); a parent sets it to recolor the label it renders, as the destructive dropdown/context menu item does.', default: 'var(--color-text-primary)', private: true},
       {name: '--_item-description-color', description: 'Companion to --_item-label-color for the secondary description line.', default: 'var(--color-text-secondary)', private: true},
+      {name: '--_item-inset-inline', description: 'Inline inset of the row. Item derives its paddingInline from this variable, and List reads it to cancel the inset when isEdgeAligned. Set paddingInline on `item` in a theme and both stay in sync.', default: 'var(--spacing-2) (var(--spacing-3) for density="spacious")', private: true},
+    ],
+    derived: [
+      {property: 'paddingInline', vars: ['--_item-inset-inline']},
     ],
   },
   components: [

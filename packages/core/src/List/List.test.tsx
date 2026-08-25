@@ -265,57 +265,64 @@ describe('List', () => {
         <ListItem label="Item" />
       </List>,
     );
-    const ul = container.querySelector('ul')!;
-    expect(ul.className).not.toContain('edgeAligned');
+    const item = container.querySelector('li')!;
+    expect(item.className).not.toContain('edgeAligned');
   });
 
-  it('applies the base negative inset when isEdgeAligned (balanced)', () => {
+  it('applies the cancelling margin to each item when isEdgeAligned', () => {
+    // The margin lives on the row element itself — the only place that can
+    // read --_item-inset-inline, which Item sets on the same element (custom
+    // properties cascade downward, so the <ul> cannot read it).
     const {container} = render(
       <List isEdgeAligned>
-        <ListItem label="Item" />
+        <ListItem label="Item 1" />
+        <ListItem label="Item 2" />
       </List>,
     );
-    const ul = container.querySelector('ul')!;
-    expect(ul.className).toContain('edgeAligned');
-    expect(ul.className).not.toContain('edgeAlignedSpacious');
-  });
-
-  it('applies the base negative inset when isEdgeAligned (compact)', () => {
-    // Compact shares the balanced 8px inline inset; only paddingBlock
-    // differs between the two densities in Item.
-    const {container} = render(
-      <List isEdgeAligned density="compact">
-        <ListItem label="Item" />
-      </List>,
+    const items = container.querySelectorAll('li');
+    expect(items).toHaveLength(2);
+    for (const item of items) {
+      expect(item.className).toContain('edgeAligned');
+    }
+    expect(container.querySelector('ul')!.className).not.toContain(
+      'edgeAligned',
     );
-    const ul = container.querySelector('ul')!;
-    expect(ul.className).toContain('edgeAligned');
-    expect(ul.className).not.toContain('edgeAlignedSpacious');
   });
 
-  it('applies the spacious negative inset when isEdgeAligned (spacious)', () => {
-    // Spacious density widens the Item inline inset to 12px, so the
-    // cancelling margin must widen with it.
-    const {container} = render(
-      <List isEdgeAligned density="spacious">
-        <ListItem label="Item" />
-      </List>,
-    );
-    const ul = container.querySelector('ul')!;
-    expect(ul.className).toContain('edgeAlignedSpacious');
+  it('uses the same var-derived cancel for every density', () => {
+    // The cancelling margin reads --_item-inset-inline instead of hardcoding
+    // per-density values, so all densities (and theme paddingInline
+    // overrides on `item`) share one style.
+    for (const density of ['compact', 'balanced', 'spacious'] as const) {
+      const {container, unmount} = render(
+        <List isEdgeAligned density={density}>
+          <ListItem label="Item" />
+        </List>,
+      );
+      expect(container.querySelector('li')!.className).toContain('edgeAligned');
+      unmount();
+    }
   });
 
-  it('pulls only the list element, not the header, when isEdgeAligned', () => {
-    // The negative margin lives on the <ul>, so the header keeps its
+  it('does not pull the header when isEdgeAligned', () => {
+    // The negative margin lives on the row elements, so the header keeps its
     // position and the row text aligns up to it.
     const {container} = render(
       <List isEdgeAligned header={<span>Items</span>}>
         <ListItem label="Item" />
       </List>,
     );
+    expect(container.querySelector('li')!.className).toContain('edgeAligned');
     const ul = container.querySelector('ul')!;
-    expect(ul.className).toContain('edgeAligned');
+    expect(ul.className).not.toContain('edgeAligned');
     expect(ul.parentElement?.className).not.toContain('edgeAligned');
+  });
+
+  it('does not apply the cancelling margin to a ListItem outside a List', () => {
+    const {container} = render(<ListItem label="Standalone" />);
+    expect(container.querySelector('li')!.className).not.toContain(
+      'edgeAligned',
+    );
   });
 
   // ===========================================================================

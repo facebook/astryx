@@ -124,6 +124,15 @@ const styles = stylex.create({
   withCounter: {
     counterIncrement: 'astryx-list',
   },
+  // List's isEdgeAligned cancels the row's built-in inline inset so its text
+  // aligns flush with sibling full-bleed content (e.g. a section heading).
+  // The margin reads --_item-inset-inline — the same variable Item derives
+  // its paddingInline from — on the row element itself (custom properties
+  // only cascade downward, so the <ul> could not read it). Density changes
+  // and theme paddingInline overrides on `item` move both values together.
+  edgeAligned: {
+    marginInline: 'calc(-1 * var(--_item-inset-inline, 0px))',
+  },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
@@ -226,6 +235,7 @@ export function ListItem({
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const listStyle = ctx?.listStyle ?? 'none';
+  const isEdgeAligned = ctx?.isEdgeAligned ?? false;
   const hasMarkers = listStyle !== 'none';
 
   const marker =
@@ -262,6 +272,7 @@ export function ListItem({
         hasMarkers && styles.withCounter,
         hasDividers && styles.withDivider,
         hasDividers && embeddedStyles.noRadius,
+        isEdgeAligned && styles.edgeAligned,
         xstyle,
       ]}
       {...mergeProps(themeProps('list-item'), {className, style})}

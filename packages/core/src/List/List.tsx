@@ -63,9 +63,10 @@ export interface ListProps extends BaseProps<
    * the items' built-in horizontal inset with a matching negative margin.
    * Use when the list sits under full-bleed sibling content such as a
    * section heading, so row text lines up optically with the heading text.
-   * Tracks the density-dependent inset automatically (8px for compact and
-   * balanced, 12px for spacious). Hover and selection backgrounds still
-   * extend past the text by that inset.
+   * The cancelling margin reads the same variable the items derive their
+   * inline padding from, so it tracks density and theme padding overrides
+   * automatically. Hover and selection backgrounds still extend past the
+   * text by the inset.
    * @default false
    */
   isEdgeAligned?: boolean;
@@ -115,18 +116,6 @@ const styles = stylex.create({
   },
   withDividers: {
     gap: 0,
-  },
-  // isEdgeAligned cancels the inline inset that Item applies to each row so
-  // row text aligns flush with sibling full-bleed content (e.g. a section
-  // heading). The negative margin mirrors Item's own density-dependent
-  // paddingInline (--spacing-2, or --spacing-3 for spacious), not the
-  // container padding vars: the goal is optical alignment with siblings,
-  // not a container bleed like Table/Divider.
-  edgeAligned: {
-    marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
-  },
-  edgeAlignedSpacious: {
-    marginInline: `calc(-1 * ${spacingVars['--spacing-3']})`,
   },
   withCounter: {
     counterReset: 'astryx-list',
@@ -188,8 +177,8 @@ export function List({
   const Tag = isOrdered ? 'ol' : 'ul';
 
   const contextValue = useMemo(
-    () => ({density, hasDividers, listStyle}),
-    [density, hasDividers, listStyle],
+    () => ({density, hasDividers, listStyle, isEdgeAligned}),
+    [density, hasDividers, listStyle, isEdgeAligned],
   );
 
   const listElement = (
@@ -215,10 +204,6 @@ export function List({
         stylex.props(
           styles.list,
           hasDividers && styles.withDividers,
-          isEdgeAligned &&
-            (density === 'spacious'
-              ? styles.edgeAlignedSpacious
-              : styles.edgeAligned),
           listStyle !== 'none' &&
             (start != null && start !== 1
               ? dynamicStyles.counterStart(start - 1)
