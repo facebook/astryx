@@ -545,6 +545,26 @@ jobs:
       - name: Run theme layer cascade guard
         run: node .github/scripts/theme-layer-cascade.js
 
+  # Guest token boundaries cross portals and the host light/dark cascade. This
+  # requires a production browser render; source and jsdom checks cannot prove
+  # which custom properties paint the portaled surfaces.
+  fixture-contrast:
+    needs: [check-scope]
+    if: needs.check-scope.outputs.docsite_only != 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      - name: Verify guest fixture contrast
+        run: pnpm -F @astryxdesign/vibe-tests fixtures:contrast
+
   # Stable-package visual regression. Core components get every story in
   # every shipped theme that styles them; a changed shipped theme gets its
   # relevant matrix. Packages marked `astryx.canaryOnly` (Lab, charts,

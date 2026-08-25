@@ -32,6 +32,7 @@ export const FIXTURE_ASSETS_TOTAL_MAX_BYTES = 300 * 1024;
 export const FIXTURE_IDS = [
   'tailwind-v4-control',
   'shadcn-tailwind-v4-established',
+  'enterprise-scoped-synthetic',
 ];
 
 const REQUIRED_PROVENANCE_FIELDS = [
@@ -187,6 +188,26 @@ function validateFixtureShape(fixtureId, fixtureRoot) {
       'popover-trigger',
       'popover-surface',
     ],
+    'enterprise-scoped-synthetic': [
+      'host-shell',
+      'page-title',
+      'mode-control',
+      'table-header',
+      'status',
+      'settings-control',
+      'guest-boundary',
+      'guest-callout',
+      'guest-callout-heading',
+      'dialog-trigger',
+      'dialog-backdrop',
+      'dialog-surface',
+      'dialog-body',
+      'dialog-callout',
+      'destructive-action',
+      'popover-trigger',
+      'popover-surface',
+      'popover-menu-item',
+    ],
   }[fixtureId];
   const nestedOverlayMarkers = {
     'tailwind-v4-control': [],
@@ -195,6 +216,13 @@ function validateFixtureShape(fixtureId, fixtureRoot) {
       'dialog-surface',
       'tooltip-trigger',
       'tooltip-surface',
+      'popover-trigger',
+      'popover-surface',
+    ],
+    'enterprise-scoped-synthetic': [
+      'dialog-trigger',
+      'dialog-backdrop',
+      'dialog-surface',
       'popover-trigger',
       'popover-surface',
     ],
@@ -270,6 +298,38 @@ function validateFixtureShape(fixtureId, fixtureRoot) {
     ]) {
       if (!app.includes(surface))
         fail(`${fixtureId}: missing ${surface} surface`);
+    }
+  }
+
+  if (fixtureId === 'enterprise-scoped-synthetic') {
+    for (const token of [
+      'success',
+      'warning',
+      'error',
+      'overlay',
+      'accent',
+      'border',
+    ]) {
+      if (!css.includes(`--color-${token}:`))
+        fail(`${fixtureId}: missing ${token} semantic token`);
+    }
+    for (const marker of [
+      'data-mode={mode}',
+      'data-guest-design-system',
+      '<table',
+      'createPortal(',
+      'role="dialog"',
+      'role="menu"',
+      'aria-modal="true"',
+    ]) {
+      if (!app.includes(marker))
+        fail(`${fixtureId}: missing ${marker} boundary surface`);
+    }
+    if (
+      !css.includes("[data-mode='light']") ||
+      !css.includes("[data-mode='dark']")
+    ) {
+      fail(`${fixtureId}: light and dark modes must be app-controlled`);
     }
   }
 }

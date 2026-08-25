@@ -184,6 +184,22 @@ describe('canonical fixture suite', () => {
     ).toThrow(/missing Tailwind v4 light\/dark theme structure/);
   });
 
+  it('rejects an enterprise fixture without its guest boundary', () => {
+    const fixtureId = 'enterprise-scoped-synthetic';
+    const sandbox = sandboxFor(fixtureId);
+    const appFile = path.join(sandbox, 'src', 'App.tsx');
+    const app = fs
+      .readFileSync(appFile, 'utf8')
+      .replaceAll('data-guest-design-system', 'data-guest');
+    fs.writeFileSync(appFile, app);
+    const recipe = cloneRecipe(fixtureId);
+    updateHash(recipe, sandbox, 'src/App.tsx');
+
+    expect(() =>
+      validateFixture({fixtureId, fixtureRoot: sandbox, recipe}),
+    ).toThrow(/missing data-guest-design-system boundary surface/);
+  });
+
   it('rejects a missing stable host probe even with a refreshed hash', () => {
     const fixtureId = 'shadcn-tailwind-v4-established';
     const sandbox = sandboxFor(fixtureId);
@@ -203,7 +219,10 @@ describe('canonical fixture suite', () => {
     ).toThrow(/stable host probe markers/);
   });
 
-  it.each([['shadcn-tailwind-v4-established', 'tooltip-surface']])(
+  it.each([
+    ['shadcn-tailwind-v4-established', 'tooltip-surface'],
+    ['enterprise-scoped-synthetic', 'popover-surface'],
+  ])(
     'rejects %s when nested overlay coverage is removed',
     (fixtureId, marker) => {
       const sandbox = sandboxFor(fixtureId);

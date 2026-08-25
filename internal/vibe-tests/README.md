@@ -156,10 +156,10 @@ internal/vibe-tests/
 
 ## Canonical fixture suite
 
-The apps under `fixtures/` represent a plain Tailwind v4 control and an
-established shadcn-style Tailwind v4 app with controlled dialog, tooltip, and
-menu portals. They are standalone packages with exact dependencies and
-lockfiles, and neither has Astryx installed.
+The three apps under `fixtures/` represent a plain Tailwind v4 control, an
+established shadcn-style Tailwind v4 app, and an original enterprise-style app
+with a marked guest design-system boundary. They are standalone packages with
+exact dependencies and lockfiles; none has Astryx installed.
 
 Treat canonical fixture files as immutable inputs. Setup validates their pinned
 recipe and SHA-256 manifest, then copies the listed files into a sandbox without

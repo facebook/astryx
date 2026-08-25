@@ -32,7 +32,9 @@
     "fixtures:verify": "node scripts/fixture-suite.mjs verify",
     "fixtures:prepare": "node scripts/fixture-suite.mjs prepare",
     "fixtures:refresh": "node scripts/fixture-suite.mjs refresh",
-    "fixtures:build": "node scripts/fixture-suite.mjs build"
+    "fixtures:build": "node scripts/fixture-suite.mjs build",
+    "fixtures:contrast": "node scripts/fixture-browser.mjs contrast",
+    "fixtures:screenshots": "node scripts/fixture-browser.mjs screenshots"
   },
   "dependencies": {
     "@astryxdesign/cli": "*",
