@@ -23,6 +23,26 @@
 export const FOCUSABLE_SELECTOR =
   'button:not([disabled]), a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), [contenteditable]:not([contenteditable="false"]), audio[controls], video[controls], iframe, details > summary:first-child';
 
+function isVisiblyFocusable(element: HTMLElement): boolean {
+  if (element.hasAttribute('inert') || element.closest('[inert]')) {
+    return false;
+  }
+  if (element.hidden || element.closest('[hidden]')) {
+    return false;
+  }
+  // closest() matches the element itself as well as any ancestor.
+  if (element.closest('[aria-hidden="true"]')) {
+    return false;
+  }
+  if (typeof window !== 'undefined' && window.getComputedStyle) {
+    const style = window.getComputedStyle(element);
+    if (style.visibility === 'hidden' || style.display === 'none') {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * Get the currently perceivable focusable descendants of a container.
  *
@@ -35,23 +55,23 @@ export const FOCUSABLE_SELECTOR =
 export function getFocusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(
     container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter(element => {
-    if (element.hasAttribute('inert') || element.closest('[inert]')) {
-      return false;
+  ).filter(isVisiblyFocusable);
+}
+
+/**
+ * Whether a container has any perceivable focusable descendant.
+ *
+ * This intentionally stops at the first match. Consumers that only need a
+ * boolean can run after subtree mutations without repeatedly computing styles
+ * for every control in a large, virtualized surface.
+ */
+export function hasFocusableDescendant(container: HTMLElement): boolean {
+  const candidates =
+    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+  for (const candidate of candidates) {
+    if (isVisiblyFocusable(candidate)) {
+      return true;
     }
-    if (element.hidden || element.closest('[hidden]')) {
-      return false;
-    }
-    // closest() matches the element itself as well as any ancestor.
-    if (element.closest('[aria-hidden="true"]')) {
-      return false;
-    }
-    if (typeof window !== 'undefined' && window.getComputedStyle) {
-      const style = window.getComputedStyle(element);
-      if (style.visibility === 'hidden' || style.display === 'none') {
-        return false;
-      }
-    }
-    return true;
-  });
+  }
+  return false;
 }

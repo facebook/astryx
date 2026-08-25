@@ -34,7 +34,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {useDevWarning} from '../hooks';
-import {getFocusableElements} from '../hooks/focusableSelector';
+import {hasFocusableDescendant} from '../hooks/focusableSelector';
 import {
   borderVars,
   colorVars,
@@ -519,7 +519,7 @@ export function BottomSheetPanel({
       return;
     }
     const syncTabIndex = () => {
-      const needsTabIndex = getFocusableElements(body).length === 0;
+      const needsTabIndex = !hasFocusableDescendant(body);
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- synchronizes focusability with rendered descendants
       setBodyNeedsTabIndex(current =>
         current === needsTabIndex ? current : needsTabIndex,
