@@ -20,7 +20,7 @@
     "src"
   ],
   "scripts": {
-    "build": "rimraf dist && tsup"
+    "build": "rimraf dist && tsup && tsc --project tsconfig.build.json && node ../../../scripts/check-fully-specified.mjs"
   },
   "peerDependencies": {
     "@astryxdesign/core": "0.4.7",
