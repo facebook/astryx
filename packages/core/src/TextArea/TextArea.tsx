@@ -556,12 +556,18 @@ export function TextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          themeProps('textarea', {
-            size,
-            status: status?.type ?? null,
-            disabled: isDisabled ? 'disabled' : null,
-            readonly: isReadOnly ? 'readonly' : null,
-          }),
+          themeProps(
+            'text-area',
+            {
+              size,
+              status: status?.type ?? null,
+              disabled: isDisabled ? 'disabled' : null,
+              readonly: isReadOnly ? 'readonly' : null,
+            },
+            // `textarea` ran the compound name together; themes styling it
+            // keep working until the next major.
+            {legacyNames: ['textarea']},
+          ),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
@@ -610,7 +616,7 @@ export function TextArea({
           }
           aria-busy={isBusy || undefined}
           {...mergeProps(
-            themeProps('textarea-control', {size}),
+            themeProps('text-area-control'),
             stylex.props(
               styles.textarea,
               textareaSizeStyles[size],
@@ -637,7 +643,7 @@ export function TextArea({
           <div
             id={counterID}
             {...mergeProps(
-              themeProps('textarea-counter'),
+              themeProps('text-area-counter'),
               stylex.props(
                 styles.counter,
                 valueLength > maxLength && styles.counterError,

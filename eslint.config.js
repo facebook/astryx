@@ -202,6 +202,23 @@ export default defineConfig(
       '@astryx/copyright-header': 'error',
     },
   },
+  // Table rows must sit inside a table section. `<table>` cannot contain a
+  // `<tr>` directly: the HTML parser inserts an implied `<tbody>` when it
+  // parses server-rendered markup and React does not when it renders on the
+  // client, so the two trees mismatch on hydration (#5277). Repo-wide, not
+  // core-only — the shape reached a shipped CLI page template, which consumers
+  // copy into their own apps, and the @eslint-react DOM rules below are scoped
+  // to packages/core/src.
+  {
+    files: ["**/*.{ts,tsx}"],
+    ignores: ["**/*.d.ts", "**/dist/**"],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/require-table-section': 'error',
+    },
+  },
   // Locale-sensitive formatting in shipped packages must go through the
   // provider-aware locale utilities, never raw Intl — see the rule's own doc
   // comment and internal/eslint-plugin-astryx/README.md for the approved
@@ -252,6 +269,48 @@ export default defineConfig(
     rules: {
       '@astryx/no-hover-on-disabled': 'error',
       '@astryx/disabled-cursor': 'error',
+    },
+  },
+  // `light-dark()` is the theme layer's mechanism, and reaches lab for the
+  // same reason the two rules above do: a component that hardcodes a
+  // light/dark decision is unreachable by every theme, and lab is where the
+  // next core component comes from. Core is covered by the token-enforcement
+  // block above (which already excludes `packages/core/src/theme/**`) and is
+  // clean, so it errors there. Lab warns for now: LogStream's `levelWarn`/
+  // `levelError` are a WCAG contrast fix written per scheme, and moving them
+  // to the theme layer means deciding which contrast-tuned status-text token
+  // they should read — a token decision, not a mechanical one. Flip to
+  // 'error' once that lands.
+  {
+    files: ["packages/lab/src/**/*.{ts,tsx}"],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-light-dark-outside-theme': 'warn',
+    },
+  },
+  // A colour written into a component is the colour every theme gets — a theme
+  // can retint any token a component reads, but it cannot reach inside a
+  // literal. Core is covered by the token-enforcement block above (which
+  // already excludes packages/core/src/theme/**); this reaches the other
+  // packages that ship component styling, for the same reason the rules above
+  // do. Warn everywhere for now: the 23 violations on main are 20 in lab
+  // (LogStream's console palette, Sankey's var() fallbacks), 2 in core and 1
+  // in charts, and each wants a token decision rather than a mechanical
+  // substitution. Promote to 'error' per package as each reaches zero.
+  {
+    files: [
+      "packages/lab/src/**/*.{ts,tsx}",
+      "packages/charts/src/**/*.{ts,tsx}",
+      "packages/richtext/src/**/*.{ts,tsx}",
+      "packages/vega/src/**/*.{ts,tsx}",
+    ],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-raw-color': 'warn',
     },
   },
   // The i18n runtime itself defines the message strings the rest of the

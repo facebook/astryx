@@ -511,6 +511,10 @@
     "defaultMessage": "Search options",
     "description": "Screen-reader-only accessible name for that same search input inside a MultiSelector."
   },
+  "@astryx.multiSelector.empty": {
+    "defaultMessage": "No options",
+    "description": "Shown in a MultiSelector's dropdown panel when it was given no options at all, and announced in a polite live region on open. Very short (2 words); neutral tone, not error-y."
+  },
   "@astryx.multiSelector.selectAllPartiallySelected": {
     "defaultMessage": "{label}, partially selected",
     "description": "Accessible name for the MultiSelector select-all option while only some options are selected. `{label}` is the visible select-all label (e.g. \"Select all\"). ARIA forbids aria-selected=\"mixed\" on options, so the indeterminate state is conveyed through the name instead. \"Partially\" = some but not all."
@@ -526,6 +530,10 @@
   "@astryx.selector.searchOptions": {
     "defaultMessage": "Search options",
     "description": "\"Options\" = the list of choices in the dropdown. Screen-reader-only accessible name for the search input inside a Selector."
+  },
+  "@astryx.selector.empty": {
+    "defaultMessage": "No options",
+    "description": "Shown in a Selector's dropdown panel when it was given no options at all, and announced in a polite live region on open. Very short (2 words); neutral tone, not error-y."
   },
   "@astryx.sideNav.label": {
     "defaultMessage": "Side navigation",
@@ -1205,7 +1213,7 @@
   },
   "@astryx.multiSelector.emptySearchResults": {
     "defaultMessage": "No results found",
-    "description": "Polite screen-reader announcement when a MultiSelector search query matches no options. Live-region text, never shown on screen; neutral tone (not error-y)."
+    "description": "Shown in a MultiSelector's dropdown panel when the search query matches no options, and announced in a polite live region at the same time. Short; neutral tone (not error-y)."
   },
   "@astryx.multiSelector.resultCount": {
     "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",
@@ -1213,7 +1221,7 @@
   },
   "@astryx.selector.emptySearchResults": {
     "defaultMessage": "No results found",
-    "description": "Polite screen-reader announcement when a Selector search query matches no options. Live-region text, never shown on screen; neutral tone (not error-y)."
+    "description": "Shown in a Selector's dropdown panel when the search query matches no options, and announced in a polite live region at the same time. Short; neutral tone (not error-y)."
   },
   "@astryx.selector.resultCount": {
     "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",

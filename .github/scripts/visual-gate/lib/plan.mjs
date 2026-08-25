@@ -145,10 +145,21 @@ function rank(name) {
  * @param {Record<string, Record<string, string[]>>} options.themeOverrides - theme → component key → override selectors
  * @param {Record<string, Record<string, string[]>>} [options.observations] - story id → targets it rendered, from a scout pass
  * @param {string} options.defaultTheme
- * @param {string[]} options.tiers - any of 'theme-matrix', 'surface', 'full'
+ * @param {string[]} options.tiers - any of 'theme-matrix', 'surface', 'full', 'component', 'probe'
+ * @param {string[]} [options.components] - for the 'component' tier: the components to cover
+ * @param {string} [options.probeTheme] - name of the generated coverage theme
  * @returns {Shot[]}
  */
-export function buildPlan({stories, targets, themeOverrides, observations, defaultTheme, tiers}) {
+export function buildPlan({
+  stories,
+  targets,
+  themeOverrides,
+  observations,
+  defaultTheme,
+  tiers,
+  components = [],
+  probeTheme = 'probe',
+}) {
   /** @type {Map<string, Shot>} */
   const shots = new Map();
   const representatives = representativeStories(stories);
@@ -173,13 +184,102 @@ export function buildPlan({stories, targets, themeOverrides, observations, defau
     }
   }
 
+  if (tiers.includes('component')) {
+    // The PR tier: every story of the named components, in the default theme
+    // and in every theme that styles them. Deeper than `surface` (which shoots
+    // one story per component), and narrow enough to run per PR.
+    const themesByComponent = new Map();
+    for (const target of targets) {
+      for (const [theme, keys] of Object.entries(themeOverrides)) {
+        if (!Object.hasOwn(keys, target.key)) continue;
+        if (!themesByComponent.has(target.component)) {
+          themesByComponent.set(target.component, new Set());
+        }
+        themesByComponent.get(target.component).add(theme);
+      }
+    }
+    for (const story of stories) {
+      if (!components.includes(story.component)) continue;
+      for (const mode of MODES) {
+        add({...toShotBase(story), theme: defaultTheme, mode}, 'component');
+        for (const theme of themesByComponent.get(story.component) ?? []) {
+          if (theme === defaultTheme) continue;
+          add({...toShotBase(story), theme, mode}, `theme:${theme}`);
+        }
+      }
+    }
+  }
+
   if (tiers.includes('theme-matrix')) {
     for (const shot of themeMatrix({stories, targets, themeOverrides, observations})) {
       add(shot.shot, shot.reason);
     }
   }
 
+  if (tiers.includes('probe')) {
+    // The coverage tier. The probe theme styles every declared target, so
+    // "which story shows this target" is the only question left — and the
+    // scout already answered it. One shot per target, on the story that
+    // renders it, which is what makes a newly added target verified from the
+    // day its doc lands instead of whenever a designer happens to style it.
+    for (const {shot, reason} of probeShots({
+      stories,
+      targets,
+      observations,
+      probeTheme,
+    })) {
+      add(shot, reason);
+    }
+  }
+
   return [...shots.values()].sort((a, b) => a.key.localeCompare(b.key));
+}
+
+/**
+ * One shot per theming target, in the probe theme, on a story that renders it.
+ *
+ * Targets are grouped so a story covering twenty of them costs one shot, not
+ * twenty: the probe theme colours every target differently, so a single frame
+ * verifies all of them at once. Without observations there is nothing to aim
+ * at — the probe tier needs the scout.
+ *
+ * @param {object} options
+ * @param {ReturnType<typeof readStoryIndex>} options.stories
+ * @param {Array<{key: string, component: string}>} options.targets
+ * @param {Record<string, Record<string, string[]>>} [options.observations]
+ * @param {string} options.probeTheme
+ */
+function probeShots({stories, targets, observations, probeTheme}) {
+  if (!observations) return [];
+
+  const wanted = new Set(targets.map(target => target.key));
+  const byStory = new Map();
+  for (const story of stories) {
+    const rendered = Object.keys(observations[story.id] ?? {}).filter(key => wanted.has(key));
+    if (rendered.length > 0) byStory.set(story, new Set(rendered));
+  }
+
+  // Greedy set cover: fewest stories that between them render every target.
+  const planned = [];
+  const uncovered = new Set(wanted);
+  while (uncovered.size > 0) {
+    let best = null;
+    let bestCount = 0;
+    for (const [story, rendered] of byStory) {
+      const count = [...rendered].filter(key => uncovered.has(key)).length;
+      if (count > bestCount) {
+        best = story;
+        bestCount = count;
+      }
+    }
+    if (!best) break;
+    for (const key of byStory.get(best)) uncovered.delete(key);
+    for (const mode of MODES) {
+      planned.push({shot: {...toShotBase(best), theme: probeTheme, mode}, reason: 'probe'});
+    }
+    byStory.delete(best);
+  }
+  return planned;
 }
 
 /**

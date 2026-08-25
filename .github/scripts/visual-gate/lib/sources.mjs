@@ -42,10 +42,17 @@ export async function loadThemingTargets(repoRoot) {
  * `defineTheme`, not a literal in its source, so the built artifact is the
  * only honest answer.
  *
+ * The probe theme is deliberately EXCLUDED. It styles every target by
+ * construction, so feeding it to the theme matrix would ask for a shot per
+ * (target x story that renders it) — 614 shots here — to answer a question the
+ * probe tier answers in 128 with a set cover. It is a coverage instrument, not
+ * a theme someone ships.
+ *
  * @param {string} repoRoot
+ * @param {string} [probeTheme] - name of the coverage fixture to leave out
  * @returns {Promise<Record<string, Record<string, string[]>>>}
  */
-export async function loadThemeOverrides(repoRoot) {
+export async function loadThemeOverrides(repoRoot, probeTheme = 'probe') {
   const themesDir = path.join(repoRoot, 'packages/themes');
   /** @type {Record<string, Record<string, string[]>>} */
   const overrides = {};
@@ -60,7 +67,7 @@ export async function loadThemeOverrides(repoRoot) {
     }
     const module = await import(pathToFileURL(built).href);
     const theme = Object.values(module).find(value => value?.name && value?.components);
-    if (!theme) continue;
+    if (!theme || theme.name === probeTheme) continue;
     overrides[theme.name] = Object.fromEntries(
       Object.entries(theme.components).map(([key, styles]) => [key, Object.keys(styles ?? {})]),
     );
@@ -71,7 +78,7 @@ export async function loadThemeOverrides(repoRoot) {
 
 /**
  * @param {string} repoRoot
- * @returns {{excludeStories: Record<string, string>, viewport: {width: number, height: number}, settleMs: number, threshold: number, maxDiffPixels: number, defaultTheme: string, tiers: string[]}}
+ * @returns {{excludeStories: Record<string, string>, viewport: {width: number, height: number}, settleMs: number, threshold: number, maxDiffPixels: number, defaultTheme: string, probeTheme: string, tiers: string[]}}
  */
 export function loadConfig(repoRoot) {
   const defaults = {
@@ -81,7 +88,8 @@ export function loadConfig(repoRoot) {
     threshold: 0.1,
     maxDiffPixels: 0,
     defaultTheme: 'neutral',
-    tiers: ['surface', 'theme-matrix'],
+    probeTheme: 'probe',
+    tiers: ['surface', 'theme-matrix', 'probe'],
   };
   const configPath = path.join(repoRoot, '.github/scripts/visual-gate/visual-gate.config.json');
   if (!fs.existsSync(configPath)) return defaults;

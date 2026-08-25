@@ -136,6 +136,46 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The assertion a pixel diff cannot make. A baseline proves a component
+      # looks like it did last week — including when the reason is that a theme
+      # override stopped applying and the broken frame was promoted as correct.
+      # This asserts each declared target's override actually reached the
+      # pixels, by equality against the probe theme's unique per-selector
+      # colour. No baseline, no images, and it names the target.
+      #
+      # Reported, not enforced, until the standing failures are worked down:
+      # today 50 targets lose to component styles because StyleX emits into
+      # @layer priority1-4, which sort AFTER astryx-theme. Failing the gate on
+      # a known systemic issue would just teach everyone to ignore it.
+      - name: Check theme overrides reach the pixels
+        id: reach
+        continue-on-error: true
+        run: |
+          set +e
+          node .github/scripts/visual-gate/gate.mjs reach \
+            --storybook-dir apps/storybook/dist \
+            --out .visual-run > reach-summary.txt 2>&1
+          code=$?
+          {
+            echo "## Theme override reach"
+            echo ""
+            echo '```'
+            head -40 reach-summary.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat reach-summary.txt
+          [ "$code" -eq 1 ] && exit 1
+          exit 0
+
+      - name: Upload reach report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-reach
+          path: .visual-run/reach.json
+          retention-days: 30
+          if-no-files-found: warn
+
   a11y:
     name: Accessibility
     runs-on: 2-core-ubuntu-arm

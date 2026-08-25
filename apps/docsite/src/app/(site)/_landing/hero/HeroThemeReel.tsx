@@ -172,8 +172,23 @@ const styles = stylex.create({
   // and cards stay aligned. Capped to 100vw to avoid horizontal scroll. Blob
   // centers sit under the card clusters; colors come from --aurora-* per slide.
   backdropGlow: {
-    position: 'fixed',
-    top: 'var(--appshell-header-height, 0px)',
+    // Desktop: fixed, part of the pin-and-cover effect alongside heroContent
+    // and the cards stage. Narrow: absolute within heroScope (position:
+    // relative), so it scrolls away with the hero instead of staying pinned
+    // for the whole page — a fixed glow below 1024px reached past the
+    // footer into the bottom-overscroll gap, which blocked pull-to-refresh
+    // from ever registering a release (#5392).
+    position: {
+      default: 'absolute',
+      '@media (min-width: 1024px)': 'fixed',
+    },
+    // heroScope already starts below the header (it's the sibling after
+    // navBackdrop in document flow), so the absolute case needs no offset;
+    // only the fixed case has to clear the header itself.
+    top: {
+      default: 0,
+      '@media (min-width: 1024px)': 'var(--appshell-header-height, 0px)',
+    },
     left: '50%',
     transform: 'translateX(-50%)',
     width: 'min(1200px, 100vw)',

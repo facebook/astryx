@@ -9,17 +9,16 @@ name: CI
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ['main']
   merge_group:
 
 permissions: {}
 
 concurrency:
-  group: "ci-${{ github.event.merge_group.head_sha || github.head_ref }}"
+  group: 'ci-${{ github.event.merge_group.head_sha || github.head_ref }}'
   cancel-in-progress: true
 
 jobs:
-
   # Detect docsite-only changes — lets docsite PRs skip heavy jobs
   check-scope:
     if: github.event_name == 'pull_request'
@@ -256,6 +255,18 @@ jobs:
           path: apps/storybook/dist/
           retention-days: 30
 
+      # pr-visual reads each theme's built source to learn which targets that
+      # theme styles — a theme's component map is what defineTheme returns, not
+      # a literal in its source. This job has already built them; shipping the
+      # artifact keeps that job on a download instead of a second full build.
+      - name: Upload built themes
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: themes-${{ steps.urls.outputs.short_hash }}
+          path: packages/themes/*/dist/
+          retention-days: 1
+
       - name: Analyze components
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: |
@@ -463,6 +474,48 @@ jobs:
       - name: Run modal close visibility guard
         run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
 
+      # A public component var can be documented, read, and emitted into the
+      # theme CSS and still be unreachable — an inline write or an unlayered
+      # declaration outranks `@layer astryx-theme` (#4530). jsdom resolves no
+      # cascade, so the unit suites assert on the generated CSS text, which
+      # proves emission and not effect. Chromium is where the promise is
+      # checkable. The source-side wiring half lives in
+      # packages/cli/foundation/discovery/theming-targets.test.mjs.
+      - name: Run theme var reachability guard
+        run: node .github/scripts/theme-var-reachability.js --storybook-dir apps/storybook/dist
+
+  # The layer order Astryx promises is Astryx < theme < product, and which
+  # declaration paints is a cascade fact no jsdom test can settle: the build has
+  # been wrong in both directions inside one week — unsplit, so StyleX outranked
+  # every theme, then wrapped instead of split, so an app's own styles lost to
+  # one. vite.build.test.ts reads the built stylesheet; this renders it.
+  #
+  # Its own job on purpose. pr-a11y, where the sibling Chromium guards live,
+  # runs only when packages/core or packages/lab changed, and what this guards
+  # is packages/build — so hosting it there would skip it on exactly the PRs
+  # that can break it. Gated like `test` instead: everything but docsite-only.
+  theme-layers:
+    needs: [check-scope]
+    if: needs.check-scope.outputs.docsite_only != 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      # The guard imports the plugin's build artifact, the same one a consumer
+      # installs.
+      - name: Build the Vite plugin
+        run: pnpm -F @astryxdesign/build build
+
+      - name: Run theme layer cascade guard
+        run: node .github/scripts/theme-layer-cascade.js
+
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so a PR only pays for the components it touched.
   # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
@@ -475,6 +528,110 @@ jobs:
   # job summary but don't block the merge, while the suite is observed for
   # flake. To promote: drop continue-on-error and add `pr-rtl` to required
   # checks. See apps/storybook/rtl-audit/README.md.
+  # Visual regression, scoped to the components a PR touched. Sibling to
+  # pr-a11y and pr-rtl: same build-storybook artifact, same analysis.json
+  # scoping, so a PR pays only for what it changed — a median PR is ~16 shots
+  # (~10s) against the 642 the daily release gate takes.
+  #
+  # Deeper than the daily gate where it looks: the release gate shoots ONE
+  # representative story per component, this shoots EVERY story of the touched
+  # component in EVERY theme that styles it.
+  #
+  # SKIPS ITSELF WHEN A PR IS TOO BROAD (--max-shots). A token or shared-hook
+  # change puts hundreds of diffs in front of a reviewer who cannot judge them
+  # one by one, and a per-PR check is the wrong instrument for that change —
+  # the daily gate reviews it against the whole baseline instead. The skip
+  # states its reason in the PR comment rather than vanishing.
+  #
+  # SOFT / NON-BLOCKING (continue-on-error) while the suite earns trust: the
+  # verdict surfaces in the job summary and the PR comment, and the release
+  # gate is the blocking one. To promote: drop continue-on-error.
+  pr-visual:
+    needs: [build-storybook, check-components]
+    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
+    runs-on: 2-core-ubuntu-arm
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-analysis
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Download built themes
+        uses: actions/download-artifact@v8
+        with:
+          name: themes-${{ needs.build-storybook.outputs.short_hash }}
+          path: packages/themes
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      - name: Fetch visual baseline from gh-pages
+        run: |
+          set -eu
+          rm -rf /tmp/gh-pages
+          git clone --depth=1 --filter=blob:none --sparse --single-branch --branch gh-pages \
+            "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
+          git -C /tmp/gh-pages sparse-checkout set visual-gate/baseline
+          mkdir -p .visual-baseline
+          if [ -d /tmp/gh-pages/visual-gate/baseline ]; then
+            cp -r /tmp/gh-pages/visual-gate/baseline/. .visual-baseline/
+          fi
+
+      - name: Run the visual gate for the touched components
+        id: visual
+        run: |
+          set -eu
+          COMPONENTS=$(jq -r '(.newComponents + .modifiedComponents) | join(",")' analysis.json)
+          if [ -z "$COMPONENTS" ]; then
+            echo "No component changes resolved from analysis.json — nothing to shoot."
+            exit 0
+          fi
+          echo "Components: $COMPONENTS"
+          set +e
+          node .github/scripts/visual-gate/gate.mjs check \
+            --storybook-dir apps/storybook/dist \
+            --baseline .visual-baseline \
+            --out .visual-run \
+            --tiers component \
+            --components "$COMPONENTS" \
+            --max-shots 240 \
+            --no-scout \
+            --summary-output visual-summary.md
+          code=$?
+          [ -f visual-summary.md ] && cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
+          # Exit 2 is "changed", which is a question for the reviewer, not a
+          # broken job. Only a crash (1) is a failure.
+          [ "$code" -eq 1 ] && exit 1
+          exit 0
+
+      - name: Upload visual verdict and report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-pr-report
+          path: |
+            .visual-run/verdict.json
+            .visual-run/report/
+          retention-days: 7
+          if-no-files-found: ignore
+
   pr-rtl:
     needs: [build-storybook, check-components]
     if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'

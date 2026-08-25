@@ -25,7 +25,10 @@ export const docs = {
         visualProps: ['variant', 'size', 'status'],
         states: ['disabled'],
       },
-      {className: 'astryx-multi-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {
+        className: 'astryx-multi-selector-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
       {className: 'astryx-multi-selector-empty-state'},
       {className: 'astryx-multi-selector-search'},
       {className: 'astryx-multi-selector-section-heading'},
@@ -138,6 +141,20 @@ export const docs = {
           type: 'string',
           description: 'Placeholder text for the search input.',
           default: "'Search...'",
+        },
+        {
+          name: 'emptyText',
+          type: 'ReactNode',
+          description:
+            'Content shown in the dropdown panel when there are no options to show, and announced in a polite live region when the panel opens (a string override is announced verbatim; a richer node falls back to the default text). Not shown while isLoading.',
+          default: "'No options'",
+        },
+        {
+          name: 'emptySearchText',
+          type: 'ReactNode',
+          description:
+            'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time (a string override is announced verbatim; a richer node falls back to the default text).',
+          default: "'No results found'",
         },
         {
           name: 'isDisabled',
@@ -315,6 +332,8 @@ export const docsZh = {
         selectAllLabel: '全选复选框的标签。',
         hasSearch: '是否显示用于过滤选项的搜索输入。',
         searchPlaceholder: '搜索输入的占位文本。',
+        emptyText: '没有可显示的选项时，下拉面板中显示的内容。',
+        emptySearchText: '搜索查询未匹配到任何选项时，下拉面板中显示的内容。',
         isDisabled: '禁用选择器。',
         htmlName:
           '用于表单提交的 HTML name 属性。为每个已选值渲染一个隐藏输入，类似原生多选。',
@@ -452,6 +471,8 @@ export const docsDense = {
         selectAllLabel: 'select-all label',
         hasSearch: 'show search input',
         searchPlaceholder: 'search placeholder',
+        emptyText: 'panel content when there are no options',
+        emptySearchText: 'panel content when the query matches nothing',
         isDisabled: 'disables selector',
         htmlName: 'HTML name attr; one hidden input per selected value.',
         disabledMessage:

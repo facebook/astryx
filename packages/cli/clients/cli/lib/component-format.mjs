@@ -13,8 +13,8 @@ import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
  *
  * Override keys are the component's stable class name with the `astryx-`
  * namespace prefix stripped — `generateThemeRules` re-adds the prefix when it
- * builds the `.astryx-*` selector. So `astryx-base-table` → key `base-table`
- * (→ `.astryx-base-table`), and `astryx-button` → key `button`.
+ * builds the `.astryx-*` selector. So `astryx-table-cell` → key `table-cell`
+ * (→ `.astryx-table-cell`), and `astryx-button` → key `button`.
  *
  * Keep the `astryx-` literal in sync with packages/core/src/naming.ts
  * (NAMESPACE / classPrefix), the same way build-theme.mjs mirrors it.

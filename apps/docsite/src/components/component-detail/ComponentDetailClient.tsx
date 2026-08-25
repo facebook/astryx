@@ -121,7 +121,11 @@ function OverviewContent({
       )}
 
       {isHook && comp.params && comp.returns && (
-        <HookSignature params={comp.params} returns={comp.returns} />
+        <HookSignature
+          params={comp.params}
+          returns={comp.returns}
+          typeDefs={comp.typeDefs}
+        />
       )}
 
       {!isHook && !hasInteractivePlayground(comp) && comp.props.length > 0 && (
