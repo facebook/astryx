@@ -116,12 +116,16 @@ export const monthGridStyles = stylex.create({
 // Day Cell Styles - Structural (layout, sizing, positioning)
 // =============================================================================
 
-// The range/preview band is inset one half-step from the cell box so its
-// rounded caps line up with the 28px day button inside the 32px cell; the day's
-// own ::before bleeds out by the same step so adjacent hit targets meet with no
-// dead gap between them.
-const BAND_INSET = spacingVars['--spacing-0-5'];
-const HIT_BLEED = `calc(${spacingVars['--spacing-0-5']} * -1)`;
+// Half the gap between the day button and its cell — (--size-element-md minus
+// --size-element-sm) / 2 — so the band's rounded caps line up with the button
+// and the button's ::before bleeds out to meet its neighbour's. Deliberately a
+// literal and NOT a spacing token: this is a layout value derived from the two
+// size tokens, and pinning it to --spacing-0-5 desynchronises it from them
+// (matcha sets that step to 3px, which overlaps adjacent days' hit targets by
+// 2px). Deriving it with calc() from the size tokens would be better still and
+// would close butter's 4px dead gap; that needs its own measured change.
+const BAND_INSET = '2px';
+const HIT_BLEED = '-2px';
 
 export const dayCellStyles = stylex.create({
   // Cell container
