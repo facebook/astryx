@@ -287,6 +287,7 @@ const ref = useMergedRefs(forwardedRef, internalRef);
 
 The rule is an error in both tiers because core contains no render-time
 `mergeRefs(...)` JSX ref callsites.
+
 ### Theming targets — `theming-target-shape`, `theming-target-name`, `themeprops-reflection`
 
 **Status: prototype.** All three are registered on the plugin but are NOT in
@@ -317,24 +318,24 @@ styled through it is not an unstyled one.
 
 | Check (messageId)                 | Rubric | What it flags                                                                                                                         | On `packages/` | Proposed tier |
 | --------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ------------- |
-| `layoutOnlyTarget`                | T7     | A sub-element target on an element whose styles declare no paint property                                                             | 6              | `warn`        |
-| `wrapperTarget`                   | T7     | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component                          | 4              | `warn`        |
+| `layoutOnlyTarget`                | T7     | A sub-element target on an element whose styles declare no paint property                                                             | 7              | `warn`        |
+| `wrapperTarget`                   | T7     | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component                          | 2              | `warn`        |
 | `unstyledTarget`                  | T7     | A target on an element with no styles at all and nothing wrapped                                                                      | 0              | `error`       |
 | `targetOnRenderPropFallback`      | T27    | A target on a fallback element that a `render*` callback renders in place of, so it misses all custom-rendered content                | 0              | `warn`        |
 | `inheritableOnRenderPropFallback` | T7/T27 | Inheritable typography/color on such a fallback, where hoisting it to the row target would cover both render paths                    | 0              | `warn`        |
-| `underDeclaredState`              | **T6** | The element's styles vary with a prop the target does not pass to `themeProps` — `fooStyles[prop]` with no `prop` in the sibling call | 17             | `warn`        |
+| `underDeclaredState`              | **T6** | The element's styles vary with a prop the target does not pass to `themeProps` — `fooStyles[prop]` with no `prop` in the sibling call | 20             | `warn`        |
 
 **`underDeclaredState` is the one worth having.** T6 is a BLOCK the rubric
 detects by grep, with no lint rule, and it records it as "historically the
-single most frequent finding" — this is the check that closes that gap. Its 17
+single most frequent finding" — this is the check that closes that gap. Its 20
 hits are a real pre-existing backlog, each needing a human call about which prop
 belongs on the target, so it ships at `warn`: an `error` tier would fail CI on
 `main`.
 
 **T7's root-target exemption is implemented, not optional.** A component's own
 root target is its address rather than a seam anyone chose to add, and there is
-nowhere else to put it — 55 layout primitives (Stack, Grid, Divider) have a
-layout-only root. Only sub-element targets are checked.
+nowhere else to put it — a layout primitive (Stack, Grid, Divider) has a
+layout-only root by definition. Only sub-element targets are checked.
 
 The rule stays silent when it cannot see the whole picture: a target spread onto
 an Astryx component (the paint is inside the component), a style it cannot
@@ -398,9 +399,9 @@ it does not see.
 | Check (messageId)        | Rubric | What it flags                                                                                                    | On `packages/` | Proposed tier |
 | ------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------- | -------------- | ------------- |
 | `droppedStateReflection` | T26    | `className={themeProps('x', {size}).className}` — the `data-*` attributes never render                           | 0              | `error`       |
-| `clobberedByLaterProp`   | T12    | `{...themeProps('x')} className={className}` — the later prop overwrites the target, so it never reaches the DOM | 1              | `error`       |
-| `bypassedThemeProps`     | T26    | `stableClassName('x')` used to build a theme class by hand, so state can never ride along                        | 7              | `warn`        |
-| `classNameOnly`          | T12    | `.className` on a call with no visual props — drops nothing today, becomes the bug tomorrow                      | 4              | `warn`        |
+| `clobberedByLaterProp`   | T12    | `{...themeProps('x')} className={className}` — the later prop overwrites the target, so it never reaches the DOM | 0              | `error`       |
+| `bypassedThemeProps`     | T26    | `stableClassName('x')` used to build a theme class by hand, so state can never ride along                        | 9              | `warn`        |
+| `classNameOnly`          | T12    | `.className` on a call with no visual props — drops nothing today, becomes the bug tomorrow                      | 3              | `warn`        |
 | `handAuthoredState`      | T26    | `data-state`/`data-selected`/… hand-written on an element that already carries a target                          | 0              | `error`       |
 
 `handAuthoredState` only looks at a short list of state attribute names: most
