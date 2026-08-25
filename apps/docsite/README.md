@@ -186,3 +186,7 @@ apps/docsite/
 Tests live in `src/__tests__/data-extraction.test.ts` and validate the generated
 registries: package discovery, component extraction, theme wiring, etc. Run
 `pnpm generate` before running tests since they import from `src/generated/`.
+
+Browser contracts for the playground preview live in `e2e/` and run with
+`pnpm test:docsite-browser` from the repo root against a production build
+(`pnpm build` at the root, then `pnpm build` here); see `playwright.config.ts`.

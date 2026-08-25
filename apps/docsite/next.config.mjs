@@ -13,12 +13,12 @@ const nextConfig = {
   },
   // The playground preview evaluates user-authored code, so it is the one
   // route that must never be embeddable by another site and never a loader of
-  // third-party script. The origin check on its postMessage channel is the
-  // actual guard (playground/previewChannel.ts); these headers are the layer
-  // underneath it. 'unsafe-eval' is inherent — the route's whole job is
-  // compiling and running TSX in the browser. img/connect stay open so demo
-  // code can still fetch and show remote data; the allowed hosts are the ones
-  // the site itself loads (Google Fonts, Vercel analytics).
+  // third-party script. The nonce-attested port handshake on its message
+  // channel is the actual guard (playground/previewChannel.ts); these headers
+  // are the layer underneath it. 'unsafe-eval' is inherent — the route's whole
+  // job is compiling and running TSX in the browser. img/connect stay open so
+  // demo code can still fetch and show remote data; the allowed hosts are the
+  // ones the site itself loads (Google Fonts, Vercel analytics).
   async headers() {
     return [
       {

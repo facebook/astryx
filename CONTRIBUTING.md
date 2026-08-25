@@ -527,6 +527,25 @@ enforces it at author time; `pnpm guard:disabled-cursor --storybook-dir
 apps/storybook/dist` hit-tests every disabled element in a built Storybook in
 Chromium and fails on any other cursor.
 
+### Playground preview isolation
+
+The docsite playground runs user-authored code in a sandboxed iframe with an
+opaque origin, tied to the page only by a nonce-attested MessagePort handshake
+(`apps/docsite/src/app/playground/previewChannel.ts`). The `docsite-browser`
+job proves that boundary in Chromium against a production build: a reloaded
+preview document recovers with the current code and theme, and a document that
+previewed code navigated the frame to receives nothing. The sandbox only exists
+in production builds (`next dev` cannot serve its assets to an opaque origin),
+so the specs need a build first:
+
+```bash
+pnpm build                                   # workspace packages the docsite imports
+pnpm -F @astryxdesign/docsite build
+npx playwright install chromium
+
+pnpm test:docsite-browser
+```
+
 ## Versioning & Releases
 
 We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.

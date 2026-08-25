@@ -37,7 +37,8 @@ import dynamic from 'next/dynamic';
 import * as stylex from '@stylexjs/stylex';
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {compressCode, decompressCode} from '../../lib/compress';
-import {isTrustedPreviewMessage, trustedPreviewOrigin} from './previewChannel';
+import {createPreviewConnector, previewSrc} from './previewChannel';
+import type {PreviewConnector} from './previewChannel';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
@@ -261,6 +262,12 @@ export function PlaygroundClient() {
   const {mode: siteMode} = useThemeMode();
   const editorTheme = siteMode === 'dark' ? 'github-dark' : 'github-light';
   const [code, setCode] = useState(getInitialCode);
+  // Mirror of `code` for event handlers with stable identities (the frame
+  // load handler resends the current code after a preview reload).
+  const codeRef = useRef(code);
+  useEffect(() => {
+    codeRef.current = code;
+  }, [code]);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
   // A ?theme=<value> query param (e.g. from the themes gallery's "Open in
   // Playground") seeds the Theme view and preview. useSearchParams reads it
@@ -306,9 +313,19 @@ export function PlaygroundClient() {
     string | null
   >(null);
 
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
   const pendingRef = useRef<string | null>(null);
+  // The preview frame generation: a fresh iframe element (key) navigated to
+  // the preview URL with a fresh nonce (src). Issued on the client only, and
+  // re-issued whenever the attested preview document is replaced — see
+  // previewChannel.ts for the trust model.
+  const [frame, setFrame] = useState<{key: number; src: string} | null>(null);
+  const frameGenerationRef = useRef(0);
+  // The channel's trust state machine (see previewChannel.ts) and the current
+  // port message handler — refs so the connector's port always dispatches
+  // into the latest closure.
+  const connectorRef = useRef<PreviewConnector | null>(null);
+  const portHandlerRef = useRef<((e: MessageEvent) => void) | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorRef = useRef<MonacoTypes.editor.IStandaloneCodeEditor | null>(
     null,
@@ -371,12 +388,9 @@ export function PlaygroundClient() {
     }
   }, [themeParam]);
 
-  // Single channel to the preview iframe; no-ops until the iframe exists.
+  // Single channel to the preview iframe; no-ops until the handshake lands.
   const postToPreview = useCallback((message: unknown) => {
-    iframeRef.current?.contentWindow?.postMessage(
-      message,
-      trustedPreviewOrigin(),
-    );
+    connectorRef.current?.post(message);
   }, []);
 
   const send = useCallback(
@@ -423,17 +437,10 @@ export function PlaygroundClient() {
     [postToPreview],
   );
 
+  // Messages from the preview arrive only on the port the handshake below
+  // transfers — the window listener hears nothing but the hello.
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (
-        !isTrustedPreviewMessage(
-          e,
-          trustedPreviewOrigin(),
-          iframeRef.current?.contentWindow,
-        )
-      ) {
-        return;
-      }
       if (e.data?.type === 'preview-ready') {
         readyRef.current = true;
         setPreviewReady(true);
@@ -465,20 +472,66 @@ export function PlaygroundClient() {
         setIsTargeting(false);
       }
     };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
+    portHandlerRef.current = handler;
+    return () => {
+      portHandlerRef.current = null;
+    };
   }, [postCode, postToPreview]);
 
+  // Handshake (previewChannel.ts): mount a fresh iframe navigated to the
+  // preview URL with a nonce only this page knows; the preview document echoes
+  // it from its own URL, and the connector answers that one hello with a port.
+  // The window listener goes up BEFORE the frame is issued so the hello cannot
+  // arrive unheard.
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (readyRef.current) {
-        clearInterval(interval);
-        return;
-      }
-      postToPreview({type: 'preview-ping'});
-    }, 300);
-    return () => clearInterval(interval);
-  }, [postToPreview]);
+    const issueFrame = () => {
+      frameGenerationRef.current += 1;
+      setFrame({
+        key: frameGenerationRef.current,
+        src: previewSrc(connector.issue()),
+      });
+    };
+    const connector = createPreviewConnector({
+      onMessage: e => portHandlerRef.current?.(e),
+      // The attested preview document is gone (previewed code navigated or
+      // reloaded its frame). Its port and nonce are already discarded; start
+      // a new generation and queue the current code so the fresh document
+      // picks up exactly where the old one was — the preview-ready handler
+      // flushes it and the theme effect re-sends on the previewReady flip.
+      onReplaced: () => {
+        readyRef.current = false;
+        setPreviewReady(false);
+        pendingRef.current = codeRef.current;
+        issueFrame();
+      },
+    });
+    connectorRef.current = connector;
+    const onWindowMessage = (e: MessageEvent) =>
+      connector.handleWindowMessage(e);
+    window.addEventListener('message', onWindowMessage);
+    issueFrame();
+    return () => {
+      window.removeEventListener('message', onWindowMessage);
+      connector.stop();
+      connectorRef.current = null;
+    };
+  }, []);
+
+  // The iframe element of the current generation, once React has mounted it:
+  // only its window can earn a port. React clears the old element's ref before
+  // attaching the new one's, and the connector forgets its window on every
+  // issue() anyway, so the null on unmount carries nothing it needs.
+  const attachFrame = useCallback((element: HTMLIFrameElement | null) => {
+    if (element?.contentWindow) {
+      connectorRef.current?.attachFrame(element.contentWindow);
+    }
+  }, []);
+
+  // Every load of the iframe goes to the connector: the first in a generation
+  // is the document we navigated to arriving, any later one is a replacement.
+  const handleFrameLoad = useCallback(() => {
+    connectorRef.current?.handleFrameLoad();
+  }, []);
 
   // Debounced push of code → preview + URL hash
   useEffect(() => {
@@ -1157,7 +1210,9 @@ export function PlaygroundClient() {
             viewport={isMobile ? 'phone' : viewport}
             isFullscreen={isFullscreen}
             onExitFullscreen={() => setIsFullscreen(false)}
-            iframeRef={iframeRef}
+            frameRef={attachFrame}
+            frame={frame}
+            onFrameLoad={handleFrameLoad}
             isInteractionDisabled={isResizing}
             isFullBleed={isMobile}
           />

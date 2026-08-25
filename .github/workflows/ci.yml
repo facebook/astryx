@@ -174,6 +174,53 @@ jobs:
         if: needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/docsite generate && pnpm -F @astryxdesign/docsite test
 
+  # Docsite browser contracts. The playground preview runs user-authored code
+  # in a sandboxed iframe whose only tie to the page is a nonce-attested
+  # MessagePort handshake (apps/docsite/src/app/playground/previewChannel.ts).
+  # jsdom can drive that state machine but cannot prove the integration: that
+  # the frame's real `load` event reaches it, that a replaced document is torn
+  # down and the current code and theme reach its successor, and that a
+  # document previewed code navigated the frame to receives nothing. Only the
+  # production build has the opaque-origin sandbox at all, so this job builds
+  # the docsite and drives `next start` in Chromium. A separate job from
+  # docsite-test so that lane keeps its two-minute signal.
+  docsite-browser:
+    needs: [check-scope]
+    if: needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      # The production build imports every theme package's built entry and the
+      # canary component packages, on top of core.
+      - name: Build docsite workspace dependencies
+        run: |
+          pnpm -F @astryxdesign/core build
+          pnpm -F @astryxdesign/lab build
+          pnpm -F @astryxdesign/charts build
+          pnpm -F @astryxdesign/richtext build
+          pnpm -F @astryxdesign/vega build
+          pnpm -F @astryxdesign/theme-neutral build
+          pnpm -F @astryxdesign/theme-matcha build
+          pnpm -F @astryxdesign/theme-stone build
+          pnpm -F @astryxdesign/theme-gothic build
+          pnpm -F @astryxdesign/theme-chocolate build
+          pnpm -F @astryxdesign/theme-y2k build
+          pnpm -F @astryxdesign/theme-butter build
+
+      - name: Build the docsite
+        run: pnpm -F @astryxdesign/docsite build
+
+      - name: Run docsite browser contracts
+        run: pnpm test:docsite-browser
+
   # Lightweight check — does the PR touch any published components?
   # Gates pr-a11y and pr-rtl to avoid unnecessary work.
   #

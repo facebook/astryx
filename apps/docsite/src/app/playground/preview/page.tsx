@@ -20,10 +20,24 @@ import {
   refreshTargetLabels,
   setActiveSiteMode,
   setCleanSource,
+  setPostToParent,
 } from '../propertyEditor/targetingOverlay';
 import {runCode, setTypeScript} from './runner';
-import {isTrustedPreviewMessage, trustedPreviewOrigin} from '../previewChannel';
+import {
+  acceptPreviewConnect,
+  announcePreview,
+  readPreviewNonce,
+} from '../previewChannel';
 import type * as TS from 'typescript';
+
+// How long after the compiler is ready the readiness announcement waits for
+// this document's own `load` event before giving up on it. The wait exists so
+// no previewed code runs before the frame's first load event (see
+// previewChannel.ts, "The handshake", step 4); the cap keeps a stalled
+// third-party subresource from stalling the preview. Past the cap only
+// recovery from hostile code that navigates away within its first
+// milliseconds is at stake, never isolation.
+const DOCUMENT_LOAD_WAIT_MS = 5000;
 
 const FALLBACK_THEME =
   themeByValue[DEFAULT_PLAYGROUND_THEME] ?? Object.values(themeByValue)[0];
@@ -34,7 +48,6 @@ const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 type PreviewMessage =
-  | {type: 'preview-ping'}
   | {type: 'preview-code'; code: string; source: string}
   | {type: 'preview-clear'}
   | {
@@ -90,11 +103,17 @@ export default function PreviewPage() {
   const [customTheme, setCustomTheme] = useState<DefinedTheme | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const [tsReady, setTsReady] = useState(false);
+  // Whether this document's own `load` event has fired (or the wait for it
+  // ran out); readiness is announced only after it.
+  const [documentLoaded, setDocumentLoaded] = useState(false);
+  // The channel adopted from the playground's connect handshake.
+  const [port, setPort] = useState<MessagePort | null>(null);
   // Whether the rendered output should fill the stage (full-page templates) vs
   // be centered as a small example. Defaults to fill so templates are never
   // shrunk; the layout effect downgrades small content to centered.
   const [fill, setFill] = useState(true);
-  const readyRef = useRef(false);
+  // The port readiness was last announced on.
+  const readyRef = useRef<MessagePort | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -116,14 +135,18 @@ export default function PreviewPage() {
 
   const theme = customTheme ?? themeByValue[themeName] ?? FALLBACK_THEME;
 
+  // Everything back to the playground travels over the adopted port (see
+  // previewChannel.ts); until the handshake lands there is nobody to talk to.
+  const portRef = useRef<MessagePort | null>(null);
   const postToParent = useCallback((msg: Record<string, unknown>) => {
-    window.parent.postMessage(msg, trustedPreviewOrigin());
+    portRef.current?.postMessage(msg);
   }, []);
 
   const targetingRef = useRef<ReturnType<
     typeof createTargetingController
   > | null>(null);
   if (targetingRef.current == null && typeof window !== 'undefined') {
+    setPostToParent(postToParent);
     targetingRef.current = createTargetingController(postToParent);
   }
 
@@ -192,27 +215,65 @@ export default function PreviewPage() {
     [],
   );
 
+  // Prove to the playground that this document is the one it navigated the
+  // frame to, and adopt the channel it answers with. Attached from mount (not
+  // gated on tsReady) so the answer is never missed — the ready reply below
+  // waits for tsReady instead.
   useEffect(() => {
-    if (!tsReady) {
+    function onWindowMessage(event: MessageEvent) {
+      // The port handler below evaluates attacker-controllable source, so a
+      // port is adopted only from a connect handshake sent by our own parent
+      // window (see previewChannel.ts) — nothing else on the window is heard.
+      const next = acceptPreviewConnect(event, window.parent);
+      if (next == null) {
+        return;
+      }
+      portRef.current?.close();
+      portRef.current = next;
+      setPort(next);
+    }
+    window.addEventListener('message', onWindowMessage);
+    // The nonce came in with the navigation the playground issued; echoing it
+    // is what earns this document a port. A document that reached the frame
+    // any other way holds a nonce the playground has already spent.
+    announcePreview(window.parent, readPreviewNonce(window.location.hash));
+    return () => window.removeEventListener('message', onWindowMessage);
+  }, []);
+
+  // Track this document's own load so readiness — and with it the first run
+  // of previewed code — waits for it (see DOCUMENT_LOAD_WAIT_MS).
+  useEffect(() => {
+    if (document.readyState === 'complete') {
+      setDocumentLoaded(true);
+      return;
+    }
+    const onLoad = () => setDocumentLoaded(true);
+    window.addEventListener('load', onLoad);
+    return () => window.removeEventListener('load', onLoad);
+  }, []);
+
+  useEffect(() => {
+    if (!tsReady || documentLoaded) {
+      return;
+    }
+    const timer = setTimeout(
+      () => setDocumentLoaded(true),
+      DOCUMENT_LOAD_WAIT_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [tsReady, documentLoaded]);
+
+  useEffect(() => {
+    if (!tsReady || !documentLoaded || port == null) {
       return;
     }
 
     function onMessage(event: MessageEvent) {
-      // The switch below evaluates attacker-controllable source, so nothing is
-      // read off `event` until the sender is known to be our own playground.
-      if (
-        !isTrustedPreviewMessage(event, trustedPreviewOrigin(), window.parent)
-      ) {
-        return;
-      }
       if (!isPreviewMessage(event.data)) {
         return;
       }
 
       switch (event.data.type) {
-        case 'preview-ping':
-          postToParent({type: 'preview-ready'});
-          break;
         case 'preview-code':
           // Keep the clean source current for the badge popover, then refresh
           // any live badges so an open popover re-parses against it.
@@ -235,15 +296,30 @@ export default function PreviewPage() {
       }
     }
 
-    window.addEventListener('message', onMessage);
+    port.onmessage = onMessage;
 
-    if (!readyRef.current) {
-      readyRef.current = true;
+    // Announce readiness once per adopted port. The playground flushes the
+    // current code on hearing it, so this is the moment previewed code first
+    // runs — after this document's own load, by the effect's guard.
+    if (readyRef.current !== port) {
+      readyRef.current = port;
       postToParent({type: 'preview-ready'});
     }
 
-    return () => window.removeEventListener('message', onMessage);
-  }, [tsReady, postToParent, handleCode, handleClear, handleTheme]);
+    return () => {
+      if (port.onmessage === onMessage) {
+        port.onmessage = null;
+      }
+    };
+  }, [
+    tsReady,
+    documentLoaded,
+    port,
+    postToParent,
+    handleCode,
+    handleClear,
+    handleTheme,
+  ]);
 
   // After each successful render (measured in fill/block layout), decide
   // whether the content is a small example that should be centered. Full-page
