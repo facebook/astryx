@@ -137,7 +137,7 @@ See [`docs/execution-provenance.md`](docs/execution-provenance.md) for the schem
 ```
 internal/vibe-tests/
 ├── test-sets/           # Prompt batteries (JSON)
-├── src/                 # Runner scripts and evaluation
+├── src/                 # Runner scripts, evaluation, and fixture guards
 │   ├── setup-nightly.mjs     # 4-target nightly setup
 │   ├── universal-eval.ts     # Static analysis scoring (5 dimensions)
 │   ├── universal-aggregate.ts # Score aggregation
@@ -146,7 +146,38 @@ internal/vibe-tests/
 │   ├── screenshot-previews.ts # Playwright screenshots
 │   ├── build-report.ts       # Vite HTML report
 │   └── deploy-report.ts      # gh-pages deployment
+├── fixtures/            # Immutable standalone consumer-app fixtures
+├── fixture-recipes/     # Pinned provenance and SHA-256 manifests
+├── scripts/             # Fixture setup plus report helpers
 ├── .baseline/           # Real shadcn/ui components for baseline tsc
 ├── results/             # Iteration results (gitignored)
 └── README.md            # This file
 ```
+
+## Canonical fixture suite
+
+The app under `fixtures/` is a plain Tailwind v4 control with no design-system
+semantics. It is a standalone package with exact dependencies and its own
+lockfile, and it does not have Astryx installed.
+
+Treat canonical fixture files as immutable inputs. Setup validates their pinned
+recipe and SHA-256 manifest, then copies the listed files into a sandbox without
+writing into the canonical directory:
+
+```bash
+pnpm -F @astryxdesign/vibe-tests fixtures:verify
+pnpm -F @astryxdesign/vibe-tests fixtures:prepare -- tailwind-v4-control --output /tmp/tailwind-control-run
+pnpm -F @astryxdesign/vibe-tests fixtures:build
+```
+
+When intentionally refreshing a fixture, update its pinned recipe, regenerate
+its lockfile, review the authored patches, and refresh the recorded hashes:
+
+```bash
+pnpm -F @astryxdesign/vibe-tests fixtures:refresh -- tailwind-v4-control
+```
+
+The root repository guard verifies provenance, exact manifests, deterministic
+source, dependency isolation, workspace exclusion, and separation from every
+publishable package root. This keeps future setup or migration tests independent
+of any unlanded harness branch.
