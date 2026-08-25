@@ -2955,6 +2955,16 @@ export default function TableFilterTemplate() {
         size="sm"
         hasClear
         triggerDisplay="labels"
+        // labels mode spells out three before it counts, which is right for a
+        // selector with a row to itself and wrong here: three filters each
+        // three labels wide push the rest of the bar into the overflow menu.
+        // One name and a count keeps every filter on the row and still says
+        // which filter it is.
+        formatValue={items =>
+          items.length > 1
+            ? `${items[0].label}, +${items.length - 1}`
+            : items[0].label
+        }
         options={[...field.options]}
         value={multiValues[field.key]}
         xstyle={
