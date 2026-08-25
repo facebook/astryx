@@ -245,6 +245,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          "Let people paste formatted numbers: a pasted 1,234,234,234 is read under the field's locale and commits as 1234234234 on blur. Typing is never intercepted.",
+      },
+      {
+        guidance: true,
+        description:
           'Set min, max, and step to guide users toward valid values.',
       },
       {
@@ -512,6 +517,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          '可以直接粘贴带格式的数字：粘贴 1,234,234,234 会按字段所在区域设置解析，失去焦点时提交为 1234234234。输入过程中不会拦截按键。',
+      },
+      {
+        guidance: true,
+        description:
           'Set min, max, and step to guide users toward valid values.',
       },
       {
@@ -578,6 +588,11 @@ export const docsDense = {
     description:
       'A form input for numeric values with built-in validation, min/max constraints, and step controls. Use NumberInput for quantities, measurements, percentages, and similar inputs.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Pasted formatted numbers parse: 1,234,234,234 commits as 1234234234 under the field's locale. Typing is never intercepted.",
+      },
       {
         guidance: true,
         description:

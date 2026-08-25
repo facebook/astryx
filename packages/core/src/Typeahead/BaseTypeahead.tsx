@@ -41,12 +41,13 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {getKey, mergeProps, mergeRefs} from '../utils';
+import {getKey, groupItems, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Types
 // =============================================================================
@@ -92,6 +93,9 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * @default 10
    */
   maxMenuItems?: number;
+
+  /** Fixed dropdown width in pixels. Never shrinks below the anchor width. */
+  menuWidth?: number;
 
   /**
    * Minimum query length before the search source is queried. Below it no
@@ -239,6 +243,18 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
+  popoverCustomWidth: (width: number) => ({
+    width: `${width}px`,
+  }),
+  groupHeading: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlockStart: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
+  },
   item: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -342,6 +358,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   placeholder: placeholderFromProps,
   hasEntriesOnFocus = false,
   maxMenuItems = 10,
+  menuWidth,
   minQueryLength = 1,
   emptySearchResultsText: emptySearchResultsTextFromProps,
   isDisabled = false,
@@ -554,6 +571,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         searchSource.cancel?.();
         setResults([]);
         setHasSearched(false);
+        // Bumping the generation abandons any in-flight search, which means
+        // its own `finally` will decline to clear this — so clear it here or
+        // the field spins forever. Backspacing below the threshold on a remote
+        // source is the everyday way to hit that.
+        setIsLoading(false);
         // Clear any lingering result-count / no-results announcement.
         announce('');
         popover.hide();
@@ -609,6 +631,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       setQuery('');
       setResults([]);
       setHasSearched(false);
+      // Same reason as in handleQueryChange: the invalidated search will not
+      // clear this itself. Selecting a stale result while the next search is
+      // still in flight would otherwise leave the field spinning.
+      setIsLoading(false);
       popover.hide();
       inputRef.current?.focus();
     },
@@ -732,6 +758,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           e.preventDefault();
           popover.hide();
           break;
+        case 'Tab':
+          // Dismiss here rather than from the blur this press produces:
+          // hiding a top-layer popover during the focusout makes Chrome
+          // abandon the in-flight focus move and drop focus to <body>, so the
+          // user's Tab appears to do nothing. Selector and MultiSelector
+          // already dismiss on this keydown.
+          popover.hide();
+          break;
         case 'Home':
           if (popover.isOpen) {
             e.preventDefault();
@@ -802,7 +836,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   return (
     <>
       <input
-        ref={mergeRefs(ref, inputRef, fallbackAnchorRef)}
+        ref={useMergedRefs(ref, inputRef, fallbackAnchorRef)}
         id={inputId}
         type="text"
         role="combobox"
@@ -877,44 +911,71 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
               {emptySearchResultsText}
             </div>
           ) : (
-            results.map((item, index) => {
-              const itemKey = getKey(item.id, index);
-              const isSelected = itemKey === selectedKey;
-              return (
-                <div
-                  key={itemKey}
-                  id={getItemId(index)}
-                  role="option"
-                  aria-selected={isSelected}
-                  tabIndex={-1}
-                  onClick={() => handleSelect(item)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  {...stylex.props(
-                    styles.item,
-                    itemSizeStyles[size],
-                    index === highlightedIndex && styles.itemHighlighted,
-                    isSelected && styles.itemSelected,
-                  )}>
-                  <span {...stylex.props(styles.itemContent)}>
-                    {renderItem ? (
-                      renderItem(item)
-                    ) : (
-                      <TypeaheadItem item={item} />
+            (() => {
+              let flatIndex = 0;
+              const renderOption = (item: T) => {
+                const index = flatIndex++;
+                const itemKey = getKey(item.id, index);
+                const isSelected = itemKey === selectedKey;
+                return (
+                  <div
+                    key={itemKey}
+                    id={getItemId(index)}
+                    role="option"
+                    aria-selected={isSelected}
+                    tabIndex={-1}
+                    onClick={() => handleSelect(item)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    {...stylex.props(
+                      styles.item,
+                      itemSizeStyles[size],
+                      index === highlightedIndex && styles.itemHighlighted,
+                      isSelected && styles.itemSelected,
+                    )}>
+                    <span {...stylex.props(styles.itemContent)}>
+                      {renderItem ? (
+                        renderItem(item)
+                      ) : (
+                        <TypeaheadItem item={item} />
+                      )}
+                    </span>
+                    {isSelected && (
+                      <Icon icon="check" size="sm" color="primary" />
                     )}
-                  </span>
-                  {isSelected && (
-                    <Icon icon="check" size="sm" color="primary" />
-                  )}
-                </div>
-              );
-            })
+                  </div>
+                );
+              };
+
+              return groupItems(results, {ungroupedFirst: true}).map(group => {
+                const options = group.items.map(renderOption);
+                if (group.heading == null) {
+                  return options;
+                }
+                return (
+                  <div
+                    key={`group-${group.heading}`}
+                    role="group"
+                    aria-label={group.heading}>
+                    <div
+                      aria-hidden="true"
+                      {...stylex.props(styles.groupHeading)}>
+                      {group.heading}
+                    </div>
+                    {options}
+                  </div>
+                );
+              });
+            })()
           )}
         </div>,
         {
           placement: 'below',
           alignment: 'start',
           offset: spacingVars['--spacing-1'],
-          xstyle: styles.popover,
+          xstyle: [
+            styles.popover,
+            menuWidth != null && styles.popoverCustomWidth(menuWidth),
+          ],
         },
       )}
     </>

@@ -424,6 +424,11 @@ export type MultiSelectorStatusType = 'warning' | 'error' | 'success';
 
 export type {MultiSelectorStatus};
 
+export interface MultiSelectorSelectedItem {
+  value: string;
+  label: string;
+}
+
 export interface MultiSelectorProps<
   T extends MultiSelectorOptionType = MultiSelectorOptionType,
 > extends Omit<BaseProps, 'onChange' | 'defaultValue'> {
@@ -609,11 +614,15 @@ export interface MultiSelectorProps<
   triggerDisplay?: 'count' | 'labels' | 'badges';
 
   /**
-   * Formats the trigger text when triggerDisplay is 'count'.
-   * Receives the number of selected values and returns the full trigger text.
-   * @default count => `${count} selected`
+   * Formats the trigger text when triggerDisplay is 'count' or 'labels'.
+   * Receives the selected items (value plus resolved label, in selection
+   * order) and returns the full trigger text; the count is `items.length`.
+   * Not called when nothing is selected — the placeholder shows instead — and
+   * not called for triggerDisplay 'badges', which renders Badge elements
+   * rather than text.
+   * @default items => `${items.length} selected` for 'count', "A, B, C, +N" for 'labels'
    */
-  formatTriggerCount?: (count: number) => string;
+  formatValue?: (items: MultiSelectorSelectedItem[]) => string;
 
   /**
    * Maximum number of badges to show before showing "+N".
@@ -718,7 +727,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   hasSearch = false,
   searchPlaceholder: searchPlaceholderFromProps,
   triggerDisplay = 'count',
-  formatTriggerCount,
+  formatValue,
   maxBadges = 3,
   renderOption,
   indicatorPosition = 'start',
@@ -1115,12 +1124,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }, [popover.isOpen, highlightedIndex, getItemId]);
 
   // Build trigger display content
-  const selectedLabels = useMemo(() => {
+  const selectedItems = useMemo(() => {
     return optimisticValue.map(v => {
       const item = selectableItems.find(i => i.value === v);
-      return item?.label ?? v;
+      return {value: v, label: item?.label ?? v};
     });
   }, [optimisticValue, selectableItems]);
+
+  const selectedLabels = useMemo(
+    () => selectedItems.map(item => item.label),
+    [selectedItems],
+  );
 
   const renderTriggerContent = useCallback(() => {
     if (optimisticValue.length === 0) {
@@ -1131,7 +1145,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       case 'count':
         return (
           <span {...stylex.props(styles.triggerText)}>
-            {formatTriggerCount?.(optimisticValue.length) ??
+            {formatValue?.(selectedItems) ??
               `${optimisticValue.length} selected`}
           </span>
         );
@@ -1143,7 +1157,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           remaining > 0
             ? `${displayed.join(', ')}, +${remaining}`
             : displayed.join(', ');
-        return <span {...stylex.props(styles.triggerText)}>{text}</span>;
+        return (
+          <span {...stylex.props(styles.triggerText)}>
+            {formatValue?.(selectedItems) ?? text}
+          </span>
+        );
       }
 
       case 'badges': {
@@ -1166,9 +1184,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }, [
     optimisticValue,
     triggerDisplay,
+    selectedItems,
     selectedLabels,
     placeholder,
-    formatTriggerCount,
+    formatValue,
     maxBadges,
   ]);
 

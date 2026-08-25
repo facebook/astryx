@@ -156,6 +156,8 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   hasEntriesOnFocus?: boolean;
   /** Max dropdown items. @default 10 */
   maxMenuItems?: number;
+  /** Fixed dropdown width in pixels. Never shrinks below the input width. */
+  menuWidth?: number;
   /**
    * Minimum query length before the search source is queried. Below it no
    * search runs and the menu stays closed — useful for remote sources where
@@ -404,6 +406,7 @@ export function Tokenizer<T extends SearchableItem>({
   placeholder,
   hasEntriesOnFocus,
   maxMenuItems,
+  menuWidth,
   minQueryLength,
   emptySearchResultsText,
   isDisabled = false,
@@ -790,6 +793,7 @@ export function Tokenizer<T extends SearchableItem>({
         placeholder={value.length === 0 ? placeholder : ''}
         hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
         maxMenuItems={maxMenuItems}
+        menuWidth={menuWidth}
         minQueryLength={minQueryLength}
         emptySearchResultsText={emptySearchResultsText}
         isDisabled={isDisabled}

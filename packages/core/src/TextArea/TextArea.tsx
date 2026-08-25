@@ -46,7 +46,7 @@ import {
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
@@ -58,6 +58,7 @@ import {themeProps} from '../utils/themeProps';
 import {characterCount} from '../utils/characters';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
 const styles = stylex.create({
@@ -555,12 +556,18 @@ export function TextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          themeProps('textarea', {
-            size,
-            status: status?.type ?? null,
-            disabled: isDisabled ? 'disabled' : null,
-            readonly: isReadOnly ? 'readonly' : null,
-          }),
+          themeProps(
+            'text-area',
+            {
+              size,
+              status: status?.type ?? null,
+              disabled: isDisabled ? 'disabled' : null,
+              readonly: isReadOnly ? 'readonly' : null,
+            },
+            // `textarea` ran the compound name together; themes styling it
+            // keep working until the next major.
+            {legacyNames: ['textarea']},
+          ),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
@@ -580,7 +587,7 @@ export function TextArea({
         )}
         <textarea
           {...rest}
-          ref={mergeRefs(ref, textareaRef)}
+          ref={useMergedRefs(ref, textareaRef)}
           id={id}
           name={isDisabled ? undefined : htmlName}
           value={optimisticValue}

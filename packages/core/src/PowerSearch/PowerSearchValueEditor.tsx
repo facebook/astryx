@@ -40,6 +40,8 @@ export interface PowerSearchValueEditorProps {
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
   config: InternalConfig;
+  /** Max suggestions in string and entity value typeaheads. */
+  maxMenuItems?: number;
   isDisabled?: boolean;
   timezoneID?: string;
 }
@@ -80,11 +82,13 @@ function StringEditor({
   filterValue,
   onChange,
   onEnter: _onEnter,
+  maxMenuItems,
 }: {
   operatorValue: OperatorValue & {type: 'string'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
+  maxMenuItems?: number;
 }) {
   const t = useTranslator();
   const currentValue = filterValue?.type === 'string' ? filterValue.value : '';
@@ -111,6 +115,7 @@ function StringEditor({
         }}
         placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
         debounceMs={150}
+        maxMenuItems={maxMenuItems}
       />
     );
   }
@@ -132,10 +137,12 @@ function StringListEditor({
   operatorValue,
   filterValue,
   onChange,
+  maxMenuItems,
 }: {
   operatorValue: OperatorValue & {type: 'string_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  maxMenuItems?: number;
 }) {
   const t = useTranslator();
   const currentValue: SearchableItem[] = useMemo(() => {
@@ -176,6 +183,7 @@ function StringListEditor({
       placeholder={t('@astryx.powersearch.valueEditor.addValuesPlaceholder')}
       debounceMs={operatorValue.searchSource ? 150 : 0}
       hasCreate={hasCreate}
+      maxMenuItems={maxMenuItems}
     />
   );
 }
@@ -537,10 +545,12 @@ function EntityListEditor({
   operatorValue,
   filterValue,
   onChange,
+  maxMenuItems,
 }: {
   operatorValue: OperatorValue & {type: 'entity_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  maxMenuItems?: number;
 }) {
   const t = useTranslator();
   const source = useMemo<SearchSource<SearchableItem>>(() => {
@@ -588,6 +598,7 @@ function EntityListEditor({
       renderItem={operatorValue.renderItem}
       placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
       debounceMs={operatorValue.searchSource ? 150 : 0}
+      maxMenuItems={maxMenuItems}
     />
   );
 }
@@ -631,6 +642,7 @@ export function PowerSearchValueEditor({
   filterValue,
   onChange,
   onEnter,
+  maxMenuItems,
   isDisabled,
 }: PowerSearchValueEditorProps) {
   switch (operatorValue.type) {
@@ -644,6 +656,7 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           onEnter={onEnter}
+          maxMenuItems={maxMenuItems}
         />
       );
 
@@ -653,6 +666,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          maxMenuItems={maxMenuItems}
         />
       );
 
@@ -734,6 +748,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          maxMenuItems={maxMenuItems}
         />
       );
 

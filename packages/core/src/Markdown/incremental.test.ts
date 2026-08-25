@@ -131,12 +131,26 @@ describe('parseMarkdownIncremental', () => {
     expect(state.settledText).toBe('');
   });
 
-  it('unclosed fence keeps everything unsettled', () => {
+  it('settles what precedes an unclosed fence, and nothing inside it', () => {
     const state = createIncrementalState();
     const input =
       '# Title\n\n```python\ndef foo():\n    pass\n\n# still inside fence';
     parseMarkdownIncremental(input, state);
-    expect(state.settledBlocks).toHaveLength(0);
+    expect(state.settledText).toBe('# Title');
+    expect(state.settledBlocks).toHaveLength(1);
+  });
+
+  it('does not hold back lines inside an unclosed fence', () => {
+    const state = createIncrementalState();
+    const blocks = parseMarkdownIncremental(
+      'Intro\n\n```ts\ntype Id = string | number;',
+      state,
+    );
+    const code = blocks.find(block => block.type === 'codeblock');
+    expect(code).toMatchObject({
+      type: 'codeblock',
+      content: 'type Id = string | number;',
+    });
   });
 
   it('handles task list streaming', () => {

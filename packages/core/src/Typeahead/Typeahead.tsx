@@ -45,13 +45,14 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
-import {getInputARIA, isImeKeyEvent, mergeProps, mergeRefs} from '../utils';
+import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -426,7 +427,7 @@ export function Typeahead<T extends SearchableItem>({
   const typeaheadContent = (
     <>
       <div
-        ref={mergeRefs(
+        ref={useMergedRefs(
           wrapperRef,
           disabledMessageTooltip.ref,
           inputGroup ? ref : undefined,

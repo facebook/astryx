@@ -128,17 +128,88 @@ describe('MultiSelector', () => {
     expect(screen.getByText('2 selected')).toBeInTheDocument();
   });
 
-  it('formats the count display with formatTriggerCount', () => {
+  it('formats the count display with formatValue', () => {
     render(
       <MultiSelector
         label="Spaces"
         options={defaultOptions}
         value={['Apple', 'Banana']}
         onChange={() => {}}
-        formatTriggerCount={count => `${count} spaces selected`}
+        formatValue={items => `${items.length} spaces selected`}
       />,
     );
     expect(screen.getByText('2 spaces selected')).toBeInTheDocument();
+  });
+
+  it('passes selected values and resolved labels to formatValue', () => {
+    const formatValue = vi.fn(
+      (items: {value: string; label: string}[]) =>
+        `${items[0].label} and ${items.length - 1} more`,
+    );
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[
+          {value: 'a', label: 'Apple'},
+          {value: 'b', label: 'Banana'},
+        ]}
+        value={['a', 'b']}
+        onChange={() => {}}
+        formatValue={formatValue}
+      />,
+    );
+    expect(formatValue).toHaveBeenCalledWith([
+      {value: 'a', label: 'Apple'},
+      {value: 'b', label: 'Banana'},
+    ]);
+    expect(screen.getByText('Apple and 1 more')).toBeInTheDocument();
+  });
+
+  it('formats the labels display with formatValue', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana', 'Orange']}
+        onChange={() => {}}
+        triggerDisplay="labels"
+        formatValue={items => items.map(item => item.label).join(' & ')}
+      />,
+    );
+    expect(screen.getByText('Apple & Banana & Orange')).toBeInTheDocument();
+  });
+
+  it('ignores formatValue in badges display', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        triggerDisplay="badges"
+        formatValue={() => 'formatted'}
+      />,
+    );
+    expect(screen.queryByText('formatted')).not.toBeInTheDocument();
+    const trigger = within(screen.getByRole('combobox'));
+    expect(trigger.getByText('Apple')).toBeInTheDocument();
+    expect(trigger.getByText('Banana')).toBeInTheDocument();
+  });
+
+  it('shows the placeholder rather than calling formatValue when empty', () => {
+    const formatValue = vi.fn(() => 'formatted');
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        placeholder="Pick fruits..."
+        formatValue={formatValue}
+      />,
+    );
+    expect(screen.getByText('Pick fruits...')).toBeInTheDocument();
+    expect(formatValue).not.toHaveBeenCalled();
   });
 
   it('shows labels display', () => {
@@ -366,6 +437,7 @@ describe('MultiSelector', () => {
 
     await user.keyboard('{Tab}');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
   });
 
   it('supports keyboard navigation with ArrowDown/ArrowUp', async () => {

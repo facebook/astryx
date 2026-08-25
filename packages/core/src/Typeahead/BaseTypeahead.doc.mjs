@@ -61,6 +61,11 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: 'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
+    },
+    {
       name: 'minQueryLength',
       type: 'number',
       description: 'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
@@ -176,6 +181,11 @@ export const docsZh = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: '下拉菜单的固定像素宽度。菜单不会小于其锚点宽度。',
+    },
+    {
       name: 'minQueryLength',
       type: 'number',
       description: '查询搜索源前的最小查询长度。低于该长度不会发起搜索，菜单保持关闭。',
@@ -265,6 +275,7 @@ export const docsDense = {
     placeholder: 'Input placeholder.',
     hasEntriesOnFocus: 'Bootstrap results on focus.',
     maxMenuItems: 'Max dropdown items.',
+    menuWidth: 'Fixed dropdown width in pixels.',
     minQueryLength: 'Min query length before searching. Menu stays closed below it.',
     emptySearchResultsText: 'Text when no results.',
     isDisabled: 'Whether input disabled.',

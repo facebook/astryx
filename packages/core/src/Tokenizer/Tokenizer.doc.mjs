@@ -136,6 +136,11 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: 'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
+    },
+    {
       name: 'minQueryLength',
       type: 'number',
       description: 'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
@@ -206,6 +211,12 @@ export const docs = {
       type: 'SizeValue',
       description:
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'tokenOverflowBehavior',
+      type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
+      description: 'Controls how tokens overflow when the container is too narrow.',
+      default: "'none'",
     },
     {
       name: 'onFocus',
@@ -385,9 +396,14 @@ export const docsZh = {
       default: '10',
     },
     {
+      name: 'menuWidth',
+      type: 'number',
+      description: '下拉菜单的固定像素宽度。菜单不会小于其锚点宽度。',
+    },
+    {
       name: 'minQueryLength',
       type: 'number',
-      description: 'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
+      description: '查询搜索源前的最小查询长度。低于该长度不会发起搜索，菜单保持关闭。',
       default: '1',
     },
     {
@@ -512,6 +528,7 @@ export const docsDense = {
     labelTooltip: 'Tooltip on label.',
     hasEntriesOnFocus: 'Show bootstrap results on focus before typing.',
     maxMenuItems: 'Max dropdown items to display.',
+    menuWidth: 'Fixed dropdown width in pixels.',
     minQueryLength: 'Min query length before searching. Menu stays closed below it.',
     emptySearchResultsText: 'Text when search returns no results.',
     hasAutoFocus: 'Auto-focus input on mount.',

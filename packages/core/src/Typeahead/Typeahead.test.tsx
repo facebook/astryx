@@ -420,6 +420,55 @@ describe('BaseTypeahead focus-out', () => {
     });
   });
 
+  it('closes the list on the Tab keydown, before the blur it produces', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    input.focus();
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // No blur is fired here on purpose: dismissing from the blur instead lets
+    // the popover close mid-focus-move, which Chrome answers by dropping
+    // focus to <body>.
+    fireEvent.keyDown(input, {key: 'Tab'});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('Tab from the input with the list open moves focus to the next control', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+        <button type="button">Next</button>
+      </>,
+    );
+    const input = screen.getByRole('combobox');
+    input.focus();
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    await user.keyboard('{Tab}');
+    expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
+  });
+
   it('keeps the dropdown open when focus moves into the anchor wrapper', async () => {
     const anchor = document.createElement('div');
     document.body.appendChild(anchor);
@@ -838,6 +887,48 @@ describe('BaseTypeahead minQueryLength', () => {
       expect(input).toHaveAttribute('aria-expanded', 'true');
     });
     expect(search).toHaveBeenCalledExactlyOnceWith('A');
+  });
+
+  it('stops reporting "Loading" when the query falls below the threshold mid-search', async () => {
+    // Falling below the threshold abandons the in-flight search by bumping the
+    // search generation, which also makes that search decline to clear the
+    // loading flag on its way out. Backspacing from three characters to two on
+    // a remote source is the everyday way to hit it, and the field would
+    // otherwise report "Loading" to a screen reader until the third character
+    // went back in.
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const search = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    render(
+      <BaseTypeahead
+        searchSource={{search, bootstrap: () => []}}
+        value={null}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await act(async () => {
+      settle(fruits.slice(0, 1));
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 });
 

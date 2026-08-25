@@ -27,7 +27,9 @@ const matchaSyntax = defineSyntaxTheme({
     tag: ['#8c3a3a', '#d47a7a'],
     attribute: ['#7c5e3a', '#c4a882'],
     property: ['#3a7c6b', '#70c4b0'],
-    punctuation: ['#707E46', '#5a6440'],
+    // #707E46/#5a6440 failed WCAG AA against the syntax background: 3.83:1
+    // light, 2.73:1 dark. #5386.
+    punctuation: ['#566a39', '#92af6a'], // 5.19:1 / 7.02:1
     background: ['#F0F0E0', '#1a1c14'],
   },
 });

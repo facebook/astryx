@@ -1586,12 +1586,26 @@ export function createIncrementalState(): IncrementalState {
 
 /**
  * Find the line-index of the last blank line that is NOT inside a fenced code
- * block.  Returns -1 when nothing is settled (unclosed fence or no blank line).
+ * block, and report whether a fence is still open at the end of the input.
+ * Returns -1 when nothing is settled.
+ *
+ * This index must never move backwards as more of the document arrives. The
+ * caller's cache is keyed on the settled text staying a prefix of what it was,
+ * so a boundary that retracts by one line costs a re-parse of every block in
+ * the document. Two things used to retract it: a blank last line, which is
+ * just the newline the stream has written so far and stops being blank as soon
+ * as the next chunk appends to it; and an open fence, which used to collapse
+ * the boundary to -1 even though the content before the fence opened cannot be
+ * changed by anything typed inside it.
  */
-function findSettledBoundary(lines: string[]): number {
+function findSettledBoundary(lines: string[]): {
+  boundary: number;
+  openFence: boolean;
+} {
   let inFence = false;
   let fenceMarker = '';
   let lastBoundary = -1;
+  let boundaryBeforeFence = -1;
 
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
@@ -1602,6 +1616,7 @@ function findSettledBoundary(lines: string[]): number {
       if (!inFence) {
         inFence = true;
         fenceMarker = fenceMatch[1];
+        boundaryBeforeFence = lastBoundary;
       } else if (
         fenceMatch[1].startsWith(fenceMarker[0]) &&
         fenceMatch[1].length >= fenceMarker.length
@@ -1611,12 +1626,20 @@ function findSettledBoundary(lines: string[]): number {
       }
     }
 
-    if (!inFence && line.trim() === '' && lineIndex > 0) {
+    if (
+      !inFence &&
+      line.trim() === '' &&
+      lineIndex > 0 &&
+      lineIndex < lines.length - 1
+    ) {
       lastBoundary = lineIndex;
     }
   }
 
-  return inFence ? -1 : lastBoundary;
+  return {
+    boundary: inFence ? boundaryBeforeFence : lastBoundary,
+    openFence: inFence,
+  };
 }
 
 /**
@@ -1945,17 +1968,23 @@ export function parseMarkdownIncremental(
     linkDefs.size > 0 ? {...opts, linkDefs} : opts;
 
   const lines = input.split('\n');
-  const boundary = findSettledBoundary(lines);
+  const {boundary, openFence} = findSettledBoundary(lines);
 
   if (boundary < 0) {
-    // Inside an unclosed fence or no blank-line boundary — full re-parse
+    // Nothing settled yet — no blank line, or a fence opened before the first
+    // one — so there is no prefix to keep and the whole input is re-parsed.
     state.prevInput = input;
     return parseMarkdownImpl(input, parseOpts);
   }
 
   const settledText = lines.slice(0, boundary).join('\n');
   const unsettledRaw = lines.slice(boundary).join('\n').trim();
-  const unsettledText = trimUnsettledStructural(unsettledRaw);
+  // Structural trimming holds back lines that look like an incomplete list or
+  // table, which inside a fence is ordinary code: a TypeScript union or a `- `
+  // would disappear from the code block as it streams.
+  const unsettledText = openFence
+    ? unsettledRaw
+    : trimUnsettledStructural(unsettledRaw);
 
   let settledBlocks: BlockNode[];
 

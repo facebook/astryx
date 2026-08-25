@@ -57,6 +57,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
+      - name: Download visual verdict from the CI run
+        uses: actions/download-artifact@v8
+        with:
+          name: visual-pr-report
+          path: visual
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
       - name: Generate and post PR comment
         uses: actions/github-script@v9
         with:
@@ -94,6 +103,9 @@ jobs:
               '.github/scripts/generate-pr-comment.js',
               '--analysis', 'pr-analysis/analysis.json',
               '--a11y', a11yPath,
+              ...(fs.existsSync('visual/verdict.json')
+                ? ['--visual', 'visual/verdict.json']
+                : []),
               '--storybook-url', meta.storybookUrl || '',
               '--sandbox-url', meta.sandboxUrl || '',
               '--run-url', meta.runUrl || '',

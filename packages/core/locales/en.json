@@ -751,6 +751,10 @@
     "defaultMessage": "{label} time",
     "description": "Screen-reader-only accessible name for the time-of-day slot in a DateTimeInput. Example: `Start date time`; reorder freely (e.g. \"time of {label}\")."
   },
+  "@astryx.dateTimeInput.timeOptionsLabel": {
+    "defaultMessage": "{label} options",
+    "description": "Screen-reader-only accessible name for the list of preset times that drops down from a DateTimeInput's time slot. `{label}` is the accessible name of the time field itself, already ending in the word for time — example: `Meeting time options`. Plural: the list holds every selectable time."
+  },
   "@astryx.dateRangeInput.placeholder": {
     "defaultMessage": "Select date range",
     "description": "Grey placeholder inside an empty DateRangeInput field. Represents picking a start–end date pair. Imperative verb."
@@ -813,7 +817,15 @@
   },
   "@astryx.table.pagination.label": {
     "defaultMessage": "Table pagination",
-    "description": "Screen-reader-only accessible name for the pagination `<nav>` appended below a data table. Kept separate from `@astryx.pagination.label` so translations may diverge."
+    "description": "Screen-reader-only accessible name for a table's pagination `<nav>` (rendered below and/or above the table per the plugin's position config). Kept separate from `@astryx.pagination.label` so translations may diverge. When position='both', this string is interpolated as the {label} value into `@astryx.table.pagination.labelAbove`/`labelBelow` — keep it compatible with those suffix templates."
+  },
+  "@astryx.table.pagination.labelAbove": {
+    "defaultMessage": "{label} (top)",
+    "description": "Accessible name for the pagination `<nav>` rendered above the table when position='both' renders two navs. `label` is the resolved base label (default \"Table pagination\" or consumer-supplied); the suffix keeps the two same-type landmarks distinguishable."
+  },
+  "@astryx.table.pagination.labelBelow": {
+    "defaultMessage": "{label} (bottom)",
+    "description": "Accessible name for the pagination `<nav>` rendered below the table when position='both' renders two navs. `label` is the resolved base label (default \"Table pagination\" or consumer-supplied); the suffix keeps the two same-type landmarks distinguishable."
   },
   "@astryx.timeInput.placeholder": {
     "defaultMessage": "Select a time",
@@ -1062,6 +1074,10 @@
   "@astryx.tableRowExpansion.expandRow": {
     "defaultMessage": "Expand row",
     "description": "Screen-reader-only label on the row-expand chevron when the row is currently collapsed. Part of a four-way set with `collapseRow`, `expandAllRows`, `collapseAllRows`."
+  },
+  "@astryx.tableRowExpansion.columnHeader": {
+    "defaultMessage": "Row expansion",
+    "description": "Screen-reader-only header for the leading column that holds the per-row expand/collapse chevrons. The column shows no visible label."
   },
   "@astryx.tableRowExpansion.collapseAllRows": {
     "defaultMessage": "Collapse all rows",

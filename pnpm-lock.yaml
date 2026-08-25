@@ -97,6 +97,12 @@ importers:
       lint-staged:
         specifier: ^17.0.8
         version: 17.0.8
+      pixelmatch:
+        specifier: ^7.2.0
+        version: 7.2.0
+      pngjs:
+        specifier: ^7.0.0
+        version: 7.0.0
       prettier:
         specifier: 'catalog:'
         version: 3.9.4
@@ -333,9 +339,24 @@ importers:
       '@astryxdesign/richtext':
         specifier: '*'
         version: link:../../packages/richtext
+      '@astryxdesign/theme-butter':
+        specifier: '*'
+        version: link:../../packages/themes/butter
+      '@astryxdesign/theme-chocolate':
+        specifier: '*'
+        version: link:../../packages/themes/chocolate
+      '@astryxdesign/theme-gothic':
+        specifier: '*'
+        version: link:../../packages/themes/gothic
+      '@astryxdesign/theme-matcha':
+        specifier: '*'
+        version: link:../../packages/themes/matcha
       '@astryxdesign/theme-neutral':
         specifier: '*'
         version: link:../../packages/themes/neutral
+      '@astryxdesign/theme-probe':
+        specifier: '*'
+        version: link:../../packages/themes/probe
       '@astryxdesign/theme-stone':
         specifier: '*'
         version: link:../../packages/themes/stone
@@ -569,7 +590,7 @@ importers:
   packages/charts:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../core
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
@@ -683,7 +704,7 @@ importers:
   packages/lab:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../core
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
@@ -723,7 +744,7 @@ importers:
   packages/richtext:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../core
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
@@ -778,7 +799,7 @@ importers:
   packages/themes/butter:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -788,7 +809,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -797,7 +818,7 @@ importers:
   packages/themes/chocolate:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -807,7 +828,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -816,7 +837,7 @@ importers:
   packages/themes/gothic:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -826,7 +847,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -835,7 +856,7 @@ importers:
   packages/themes/matcha:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -845,7 +866,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -854,7 +875,7 @@ importers:
   packages/themes/neutral:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -864,16 +885,32 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
         version: 6.1.3
 
+  packages/themes/probe:
+    dependencies:
+      '@astryxdesign/core':
+        specifier: 0.5.0
+        version: link:../../core
+      react:
+        specifier: '>=19'
+        version: 19.2.7
+    devDependencies:
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.25)(tsx@4.23.0)(typescript@6.0.3)(yaml@2.9.0)
+
   packages/themes/stone:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -883,7 +920,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -892,7 +929,7 @@ importers:
   packages/themes/y2k:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -902,7 +939,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -5351,6 +5388,10 @@ packages:
     resolution: {integrity: sha512-TfySrs/5nm8fQJDcBDuUng3VOUKsd7S+zqvbOTiGXHfxX4wK31ard+hoNuvkicM/2YFzlpDgABOevKSsB4G/FA==}
     engines: {node: '>= 6'}
 
+  pixelmatch@7.2.0:
+    resolution: {integrity: sha512-xhcb4yHu9sM/G7foGzoLtXYcC0zHEaOXXjRKhGup0fw78Nf2Tkiapv4EQyMzrbcmQPsllAI7DbFY2UT7PlI9Pg==}
+    hasBin: true
+
   pkce-challenge@5.0.1:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
@@ -5371,6 +5412,10 @@ packages:
     resolution: {integrity: sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==}
     engines: {node: '>=18'}
     hasBin: true
+
+  pngjs@7.0.0:
+    resolution: {integrity: sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow==}
+    engines: {node: '>=14.19.0'}
 
   postcss-load-config@6.0.1:
     resolution: {integrity: sha512-oPtTM4oerL+UXmx+93ytZVN82RrlY/wPUV8IeDxFrzIjXOLF1pN+EmKPLbubvKHT2HC20xXsCAH2Z+CKV6Oz/g==}
@@ -10720,6 +10765,10 @@ snapshots:
 
   pirates@4.0.7: {}
 
+  pixelmatch@7.2.0:
+    dependencies:
+      pngjs: 7.0.0
+
   pkce-challenge@5.0.1: {}
 
   pkg-dir@3.0.0:
@@ -10739,6 +10788,8 @@ snapshots:
       playwright-core: 1.61.1
     optionalDependencies:
       fsevents: 2.3.2
+
+  pngjs@7.0.0: {}
 
   postcss-load-config@6.0.1(jiti@2.7.0)(postcss@8.5.25)(tsx@4.23.0)(yaml@2.9.0):
     dependencies:
