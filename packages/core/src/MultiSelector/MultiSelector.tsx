@@ -605,13 +605,20 @@ export interface MultiSelectorProps<
   searchPlaceholder?: string;
 
   /**
-   * Content shown in the panel when there are no options to show.
+   * Content shown in the panel when there are no options to show, and
+   * announced in a polite live region when the panel opens. Not shown while
+   * `isLoading` — the options have not arrived yet.
    * @default 'No options'
    */
   emptyText?: ReactNode;
 
   /**
-   * Content shown in the panel when a search query matches no options.
+   * Content shown in the panel when a search query matches no options, and
+   * announced in a polite live region at the same time.
+   *
+   * The panel message is `role="presentation"`, so the live region is the only
+   * route to assistive tech: a string is announced verbatim, a richer node
+   * falls back to the default text since it cannot be spoken.
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
@@ -763,7 +770,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     searchPlaceholderFromProps ?? t('@astryx.multiSelector.searchPlaceholder');
   const emptyText = emptyTextFromProps ?? t('@astryx.multiSelector.empty');
   const emptySearchText =
-    emptySearchTextFromProps ?? t('@astryx.multiSelector.emptySearch');
+    emptySearchTextFromProps ?? t('@astryx.multiSelector.emptySearchResults');
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
     variant === 'ghost' && statusVariant === 'attached'
@@ -838,6 +845,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // Announce selection-count changes politely (comboboxes-7 announce path).
   // Toggling options / select-all previously produced no audible feedback.
   const announce = useAnnounce();
+
+  // The panel's empty message is role="presentation" and reaches assistive tech
+  // only through this live region, so the region has to speak whatever the
+  // panel shows. A ReactNode override cannot be spoken; fall back to the
+  // catalog copy for that case rather than announcing nothing.
+  const emptyAnnouncement =
+    typeof emptyText === 'string'
+      ? emptyText
+      : t('@astryx.multiSelector.empty');
+  const emptySearchAnnouncement =
+    typeof emptySearchText === 'string'
+      ? emptySearchText
+      : t('@astryx.multiSelector.emptySearchResults');
   const announceSelection = useCallback(
     (nextValue: string[]) => {
       const total = selectableItems.length;
@@ -960,11 +980,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
-          ? t('@astryx.multiSelector.emptySearchResults')
+          ? emptySearchAnnouncement
           : t('@astryx.multiSelector.resultCount', {count}),
       );
     },
-    [announce, selectableItems, t],
+    [announce, selectableItems, emptySearchAnnouncement, t],
   );
 
   // Handle toggle
@@ -1113,13 +1133,26 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       setSelectedAtOpen(new Set(optimisticValue));
 
       popover.show();
+      // A panel with nothing in it produces no option to focus and no result
+      // count, so without this the message on screen is never spoken.
+      if (selectableItems.length === 0 && !isLoading) {
+        announce(emptyAnnouncement);
+      }
       if (hasSearch) {
         // Focus search after popover opens
         requestAnimationFrame(() => {
           searchRef.current?.focus();
         });
       }
-    }, [popover, hasSearch, optimisticValue]),
+    }, [
+      popover,
+      hasSearch,
+      optimisticValue,
+      selectableItems,
+      isLoading,
+      announce,
+      emptyAnnouncement,
+    ]),
     onClose: popover.hide,
     onToggle: handleNavigableToggle,
     onClear: hasClear ? clearValues : undefined,
@@ -1433,7 +1466,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // message out of the listbox's accessibility tree (role="listbox" only
     // permits option/group children); the no-results outcome is announced
     // via the result-count live region instead.
-    if (realItemCount === 0) {
+    // While isLoading the options have not arrived yet, so asserting either
+    // message would be a claim the component cannot make; the trigger's
+    // spinner covers it.
+    if (realItemCount === 0 && !isLoading) {
       elements.push(
         <div
           key="empty"
@@ -1538,6 +1574,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     sortedItems,
     searchQuery,
     hasSelectAll,
+    isLoading,
     emptyText,
     emptySearchText,
   ]);

@@ -958,6 +958,69 @@ describe('MultiSelector', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('announces emptySearchText, not the catalog default', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        emptySearchText="Nothing like that here"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    // The panel message is role="presentation", so the live region is the
+    // only thing a screen reader gets — it has to say the same words.
+    await waitFor(() =>
+      expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+    );
+  });
+
+  it('announces the empty state when opened with no options', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        emptyText="Add a fruit first"
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+    await waitFor(() =>
+      expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+    );
+  });
+
+  it('shows and announces nothing while isLoading', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+    // The options have not arrived, so "No options" would be a claim the
+    // component cannot make; the trigger's spinner carries the state.
+    const listbox = screen.getByRole('listbox', h);
+    expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
+    expect(politeRegion()?.textContent ?? '').toBe('');
+  });
+
   it('renders emptyText when there are no options and no search input', async () => {
     const user = userEvent.setup();
     render(
