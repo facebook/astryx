@@ -110,6 +110,7 @@ import {
   DATE_FORMAT_WEEKDAY_ONLY,
   type ISODateString,
 } from '../utils';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {MonthScroller, type MonthScrollerHandle} from './MonthScroller';
 import {MonthYearWheels} from './MonthYearWheels';
@@ -345,15 +346,7 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     borderRadius: radiusVars['--radius-element'],
-    backgroundColor: {
-      default: 'transparent',
-      '@media (hover: hover)': {
-        default: 'transparent',
-        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
-          colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
+    backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -958,7 +951,11 @@ export function TouchDateField({
           // restyle the header button. Adding a target later is additive;
           // withdrawing one is not.
           data-title="month-year"
-          {...stylex.props(styles.title, focusOutlineStyles.focusVisible)}>
+          {...stylex.props(
+            styles.title,
+            interactionOverlayStyles.backgroundColor,
+            focusOutlineStyles.focusVisible,
+          )}>
           <span {...stylex.props(styles.titleText)}>{monthYearLabel}</span>
           <Icon
             icon="chevronDown"

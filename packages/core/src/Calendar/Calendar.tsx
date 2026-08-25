@@ -61,6 +61,7 @@ import {
 } from '../utils/plainDate';
 import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {getInitialFocusDate} from './getInitialFocusDate';
 import {
   computeDayCellState,
@@ -1178,6 +1179,7 @@ function DayCell({
           focusOutlineProps.focusVisible(
             dayCellStyles.day,
             dayCellTheme.day,
+            interactionOverlayStyles.backgroundImage,
             isOutside && dayCellStyles.dayOutside,
             isOutside && dayCellTheme.dayOutside,
             showsTodayRing && dayCellStyles.dayToday,

@@ -60,6 +60,7 @@ import {useTopNavSlot} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
@@ -529,6 +530,7 @@ function DrawerMegaMenu({
           themeProps('top-nav-mega-menu', {mode: 'drawer'}),
           focusOutlineProps.focusVisible(
             navItemStyles.item,
+            interactionOverlayStyles.backgroundColor,
             styles.drawerHeader,
           ),
         )}>

@@ -29,6 +29,7 @@ import {useAvatarGroup} from './AvatarGroupContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 
 const BORDER_WIDTH = 2;
@@ -96,14 +97,6 @@ const styles = stylex.create({
     // Reset the UA button's block padding only; the inline padding from `base`
     // provides the pill's breathing room and must be preserved.
     paddingBlock: 0,
-    // Interactive overlay states layered on top via backgroundImage
-    backgroundImage: {
-      default: `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']}), linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']}), linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
-    },
     // Focus ring via focus-visible
   },
   overlap: {
@@ -194,6 +187,7 @@ export function AvatarGroupOverflow({
           focusOutlineProps.focusVisible(
             styles.base,
             styles.button,
+            interactionOverlayStyles.backgroundImageOnNeutral,
             styles.overlap,
             dynamicStyles.size(numericSize),
             dynamicStyles.fontSize(numericSize),
