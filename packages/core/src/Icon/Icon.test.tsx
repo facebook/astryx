@@ -238,7 +238,7 @@ describe('Icon', () => {
       resetThemes();
 
       const {container} = render(
-        <Icon icon="numberInput:stepperDown" data-testid="icon" />,
+        <Icon icon="numberInput:missing" data-testid="icon" />,
       );
 
       expect(screen.queryByTestId('icon')).not.toBeInTheDocument();

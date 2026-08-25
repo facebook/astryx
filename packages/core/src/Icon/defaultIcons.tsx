@@ -70,6 +70,13 @@ export const defaultIcons: IconRegistry &
     </svg>
   ),
 
+  /** ⌄ — compact NumberInput stepper chevron */
+  'numberInput:stepperDown': (
+    <svg {...svgProps}>
+      <path d="M7.5 9.75l4.5 4.5 4.5-4.5" />
+    </svg>
+  ),
+
   /** ‹ — left chevron */
   chevronLeft: (
     <svg {...svgProps}>
