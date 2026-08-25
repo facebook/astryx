@@ -259,12 +259,21 @@ jobs:
       # theme styles — a theme's component map is what defineTheme returns, not
       # a literal in its source. This job has already built them; shipping the
       # artifact keeps that job on a download instead of a second full build.
-      - name: Upload built themes
+      #
+      # core's dist ships with them because importing a built theme executes
+      # `import {defineTheme} from '@astryxdesign/core/theme'`, which pnpm
+      # resolves through the workspace link into packages/core/dist.
+      #
+      # Two paths, so the artifact is rooted at their common ancestor
+      # (packages/) — the download below unpacks it there.
+      - name: Upload built themes and core
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
-          name: themes-${{ steps.urls.outputs.short_hash }}
-          path: packages/themes/*/dist/
+          name: dists-${{ steps.urls.outputs.short_hash }}
+          path: |
+            packages/themes/*/dist/
+            packages/core/dist/
           retention-days: 1
 
       - name: Analyze components
@@ -573,11 +582,11 @@ jobs:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
-      - name: Download built themes
+      - name: Download built themes and core
         uses: actions/download-artifact@v8
         with:
-          name: themes-${{ needs.build-storybook.outputs.short_hash }}
-          path: packages/themes
+          name: dists-${{ needs.build-storybook.outputs.short_hash }}
+          path: packages
 
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
