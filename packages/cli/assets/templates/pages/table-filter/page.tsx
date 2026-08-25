@@ -1539,8 +1539,8 @@ const styles = stylex.create({
   },
   // One step past hover in the same neutral ramp. A muted fill can't carry
   // this on its own — --color-background-muted resolves to the identical
-  // value as --color-overlay-hover — and the accent wash is already spoken
-  // for by the selection plugin's checked rows.
+  // value as --color-overlay-hover. Row background belongs to this state
+  // alone: selection opts out of its wash so the two never compete.
   activeRow: {
     backgroundColor: colorVars['--color-overlay-pressed'],
     // A pinned cell paints an opaque background of its own, which would cover
@@ -2211,6 +2211,11 @@ export default function TableFilterTemplate() {
   const selectionPlugin = useTableSelection<ServiceJob>({
     ...selectionConfig,
     getRowLabel: (item: ServiceJob) => `${item.id} ${item.summary}`,
+    // Row background already means "open in the panel" here, so checking a box
+    // must not claim it too — two row states sharing one signal reads as one
+    // confused state. The tick is the selection; aria-selected is still set
+    // either way, so this costs assistive tech nothing.
+    hasRowHighlight: false,
   });
   const sortablePlugin = useTableSortable<ServiceJob>({
     sort,
