@@ -204,12 +204,11 @@ export interface CardProps extends BaseProps<HTMLDivElement> {
    * Internal padding of the card using the spacing scale.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    *
-   * Omit it and the card takes the theme's card padding instead of a step:
-   * every shipped theme but `butter` sets that to spacing step 3, so an
-   * explicit `padding={4}` is wider than the default, not equal to it.
+   * Omit it and the card takes the theme's card padding rather than a step, so
+   * passing a step is a decision to override the theme, not a way to restate
+   * the default.
    *
-   * @default the theme's card padding (spacing step 3 in the default theme;
-   * spacing step 4 with no theme)
+   * @default the theme's card padding (spacing step 4 with no theme)
    */
   padding?: SpacingStep;
 

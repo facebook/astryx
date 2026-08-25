@@ -58,8 +58,8 @@ export const docs = {
       name: 'padding',
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
-        "Internal padding using the spacing scale. Omit it and the card takes the theme's card padding rather than a step: every shipped theme but `butter` sets that to spacing step 3, so an explicit `padding={4}` is wider than the default rather than equal to it.",
-      default: "the theme's card padding (step 3 in the default theme, step 4 with no theme)",
+        "Internal padding using the spacing scale. Omit it and the card takes the theme's card padding rather than a step, so passing a step is a decision to override the theme, not a way to restate the default.",
+      default: "the theme's card padding (spacing step 4 with no theme)",
     },
     {
       name: 'variant',
@@ -135,7 +135,7 @@ export const docsZh = {
     {name: 'maxWidth', type: 'SizeValue', description: '卡片最大宽度。'},
     {name: 'minHeight', type: 'SizeValue', description: '卡片最小高度。'},
     {name: 'children', type: 'ReactNode', description: '在卡片内部渲染的内容。'},
-    {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: '使用间距比例的内边距。省略时，卡片采用主题的卡片内边距，而不是某个步进值：除 `butter` 外的所有主题都将其设为间距步进 3，因此显式的 `padding={4}` 比默认值更宽。', default: "the theme's card padding (step 3 in the default theme, step 4 with no theme)"},
+    {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: '使用间距比例的内边距。省略时，卡片采用主题的卡片内边距，而不是某个步进值；传入步进值意味着覆盖主题，而不是复述默认值。', default: "the theme's card padding (spacing step 4 with no theme)"},
     {name: 'variant', type: "'default' | 'transparent' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'", description: '背景颜色变体。`default` 使用标准卡片背景；`transparent` 完全去掉背景；`muted` 使用弱化卡片的柔和背景。非语义变体使用对应的 `--color-background-<name>` 令牌。', default: "'default'"},
     {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: '静止阴影深度。`none` 为扁平；`low`/`med`/`high` 对应阴影令牌比例。', default: "'none'"},
   ],
@@ -181,7 +181,7 @@ export const docsDense = {
     maxWidth: 'max card width',
     minHeight: 'min card height',
     children: 'content inside card',
-    padding: "internal padding via spacing scale; omitted = the theme's card padding (step 3 in the default theme), NOT step 4",
+    padding: "internal padding via spacing scale; omitted = the theme's card padding, NOT a fixed step. Passing a step overrides the theme.",
     variant: 'background color variant; `default` = standard card bg, `transparent` = no background at all, `muted` = muted bg for de-emphasised cards; non-semantic variants use the corresponding `--color-background-<name>` token',
     elevation: 'resting shadow depth: none (flat) | low | med | high (shadow token scale). Raise only to float above content.',
   },
