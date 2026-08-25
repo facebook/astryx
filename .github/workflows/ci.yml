@@ -582,7 +582,12 @@ jobs:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
+      # Non-fatal: if this artifact is ever missing, renamed, or produced under
+      # a different key, the gate builds the themes itself. A crash here would
+      # be before the gate ever runs, which is how an artifact-wiring change
+      # reddened every open component PR twice in one day.
       - name: Download built themes and core
+        continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           name: dists-${{ needs.build-storybook.outputs.short_hash }}
