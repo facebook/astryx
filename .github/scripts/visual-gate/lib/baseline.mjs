@@ -23,13 +23,45 @@ import * as path from 'node:path';
 
 export const EMPTY_MANIFEST = {version: 1, shots: {}, decisions: []};
 
+/** The only verdict statuses whose capture may become baseline material. */
+export const PROMOTABLE_VERDICT_STATUSES = ['pass', 'changed'];
+
+/**
+ * The promotion boundary. A failed or skipped gate still uploads its capture
+ * (if: always()), and GitHub reports a terminal failure's run as
+ * status=completed — so the verdict, not the run state, decides whether a
+ * capture may be promoted. Only a verdict the gate stood behind (pass or
+ * changed) passes; failed, skipped, missing (null), unreadable (not an
+ * object), and any unknown status are refused.
+ *
+ * @param {unknown} verdict - parsed verdict.json, or null when it is missing
+ * @throws {Error} when the capture must not be promoted
+ */
+export function assertPromotableVerdict(verdict) {
+  if (verdict == null) {
+    throw new Error(
+      'Refusing to promote a capture with no verdict.json — promote from a check or release run whose verdict is pass or changed.',
+    );
+  }
+  const status =
+    typeof verdict === 'object' && typeof verdict.status === 'string' ? verdict.status : null;
+  if (status == null || !PROMOTABLE_VERDICT_STATUSES.includes(status)) {
+    const shown = status == null ? 'unreadable' : JSON.stringify(status);
+    throw new Error(
+      `Refusing to promote from a gate run whose verdict status is ${shown} — only pass or changed captures may become the baseline.`,
+    );
+  }
+}
+
 /**
  * @param {string} baselineDir
  * @returns {{manifest: object, exists: boolean}}
  */
 export function readBaseline(baselineDir) {
   const manifestPath = path.join(baselineDir, 'manifest.json');
-  if (!fs.existsSync(manifestPath)) return {manifest: {...EMPTY_MANIFEST}, exists: false};
+  // A deep copy: a shallow spread shared EMPTY_MANIFEST's shots and decisions
+  // objects between every fresh baseline in the same process.
+  if (!fs.existsSync(manifestPath)) return {manifest: structuredClone(EMPTY_MANIFEST), exists: false};
   return {manifest: JSON.parse(fs.readFileSync(manifestPath, 'utf8')), exists: true};
 }
 
@@ -74,12 +106,14 @@ export function incomparable(baselineManifest, currentManifest) {
 }
 
 /**
- * Promote captured shots into the baseline.
+ * Promote captured shots into the baseline. Nothing is written unless the
+ * capture's verdict is one the gate stood behind (see assertPromotableVerdict).
  *
  * @param {object} options
  * @param {string} options.baselineDir
  * @param {string} options.captureDir - directory holding the capture's shots/
  * @param {object} options.currentManifest
+ * @param {unknown} options.verdict - the capture's parsed verdict.json (null when missing)
  * @param {string[]} options.keys - shot keys to promote
  * @param {string} options.reason - why the new rendering is the correct one
  * @param {string} options.actor
@@ -91,13 +125,23 @@ export function accept({
   baselineDir,
   captureDir,
   currentManifest,
+  verdict,
   keys,
   reason,
   actor,
   runId = null,
   prune = [],
 }) {
+  assertPromotableVerdict(verdict);
   if (!reason?.trim()) throw new Error('accept requires a reason — it is the record of the decision');
+  // Shot keys name files inside shots/. A real key is shotKey() output
+  // ([a-zA-Z0-9._-] only, see plan.mjs), never a path — reject anything else
+  // before it is joined into one, whichever manifest or flag it came from.
+  const SHOT_KEY = /^(?!\.+$)[a-zA-Z0-9._-]+$/;
+  const badKey = [...keys, ...prune].find(key => !SHOT_KEY.test(String(key)));
+  if (badKey != null) {
+    throw new Error(`Invalid shot key: ${JSON.stringify(badKey)}`);
+  }
   const {manifest} = readBaseline(baselineDir);
   const shotsDir = path.join(baselineDir, 'shots');
   fs.mkdirSync(shotsDir, {recursive: true});

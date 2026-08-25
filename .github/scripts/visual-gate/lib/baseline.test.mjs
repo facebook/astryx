@@ -6,7 +6,12 @@ import * as path from 'node:path';
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 
-import {accept, incomparable, readBaseline} from './baseline.mjs';
+import {
+  accept,
+  assertPromotableVerdict,
+  incomparable,
+  readBaseline,
+} from './baseline.mjs';
 
 let root;
 let baselineDir;
@@ -34,15 +39,88 @@ const promote = overrides =>
     baselineDir,
     captureDir,
     currentManifest,
+    verdict: {status: 'changed'},
     keys: ['a'],
     reason: 'Button radius changed on purpose',
     actor: 'tester',
     ...overrides,
   });
 
+// Every way a capture can arrive without a verdict the gate stood behind: the
+// gate's own failed and skipped statuses, no verdict.json at all (null), a
+// verdict.json that did not parse into an object, and statuses this gate never
+// writes.
+const UNPROMOTABLE_VERDICTS = [
+  ['failed', {status: 'failed'}],
+  ['skipped', {status: 'skipped'}],
+  ['missing', null],
+  ['undefined', undefined],
+  ['unreadable (not an object)', 'pass'],
+  ['unreadable (no status)', {}],
+  ['unreadable (null status)', {status: null}],
+  ['unknown (crashed)', {status: 'crashed'}],
+  ['unknown (empty)', {status: ''}],
+  ['unknown (wrong case)', {status: 'PASS'}],
+];
+
+describe('assertPromotableVerdict', () => {
+  it('lets pass and changed through', () => {
+    expect(() => assertPromotableVerdict({status: 'pass'})).not.toThrow();
+    expect(() => assertPromotableVerdict({status: 'changed'})).not.toThrow();
+  });
+
+  it.each(UNPROMOTABLE_VERDICTS)('refuses a %s verdict', (_label, verdict) => {
+    expect(() => assertPromotableVerdict(verdict)).toThrow(/Refusing to promote/);
+  });
+});
+
 describe('accept', () => {
   it('refuses to promote without a reason, because the reason is the record', () => {
     expect(() => promote({reason: ' '})).toThrow(/reason/);
+  });
+
+  it('promotes from a pass verdict as well as a changed one', () => {
+    promote({verdict: {status: 'pass'}});
+    expect(fs.existsSync(path.join(baselineDir, 'shots', 'a.png'))).toBe(true);
+  });
+
+  it.each(UNPROMOTABLE_VERDICTS)(
+    'writes no baseline file from a %s verdict',
+    (_label, verdict) => {
+      expect(() => promote({verdict})).toThrow(/Refusing to promote/);
+      expect(() => promote({verdict, keys: ['a', 'b']})).toThrow(/Refusing to promote/);
+      // Nothing was created: no manifest, no shots directory, no baseline dir.
+      expect(fs.existsSync(baselineDir)).toBe(false);
+    },
+  );
+
+  it.each(UNPROMOTABLE_VERDICTS)(
+    'neither overwrites nor prunes an existing baseline from a %s verdict',
+    (_label, verdict) => {
+      promote({keys: ['a', 'b']});
+      const before = fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8');
+      fs.writeFileSync(path.join(captureDir, 'shots', 'a.png'), 'broken-a');
+
+      expect(() => promote({verdict, keys: ['a']})).toThrow(/Refusing to promote/);
+      expect(() => promote({verdict, keys: [], prune: ['b'], reason: 'story deleted'})).toThrow(
+        /Refusing to promote/,
+      );
+
+      expect(fs.readFileSync(path.join(baselineDir, 'shots', 'a.png'), 'utf8')).toBe('new-a');
+      expect(fs.existsSync(path.join(baselineDir, 'shots', 'b.png'))).toBe(true);
+      expect(fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8')).toBe(before);
+    },
+  );
+
+  it('refuses keys that are not shot keys — they name files under shots/', () => {
+    // shotKey() output is [a-zA-Z0-9._-] only; anything path-shaped (or
+    // dots-only) must be rejected before it is joined into a path, whichever
+    // list it arrives in.
+    for (const bad of ['../escape', 'a/b', 'a\\b', '..', ' a']) {
+      expect(() => promote({keys: [bad]})).toThrow(/Invalid shot key/);
+      expect(() => promote({keys: [], prune: [bad]})).toThrow(/Invalid shot key/);
+    }
+    expect(fs.existsSync(baselineDir)).toBe(false);
   });
 
   it('copies only the named shots into the baseline', () => {
