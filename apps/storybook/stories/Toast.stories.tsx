@@ -405,12 +405,13 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
 // A product with its own notification layout passes `renderContent` on the
 // `showToast` call. Astryx keeps the card — surface, `astryx-toast` theme
 // target, live-region role, auto-hide timer — and hands over the message, the
-// `endContent`, and its own dismiss `Button`.
+// `endContent`, and a `DismissButton` component.
 //
-// The dismiss is the part worth noticing: it arrives as an element, so it
-// stays a real Astryx `Button` with its translated label and its
-// `astryx-button` theming. A custom layout positions it; it does not rebuild
-// it, and so cannot mislabel it or leave a toast with no way to close.
+// The dismiss is the part worth noticing: the layout *places* it rather than
+// building it, so it stays a real Astryx `Button` with its translated label
+// and its `astryx-button` theming. And a layout that never renders it does
+// not produce a toast with no way out — Astryx puts the close in the card's
+// default corner instead. The last two buttons below show both halves.
 //
 // Note there is no second `ToastViewport` here: the story's toasts go through
 // the app-level one, exactly as a product's would.
@@ -418,7 +419,7 @@ function ProductToastContent({
   type,
   body,
   endContent,
-  dismissButton,
+  DismissButton,
 }: ToastContentRenderProps) {
   return (
     <div {...stylex.props(cardStyles.row)}>
@@ -430,7 +431,24 @@ function ProductToastContent({
       />
       <div {...stylex.props(cardStyles.text)}>{body}</div>
       {endContent}
-      {dismissButton}
+      <DismissButton />
+    </div>
+  );
+}
+
+// The same layout with the close left out — a mistake, or a layout written
+// before the close existed. The toast is still dismissible: Astryx renders it
+// in the corner.
+function ForgetfulToastContent({type, body}: ToastContentRenderProps) {
+  return (
+    <div {...stylex.props(cardStyles.row)}>
+      <div
+        {...stylex.props(
+          cardStyles.stripe,
+          type === 'error' ? cardStyles.stripeError : cardStyles.stripeInfo,
+        )}
+      />
+      <div {...stylex.props(cardStyles.text)}>{body}</div>
     </div>
   );
 }
@@ -482,6 +500,19 @@ export const CustomContent: StoryObj = {
           }}
         />
         <Button
+          label="Layout without the close"
+          variant="ghost"
+          onClick={() => {
+            toast({
+              body: 'This layout never renders DismissButton.',
+              type: 'error',
+              renderContent: toastProps => (
+                <ForgetfulToastContent {...toastProps} />
+              ),
+            });
+          }}
+        />
+        <Button
           label="Without renderContent"
           variant="ghost"
           onClick={() => {
@@ -495,7 +526,7 @@ export const CustomContent: StoryObj = {
     docs: {
       description: {
         story:
-          "`renderContent` on the `showToast` options replaces the content of that toast's card with your own layout — here a leading status stripe. Astryx keeps the card and the transport, and hands over the message, the `endContent` and its own dismiss `Button`, so the close stays themed, translated and correctly named. The last button omits `renderContent`, showing what a toast raised by code that has never heard of this layout looks like: an ordinary Astryx toast, intact and dismissible.",
+          "`renderContent` on the `showToast` options replaces the content of that toast's card with your own layout — here a leading status stripe. Astryx keeps the card and the transport, and hands over the message, the `endContent` and a `DismissButton` to place, so the close stays themed, translated and correctly named. **Layout without the close** is the same layout with `DismissButton` left out, on an error toast that does not auto-hide: Astryx renders the close in the card's corner, so the toast is still dismissible. The last button omits `renderContent` entirely, showing what a toast raised by code that has never heard of this layout looks like.",
       },
     },
   },

@@ -499,7 +499,7 @@ describe('toast timer lifecycle (#3589)', () => {
         <div data-testid="custom-content">
           {toast.body}
           {toast.endContent}
-          {toast.dismissButton}
+          <toast.DismissButton />
         </div>
       ),
     };
@@ -648,9 +648,9 @@ describe('toast timer lifecycle (#3589)', () => {
     });
   });
 
-  // A toast that does not auto-hide has exactly one exit, and a layout is
-  // free to drop `dismissButton` on the floor. The component renders what it
-  // is given — but this is the combination that traps someone, so it warns.
+  // A layout is free to leave `DismissButton` out — the component renders
+  // what it is given. What it must not produce is a toast with no way out, so
+  // an unplaced close falls back to the card's own corner.
   describe('a layout that drops the dismiss', () => {
     const NO_CLOSE: ToastOptions = {
       body: 'Stuck',
@@ -658,24 +658,47 @@ describe('toast timer lifecycle (#3589)', () => {
       renderContent: toast => <div>{toast.body}</div>,
     };
 
-    it('warns when a sticky toast is left with no way to close', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      try {
-        renderViewport(
-          <ShowToastButton options={NO_CLOSE} triggerLabel="Show" />,
-        );
-        act(() => {
-          fireEvent.click(screen.getByText('Show'));
-        });
-        expect(warn).toHaveBeenCalledWith(
-          expect.stringContaining('cannot be dismissed'),
-        );
-      } finally {
-        warn.mockRestore();
-      }
+    function closeButtons(): HTMLElement[] {
+      return screen.queryAllByRole('button', {name: 'Dismiss notification'});
+    }
+
+    it('still renders a close, and it dismisses the toast', () => {
+      const onHide = vi.fn();
+      renderViewport(
+        <ShowToastButton options={{...NO_CLOSE, onHide}} triggerLabel="Show" />,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      expect(closeButtons()).toHaveLength(1);
+      act(() => {
+        fireEvent.click(closeButtons()[0]);
+      });
+      expect(onHide).toHaveBeenCalledWith('manual');
     });
 
-    it('stays quiet when the layout places it', () => {
+    it('does not add a second one when the layout places it', () => {
+      renderViewport(
+        <ShowToastButton
+          options={{
+            ...NO_CLOSE,
+            renderContent: toast => (
+              <div>
+                {toast.body}
+                <toast.DismissButton />
+              </div>
+            ),
+          }}
+          triggerLabel="Show"
+        />,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      expect(closeButtons()).toHaveLength(1);
+    });
+
+    it('warns when a layout renders the close more than once', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       try {
         renderViewport(
@@ -684,8 +707,9 @@ describe('toast timer lifecycle (#3589)', () => {
               ...NO_CLOSE,
               renderContent: toast => (
                 <div>
+                  <toast.DismissButton />
                   {toast.body}
-                  {toast.dismissButton}
+                  <toast.DismissButton />
                 </div>
               ),
             }}
@@ -695,29 +719,8 @@ describe('toast timer lifecycle (#3589)', () => {
         act(() => {
           fireEvent.click(screen.getByText('Show'));
         });
-        expect(warn).not.toHaveBeenCalledWith(
-          expect.stringContaining('cannot be dismissed'),
-        );
-      } finally {
-        warn.mockRestore();
-      }
-    });
-
-    it('stays quiet when the toast auto-hides', () => {
-      // No close is a legitimate choice for a toast that leaves on its own.
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      try {
-        renderViewport(
-          <ShowToastButton
-            options={{...NO_CLOSE, type: 'info', isAutoHide: true}}
-            triggerLabel="Show"
-          />,
-        );
-        act(() => {
-          fireEvent.click(screen.getByText('Show'));
-        });
-        expect(warn).not.toHaveBeenCalledWith(
-          expect.stringContaining('cannot be dismissed'),
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('Render it once'),
         );
       } finally {
         warn.mockRestore();
