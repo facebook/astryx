@@ -9,15 +9,21 @@
  * People paste numbers out of spreadsheets, and a spreadsheet writes them
  * grouped, signed, and decorated. This reads those back. Everything locale
  * specific — the grouping and decimal separators, the group sizes, the digit
- * script — is derived from Intl and Unicode rather than a table, and text no
- * reading fits returns null so the field stays visibly invalid instead of
+ * script — is derived from Intl and Unicode rather than a table, and text that
+ * no reading fits returns null so the field stays visibly invalid instead of
  * committing a guess. Where both readings are well formed the locale's wins,
  * the way utils/dateParser.ts settles an ambiguous date by locale preference.
- * Grouping is well formed only when every group fits the locale's own sizes,
- * so de-DE `1.234` is 1234, while `1.2345` (last group too long) and
- * `1234.567` (too much ahead of it) keep the full stop as a decimal point. A
- * separator repeated with three digits after every occurrence is grouping in
- * any locale, so `1,234,567` reads the same in all of them.
+ * Grouping is well formed only when every group fits the locale's own sizes:
+ * the last exactly the primary size, each inner one exactly the secondary, the
+ * first no longer than that. So de-DE `1.234` is 1234, while `1.2345` (last
+ * group too long) and `1234.567` (too much ahead of it) keep the full stop as
+ * a decimal point. Groups of three fit every locale, so a separator repeated
+ * with three-digit groups is grouping in all of them and `1,234,567` reads the
+ * same everywhere; for a space or apostrophe, which no locale writes as a
+ * decimal point, one occurrence is enough, so en-US `1 234` is 1234.
+ *
+ * That paragraph is executable: numberParser.docblock.test.ts implements it as
+ * code, quote by quote, and fails when the parser and the words disagree.
  *
  * Which characters may separate digits at all is the one thing that is NOT
  * read off the input: SEPARATOR_CHARS below is a bounded alphabet, the same
@@ -26,6 +32,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/NumberInput/NumberInput.tsx
  * - /packages/core/src/NumberInput/numberParser.test.ts
+ * - /packages/core/src/NumberInput/numberParser.docblock.test.ts
  */
 
 import type {Locale} from '../i18n';
