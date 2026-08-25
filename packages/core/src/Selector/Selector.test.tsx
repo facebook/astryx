@@ -3322,6 +3322,35 @@ describe('Selector search focus ring', () => {
     await waitForSearchFocus();
     expect(field()).toHaveAttribute('data-keyboard-focus', 'true');
   });
+
+  it('rings when Shift+Tab returns from clear to the search input', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await waitForSearchFocus();
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'a');
+
+    await user.tab();
+    expect(
+      screen.getByRole('button', {
+        name: 'Clear Search options',
+        hidden: true,
+      }),
+    ).toHaveFocus();
+
+    await user.tab({shift: true});
+    expect(search).toHaveFocus();
+    expect(field()).toHaveAttribute('data-keyboard-focus', 'true');
+  });
 });
 
 describe('Selector search affordances', () => {
