@@ -13,6 +13,10 @@
  * that could mean two different numbers returns null so the field stays
  * visibly invalid instead of committing a guess.
  *
+ * Which characters may separate digits at all is the one thing that is NOT
+ * read off the input: SEPARATOR_CHARS below is a bounded alphabet, the same
+ * shape utils/dateParser.ts uses for its `[-/.]` date separators.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/NumberInput/NumberInput.tsx
  * - /packages/core/src/NumberInput/numberParser.test.ts
@@ -69,13 +73,26 @@ function getLocaleNumberSymbols(locale: Locale | undefined) {
 // General_Category short names, failing the sandbox build. Property escapes are
 // ES2018 and need no transform in any browser this package supports.
 const DECIMAL_DIGIT = new RegExp('\\p{Nd}', 'u');
-const LETTER = new RegExp('\\p{L}', 'u');
 const CURRENCY = new RegExp('\\p{Sc}', 'u');
 // Zero-width joiners, bidi isolates and the BOM Excel prepends.
 const INVISIBLES = /[\u200B-\u200D\u200E\u200F\u061C\u2066-\u2069\uFEFF]/g;
 // Hyphen last: inside the character class this builds, a leading one would
 // open a range.
 const MINUS_SIGNS = '\u2212\u2012\u2013-';
+
+/**
+ * Every character a locale writes between digits: comma, full stop, space
+ * (the whole space family folds to it under NFKC), the Swiss apostrophes, the
+ * Catalan middle dot, and the Arabic decimal and thousands separators.
+ *
+ * The alphabet is bounded on purpose. Read the candidates off the input
+ * instead and any repeated character is grouping, so a hyphenated ID commits
+ * as a number.
+ */
+const SEPARATOR_CHARS = ",.' \u2019\u00B7\u066B\u066C";
+const NUMBER_BODY = new RegExp(`^[0-9${SEPARATOR_CHARS}]+$`);
+/** No grouping and at most one full stop: the format `Number()` reads. */
+const MACHINE_NUMBER = /^(?:\d+\.?\d*|\.\d+)$/;
 
 /**
  * Value of any Unicode decimal digit. Each digit script lays its ten digits
@@ -188,7 +205,7 @@ function toPlainNumber(
   core: string,
   locale: Locale | undefined,
 ): string | null {
-  if (LETTER.test(core)) {
+  if (!NUMBER_BODY.test(core)) {
     return null;
   }
 
@@ -206,10 +223,20 @@ function toPlainNumber(
     return inLocale;
   }
 
-  // The locale could not read it. A repeated separator with three digits after
-  // each occurrence can only be grouping — a decimal point appears once — so
-  // that shape reads the same in every locale, which is what lets a
-  // `1,234,234,234` pasted out of a spreadsheet land in a de-DE app.
+  // The machine format, which is what the field read before this parser
+  // existed. It comes after the locale rather than before it — dateParser.ts
+  // can put ISO first because `2026-01-25` has no second reading, while
+  // `1.234` in de-DE has one and grouping is the reading a German means. What
+  // reaches here is a full stop the locale could NOT read, so it is not
+  // well-formed grouping either, and exactly one reading is left.
+  if (MACHINE_NUMBER.test(core)) {
+    return core;
+  }
+
+  // A repeated separator with three digits after each occurrence can only be
+  // grouping — a decimal point appears once — so that shape reads the same in
+  // every locale, which is what lets a `1,234,234,234` pasted out of a
+  // spreadsheet land in a de-DE app.
   const separators = [...new Set(core.replace(/\d/g, ''))];
   if (separators.length === 0 || separators.length > 2) {
     return null;
@@ -240,13 +267,17 @@ function toPlainNumber(
  * Returns null rather than a guess. Grouping is validated, so en-US `1,23` —
  * a comma that is neither a decimal point nor a well-formed group — is not
  * silently read as 123, and neither is a number written for another locale.
+ * Only the characters some locale writes between digits count as separators,
+ * so `123-456-789` is not a number at all.
  *
  * @example
  * ```
  * parseLocaleNumber('1,234,234,234', 'en-US')  // 1234234234
  * parseLocaleNumber('1,234,234,234', 'de-DE')  // 1234234234
  * parseLocaleNumber('1,5', 'de-DE')            // 1.5
+ * parseLocaleNumber('1.5', 'de-DE')            // 1.5
  * parseLocaleNumber('1,5', 'en-US')            // null
+ * parseLocaleNumber('123-456-789', 'en-US')    // null
  * ```
  */
 export function parseLocaleNumber(
@@ -274,16 +305,25 @@ export function parseLocaleNumber(
 
   // The sign lands on either end — RTL locales trail it, and Intl writes
   // U+2212 where a keyboard writes a hyphen.
+  let hasWrittenSign = false;
   const leadingSign = new RegExp(`^([+${MINUS_SIGNS}])\\s*`).exec(rest);
   if (leadingSign) {
+    hasWrittenSign = true;
     sign = leadingSign[1] === '+' ? sign : -sign;
     rest = rest.slice(leadingSign[0].length);
   } else {
     const trailingSign = new RegExp(`\\s*([+${MINUS_SIGNS}])$`).exec(rest);
     if (trailingSign) {
+      hasWrittenSign = true;
       sign = trailingSign[1] === '+' ? sign : -sign;
       rest = rest.slice(0, rest.length - trailingSign[0].length);
     }
+  }
+
+  // The parens already say negative, so a sign inside them contradicts or
+  // doubles it: `(-1,234)` is -1234 to one reader and +1234 to another.
+  if (accounting && hasWrittenSign) {
+    return null;
   }
 
   rest = stripCurrency(rest);

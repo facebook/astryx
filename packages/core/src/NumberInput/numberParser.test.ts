@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {parseLocaleNumber} from './numberParser';
+import {formatEditableNumber, parseLocaleNumber} from './numberParser';
 
 const NBSP = '\u00A0';
 const NARROW_NBSP = '\u202F';
@@ -41,7 +41,18 @@ const CORPUS: [string, string, number | null][] = [
   ['1,5', 'de-DE', 1.5],
   ['1,5', 'en-US', null],
   ['1.5', 'en-US', 1.5],
-  ['1.5', 'de-DE', null],
+
+  // The machine decimal point reads everywhere: a full stop the locale cannot
+  // read as grouping has one meaning left, and refusing it lost a number the
+  // person had typed. Where grouping IS well formed the locale still wins.
+  ['1.5', 'de-DE', 1.5],
+  ['1.5', 'fr-FR', 1.5],
+  ['1234.56', 'de-DE', 1234.56],
+  ['-3.25', 'fr-FR', -3.25],
+  ['0.5', 'de-DE', 0.5],
+  ['1.5e3', 'de-DE', 1500],
+  ['1.234', 'de-DE', 1234],
+  ['1.2345', 'de-DE', 1.2345],
 
   // Decimals and signs.
   ['1,234.56', 'en-US', 1234.56],
@@ -89,6 +100,9 @@ const CORPUS: [string, string, number | null][] = [
   ['(1,234)', 'en-US', -1234],
   ['($1,234.50)', 'en-US', -1234.5],
   ['(1,234', 'en-US', null],
+  // The parens already carry the sign; a second one reads two ways.
+  ['(-1,234)', 'en-US', null],
+  ['(+1,234)', 'en-US', null],
 
   // Typographic minus signs.
   ['\u22121234', 'en-US', -1234],
@@ -114,6 +128,25 @@ const CORPUS: [string, string, number | null][] = [
   ['1 234 (approx)', 'en-US', null],
   ['--5', 'en-US', null],
   ['1..234', 'en-US', null],
+
+  // Only a character some locale writes between digits is a separator. None of
+  // these are numbers, and the last two were refused before only because their
+  // final group is the wrong length — luck, not a rule.
+  ['123-456-789', 'en-US', null],
+  ['1-800-555', 'en-US', null],
+  ['555-123-456', 'en-US', null],
+  ['1_234_567', 'en-US', null],
+  ['1/234/567', 'en-US', null],
+  ['1:234:567', 'en-US', null],
+  ['1*234*567', 'en-US', null],
+  ['800-555-1212', 'en-US', null],
+  ['2024-01-15', 'en-US', null],
+
+  // The field has no percent semantics, so a percent sign is not dropped:
+  // committing 45 for `45%` is off by a factor of a hundred.
+  ['45%', 'en-US', null],
+  ['0.5%', 'en-US', null],
+  ['45 %', 'fr-FR', null],
 ];
 
 describe('parseLocaleNumber', () => {
@@ -132,6 +165,46 @@ describe('parseLocaleNumber', () => {
     ]) {
       const text = new Intl.NumberFormat(locale).format(1234234234);
       expect(parseLocaleNumber(text, locale)).toBe(1234234234);
+    }
+  });
+});
+
+describe('formatEditableNumber', () => {
+  it.each([
+    [1.5, 'en-US', '1.5'],
+    [1.5, 'de-DE', '1,5'],
+    [-1234.56, 'fr-FR', '-1234,56'],
+    [3.5, 'ar-SA', '3٫5'],
+    // No grouping: the text has to be editable, and a separator the person did
+    // not type is one they have to delete.
+    [1234234234, 'de-DE', '1234234234'],
+    [42, 'de-DE', '42'],
+    // What `String` writes for the extremes stays untouched but for the point.
+    [1e21, 'de-DE', '1e+21'],
+    [1.5e-7, 'de-DE', '1,5e-7'],
+  ])('shows %j in %s as %j', (value, locale, expected) => {
+    expect(formatEditableNumber(value, locale)).toBe(expected);
+  });
+
+  it('round trips through the parser in every locale', () => {
+    for (const locale of [
+      'en-US',
+      'de-DE',
+      'fr-FR',
+      'de-CH',
+      'en-IN',
+      'ar-SA',
+      'ja-JP',
+      'hi-IN',
+    ]) {
+      for (const value of [
+        0, 1, -1, 0.1, 1.5, -0.5, 1234.56, -1234567.125, 123456789,
+        3.141592653589793, 1e21, 1.5e-7, -9007199254740991,
+      ]) {
+        expect(
+          parseLocaleNumber(formatEditableNumber(value, locale), locale),
+        ).toBe(value);
+      }
     }
   });
 });
