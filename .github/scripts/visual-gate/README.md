@@ -77,6 +77,39 @@ runner would read as "everything changed". The gate refuses that comparison
 instead of showing you 500 false diffs, and the shared baseline is only ever
 written by CI, from the pinned runner label.
 
+## Two different questions
+
+The gate asks two things, and only one of them is a screenshot.
+
+**Did anything move?** — the shot tiers, compared against an accepted baseline.
+Catches any visual regression, in any theme.
+
+**Did each theming target's override actually reach the pixels?** — `gate.mjs
+reach`, and no baseline is involved. A pixel diff cannot answer this: when an
+override stops applying, the frame is captured broken and promoted as correct,
+and every later run agrees with it forever. The probe theme gives every
+selector a unique deterministic colour, so this is an equality test — compute
+the colour that selector should have produced, read the element, compare. It
+names the target instead of a rectangle, and it cannot flake.
+
+Three outcomes, because the difference matters:
+
+|          | meaning                                                                          |
+| -------- | -------------------------------------------------------------------------------- |
+| reached  | the override painted                                                             |
+| shadowed | another target on the _same element_ won — a fact about the markup, not a defect |
+| missed   | nothing probe-coloured won                                                       |
+
+```bash
+node .github/scripts/visual-gate/gate.mjs reach
+```
+
+It runs in the daily gate and is **reported, not enforced**. Today 50 targets
+miss, from one systemic cause: StyleX emits into `@layer priority1-4`, which
+sort _after_ `astryx-theme`, so wherever a component sets a property the theme
+override loses. Failing the gate on a known systemic issue would only teach
+everyone to ignore it — enforce it once that is fixed and the count is zero.
+
 ## How the release cut uses it
 
 The daily cut (08:00 PT) reads the gate's verdict before it merges the version
