@@ -35,6 +35,22 @@ export interface ToastOptions {
   autoHideDuration?: number;
   /** Content rendered at the end of the toast (trailing slot). */
   endContent?: ReactNode;
+  /**
+   * Replaces the content of this toast's card with your own layout.
+   *
+   * Astryx keeps the card — its surface, its `astryx-toast` theme target, the
+   * live-region role and the auto-hide timer — and hands the renderer this
+   * toast's message, its `endContent`, and Astryx's own dismiss `Button` to
+   * place. The close therefore stays a real Astryx `Button`: themed,
+   * translated, correctly named, and impossible for a layout to forget.
+   *
+   * Per-toast rather than app-wide on purpose. An app that wants every one of
+   * its toasts to share a layout wraps `useToast()` once and passes this on
+   * every call; a toast raised by library code that knows nothing about that
+   * wrapper then renders as an ordinary Astryx toast — intact, dismissible —
+   * rather than inheriting a layout written for someone else's payload.
+   */
+  renderBody?: ToastBodyRenderFn;
 
   /** Unique identifier for deduplication. */
   uniqueID?: string;
@@ -87,8 +103,8 @@ export interface ToastBodyRenderProps {
 }
 
 /**
- * Renders the content of every toast inside Astryx's card — see
- * `ToastViewport`'s `renderBody`.
+ * Renders the content of one toast inside Astryx's card — see
+ * `ToastOptions.renderBody`.
  */
 export type ToastBodyRenderFn = (toast: ToastBodyRenderProps) => ReactNode;
 

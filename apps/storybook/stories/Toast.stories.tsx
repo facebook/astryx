@@ -399,19 +399,18 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
 // Custom body (renderBody)
 // =============================================================================
 
-// A product with its own notification layout supplies `renderBody` on the
-// viewport. Astryx keeps the card — surface, `astryx-toast` theme target,
-// live-region role, auto-hide timer — and hands over the message, the
-// `endContent`, and its own dismiss `Button` to place.
+// A product with its own notification layout passes `renderBody` on the
+// `showToast` call. Astryx keeps the card — surface, `astryx-toast` theme
+// target, live-region role, auto-hide timer — and hands over the message, the
+// `endContent`, and its own dismiss `Button`.
 //
 // The dismiss is the part worth noticing: it arrives as an element, so it
 // stays a real Astryx `Button` with its translated label and its
 // `astryx-button` theming. A custom layout positions it; it does not rebuild
 // it, and so cannot mislabel it or leave a toast with no way to close.
 //
-// It applies to every toast in the viewport, so a toast raised by library
-// code that has never heard of this layout gets it too — which is what
-// hiding the built-in dismiss with CSS cannot do.
+// Note there is no second `ToastViewport` here: the story's toasts go through
+// the app-level one, exactly as a product's would.
 function ProductToastBody({
   type,
   body,
@@ -433,54 +432,68 @@ function ProductToastBody({
   );
 }
 
+// An app shares one layout across its toasts by wrapping the hook once —
+// which is also what keeps a library's toast out of it: code that calls
+// `useToast()` directly never passes `renderBody`, so it renders as an
+// ordinary Astryx toast rather than inheriting a layout built for someone
+// else's payload.
+const renderProductBody = (toast: ToastBodyRenderProps) => (
+  <ProductToastBody {...toast} />
+);
+
 export const CustomBody: StoryObj = {
   name: 'Custom body (renderBody)',
   render: function CustomBodyStory() {
+    const toast = useToast();
     return (
-      <ToastViewport
-        isTopLayer={false}
-        renderBody={toast => <ProductToastBody {...toast} />}>
-        <CustomBodyTriggers />
-      </ToastViewport>
+      <Stack direction="horizontal" gap={2} wrap="wrap">
+        <Button
+          label="Show"
+          onClick={() => {
+            toast({
+              body: 'Your changes have been saved.',
+              renderBody: renderProductBody,
+            });
+          }}
+        />
+        <Button
+          label="With an action"
+          variant="secondary"
+          onClick={() => {
+            toast({
+              body: 'Row deleted.',
+              endContent: <Button variant="ghost" size="sm" label="Undo" />,
+              renderBody: renderProductBody,
+            });
+          }}
+        />
+        <Button
+          label="Error"
+          variant="destructive"
+          onClick={() => {
+            toast({
+              body: 'Could not reach the server.',
+              type: 'error',
+              renderBody: renderProductBody,
+            });
+          }}
+        />
+        <Button
+          label="Without renderBody"
+          variant="ghost"
+          onClick={() => {
+            toast({body: 'A toast from code that knows nothing about it.'});
+          }}
+        />
+      </Stack>
     );
   },
   parameters: {
     docs: {
       description: {
         story:
-          "`renderBody` on `ToastViewport` replaces the content of every toast's card with your own layout — here a leading status stripe. Astryx keeps the card and the transport, and hands over the message, the `endContent` and its own dismiss `Button`, so the close stays themed, translated and correctly named. It applies to every toast in the viewport, including ones raised by code that knows nothing about this layout.",
+          "`renderBody` on the `showToast` options replaces the content of that toast's card with your own layout — here a leading status stripe. Astryx keeps the card and the transport, and hands over the message, the `endContent` and its own dismiss `Button`, so the close stays themed, translated and correctly named. The last button omits `renderBody`, showing what a toast raised by code that has never heard of this layout looks like: an ordinary Astryx toast, intact and dismissible.",
       },
     },
   },
 };
-
-function CustomBodyTriggers() {
-  const toast = useToast();
-  return (
-    <Stack direction="horizontal" gap={2} wrap="wrap">
-      <Button
-        label="Show"
-        onClick={() => {
-          toast({body: 'Your changes have been saved.'});
-        }}
-      />
-      <Button
-        label="With an action"
-        variant="secondary"
-        onClick={() => {
-          toast({
-            body: 'Row deleted.',
-            endContent: <Button variant="ghost" size="sm" label="Undo" />,
-          });
-        }}
-      />
-      <Button
-        label="Error"
-        variant="destructive"
-        onClick={() => {
-          toast({body: 'Could not reach the server.', type: 'error'});
-        }}
-      />
-    </Stack>
-  );
-}

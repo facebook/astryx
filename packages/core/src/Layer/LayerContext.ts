@@ -14,7 +14,6 @@
  */
 
 import {createContext, use} from 'react';
-import type {ToastBodyRenderFn} from '../Toast/types';
 
 /**
  * Toast configuration passed through the layer provider.
@@ -31,13 +30,6 @@ export interface LayerToastConfig {
     start?: number;
     end?: number;
   };
-  /**
-   * Replaces the content of every toast's card with your own layout — see
-   * `ToastViewport`'s `renderBody`. Set it here when the app mounts its
-   * viewport through `LayerProvider` or `AppShell`, which is the usual case;
-   * the viewport prop is for a viewport you mount yourself.
-   */
-  renderBody?: ToastBodyRenderFn;
 }
 
 /**

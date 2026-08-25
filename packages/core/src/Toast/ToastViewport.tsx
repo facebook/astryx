@@ -19,12 +19,7 @@ import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {Toast} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
-import type {
-  ToastEntry,
-  ToastPosition,
-  ToastDismissReason,
-  ToastBodyRenderFn,
-} from './types';
+import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -129,36 +124,6 @@ export interface ToastViewportProps {
    * @default true
    */
   isTopLayer?: boolean;
-  /**
-   * Replaces the content of every toast's card with your own layout. Astryx
-   * keeps the card itself — its surface, its `astryx-toast` theme target, the
-   * live-region role, and the auto-hide timer — and hands the renderer the
-   * message, the `endContent`, and its own dismiss `Button` to place.
-   *
-   * It applies to every toast in the viewport, including ones raised by
-   * library code that calls `useToast()` without knowing about your layout.
-   * That app-wide reach is the point: hiding Astryx's dismiss with CSS to
-   * draw your own reaches only the toasts your own wrapper created, so a
-   * library's toast keeps the built-in card and loses its only way to close.
-   *
-   * The dismiss control stays Astryx's — themed, translated, correctly named
-   * — so a custom layout cannot mislabel it. Place it somewhere.
-   *
-   * @example
-   * ```
-   * <ToastViewport
-   *   renderBody={({body, endContent, dismissButton}) => (
-   *     <MyRow>
-   *       <MyTitle>{body}</MyTitle>
-   *       {endContent}
-   *       {dismissButton}
-   *     </MyRow>
-   *   )}>
-   *   <App />
-   * </ToastViewport>
-   * ```
-   */
-  renderBody?: ToastBodyRenderFn;
   children?: React.ReactNode;
 }
 
@@ -179,7 +144,6 @@ export function ToastViewport({
   maxVisible = 5,
   inset,
   isTopLayer = true,
-  renderBody,
   children,
 }: ToastViewportProps) {
   const t = useTranslator();
@@ -475,16 +439,8 @@ export function ToastViewport({
       {children}
       <div
         ref={viewportRef}
-        // A landmark only while it holds something. An empty viewport is an
-        // empty named region in every screen reader's landmark list, and
-        // `LayerProvider` mounts one for every app whether or not a toast is
-        // ever shown — so a second viewport (a dialog's, or one a story or a
-        // sub-tree mounts to configure it) made two identically named
-        // landmarks, which is an axe `landmark-unique` violation and a real
-        // navigation annoyance. F6 still reaches it either way: the handler
-        // works off the ref, not the role.
-        role={hasToasts ? 'region' : undefined}
-        aria-label={hasToasts ? t('@astryx.toast.viewport') : undefined}
+        role="region"
+        aria-label={t('@astryx.toast.viewport')}
         tabIndex={-1}
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.
@@ -530,7 +486,7 @@ export function ToastViewport({
                   autoHideDuration={dur}
                   isExiting={isExiting}
                   onDismiss={reason => removeToast(entry.id, reason)}
-                  renderBody={renderBody}
+                  renderBody={o.renderBody}
                 />
               </div>
             </div>

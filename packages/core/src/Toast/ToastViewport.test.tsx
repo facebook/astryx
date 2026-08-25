@@ -25,7 +25,7 @@ import React from 'react';
 import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {ToastViewport} from './ToastViewport';
 import {useToast} from './useToast';
-import type {ToastOptions, ToastBodyRenderProps} from './types';
+import type {ToastOptions} from './types';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -257,29 +257,10 @@ describe('Toast blur timer pause', () => {
 describe('ToastViewport region ARIA', () => {
   it('exposes the notifications region without a prohibited aria-modal', () => {
     renderViewport(<ShowToastButton />);
-    act(() => {
-      fireEvent.click(screen.getByText('Trigger'));
-    });
     const region = screen.getByRole('region', {name: 'Notifications'});
     // aria-modal is only valid on role="dialog"/"alertdialog"; a region must
     // not declare it (axe: aria-allowed-attr).
     expect(region).not.toHaveAttribute('aria-modal');
-  });
-
-  it('is not a landmark until it holds a toast', () => {
-    // An empty viewport used to be an empty named region in every screen
-    // reader's landmark list. LayerProvider mounts one for every app whether
-    // a toast is ever shown, so a second viewport — a dialog's, or one a
-    // sub-tree mounts to configure it — produced two identically named
-    // landmarks (axe: landmark-unique).
-    renderViewport(<ShowToastButton />);
-    expect(screen.queryByRole('region')).not.toBeInTheDocument();
-    act(() => {
-      fireEvent.click(screen.getByText('Trigger'));
-    });
-    expect(
-      screen.getByRole('region', {name: 'Notifications'}),
-    ).toBeInTheDocument();
   });
 });
 
@@ -507,56 +488,65 @@ describe('toast timer lifecycle (#3589)', () => {
     }
   });
 
-  // `renderBody` replaces the content of the card. What matters to a consumer
-  // is the handover: every toast must route through it, including ones a
-  // library raised; the pieces the layout needs must arrive rather than being
-  // dropped; and the dismiss must stay Astryx's own control so a custom
-  // layout cannot mislabel it or lose it.
+  // `renderBody` rides the `showToast` options and replaces the content of
+  // that toast's card. What matters to a consumer is the handover: the pieces
+  // the layout needs must arrive rather than being dropped; the dismiss must
+  // stay Astryx's own control so a layout cannot mislabel it or lose it; and
+  // a toast that does NOT pass one must be untouched, because that is the
+  // library-raised case the app cannot reach.
   describe('renderBody', () => {
-    function renderWithBody(
-      children: React.ReactNode,
-      renderBody: (t: ToastBodyRenderProps) => React.ReactNode,
-    ) {
-      return render(
-        <ToastViewport isTopLayer={false} renderBody={renderBody}>
-          {children}
-        </ToastViewport>,
-      );
-    }
+    const STRIPED: ToastOptions = {
+      body: 'Toast A',
+      renderBody: toast => (
+        <div data-testid="custom-body">
+          {toast.body}
+          {toast.endContent}
+          {toast.dismissButton}
+        </div>
+      ),
+    };
 
-    it('replaces the default layout', () => {
-      renderWithBody(
-        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
-        toast => <div data-testid="custom-body">{toast.body}</div>,
-      );
+    it('replaces the default layout for that toast', () => {
+      renderViewport(<ShowToastButton options={STRIPED} triggerLabel="Show" />);
       act(() => {
         fireEvent.click(screen.getByText('Show'));
       });
       expect(screen.getByTestId('custom-body')).toHaveTextContent('Toast A');
     });
 
-    it('renders a toast raised by code that knows nothing about the layout', () => {
-      // ShowToastButton calls the plain useToast() — it stands in for a
-      // shared library. Its toast still gets the app's layout, which is what
-      // hiding the built-in dismiss with CSS cannot achieve.
-      renderWithBody(
-        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
-        toast => <div data-testid="custom-body">{toast.body}</div>,
+    it('leaves a toast that did not ask for one alone', () => {
+      // The library-raised case: code that never passes `renderBody` keeps
+      // Astryx's own layout, intact and dismissible, rather than inheriting a
+      // layout written for someone else's payload.
+      renderViewport(
+        <>
+          <ShowToastButton options={STRIPED} triggerLabel="Custom" />
+          <ShowToastButton options={INFO_B} triggerLabel="Plain" />
+        </>,
       );
       act(() => {
-        fireEvent.click(screen.getByText('Show'));
+        fireEvent.click(screen.getByText('Custom'));
       });
-      expect(screen.getByTestId('custom-body')).toHaveTextContent('Toast A');
+      act(() => {
+        fireEvent.click(screen.getByText('Plain'));
+      });
+      const plain = screen.getByText('Toast B').closest('.astryx-toast');
+      expect(plain).not.toBeNull();
+      expect(
+        within(plain as HTMLElement).getByRole('button', {
+          name: 'Dismiss notification',
+        }),
+      ).toBeInTheDocument();
+      expect(
+        within(plain as HTMLElement).queryByTestId('custom-body'),
+      ).not.toBeInTheDocument();
     });
 
     it("hands over Astryx's own dismiss button, correctly named", () => {
-      // The reason the control is passed rather than left to the layout: it
-      // keeps the translated label and the accessible name, so a custom
-      // layout cannot ship an unnamed or unlabelled close.
-      renderWithBody(
-        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
-        toast => <div data-testid="custom-body">{toast.dismissButton}</div>,
-      );
+      // Why the control is passed rather than left to the layout: it keeps the
+      // translated label and the accessible name, so a custom layout cannot
+      // ship an unnamed or unlabelled close.
+      renderViewport(<ShowToastButton options={STRIPED} triggerLabel="Show" />);
       act(() => {
         fireEvent.click(screen.getByText('Show'));
       });
@@ -569,12 +559,8 @@ describe('toast timer lifecycle (#3589)', () => {
 
     it('dismisses the toast from the handed-over button', () => {
       const onHide = vi.fn();
-      renderWithBody(
-        <ShowToastButton
-          options={{body: 'Closable', onHide}}
-          triggerLabel="Show"
-        />,
-        toast => <div>{toast.dismissButton}</div>,
+      renderViewport(
+        <ShowToastButton options={{...STRIPED, onHide}} triggerLabel="Show" />,
       );
       act(() => {
         fireEvent.click(screen.getByText('Show'));
@@ -587,35 +573,26 @@ describe('toast timer lifecycle (#3589)', () => {
       expect(onHide).toHaveBeenCalledWith('manual');
     });
 
-    it('renders no dismiss button of its own', () => {
-      // Astryx must not draw a second close beside the one the layout placed.
-      renderWithBody(
-        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
-        toast => <div>{toast.body}</div>,
-      );
+    it('renders no dismiss button of its own beside the layout', () => {
+      // Astryx must not draw a second close next to the one the layout placed.
+      renderViewport(<ShowToastButton options={STRIPED} triggerLabel="Show" />);
       act(() => {
         fireEvent.click(screen.getByText('Show'));
       });
       expect(
-        screen.queryByRole('button', {name: 'Dismiss notification'}),
-      ).not.toBeInTheDocument();
+        screen.getAllByRole('button', {name: 'Dismiss notification'}),
+      ).toHaveLength(1);
     });
 
     it('hands endContent to the layout rather than dropping it', () => {
-      renderWithBody(
+      renderViewport(
         <ShowToastButton
           options={{
-            body: 'Deleted',
+            ...STRIPED,
             endContent: <button type="button">Undo</button>,
           }}
           triggerLabel="Show"
         />,
-        toast => (
-          <div data-testid="custom-body">
-            {toast.body}
-            {toast.endContent}
-          </div>
-        ),
       );
       act(() => {
         fireEvent.click(screen.getByText('Show'));
@@ -632,18 +609,22 @@ describe('toast timer lifecycle (#3589)', () => {
       try {
         const seen: {isAutoHide: boolean; autoHideDuration: number}[] = [];
         const onHide = vi.fn();
-        renderWithBody(
+        renderViewport(
           <ShowToastButton
-            options={{body: 'Fleeting', autoHideDuration: 3000, onHide}}
+            options={{
+              body: 'Fleeting',
+              autoHideDuration: 3000,
+              onHide,
+              renderBody: toast => {
+                seen.push({
+                  isAutoHide: toast.isAutoHide,
+                  autoHideDuration: toast.autoHideDuration,
+                });
+                return <div>{toast.body}</div>;
+              },
+            }}
             triggerLabel="Show"
           />,
-          toast => {
-            seen.push({
-              isAutoHide: toast.isAutoHide,
-              autoHideDuration: toast.autoHideDuration,
-            });
-            return <div>{toast.body}</div>;
-          },
         );
         act(() => {
           fireEvent.click(screen.getByText('Show'));
@@ -661,10 +642,7 @@ describe('toast timer lifecycle (#3589)', () => {
     it('keeps announcing through the live region', () => {
       // The announcement is the viewport's job, not the layout's — a custom
       // body must not cost a screen-reader user the notification.
-      renderWithBody(
-        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
-        toast => <div>{toast.body}</div>,
-      );
+      renderViewport(<ShowToastButton options={STRIPED} triggerLabel="Show" />);
       act(() => {
         fireEvent.click(screen.getByText('Show'));
       });

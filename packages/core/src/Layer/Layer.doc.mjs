@@ -56,7 +56,7 @@ export const docs = {
           name: 'toast',
           type: 'LayerToastConfig',
           description:
-            'Toast viewport configuration for toasts shown through useToast: position (\'topEnd\' | \'topStart\' | \'bottomEnd\' | \'bottomStart\'), maxVisible, inset, and renderBody — a function replacing the content of every toast\'s card, receiving {body, endContent, dismissButton, type, isAutoHide, autoHideDuration, dismiss} where type is \'info\' | \'error\'.',
+            'Toast viewport configuration. Controls position, maxVisible, and inset for toasts shown through useToast.',
         },
       ],
     },
@@ -90,7 +90,7 @@ export const docsDense = {
       description: 'App-level provider for toast/layer systems.',
       propDescriptions: {
         children: 'application subtree using shared layer context',
-        toast: 'toast viewport config: position, maxVisible, inset, renderBody',
+        toast: 'toast viewport config: position, maxVisible, inset',
       },
     },
   ],
