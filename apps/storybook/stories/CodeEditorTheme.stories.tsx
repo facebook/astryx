@@ -86,7 +86,7 @@ function ThemedEditor({
 }
 
 const meta: Meta = {
-  title: 'Lab/CodeEditorTheme',
+  title: 'Lab/Themes/CodeEditorTheme',
   parameters: {
     docs: {
       description: {

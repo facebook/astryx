@@ -15,7 +15,7 @@ import {Stack, Text} from '@astryxdesign/core';
 import {Heading} from '@astryxdesign/core/Text';
 
 const meta: Meta = {
-  title: 'Lab/useChartRange',
+  title: 'Lab/Hooks/useChartRange',
 };
 
 export default meta;
