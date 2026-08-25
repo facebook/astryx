@@ -20,6 +20,9 @@ in de-DE is 1234, not 1.234.
 committed 123456789, and so did `1_234_567`, `1/234/567` and `1:234:567` — a
 hyphenated ID pasted into a quantity field became a number. Only the
 characters some locale actually writes between digits are separators now.
+That bounds the characters, not the shapes: a full stop is a real separator in
+its own right, so `192.168.100.200` still commits 192168100200, exactly as it
+did before.
 
 Also: `(-1,234)` and `(+1,234)` each flipped their own sign and now refuse — an
 accounting paren already says negative, so a sign inside it reads two ways.

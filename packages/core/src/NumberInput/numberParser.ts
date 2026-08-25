@@ -9,9 +9,12 @@
  * People paste numbers out of spreadsheets, and a spreadsheet writes them
  * grouped, signed, and decorated. This reads those back. Everything locale
  * specific — the grouping and decimal separators, the group sizes, the digit
- * script — is derived from Intl and Unicode rather than a table, and anything
- * that could mean two different numbers returns null so the field stays
- * visibly invalid instead of committing a guess.
+ * script — is derived from Intl and Unicode rather than a table, and text no
+ * reading fits returns null so the field stays visibly invalid instead of
+ * committing a guess. Where both readings are well formed the locale's wins,
+ * the way utils/dateParser.ts settles an ambiguous date by locale preference:
+ * a lone group of exactly the locale's group size is grouping, so de-DE
+ * `1.234` is 1234, while `1.2345` cannot be grouping and is 1.2345.
  *
  * Which characters may separate digits at all is the one thing that is NOT
  * read off the input: SEPARATOR_CHARS below is a bounded alphabet, the same
@@ -81,15 +84,18 @@ const INVISIBLES = /[\u200B-\u200D\u200E\u200F\u061C\u2066-\u2069\uFEFF]/g;
 const MINUS_SIGNS = '\u2212\u2012\u2013-';
 
 /**
- * Every character a locale writes between digits: comma, full stop, space
- * (the whole space family folds to it under NFKC), the Swiss apostrophes, the
- * Catalan middle dot, and the Arabic decimal and thousands separators.
+ * Every character a locale writes between digits. Walking the 136 locales Intl
+ * serves yields exactly six: comma, full stop, apostrophe, space (the whole
+ * space family folds to it under NFKC), and the Arabic decimal and thousands
+ * separators. U+2019 joins them because Swiss text still spells its groups
+ * with it, though no locale Intl serves writes it any more.
  *
  * The alphabet is bounded on purpose. Read the candidates off the input
  * instead and any repeated character is grouping, so a hyphenated ID commits
- * as a number.
+ * as a number. It bounds characters and not shapes: a full stop is a real
+ * separator, so `192.168.100.200` is four well-formed groups.
  */
-const SEPARATOR_CHARS = ",.' \u2019\u00B7\u066B\u066C";
+const SEPARATOR_CHARS = ",.' \u2019\u066B\u066C";
 const NUMBER_BODY = new RegExp(`^[0-9${SEPARATOR_CHARS}]+$`);
 /** No grouping and at most one full stop: the format `Number()` reads. */
 const MACHINE_NUMBER = /^(?:\d+\.?\d*|\.\d+)$/;
