@@ -183,10 +183,10 @@ describe('formatEditableNumber', () => {
     [1.5, 'en-US', '1.5'],
     [1.5, 'de-DE', '1,5'],
     [-1234.56, 'fr-FR', '-1234,56'],
-    // Latin digits with the locale's decimal separator. The digits are the
-    // ones the field already shows at rest — `String(value)`, unless the
-    // caller formats it — so localizing them here would flip the script on
-    // focus; the separator is localized because the parser reads it back.
+    // Only the decimal separator is localized: its meaning is the part that
+    // changes by locale, and reading it back is what makes the round trip
+    // hold. A digit means the same in every script, so digits stay as
+    // `String` writes them — localizing them spells `1e+21` as `١e+٢١`.
     [3.5, 'ar-SA', '3٫5'],
     // No grouping: the text has to be editable, and a separator the person did
     // not type is one they have to delete.
