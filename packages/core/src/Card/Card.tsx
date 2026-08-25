@@ -23,13 +23,7 @@ import {
 } from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
-import {
-  paddingStyles,
-  containerPaddingInlineVarStyles,
-  containerPaddingBlockStartVarStyles,
-  containerPaddingBlockEndVarStyles,
-  spacingStepToToken,
-} from '../Layout/padding.stylex';
+import {spacingStepToToken} from '../Layout/padding.stylex';
 import type {Elevation, SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -177,14 +171,6 @@ export type {SizeValue} from '../utils/types';
 export interface CardProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
-   * CSS class name(s) appended to the root element.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
-  /**
    * Width of the card.
    * Numbers are treated as pixels, strings are used as-is.
    */
@@ -217,7 +203,12 @@ export interface CardProps extends BaseProps<HTMLDivElement> {
   /**
    * Internal padding of the card using the spacing scale.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
-   * @default 4 (16px)
+   *
+   * Omit it and the card takes the theme's card padding rather than a step, so
+   * passing a step is a decision to override the theme, not a way to restate
+   * the default.
+   *
+   * @default the theme's card padding (spacing step 4 with no theme)
    */
   padding?: SpacingStep;
 
@@ -293,14 +284,15 @@ export function Card({
 
   // When no explicit padding prop, use theme default (set via container tokens)
   const useThemeDefault = padding == null;
-  const effectivePadding = padding ?? 4;
-  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
+  const paddingToken = useThemeDefault
+    ? undefined
+    : (spacingStepToToken[padding] as SpacingToken);
 
   return (
     <div
       ref={ref}
       {...mergeProps(
-        themeProps('card', {variant}),
+        themeProps('card', {variant, elevation}),
         stylex.props(
           styles.card,
           variantStyles[variant],
@@ -313,7 +305,7 @@ export function Card({
             minHeight ?? null,
           ),
           ...container(
-            useThemeDefault
+            paddingToken == null
               ? {useThemeDefault: 'card'}
               : {
                   paddingInnerX: paddingToken,
@@ -322,18 +314,6 @@ export function Card({
                   paddingOuterY: paddingToken,
                 },
           ),
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            paddingStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingInlineVarStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingBlockStartVarStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingBlockEndVarStyles[effectivePadding],
           // Applied after the container padding so the border-inset calc wins;
           // it reads the --container-padding-* vars set above.
           variant === 'default' && styles.withBorder,

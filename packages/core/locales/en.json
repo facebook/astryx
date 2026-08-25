@@ -725,7 +725,7 @@
   },
   "@astryx.dateInput.resetPicking": {
     "defaultMessage": "Reset",
-    "description": "Secondary button in the mobile date picker's footer, beside Save. Removes the chosen date AND returns the calendar to the current month — it undoes the picking done so far and puts the picker back to how it opens, so prefer a word covering both, not one that only means emptying a field. Not cancel: the picker stays open afterwards and nothing is dismissed."
+    "description": "Ghost button in the mobile date picker's header, at the trailing corner beside the month arrows. Removes the chosen date AND returns the calendar to the current month — it undoes the picking done so far and puts the picker back to how it opens, so prefer a word covering both, not one that only means emptying a field. Not cancel: the picker stays open afterwards and nothing is dismissed. Keep it short; it shares one line with the month title and two arrows."
   },
   "@astryx.dateInput.savePicking": {
     "defaultMessage": "Save",

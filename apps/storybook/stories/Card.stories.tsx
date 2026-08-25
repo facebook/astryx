@@ -45,6 +45,9 @@ const styles = stylex.create({
     fontSize: 14,
     color: colorVars['--color-text-secondary'],
   },
+  narrowContainer: {
+    width: 320,
+  },
 });
 
 const meta: Meta<typeof Card> = {
@@ -463,6 +466,70 @@ export const ColorVariants: Story = {
           </Card>
         </div>
       ))}
+    </div>
+  ),
+};
+
+/**
+ * A card with no children, and one with a minimum height. An empty card holds
+ * its padding and radius rather than collapsing, so a placeholder or a loading
+ * shell keeps the surrounding layout stable.
+ */
+export const Empty: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>No children</h4>
+        <Card width={250} />
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>No children, minHeight 120</h4>
+        <Card width={250} minHeight={120} />
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Long prose and a title long enough to wrap, in a fixed-width card. Text wraps
+ * and the card grows to fit. Most languages run longer than English, so this is
+ * the state translated copy lands in.
+ */
+export const LongContent: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <Card width={280}>
+        <VStack gap={2}>
+          <Heading level={3}>
+            A card title long enough to wrap onto several lines
+          </Heading>
+          <p {...stylex.props(styles.text)}>
+            Cards grow to fit their content, so a long description keeps
+            wrapping rather than being cut off. Sibling cards in a grid stay
+            aligned on their top edge and the tallest one sets the row height.
+          </p>
+        </VStack>
+      </Card>
+    </div>
+  ),
+};
+
+/**
+ * A card with no width prop inside a 320px container: the width comes from the
+ * parent, so the card reflows to the container instead of forcing horizontal
+ * scroll on a narrow screen.
+ */
+export const NarrowContainer: Story = {
+  render: () => (
+    <div {...stylex.props(styles.narrowContainer)}>
+      <Card>
+        <VStack gap={2}>
+          <Heading level={3}>Narrow container</Heading>
+          <p {...stylex.props(styles.text)}>
+            The card fills the container it is given.
+          </p>
+        </VStack>
+      </Card>
     </div>
   ),
 };
