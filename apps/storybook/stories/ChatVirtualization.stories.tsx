@@ -215,11 +215,13 @@ function VirtualizedMessages({
   isStreaming,
   apiRef,
   scrollElRef,
+  endThreshold,
 }: {
   messages: DemoMessage[];
   isStreaming: boolean;
   apiRef: React.RefObject<ChatVirtualizerHandle | null>;
   scrollElRef: React.RefObject<HTMLElement | null>;
+  endThreshold: number;
 }) {
   const ctx = useChatLayoutContext();
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
@@ -241,6 +243,7 @@ function VirtualizedMessages({
         keyExtractor={m => m.id}
         getItemType={m => m.role}
         estimatedItemSize={120}
+        endThreshold={endThreshold}
         renderItem={({item}) => (
           <div {...stylex.props(styles.rowPad)}>
             <ChatMessage sender={item.role}>
@@ -300,6 +303,7 @@ function VirtScrollButton({
 type StoryArgs = {
   messageCount: number;
   virtualized: boolean;
+  endThreshold: number;
 };
 
 export const ThousandsOfMessages: StoryObj<StoryArgs> = {
@@ -307,6 +311,7 @@ export const ThousandsOfMessages: StoryObj<StoryArgs> = {
   args: {
     messageCount: 3000,
     virtualized: true,
+    endThreshold: 24,
   },
   argTypes: {
     messageCount: {
@@ -314,6 +319,16 @@ export const ThousandsOfMessages: StoryObj<StoryArgs> = {
       options: [100, 1000, 3000],
     },
     virtualized: {control: 'boolean'},
+    endThreshold: {
+      control: {type: 'select'},
+      options: [1, 24, 96],
+      description:
+        'Virtualized arm only: how close to the bottom (px) a scroll must ' +
+        "land to re-engage follow. At 1 (TanStack Virtual's default), " +
+        'stopping "visually at the bottom" — trackpad inertia, fractional ' +
+        'row heights — often leaves follow silently disengaged while a ' +
+        "stream grows below; 24 is a production chat transcript's value.",
+    },
   },
   render: args => {
     const [messages, setMessages] = useState<DemoMessage[]>(() =>
@@ -403,6 +418,7 @@ export const ThousandsOfMessages: StoryObj<StoryArgs> = {
               isStreaming={isStreaming}
               apiRef={virtApiRef}
               scrollElRef={scrollElRef}
+              endThreshold={args.endThreshold}
             />
           ) : (
             <ChatMessageList isStreaming={isStreaming}>
