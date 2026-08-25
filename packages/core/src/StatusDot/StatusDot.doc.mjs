@@ -48,7 +48,10 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-statusdot', visualProps: ['variant']},
+      {className: 'astryx-status-dot', visualProps: ['variant']},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-statusdot', visualProps: ['variant'], deprecatedFor: 'status-dot'},
     ],
   },
   usage: {
@@ -105,7 +108,10 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-statusdot', visualProps: ['variant']},
+      {className: 'astryx-status-dot', visualProps: ['variant']},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-statusdot', visualProps: ['variant'], deprecatedFor: 'status-dot'},
     ],
   },
   usage: {

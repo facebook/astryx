@@ -354,6 +354,9 @@ importers:
       '@astryxdesign/theme-neutral':
         specifier: '*'
         version: link:../../packages/themes/neutral
+      '@astryxdesign/theme-probe':
+        specifier: '*'
+        version: link:../../packages/themes/probe
       '@astryxdesign/theme-stone':
         specifier: '*'
         version: link:../../packages/themes/stone
@@ -587,7 +590,7 @@ importers:
   packages/charts:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../core
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
@@ -701,7 +704,7 @@ importers:
   packages/lab:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../core
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
@@ -741,7 +744,7 @@ importers:
   packages/richtext:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../core
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
@@ -796,7 +799,7 @@ importers:
   packages/themes/butter:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -806,7 +809,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -815,7 +818,7 @@ importers:
   packages/themes/chocolate:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -825,7 +828,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -834,7 +837,7 @@ importers:
   packages/themes/gothic:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -844,7 +847,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -853,7 +856,7 @@ importers:
   packages/themes/matcha:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -863,7 +866,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -872,7 +875,7 @@ importers:
   packages/themes/neutral:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -882,16 +885,32 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
         version: 6.1.3
 
+  packages/themes/probe:
+    dependencies:
+      '@astryxdesign/core':
+        specifier: 0.5.0
+        version: link:../../core
+      react:
+        specifier: '>=19'
+        version: 19.2.7
+    devDependencies:
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.25)(tsx@4.23.0)(typescript@6.0.3)(yaml@2.9.0)
+
   packages/themes/stone:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -901,7 +920,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1
@@ -910,7 +929,7 @@ importers:
   packages/themes/y2k:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -920,7 +939,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../cli
       rimraf:
         specifier: ^6.0.1

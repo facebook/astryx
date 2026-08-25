@@ -17,11 +17,13 @@
  */
 
 import {
+  useEffect,
   useId,
   useMemo,
   useRef,
   useState,
   useCallback,
+  type FocusEvent,
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
@@ -42,6 +44,10 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
 import {mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {
+  getInteractionModality,
+  trackInteractionModality,
+} from '../utils/interactionModality';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -493,6 +499,36 @@ export function Slider({ref, ...props}: SliderProps) {
   const draggingThumbRef = useRef<number | null>(null);
   const [draggingThumb, setDraggingThumb] = useState<number | null>(null);
 
+  // A thumb is a div[role="slider"], and `handlePointerDown` focuses it from
+  // script after preventDefault — which Chromium treats as focus-visible, so
+  // dragging with a mouse drew the keyboard ring (measured: `:focus-visible`
+  // true on pointerdown). Gate the ring on how the user last interacted; the
+  // CSS condition stays `:focus-visible`, this only narrows it.
+  const [keyboardFocusThumb, setKeyboardFocusThumb] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    trackInteractionModality();
+  }, []);
+
+  const handleThumbFocus = useCallback(
+    (thumbIndex: number, _e: FocusEvent<HTMLDivElement>) => {
+      // A disabled thumb draws no ring even when it stays focusable for its
+      // reason tooltip, so there is nothing to track for one.
+      setKeyboardFocusThumb(
+        !isDisabled && getInteractionModality() === 'keyboard'
+          ? thumbIndex
+          : null,
+      );
+    },
+    [isDisabled],
+  );
+
+  const handleThumbBlur = useCallback((_e: FocusEvent<HTMLDivElement>) => {
+    setKeyboardFocusThumb(null);
+  }, []);
+
   // Disabled-reason tooltip. This is a *separate* useTooltip instance from the
   // per-thumb value bubble (the `<Tooltip>` component below): it anchors to the
   // track container and fires on hover/focus of the whole control. Disabled
@@ -679,6 +715,10 @@ export function Slider({ref, ...props}: SliderProps) {
         const thumbs = track.querySelectorAll<HTMLElement>('[role="slider"]');
         thumbs[thumbIndex]?.focus();
       }
+      // Also clear it explicitly: focusing an already-focused thumb fires no
+      // focus event, so a thumb the user had tabbed to would keep its ring
+      // through the drag.
+      setKeyboardFocusThumb(null);
 
       if (
         typeof (e.currentTarget as HTMLElement).setPointerCapture === 'function'
@@ -716,6 +756,13 @@ export function Slider({ref, ...props}: SliderProps) {
     (thumbIndex: number, e: KeyboardEvent<HTMLDivElement>) => {
       if (isDisabled) {
         return;
+      }
+      // Unlike a text field, a thumb has no caret to show where input is
+      // going, so a keypress after a mouse drag must bring the ring back.
+      // Ask the utility rather than assuming: a modifier chord (⌘R, ⌃C) is
+      // not navigation and must not re-ring a thumb the mouse is holding.
+      if (getInteractionModality() === 'keyboard') {
+        setKeyboardFocusThumb(thumbIndex);
       }
       const currentVal = values[thumbIndex];
       let newVal: number;
@@ -843,6 +890,8 @@ export function Slider({ref, ...props}: SliderProps) {
         aria-labelledby={!isRange ? labelID : undefined}
         aria-describedby={ariaDescribedBy}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
+        onFocus={e => handleThumbFocus(thumbIndex, e)}
+        onBlur={handleThumbBlur}
         {...mergeProps(
           themeProps('slider-thumb', {
             orientation,
@@ -854,7 +903,9 @@ export function Slider({ref, ...props}: SliderProps) {
               ? styles.thumbHorizontal
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
-            !isDisabled && focusOutlineStyles.focusVisible,
+            !isDisabled &&
+              keyboardFocusThumb === thumbIndex &&
+              focusOutlineStyles.focusVisible,
             isDisabled && styles.thumbDisabled,
           ),
           undefined,

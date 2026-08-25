@@ -105,6 +105,8 @@ export interface PowerSearchEditPopoverProps {
   onCancel: () => void;
   /** Label for the save button. @default 'Apply' */
   saveButtonLabel?: string;
+  /** Max suggestions in string and entity value typeaheads. */
+  maxMenuItems?: number;
   /** Whether the filter is read-only. */
   isReadOnly?: boolean;
 }
@@ -247,6 +249,7 @@ interface NestedSubFilterRowProps {
   config: InternalConfig;
   subFilter: EditablePartialFilter;
   onChange: (subFilter: EditablePartialFilter) => void;
+  maxMenuItems?: number;
   isReadOnly: boolean;
 }
 
@@ -254,6 +257,7 @@ function NestedSubFilterRow({
   config,
   subFilter,
   onChange,
+  maxMenuItems,
   isReadOnly,
 }: NestedSubFilterRowProps) {
   const t = useTranslator();
@@ -356,6 +360,7 @@ function NestedSubFilterRow({
             filterValue={subFilter.value}
             onChange={handleValueChange}
             config={config}
+            maxMenuItems={maxMenuItems}
             isDisabled={isReadOnly}
           />
         </div>
@@ -374,6 +379,7 @@ interface NestedEditorProps {
   operatorOptions: {value: string; label: string}[];
   onOperatorChange: (operatorKey: string) => void;
   onPartialFilterChange: (filter: PartialFilter) => void;
+  maxMenuItems?: number;
   isReadOnly: boolean;
 }
 
@@ -383,6 +389,7 @@ function NestedEditor({
   operatorOptions,
   onOperatorChange,
   onPartialFilterChange,
+  maxMenuItems,
   isReadOnly,
 }: NestedEditorProps) {
   const t = useTranslator();
@@ -504,6 +511,7 @@ function NestedEditor({
               config={config}
               subFilter={sf}
               onChange={updated => handleUpdate(itemPath, updated)}
+              maxMenuItems={maxMenuItems}
               isReadOnly={isReadOnly}
             />
           ),
@@ -530,6 +538,7 @@ function NestedEditor({
             config={config}
             subFilter={sf}
             onChange={updated => handleUpdate(itemPath, updated)}
+            maxMenuItems={maxMenuItems}
             isReadOnly={isReadOnly}
           />
         ),
@@ -608,6 +617,7 @@ export function PowerSearchEditPopover({
   onSave,
   onCancel,
   saveButtonLabel: saveButtonLabelFromProps,
+  maxMenuItems,
   isReadOnly = false,
 }: PowerSearchEditPopoverProps) {
   const t = useTranslator();
@@ -777,6 +787,7 @@ export function PowerSearchEditPopover({
               operatorOptions={operatorOptions}
               onOperatorChange={handleOperatorChange}
               onPartialFilterChange={setPartialFilter}
+              maxMenuItems={maxMenuItems}
               isReadOnly={isReadOnly}
             />
           </VStack>
@@ -850,6 +861,7 @@ export function PowerSearchEditPopover({
                 onChange={handleValueChange}
                 onEnter={handleSave}
                 config={config}
+                maxMenuItems={maxMenuItems}
                 isDisabled={isReadOnly}
               />
             </div>

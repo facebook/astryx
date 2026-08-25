@@ -719,3 +719,18 @@ describe('focus ring ownership (WCAG 2.4.7)', () => {
     expect(indicatorOf(container).style.outlineStyle).toBe('');
   });
 });
+
+describe('label theme target', () => {
+  it('names its own label so a theme can style it apart from a field label', () => {
+    // The control knows this label shares a row with it; the label does not.
+    // Both classes land on the one element, so a theme reaches every label
+    // through `astryx-field-label` and only this kind through
+    // `astryx-checkbox-label`.
+    render(
+      <CheckboxInput label="Notify me" value={false} onChange={() => {}} />,
+    );
+    const label = screen.getByText('Notify me').closest('label');
+    expect(label).toHaveClass('astryx-field-label');
+    expect(label).toHaveClass('astryx-checkbox-label');
+  });
+});

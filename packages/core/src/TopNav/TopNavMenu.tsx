@@ -29,7 +29,8 @@ import {useMenuHover} from '../hooks/useMenuHover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {Icon} from '../Icon';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
@@ -361,7 +362,7 @@ export function TopNavMenu({
       popoverId: popover.id,
     });
 
-  const setTriggerRef = mergeRefs<HTMLButtonElement>(
+  const setTriggerRef = useMergedRefs<HTMLButtonElement>(
     triggerButtonRef,
     popover.triggerRef,
     setTriggerEl,
@@ -426,7 +427,7 @@ export function TopNavMenu({
 
   // Menu container carries both the hover hook's ref (for its open/close
   // focus management) and the list-focus ref (for roving tabindex/typeahead).
-  const setMenuRef = mergeRefs<HTMLDivElement>(menuRef, listRef);
+  const setMenuRef = useMergedRefs<HTMLDivElement>(menuRef, listRef);
 
   // Mobile bar: hide menus entirely
   if (renderMode === 'mobile-bar') {

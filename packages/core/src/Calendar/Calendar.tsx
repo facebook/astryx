@@ -462,7 +462,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
             setRangeSelectionStart(null);
             announce(
               t('@astryx.calendar.rangeClearedAnnounce', {
-                date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY),
+                date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY, locale),
               }),
             );
             return;

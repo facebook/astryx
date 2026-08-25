@@ -10,7 +10,11 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
-import type {FilterValueEntityList, PowerSearchEntity} from './types';
+import type {
+  FilterValueEntityList,
+  OperatorValue,
+  PowerSearchEntity,
+} from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 
@@ -402,5 +406,47 @@ describe('StringListEditor (#1107)', () => {
 
     // Should render the tokenizer with a combobox
     expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+});
+
+describe('maxMenuItems', () => {
+  const source = createSearchSource(
+    Array.from({length: 6}, (_, index) => ({
+      id: `option-${index}`,
+      label: `Option ${index}`,
+    })),
+  );
+
+  async function expectCapped(operatorValue: OperatorValue) {
+    render(
+      <PowerSearchValueEditor
+        operatorValue={operatorValue}
+        filterValue={undefined}
+        onChange={vi.fn()}
+        config={stubConfig}
+        maxMenuItems={2}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: {value: 'Option'},
+      });
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    expect(screen.getAllByRole('option', {hidden: true})).toHaveLength(2);
+  }
+
+  it('caps string suggestions', async () => {
+    await expectCapped({type: 'string', searchSource: source});
+  });
+
+  it('caps string-list suggestions', async () => {
+    await expectCapped({type: 'string_list', searchSource: source});
+  });
+
+  it('caps entity-list suggestions', async () => {
+    await expectCapped({type: 'entity_list', searchSource: source});
   });
 });

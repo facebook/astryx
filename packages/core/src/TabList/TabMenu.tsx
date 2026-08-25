@@ -37,7 +37,8 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useTabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
 import {tabScope} from './tab.markers.stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
@@ -336,7 +337,7 @@ export function TabMenu({
     [tabListCtx, popover],
   );
 
-  const setButtonRef = mergeRefs<HTMLButtonElement>(
+  const setButtonRef = useMergedRefs<HTMLButtonElement>(
     popover.triggerRef,
     buttonRef,
     ref,

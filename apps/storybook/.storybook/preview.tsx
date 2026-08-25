@@ -12,6 +12,7 @@ import {chocolateTheme} from '@astryxdesign/theme-chocolate';
 import {gothicTheme} from '@astryxdesign/theme-gothic';
 import {matchaTheme} from '@astryxdesign/theme-matcha';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
+import {probeTheme} from '@astryxdesign/theme-probe';
 import {stoneTheme} from '@astryxdesign/theme-stone';
 import {y2kTheme} from '@astryxdesign/theme-y2k';
 // Import the base reset stylesheet
@@ -28,6 +29,10 @@ const themes = {
   gothic: gothicTheme,
   matcha: matchaTheme,
   neutral: neutralTheme,
+  // A generated test fixture, not a design: it styles every declared theming
+  // target so the visual gate can prove each one still paints. See
+  // packages/themes/probe/README.md.
+  probe: probeTheme,
   stone: stoneTheme,
   y2k: y2kTheme,
 };
@@ -117,6 +122,7 @@ const preview: Preview = {
           {value: 'chocolate', title: 'Chocolate', icon: 'circle'},
           {value: 'gothic', title: 'Gothic', icon: 'moon'},
           {value: 'matcha', title: 'Matcha', icon: 'circlehollow'},
+          {value: 'probe', title: 'Probe (test fixture)', icon: 'beaker'},
           {value: 'y2k', title: 'Y2K', icon: 'lightning'},
         ],
         dynamicTitle: true,
