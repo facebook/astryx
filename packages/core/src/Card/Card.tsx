@@ -23,13 +23,7 @@ import {
 } from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
-import {
-  paddingStyles,
-  containerPaddingInlineVarStyles,
-  containerPaddingBlockStartVarStyles,
-  containerPaddingBlockEndVarStyles,
-  spacingStepToToken,
-} from '../Layout/padding.stylex';
+import {spacingStepToToken} from '../Layout/padding.stylex';
 import type {Elevation, SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -291,8 +285,9 @@ export function Card({
 
   // When no explicit padding prop, use theme default (set via container tokens)
   const useThemeDefault = padding == null;
-  const effectivePadding = padding ?? 4;
-  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
+  const paddingToken = useThemeDefault
+    ? undefined
+    : (spacingStepToToken[padding] as SpacingToken);
 
   return (
     <div
@@ -311,7 +306,7 @@ export function Card({
             minHeight ?? null,
           ),
           ...container(
-            useThemeDefault
+            paddingToken == null
               ? {useThemeDefault: 'card'}
               : {
                   paddingInnerX: paddingToken,
@@ -320,18 +315,6 @@ export function Card({
                   paddingOuterY: paddingToken,
                 },
           ),
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            paddingStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingInlineVarStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingBlockStartVarStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingBlockEndVarStyles[effectivePadding],
           // Applied after the container padding so the border-inset calc wins;
           // it reads the --container-padding-* vars set above.
           variant === 'default' && styles.withBorder,
