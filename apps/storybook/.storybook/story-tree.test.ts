@@ -34,13 +34,15 @@ const PACKAGES = ['Core', 'Lab', 'Charts', 'Vega', 'RichText'];
 /** Groups that are deliberately not components. */
 const NON_COMPONENT_GROUPS = ['Hooks', 'Themes'];
 
+type StoryIndex = {entries: Record<string, {title: string}>};
+
 const built = fs.existsSync(INDEX);
 const titles = built
   ? [
       ...new Set(
-        Object.values(JSON.parse(fs.readFileSync(INDEX, 'utf8')).entries).map(
-          e => e.title,
-        ),
+        Object.values(
+          (JSON.parse(fs.readFileSync(INDEX, 'utf8')) as StoryIndex).entries,
+        ).map(entry => entry.title),
       ),
     ].sort()
   : [];
