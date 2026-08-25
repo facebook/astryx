@@ -156,11 +156,13 @@ describe('the repo itself (#3637)', () => {
       const {scripts} = read(`${dir}/package.json`);
       const core = read('packages/core/package.json');
 
-      // Same flags, same quoting as core — only the babel config file differs
-      // (lab/charts author theirs in .js, core in .json).
+      // Same flags, same quoting as core. The config filename is normalised so
+      // the assertion holds whichever extension a package authors its babel
+      // config in.
+      const config = /\.\/babel\.config\.\w+/;
       for (const name of ['build:esm', 'dev']) {
-        expect(scripts[name].replace('./babel.config.js', 'CONFIG')).toBe(
-          core.scripts[name].replace('./babel.config.json', 'CONFIG'),
+        expect(scripts[name].replace(config, 'CONFIG')).toBe(
+          core.scripts[name].replace(config, 'CONFIG'),
         );
       }
     },

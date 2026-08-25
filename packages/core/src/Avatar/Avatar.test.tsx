@@ -6,6 +6,7 @@ import {act, render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Avatar} from './Avatar';
 import {AvatarStatusDot} from './AvatarStatusDot';
+import {AvatarGroup} from '../AvatarGroup';
 
 describe('Avatar', () => {
   it('exposes role="img" with the name as accessible name', () => {
@@ -416,6 +417,85 @@ describe('Avatar', () => {
     expect(img).toHaveAttribute('src', 'https://example.com/ada.jpg');
   });
 
+  it('renders without error for all shape variants', () => {
+    const shapes = ['circle', 'rounded', 'square'] as const;
+    for (const shape of shapes) {
+      const {unmount} = render(
+        <Avatar
+          name="Ana Thomas"
+          shape={shape}
+          data-testid={`avatar-${shape}`}
+        />,
+      );
+      expect(screen.getByTestId(`avatar-${shape}`)).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('defaults to circle shape (no shape prop)', () => {
+    render(<Avatar name="Lee" data-testid="avatar-default" />);
+    // Should still render with role="img" using the name as the accessible label.
+    expect(screen.getByRole('img', {name: 'Lee'})).toBeInTheDocument();
+  });
+
+  it('renders status dot for all shape variants', () => {
+    const shapes = ['circle', 'rounded', 'square'] as const;
+    const StatusDot = () => <span data-testid="status-dot" />;
+    for (const shape of shapes) {
+      const {unmount} = render(
+        <Avatar
+          name="Ana"
+          shape={shape}
+          status={<StatusDot />}
+          data-testid={`avatar-${shape}-status`}
+        />,
+      );
+      expect(screen.getByTestId('status-dot')).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('applies shapeStyles to wrapper when rendered inside AvatarGroup', () => {
+    render(
+      <AvatarGroup>
+        <Avatar name="Alice" shape="rounded" data-testid="group-avatar" />
+      </AvatarGroup>,
+    );
+    expect(screen.getByTestId('group-avatar')).toBeInTheDocument();
+  });
+
+  it("an AvatarGroup's shape overrides an individual Avatar's own shape prop, matching how size already works", () => {
+    render(
+      <AvatarGroup shape="square">
+        <Avatar name="Alice" shape="rounded" data-testid="group-avatar" />
+      </AvatarGroup>,
+    );
+    expect(screen.getByTestId('group-avatar')).toHaveAttribute(
+      'data-shape',
+      'square',
+    );
+  });
+
+  it("an Avatar's own shape prop applies outside any AvatarGroup", () => {
+    render(<Avatar name="Ana" shape="rounded" data-testid="solo-avatar" />);
+    expect(screen.getByTestId('solo-avatar')).toHaveAttribute(
+      'data-shape',
+      'rounded',
+    );
+  });
+
+  it('defaults to circle shape inside an AvatarGroup with no explicit shape', () => {
+    render(
+      <AvatarGroup>
+        <Avatar name="Alice" shape="square" data-testid="group-avatar" />
+      </AvatarGroup>,
+    );
+    expect(screen.getByTestId('group-avatar')).toHaveAttribute(
+      'data-shape',
+      'circle',
+    );
+  });
+
   // --- Name tooltip (tooltip?: string | boolean) ---
   describe('name tooltip', () => {
     const originalShowPopover = HTMLElement.prototype.showPopover;
@@ -568,6 +648,23 @@ describe('Avatar', () => {
       const ref = {current: null as HTMLDivElement | null};
       render(<Avatar name="Ada Lovelace" ref={ref} data-testid="a" />);
       expect(ref.current).toBe(screen.getByTestId('a'));
+    });
+
+    it('keeps its merged ref attached across unrelated rerenders', () => {
+      const ref = vi.fn();
+      const {rerender} = render(
+        <Avatar name="Ada Lovelace" size="sm" tooltip={false} ref={ref} />,
+      );
+      const avatar = screen.getByRole('img', {name: 'Ada Lovelace'});
+      expect(ref).toHaveBeenLastCalledWith(avatar);
+      ref.mockClear();
+
+      rerender(
+        <Avatar name="Ada Lovelace" size="lg" tooltip={false} ref={ref} />,
+      );
+
+      expect(ref).not.toHaveBeenCalled();
+      expect(screen.getByRole('img', {name: 'Ada Lovelace'})).toBe(avatar);
     });
   });
 });

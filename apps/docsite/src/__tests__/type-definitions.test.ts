@@ -187,12 +187,9 @@ describe('splitTypeRefSegments', () => {
   });
 });
 
-describe('props table trigger', () => {
+describe('type definition trigger', () => {
   const source = fs.readFileSync(
-    path.resolve(
-      __dirname,
-      '../components/component-detail/PlaygroundPropsTable.tsx',
-    ),
+    path.resolve(__dirname, '../components/component-detail/TypeRefText.tsx'),
     'utf8',
   );
 
@@ -209,6 +206,15 @@ describe('props table trigger', () => {
 describe('generated registry', () => {
   const allEntries = Object.values(components).flat();
 
+  it('attaches typeRefs and matching typeDefs to a hook return field', () => {
+    const entry = allEntries.find(e => e.name === 'useToast');
+    expect(entry).toBeDefined();
+    const showToast = entry!.returns?.find(r => r.name === 'showToast');
+    expect(showToast?.typeRefs).toEqual(['ToastOptions']);
+    const def = entry!.typeDefs.find(d => d.name === 'ToastOptions');
+    expect(def?.definition).toContain('export interface ToastOptions');
+  });
+
   it('attaches typeRefs and matching typeDefs to BaseTypeahead', () => {
     const entry = allEntries.find(e => e.name === 'BaseTypeahead');
     expect(entry).toBeDefined();
@@ -218,10 +224,14 @@ describe('generated registry', () => {
     expect(def?.definition).toContain('export interface SearchSource<');
   });
 
-  it('only records typeDefs that some prop references', () => {
+  it('only records typeDefs that some documented row references', () => {
     for (const entry of allEntries) {
       const referenced = new Set(
-        entry.props.flatMap(prop => prop.typeRefs ?? []),
+        [
+          ...entry.props,
+          ...(entry.params ?? []),
+          ...(entry.returns ?? []),
+        ].flatMap(row => row.typeRefs ?? []),
       );
       expect(entry.typeDefs.map(d => d.name).sort()).toEqual(
         [...referenced].sort(),

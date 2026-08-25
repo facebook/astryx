@@ -24,7 +24,6 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-base-table'},
       {className: 'astryx-table'},
       {className: 'astryx-table-scroll-wrapper'},
       {className: 'astryx-table-header'},
@@ -33,6 +32,9 @@ export const docs = {
       {className: 'astryx-table-row'},
       {className: 'astryx-table-cell', visualProps: ['density']},
       {className: 'astryx-table-header-cell', visualProps: ['density']},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-base-table', deprecatedFor: 'table'},
     ],
   },
   description: 'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support. T must extend Record<string, unknown>.',

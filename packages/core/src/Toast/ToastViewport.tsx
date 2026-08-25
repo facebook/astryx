@@ -58,7 +58,6 @@ const styles = stylex.create({
     pointerEvents: 'auto',
     display: 'grid',
     gridTemplateRows: '1fr',
-    paddingBlockEnd: spacingVars['--spacing-3'],
     transitionProperty: 'grid-template-rows, padding',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -69,6 +68,18 @@ const styles = stylex.create({
       gridTemplateRows: '0fr',
       paddingBlockEnd: 0,
     },
+  },
+  // The inter-toast gap is padding on each toast rather than `gap` on the
+  // viewport so it can animate alongside gridTemplateRows on entry and exit.
+  // That makes it the toast's own trailing space, so the toast at the visual
+  // bottom of the stack has to give it up — otherwise it stacks on top of the
+  // viewport's own padding. Which child that is flips with the flex direction
+  // the position sets.
+  toastWrapperGap: {
+    paddingBlockEnd: {default: spacingVars['--spacing-3'], ':last-child': 0},
+  },
+  toastWrapperGapReversed: {
+    paddingBlockEnd: {default: spacingVars['--spacing-3'], ':first-child': 0},
   },
   toastWrapperExiting: {
     gridTemplateRows: '0fr',
@@ -417,6 +428,10 @@ export function ToastViewport({
         : position === 'bottomStart'
           ? styles.bottomStart
           : styles.bottomEnd;
+  const isReversed = position === 'topEnd' || position === 'topStart';
+  const gapStyle = isReversed
+    ? styles.toastWrapperGapReversed
+    : styles.toastWrapperGap;
 
   return (
     <ToastContext value={contextValue}>
@@ -444,6 +459,7 @@ export function ToastViewport({
               data-toast-id={entry.id}
               {...stylex.props(
                 styles.toastWrapper,
+                gapStyle,
                 isExiting && styles.toastWrapperExiting,
               )}
               onTransitionEnd={

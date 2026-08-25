@@ -52,7 +52,9 @@ const neutralSyntax = defineSyntaxTheme({
     tag: ['#89001a', '#ffaeaa'], // red
     attribute: ['#584400', '#eec12f'], // yellow
     property: ['#005348', '#83dac9'], // teal
-    punctuation: ['#a3a3a3', '#525252'], // neutral
+    // #a3a3a3/#525252 (this pair's own disabled-text tone) failed WCAG AA
+    // against the syntax background: 2.42:1 light, 2.53:1 dark. #5386.
+    punctuation: ['#6e6e6e', '#a0a0a0'], // neutral, 4.89:1 / 7.57:1
     background: ['#fafafa', '#0a0a0a'],
   },
 });

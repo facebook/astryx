@@ -259,7 +259,59 @@ export function HoverCard({
     // Use combined ref for position + interaction
     hoverCard.ref(firstChild);
 
-    // Set aria-describedby, merging with existing
+    if (label) {
+      // When named, the hover card is a dialog. The trigger should advertise the
+      // popup relationship with aria-haspopup/aria-expanded, not describe the
+      // trigger with the dialog's content (aria-describedby is for plain-text
+      // descriptions, not navigable regions). See #5049.
+      //
+      // Merge rather than overwrite: the trigger may already carry its own
+      // popup semantics (e.g. a menu button wrapped in a labelled HoverCard),
+      // so preserve the existing values and restore them on cleanup.
+      const existingHaspopup = firstChild.getAttribute('aria-haspopup');
+      const existingControls = firstChild.getAttribute('aria-controls');
+      const existingExpanded = firstChild.getAttribute('aria-expanded');
+
+      firstChild.setAttribute('aria-haspopup', 'dialog');
+      // Only point aria-controls at the layer while it is open and in the DOM.
+      // While closed, useLayer leaves only an inert <template> marker, so the
+      // id would reference nothing. DateInput gates it the same way. The
+      // trigger's own aria-controls (if any) is preserved either way.
+      if (hoverCard.isOpen) {
+        firstChild.setAttribute(
+          'aria-controls',
+          mergeIds(existingControls, hoverCard.id) ?? '',
+        );
+      } else if (existingControls) {
+        firstChild.setAttribute('aria-controls', existingControls);
+      } else {
+        firstChild.removeAttribute('aria-controls');
+      }
+      firstChild.setAttribute('aria-expanded', String(hoverCard.isOpen));
+
+      return () => {
+        hoverCard.ref(null);
+        if (existingHaspopup) {
+          firstChild.setAttribute('aria-haspopup', existingHaspopup);
+        } else {
+          firstChild.removeAttribute('aria-haspopup');
+        }
+        if (existingControls) {
+          firstChild.setAttribute('aria-controls', existingControls);
+        } else {
+          firstChild.removeAttribute('aria-controls');
+        }
+        if (existingExpanded) {
+          firstChild.setAttribute('aria-expanded', existingExpanded);
+        } else {
+          firstChild.removeAttribute('aria-expanded');
+        }
+      };
+    }
+
+    // Unnamed fallback: the popup remains role="group", which is not a dialog,
+    // so keep the previous description relationship until a naming decision is
+    // made for the no-label case (tracked in #5049).
     const existingDescribedBy = firstChild.getAttribute('aria-describedby');
     firstChild.setAttribute(
       'aria-describedby',
@@ -274,7 +326,14 @@ export function HoverCard({
         firstChild.removeAttribute('aria-describedby');
       }
     };
-  }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
+  }, [
+    textOnly,
+    label,
+    hoverCard.ref,
+    hoverCard.id,
+    hoverCard.isOpen,
+    hoverCard.describedBy,
+  ]);
 
   // While closed, useLayer leaves only an inert <template> marker at this JSX
   // position. When the card needs to open, it uses that marker to keep the
@@ -293,7 +352,10 @@ export function HoverCard({
         <span
           ref={hoverCard.ref}
           tabIndex={0}
-          aria-describedby={hoverCard.describedBy}
+          aria-haspopup={label ? 'dialog' : undefined}
+          aria-controls={label && hoverCard.isOpen ? hoverCard.id : undefined}
+          aria-expanded={label ? hoverCard.isOpen : undefined}
+          aria-describedby={label ? undefined : hoverCard.describedBy}
           {...stylex.props(
             styles.wrapperInline,
             showHoverIndication && styles.hoverIndication,

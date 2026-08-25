@@ -285,6 +285,13 @@ export function FieldLabel({
         htmlFor={isGroupLabel ? undefined : inputID}
         {...rest}
         {...mergeProps(
+          // A control that knows what kind of label this is passes its own
+          // target down (CheckboxInput's `checkbox-label`, Switch's
+          // `switch-label`); it arrives as `className` and composes onto this
+          // one. The label itself does not describe its own placement — it
+          // cannot know it, and any encoding it guessed would be wrong for a
+          // caller that arranges labels differently (Field's
+          // `horizontal-labels`).
           themeProps('field-label'),
           stylex.props(
             styles.label,

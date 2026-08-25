@@ -661,21 +661,27 @@ async function generateComponentRegistry() {
       }
     }
 
-    // Surface the shape of non-primitive prop types (issue #2682): when a
-    // documented prop type references a named type exported from this
-    // package's source (e.g. `SearchSource<T>`), record the reference on the
-    // prop and attach the extracted declaration to the entry so the props
-    // table can render it on demand.
+    // Surface the shape of non-primitive types (issue #2682): when a
+    // documented prop, hook parameter, or hook return type references a named
+    // type exported from this package's source (e.g. `SearchSource<T>`,
+    // `ToastOptions`), record the reference on the row and attach the
+    // extracted declaration to the entry so the docs table can render it on
+    // demand.
     const typeIndex = buildTypeDefinitionIndex(
       pkg.srcDir,
       path.relative(CONTENT_ROOT, pkg.srcDir),
     );
     for (const comp of components) {
       const referenced = new Map();
-      for (const prop of comp.props) {
-        const typeRefs = collectPropTypeRefs(prop.type, typeIndex);
+      const rows = [
+        ...comp.props,
+        ...(comp.params ?? []),
+        ...(comp.returns ?? []),
+      ];
+      for (const row of rows) {
+        const typeRefs = collectPropTypeRefs(row.type, typeIndex);
         if (typeRefs.length > 0) {
-          prop.typeRefs = typeRefs;
+          row.typeRefs = typeRefs;
           for (const name of typeRefs) {
             referenced.set(name, typeIndex.get(name));
           }
@@ -774,12 +780,18 @@ export interface HookParamDoc {
   description: string;
   default?: string;
   required?: boolean;
+  /** Names of package-exported types referenced by \`type\`, resolvable
+   *  against the owning entry's \`typeDefs\`. */
+  typeRefs?: string[];
 }
 
 export interface HookReturnDoc {
   name: string;
   type: string;
   description: string;
+  /** Names of package-exported types referenced by \`type\`, resolvable
+   *  against the owning entry's \`typeDefs\`. */
+  typeRefs?: string[];
 }
 
 export interface ComponentEntry {
@@ -806,7 +818,8 @@ export interface ComponentEntry {
   hidden: boolean;
   parentDoc: string | null;
   props: PropDoc[];
-  /** Declarations for every type referenced from \`props[].typeRefs\`. */
+  /** Declarations for every type referenced from \`props[]\`, \`params[]\`, or
+   *  \`returns[]\` \`typeRefs\`. */
   typeDefs: TypeDefinition[];
   usage: UsageDoc | null;
   theming: ThemingDoc | null;

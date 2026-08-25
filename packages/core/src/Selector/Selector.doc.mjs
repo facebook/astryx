@@ -90,6 +90,20 @@ export const docs = {
       default: "'Search...'",
     },
     {
+      name: 'emptyText',
+      type: 'ReactNode',
+      description:
+        'Content shown in the dropdown panel when there are no options to show, and announced in a polite live region when the panel opens (a string override is announced verbatim; a richer node falls back to the default text). Not shown while isLoading.',
+      default: "'No options'",
+    },
+    {
+      name: 'emptySearchText',
+      type: 'ReactNode',
+      description:
+        'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time (a string override is announced verbatim; a richer node falls back to the default text).',
+      default: "'No results found'",
+    },
+    {
       name: 'placeholder',
       type: 'string',
       description: 'Placeholder text shown when no value is selected.',

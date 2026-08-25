@@ -7,14 +7,4 @@
  * this file into the resolved version folder.
  */
 
-import bannerCollapsibleContent, {
-  meta as bannerCollapsibleContentMeta,
-} from './banner-collapsible-content.mjs';
-
-export default [
-  {
-    name: 'banner-collapsible-content',
-    transform: bannerCollapsibleContent,
-    meta: bannerCollapsibleContentMeta,
-  },
-];
+export default [];

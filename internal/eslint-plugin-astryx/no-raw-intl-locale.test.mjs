@@ -33,6 +33,12 @@ const COMPONENT_FILE = 'packages/core/src/Calendar/Calendar.tsx';
 const INFRA_FILE = 'packages/core/src/utils/plainDate.ts';
 const DATE_PARSER_INFRA_FILE = 'packages/core/src/utils/dateParser.ts';
 const COLLATOR_INFRA_FILE = 'packages/core/src/i18n/useCollator.ts';
+const NUMBER_PARSER_INFRA_FILE =
+  'packages/core/src/NumberInput/numberParser.ts';
+const NUMBER_PARSER_TEST_ORACLE_FILE =
+  'packages/core/src/NumberInput/numberParser.test.ts';
+const NUMBER_PARSER_DOCBLOCK_ORACLE_FILE =
+  'packages/core/src/NumberInput/numberParser.docblock.test.ts';
 const CHARTS_INFRA_FILE = 'packages/charts/src/formatters.ts';
 const TIMESTAMP_TEST_ORACLE_FILE = 'packages/core/src/Timestamp/Timestamp.test.tsx';
 const CALENDAR_TEST_ORACLE_FILE = 'packages/core/src/Calendar/Calendar.test.tsx';
@@ -126,6 +132,10 @@ tester.run('no-raw-intl-locale', rule, {
       code: `new Intl.Collator(locale, options);`,
       filename: COLLATOR_INFRA_FILE,
     },
+    {
+      code: `new Intl.NumberFormat(locale).formatToParts(12345.6);`,
+      filename: NUMBER_PARSER_INFRA_FILE,
+    },
     // -- Named test-oracle files retain meaningful explicit-locale fixtures. --
     {
       code: `number.toLocaleString('en-US');`,
@@ -134,6 +144,14 @@ tester.run('no-raw-intl-locale', rule, {
     {
       code: `left.localeCompare(right, 'en-US');`,
       filename: 'packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx',
+    },
+    {
+      code: `new Intl.NumberFormat('de-DE').format(1234234234);`,
+      filename: NUMBER_PARSER_TEST_ORACLE_FILE,
+    },
+    {
+      code: `new Intl.NumberFormat(locale).formatToParts(11111111111);`,
+      filename: NUMBER_PARSER_DOCBLOCK_ORACLE_FILE,
     },
 
     // -- A named test-oracle file may also construct raw Intl with a
@@ -167,6 +185,11 @@ tester.run('no-raw-intl-locale', rule, {
     {
       code: `new Intl.NumberFormat(undefined).format(value);`,
       filename: CHARTS_INFRA_FILE,
+      errors: [ambientIntlInImplementation],
+    },
+    {
+      code: `new Intl.NumberFormat().formatToParts(1);`,
+      filename: NUMBER_PARSER_INFRA_FILE,
       errors: [ambientIntlInImplementation],
     },
     {

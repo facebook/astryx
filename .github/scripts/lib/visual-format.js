@@ -31,10 +31,15 @@ function buildVisualSection(verdict, reportUrl) {
     return `### Visual Regression\n\n**Status:** ${verdict.counts.failed} shot(s) could not be captured.${link}\n\n`;
   }
   if (!verdict.changes || verdict.changes.length === 0) {
-    const added = verdict.counts?.added
-      ? ` ${verdict.counts.added} new shot(s) had no baseline to compare against.`
+    const compared = verdict.counts.total - (verdict.counts.added ?? 0);
+    // A PR-scoped run shoots every story of the touched component in every
+    // theme that styles it, which is deeper than the daily gate's baseline
+    // reaches — so some shots legitimately have nothing to compare against.
+    // Saying "added" there reads as a problem; saying it plainly does not.
+    const unbaselined = verdict.counts?.added
+      ? ` ${verdict.counts.added} shot(s) have no baseline yet and were not compared.`
       : '';
-    return `### Visual Regression\n\n**Status:** No visual change across ${verdict.counts.total} shot(s).${added}\n\n`;
+    return `### Visual Regression\n\n**Status:** No visual change across ${compared} compared shot(s).${unbaselined}\n\n`;
   }
 
   const rows = verdict.changes
