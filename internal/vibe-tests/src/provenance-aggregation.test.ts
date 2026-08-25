@@ -88,7 +88,7 @@ describe('provenance aggregation', () => {
       usage: {
         inputTokens: 7,
         outputTokens: 3,
-        source: 'runner',
+        source: '/home/example/private-usage.json',
         complete: true,
       },
     };
@@ -108,7 +108,7 @@ describe('provenance aggregation', () => {
     ).toEqual({
       inputTokens: 7,
       outputTokens: 3,
-      source: 'runner',
+      source: 'runner-reported',
       quality: 'complete',
       complete: true,
     });

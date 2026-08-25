@@ -24,6 +24,11 @@ import type {
 import {getResultsDir, writeJson, ensureTsxFiles} from './utils.js';
 import {evaluate, getDimensionNames} from './universal-eval.js';
 import {provenanceFilename} from './provenance.js';
+// @ts-expect-error -- public-artifact.mjs intentionally has no declaration output.
+import {
+  assertPublicArtifactSafe,
+  sanitizePublicArtifact,
+} from './public-artifact.mjs';
 import {
   buildExecutionBreakdown,
   loadOptionalExecutionProvenance,
@@ -40,6 +45,19 @@ const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   maintainability: 'Maintainability',
   design: 'Design',
 };
+
+function runtimePrivateValues(): string[] {
+  return [
+    process.cwd(),
+    process.env.HOME,
+    process.env.USER,
+    process.env.HOSTNAME,
+  ].filter((value): value is string => typeof value === 'string');
+}
+
+function publicMessage(value: unknown, privateValues = runtimePrivateValues()) {
+  return sanitizePublicArtifact(String(value), {privateValues}) as string;
+}
 
 function parseArgs(): {
   iteration: string;
@@ -84,14 +102,15 @@ async function main() {
   const iterDir = path.join(resultsDir, iteration);
   const codeDir = path.join(iterDir, 'results');
   const manifestPath = path.join(iterDir, 'manifest.json');
+  const privateValues = [iterDir, resultsDir, ...runtimePrivateValues()];
 
   if (!fs.existsSync(manifestPath)) {
-    console.error(`No manifest.json found at ${manifestPath}`);
+    console.error('No manifest.json found for the requested iteration');
     process.exit(1);
   }
 
   if (!fs.existsSync(codeDir)) {
-    console.error(`No results directory found at ${codeDir}`);
+    console.error('No results directory found for the requested iteration');
     process.exit(1);
   }
 
@@ -296,7 +315,9 @@ async function main() {
         }
       }
     } catch (err) {
-      console.error(`Warning: Failed to load design scores: ${err}`);
+      console.error(
+        `Warning: Failed to load design scores: ${publicMessage(err, privateValues)}`,
+      );
     }
   }
 
@@ -378,7 +399,7 @@ async function main() {
       (durationSources[entry.durationSource] ?? 0) + 1;
   }
 
-  const aggregate: UniversalAggregate = {
+  let aggregate: UniversalAggregate = {
     averages,
     overall,
     byPrompt,
@@ -403,8 +424,24 @@ async function main() {
     execution: buildExecutionBreakdown(runs),
   };
 
+  aggregate = sanitizePublicArtifact(aggregate, {
+    privateValues,
+  }) as UniversalAggregate;
+  assertPublicArtifactSafe(aggregate, {
+    label: 'universal aggregate report',
+    privateValues,
+  });
+
   // Save
   const outputPath = path.join(iterDir, 'universal.json');
+  const reportContext = sanitizePublicArtifact(
+    {iteration, target, output: path.basename(outputPath)},
+    {privateValues},
+  ) as {iteration: string; target: string; output: string};
+  assertPublicArtifactSafe(reportContext, {
+    label: 'universal aggregate stdout',
+    privateValues,
+  });
   writeJson(outputPath, aggregate);
 
   if (json) {
@@ -413,8 +450,10 @@ async function main() {
   }
 
   // Print formatted table
-  console.log(`\n📊 Universal Evaluation — Iteration ${iteration}`);
-  console.log(`   ${promptCount} prompts, target: ${target}\n`);
+  console.log(
+    `\n📊 Universal Evaluation — Iteration ${reportContext.iteration}`,
+  );
+  console.log(`   ${promptCount} prompts, target: ${reportContext.target}\n`);
 
   console.log('┌─────────────────────┬───────┐');
   console.log('│ Dimension           │ Score │');
@@ -522,22 +561,24 @@ async function main() {
   }
 
   // Category breakdown
-  const categories = Object.keys(byCategory).sort();
+  const categories = Object.keys(aggregate.byCategory).sort();
   if (categories.length > 1) {
     console.log('\n📂 By Category:');
     for (const cat of categories) {
       const catOverall = Math.round(
-        dimensions.reduce((s, d) => s + byCategory[cat][d], 0) /
-          dimensions.length,
+        dimensions.reduce(
+          (sum, dimension) => sum + aggregate.byCategory[cat][dimension],
+          0,
+        ) / dimensions.length,
       );
       console.log(`   ${cat.padEnd(25)} ${catOverall}`);
     }
   }
 
-  console.log(`\nSaved: ${outputPath}\n`);
+  console.log(`\nSaved: ${reportContext.output}\n`);
 }
 
 main().catch(err => {
-  console.error(err);
+  console.error(publicMessage(err));
   process.exit(1);
 });

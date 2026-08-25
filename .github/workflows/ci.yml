@@ -562,6 +562,11 @@ jobs:
       - name: Install Playwright
         run: npx playwright install chromium
 
+      - name: Verify canonical setup compositions
+        env:
+          ASTRYX_CANONICAL_SETUP_BROWSER: '1'
+        run: pnpm vitest run internal/vibe-tests/setup-test/setup-canonical.test.ts --project node --maxWorkers=1
+
       - name: Verify guest fixture contrast
         run: pnpm -F @astryxdesign/vibe-tests fixtures:contrast
 

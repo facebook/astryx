@@ -21,6 +21,8 @@ import {
   parseExecutionProvenanceV1,
   type ExecutionProvenanceV1,
 } from './provenance.js';
+// @ts-expect-error -- public-artifact.mjs intentionally has no declaration output.
+import {publicSourceLabel} from './public-artifact.mjs';
 
 export function loadOptionalExecutionProvenance(
   filePath: string,
@@ -120,7 +122,7 @@ export function resolveUsage(options: {
     return {
       inputTokens: usage.inputTokens ?? null,
       outputTokens: usage.outputTokens ?? null,
-      source: usage.source ?? 'provenance',
+      source: publicSourceLabel(usage.source),
       quality: usage.complete ? 'complete' : 'incomplete',
       complete: usage.complete,
     };

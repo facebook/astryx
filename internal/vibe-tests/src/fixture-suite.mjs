@@ -172,6 +172,7 @@ function validateFixtureShape(fixtureId, fixtureRoot) {
       'primary-action',
       'table-header',
       'table-cell',
+      'status',
       'form-control',
     ],
     'shadcn-tailwind-v4-established': [

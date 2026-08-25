@@ -29,6 +29,8 @@
     "correct": "tsx src/correct-previews.ts",
     "correct:dry": "tsx src/correct-previews.ts --dry-run",
     "preview:tsc-only": "tsx src/build-previews.ts --tsc-only",
+    "setup:prepare": "node setup-test/run-setup.mjs",
+    "setup:test": "vitest run --root ../.. internal/vibe-tests/setup-test --project node",
     "fixtures:verify": "node scripts/fixture-suite.mjs verify",
     "fixtures:prepare": "node scripts/fixture-suite.mjs prepare",
     "fixtures:refresh": "node scripts/fixture-suite.mjs refresh",

@@ -150,6 +150,15 @@ internal/vibe-tests/
 ├── fixture-recipes/     # Pinned provenance and SHA-256 manifests
 ├── scripts/             # Fixture setup plus report helpers
 ├── .baseline/           # Real shadcn/ui components for baseline tsc
+├── setup-test/          # Setup evaluation over the canonical fixture matrix
+│   ├── PLAN.md               # controls, pilot stages, measures, decision rule
+│   ├── matrix.json           # fixtures × controls × prompts × bundles × reps
+│   ├── run-setup.mjs         # sandbox + task + provenance preparation only
+│   ├── setup-interactions.mjs # marker-driven dialog and nested-overlay opener
+│   ├── setup-measure.mjs     # build + exact style, geometry, and overlay probes
+│   ├── setup-integrity.mjs   # read-only diff attestation and escape-hatch checks
+│   ├── setup-eval.ts         # strict deterministic deltas against each fixture
+│   └── setup-aggregate.ts    # matrix coverage, A/B deltas, and final acceptance
 ├── results/             # Iteration results (gitignored)
 └── README.md            # This file
 ```
@@ -158,7 +167,9 @@ internal/vibe-tests/
 
 The three apps under `fixtures/` represent a plain Tailwind v4 control, an
 established shadcn-style Tailwind v4 app, and an original enterprise-style app
-with a marked guest design-system boundary. They are standalone packages with
+with a marked guest design-system boundary. The two established-app fixtures
+include controlled portal dialogs and nested tooltip/menu surfaces so setup can
+measure clipping, occlusion, and layer order. They are standalone packages with
 exact dependencies and lockfiles; none has Astryx installed.
 
 Treat canonical fixture files as immutable inputs. Setup validates their pinned
@@ -182,3 +193,9 @@ The root repository guard verifies provenance, exact manifests, deterministic
 source, dependency isolation, workspace exclusion, and separation from every
 publishable package root. This keeps future setup or migration tests independent
 of any unlanded harness branch.
+
+Generated public artifacts never retain machine-local paths. Setup configs use
+paths relative to their output directory; measurements identify the fixture and
+redact private paths or hosts from build diagnostics; exported provenance uses a
+generic usage-source label. Setup and universal aggregation fail closed before
+emitting a report that still contains an absolute path or private host.

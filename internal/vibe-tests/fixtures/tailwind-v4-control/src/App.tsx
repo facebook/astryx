@@ -75,7 +75,14 @@ export default function App() {
                       {row.item}
                     </td>
                     <td className="px-5 py-3 text-zinc-600">{row.owner}</td>
-                    <td className="px-5 py-3">{row.state}</td>
+                    <td className="px-5 py-3">
+                      <span
+                        data-vibe-probe={
+                          row.item === 'Quarterly plan' ? 'status' : undefined
+                        }>
+                        {row.state}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
