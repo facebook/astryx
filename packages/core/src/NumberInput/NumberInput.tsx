@@ -608,6 +608,14 @@ function getSteppedValue({
     nextValue = stepBase + nextStepPosition * effectiveStep;
   }
 
+  const precision = Math.min(
+    12,
+    Math.max(getDecimalPlaces(effectiveStep), getDecimalPlaces(stepBase)),
+  );
+  nextValue = Number(nextValue.toFixed(precision));
+
+  // Clamp after rounding so a bound with finer precision than the step cannot
+  // be rounded back out of its own range.
   if (min != null) {
     nextValue = Math.max(min, nextValue);
   }
@@ -618,16 +626,10 @@ function getSteppedValue({
   if (!Number.isFinite(nextValue)) {
     return currentValue;
   }
-
-  const precision = Math.min(
-    12,
-    Math.max(getDecimalPlaces(effectiveStep), getDecimalPlaces(stepBase)),
-  );
-  const roundedValue = Number(nextValue.toFixed(precision));
-  if (isIntegerOnly && !Number.isInteger(roundedValue)) {
+  if (isIntegerOnly && !Number.isInteger(nextValue)) {
     return currentValue;
   }
-  return Object.is(roundedValue, -0) ? 0 : roundedValue;
+  return Object.is(nextValue, -0) ? 0 : nextValue;
 }
 
 /**
