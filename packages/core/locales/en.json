@@ -1067,6 +1067,10 @@
     "defaultMessage": "Collapse group {groupKey}",
     "description": "Screen-reader-only label on the same chevron when the group is expanded. Example: `Collapse group Q1 2024`. Pairs with `expandGroup`."
   },
+  "@astryx.tableGroupedRows.partialCount": {
+    "defaultMessage": "{count} of {total}",
+    "description": "Row count in a grouped table's group header while the group is still loading under pagination — {count} rows are on the page and the group holds {total} overall. Example: `6 of 10`. Rendered inside parentheses by the header. Once the group is fully loaded the header shows the bare total instead."
+  },
   "@astryx.tableRowExpansion.collapseRow": {
     "defaultMessage": "Collapse row",
     "description": "Screen-reader-only label on the row-expand chevron when the row is currently expanded. Part of the four-way expand/collapse set."

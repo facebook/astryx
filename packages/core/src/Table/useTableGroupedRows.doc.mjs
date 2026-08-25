@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableGroupedRows',
   description:
-    "Hook that groups a flat data array into collapsible section rows. Each distinct groupBy value becomes a full-width section-header row with a chevron toggle, the group label, and a member count; collapsing hides that group's data rows while keeping the header visible. Mirrors useTableTreeState: the consumer owns the collapsedGroups set and the hook returns {data, plugin, idKey}: pass them to Table as data, plugins, and idKey respectively.",
+    "Hook that groups a flat data array into collapsible section rows. Each distinct groupBy value becomes a full-width section-header row with a chevron toggle, the group label, and a member count; collapsing hides that group's data rows while keeping the header visible. Mirrors useTableTreeState: the consumer owns the collapsedGroups set and the hook returns {data, plugin, idKey}: pass them to Table as data, plugins, and idKey respectively. Grouping runs on the rows you hand it, so with pagination the order is filter, sort, slice, then group — sort by the group key first and the user's keys second, so a section's rows stay contiguous and each page appends to the bottom of the table instead of splicing rows in above the reader. Pass getGroupTotal so a section still filling reads \"6 of 10\" rather than a page count that looks like a total.",
   props: [
     {
       name: 'data',
@@ -36,9 +36,9 @@ export const docs = {
     },
     {
       name: 'renderGroupHeader',
-      type: '(groupKey: string, count: number, collapsed: boolean) => ReactNode',
+      type: '(groupKey: string, count: number, collapsed: boolean, total: number) => ReactNode',
       description:
-        "Custom renderer for a group header's content (right of the chevron). Defaults to `<groupKey> (<count>)`.",
+        "Custom renderer for a group header's content (right of the chevron). Defaults to `<groupKey> (<count>)`, or `<groupKey> (<count> of <total>)` while getGroupTotal reports more rows than the page holds. `count` is what this page contains; `total` is the whole result set, and equals `count` unless getGroupTotal says otherwise.",
     },
     {
       name: 'getRowKey',
@@ -52,21 +52,29 @@ export const docs = {
       description:
         'Explicit group ordering; groups not listed keep first-seen order after these.',
     },
+    {
+      name: 'getGroupTotal',
+      type: '(groupKey: string) => number | undefined',
+      description:
+        'How many rows a section holds in the whole result set, when that is more than `data` carries. Grouping runs on the rows it is handed, so under pagination or infinite scroll it can only count the current page — a section reads "6" and silently becomes "10" as the reader scrolls, a number that looks like a total but is a progress meter. Supply this and the header says "6 of 10" until the section is fully loaded. Return undefined for a group whose total is unknown; it falls back to the page count.',
+    },
   ],
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Groups a flat data array into collapsible section rows. Each groupBy value becomes a full-width header (chevron + label + count); collapsing hides its rows. Returns {data, plugin, idKey}: pass them to Table data / plugins / idKey. Consumer owns the collapsedGroups set.',
+    'Groups a flat data array into collapsible section rows. Each groupBy value becomes a full-width header (chevron + label + count); collapsing hides its rows. Returns {data, plugin, idKey}: pass them to Table data / plugins / idKey. Consumer owns the collapsedGroups set. Under pagination the order is filter, sort, slice, group — sort by the group key first so sections stay contiguous and pages append at the bottom; pass getGroupTotal so a filling section reads "6 of 10".',
   propDescriptions: {
     data: 'The flat data to group.',
     groupBy: "Derive a row's group key. Same key = same section.",
     collapsedGroups: 'Set of currently-collapsed group keys.',
     onToggleGroup: 'Called with the group key when a header is toggled.',
     renderGroupHeader:
-      "Custom header content (right of chevron). Default '<key> (<count>)'.",
+      "Custom header content (right of chevron). Default '<key> (<count>)', or '<key> (<count> of <total>)' when getGroupTotal reports more. Args: (key, count, collapsed, total).",
     getRowKey: 'Stable key for a real row; positional fallback when omitted.',
     groupOrder: 'Pin these group keys first; others keep first-seen order.',
+    getGroupTotal:
+      'Rows the section holds in the full result set, when that exceeds this page. Makes the header read "6 of 10" instead of a page count that reads as a total. Return undefined to fall back to the page count.',
   },
 };
