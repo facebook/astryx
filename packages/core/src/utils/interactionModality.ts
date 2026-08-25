@@ -31,14 +31,22 @@ export type InteractionModality = 'keyboard' | 'pointer';
 let modality: InteractionModality = 'keyboard';
 let isListening = false;
 
+const MODIFIER_KEYS = new Set(['Alt', 'Control', 'Meta', 'Shift']);
+
 function onPointerDown(): void {
   modality = 'pointer';
 }
 
 function onKeyDown(event: KeyboardEvent): void {
-  // Modifier-only presses are not navigation — holding Shift before a click
-  // must not turn that click into "keyboard".
-  if (event.metaKey || event.altKey || event.ctrlKey) {
+  // A modifier on its own is not navigation. Check the key value as well as
+  // the active modifier flags: the Shift key's own event has key="Shift",
+  // while Shift+Tab's navigation event has key="Tab" and must count.
+  if (
+    MODIFIER_KEYS.has(event.key) ||
+    event.metaKey ||
+    event.altKey ||
+    event.ctrlKey
+  ) {
     return;
   }
   modality = 'keyboard';

@@ -980,6 +980,14 @@ describe('Slider', () => {
       expect(isRinged(thumb)).toBe(false);
     });
 
+    it('leaves the ring off for a bare Shift press after a mouse drag', () => {
+      render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
+      const thumb = screen.getByRole('slider');
+      grabTrack(thumb);
+      fireEvent.keyDown(thumb, {key: 'Shift', shiftKey: true});
+      expect(isRinged(thumb)).toBe(false);
+    });
+
     it('drops the ring on blur', async () => {
       const user = userEvent.setup();
       render(<Slider label="Volume" value={50} onChange={vi.fn()} />);
