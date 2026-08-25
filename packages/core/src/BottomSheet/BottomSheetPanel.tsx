@@ -28,11 +28,13 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {useDevWarning} from '../hooks';
+import {getFocusableElements} from '../hooks/focusableSelector';
 import {
   borderVars,
   colorVars,
@@ -71,6 +73,21 @@ const TRANSITION_BACKSTOP_BUFFER_MS = 50;
 // from the sheet's top edge, inside the space a content wrapper's own top
 // padding already provides.
 const HANDLE_BAR_HEIGHT = spacingVars['--spacing-6'];
+
+const FOCUSABILITY_ATTRIBUTES = [
+  'aria-hidden',
+  'class',
+  'contenteditable',
+  'controls',
+  'disabled',
+  'hidden',
+  'href',
+  'inert',
+  'open',
+  'style',
+  'tabindex',
+  'type',
+] as const;
 
 // Measure the same viewport the height budgets are written against. Those are
 // `dvh`, which the virtual keyboard does not shrink, so reading
@@ -490,6 +507,55 @@ export function BottomSheetPanel({
     onScrimOpacity,
   });
 
+  // The body is the only element that can scroll, so it needs a tab stop when
+  // its content offers no other keyboard route. Start in the accessible state
+  // for server rendering, then remove the extra stop before paint when the DOM
+  // contains a focusable descendant. Observe the subtree because a lazy child
+  // can add, remove, enable, or reveal a control without rerendering this panel.
+  const [bodyNeedsTabIndex, setBodyNeedsTabIndex] = useState(true);
+  useLayoutEffect(() => {
+    const body = bodyElementRef.current;
+    if (body == null) {
+      return;
+    }
+    const syncTabIndex = () => {
+      const needsTabIndex = getFocusableElements(body).length === 0;
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- synchronizes focusability with rendered descendants
+      setBodyNeedsTabIndex(current =>
+        current === needsTabIndex ? current : needsTabIndex,
+      );
+    };
+
+    syncTabIndex();
+    if (typeof MutationObserver === 'undefined') {
+      return;
+    }
+    const observer = new MutationObserver(records => {
+      // React owns the body's tabIndex. Ignore the attribute write caused by
+      // this state update so it cannot feed back into another scan.
+      if (
+        records.every(
+          record =>
+            record.type === 'attributes' &&
+            record.target === body &&
+            record.attributeName === 'tabindex',
+        )
+      ) {
+        return;
+      }
+      syncTabIndex();
+    });
+    observer.observe(body, {
+      attributes: true,
+      attributeFilter: [...FOCUSABILITY_ATTRIBUTES],
+      childList: true,
+      subtree: true,
+    });
+    return () => {
+      observer.disconnect();
+    };
+  }, [bodyElementRef]);
+
   const setElement = useCallback(
     (element: HTMLDivElement | null) => {
       sheetRef(element);
@@ -656,6 +722,7 @@ export function BottomSheetPanel({
         <div {...stylex.props(styles.handlePill)} />
       </div>
       <div
+        tabIndex={bodyNeedsTabIndex ? 0 : undefined}
         {...mergeProps(
           stylex.props(
             styles.body,

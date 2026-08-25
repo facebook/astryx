@@ -18,7 +18,7 @@
 
 import {useCallback, useEffect, useRef} from 'react';
 
-import {FOCUSABLE_SELECTOR} from './focusableSelector';
+import {getFocusableElements} from './focusableSelector';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 
 // Escape-dismissible focus traps currently mounted. This is the whole state
@@ -39,44 +39,6 @@ let activeEscapeTrapCount = 0;
  */
 export function hasActiveFocusTrapEscape(): boolean {
   return activeEscapeTrapCount > 0;
-}
-
-/**
- * Whether an element is currently perceivable/focusable — excludes ones hidden
- * via `display:none`/`visibility:hidden` or inside an `inert`/`hidden` subtree,
- * which the browser skips for Tab, and ones inside an `aria-hidden="true"`
- * subtree, which sighted-keyboard users could Tab to while AT skips them
- * (WCAG 4.1.2 — focusable content must be exposed to assistive tech).
- */
-function isVisiblyFocusable(el: HTMLElement): boolean {
-  if (el.hasAttribute('inert') || el.closest('[inert]')) {
-    return false;
-  }
-  if (el.hidden || el.closest('[hidden]')) {
-    return false;
-  }
-  // closest() matches the element itself as well as any ancestor.
-  if (el.closest('[aria-hidden="true"]')) {
-    return false;
-  }
-  // offsetParent is null for display:none (and fixed elements); pair with a
-  // visibility check via getComputedStyle when available.
-  if (typeof window !== 'undefined' && window.getComputedStyle) {
-    const style = window.getComputedStyle(el);
-    if (style.visibility === 'hidden' || style.display === 'none') {
-      return false;
-    }
-  }
-  return true;
-}
-
-/**
- * Get all focusable elements within a container.
- */
-function getFocusableElements(container: HTMLElement): HTMLElement[] {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter(isVisiblyFocusable);
 }
 
 /**

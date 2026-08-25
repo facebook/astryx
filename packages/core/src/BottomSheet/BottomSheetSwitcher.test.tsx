@@ -582,7 +582,7 @@ describe('BottomSheetSwitcher', () => {
     expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps focus in a modal sheet that has no tabbable controls', () => {
+  it('keeps focus on the scroll body in a modal sheet with read-only content', () => {
     render(
       <>
         <button type="button">Background action</button>
@@ -598,9 +598,22 @@ describe('BottomSheetSwitcher', () => {
 
     const dialog = screen.getByRole('dialog', {name: 'Read-only details'});
     const panel = getSheetPanel(dialog);
+    const scrollBody = panel.querySelector<HTMLElement>('[tabindex="0"]');
     expect(panel).toHaveFocus();
-    expect(fireEvent.keyDown(panel, {key: 'Tab'})).toBe(false);
-    expect(panel).toHaveFocus();
+    if (scrollBody == null) {
+      throw new Error('keyboard-focusable scroll body not found');
+    }
+
+    // jsdom does not perform native Tab navigation, so emulate the browser's
+    // move after verifying the trap allows it to reach the scroll region.
+    expect(fireEvent.keyDown(panel, {key: 'Tab'})).toBe(true);
+    scrollBody.focus();
+    expect(scrollBody).toHaveFocus();
+
+    // With no other controls, the trap wraps at the scroll region rather than
+    // allowing the next Tab press to reach the background.
+    expect(fireEvent.keyDown(scrollBody, {key: 'Tab'})).toBe(false);
+    expect(scrollBody).toHaveFocus();
     expect(
       screen.getByRole('button', {name: 'Background action'}),
     ).not.toHaveFocus();

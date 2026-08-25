@@ -7,7 +7,8 @@
  * @position Internal presentation tests shared by standalone and switcher modes
  */
 
-import {act, fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, waitFor} from '@testing-library/react';
+import {renderToString} from 'react-dom/server';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   BottomSheetPanel,
@@ -63,13 +64,21 @@ function renderPanel(
 }
 
 function getPanel(): HTMLElement {
-  const panel = screen
-    .getByText('Panel content')
-    .closest<HTMLElement>('.astryx-bottom-sheet');
+  const panel = document.querySelector<HTMLElement>('.astryx-bottom-sheet');
   if (panel == null) {
     throw new Error('BottomSheetPanel surface not found');
   }
   return panel;
+}
+
+function getBody(): HTMLElement {
+  const body = getPanel().querySelector<HTMLElement>(
+    ':scope > div[aria-hidden="true"] + div',
+  );
+  if (body == null) {
+    throw new Error('BottomSheetPanel scrolling body not found');
+  }
+  return body;
 }
 
 describe('BottomSheetPanel', () => {
@@ -236,6 +245,81 @@ describe('BottomSheetPanel', () => {
     unmount();
     expect(panelRef).toHaveBeenLastCalledWith(null);
     expect(panelRef).toHaveBeenCalledTimes(2);
+  });
+
+  it('makes a text-only scrolling body keyboard-focusable', () => {
+    renderPanel({kind: 'open', entering: false});
+
+    expect(getBody()).toHaveAttribute('tabindex', '0');
+  });
+
+  it('server-renders the body with a conservative keyboard tab stop', () => {
+    const html = renderToString(
+      <BottomSheetPanel
+        state={{kind: 'open', entering: false}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        Panel content
+      </BottomSheetPanel>,
+    );
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const body = root.querySelector<HTMLElement>(
+      '.astryx-bottom-sheet > div[aria-hidden="true"] + div',
+    );
+
+    expect(body).toHaveAttribute('tabindex', '0');
+  });
+
+  it('does not add an extra tab stop when the body has a focusable control', () => {
+    render(
+      <BottomSheetPanel
+        state={{kind: 'open', entering: false}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        <button type="button">Panel action</button>
+      </BottomSheetPanel>,
+    );
+
+    expect(getBody()).not.toHaveAttribute('tabindex');
+  });
+
+  it('tracks focusable controls added and removed by a nested child', async () => {
+    const panel = (content: React.ReactNode) => (
+      <BottomSheetPanel
+        state={{kind: 'open', entering: false}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        {content}
+      </BottomSheetPanel>
+    );
+    const {rerender} = render(panel('Panel content'));
+    expect(getBody()).toHaveAttribute('tabindex', '0');
+
+    rerender(panel(<button type="button">Panel action</button>));
+    await waitFor(() => expect(getBody()).not.toHaveAttribute('tabindex'));
+
+    rerender(panel('Panel content'));
+    await waitFor(() => expect(getBody()).toHaveAttribute('tabindex', '0'));
+  });
+
+  it('keeps the body focusable when its only control is hidden', () => {
+    render(
+      <BottomSheetPanel
+        state={{kind: 'open', entering: false}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        <button type="button" hidden>
+          Hidden action
+        </button>
+      </BottomSheetPanel>,
+    );
+
+    expect(getBody()).toHaveAttribute('tabindex', '0');
   });
 
   it('floats the handle bar over content that starts at the sheet top edge', () => {

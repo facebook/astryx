@@ -240,6 +240,44 @@ export const TallSheet: Story = {
   },
 };
 
+export const KeyboardScrollableText: Story = {
+  name: 'Keyboard scroll — Text only',
+  render: () => {
+    const [isOpen, setIsOpen] = useState(true);
+    return (
+      <>
+        <Button label="Open release notes" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Release notes"
+          height="capped">
+          <Section padding={4}>
+            <VStack gap={3}>
+              <Heading level={3}>Release notes</Heading>
+              <Text type="supporting" color="secondary">
+                This sheet opens for the accessibility audit. Its body has no
+                controls, so keyboard users reach the body itself and scroll it
+                with arrow keys or Page Down.
+              </Text>
+              <Divider />
+              {Array.from({length: 18}, (_, i) => (
+                <VStack key={i} gap={1}>
+                  <Text type="label">Update {i + 1}</Text>
+                  <Text type="supporting" color="secondary">
+                    Details about this release remain readable without a mouse
+                    or touch gesture.
+                  </Text>
+                </VStack>
+              ))}
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
 export const SnapPoints: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
