@@ -22,6 +22,17 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // The playground page itself also refuses embedding: today the
+        // nested preview's own frame-ancestors already breaks any embedding
+        // chain, but that protection shouldn't hinge on a child frame's
+        // headers — the parent states it directly.
+        source: '/playground',
+        headers: [
+          {key: 'X-Frame-Options', value: 'SAMEORIGIN'},
+          {key: 'Content-Security-Policy', value: "frame-ancestors 'self'"},
+        ],
+      },
+      {
         source: '/playground/preview',
         headers: [
           {key: 'X-Frame-Options', value: 'SAMEORIGIN'},
