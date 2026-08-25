@@ -534,8 +534,11 @@ export function Banner({
   // Show the end area if there are actions, dismiss, or a collapsible toggle
   const showEndArea = isRenderable(endContent) || isDismissable || hasToggle;
   // Center items vertically when there's only a title (no description)
-  // and the banner has action buttons
-  const hasActions = isRenderable(endContent) || isDismissable;
+  // and the banner has action buttons. The collapse toggle counts: it is the
+  // same 28px control as a dismiss button and shares the row with it, so a
+  // collapsible title-only banner is exactly the case this centers — leaving
+  // it out left the icon and title hanging above the toggle they sit beside.
+  const hasActions = isRenderable(endContent) || isDismissable || hasToggle;
   const isSingleLine = !isRenderable(description) && hasActions;
 
   // Non-collapsible children are always shown; collapsible ones follow the

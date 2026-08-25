@@ -650,4 +650,44 @@ describe('Banner', () => {
       expect(getComputedStyle(textColumn).flexBasis).not.toBe('8rem');
     });
   });
+  describe('single-line centering', () => {
+    const headerOf = (ui: React.ReactElement) => {
+      const {container} = render(ui);
+      return container.firstElementChild!.firstElementChild!;
+    };
+
+    it('centers a title-only banner that has a dismiss button', () => {
+      const header = headerOf(
+        <Banner status="info" title="Deploy finished" isDismissable />,
+      );
+      expect(getComputedStyle(header).alignItems).toBe('center');
+    });
+
+    it('centers a title-only banner whose only control is the collapse toggle', () => {
+      const header = headerOf(
+        <Banner status="info" title="Deploy finished">
+          <p>Details</p>
+        </Banner>,
+      );
+      expect(getComputedStyle(header).alignItems).toBe('center');
+    });
+
+    it('keeps a described banner top-aligned, toggle or not', () => {
+      const header = headerOf(
+        <Banner status="info" title="Deploy finished" description="Two lines">
+          <p>Details</p>
+        </Banner>,
+      );
+      expect(getComputedStyle(header).alignItems).toBe('flex-start');
+    });
+
+    it('keeps a banner with no controls at all top-aligned', () => {
+      const header = headerOf(
+        <Banner status="info" title="Deploy finished" collapsible={false}>
+          <p>Details</p>
+        </Banner>,
+      );
+      expect(getComputedStyle(header).alignItems).toBe('flex-start');
+    });
+  });
 });
