@@ -335,12 +335,7 @@ describe('DateInput — surface selection', () => {
     setViewport('desktop');
     const onChange = vi.fn();
     render(
-      <DateInput
-        nativePicker="never"
-        label="Event date"
-        onChange={onChange}
-        min={undefined}
-      />,
+      <DateInput nativePicker="never" label="Event date" onChange={onChange} min={undefined} />,
     );
     fireEvent.change(field(), {target: {value: '2026-03-25'}});
     expect(onChange).toHaveBeenCalledWith('2026-03-25');
@@ -385,12 +380,7 @@ describe('DateInput — field parity', () => {
     expect(field()).toHaveValue('');
     expect(field()).toHaveAttribute('placeholder', 'Select a date');
     rerender(
-      <DateInput
-        nativePicker="never"
-        label="Ship date"
-        value="2026-03-21"
-        onChange={() => {}}
-      />,
+      <DateInput nativePicker="never" label="Ship date" value="2026-03-21" onChange={() => {}} />,
     );
     expect(field()).toHaveValue('March 21, 2026');
   });
@@ -487,13 +477,7 @@ describe('DateInput — field parity', () => {
 
   it('does not open the picker until the field is tapped', () => {
     withLayout(() => {
-      render(
-        <DateInput
-          nativePicker="never"
-          label="Ship date"
-          onChange={() => {}}
-        />,
-      );
+      render(<DateInput nativePicker="never" label="Ship date" onChange={() => {}} />);
       expect(field()).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('grid')).not.toBeInTheDocument();
       fireEvent.click(field());
@@ -511,14 +495,7 @@ describe('DateInput — field parity', () => {
   });
 
   it('is not openable while disabled', () => {
-    render(
-      <DateInput
-        nativePicker="never"
-        label="Ship date"
-        isDisabled
-        onChange={() => {}}
-      />,
-    );
+    render(<DateInput nativePicker="never" label="Ship date" isDisabled onChange={() => {}} />);
     expect(field()).toBeDisabled();
     fireEvent.click(field());
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
@@ -561,21 +538,12 @@ describe('DateInput — field parity', () => {
   });
 
   it('marks required for assistive technology', () => {
-    render(
-      <DateInput
-        nativePicker="never"
-        label="Ship date"
-        isRequired
-        onChange={() => {}}
-      />,
-    );
+    render(<DateInput nativePicker="never" label="Ship date" isRequired onChange={() => {}} />);
     expect(field()).toHaveAttribute('aria-required', 'true');
   });
 
   it('associates the label natively, so the field is named without ARIA', () => {
-    render(
-      <DateInput nativePicker="never" label="Ship date" onChange={() => {}} />,
-    );
+    render(<DateInput nativePicker="never" label="Ship date" onChange={() => {}} />);
     expect(screen.getByLabelText('Ship date')).toBe(field());
   });
 
@@ -698,13 +666,7 @@ describe('DateInput — calendar surface', () => {
   it('Save closes even with no date chosen, committing nothing', () => {
     const onChange = vi.fn();
     withLayout(() => {
-      render(
-        <DateInput
-          nativePicker="never"
-          label="Ship date"
-          onChange={onChange}
-        />,
-      );
+      render(<DateInput nativePicker="never" label="Ship date" onChange={onChange} />);
       fireEvent.click(field());
       fireEvent.click(screen.getByRole('button', {name: 'Save'}));
     });
