@@ -147,7 +147,7 @@ const CORPUS: [string, string, number | null][] = [
   ['2024-01-15', 'en-US', null],
 
   // U+00B7 was in the alphabet as the Catalan middle dot. Catalan groups with
-  // a full stop, and no locale Intl serves writes it between digits at all.
+  // a full stop, and no locale ICU resolves writes it between digits at all.
   [`1${MIDDLE_DOT}234${MIDDLE_DOT}567`, 'en-US', null],
   [`1${MIDDLE_DOT}234${MIDDLE_DOT}567`, 'ca-ES', null],
 
@@ -183,10 +183,9 @@ describe('formatEditableNumber', () => {
     [1.5, 'en-US', '1.5'],
     [1.5, 'de-DE', '1,5'],
     [-1234.56, 'fr-FR', '-1234,56'],
-    // Only the decimal separator is localized: its meaning is the part that
-    // changes by locale, and reading it back is what makes the round trip
-    // hold. A digit means the same in every script, so digits stay as
-    // `String` writes them — localizing them spells `1e+21` as `١e+٢١`.
+    // Only the decimal separator is localized. The digits stay as `String`
+    // writes them, which is what the field shows at rest when no `formatValue`
+    // is given, so localizing them here would flip the script on focus.
     [3.5, 'ar-SA', '3٫5'],
     // No grouping: the text has to be editable, and a separator the person did
     // not type is one they have to delete.

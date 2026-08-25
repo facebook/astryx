@@ -12,9 +12,12 @@
  * script — is derived from Intl and Unicode rather than a table, and text no
  * reading fits returns null so the field stays visibly invalid instead of
  * committing a guess. Where both readings are well formed the locale's wins,
- * the way utils/dateParser.ts settles an ambiguous date by locale preference:
- * a lone group of exactly the locale's group size is grouping, so de-DE
- * `1.234` is 1234, while `1.2345` cannot be grouping and is 1.2345.
+ * the way utils/dateParser.ts settles an ambiguous date by locale preference.
+ * Grouping is well formed only when every group fits the locale's own sizes,
+ * so de-DE `1.234` is 1234, while `1.2345` (last group too long) and
+ * `1234.567` (too much ahead of it) keep the full stop as a decimal point. A
+ * separator repeated with three digits after every occurrence is grouping in
+ * any locale, so `1,234,567` reads the same in all of them.
  *
  * Which characters may separate digits at all is the one thing that is NOT
  * read off the input: SEPARATOR_CHARS below is a bounded alphabet, the same
@@ -84,11 +87,12 @@ const INVISIBLES = /[\u200B-\u200D\u200E\u200F\u061C\u2066-\u2069\uFEFF]/g;
 const MINUS_SIGNS = '\u2212\u2012\u2013-';
 
 /**
- * Every character a locale writes between digits. Walking the 136 locales Intl
- * serves yields exactly six: comma, full stop, apostrophe, space (the whole
- * space family folds to it under NFKC), and the Arabic decimal and thousands
- * separators. U+2019 joins them because Swiss text still spells its groups
- * with it, though no locale Intl serves writes it any more.
+ * Every character a locale writes between digits. Sweeping every language ICU
+ * resolves, in every region, yields seven: comma, full stop, apostrophe,
+ * space (the whole space family folds to it under NFKC), the Arabic decimal
+ * and thousands separators, and U+060C — which only nqo writes, and which
+ * this alphabet leaves out. U+2019 is here in its place: no locale writes it,
+ * but the corpus pins it as the Swiss spelling.
  *
  * The alphabet is bounded on purpose. Read the candidates off the input
  * instead and any repeated character is grouping, so a hyphenated ID commits
@@ -204,7 +208,7 @@ function readUnder(
  * beats the decimal-point reading.
  */
 function isGroupOnlySeparator(separator: string): boolean {
-  return /^[\s'\u2019\u00B7]$/.test(separator);
+  return /^[\s'\u2019]$/.test(separator);
 }
 
 function toPlainNumber(
