@@ -994,6 +994,37 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
   );
 
+  // The panel's empty message is role="presentation", so this region is the
+  // only route to assistive tech. It has to watch the STATE rather than the
+  // open event: the panel can become empty either on open or when a fetch
+  // lands with nothing in it, and an open-only announcement leaves the second
+  // case silent while the message sits on screen. The ref makes it fire once
+  // per arrival at that state rather than on every re-render.
+  const announcedEmptyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const isPanelEmpty =
+      popover.isOpen &&
+      !isLoading &&
+      searchQuery === '' &&
+      selectableItems.length === 0;
+    if (!isPanelEmpty) {
+      announcedEmptyRef.current = null;
+      return;
+    }
+    if (announcedEmptyRef.current === emptyAnnouncement) {
+      return;
+    }
+    announcedEmptyRef.current = emptyAnnouncement;
+    announce(emptyAnnouncement);
+  }, [
+    popover.isOpen,
+    isLoading,
+    searchQuery,
+    selectableItems.length,
+    emptyAnnouncement,
+    announce,
+  ]);
+
   // Handle toggle
   // Clear all selected values. Shared by the clear button and the keyboard
   // Delete/Backspace path so clearing is reachable without a mouse.
@@ -1140,26 +1171,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       setSelectedAtOpen(new Set(optimisticValue));
 
       popover.show();
-      // A panel with nothing in it produces no option to focus and no result
-      // count, so without this the message on screen is never spoken.
-      if (selectableItems.length === 0 && !isLoading) {
-        announce(emptyAnnouncement);
-      }
       if (hasSearch) {
         // Focus search after popover opens
         requestAnimationFrame(() => {
           searchRef.current?.focus();
         });
       }
-    }, [
-      popover,
-      hasSearch,
-      optimisticValue,
-      selectableItems,
-      isLoading,
-      announce,
-      emptyAnnouncement,
-    ]),
+    }, [popover, hasSearch, optimisticValue]),
     onClose: popover.hide,
     onToggle: handleNavigableToggle,
     onClear: hasClear ? clearValues : undefined,

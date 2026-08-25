@@ -1013,6 +1013,37 @@ export function Selector<T extends SelectorOptionType>(
     [announceSearchResults],
   );
 
+  // The panel's empty message is role="presentation", so this region is the
+  // only route to assistive tech. It has to watch the STATE rather than the
+  // open event: the panel can become empty either on open or when a fetch
+  // lands with nothing in it, and an open-only announcement leaves the second
+  // case silent while the message sits on screen. The ref makes it fire once
+  // per arrival at that state rather than on every re-render.
+  const announcedEmptyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const isPanelEmpty =
+      popover.isOpen &&
+      !isLoading &&
+      searchQuery === '' &&
+      selectableItems.length === 0;
+    if (!isPanelEmpty) {
+      announcedEmptyRef.current = null;
+      return;
+    }
+    if (announcedEmptyRef.current === emptyAnnouncement) {
+      return;
+    }
+    announcedEmptyRef.current = emptyAnnouncement;
+    announce(emptyAnnouncement);
+  }, [
+    popover.isOpen,
+    isLoading,
+    searchQuery,
+    selectableItems.length,
+    emptyAnnouncement,
+    announce,
+  ]);
+
   // Calculate offset to position selected item over trigger. Explicit
   // placement opts out of the selector-specific overlay behavior and uses the
   // standard layer positioning API instead.
@@ -1097,11 +1128,6 @@ export function Selector<T extends SelectorOptionType>(
     hasSearch,
     onOpen: useCallback(() => {
       popover.show();
-      // A panel with nothing in it produces no option to focus and no result
-      // count, so without this the message on screen is never spoken.
-      if (selectableItems.length === 0 && !isLoading) {
-        announce(emptyAnnouncement);
-      }
       if (hasSearch) {
         requestAnimationFrame(() => {
           const input = searchRef.current;
@@ -1113,14 +1139,7 @@ export function Selector<T extends SelectorOptionType>(
           }
         });
       }
-    }, [
-      popover,
-      hasSearch,
-      selectableItems,
-      isLoading,
-      announce,
-      emptyAnnouncement,
-    ]),
+    }, [popover, hasSearch]),
     onClose: popover.hide,
     onSelect: commitValue,
     onClear: hasClear ? clearValue : undefined,

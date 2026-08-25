@@ -1104,6 +1104,43 @@ describe('Selector', () => {
       );
     });
 
+    it('announces the empty state when a load finishes with no options', async () => {
+      const user = userEvent.setup();
+      function Fetching() {
+        const [isLoading, setIsLoading] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setIsLoading(false)}>
+              land
+            </button>
+            <Selector
+              label="Fruit"
+              options={[]}
+              onChange={() => {}}
+              isLoading={isLoading}
+              emptyText="Add a fruit first"
+            />
+          </>
+        );
+      }
+      render(<Fetching />);
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      // Open while loading: nothing on screen, nothing spoken.
+      await act(
+        async () =>
+          void (await new Promise(resolve => requestAnimationFrame(resolve))),
+      );
+      expect(politeRegion()?.textContent ?? '').toBe('');
+
+      // The fetch lands empty while the panel is open. The message appears, so
+      // the region owes the same words — an open-only announcement misses this.
+      await user.click(screen.getByRole('button', {name: 'land'}));
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+      );
+    });
+
     it('renders emptyText when there are no options and no search input', async () => {
       const user = userEvent.setup();
       render(
