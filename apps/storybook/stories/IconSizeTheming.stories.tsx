@@ -185,6 +185,7 @@ function Columns({render}: {render: () => React.ReactNode}) {
 
 const meta: Meta = {
   title: 'Core/Icon/Size Theming',
+  tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
