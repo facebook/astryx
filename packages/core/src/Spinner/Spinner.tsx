@@ -74,8 +74,11 @@ let didRegisterVars = false;
  * (a valid length on its own, a `<number>` inside `calc()`) poisons the sum:
  * `calc(28px + 0 * 2)` is invalid at computed-value time and the box loses its
  * size. Registered, the value is already an absolute length by the time the
- * `calc()` sees it, so `0` means `0px` and the documented "a rail of 0 draws
- * an arc with no track" holds.
+ * `calc()` sees it, so `0` means `0px` — a zero-width stroke that paints
+ * nothing — rather than a bare `0` that invalidates the sum and leaves the box
+ * with no size at all. One `stroke-width` drives both circles, so a themed
+ * rail of `0` hides the arc along with the track; an arc with no track behind
+ * it is `--spinner-track-color: transparent`.
  *
  * Only the resolved vars are registered, and the public ones deliberately are
  * not: a registered property with an `initialValue` is never
@@ -198,14 +201,6 @@ const styles = stylex.create({
     // size moves both together.
     width: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_RAIL}) * 2)`,
     height: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_RAIL}) * 2)`,
-    // Hosts that paint a spinner inside a fixed-size control are flex
-    // containers (a Switch thumb is 14px at the smallest size), and a flex
-    // item's default `flex-shrink: 1` lets the parent compress this box while
-    // the ring keeps drawing at the size the vars asked for — the ring then
-    // paints outside its own clipped box. Refusing to shrink keeps the two
-    // measurements the same thing, so a size that does not fit is visibly
-    // wrong at the host rather than silently mismatched.
-    flexShrink: 0,
   },
   ring: {
     backfaceVisibility: 'hidden',
