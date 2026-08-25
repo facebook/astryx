@@ -626,14 +626,14 @@ describe('plainDateFormat', () => {
     ).toBe('2026');
   });
 
-  it('honors an explicit options.calendar override', () => {
+  it('honors an explicitly requested calendar for compatibility', () => {
     expect(
       plainDateFormat(
         {year: 2026, month: 8, day: 22},
         {year: 'numeric', calendar: 'buddhist'},
         'en-US',
       ),
-    ).toContain('2569');
+    ).toBe('2569 BE');
   });
 });
 
