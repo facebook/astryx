@@ -511,14 +511,41 @@ function parseNumberInputForCommit(
     return null;
   }
 
-  if (options.min != null && num < options.min) {
-    return options.min;
+  // The bound itself has to satisfy the field's own shape rule, or an
+  // integer-only field commits the fractional `max` it was handed. Round
+  // inwards, the same way stepping from empty does.
+  const {min, max} = getCommittableBounds(options);
+  // No number satisfies both, so there is nothing to clamp to.
+  if (min != null && max != null && min > max) {
+    return null;
   }
-  if (options.max != null && num > options.max) {
-    return options.max;
+
+  if (min != null && num < min) {
+    return min;
+  }
+  if (max != null && num > max) {
+    return max;
   }
 
   return num;
+}
+
+function getCommittableBounds({
+  min,
+  max,
+  isIntegerOnly,
+}: {
+  min?: number | null;
+  max?: number | null;
+  isIntegerOnly?: boolean;
+}): {min: number | null; max: number | null} {
+  if (!isIntegerOnly) {
+    return {min: min ?? null, max: max ?? null};
+  }
+  return {
+    min: min == null ? null : Math.ceil(min),
+    max: max == null ? null : Math.floor(max),
+  };
 }
 
 type StepDirection = -1 | 1;

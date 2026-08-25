@@ -699,6 +699,73 @@ describe('NumberInput', () => {
       expect(handleChange).not.toHaveBeenCalled();
       expect(input).toHaveValue('');
     });
+
+    it('rounds a fractional max inwards for an integer-only field', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          max={9.5}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '20');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(9);
+    });
+
+    it('rounds a fractional min inwards for an integer-only field', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          min={0.5}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '0');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(1);
+    });
+
+    it('does not clamp when no value can satisfy both bounds', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          min={5}
+          max={2}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('');
+    });
   });
 
   describe('status prop', () => {

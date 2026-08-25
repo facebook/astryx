@@ -128,12 +128,14 @@ export const docs = {
     {
       name: 'min',
       type: 'number | null',
-      description: 'Minimum value allowed.',
+      description:
+        'Minimum value allowed. A smaller entry commits at this value on blur or Enter.',
     },
     {
       name: 'max',
       type: 'number | null',
-      description: 'Maximum value allowed.',
+      description:
+        'Maximum value allowed. A larger entry commits at this value on blur or Enter.',
     },
     {
       name: 'step',
@@ -410,12 +412,12 @@ export const docsZh = {
     {
       name: 'min',
       type: 'number | null',
-      description: '允许的最小值。',
+      description: '允许的最小值。更小的输入会在失焦或按 Enter 时提交为该值。',
     },
     {
       name: 'max',
       type: 'number | null',
-      description: '允许的最大值。',
+      description: '允许的最大值。更大的输入会在失焦或按 Enter 时提交为该值。',
     },
     {
       name: 'step',
