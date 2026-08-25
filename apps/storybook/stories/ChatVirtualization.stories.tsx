@@ -45,7 +45,13 @@ import * as stylex from '@stylexjs/stylex';
 const meta: Meta = {
   title: 'Lab/ChatVirtualization',
   tags: ['autodocs'],
-  parameters: {layout: 'fullscreen'},
+  parameters: {
+    layout: 'fullscreen',
+    // "Show code" must render the story SOURCE, not the dynamic snippet:
+    // the dynamic mode serializes the rendered element tree, and at
+    // messageCount=3000 that walk freezes the docs panel.
+    docs: {source: {type: 'code'}},
+  },
 };
 export default meta;
 
