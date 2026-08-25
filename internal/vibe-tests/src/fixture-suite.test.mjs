@@ -170,6 +170,57 @@ describe('canonical fixture suite', () => {
     ).toThrow(/only background\/foreground semantic colors/);
   });
 
+  it('rejects a shadcn-style fixture without its dark token set', () => {
+    const fixtureId = 'shadcn-tailwind-v4-established';
+    const sandbox = sandboxFor(fixtureId);
+    const cssFile = path.join(sandbox, 'src', 'index.css');
+    const css = fs.readFileSync(cssFile, 'utf8').replace('.dark {', '.night {');
+    fs.writeFileSync(cssFile, css);
+    const recipe = cloneRecipe(fixtureId);
+    updateHash(recipe, sandbox, 'src/index.css');
+
+    expect(() =>
+      validateFixture({fixtureId, fixtureRoot: sandbox, recipe}),
+    ).toThrow(/missing Tailwind v4 light\/dark theme structure/);
+  });
+
+  it('rejects a missing stable host probe even with a refreshed hash', () => {
+    const fixtureId = 'shadcn-tailwind-v4-established';
+    const sandbox = sandboxFor(fixtureId);
+    const appFile = path.join(sandbox, 'src', 'App.tsx');
+    const app = fs
+      .readFileSync(appFile, 'utf8')
+      .replace(
+        'data-vibe-probe="primary-action"',
+        'data-host-probe="primary-action"',
+      );
+    fs.writeFileSync(appFile, app);
+    const recipe = cloneRecipe(fixtureId);
+    updateHash(recipe, sandbox, 'src/App.tsx');
+
+    expect(() =>
+      validateFixture({fixtureId, fixtureRoot: sandbox, recipe}),
+    ).toThrow(/stable host probe markers/);
+  });
+
+  it.each([['shadcn-tailwind-v4-established', 'tooltip-surface']])(
+    'rejects %s when nested overlay coverage is removed',
+    (fixtureId, marker) => {
+      const sandbox = sandboxFor(fixtureId);
+      const appFile = path.join(sandbox, 'src', 'App.tsx');
+      const app = fs
+        .readFileSync(appFile, 'utf8')
+        .replace(`data-vibe-probe="${marker}"`, `data-overlay="${marker}"`);
+      fs.writeFileSync(appFile, app);
+      const recipe = cloneRecipe(fixtureId);
+      updateHash(recipe, sandbox, 'src/App.tsx');
+
+      expect(() =>
+        validateFixture({fixtureId, fixtureRoot: sandbox, recipe}),
+      ).toThrow(new RegExp(`missing nested-overlay probe marker ${marker}`));
+    },
+  );
+
   it('rejects missing and oversized gallery assets', () => {
     const parent = fs.mkdtempSync(
       path.join(os.tmpdir(), 'fixture-gallery-test-'),

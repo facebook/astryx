@@ -29,7 +29,10 @@ export const FIXTURE_GALLERY_README = path.join(FIXTURES_ROOT, 'README.md');
 export const FIXTURE_ASSETS_ROOT = path.join(FIXTURES_ROOT, 'assets');
 export const FIXTURE_ASSET_MAX_BYTES = 250 * 1024;
 export const FIXTURE_ASSETS_TOTAL_MAX_BYTES = 300 * 1024;
-export const FIXTURE_IDS = ['tailwind-v4-control'];
+export const FIXTURE_IDS = [
+  'tailwind-v4-control',
+  'shadcn-tailwind-v4-established',
+];
 
 const REQUIRED_PROVENANCE_FIELDS = [
   'source',
@@ -161,14 +164,46 @@ function validateFixtureShape(fixtureId, fixtureRoot) {
     'utf8',
   );
   const app = fs.readFileSync(path.join(fixtureRoot, 'src', 'App.tsx'), 'utf8');
-  const requiredProbeMarkers = [
-    'host-shell',
-    'page-title',
-    'primary-action',
-    'table-header',
-    'table-cell',
-    'form-control',
-  ];
+  const requiredProbeMarkers = {
+    'tailwind-v4-control': [
+      'host-shell',
+      'page-title',
+      'primary-action',
+      'table-header',
+      'table-cell',
+      'form-control',
+    ],
+    'shadcn-tailwind-v4-established': [
+      'host-shell',
+      'page-title',
+      'primary-action',
+      'table-header',
+      'status',
+      'form-control',
+      'dialog-backdrop',
+      'dialog-surface',
+      'tooltip-trigger',
+      'tooltip-surface',
+      'popover-trigger',
+      'popover-surface',
+    ],
+  }[fixtureId];
+  const nestedOverlayMarkers = {
+    'tailwind-v4-control': [],
+    'shadcn-tailwind-v4-established': [
+      'dialog-backdrop',
+      'dialog-surface',
+      'tooltip-trigger',
+      'tooltip-surface',
+      'popover-trigger',
+      'popover-surface',
+    ],
+  }[fixtureId];
+  for (const marker of nestedOverlayMarkers) {
+    if (!app.includes(`data-vibe-probe="${marker}"`)) {
+      fail(`${fixtureId}: missing nested-overlay probe marker ${marker}`);
+    }
+  }
   const probeAttributeCount = [...app.matchAll(/\bdata-vibe-probe=/g)].length;
   if (probeAttributeCount !== requiredProbeMarkers.length) {
     fail(
@@ -195,6 +230,46 @@ function validateFixtureShape(fixtureId, fixtureRoot) {
     }
     if (/shadcn|components\.json/i.test(app + css)) {
       fail(`${fixtureId}: control must not contain shadcn structure`);
+    }
+  }
+
+  if (fixtureId === 'shadcn-tailwind-v4-established') {
+    const requiredTokens = [
+      'background',
+      'card',
+      'popover',
+      'primary',
+      'secondary',
+      'muted',
+      'accent',
+      'destructive',
+      'border',
+      'input',
+      'ring',
+    ];
+    if (
+      !css.includes('@theme inline') ||
+      !css.includes(':root') ||
+      !/(?:^|\n)\.dark\s*\{/.test(css)
+    ) {
+      fail(`${fixtureId}: missing Tailwind v4 light/dark theme structure`);
+    }
+    for (const token of requiredTokens) {
+      if (!css.includes(`--color-${token}:`))
+        fail(`${fixtureId}: missing ${token} semantic token`);
+    }
+    for (const surface of [
+      '<form',
+      '<table',
+      'statusClasses',
+      'createPortal(',
+      'role="dialog"',
+      'role="tooltip"',
+      'role="menu"',
+      'aria-modal="true"',
+    ]) {
+      if (!app.includes(surface))
+        fail(`${fixtureId}: missing ${surface} surface`);
     }
   }
 }
