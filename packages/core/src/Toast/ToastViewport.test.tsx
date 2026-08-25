@@ -25,7 +25,7 @@ import React from 'react';
 import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {ToastViewport} from './ToastViewport';
 import {useToast} from './useToast';
-import type {ToastOptions, ToastRenderProps} from './types';
+import type {ToastOptions, ToastBodyRenderProps} from './types';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -507,56 +507,102 @@ describe('toast timer lifecycle (#3589)', () => {
     }
   });
 
-  // `renderToast` replaces the whole visible surface. What matters to a
-  // consumer is the handover: Astryx must stop drawing its own card (and its
-  // close button) so nothing has to be hidden with CSS, must route EVERY
-  // toast through the renderer including ones a library raised, and must
-  // hand over the pieces the surface needs to be complete.
-  describe('renderToast', () => {
-    function renderWithRenderer(
+  // `renderBody` replaces the content of the card. What matters to a consumer
+  // is the handover: every toast must route through it, including ones a
+  // library raised; the pieces the layout needs must arrive rather than being
+  // dropped; and the dismiss must stay Astryx's own control so a custom
+  // layout cannot mislabel it or lose it.
+  describe('renderBody', () => {
+    function renderWithBody(
       children: React.ReactNode,
-      renderToast: (t: ToastRenderProps) => React.ReactNode,
+      renderBody: (t: ToastBodyRenderProps) => React.ReactNode,
     ) {
       return render(
-        <ToastViewport isTopLayer={false} renderToast={renderToast}>
+        <ToastViewport isTopLayer={false} renderBody={renderBody}>
           {children}
         </ToastViewport>,
       );
     }
 
-    it('replaces the built-in surface, leaving no dismiss button to hide', () => {
-      // The reason this API exists: hiding Astryx's close with CSS also hits
-      // any button in endContent, and misses toasts a library raised.
-      renderWithRenderer(
+    it('replaces the default layout', () => {
+      renderWithBody(
+        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
+        toast => <div data-testid="custom-body">{toast.body}</div>,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      expect(screen.getByTestId('custom-body')).toHaveTextContent('Toast A');
+    });
+
+    it('renders a toast raised by code that knows nothing about the layout', () => {
+      // ShowToastButton calls the plain useToast() — it stands in for a
+      // shared library. Its toast still gets the app's layout, which is what
+      // hiding the built-in dismiss with CSS cannot achieve.
+      renderWithBody(
+        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
+        toast => <div data-testid="custom-body">{toast.body}</div>,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      expect(screen.getByTestId('custom-body')).toHaveTextContent('Toast A');
+    });
+
+    it("hands over Astryx's own dismiss button, correctly named", () => {
+      // The reason the control is passed rather than left to the layout: it
+      // keeps the translated label and the accessible name, so a custom
+      // layout cannot ship an unnamed or unlabelled close.
+      renderWithBody(
+        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
+        toast => <div data-testid="custom-body">{toast.dismissButton}</div>,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      expect(
+        within(screen.getByTestId('custom-body')).getByRole('button', {
+          name: 'Dismiss notification',
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it('dismisses the toast from the handed-over button', () => {
+      const onHide = vi.fn();
+      renderWithBody(
+        <ShowToastButton
+          options={{body: 'Closable', onHide}}
+          triggerLabel="Show"
+        />,
+        toast => <div>{toast.dismissButton}</div>,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+      act(() => {
+        fireEvent.click(
+          screen.getByRole('button', {name: 'Dismiss notification'}),
+        );
+      });
+      expect(onHide).toHaveBeenCalledWith('manual');
+    });
+
+    it('renders no dismiss button of its own', () => {
+      // Astryx must not draw a second close beside the one the layout placed.
+      renderWithBody(
         <ShowToastButton options={INFO_A} triggerLabel="Show" />,
         toast => <div>{toast.body}</div>,
       );
       act(() => {
         fireEvent.click(screen.getByText('Show'));
       });
-      expect(screen.getByText('Toast A')).toBeInTheDocument();
       expect(
         screen.queryByRole('button', {name: 'Dismiss notification'}),
       ).not.toBeInTheDocument();
     });
 
-    it('renders a toast raised by code that knows nothing about the surface', () => {
-      // ShowToastButton calls the plain useToast() — it is the stand-in for a
-      // shared library. Its toast still gets the app's surface.
-      renderWithRenderer(
-        <ShowToastButton options={INFO_A} triggerLabel="Show" />,
-        toast => <div data-testid="custom-surface">{toast.body}</div>,
-      );
-      act(() => {
-        fireEvent.click(screen.getByText('Show'));
-      });
-      expect(screen.getByTestId('custom-surface')).toHaveTextContent('Toast A');
-    });
-
-    it('hands endContent to the surface rather than dropping it', () => {
-      // The trailing slot belongs to Astryx's card, which is gone. Passing it
-      // through is what keeps an Undo button working across the switch.
-      renderWithRenderer(
+    it('hands endContent to the layout rather than dropping it', () => {
+      renderWithBody(
         <ShowToastButton
           options={{
             body: 'Deleted',
@@ -565,7 +611,7 @@ describe('toast timer lifecycle (#3589)', () => {
           triggerLabel="Show"
         />,
         toast => (
-          <div data-testid="custom-surface">
+          <div data-testid="custom-body">
             {toast.body}
             {toast.endContent}
           </div>
@@ -574,47 +620,19 @@ describe('toast timer lifecycle (#3589)', () => {
       act(() => {
         fireEvent.click(screen.getByText('Show'));
       });
-      // Inside the custom surface specifically — Astryx's own card renders
-      // endContent too, so asserting mere presence would pass either way.
       expect(
-        within(screen.getByTestId('custom-surface')).getByRole('button', {
+        within(screen.getByTestId('custom-body')).getByRole('button', {
           name: 'Undo',
         }),
       ).toBeInTheDocument();
     });
 
-    it('gives the surface a dismiss that removes its own toast', () => {
-      // The surface owns the dismiss control now, so it needs a working one —
-      // and it is built before showToast() has returned anything to close.
-      const onHide = vi.fn();
-      renderWithRenderer(
-        <ShowToastButton
-          options={{body: 'Closable', onHide}}
-          triggerLabel="Show"
-        />,
-        toast => (
-          <button type="button" onClick={toast.dismiss}>
-            Close it
-          </button>
-        ),
-      );
-      act(() => {
-        fireEvent.click(screen.getByText('Show'));
-      });
-      act(() => {
-        fireEvent.click(screen.getByText('Close it'));
-      });
-      expect(onHide).toHaveBeenCalledWith('manual');
-    });
-
     it('still auto-dismisses, and says so before it happens', () => {
-      // Astryx keeps owning the timer; the surface is told, so it can render a
-      // progress affordance or suppress its own close.
       vi.useFakeTimers();
       try {
         const seen: {isAutoHide: boolean; autoHideDuration: number}[] = [];
         const onHide = vi.fn();
-        renderWithRenderer(
+        renderWithBody(
           <ShowToastButton
             options={{body: 'Fleeting', autoHideDuration: 3000, onHide}}
             triggerLabel="Show"
@@ -641,9 +659,9 @@ describe('toast timer lifecycle (#3589)', () => {
     });
 
     it('keeps announcing through the live region', () => {
-      // The announcement is the viewport's job, not the card's — a custom
-      // surface must not cost a screen-reader user the notification.
-      renderWithRenderer(
+      // The announcement is the viewport's job, not the layout's — a custom
+      // body must not cost a screen-reader user the notification.
+      renderWithBody(
         <ShowToastButton options={INFO_A} triggerLabel="Show" />,
         toast => <div>{toast.body}</div>,
       );

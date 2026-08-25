@@ -4,28 +4,35 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {useState, useRef} from 'react';
 import {useToast, ToastViewport} from '@astryxdesign/core/Toast';
-import type {ToastType} from '@astryxdesign/core/Toast';
+import type {ToastType, ToastBodyRenderProps} from '@astryxdesign/core/Toast';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Card} from '@astryxdesign/core/Card';
 import {Stack} from '@astryxdesign/core/Stack';
 import {Dialog} from '@astryxdesign/core/Dialog';
-import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {
+  colorVars,
+  radiusVars,
+  spacingVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 
-// The custom toast surface used by the `renderToast` story below.
+// The custom toast layout used by the `renderBody` story below.
 const cardStyles = stylex.create({
-  card: {
+  row: {
     display: 'flex',
     alignItems: 'flex-start',
     gap: spacingVars['--spacing-3'],
-    width: 380,
-    maxWidth: 'min(100%, calc(100vw - 32px))',
-    borderInlineStartWidth: 4,
-    borderInlineStartStyle: 'solid',
+    width: '100%',
   },
-  info: {borderInlineStartColor: colorVars['--color-accent']},
-  error: {borderInlineStartColor: colorVars['--color-text-red']},
-  body: {flex: 1, minWidth: 0},
+  stripe: {
+    alignSelf: 'stretch',
+    width: 4,
+    borderRadius: radiusVars['--radius-full'],
+    flexShrink: 0,
+  },
+  stripeInfo: {backgroundColor: colorVars['--color-accent']},
+  stripeError: {backgroundColor: colorVars['--color-text-red']},
+  text: {flex: 1, minWidth: 0},
 });
 
 const meta: Meta = {
@@ -389,66 +396,51 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
 }
 
 // =============================================================================
-// Custom surface (renderToast)
+// Custom body (renderBody)
 // =============================================================================
 
-// A product with its own notification design supplies `renderToast` on the
-// viewport, and Astryx draws no card at all — background, padding and the
-// dismiss button are all the renderer's. It applies to every toast in the
-// viewport, so a toast raised by library code that has never heard of this
-// card still gets it; the alternative — hiding Astryx's dismiss with CSS —
-// reaches only the toasts the app itself raised, and strips the library's
-// toast of its only way to close.
+// A product with its own notification layout supplies `renderBody` on the
+// viewport. Astryx keeps the card — surface, `astryx-toast` theme target,
+// live-region role, auto-hide timer — and hands over the message, the
+// `endContent`, and its own dismiss `Button` to place.
 //
-// The renderer owns the dismiss control and its accessible name. Astryx keeps
-// the transport: stacking, the top layer, and the auto-hide timer with its
-// pause-on-hover, all of which still work below.
-function ProductToastCard({
+// The dismiss is the part worth noticing: it arrives as an element, so it
+// stays a real Astryx `Button` with its translated label and its
+// `astryx-button` theming. A custom layout positions it; it does not rebuild
+// it, and so cannot mislabel it or leave a toast with no way to close.
+//
+// It applies to every toast in the viewport, so a toast raised by library
+// code that has never heard of this layout gets it too — which is what
+// hiding the built-in dismiss with CSS cannot do.
+function ProductToastBody({
   type,
   body,
   endContent,
-  dismiss,
-}: {
-  type: ToastType;
-  body: React.ReactNode;
-  endContent?: React.ReactNode;
-  dismiss: () => void;
-}) {
+  dismissButton,
+}: ToastBodyRenderProps) {
   return (
-    <Card
-      xstyle={[
-        cardStyles.card,
-        type === 'error' ? cardStyles.error : cardStyles.info,
-      ]}>
-      <div {...stylex.props(cardStyles.body)}>{body}</div>
-      {endContent}
-      <Button
-        variant="ghost"
-        size="sm"
-        label="Dismiss notification"
-        isIconOnly
-        icon={<span aria-hidden="true">×</span>}
-        onClick={dismiss}
+    <div {...stylex.props(cardStyles.row)}>
+      <div
+        {...stylex.props(
+          cardStyles.stripe,
+          type === 'error' ? cardStyles.stripeError : cardStyles.stripeInfo,
+        )}
       />
-    </Card>
+      <div {...stylex.props(cardStyles.text)}>{body}</div>
+      {endContent}
+      {dismissButton}
+    </div>
   );
 }
 
-export const CustomSurface: StoryObj = {
-  name: 'Custom surface (renderToast)',
-  render: function CustomSurfaceStory() {
+export const CustomBody: StoryObj = {
+  name: 'Custom body (renderBody)',
+  render: function CustomBodyStory() {
     return (
       <ToastViewport
         isTopLayer={false}
-        renderToast={toast => (
-          <ProductToastCard
-            type={toast.type}
-            body={toast.body}
-            endContent={toast.endContent}
-            dismiss={toast.dismiss}
-          />
-        )}>
-        <CustomSurfaceTriggers />
+        renderBody={toast => <ProductToastBody {...toast} />}>
+        <CustomBodyTriggers />
       </ToastViewport>
     );
   },
@@ -456,13 +448,13 @@ export const CustomSurface: StoryObj = {
     docs: {
       description: {
         story:
-          '`renderToast` on `ToastViewport` replaces the entire visible toast — Astryx renders no card and no dismiss button. It applies to every toast in the viewport, including ones raised by code that knows nothing about the custom card, which is what hiding the built-in dismiss with CSS cannot do. `endContent` is handed to the renderer to place rather than dropped, and the auto-hide timer keeps running: hover the toast to pause it.',
+          "`renderBody` on `ToastViewport` replaces the content of every toast's card with your own layout — here a leading status stripe. Astryx keeps the card and the transport, and hands over the message, the `endContent` and its own dismiss `Button`, so the close stays themed, translated and correctly named. It applies to every toast in the viewport, including ones raised by code that knows nothing about this layout.",
       },
     },
   },
 };
 
-function CustomSurfaceTriggers() {
+function CustomBodyTriggers() {
   const toast = useToast();
   return (
     <Stack direction="horizontal" gap={2} wrap="wrap">

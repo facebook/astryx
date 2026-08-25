@@ -67,10 +67,10 @@ export const docs = {
       required: true,
     },
     {
-      name: 'renderToast',
-      type: '(toast: ToastRenderProps) => ReactNode',
+      name: 'renderBody',
+      type: '(toast: ToastBodyRenderProps) => ReactNode',
       description:
-        'On ToastViewport (or LayerProvider\'s toast config). Renders the entire visible surface of every toast, replacing Astryx\'s card — no background, no padding and no dismiss button are drawn for you. Applies to every toast in the viewport, including ones raised by library code. Your surface owns the dismiss control and its accessible name; call the supplied dismiss(). endContent is handed to you to place, not dropped. The render argument is {body, endContent, type, isAutoHide, autoHideDuration, uniqueID, dismiss}, where type is \'info\' | \'error\'.',
+        "On ToastViewport (or LayerProvider's toast config). Replaces the content of every toast's card with your own layout. Astryx keeps the card, its astryx-toast theme target, the live-region role and the auto-hide timer, and hands the renderer the message, the endContent and its own dismiss Button to place — so the close stays themeable, translated and correctly named rather than something a custom layout has to rebuild. Applies to every toast in the viewport, including ones raised by library code. The argument is {body, endContent, dismissButton, type, isAutoHide, autoHideDuration, dismiss}, where type is 'info' | 'error'.",
     },
   ],  theming: {
     targets: [
@@ -117,8 +117,8 @@ export const docsZh = {
     uniqueID: '用于去重的唯一标识符。',
     collisionBehavior: '当已存在相同 uniqueID 的 toast 时的行为。',
     onHide: '当 toast 被移除时触发的回调。',
-    renderToast:
-      '位于 ToastViewport 上。渲染每个 toast 的整个可见表面，替换 Astryx 自带的卡片——不会为你绘制背景、内边距和关闭按钮。作用于该视口中的每个 toast，包括由库代码发起的 toast。你的表面拥有关闭控件及其无障碍名称，请调用传入的 dismiss()。endContent 会交给你放置，而不会被丢弃。传入的参数为 {body, endContent, type, isAutoHide, autoHideDuration, uniqueID, dismiss}，其中 type 为 \'info\' | \'error\'。',
+    renderBody:
+      "位于 ToastViewport（或 LayerProvider 的 toast 配置）上。用你自己的布局替换每个 toast 卡片内部的内容。Astryx 保留卡片本身、astryx-toast 主题目标、实时区域角色以及自动关闭计时器，并把消息、endContent 和它自己的关闭 Button 交给渲染函数放置——因此关闭控件仍然可主题化、已翻译且具备正确的无障碍名称，无需自行重建。作用于该视口中的每个 toast，包括由库代码发起的 toast。传入参数为 {body, endContent, dismissButton, type, isAutoHide, autoHideDuration, dismiss}，其中 type 为 'info' | 'error'。",
   },
   usage: {
     description:

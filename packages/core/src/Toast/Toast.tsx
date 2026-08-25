@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useCallback, useRef} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
@@ -20,10 +20,9 @@ import {
 import {mergeProps} from '../utils';
 import {useTheme} from '../theme';
 import {MediaTheme} from '../theme/MediaTheme';
-import type {ToastType, ToastDismissReason} from './types';
+import type {ToastType, ToastDismissReason, ToastBodyRenderFn} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {useToastTimer} from './useToastTimer';
 
 const styles = stylex.create({
   root: {
@@ -87,6 +86,11 @@ export interface ToastProps {
   autoHideDuration: number;
   isExiting?: boolean;
   onDismiss: (reason: ToastDismissReason) => void;
+  /**
+   * Replaces the content of the toast's card — see `ToastViewport`'s
+   * `renderBody`, which is where an app normally sets this.
+   */
+  renderBody?: ToastBodyRenderFn;
 }
 
 /**
@@ -117,22 +121,101 @@ export function Toast({
   autoHideDuration,
   isExiting = false,
   onDismiss,
+  renderBody,
 }: ToastProps) {
   const t = useTranslator();
-  // Read onDismiss through a ref so the timer callback never restarts on an
-  // unrelated viewport render.
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isPausedRef = useRef(false);
+  const remainingRef = useRef(autoHideDuration);
+  // Will be initialized by startTimer when actually used
+  const startTimeRef = useRef<number | null>(null);
+
+  // Read onDismiss through a ref: the viewport re-creates it on every render
+  // (another toast arriving/exiting), and a startTimer that depends on it
+  // would restart — and un-pause — this toast's timer on unrelated renders.
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
 
-  // The auto-hide lifetime is the toast's transport, shared with the viewport
-  // so a `renderToast` surface keeps it (see useToastTimer).
-  const timerHandlers = useToastTimer(isAutoHide, autoHideDuration, () =>
-    onDismissRef.current('auto'),
-  );
+  const startTimer = useCallback(() => {
+    if (!isAutoHide || isPausedRef.current) {
+      return;
+    }
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    startTimeRef.current = Date.now();
+    timerRef.current = setTimeout(() => {
+      onDismissRef.current('auto');
+    }, remainingRef.current);
+  }, [isAutoHide]);
+
+  const pauseTimer = useCallback(() => {
+    if (!isAutoHide || isPausedRef.current) {
+      return;
+    }
+    isPausedRef.current = true;
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (startTimeRef.current != null) {
+      const elapsed = Date.now() - startTimeRef.current;
+      remainingRef.current = Math.max(remainingRef.current - elapsed, 1000);
+    }
+  }, [isAutoHide]);
+
+  const resumeTimer = useCallback(() => {
+    if (!isAutoHide || !isPausedRef.current) {
+      return;
+    }
+    isPausedRef.current = false;
+    startTimer();
+  }, [isAutoHide, startTimer]);
+
+  useEffect(() => {
+    remainingRef.current = autoHideDuration;
+    startTimer();
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+    // startTimer's identity is stable per isAutoHide, so this runs on mount
+    // and on a genuine duration change — not on unrelated viewport renders.
+  }, [autoHideDuration, startTimer]);
+
+  // Pause the auto-hide timer while the window is not focused, so a toast
+  // doesn't silently expire while the user is in another window or tab.
+  useEffect(() => {
+    if (!isAutoHide) {
+      return;
+    }
+    window.addEventListener('blur', pauseTimer);
+    window.addEventListener('focus', resumeTimer);
+    return () => {
+      window.removeEventListener('blur', pauseTimer);
+      window.removeEventListener('focus', resumeTimer);
+    };
+  }, [isAutoHide, pauseTimer, resumeTimer]);
 
   const handleDismiss = useCallback(() => {
     onDismiss('manual');
   }, [onDismiss]);
+
+  // Built here rather than inside the default layout so `renderBody` can be
+  // handed the very same control: a custom layout gets Astryx's close, with
+  // its translated label and its `astryx-button` theming, instead of having
+  // to rebuild one and get those right itself.
+  const dismissButton = (
+    <Button
+      variant="ghost"
+      size="sm"
+      icon={<Icon icon="close" size="sm" color="inherit" />}
+      label={t('@astryx.toast.dismiss')}
+      onClick={handleDismiss}
+      isIconOnly
+    />
+  );
 
   const isError = type === 'error';
   // The surface is *usually* dark in light mode and light in dark mode, but a
@@ -146,7 +229,10 @@ export function Toast({
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
       aria-atomic="true"
-      {...timerHandlers}
+      onMouseEnter={pauseTimer}
+      onMouseLeave={resumeTimer}
+      onFocusCapture={pauseTimer}
+      onBlurCapture={resumeTimer}
       {...mergeProps(
         themeProps('toast', {type}),
         stylex.props(
@@ -156,21 +242,26 @@ export function Toast({
         ),
       )}>
       <MediaTheme mode="auto" fallback={fallbackMediaMode}>
-        <div {...stylex.props(styles.inner)}>
-          <div {...stylex.props(styles.content)}>{body}</div>
+        {renderBody ? (
+          renderBody({
+            body,
+            endContent,
+            dismissButton,
+            type,
+            isAutoHide,
+            autoHideDuration,
+            dismiss: handleDismiss,
+          })
+        ) : (
+          <div {...stylex.props(styles.inner)}>
+            <div {...stylex.props(styles.content)}>{body}</div>
 
-          <div {...stylex.props(styles.endContent)}>
-            {endContent}
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<Icon icon="close" size="sm" color="inherit" />}
-              label={t('@astryx.toast.dismiss')}
-              onClick={handleDismiss}
-              isIconOnly
-            />
+            <div {...stylex.props(styles.endContent)}>
+              {endContent}
+              {dismissButton}
+            </div>
           </div>
-        </div>
+        )}
       </MediaTheme>
     </div>
   );

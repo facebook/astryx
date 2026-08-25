@@ -23,11 +23,9 @@ import type {
   ToastEntry,
   ToastPosition,
   ToastDismissReason,
-  ToastRenderFn,
-  ToastRenderProps,
+  ToastBodyRenderFn,
 } from './types';
 import {themeProps} from '../utils/themeProps';
-import {useToastTimer} from './useToastTimer';
 import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
@@ -110,32 +108,6 @@ function getNodeText(node: ReactNode): string {
   return '';
 }
 
-/**
- * One toast drawn by a consumer's `renderToast`.
- *
- * Astryx's own card runs the auto-hide timer itself; a custom surface replaces
- * the card, so the timer has to live out here instead — the lifetime is the
- * toast's transport, and the transport stays Astryx's whoever draws. The
- * pause handlers ride the wrapper, which is the element the pointer and focus
- * actually reach.
- */
-function RenderedToast({
-  render,
-  toast,
-  onExpire,
-}: {
-  render: ToastRenderFn;
-  toast: ToastRenderProps;
-  onExpire: () => void;
-}) {
-  const timerHandlers = useToastTimer(
-    toast.isAutoHide,
-    toast.autoHideDuration,
-    onExpire,
-  );
-  return <div {...timerHandlers}>{render(toast)}</div>;
-}
-
 export interface ToastViewportProps {
   position?: ToastPosition;
   maxVisible?: number;
@@ -147,36 +119,35 @@ export interface ToastViewportProps {
    */
   isTopLayer?: boolean;
   /**
-   * Renders the entire visible surface of every toast, replacing Astryx's own
-   * card — no background, no padding, and **no dismiss button** are drawn for
-   * you. Applies to every toast in the viewport, including ones raised by
-   * library code that calls `useToast()` without knowing about your surface.
+   * Replaces the content of every toast's card with your own layout. Astryx
+   * keeps the card itself — its surface, its `astryx-toast` theme target, the
+   * live-region role, and the auto-hide timer — and hands the renderer the
+   * message, the `endContent`, and its own dismiss `Button` to place.
    *
-   * That app-wide reach is the point. Hiding Astryx's dismiss button with CSS
-   * to draw your own inside `body` reaches only the toasts your own wrapper
-   * created; a library's toast keeps Astryx's card and loses its only way to
-   * close. A renderer replaces the surface for those too.
+   * It applies to every toast in the viewport, including ones raised by
+   * library code that calls `useToast()` without knowing about your layout.
+   * That app-wide reach is the point: hiding Astryx's dismiss with CSS to
+   * draw your own reaches only the toasts your own wrapper created, so a
+   * library's toast keeps the built-in card and loses its only way to close.
    *
-   * Your surface owns the dismiss control and its accessible name — call
-   * `dismiss` from it. `endContent` is handed to you rather than dropped;
-   * place it yourself.
+   * The dismiss control stays Astryx's — themed, translated, correctly named
+   * — so a custom layout cannot mislabel it. Place it somewhere.
    *
    * @example
    * ```
    * <ToastViewport
-   *   renderToast={toast => (
-   *     <MyCard
-   *       tone={toast.type}
-   *       title={toast.body}
-   *       action={toast.endContent}
-   *       onDismiss={toast.dismiss}
-   *     />
+   *   renderBody={({body, endContent, dismissButton}) => (
+   *     <MyRow>
+   *       <MyTitle>{body}</MyTitle>
+   *       {endContent}
+   *       {dismissButton}
+   *     </MyRow>
    *   )}>
    *   <App />
    * </ToastViewport>
    * ```
    */
-  renderToast?: ToastRenderFn;
+  renderBody?: ToastBodyRenderFn;
   children?: React.ReactNode;
 }
 
@@ -197,7 +168,7 @@ export function ToastViewport({
   maxVisible = 5,
   inset,
   isTopLayer = true,
-  renderToast,
+  renderBody,
   children,
 }: ToastViewportProps) {
   const t = useTranslator();
@@ -535,31 +506,16 @@ export function ToastViewport({
                   : undefined
               }>
               <div {...stylex.props(styles.toastWrapperInner)}>
-                {renderToast ? (
-                  <RenderedToast
-                    render={renderToast}
-                    toast={{
-                      body: o.body,
-                      endContent: o.endContent,
-                      type,
-                      isAutoHide,
-                      autoHideDuration: dur,
-                      uniqueID: o.uniqueID,
-                      dismiss: () => removeToast(entry.id, 'manual'),
-                    }}
-                    onExpire={() => removeToast(entry.id, 'auto')}
-                  />
-                ) : (
-                  <Toast
-                    type={type}
-                    body={o.body}
-                    endContent={o.endContent}
-                    isAutoHide={isAutoHide}
-                    autoHideDuration={dur}
-                    isExiting={isExiting}
-                    onDismiss={reason => removeToast(entry.id, reason)}
-                  />
-                )}
+                <Toast
+                  type={type}
+                  body={o.body}
+                  endContent={o.endContent}
+                  isAutoHide={isAutoHide}
+                  autoHideDuration={dur}
+                  isExiting={isExiting}
+                  onDismiss={reason => removeToast(entry.id, reason)}
+                  renderBody={renderBody}
+                />
               </div>
             </div>
           );

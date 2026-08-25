@@ -51,35 +51,46 @@ export interface ToastOptions {
 export type ToastDismissFn = () => void;
 
 /**
- * What a `renderToast` function receives — one toast's content plus the
- * controls a surface needs to be complete.
+ * What a `renderBody` function receives: one toast's content, plus the two
+ * controls Astryx has already built for it.
  *
- * `dismiss` is the reason this is a render function rather than a slot: the
- * dismiss control has to be inside the surface, and the surface is built
- * before `showToast` has returned anything to close it with.
+ * `dismissButton` is the point of the whole thing. Astryx renders the close —
+ * a ghost icon `Button` carrying the translated `@astryx.toast.dismiss` label
+ * — and hands it over as an element to place. So it stays a real Astryx
+ * `Button`: themeable through `astryx-button` like every other, named in the
+ * user's language, and impossible for a custom layout to forget or mislabel.
+ * The layout is the consumer's; the control is not.
  */
-export interface ToastRenderProps {
+export interface ToastBodyRenderProps {
   /** Primary message content, as passed to `showToast`. */
   body: ReactNode;
-  /** Trailing content, as passed to `showToast`. Place it in your surface. */
+  /** Trailing content, as passed to `showToast`. Place it in your layout. */
   endContent?: ReactNode;
+  /**
+   * Astryx's dismiss control, ready to place. Render it somewhere — it is the
+   * toast's only pointer affordance, and on an error toast (which does not
+   * auto-hide) its only exit at all.
+   */
+  dismissButton: ReactNode;
   /** Resolved toast type — `'error'` also makes the live region assertive. */
   type: ToastType;
   /** Whether this toast will dismiss itself. */
   isAutoHide: boolean;
   /** Milliseconds until auto-dismiss, when `isAutoHide`. */
   autoHideDuration: number;
-  /** The toast's `uniqueID`, when one was given. */
-  uniqueID?: string;
-  /** Removes this toast, as a manual dismissal. */
+  /**
+   * Dismisses this toast, as a manual dismissal — the same thing
+   * `dismissButton` does. For a layout whose own control dismisses too, e.g.
+   * an Undo that closes the toast after undoing.
+   */
   dismiss: ToastDismissFn;
 }
 
 /**
- * Renders the entire visible surface of every toast, replacing Astryx's own
- * card — see `ToastViewport`'s `renderToast`.
+ * Renders the content of every toast inside Astryx's card — see
+ * `ToastViewport`'s `renderBody`.
  */
-export type ToastRenderFn = (toast: ToastRenderProps) => ReactNode;
+export type ToastBodyRenderFn = (toast: ToastBodyRenderProps) => ReactNode;
 
 /** Function returned by useToast to show toasts. */
 export type ShowToastFn = (options: ToastOptions) => ToastDismissFn;

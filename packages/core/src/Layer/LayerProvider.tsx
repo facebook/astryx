@@ -54,7 +54,7 @@ export function LayerProvider({
         position={toastConfig.position}
         maxVisible={toastConfig.maxVisible}
         inset={toastConfig.inset}
-        renderToast={toastConfig.renderToast}>
+        renderBody={toastConfig.renderBody}>
         {children}
       </ToastViewport>
     </LayerContext>
