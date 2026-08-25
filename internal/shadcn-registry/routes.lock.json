@@ -972,6 +972,11 @@
       "aliases": []
     },
     {
+      "name": "component-table-selection-toolbar",
+      "path": "components/table-selection-toolbar",
+      "aliases": []
+    },
+    {
       "name": "component-text",
       "path": "components/text",
       "aliases": []
@@ -3558,6 +3563,16 @@
     {
       "name": "example-use-table-row-status-semantic-and-custom-markers",
       "path": "examples/use-table-row-status/semantic-and-custom-markers",
+      "aliases": []
+    },
+    {
+      "name": "example-use-table-selection-table-bulk-actions",
+      "path": "examples/use-table-selection/table-bulk-actions",
+      "aliases": []
+    },
+    {
+      "name": "example-use-table-selection-table-floating-bulk-actions",
+      "path": "examples/use-table-selection/table-floating-bulk-actions",
       "aliases": []
     },
     {

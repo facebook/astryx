@@ -225,6 +225,7 @@ export const docs = {
     {name: 'TableHeaderCell'},
     {name: 'useTableSelection'},
     {name: 'useTableSelectionState'},
+    {name: 'TableSelectionToolbar'},
     {name: 'useTableSortable'},
     {name: 'useTableTreeData'},
     {name: 'useTableTreeState'},
