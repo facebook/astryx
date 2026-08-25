@@ -1,0 +1,942 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+'use client';
+
+/**
+ * @file ChatVirtualizer.tsx
+ * @input Uses React only (no DOM libraries); attaches to a caller-owned
+ *   scroll container (ChatLayout) or renders its own
+ * @output Exports ChatVirtualizer component, ChatVirtualizerProps and
+ *   ChatVirtualizerHandle
+ * @position Experimental windowing participant for ChatMessageList children:
+ *   keeps thousands-of-messages transcripts at a bounded DOM size while
+ *   owning follow-at-end and read-position stability
+ *
+ * The combination under evaluation:
+ *   1. aggregate top/bottom spacers — rendered rows stay in normal document
+ *      flow between two placeholder divs (O(1) placeholder nodes, the
+ *      occupancy scheme production chat transcripts ship);
+ *   2. bottom-distance bookkeeping as the default reference frame — the
+ *      desired position is stored as "px from the bottom edge", so
+ *      above-viewport estimate→measured swaps and pinned tail growth are
+ *      both identity operations;
+ *   3. identity-anchor override while scrolled up — reading history anchors
+ *      the first row intersecting the viewport top, so above-window size
+ *      corrections keep the row being read visually frozen.
+ *
+ * Corrections are SYNCHRONOUS pre-paint: every commit's layout effect runs
+ * the pass — measure ('sync' re-reads the whole window's offsetHeight;
+ * 'ro', the default, forced-reads only never-seen rows and takes the rest
+ * from ResizeObserver callbacks), recompute offsets, resize the spacers,
+ * restore scrollTop from the mode — all before the browser paints. No
+ * compensation deltas anywhere: position is always re-derived from the
+ * stored reference, so a single miss self-heals.
+ *
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/lab/src/Chat/index.ts (exports)
+ * - /apps/storybook/stories/ChatVirtualization.stories.tsx (examples)
+ */
+
+import * as React from 'react';
+
+// "Did the declarative target land?" — a convergence tolerance, deliberately
+// NOT the same knob as `endThreshold` (which is a user-intent question).
+const CONVERGE_EPSILON_PX = 4;
+
+const GLOBAL_BUCKET = '\u0000global';
+// Prior strength for shrinkage in effectiveAvg: at this many real samples
+// the bucket's own data and the inherited baseline carry equal weight.
+const PRIOR_SAMPLES = 5;
+
+// flexShrink: 0 — inside a column-flex scroller the spacers are flex items
+// and would otherwise be compressed to fit (default shrink 1), silently
+// corrupting the whole geometry. Heights stay imperative; React only
+// manages this one property, so its style diffing never touches height.
+const spacerStyle: React.CSSProperties = {flexShrink: 0};
+
+export type ChatVirtualizerMeasureMode = 'ro' | 'sync';
+
+/** Imperative surface — both methods are declarations, not scroll actions. */
+export interface ChatVirtualizerHandle {
+  /** Declare "be N px above the bottom edge" (0 = follow-at-end). */
+  scrollToDistanceFromBottomPx: (px?: number) => void;
+  /**
+   * Hold one row at a fixed viewport offset (0 = its top edge at the
+   * viewport top — the "pin the new prompt to the top" pattern). Same
+   * declaration semantics; the reference frame becomes a row identity
+   * instead of the bottom edge, so rows resizing above it are absorbed.
+   * The position clamps to the scrollable range, and the key must exist in
+   * the CURRENT data: a missing key falls back to follow-at-end on the next
+   * pass, so declare after the data commit, not ahead of it.
+   */
+  anchorToKey: (key: string, viewportOffset?: number) => void;
+}
+
+export interface ChatVirtualizerProps<T> {
+  /** Row data. Changes are detected by REFERENCE — replace, don't mutate. */
+  data: readonly T[];
+  /**
+   * Stable string identity per row (coerced with String() internally).
+   * Never derive keys from indices: the size cache and the running size
+   * averages are keyed by identity.
+   */
+  keyExtractor: (item: T, index: number) => string;
+  renderItem: (info: {item: T; index: number}) => React.ReactNode;
+  /**
+   * Static estimate (px) for unmeasured rows, or a function — a function is
+   * authoritative and never overridden by the running averages.
+   */
+  estimatedItemSize?: number | ((item: T, index: number) => number);
+  /**
+   * 'ro' (default, the shipping gear) = sizes come from ResizeObserver
+   * callbacks plus a one-shot sync read at first mount; steady-state
+   * commits force no layout. 'sync' = forced-layout measurement in EVERY
+   * commit's layout effect — zero-window corrections, pays a sync layout
+   * per commit. Kept as the experimental control arm: same code, one
+   * switch, so any residual artifact bisects into "pipeline timing" vs
+   * "logic" instantly.
+   */
+  measureMode?: ChatVirtualizerMeasureMode;
+  /** Imperative declarations (see ChatVirtualizerHandle). */
+  apiRef?: React.Ref<ChatVirtualizerHandle>;
+  /**
+   * Optional item classifier: measured sizes feed a running average PER
+   * TYPE, so a corpus mixing tool-call stubs with long markdown converges
+   * to honest per-shape prices instead of one blended number.
+   */
+  getItemType?: (item: T, index: number) => string;
+  /**
+   * ATTACH MODE. By default the list renders its own scroll container. Pass
+   * the caller's scroll element instead (ChatLayout's, via
+   * useChatLayoutContext().scrollContainerRef) and it renders a bare
+   * fragment — spacers + windowed rows — into the container the caller
+   * already owns: the layout component keeps the scroller, the virtualizer
+   * is one participant in it. Pass the ELEMENT, not a ref: a parent's ref
+   * attaches after its children's layout effects, so a ref would still read
+   * null on the commit that matters, while state holding the element
+   * re-renders with it available. Pass null (not undefined) while the
+   * element is pending: absent = own-container mode, null = attach mode
+   * waiting — falling back to the own container for even one commit mounts
+   * EVERY row (unbounded clientHeight) and tears it back down (measured:
+   * 10s boot at 2000 messages).
+   *
+   * CONTRACT: row spacing must live INSIDE the rows (padding), never as
+   * flex `gap` or margins on the container — offsetHeight cannot see
+   * either, so the geometry would drift by one gap per row. Nest inside
+   * ChatMessageList with gap=0.
+   */
+  scrollElement?: HTMLElement | null;
+  /**
+   * How close to the bottom (px) a user scroll must land to re-engage
+   * follow-at-end. This is the RE-ENGAGE condition only — disengaging is
+   * upward movement past it. Default 24 matches the value shipped by a
+   * production chat transcript; TanStack Virtual's chat mode uses 1px and
+   * Legend List 10% of the viewport, so the useful range is wide. Too tight
+   * and a user who stops "visually at the bottom" (trackpad inertia,
+   * fractional row heights, page zoom) silently stops following while
+   * output grows below them.
+   */
+  endThreshold?: number;
+  overscanTop?: number;
+  overscanBottom?: number;
+  /** Own-container mode only. */
+  style?: React.CSSProperties;
+  /** Own-container mode only. */
+  className?: string;
+}
+
+type Mode =
+  | {kind: 'end'; distance: number}
+  | {kind: 'anchor'; key: string; viewportOffset: number};
+
+type Win = {start: number; end: number};
+
+type Geo = {
+  offsets: number[];
+  total: number;
+  keys: string[];
+  index: Map<string, number>;
+};
+
+type Bucket = {sum: number; count: number; eff: number};
+
+export function ChatVirtualizer<T>(
+  props: ChatVirtualizerProps<T>,
+): React.ReactNode {
+  const {
+    data,
+    keyExtractor,
+    renderItem,
+    estimatedItemSize = 120,
+    measureMode = 'ro',
+    apiRef,
+    getItemType,
+    scrollElement,
+    endThreshold = 24,
+    overscanTop = 1600,
+    overscanBottom = 600,
+    style,
+    className,
+  } = props;
+
+  const ownScrollerRef = React.useRef<HTMLDivElement | null>(null);
+  const attachMode = scrollElement !== undefined;
+  // CLOSURE DISCIPLINE (canonical statement): the machinery is plain
+  // render-scope functions, so same-commit callers always see live props;
+  // everything created ONCE and outliving renders — the ResizeObserver
+  // callback, the imperative handle, the rAF retry — must go through a
+  // live ref (syncRef and the prop mirrors below) instead of its birth
+  // closure. A violation froze attach mode for a memoized consumer on the
+  // first render's null scroller (geometry stuck on estimates forever).
+  const scrollElementRef = React.useRef(scrollElement);
+  scrollElementRef.current = scrollElement;
+  const overscanTopRef = React.useRef(overscanTop);
+  overscanTopRef.current = overscanTop;
+  const overscanBottomRef = React.useRef(overscanBottom);
+  overscanBottomRef.current = overscanBottom;
+  // Single accessor so every pass reads the live element in either mode.
+  // In attach mode a pending (null) element makes every pass bail rather
+  // than falling back to the own container.
+  const getScroller = (): HTMLElement | null =>
+    scrollElementRef.current !== undefined
+      ? scrollElementRef.current
+      : ownScrollerRef.current;
+  const spacerTopRef = React.useRef<HTMLDivElement | null>(null);
+  const spacerBottomRef = React.useRef<HTMLDivElement | null>(null);
+  const rowEls = React.useRef(new Map<string, HTMLDivElement>());
+  const sizes = React.useRef(new Map<string, number>());
+  const geo = React.useRef<Geo>({
+    offsets: [],
+    total: 0,
+    keys: [],
+    index: new Map(),
+  });
+  const mode = React.useRef<Mode>({kind: 'end', distance: 0});
+  // Echo-matching instead of a time window: we record the exact value we
+  // wrote; a scroll event only counts as "ours" if scrollTop matches it.
+  // A time gate would swallow real user scrolls arriving within the window,
+  // leaving a stale anchor that the next restore then fights (double-writer).
+  const progTarget = React.useRef<number | null>(null);
+  // Which regime scrollTop is in: USER-DRIVEN (a non-echo scroll event was
+  // the latest movement — the live-anchor refresh may re-derive identity
+  // from scrollTop every pass, covering the events-lag-rAF staleness) or
+  // MACHINE-DRIVEN (a declaration was issued and the user has not scrolled
+  // since — the stored identity is the truth and refresh must hold off).
+  // A regime, not a one-shot: at high scroll speeds several correction
+  // passes run between two scroll events, and clearing per pass re-created
+  // the staleness class mid-gesture (measured: 5.2% jitter at 60px steps).
+  const userScrolledRef = React.useRef(false);
+  // Last scrollTop observed by a scroll event, and the px the user has moved
+  // away from where the machinery last placed them — the end→anchor decision
+  // runs on the latter (see onScroll).
+  const lastEventST = React.useRef<number | null>(null);
+  const lastUserEventT = React.useRef(0);
+  const userAway = React.useRef(0);
+  const geoChanged = React.useRef(false);
+  const rafRetry = React.useRef<number | null>(null);
+  const prevScrollerRef = React.useRef<HTMLElement | null>(null);
+  // Convergence protection (generalized from a one-shot landing flag):
+  // whenever a declarative target is set (mount landing, or any imperative
+  // scrollTo*), the list is "converging" — scroll events may not flip the
+  // mode (bootstrap writes and transient clamps would otherwise read as
+  // user scrolls and hijack the target mid-flight), and every pass keeps
+  // retrying until the target is reached. Only INTENT signals (wheel/touch,
+  // not scroll effects — those mix in our own writes) break it early.
+  const converging = React.useRef(true);
+  const [win, setWin] = React.useState<Win>({start: 0, end: -1});
+  const winRef = React.useRef(win);
+  winRef.current = win;
+  const dataRef = React.useRef(data);
+  dataRef.current = data;
+  const measureModeRef = React.useRef(measureMode);
+  measureModeRef.current = measureMode;
+  const endThresholdRef = React.useRef(endThreshold);
+  endThresholdRef.current = endThreshold;
+
+  // Running average of everything measured so far. A static estimate that
+  // undershoots makes the bottom RECEDE while scrolling toward it: each cold
+  // row that mounts adds (real - est) px of newly discovered distance, and a
+  // mouse wheel at ~120px/click cannot outrun a 158px/row discovery rate —
+  // measured as "wheel cannot reach the bottom; trackpad (faster) can".
+  // Once samples exist they price unmeasured rows, so mounting a cold row
+  // discovers ~nothing. An estimatedItemSize FUNCTION is authoritative and
+  // never overridden (the consumer knows more than an average does).
+  // Raw averages accumulate continuously — one bucket per item type when
+  // getItemType is given, plus a global cold-start bucket — but the
+  // EFFECTIVE price is gated (see effectiveAvg): hysteresis >10%, never
+  // while converging, only in scroll-quiet, and every move marks the
+  // geometry dirty. Each gate has a measured failure behind it (landings
+  // chasing a moving sum 200px off; 1.1% repricing jitter at fast scroll; a
+  // deterministic 44px anchor miss without the dirty mark).
+  const bucketsRef = React.useRef(new Map<string, Bucket>());
+  const typeByKey = React.useRef(new Map<string, string>());
+  const bucket = (t: string): Bucket => {
+    let b = bucketsRef.current.get(t);
+    if (!b) {
+      bucketsRef.current.set(t, (b = {sum: 0, count: 0, eff: 0}));
+    }
+    return b;
+  };
+  const noteMeasured = (
+    key: string,
+    prev: number | undefined,
+    px: number,
+  ): void => {
+    for (const t of [GLOBAL_BUCKET, typeByKey.current.get(key)]) {
+      if (t === undefined) {
+        continue;
+      }
+      const b = bucket(t);
+      if (prev === undefined) {
+        b.sum += px;
+        b.count += 1;
+      } else {
+        b.sum += px - prev;
+      }
+    }
+  };
+  // A bucket's effective price INITIALIZES from the inherited baseline (the
+  // global average, or the static estimate), so a type first encountered
+  // mid-scroll is not a cliff — zero-initialized buckets made the first
+  // per-type pricing a mass repricing event.
+  const effectiveAvg = (t: string, baseline: number): number => {
+    const b = bucketsRef.current.get(t);
+    if (!b || b.count === 0) {
+      return baseline;
+    }
+    // Shrinkage toward the inherited baseline: the baseline counts as
+    // PRIOR_SAMPLES virtual samples, so a young bucket's mean is mostly
+    // baseline (1 real sample = 1/(1+K) weight) and the data takes over
+    // smoothly as samples accumulate. Replaces a hard min-count gate —
+    // same protection against single-sample noise, no cliff at the
+    // threshold crossing.
+    const raw = (b.sum + PRIOR_SAMPLES * baseline) / (b.count + PRIOR_SAMPLES);
+    if (b.eff === 0) {
+      b.eff = baseline > 0 ? baseline : raw;
+    }
+    if (
+      !converging.current &&
+      // ...and only while scrolling is QUIET: a repricing event moves every
+      // unmeasured offset at once, costing ~one frame at up-to-step-size
+      // deviation if it lands mid-scroll. A quarter second of scroll silence
+      // defers the same correction into frames nobody is watching. (Streams
+      // reprice freely — machinery echoes are not user events.)
+      performance.now() - lastUserEventT.current > 250 &&
+      Math.abs(raw - b.eff) > b.eff * 0.1
+    ) {
+      b.eff = raw;
+      geoChanged.current = true;
+    }
+    return b.eff;
+  };
+  const estOf = (item: T, i: number): number => {
+    if (typeof estimatedItemSize === 'function') {
+      return estimatedItemSize(item, i);
+    }
+    const global = effectiveAvg(GLOBAL_BUCKET, estimatedItemSize);
+    return getItemType ? effectiveAvg(getItemType(item, i), global) : global;
+  };
+
+  const recompute = (): void => {
+    const d = dataRef.current;
+    const offsets = new Array<number>(d.length);
+    const keys = new Array<string>(d.length);
+    let y = 0;
+    const index = new Map<string, number>();
+    for (let i = 0; i < d.length; i++) {
+      // String coercion is part of the key contract: the RO pipeline reads
+      // keys back from dataset.pkey (always a string), so a number key would
+      // split the size cache in two — the RO copy under the string, the sync
+      // copy under the number — and every RO re-measure would feed the
+      // averages as a fresh sample. Coercing at both derivation points keeps
+      // every internal map keyed consistently.
+      keys[i] = String(keyExtractor(d[i], i));
+      index.set(keys[i], i);
+      offsets[i] = y;
+      y += sizes.current.get(keys[i]) ?? estOf(d[i], i);
+    }
+    geo.current = {offsets, total: y, keys, index};
+  };
+
+  // index of the last row whose offset <= y
+  const indexAt = (y: number): number => {
+    const {offsets} = geo.current;
+    let lo = 0;
+    let hi = offsets.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (offsets[mid] <= y) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return lo;
+  };
+
+  const computeWindow = (el: HTMLElement, desiredTop?: number): Win => {
+    const g = geo.current;
+    if (g.keys.length === 0) {
+      return {start: 0, end: -1};
+    }
+    const top = (desiredTop ?? el.scrollTop) - originRef.current;
+    const start = indexAt(Math.max(0, top - overscanTopRef.current));
+    const bottomEdge = top + el.clientHeight + overscanBottomRef.current;
+    // When the query reaches past the content, include the last row by
+    // construction instead of by binary search: a zero-height final row sits
+    // AT total, which the search (offsets[i] <= total - 1) can never select.
+    const end = bottomEdge >= g.total ? g.keys.length - 1 : indexAt(bottomEdge);
+    return {start, end};
+  };
+
+  const setWindowIfChanged = (next: Win): void => {
+    const cur = winRef.current;
+    if (next.start !== cur.start || next.end !== cur.end) {
+      geoChanged.current = true;
+      setWin(next);
+    }
+  };
+
+  // Size both spacers so the mounted window occupies its true place in the
+  // scroll range, under whatever geometry is current.
+  // `floor` mode only ever GROWS a spacer (used pre-mutation, where the new
+  // window's rows are not in the DOM yet: shrinking the bottom spacer there
+  // would make the transient shorter — the clamp window all over again).
+  const writeSpacers = (w: Win, floor = false): void => {
+    const g = geo.current;
+    const empty = w.end < w.start || g.offsets.length === 0;
+    const top = empty ? 0 : g.offsets[w.start];
+    const belowEnd = empty
+      ? 0
+      : w.end + 1 < g.offsets.length
+        ? g.offsets[w.end + 1]
+        : g.total;
+    const write = (
+      ref: React.RefObject<HTMLDivElement | null>,
+      px: number,
+    ): void => {
+      if (!ref.current) {
+        return;
+      }
+      if (floor && px <= (parseFloat(ref.current.style.height) || 0)) {
+        return;
+      }
+      ref.current.style.height = `${px}px`;
+    };
+    write(spacerTopRef, top);
+    write(spacerBottomRef, Math.max(0, g.total - belowEnd));
+  };
+
+  // Where a row identity + viewport offset puts scrollTop under the current
+  // geometry, and the reverse: the anchor for whatever is at a scroll offset.
+  const anchorAt = (scrollTop: number): Mode => {
+    const g = geo.current;
+    const y = scrollTop - originRef.current;
+    const idx = indexAt(y);
+    return {
+      kind: 'anchor',
+      key: g.keys[idx],
+      viewportOffset: g.offsets[idx] - y,
+    };
+  };
+
+  // Scroll offset at which our content starts. Zero when we own the scroller;
+  // in attach mode the caller's container can put padding, a header or a
+  // sticky region above us, and every offset in `geo` is relative to our first
+  // spacer rather than to the scroll box.
+  const originRef = React.useRef(0);
+  // Content the caller renders BELOW our fragment (in ChatLayout, the dock
+  // overflow: the scroller deliberately overflows by the composer height so
+  // the tail can scroll clear of it). End mode must scroll past it, or the
+  // last message parks underneath the overlay (measured: constant 174px).
+  const belowRef = React.useRef(0);
+  const measureOrigin = (el: HTMLElement): number => {
+    if (scrollElementRef.current == null) {
+      return 0;
+    }
+    const top = spacerTopRef.current;
+    if (!top) {
+      return originRef.current;
+    }
+    originRef.current =
+      top.getBoundingClientRect().top -
+      el.getBoundingClientRect().top +
+      el.scrollTop;
+    belowRef.current = Math.max(
+      0,
+      el.scrollHeight - originRef.current - geo.current.total,
+    );
+    return originRef.current;
+  };
+
+  // Desired scrollTop for a reference frame, clamped to the scrollable range.
+  // null when the anchored row no longer exists in the data.
+  const targetFor = (m: Mode, el: HTMLElement): number | null => {
+    const g = geo.current;
+    const origin = originRef.current;
+    let raw;
+    const below = belowRef.current;
+    if (m.kind === 'end') {
+      raw = origin + g.total + below - el.clientHeight - m.distance;
+    } else {
+      const idx = g.index.get(m.key) ?? -1;
+      if (idx < 0) {
+        return null;
+      }
+      raw = origin + g.offsets[idx] - m.viewportOffset;
+    }
+    return Math.max(
+      0,
+      Math.min(raw, origin + g.total + below - el.clientHeight),
+    );
+  };
+
+  // The single correction pass: spacers(old geo) -> measure -> recompute ->
+  // spacers(new geo) -> restore.
+  const syncAndRestore = (): void => {
+    const el = getScroller();
+    if (!el) {
+      return;
+    }
+    const entryScrollTop = el.scrollTop;
+    // Phase 0 — spacers FIRST, from the pre-measure geometry: a window-shift
+    // commit swaps rows before the layout effect runs, so without this the
+    // first forced layout below sees new rows + stale spacers, the content
+    // height transiently collapses, and the browser clamps scrollTop (which
+    // then reads as a user scroll). Style writes don't force layout, so
+    // making the spacers consistent BEFORE the first offsetHeight read
+    // removes the collapse window entirely.
+    writeSpacers(winRef.current);
+    measureOrigin(el);
+    // Refresh the anchor from the LIVE scrollTop against the pre-measure
+    // geometry (= what's currently painted). scroll events lag rAF-driven
+    // scrolls by a frame; scrollTop itself is ground truth, so deriving the
+    // anchor here removes that staleness class entirely.
+    if (
+      mode.current.kind === 'anchor' &&
+      // Re-derive the anchor from the live scrollTop ONLY when scrollTop's
+      // latest movement was user-authored. That is the staleness this refresh
+      // exists for (scroll events lag rAF scrolls by a frame). When the
+      // machinery moved last — a declared anchorToKey landing, a restore, an
+      // average repricing — the stored identity is the truth and scrollTop
+      // may be mid-correction: re-deriving from it replaced a declared
+      // {key, 0} with the neighbouring row at the repricing delta
+      // (measured: deterministic 44px landing error).
+      userScrolledRef.current &&
+      !converging.current &&
+      geo.current.keys.length > 0
+    ) {
+      mode.current = anchorAt(el.scrollTop);
+    }
+    // 'sync' re-measures the whole window every commit. 'ro' only measures
+    // rows it has never seen — the first-mount backstop: an UNMEASURED row is
+    // about to paint at its real height while the geometry still carries its
+    // estimate, and in document flow that displaces everything below it (the
+    // whole viewport) by (real - est) for one frame, then snaps back when RO
+    // delivers. Measuring ONCE at mount closes that; growth and reflow of
+    // known rows stay on the RO pipeline, so steady-state commits force no
+    // layout at all.
+    const remeasureAll = measureModeRef.current === 'sync';
+    for (const [key, rowEl] of rowEls.current) {
+      if (!remeasureAll && sizes.current.has(key)) {
+        continue;
+      }
+      const px = rowEl.offsetHeight;
+      // Never record 0: a row measured while transiently EMPTY (a streaming
+      // reply's first commit) would otherwise pin offsets[last] == total,
+      // which no bottom-edge query can reach — the row is evicted from the
+      // window and, unmounted, can never be re-measured. Deadlock, measured:
+      // the streamed reply never rendered at all. Keeping the estimate keeps
+      // the row reachable until it has real height.
+      if (px === 0) {
+        continue;
+      }
+      const prev = sizes.current.get(key);
+      if (prev !== px) {
+        noteMeasured(key, prev, px);
+        sizes.current.set(key, px);
+        geoChanged.current = true;
+      }
+    }
+    recompute();
+    writeSpacers(winRef.current);
+
+    // restore scrollTop from the stored reference frame
+    if (converging.current) {
+      geoChanged.current = true;
+    }
+    let target = targetFor(mode.current, el);
+    // Dead-anchor fallback: a null target means the anchored key is not in
+    // the data — an anchorToKey to a missing key, or the anchored row left
+    // with a thread switch / history replacement. Convergence could never
+    // exit (it only exits by reaching a target, and its gate keeps ignoring
+    // scroll events — scrollbar and keyboard could not recover), and a
+    // parked dead anchor would neither follow nor restore until the next
+    // gesture. Fall back to follow-at-end, the chat default.
+    if (target === null) {
+      converging.current = false;
+      if (dataRef.current.length > 0) {
+        mode.current = {kind: 'end', distance: 0};
+        userAway.current = 0;
+        geoChanged.current = true;
+        target = targetFor(mode.current, el);
+      }
+    }
+    if (target !== null && geoChanged.current) {
+      geoChanged.current = false;
+      if (Math.abs(el.scrollTop - target) > 0.5) {
+        el.scrollTop = target;
+        // Read back: the browser may clamp the write if the spacer resize
+        // hasn't reached layout yet. The echo target must be the ACTUAL
+        // landing value (otherwise our own clamped write is misread as a
+        // user scroll and flips the mode), and a clamp marks the geometry
+        // dirty again with a next-frame retry until the write sticks.
+        const actual = el.scrollTop;
+        progTarget.current = actual;
+        if (Math.abs(actual - target) > 1) {
+          geoChanged.current = true;
+          // One retry slot: consecutive clamped writes coalesce, and unmount
+          // cancels it (a post-unmount pass would setWin on a dead tree).
+          if (rafRetry.current !== null) {
+            cancelAnimationFrame(rafRetry.current);
+          }
+          rafRetry.current = requestAnimationFrame(() => {
+            rafRetry.current = null;
+            syncRef.current();
+          });
+        }
+      }
+    }
+    if (
+      converging.current &&
+      target !== null &&
+      dataRef.current.length > 0 &&
+      Math.abs(el.scrollTop - target) <= CONVERGE_EPSILON_PX
+    ) {
+      converging.current = false;
+    }
+    // The window must cover the DESIRED position, not the stale scrollTop:
+    // in end mode a newly appended tail row would otherwise never enter the
+    // window and its growth stay invisible to the geometry; for a declared
+    // anchor it is what renders the destination before the position lands.
+    setWindowIfChanged(
+      computeWindow(el, target === null ? el.scrollTop : target),
+    );
+    // Entry/exit claim: if scrollTop moved during this pass — by our write OR
+    // by a SILENT BROWSER CLAMP during a transient layout (spacers not yet
+    // caught up with a window shift, an estimate replaced by a smaller
+    // measured size) — the movement is machinery-induced, and the coalesced
+    // scroll event that dispatches next frame will carry the CURRENT value.
+    // Claim it, or that event is misread as a user scroll and hijacks the
+    // mode. User input cannot move scrollTop inside synchronous JS
+    // (compositor scrolls land at frame boundaries), so this never swallows
+    // a real gesture.
+    if (el.scrollTop !== entryScrollTop) {
+      progTarget.current = el.scrollTop;
+    }
+  };
+  // Latest-pass ref for once-created callers (see CLOSURE DISCIPLINE).
+  const syncRef = React.useRef(syncAndRestore);
+  syncRef.current = syncAndRestore;
+
+  // Data identity change (append / chunk growth) also invalidates geometry.
+  const prevData = React.useRef(data);
+  if (prevData.current !== data) {
+    prevData.current = data;
+    geoChanged.current = true;
+  }
+
+  // Runs BEFORE this commit's DOM mutations (the useInsertionEffect
+  // contract): floor-size the spacers for the NEW window while the OLD rows
+  // are still in the DOM, so the transient is strictly TALLER and can never
+  // clamp scrollTop. Without it, a consumer row's own layout effect (they
+  // run before ours) forcing layout between React's row removal and our
+  // spacer write sees the collapsed height, the browser clamps on the spot,
+  // and the live-anchor refresh adopts the clamp as the user's position
+  // (measured: 314-426px yank-backs with astryx message rows — plain divs
+  // have no such effects and never reproduced it).
+  React.useInsertionEffect(() => {
+    writeSpacers(winRef.current, true);
+  });
+
+  // Runs after EVERY commit — this is the pre-paint correction slot. (No
+  // separate initial-landing effect: this pass computes the window from the
+  // declared target on the same commits, attach arrival included.)
+  React.useLayoutEffect(() => {
+    syncAndRestore();
+  });
+
+  // In 'sync' mode the RO is only a backstop for out-of-commit size changes
+  // (images, fonts). In 'ro' mode it IS the measurement pipeline: sizes come
+  // from the observed border-box (no forced layout anywhere).
+  const roRef = React.useRef<ResizeObserver | null>(null);
+  if (roRef.current === null && typeof ResizeObserver !== 'undefined') {
+    roRef.current = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const key = (entry.target as HTMLElement).dataset.pkey;
+        if (key === undefined) {
+          // The scroll CONTAINER (observed in the listener effect): its
+          // resize changes clientHeight, which moves the end-mode target and
+          // the window coverage with zero row-size changes — without marking
+          // the geometry dirty here, a window resize or a growing composer
+          // would leave the pinned bottom stranded.
+          geoChanged.current = true;
+          continue;
+        }
+        if (measureModeRef.current !== 'ro') {
+          continue;
+        }
+        const px =
+          entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+        const prev = sizes.current.get(key);
+        if (px > 0 && prev !== px) {
+          noteMeasured(key, prev, px);
+          sizes.current.set(key, px);
+          geoChanged.current = true;
+        }
+      }
+      syncRef.current();
+    });
+  }
+  React.useEffect(
+    () => () => {
+      roRef.current?.disconnect();
+      if (rafRetry.current !== null) {
+        cancelAnimationFrame(rafRetry.current);
+      }
+    },
+    [],
+  );
+
+  // A DECLARATION re-points the reference frame and lets the restore loop
+  // converge: machine-driven regime, displacement cleared, protected from
+  // mode flips until reached. The window is computed from the declared
+  // target first, so the destination renders before the position lands
+  // (committed semantics; no blank flash on long jumps).
+  const declare = (m: Mode): void => {
+    mode.current = m;
+    userScrolledRef.current = false;
+    userAway.current = 0;
+    converging.current = true;
+    geoChanged.current = true;
+    syncRef.current(); // captured by the once-created handle: live ref
+  };
+
+  // Imperative API — both methods are declarations, not scroll actions.
+  // useImperativeHandle so a discarded concurrent render cannot repoint the
+  // handle; created once, reads only refs (see CLOSURE DISCIPLINE).
+  React.useImperativeHandle(
+    apiRef,
+    () => ({
+      scrollToDistanceFromBottomPx: (px = 0) =>
+        declare({kind: 'end', distance: px}),
+      anchorToKey: (key, viewportOffset = 0) =>
+        declare({kind: 'anchor', key: String(key), viewportOffset}),
+    }),
+    [],
+  );
+
+  const onScroll = (): void => {
+    const el = getScroller();
+    if (!el) {
+      return;
+    }
+    const isEcho =
+      progTarget.current !== null &&
+      Math.abs(el.scrollTop - progTarget.current) <= 1;
+    // STICKY echo: k offset changes within one frame queue up to k scroll
+    // events, dispatched across successive frames, EACH reading the same
+    // final scrollTop. A consume-once slot matches the first and misreads
+    // every duplicate as a user scroll. Keep the expectation while events
+    // match; only a NON-matching event (a real user scroll) clears it.
+    if (!isEcho) {
+      progTarget.current = null;
+      userScrolledRef.current = true;
+      lastUserEventT.current = performance.now();
+    }
+    const prevEventST = lastEventST.current;
+    lastEventST.current = el.scrollTop;
+    if (!isEcho && !converging.current) {
+      const g = geo.current;
+      const dist = el.scrollHeight - el.clientHeight - el.scrollTop;
+      const anchorHere = (): void => {
+        mode.current = anchorAt(el.scrollTop);
+        userAway.current = 0;
+      };
+      if (g.keys.length === 0) {
+        mode.current = {kind: 'end', distance: 0};
+        userAway.current = 0;
+      } else if (mode.current.kind === 'end') {
+        // DISENGAGE is judged on the user's own displacement, never on the
+        // absolute distance to the bottom: while following, the tail grows
+        // between corrections, so the live distance carries machinery
+        // movement the user did not make (measured: 6-24px nudges reading as
+        // 25-59px, flipping to anchor and stranding the reader mid-stream).
+        // Accumulating means a slow, persistent upward scroll still wins even
+        // when each individual step is erased by a re-pin.
+        userAway.current = Math.max(
+          0,
+          userAway.current +
+            (prevEventST === null ? 0 : prevEventST - el.scrollTop),
+        );
+        if (userAway.current > endThresholdRef.current) {
+          anchorHere();
+        }
+      } else if (dist <= endThresholdRef.current) {
+        // RE-ENGAGE is judged on the absolute distance, which IS honest in
+        // anchor mode: nothing is pulling the viewport, so reaching the
+        // bottom is the user's own doing.
+        mode.current = {kind: 'end', distance: 0};
+        userAway.current = 0;
+      } else {
+        anchorHere();
+      }
+    }
+    setWindowIfChanged(computeWindow(el));
+  };
+
+  // The listener is attached once per scroll element but the handler is read
+  // live, so it never closes over a stale render's props.
+  const onScrollRef = React.useRef(onScroll);
+  onScrollRef.current = onScroll;
+
+  // Listeners are attached imperatively rather than through JSX so both modes
+  // take the same path, and so attach mode can also turn OFF the browser's own
+  // scroll anchoring on a container it does not render: native anchoring picks
+  // its own anchor node and adjusts scrollTop underneath us, which is exactly
+  // the job this list is doing from its own reference frame.
+  React.useEffect(() => {
+    const el = getScroller();
+    if (!el) {
+      return;
+    }
+    // A REPLACED scroller (not the first arrival) carries none of the old
+    // one's scroll state: a stale lastEventST would difference two unrelated
+    // scrollTops into a phantom user displacement (instant spurious unpin),
+    // and a stale echo expectation could swallow the first real event.
+    if (prevScrollerRef.current !== null && prevScrollerRef.current !== el) {
+      lastEventST.current = null;
+      userAway.current = 0;
+      progTarget.current = null;
+    }
+    prevScrollerRef.current = el;
+    // Intent signals break convergence early: wheel/touchstart are USER INPUT,
+    // unlike scroll events (which mix in our own writes and clamps).
+    //
+    // Wheel-up additionally unpins follow IMMEDIATELY (the semantic one
+    // production transcript virtualizer ships), because the scroll-event path
+    // cannot be trusted for this during a stream: a follow write can land
+    // between the browser moving scrollTop and our handler reading it, so
+    // the user's own upward movement reads back as our echo and the
+    // disengage is swallowed (measured: a scroll-up during an active stream
+    // stayed pinned, the viewport snapped straight back to the bottom).
+    // Acting on the wheel event itself needs no scrollTop read, so there is
+    // no window to race. Re-engaging stays position-based — dist <=
+    // endThreshold at a user scroll event — with the scroll-to-bottom button
+    // as the declarative path back mid-stream.
+    const cancel = (e: Event): void => {
+      converging.current = false;
+      if (
+        e.type === 'wheel' &&
+        (e as WheelEvent).deltaY < 0 &&
+        mode.current.kind === 'end' &&
+        el.scrollTop > 0
+      ) {
+        mode.current = anchorAt(el.scrollTop);
+        userAway.current = 0;
+        userScrolledRef.current = true;
+        lastUserEventT.current = performance.now();
+      }
+    };
+    const prevAnchor = el.style.overflowAnchor;
+    el.style.overflowAnchor = 'none';
+    const scrollHandler = (): void => onScrollRef.current();
+    el.addEventListener('scroll', scrollHandler, {passive: true});
+    el.addEventListener('wheel', cancel, {passive: true});
+    el.addEventListener('touchstart', cancel, {passive: true});
+    // Observe the CONTAINER too (rows alone miss clientHeight changes): a
+    // window resize or a growing composer moves the end-mode target and the
+    // window coverage without any row changing size. Container entries have
+    // no data-pkey — the RO callback marks the geometry dirty for them.
+    roRef.current?.observe(el);
+    return () => {
+      el.style.overflowAnchor = prevAnchor;
+      el.removeEventListener('scroll', scrollHandler);
+      el.removeEventListener('wheel', cancel);
+      el.removeEventListener('touchstart', cancel);
+      roRef.current?.unobserve(el);
+    };
+  }, [scrollElement]);
+
+  // Stable per-key ref callbacks: an inline `(el) => …` would be a new
+  // identity every render, making React detach + reattach EVERY row's ref on
+  // EVERY commit — and each re-observe() fires an initial ResizeObserver
+  // callback, so steady-state commits would trigger a full-window RO batch
+  // of pure noise.
+  const rowRefCbs = React.useRef(
+    new Map<string, (el: HTMLDivElement | null) => void>(),
+  );
+  const rowRef = (key: string): ((el: HTMLDivElement | null) => void) => {
+    let cb = rowRefCbs.current.get(key);
+    if (!cb) {
+      cb = el => {
+        if (el) {
+          rowEls.current.set(key, el);
+          roRef.current?.observe(el);
+        } else {
+          const prev = rowEls.current.get(key);
+          if (prev) {
+            roRef.current?.unobserve(prev);
+          }
+          rowEls.current.delete(key);
+          rowRefCbs.current.delete(key);
+        }
+      };
+      rowRefCbs.current.set(key, cb);
+    }
+    return cb;
+  };
+
+  const children: React.ReactNode[] = [
+    <div key="__top" ref={spacerTopRef} style={spacerStyle} aria-hidden />,
+  ];
+  if (win.end >= win.start) {
+    for (let i = win.start; i <= Math.min(win.end, data.length - 1); i++) {
+      const key = String(keyExtractor(data[i], i));
+      if (getItemType) {
+        typeByKey.current.set(key, getItemType(data[i], i));
+      }
+      children.push(
+        <div key={key} ref={rowRef(key)} data-pkey={key}>
+          {renderItem({item: data[i], index: i})}
+        </div>,
+      );
+    }
+  }
+  children.push(
+    <div
+      key="__bottom"
+      ref={spacerBottomRef}
+      style={spacerStyle}
+      aria-hidden
+    />,
+  );
+
+  if (attachMode) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div
+      ref={ownScrollerRef}
+      className={className}
+      style={{
+        overflowY: 'auto',
+        overflowAnchor: 'none',
+        position: 'relative',
+        ...style,
+      }}>
+      {children}
+    </div>
+  );
+}
