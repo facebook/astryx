@@ -126,6 +126,12 @@ These are intentional and documented; they slightly favor baseline, making Astry
 - **Maintainability:** Tailwind scale values (`p-4`, `text-sm`) count as semantic, which is generous compared to how raw `16px` is counted for HTML
 - **Astryx+Tailwind scoring:** The hybrid target counts styling decisions from both Astryx props and Tailwind classes. This may inflate its decision count relative to pure Astryx, but accurately reflects the code's actual styling surface area
 
+## Execution Provenance
+
+Runners may write an optional `<promptId>.provenance.json` sidecar beside each result. It records versioned, executor-neutral task, fixture, condition, executor, timing, and token metadata without embedding prompts or filesystem paths. Collection copies the sidecar, and universal aggregation preserves per-run harness/model labels, supports provenance filters, and marks measured, derived, estimated, complete, and incomplete cost data explicitly.
+
+See [`docs/execution-provenance.md`](docs/execution-provenance.md) for the schema, example, fallback rules, and runner migration contract.
+
 ## Directory Structure
 
 ```

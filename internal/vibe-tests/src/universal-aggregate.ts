@@ -14,12 +14,23 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type {
+  ExecutionProvenanceFilter,
+  PromptCostMetrics,
   UniversalDimension,
+  UniversalRunSummary,
   UniversalScore,
   UniversalAggregate,
 } from './types.js';
 import {getResultsDir, writeJson, ensureTsxFiles} from './utils.js';
 import {evaluate, getDimensionNames} from './universal-eval.js';
+import {provenanceFilename} from './provenance.js';
+import {
+  buildExecutionBreakdown,
+  loadOptionalExecutionProvenance,
+  matchesExecutionFilter,
+  resolveDuration,
+  resolveUsage,
+} from './provenance-aggregation.js';
 
 const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   correctness: 'Correctness',
@@ -30,10 +41,15 @@ const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   design: 'Design',
 };
 
-function parseArgs(): {iteration: string; json: boolean} {
+function parseArgs(): {
+  iteration: string;
+  json: boolean;
+  filter: ExecutionProvenanceFilter;
+} {
   const args = process.argv.slice(2);
   let iteration = '';
   let json = false;
+  const filter: ExecutionProvenanceFilter = {};
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--iteration' && args[i + 1]) {
@@ -41,21 +57,29 @@ function parseArgs(): {iteration: string; json: boolean} {
       i++;
     } else if (args[i] === '--json') {
       json = true;
+    } else if (args[i] === '--harness' && args[i + 1]) {
+      filter.harness = args[++i];
+    } else if (args[i] === '--model' && args[i + 1]) {
+      filter.model = args[++i];
+    } else if (args[i] === '--fixture' && args[i + 1]) {
+      filter.fixture = args[++i];
+    } else if (args[i] === '--condition' && args[i + 1]) {
+      filter.condition = args[++i];
     }
   }
 
   if (!iteration) {
     console.error(
-      'Usage: tsx src/universal-aggregate.ts --iteration <id> [--json]',
+      'Usage: tsx src/universal-aggregate.ts --iteration <id> [--json] [--harness <label>] [--model <label>] [--fixture <id>] [--condition <label>]',
     );
     process.exit(1);
   }
 
-  return {iteration, json};
+  return {iteration, json, filter};
 }
 
 async function main() {
-  const {iteration, json} = parseArgs();
+  const {iteration, json, filter} = parseArgs();
   const resultsDir = getResultsDir();
   const iterDir = path.join(resultsDir, iteration);
   const codeDir = path.join(iterDir, 'results');
@@ -97,18 +121,9 @@ async function main() {
   > = {};
   let darkModeCount = 0;
 
-  // Cost tracking
-  const costByPrompt: Record<
-    string,
-    {
-      durationMs: number;
-      outputChars: number;
-      outputLines: number;
-      docsRead: string[];
-      estimatedInputTokens: number;
-      estimatedOutputTokens: number;
-    }
-  > = {};
+  // Cost and provenance tracking
+  const costByPrompt: Record<string, PromptCostMetrics> = {};
+  const runs: UniversalRunSummary[] = [];
 
   /** Rough doc size estimates in chars (for input token calculation) */
   const DOC_CHAR_SIZES: Record<string, number> = {
@@ -122,6 +137,12 @@ async function main() {
   for (const file of files) {
     const promptId = path.basename(file, '.tsx');
     const codePath = path.join(codeDir, file);
+    const provenance = loadOptionalExecutionProvenance(
+      path.join(codeDir, provenanceFilename(promptId)),
+    );
+    if (!matchesExecutionFilter(provenance, filter)) {
+      continue;
+    }
     const code = fs.readFileSync(codePath, 'utf-8');
     const score = evaluate(code, target, {iterDir, promptId});
     byPrompt[promptId] = score;
@@ -148,67 +169,90 @@ async function main() {
       }
     }
 
-    // --- Cost data ---
-    let durationMs = 0;
+    // --- Cost and execution data ---
     let docsRead: string[] = [];
-
-    // Read result metadata (docsRead, completedAt)
-    const jsonPath = path.join(codeDir, `${promptId}.json`);
     let completedAt: string | undefined;
+    const jsonPath = path.join(codeDir, `${promptId}.json`);
     if (fs.existsSync(jsonPath)) {
       try {
         const meta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
-        docsRead = meta.docsRead || [];
+        docsRead = Array.isArray(meta.docsRead) ? meta.docsRead : [];
         completedAt = meta.completedAt;
       } catch {
-        // ignore parse errors
+        // Legacy metadata remains best-effort. Provenance sidecars are validated.
       }
     }
 
-    // Duration: prefer createdAt/completedAt timestamps, fall back to file mtimes
     const taskPath = path.join(iterDir, 'tasks', `${promptId}.json`);
+    let createdAt: string | undefined;
+    let taskMtimeMs: number | undefined;
     if (fs.existsSync(taskPath)) {
+      taskMtimeMs = fs.statSync(taskPath).mtimeMs;
       try {
         const taskMeta = JSON.parse(fs.readFileSync(taskPath, 'utf-8'));
-        if (taskMeta.createdAt && completedAt) {
-          const start = new Date(taskMeta.createdAt).getTime();
-          const end = new Date(completedAt).getTime();
-          if (end > start) {
-            durationMs = Math.round(end - start);
-          }
-        }
+        createdAt = taskMeta.createdAt;
       } catch {
-        // ignore
-      }
-
-      // Fall back to file timestamps if no explicit timestamps
-      if (durationMs === 0) {
-        const taskStat = fs.statSync(taskPath);
-        const resultStat = fs.statSync(codePath);
-        const inferred = resultStat.mtimeMs - taskStat.mtimeMs;
-        if (inferred > 0) {
-          durationMs = Math.round(inferred);
-        }
+        // Legacy task metadata remains best-effort.
       }
     }
 
-    // Estimate input tokens from docs read
-    let estimatedInputChars = 0;
+    let estimatedInputChars = 1500;
     for (const doc of docsRead) {
       const key = doc.endsWith('.md') ? doc : `${doc}.md`;
       estimatedInputChars += DOC_CHAR_SIZES[key] || DEFAULT_DOC_SIZE;
     }
-    // Add prompt overhead (~1500 chars)
-    estimatedInputChars += 1500;
+    const estimatedInputTokens = Math.round(estimatedInputChars / 4);
+    const estimatedOutputTokens = Math.round(code.length / 4);
+    const duration = resolveDuration({
+      provenance,
+      legacyStartedAt: createdAt,
+      legacyFinishedAt: completedAt,
+      taskMtimeMs,
+      resultMtimeMs: fs.statSync(codePath).mtimeMs,
+    });
+    const usage = resolveUsage({
+      provenance,
+      estimatedInputTokens,
+      estimatedOutputTokens,
+    });
 
     costByPrompt[promptId] = {
-      durationMs,
+      durationMs: duration.valueMs ?? 0,
+      durationSource: duration.source,
+      durationQuality: duration.quality,
       outputChars: code.length,
       outputLines: code.split('\n').length,
       docsRead,
-      estimatedInputTokens: Math.round(estimatedInputChars / 4),
-      estimatedOutputTokens: Math.round(code.length / 4),
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      tokenSource: usage.source,
+      tokenQuality: usage.quality,
+      usageComplete: usage.complete,
+      estimatedInputTokens,
+      estimatedOutputTokens,
     };
+    runs.push({
+      promptId,
+      taskId: provenance?.task?.id ?? promptId,
+      harness: provenance?.executor?.harness ?? 'unknown',
+      model: provenance?.executor?.model ?? 'unknown',
+      ...(provenance?.executor?.effort
+        ? {effort: provenance.executor.effort}
+        : {}),
+      ...(provenance?.fixture?.id ? {fixture: provenance.fixture.id} : {}),
+      ...(provenance?.condition ? {condition: provenance.condition} : {}),
+      ...(provenance?.rep ? {rep: provenance.rep} : {}),
+      ...(provenance?.execution?.status
+        ? {executionStatus: provenance.execution.status}
+        : {}),
+      score,
+      duration,
+      usage,
+    });
+  }
+
+  if (runs.length === 0) {
+    throw new Error('No results matched the requested provenance filters');
   }
 
   // --- Merge design scores if available ---
@@ -305,20 +349,34 @@ async function main() {
 
   const darkModeRate = Math.round((darkModeCount / promptCount) * 100);
 
-  // Compute cost aggregates
+  // Compute cost aggregates. Selected token totals are only comparable when
+  // every run reports complete usage; estimates remain available separately.
   const costEntries = Object.values(costByPrompt);
   const totalDurationMs = costEntries.reduce((s, c) => s + c.durationMs, 0);
   const totalOutputChars = costEntries.reduce((s, c) => s + c.outputChars, 0);
   const totalOutputLines = costEntries.reduce((s, c) => s + c.outputLines, 0);
   const totalDocsRead = costEntries.reduce((s, c) => s + c.docsRead.length, 0);
-  const totalInputTokens = costEntries.reduce(
+  const completeUsageRuns = costEntries.filter(c => c.usageComplete).length;
+  const usageComplete = completeUsageRuns === costEntries.length;
+  const selectedInputTokens = usageComplete
+    ? costEntries.reduce((s, c) => s + (c.inputTokens ?? 0), 0)
+    : null;
+  const selectedOutputTokens = usageComplete
+    ? costEntries.reduce((s, c) => s + (c.outputTokens ?? 0), 0)
+    : null;
+  const totalEstimatedInputTokens = costEntries.reduce(
     (s, c) => s + c.estimatedInputTokens,
     0,
   );
-  const totalOutputTokens = costEntries.reduce(
+  const totalEstimatedOutputTokens = costEntries.reduce(
     (s, c) => s + c.estimatedOutputTokens,
     0,
   );
+  const durationSources: Record<string, number> = {};
+  for (const entry of costEntries) {
+    durationSources[entry.durationSource] =
+      (durationSources[entry.durationSource] ?? 0) + 1;
+  }
 
   const aggregate: UniversalAggregate = {
     averages,
@@ -332,10 +390,17 @@ async function main() {
       avgOutputChars: Math.round(totalOutputChars / promptCount),
       avgOutputLines: Math.round(totalOutputLines / promptCount),
       avgDocsRead: Math.round((totalDocsRead / promptCount) * 10) / 10,
-      estimatedInputTokens: totalInputTokens,
-      estimatedOutputTokens: totalOutputTokens,
+      inputTokens: selectedInputTokens,
+      outputTokens: selectedOutputTokens,
+      usageComplete,
+      completeUsageRuns,
+      incompleteUsageRuns: costEntries.length - completeUsageRuns,
+      durationSources,
+      estimatedInputTokens: totalEstimatedInputTokens,
+      estimatedOutputTokens: totalEstimatedOutputTokens,
       byPrompt: costByPrompt,
     },
+    execution: buildExecutionBreakdown(runs),
   };
 
   // Save
@@ -402,7 +467,7 @@ async function main() {
   }
 
   // Cost metrics
-  if (aggregate.cost && aggregate.cost.totalDurationMs > 0) {
+  if (aggregate.cost) {
     const c = aggregate.cost;
     console.log(`\n💰 Cost:`);
     console.log(
@@ -412,9 +477,48 @@ async function main() {
       `   Output: ${c.avgOutputLines} lines avg (${c.avgOutputChars} chars)`,
     );
     console.log(`   Docs read: ${c.avgDocsRead} avg per prompt`);
-    console.log(
-      `   Tokens: ~${c.estimatedInputTokens} input, ~${c.estimatedOutputTokens} output`,
-    );
+    if (c.usageComplete) {
+      console.log(
+        `   Tokens: ${c.inputTokens ?? 0} input, ${c.outputTokens ?? 0} output (complete)`,
+      );
+    } else {
+      console.log(
+        `   Tokens: not comparable (${c.completeUsageRuns}/${promptCount} runs complete); estimates: ~${c.estimatedInputTokens} input, ~${c.estimatedOutputTokens} output`,
+      );
+    }
+  }
+
+  const harnessModelGroups = aggregate.execution?.byHarnessModel ?? [];
+  if (harnessModelGroups.length > 0) {
+    console.log('\n⚙️ By Harness + Model:');
+    for (const group of harnessModelGroups) {
+      const {harness = 'unknown', model = 'unknown'} = group.dimensions;
+      const usage = group.usage.complete
+        ? `${(group.usage.inputTokens ?? 0) + (group.usage.outputTokens ?? 0)} tokens`
+        : `usage ${group.usage.completeRuns}/${group.runCount} complete`;
+      console.log(
+        `   ${harness} / ${model}: ${group.runCount} runs, score ${group.averageScore}, ${usage}`,
+      );
+    }
+  }
+
+  for (const [label, groups] of [
+    ['Fixture', aggregate.execution?.byFixture ?? []],
+    ['Condition', aggregate.execution?.byCondition ?? []],
+  ] as const) {
+    if (groups.length === 0) {
+      continue;
+    }
+    console.log(`\n📎 By ${label}:`);
+    for (const group of groups) {
+      const value =
+        label === 'Fixture'
+          ? group.dimensions.fixture
+          : group.dimensions.condition;
+      console.log(
+        `   ${value}: ${group.runCount} runs, score ${group.averageScore}`,
+      );
+    }
   }
 
   // Category breakdown
