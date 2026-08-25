@@ -582,6 +582,12 @@ jobs:
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
+      # The downloaded theme builds import Core's consumer-facing dist files.
+      # Rebuild only Core here so those imports resolve without repeating the
+      # full workspace build that produced the theme artifact.
+      - name: Build Core dependency for theme inspection
+        run: pnpm -F @astryxdesign/core build
+
       - name: Fetch visual baseline from gh-pages
         run: |
           set -eu
