@@ -117,6 +117,9 @@ const scrollWrapperStyles = stylex.create({
     overflowX: 'auto',
     WebkitOverflowScrolling: 'touch',
   },
+  overlayContainer: {
+    position: 'relative',
+  },
   containerBleed: {
     marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
     marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
@@ -137,6 +140,7 @@ function TableScrollWrapper({
   children,
   htmlProps,
   xstyle: pluginStyles,
+  beforeScrollArea,
   beforeTable,
   afterTable,
 }: {
@@ -145,12 +149,13 @@ function TableScrollWrapper({
     ref?: React.Ref<HTMLDivElement>;
   };
   xstyle?: StyleXStyles[];
+  beforeScrollArea?: React.ReactNode;
   beforeTable?: React.ReactNode;
   afterTable?: React.ReactNode;
 }) {
   const t = useTranslator();
   const {ref, ...restHtmlProps} = htmlProps ?? {};
-  return (
+  const scrollArea = (
     <div
       ref={ref}
       // Keyboard-focusable so keyboard users can scroll a horizontally
@@ -166,13 +171,28 @@ function TableScrollWrapper({
         themeProps('table-scroll-wrapper'),
         stylex.props(
           scrollWrapperStyles.base,
-          scrollWrapperStyles.containerBleed,
+          beforeScrollArea == null && scrollWrapperStyles.containerBleed,
           ...(pluginStyles ?? []),
         ),
       )}>
       {beforeTable}
       {children}
       {afterTable}
+    </div>
+  );
+
+  if (beforeScrollArea == null) {
+    return scrollArea;
+  }
+
+  return (
+    <div
+      {...stylex.props(
+        scrollWrapperStyles.overlayContainer,
+        scrollWrapperStyles.containerBleed,
+      )}>
+      {beforeScrollArea}
+      {scrollArea}
     </div>
   );
 }

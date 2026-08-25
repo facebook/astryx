@@ -7,7 +7,10 @@ import {
   useTableSelection,
   useTableSelectionState,
 } from '@astryxdesign/core/Table';
-import type {TableColumn} from '@astryxdesign/core/Table';
+import type {
+  TableBulkActionsLayout,
+  TableColumn,
+} from '@astryxdesign/core/Table';
 
 // =============================================================================
 // Sample Data
@@ -291,4 +294,82 @@ export const WithStripedRows: Story = {
       </div>
     );
   },
+};
+
+/**
+ * Shared harness for the fixed and floating bulk-actions examples.
+ */
+function BulkActionsExample({layout}: {layout?: TableBulkActionsLayout}) {
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+  const {selectionConfig} = useTableSelectionState<User>({
+    data: users,
+    idKey: 'id',
+    selectedKeys,
+    setSelectedKeys,
+  });
+  const selectionPlugin = useTableSelection<User>({
+    ...selectionConfig,
+    bulkActions: {
+      layout,
+      selectedKeys,
+      actions:
+        layout === 'floating'
+          ? [
+              {
+                label: 'Approve',
+                onClick: keys => window.alert(`Approve ${keys.size} rows`),
+              },
+            ]
+          : [
+              {
+                label: 'Export',
+                onClick: keys => window.alert(`Export ${keys.size} rows`),
+              },
+              {
+                label: 'Delete',
+                onClick: keys => {
+                  setSelectedKeys(new Set());
+                  window.alert(`Deleted ${keys.size} rows`);
+                },
+              },
+            ],
+      clearSelection: {
+        label: 'Unselect All',
+        onClick: () => setSelectedKeys(new Set()),
+      },
+    },
+  });
+
+  return (
+    <div
+      style={{
+        maxWidth: 600,
+        paddingTop: layout === 'floating' ? 64 : undefined,
+      }}>
+      <Table
+        data={users}
+        columns={columns}
+        idKey="id"
+        hasHover
+        plugins={{selection: selectionPlugin}}
+      />
+    </div>
+  );
+}
+
+/**
+ * The default fixed layout renders in flow as a full-bleed band. Actions lead;
+ * selection status and the clear-selection control trail.
+ */
+export const BulkActions: Story = {
+  render: () => <BulkActionsExample />,
+};
+
+/**
+ * The floating layout appears 16px above the table without shifting it. It
+ * keeps the same action and selection-control alignment as the fixed layout.
+ */
+export const BulkActionsFloating: Story = {
+  render: () => <BulkActionsExample layout="floating" />,
 };

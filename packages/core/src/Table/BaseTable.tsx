@@ -604,8 +604,9 @@ function BaseTableInner<T extends Record<string, unknown>>({
 
   // Wrap the <table> in a scroll container so it scrolls horizontally
   // when columns exceed the container width. This wrapper sits between
-  // the <table> and transformTableContext, so plugin chrome (pagination,
-  // toolbars) renders outside the scroll area.
+  // the <table> and transformTableContext. Plugins can add chrome inside the
+  // scroller with beforeTable/afterTable or outside overflow clipping with
+  // beforeScrollArea.
   //
   // Before rendering the wrapper, run the plugin `transformScrollWrapper`
   // pipeline so plugins can attach a ref to the scroll container (scroll-aware
@@ -624,6 +625,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
       <ScrollWrapper
         htmlProps={scrollWrapperRenderProps.htmlProps}
         xstyle={scrollWrapperRenderProps.xstyle}
+        beforeScrollArea={scrollWrapperRenderProps.beforeScrollArea}
         beforeTable={scrollWrapperRenderProps.beforeTable}
         afterTable={scrollWrapperRenderProps.afterTable}>
         {tableElement}

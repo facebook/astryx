@@ -68,6 +68,12 @@ export const docs = {
         'Paints checked rows with the accent wash. Set false when the surrounding UI already uses row background to mean something else (a row open in a detail panel, say). The wash is an inline style, so it cannot be overridden from userland. Only the background is dropped: aria-selected is still set on checked rows either way.',
       default: 'true',
     },
+    {
+      name: 'bulkActions',
+      type: 'TableBulkActionsConfig',
+      description:
+        'Adds an opt-in bulk-actions bar while rows are selected. The default fixed layout renders in flow as a full-bleed section; `layout: "floating"` renders a rounded, elevated bar 16px above the table without shifting it. Both layouts place actions on the logical start side and the selection count, optional select-all-matching affordance, and optional localized clearSelection control on the logical end side.',
+    },
   ],
   examples: [
     {
@@ -171,6 +177,12 @@ export const docsZh = {
         '为选中的行绘制强调色背景。当周围的界面已用行背景表达其他含义（例如该行已在详情面板中打开）时设为 false —— 该背景是内联样式，无法从业务代码覆盖。仅去掉背景：无论如何选中的行仍会设置 aria-selected。',
       default: 'true',
     },
+    {
+      name: 'bulkActions',
+      type: 'TableBulkActionsConfig',
+      description:
+        '选中行时添加可选的批量操作栏。默认 fixed 布局以内嵌通栏形式渲染；`layout: "floating"` 会在表格上方 16px 处渲染圆角浮动栏，并且不会移动表格。两种布局都将操作放在逻辑起始侧，将选择计数、可选的全选匹配项操作和本地化的 clearSelection 控件放在逻辑结束侧。',
+    },
   ],
 };
 
@@ -195,5 +207,7 @@ export const docsDense = {
       'Derives row identity for the checkbox\'s hidden label: `Select ${getRowLabel(item)}`. Falls back to "Select row" when omitted.',
     hasRowHighlight:
       'false => skip the accent wash on checked rows (inline style, not overridable from userland). aria-selected is unaffected. Defaults to true.',
+    bulkActions:
+      'Optional bulk-actions bar. fixed (default) = in-flow full-bleed; floating = rounded/elevated 16px above table without layout shift. Actions lead; count, select-all-matching, and localized clearSelection control trail.',
   },
 };

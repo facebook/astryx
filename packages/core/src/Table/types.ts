@@ -361,6 +361,8 @@ export interface ScrollWrapperRenderProps {
     ref?: Ref<HTMLDivElement>;
   };
   xstyle: StyleXStyles[];
+  /** Content rendered before the scroll container, outside overflow clipping. */
+  beforeScrollArea?: ReactNode;
   /** Content rendered before the `<table>`, inside the scroll container. */
   beforeTable?: ReactNode;
   /** Content rendered after the `<table>`, inside the scroll container. */
@@ -611,14 +613,16 @@ export interface BaseTableProps<
    * stays outside the scrollable area.
    *
    * Receives `htmlProps` (including an optional `ref`) and `xstyle` produced
-   * by the plugin `transformScrollWrapper` pipeline, plus `beforeTable`/`afterTable`
-   * chrome. The wrapper must spread `htmlProps` (and apply `xstyle`) onto its
-   * scroll-container element so plugins can attach refs / scroll listeners.
+   * by the plugin `transformScrollWrapper` pipeline, plus `beforeScrollArea`,
+   * `beforeTable`, and `afterTable` chrome. The wrapper must spread `htmlProps`
+   * (and apply `xstyle`) onto its scroll-container element so plugins can
+   * attach refs / scroll listeners.
    */
   scrollWrapper?: ComponentType<{
     children: ReactNode;
     htmlProps?: HTMLAttributes<HTMLDivElement> & {ref?: Ref<HTMLDivElement>};
     xstyle?: StyleXStyles[];
+    beforeScrollArea?: ReactNode;
     beforeTable?: ReactNode;
     afterTable?: ReactNode;
   }>;
