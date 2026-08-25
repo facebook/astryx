@@ -894,7 +894,7 @@ importers:
   packages/themes/probe:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.4.7
+        specifier: 0.5.0
         version: link:../../core
       react:
         specifier: '>=19'

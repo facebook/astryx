@@ -133,9 +133,14 @@ export function buildProbeComponents(targets, propsByComponent, aliases = {}) {
  * background — and makes the diff report unreadable for the human who has to
  * judge it. Lightness is pinned so the text always contrasts with the fill.
  *
+ * Exported so the reach check computes expectations from the SAME function
+ * that generates the theme — two copies of this mapping would drift, and the
+ * check would then report the drift as a broken override.
+ *
  * @param {string} seed
+ * @returns {{backgroundColor: string, color: string, borderColor: string, outlineColor: string}}
  */
-function paint(seed) {
+export function paint(seed) {
   return {
     backgroundColor: probeColor(seed),
     color: probeColor(`${seed}/text`, {lightness: 12}),
