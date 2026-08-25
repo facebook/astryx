@@ -759,7 +759,11 @@ export function Slider({ref, ...props}: SliderProps) {
       }
       // Unlike a text field, a thumb has no caret to show where input is
       // going, so a keypress after a mouse drag must bring the ring back.
-      setKeyboardFocusThumb(thumbIndex);
+      // Ask the utility rather than assuming: a modifier chord (⌘R, ⌃C) is
+      // not navigation and must not re-ring a thumb the mouse is holding.
+      if (getInteractionModality() === 'keyboard') {
+        setKeyboardFocusThumb(thumbIndex);
+      }
       const currentVal = values[thumbIndex];
       let newVal: number;
 
@@ -885,9 +889,6 @@ export function Slider({ref, ...props}: SliderProps) {
         aria-label={thumbLabel}
         aria-labelledby={!isRange ? labelID : undefined}
         aria-describedby={ariaDescribedBy}
-        data-keyboard-focus={
-          keyboardFocusThumb === thumbIndex ? 'true' : undefined
-        }
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
         onFocus={e => handleThumbFocus(thumbIndex, e)}
         onBlur={handleThumbBlur}
