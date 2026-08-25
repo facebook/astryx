@@ -304,7 +304,14 @@ type StoryArgs = {
   messageCount: number;
   virtualized: boolean;
   endThreshold: number;
+  streamSpeed: 'relaxed' | 'default' | 'fast';
 };
+
+const STREAM_SPEEDS = {
+  relaxed: {intervalMs: 50, minChunk: 1, maxChunk: 3},
+  default: {intervalMs: 25, minChunk: 2, maxChunk: 6},
+  fast: {intervalMs: 10, minChunk: 6, maxChunk: 14},
+} as const;
 
 export const ThousandsOfMessages: StoryObj<StoryArgs> = {
   name: 'Thousands of Messages',
@@ -312,6 +319,7 @@ export const ThousandsOfMessages: StoryObj<StoryArgs> = {
     messageCount: 3000,
     virtualized: true,
     endThreshold: 24,
+    streamSpeed: 'default',
   },
   argTypes: {
     messageCount: {
@@ -319,6 +327,13 @@ export const ThousandsOfMessages: StoryObj<StoryArgs> = {
       options: [100, 1000, 3000],
     },
     virtualized: {control: 'boolean'},
+    streamSpeed: {
+      control: {type: 'select'},
+      options: ['relaxed', 'default', 'fast'],
+      description:
+        'Chunk cadence of the streamed reply. `fast` stresses the ' +
+        'follow machinery: disengage mid-stream, scroll back, re-engage.',
+    },
     endThreshold: {
       control: {type: 'select'},
       options: [1, 24, 96],
@@ -351,6 +366,9 @@ export const ThousandsOfMessages: StoryObj<StoryArgs> = {
     }, [args.messageCount]);
     useEffect(() => () => clearInterval(streamRef.current), []);
 
+    const speed = STREAM_SPEEDS[args.streamSpeed];
+    const speedRef = useRef(speed);
+    speedRef.current = speed;
     const handleSubmit = useCallback((value: string) => {
       const base = Date.now();
       const userId = `u-${base}`;
@@ -366,8 +384,10 @@ export const ThousandsOfMessages: StoryObj<StoryArgs> = {
       ]);
       setIsStreaming(true);
       let charIdx = 0;
+      const {intervalMs, minChunk, maxChunk} = speedRef.current;
       streamRef.current = setInterval(() => {
-        charIdx += 2 + Math.floor(Math.random() * 4);
+        charIdx +=
+          minChunk + Math.floor(Math.random() * (maxChunk - minChunk + 1));
         const done = charIdx >= STREAM_REPLY.length;
         const text = done ? STREAM_REPLY : STREAM_REPLY.slice(0, charIdx);
         setMessages(prev =>
@@ -377,7 +397,7 @@ export const ThousandsOfMessages: StoryObj<StoryArgs> = {
           clearInterval(streamRef.current);
           setIsStreaming(false);
         }
-      }, 25);
+      }, intervalMs);
     }, []);
 
     const virtualized = args.virtualized;
