@@ -978,9 +978,41 @@ interface ViewState {
 const INITIAL_VIEW: ViewState = {
   columnKeys: DEFAULT_COLUMN_KEYS,
   density: 'balanced',
-  stickyStart: 'none',
+  stickyStart: 'one',
   stickyEnd: 'none',
-  grouping: 'none',
+  grouping: 'customer',
+};
+
+/**
+ * The screen opens on open work — every status except Completed. Landing on a
+ * list of closed jobs is a poor first impression, and an unfiltered table
+ * shows the filter bar in its resting state, which hides the chip, the result
+ * count and Clear all behind a click. The saved-view baseline is the same set,
+ * so the template arrives already demonstrating what it is for.
+ */
+const INITIAL_FILTERS: PowerSearchFilter[] = [
+  {
+    field: 'status',
+    operator: 'is_any_of',
+    value: {
+      type: 'enum_list',
+      value: (Object.keys(STATUS_META) as JobStatus[]).filter(
+        status => status !== 'completed',
+      ),
+    },
+  },
+];
+
+/**
+ * Severity order for the enum columns, because their labels do not sort into
+ * it. Alphabetically Priority runs High, Normal, Urgent — which files the rows
+ * that matter in the middle. Rank is what a reader means by "sort by
+ * priority", so the comparator reaches for this before falling back to a
+ * string compare.
+ */
+const SORT_RANKS: Record<string, Record<string, number>> = {
+  priority: {urgent: 0, high: 1, normal: 2},
+  status: {overdue: 0, on_hold: 1, in_progress: 2, scheduled: 3, completed: 4},
 };
 
 const PAGE_SIZE = 15;
@@ -1180,6 +1212,12 @@ const styles = stylex.create({
     // its own. Owning the surface makes the page legible wherever it is
     // embedded.
     backgroundColor: colorVars['--color-background-surface'],
+    // A pinned cell paints an opaque base so scrolled content cannot show
+    // through it, and that base defaults to the card token — right for a table
+    // inside a card, wrong for this one, which sits on the page surface. Both
+    // tokens are the same white in light mode, so the mismatch only surfaces
+    // in dark, as a darker band exactly where the frozen columns are.
+    '--table-sticky-background': colorVars['--color-background-surface'],
   },
   // A wrapped row's `gap` sets both axes, and 8px between stacked lines is more
   // air than these need; the row gap is tightened back to 6 on its own.
@@ -1505,6 +1543,10 @@ const styles = stylex.create({
   // for by the selection plugin's checked rows.
   activeRow: {
     backgroundColor: colorVars['--color-overlay-pressed'],
+    // A pinned cell paints an opaque background of its own, which would cover
+    // the row's. Publishing the overlay is how the sticky plugin picks it up
+    // and replays it, the same way TableRow does for striping and hover.
+    '--table-row-overlay': colorVars['--color-overlay-pressed'],
   },
   // A flex child has no definite width for AspectRatio to derive a height
   // from, so the tile is pinned here and told not to give the width back when
@@ -1766,7 +1808,7 @@ function ViewSummaryList({
 
 export default function TableFilterTemplate() {
   // --- Filtering -------------------------------------------------------------
-  const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
+  const [filters, setFilters] = useState<PowerSearchFilter[]>(INITIAL_FILTERS);
   const [isPowerSearch, setIsPowerSearch] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -1797,7 +1839,7 @@ export default function TableFilterTemplate() {
   // --- Sorting ---------------------------------------------------------------
   const [sort, setSort] = useState<
     Array<{sortKey: string; direction: 'ascending' | 'descending'}>
-  >([{sortKey: 'scheduledAt', direction: 'ascending'}]);
+  >([{sortKey: 'priority', direction: 'ascending'}]);
 
   // --- View options ----------------------------------------------------------
   const [view, setView] = useState<ViewState>(INITIAL_VIEW);
@@ -1834,6 +1876,9 @@ export default function TableFilterTemplate() {
     return () => clearTimeout(timer);
   }, [filters, query]);
 
+  const groupField = view.grouping;
+  const isGrouped = groupField !== 'none';
+
   const results = useMemo(() => {
     const byFilters = applyFilters(filters, allJobs);
     const q = query.trim().toLowerCase();
@@ -1845,24 +1890,75 @@ export default function TableFilterTemplate() {
             j.id.toLowerCase().includes(q),
         )
       : byFilters;
-    if (sort.length === 0) {
+    if (sort.length === 0 && !isGrouped) {
       return byQuery;
     }
+    // Grouping sorts before the user's own keys, which is what keeps a
+    // section's rows contiguous in the result set. Batches then fill the
+    // sections in order and always land at the bottom of the table; grouping
+    // whatever a row-ordered slice happened to contain would instead scatter
+    // every section across every batch and splice new rows in above the fold.
+    // A real backend does the same thing — ORDER BY group, then by sort.
+    const groupRank = isGrouped
+      ? new Map(GROUP_ORDERS[groupField].map((key, i) => [key, i]))
+      : null;
     return [...byQuery].sort((a, b) => {
+      if (groupRank != null) {
+        const cmp =
+          (groupRank.get(String(a[groupField])) ?? Number.MAX_SAFE_INTEGER) -
+          (groupRank.get(String(b[groupField])) ?? Number.MAX_SAFE_INTEGER);
+        if (cmp !== 0) {
+          return cmp;
+        }
+      }
       for (const {sortKey, direction} of sort) {
         const av = a[sortKey];
         const bv = b[sortKey];
-        const cmp =
-          typeof av === 'number' && typeof bv === 'number'
-            ? av - bv
-            : String(av ?? '').localeCompare(String(bv ?? ''));
+        const rank = SORT_RANKS[sortKey];
+        let cmp: number;
+        if (rank != null) {
+          // An unranked value sorts last rather than first, so a value the map
+          // has not heard of cannot displace Urgent at the top.
+          cmp =
+            (rank[String(av)] ?? Number.MAX_SAFE_INTEGER) -
+            (rank[String(bv)] ?? Number.MAX_SAFE_INTEGER);
+        } else if (typeof av === 'number' && typeof bv === 'number') {
+          cmp = av - bv;
+        } else {
+          cmp = String(av ?? '').localeCompare(String(bv ?? ''));
+        }
         if (cmp !== 0) {
           return direction === 'ascending' ? cmp : -cmp;
         }
       }
       return 0;
     });
-  }, [applyFilters, filters, query, sort]);
+  }, [applyFilters, filters, groupField, isGrouped, query, sort]);
+
+  /**
+   * How many rows each section holds in the whole result set, not just in the
+   * batch on screen. The grouping hook can only count what it is handed, so
+   * left to itself a section reads "6 jobs" and silently becomes "10 jobs" as
+   * the reader scrolls — a number that looks like a total but is a progress
+   * meter. Only the page holding the result set can answer this, which is why
+   * the hook takes it from here rather than working it out.
+   */
+  const groupTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    if (!isGrouped) {
+      return totals;
+    }
+    for (const job of results) {
+      const key = String(job[groupField]);
+      totals.set(key, (totals.get(key) ?? 0) + 1);
+    }
+    return totals;
+  }, [groupField, isGrouped, results]);
+
+  const getGroupTotal = useCallback(
+    (groupKey: string) => groupTotals.get(groupKey),
+    [groupTotals],
+  );
 
   const {
     data: rows,
@@ -2122,15 +2218,15 @@ export default function TableFilterTemplate() {
     allowUnsortedState: true,
     isMultiSortEnabled: true,
   });
+  // The checkbox column needs no mention here: the plugin pins the whole
+  // contiguous run from the first column through the last key it is given, so
+  // naming the first data column carries the selection column with it.
   const stickyPlugin = useTableStickyColumns<ServiceJob>({
     startKeys: stickyKeys(view.stickyStart, view.columnKeys, false),
     endKeys: stickyKeys(view.stickyEnd, view.columnKeys, true),
   });
 
   // --- Grouping --------------------------------------------------------------
-  const groupField = view.grouping;
-  const isGrouped = groupField !== 'none';
-
   const toggleGroup = useCallback((groupKey: string) => {
     setCollapsedGroups(current => {
       const next = new Set(current);
@@ -2155,13 +2251,18 @@ export default function TableFilterTemplate() {
    * labels already, which is what the fallback covers.
    */
   const renderGroupHeader = useCallback(
-    (groupKey: string, count: number) => (
-      // The plugin lays its header out as a flex row, so two siblings need no
-      // wrapper — and Text renders a span, which the span around it can hold.
+    // `count` is the batch on screen, `total` the result set — the plugin
+    // reconciles the two from getGroupTotal, so the section still filling at
+    // the bottom reads "6 of 10" until its last batch arrives.
+    (groupKey: string, count: number, _collapsed: boolean, total: number) => (
+      // The plugin lays its header out as a flex row, so two siblings need
+      // no wrapper — and Text renders a span, which the span around it can
+      // hold.
       <>
         <Text type="label">{VALUE_LABELS[groupKey] ?? groupKey}</Text>
         <Text type="supporting" color="secondary">
-          {count} {count === 1 ? 'job' : 'jobs'}
+          {count < total ? `${count} of ${total}` : total}{' '}
+          {total === 1 ? 'job' : 'jobs'}
         </Text>
       </>
     ),
@@ -2173,14 +2274,16 @@ export default function TableFilterTemplate() {
     data: groupedRows,
     idKey: groupRowKey,
   } = useTableGroupedRows<ServiceJob>({
-    // Only the loaded batch is grouped, so a section counts what is on screen
-    // and the next batch folds into it on arrival. With grouping off the hook
-    // is handed nothing, so it flattens nothing and its plugin goes unused.
+    // Only the loaded batch is grouped, so the next batch folds into a section
+    // on arrival; getGroupTotal is what keeps the heading honest meanwhile.
+    // With grouping off the hook is handed nothing, so it flattens nothing and
+    // its plugin goes unused.
     data: isGrouped ? rows : NO_ROWS,
     groupBy,
     collapsedGroups,
     onToggleGroup: toggleGroup,
     renderGroupHeader,
+    getGroupTotal,
     getRowKey,
     groupOrder: GROUP_ORDERS[groupField],
   });
@@ -2189,6 +2292,30 @@ export default function TableFilterTemplate() {
     (item: ServiceJob) => groupRowKey(item).startsWith(GROUP_ROW_KEY_PREFIX),
     [groupRowKey],
   );
+
+  /**
+   * The panel opens on the first row, so the template arrives showing its
+   * detail view instead of a bare rail the reader has to discover. It reads
+   * the grouped order rather than `results` because that is the order on
+   * screen, and skips the synthetic section headers.
+   *
+   * One-shot through a ref: without it, every filter change would reopen the
+   * panel, and closing it would only make the next render open it again.
+   */
+  const hasOpenedFirstRow = useRef(false);
+  useEffect(() => {
+    if (hasOpenedFirstRow.current) {
+      return;
+    }
+    const first = (isGrouped ? groupedRows : rows).find(
+      row => !isGroupHeaderRow(row),
+    );
+    if (first == null) {
+      return;
+    }
+    hasOpenedFirstRow.current = true;
+    setActiveJobId(first.id);
+  }, [groupedRows, isGroupHeaderRow, isGrouped, rows]);
 
   /**
    * A section header is a synthetic row, and the table renders every column's
