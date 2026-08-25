@@ -196,7 +196,7 @@ describe('AlertDialog', () => {
       expect(getComputedStyle(footerStack).flexWrap).toBe('wrap');
     });
 
-    it('wraps long action labels in the wide horizontal branch', () => {
+    it('keeps long action buttons within the wide horizontal footer without changing Button sizing', () => {
       stubAlertDialogMedia({
         smallScreen: false,
         coarsePointer: false,
@@ -220,8 +220,8 @@ describe('AlertDialog', () => {
       expect(getComputedStyle(footerStack).flexWrap).toBe('wrap');
       for (const button of buttons) {
         const computed = getComputedStyle(button);
-        expect(computed.whiteSpace).toBe('normal');
-        expect(computed.height).toBe('auto');
+        expect(computed.whiteSpace).toBe('nowrap');
+        expect(computed.height).toBe('var(--size-element-md)');
         expect(computed.maxWidth).toBe('100%');
       }
     });
@@ -254,7 +254,7 @@ describe('AlertDialog', () => {
       expect(getComputedStyle(footerStack).flexDirection).toBe('column');
       for (const button of buttons) {
         const computed = getComputedStyle(button);
-        expect(computed.whiteSpace).toBe('normal');
+        expect(computed.whiteSpace).toBe('nowrap');
         expect(computed.width).toBe('100%');
         expect(computed.maxWidth).toBe('100%');
       }
@@ -284,9 +284,9 @@ describe('AlertDialog', () => {
         'Permanently delete workspace',
         'Keep this workspace',
       ]);
-      expect(getComputedStyle(buttons[0]).whiteSpace).toBe('normal');
+      expect(getComputedStyle(buttons[0]).whiteSpace).toBe('nowrap');
       expect(getComputedStyle(buttons[0]).width).toBe('100%');
-      expect(getComputedStyle(buttons[1]).whiteSpace).toBe('normal');
+      expect(getComputedStyle(buttons[1]).whiteSpace).toBe('nowrap');
       expect(getComputedStyle(buttons[1]).width).toBe('100%');
     });
 

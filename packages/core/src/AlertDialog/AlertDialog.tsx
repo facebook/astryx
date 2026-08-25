@@ -4,7 +4,7 @@
 
 /**
  * @file AlertDialog.tsx
- * @input Uses React, StyleX, theme size tokens, Dialog, Layout, Heading, Text, Button
+ * @input Uses React, StyleX, Dialog, Layout, Heading, Text, Button
  * @output Exports AlertDialog component, AlertDialogProps type
  * @position Core implementation; consumed by index.ts, tested by AlertDialog.test.tsx
  *
@@ -31,7 +31,6 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {useMediaQuery} from '../hooks';
-import {sizeVars} from '../theme/tokens.stylex';
 
 const SMALL_SCREEN_QUERY = '(max-width: 640px)';
 
@@ -39,14 +38,9 @@ const styles = stylex.create({
   action: {
     maxWidth: '100%',
     minWidth: 0,
-    height: 'auto',
-    minHeight: sizeVars['--size-element-md'],
-    whiteSpace: 'normal',
-    overflowWrap: 'anywhere',
   },
   stackedAction: {
     width: '100%',
-    maxWidth: '100%',
   },
 });
 
