@@ -6,7 +6,7 @@ export const doc = {
   name: 'Filterable Table',
   displayName: 'Filterable Table',
   description:
-    'Filterable table page: a token-list filter bar of toggles, selectors, a multi-select and a range slider that swaps to PowerSearch for advanced queries, saved views that capture both the filters and the table configuration, and a two-pane view options popover for columns, density, sticky edges and grouping. Rows open a resizable detail panel, checkboxes raise a bulk edit bar, and the list pages in by infinite scroll with skeleton rows and empty states.',
+    'Filterable data table with a token filter bar that swaps to PowerSearch, saved views, and a resizable detail panel.',
   isReady: true,
   category: 'Table - Filtering',
 };
