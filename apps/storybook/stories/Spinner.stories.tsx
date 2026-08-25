@@ -118,47 +118,40 @@ const themedGeometry = defineTheme({
   },
 });
 
+// A `Theme` with no parent Theme syncs its name onto the document root so its
+// @scope'd component rules also reach portals — which means they reach every
+// spinner on the page, including ones rendered outside the provider. A
+// "default vs themed" pair inside one story therefore shows two themed rows,
+// measured in Chromium; the unthemed reference is the `Sizes` story above.
 export const ThemedGeometry: Story = {
   name: 'Themed Geometry (per size)',
   render: () => (
-    <VStack gap={6}>
-      <VStack gap={2}>
-        <Text type="supporting" color="secondary">
-          Default — 10 / 14 / 18 / 28px rings
-        </Text>
+    <VStack gap={2}>
+      <Text type="supporting" color="secondary">
+        Themed — rem and calc() diameters; the box tracks the ring
+      </Text>
+      <Theme theme={themedGeometry} mode="light">
         <HStack gap={4} vAlign="center">
           <Spinner size="sm" />
           <Spinner size="md" />
           <Spinner size="lg" />
           <Spinner size="xl" />
         </HStack>
-      </VStack>
-
-      <VStack gap={2}>
-        <Text type="supporting" color="secondary">
-          Themed — rem and calc() diameters; the box tracks the ring
-        </Text>
-        <Theme theme={themedGeometry} mode="light">
-          <HStack gap={4} vAlign="center">
-            <Spinner size="sm" />
-            <Spinner size="md" />
-            <Spinner size="lg" />
-            <Spinner size="xl" />
-          </HStack>
-        </Theme>
-      </VStack>
+      </Theme>
     </VStack>
   ),
 };
 
-// A rail of `0` is a legitimate thing to theme — an arc with no visible track —
-// and is the case that used to read as "unset" and silently draw the default
-// ring in a box sized for none.
-const themedRailless = defineTheme({
-  name: 'spinner-themed-railless',
+// A hairline rail: geometry themed down to 1px while the diameter stays put.
+// Not `0` — one `stroke-width` drives both circles, so a rail of `0` is a
+// zero-width stroke on each and paints nothing. An arc with no track behind it
+// is `--spinner-track-color: transparent`, which is what the subtle shade in
+// `ThemedColor` shows.
+const themedHairline = defineTheme({
+  name: 'spinner-themed-hairline',
   components: {
     spinner: {
-      'size:xl': {'--spinner-rail-width': '0px'},
+      'size:xl': {'--spinner-rail-width': '1px'},
       base: {'--spinner-track-color': 'transparent'},
     },
   },
@@ -184,37 +177,34 @@ const themedColor = defineTheme({
 export const ThemedColor: Story = {
   name: 'Themed Color (per shade)',
   render: () => (
-    <VStack gap={6}>
-      <VStack gap={2}>
-        <Text type="supporting" color="secondary">
-          Default — accent arc over the track token
-        </Text>
+    <VStack gap={2}>
+      <Text type="supporting" color="secondary">
+        Themed — blue arc and wash; the subtle shade drops its track (the
+        `Shades` story above is the untinted reference — see the note on
+        `ThemedGeometry` for why it cannot sit in this story)
+      </Text>
+      <Theme theme={themedColor} mode="light">
         <HStack gap={4} vAlign="center">
           <Spinner size="xl" />
           <Spinner size="xl" shade="subtle" />
         </HStack>
-      </VStack>
+      </Theme>
+    </VStack>
+  ),
+};
 
-      <VStack gap={2}>
-        <Text type="supporting" color="secondary">
-          Themed — blue arc and wash; the subtle shade drops its track
-        </Text>
-        <Theme theme={themedColor} mode="light">
-          <HStack gap={4} vAlign="center">
-            <Spinner size="xl" />
-            <Spinner size="xl" shade="subtle" />
-          </HStack>
-        </Theme>
-      </VStack>
-
-      <VStack gap={2}>
-        <Text type="supporting" color="secondary">
-          Themed — a rail of 0: an arc with no track, in a box that fits it
-        </Text>
-        <Theme theme={themedRailless} mode="light">
-          <Spinner size="xl" />
-        </Theme>
-      </VStack>
+// One Theme per story, for the same reason: two providers in one story would
+// each claim the document root and the last one mounted would paint both rows.
+export const ThemedHairlineRail: Story = {
+  name: 'Themed Hairline Rail',
+  render: () => (
+    <VStack gap={2}>
+      <Text type="supporting" color="secondary">
+        Themed — a 1px hairline rail over a transparent track
+      </Text>
+      <Theme theme={themedHairline} mode="light">
+        <Spinner size="xl" />
+      </Theme>
     </VStack>
   ),
 };
