@@ -21,6 +21,11 @@ import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
+import {
+  eagerShowcases,
+  EAGER_SHOWCASE_COUNT,
+  GALLERY_CATEGORIES,
+} from '../generated/galleryShowcaseRegistry';
 import {exampleRegistry} from '../generated/exampleRegistry';
 
 const REPO_ROOT = path.resolve(
@@ -1023,5 +1028,71 @@ describe('LinkProvider utility page', () => {
     const examples = exampleRegistry['LinkProvider'] ?? [];
     expect(examples.length).toBeGreaterThanOrEqual(1);
     expect(examples[0].source).toContain('<LinkProvider component=');
+  });
+});
+
+// ── Gallery Showcase Registry ──────────────────────────────────────────
+
+/**
+ * The eagerly imported showcases have to stay in step with what the
+ * /components gallery actually renders first — an eager set pointing at
+ * tiles further down the page would ship the chunk cost without removing
+ * any loading state. These tests recompute the gallery's render order from
+ * the same inputs the page uses and pin the eager set to the top of it.
+ */
+describe('galleryShowcaseRegistry', () => {
+  /** Mirrors the tile filtering in src/app/(docs)/components/page.tsx. */
+  const isGalleryComponent = (comp: ComponentEntry) =>
+    !comp.isHiddenFromOverview &&
+    !comp.hidden &&
+    !comp.name.startsWith('use') &&
+    Boolean(comp.category) &&
+    comp.group !== 'Utilities';
+
+  const galleryOrder = GALLERY_CATEGORIES.flatMap(cat =>
+    (components['@astryxdesign/core'] ?? []).filter(
+      c => c.category === cat && isGalleryComponent(c),
+    ),
+  );
+
+  it('renders every gallery category', () => {
+    const categories = new Set(
+      (components['@astryxdesign/core'] ?? [])
+        .filter(isGalleryComponent)
+        .map(c => c.category),
+    );
+    for (const cat of categories) {
+      expect(GALLERY_CATEGORIES).toContain(cat);
+    }
+  });
+
+  it('eagerly imports exactly the first EAGER_SHOWCASE_COUNT tiles that have a showcase', () => {
+    const expected = galleryOrder
+      .filter(c => showcaseRegistry[c.name] != null)
+      .slice(0, EAGER_SHOWCASE_COUNT)
+      .map(c => c.name);
+    expect(Object.keys(eagerShowcases)).toEqual(expected);
+  });
+
+  it('eager entries are components, not lazy loaders', () => {
+    for (const [name, Component] of Object.entries(eagerShowcases)) {
+      expect(Component, name).toBeTypeOf('function');
+      // A lazy loader would resolve to a promise; an eager showcase is the
+      // component itself and must render synchronously on the server.
+      expect((Component as {$$typeof?: symbol}).$$typeof).toBeUndefined();
+    }
+  });
+
+  it('every eager component also has a lazy loader', () => {
+    for (const name of Object.keys(eagerShowcases)) {
+      expect(showcaseRegistry[name], name).toBeDefined();
+    }
+  });
+
+  it('keeps the eager set small enough to stay off the critical path', () => {
+    expect(Object.keys(eagerShowcases).length).toBe(EAGER_SHOWCASE_COUNT);
+    // 12 covers a 2560x1440 viewport. Well past that and the page chunk is
+    // carrying components nobody sees before they scroll.
+    expect(EAGER_SHOWCASE_COUNT).toBeLessThanOrEqual(16);
   });
 });
