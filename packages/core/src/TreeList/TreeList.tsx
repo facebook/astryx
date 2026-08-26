@@ -349,10 +349,8 @@ export function TreeList({
       <ul
         ref={treeRef}
         role="tree"
-        aria-label={ariaLabel}
-        aria-labelledby={
-          ariaLabelledby ?? (header != null ? headerId : undefined)
-        }
+        aria-label={header != null ? undefined : ariaLabel}
+        aria-labelledby={header != null ? headerId : ariaLabelledby}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         {...stylex.props(styles.list)}>
