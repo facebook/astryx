@@ -109,7 +109,7 @@ function ScaleControl({
         <NumberInput
           label={controlLabel}
           isLabelHidden
-          value={numberValue}
+          value={liveNumber.value}
           placeholder="—"
           onChange={liveNumber.handleChange}
           onFocus={liveNumber.handleFocus}

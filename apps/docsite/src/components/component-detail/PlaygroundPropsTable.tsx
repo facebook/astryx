@@ -392,7 +392,7 @@ function NumberControl({
   return (
     <NumberInput
       label=""
-      value={value}
+      value={liveNumber.value}
       placeholder={isRequired ? undefined : 'unset'}
       hasClear={!isRequired}
       onChange={liveNumber.handleChange}

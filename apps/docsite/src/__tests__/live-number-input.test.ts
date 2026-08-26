@@ -5,31 +5,16 @@ import {readLiveNumberDraft} from '../lib/useLiveNumberInput';
 
 describe('readLiveNumberDraft', () => {
   it('returns an in-range machine number for live preview', () => {
-    expect(readLiveNumberDraft('12.5', {min: 0, max: 20})).toEqual({
-      liveValue: 12.5,
-      shouldRevert: false,
-    });
+    expect(readLiveNumberDraft('12.5', {min: 0, max: 20})).toBe(12.5);
   });
 
-  it('marks unreadable and non-integral drafts for rollback', () => {
-    expect(readLiveNumberDraft('1·234', {})).toEqual({
-      liveValue: null,
-      shouldRevert: true,
-    });
-    expect(readLiveNumberDraft('3.5', {isIntegerOnly: true})).toEqual({
-      liveValue: null,
-      shouldRevert: true,
-    });
+  it('rejects unreadable and non-integral drafts', () => {
+    expect(readLiveNumberDraft('1·234', {})).toBeNull();
+    expect(readLiveNumberDraft('3.5', {isIntegerOnly: true})).toBeNull();
   });
 
   it('leaves empty and out-of-range drafts to NumberInput commit policy', () => {
-    expect(readLiveNumberDraft('', {})).toEqual({
-      liveValue: null,
-      shouldRevert: false,
-    });
-    expect(readLiveNumberDraft('100', {max: 10})).toEqual({
-      liveValue: null,
-      shouldRevert: false,
-    });
+    expect(readLiveNumberDraft('', {})).toBeNull();
+    expect(readLiveNumberDraft('100', {max: 10})).toBeNull();
   });
 });

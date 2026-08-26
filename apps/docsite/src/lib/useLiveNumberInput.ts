@@ -5,6 +5,7 @@
 import {
   useCallback,
   useRef,
+  useState,
   type FocusEvent,
   type FormEvent,
   type KeyboardEvent,
@@ -19,70 +20,69 @@ interface LiveNumberInputOptions {
 export function readLiveNumberDraft(
   text: string,
   {min, max, isIntegerOnly}: LiveNumberInputOptions,
-): {liveValue: number | null; shouldRevert: boolean} {
+): number | null {
   const trimmed = text.trim();
   if (trimmed === '') {
-    return {liveValue: null, shouldRevert: false};
+    return null;
   }
   const value = Number(trimmed);
   if (!Number.isFinite(value) || (isIntegerOnly && !Number.isInteger(value))) {
-    return {liveValue: null, shouldRevert: true};
+    return null;
   }
   if ((min != null && value < min) || (max != null && value > max)) {
-    return {liveValue: null, shouldRevert: false};
+    return null;
   }
-  return {liveValue: value, shouldRevert: false};
+  return value;
 }
 
 export function useLiveNumberInput(
   value: number | null,
   onChange: (value: number | null) => void,
-  options: LiveNumberInputOptions = {},
+  {min, max, isIntegerOnly}: LiveNumberInputOptions = {},
 ) {
-  const editStartValueRef = useRef(value);
-  const lastDraftShouldRevertRef = useRef(false);
+  const [editBase, setEditBase] = useState<number | null | undefined>(
+    undefined,
+  );
+  const editBaseRef = useRef(value);
   const committedAtBoundaryRef = useRef(false);
 
   const handleChange = useCallback(
     (nextValue: number | null) => {
       committedAtBoundaryRef.current = true;
-      editStartValueRef.current = nextValue;
+      editBaseRef.current = nextValue;
+      setEditBase(nextValue);
       onChange(nextValue);
     },
     [onChange],
   );
   const handleFocus = useCallback(() => {
-    editStartValueRef.current = value;
-    lastDraftShouldRevertRef.current = false;
+    editBaseRef.current = value;
     committedAtBoundaryRef.current = false;
+    setEditBase(value);
   }, [value]);
   const handleInput = useCallback(
     (event: FormEvent<HTMLElement>) => {
       committedAtBoundaryRef.current = false;
-      const {liveValue, shouldRevert} = readLiveNumberDraft(
+      const liveValue = readLiveNumberDraft(
         (event.currentTarget as HTMLInputElement).value,
-        options,
+        {min, max, isIntegerOnly},
       );
-      lastDraftShouldRevertRef.current = shouldRevert;
       if (liveValue !== null && liveValue !== value) {
         onChange(liveValue);
       }
     },
-    [onChange, options, value],
+    [isIntegerOnly, max, min, onChange, value],
   );
   const restoreRejectedDraft = useCallback(() => {
-    if (
-      lastDraftShouldRevertRef.current &&
-      !committedAtBoundaryRef.current &&
-      value !== editStartValueRef.current
-    ) {
-      onChange(editStartValueRef.current);
+    if (!committedAtBoundaryRef.current && value !== editBaseRef.current) {
+      onChange(editBaseRef.current);
     }
     committedAtBoundaryRef.current = false;
   }, [onChange, value]);
   const handleBlur = useCallback(
     (_event: FocusEvent<HTMLInputElement>) => {
       restoreRejectedDraft();
+      setEditBase(undefined);
     },
     [restoreRejectedDraft],
   );
@@ -95,5 +95,12 @@ export function useLiveNumberInput(
     [restoreRejectedDraft],
   );
 
-  return {handleBlur, handleChange, handleFocus, handleInput, handleKeyDown};
+  return {
+    value: editBase === undefined ? value : editBase,
+    handleBlur,
+    handleChange,
+    handleFocus,
+    handleInput,
+    handleKeyDown,
+  };
 }

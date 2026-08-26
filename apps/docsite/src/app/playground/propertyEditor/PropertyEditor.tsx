@@ -90,7 +90,7 @@ function LiveNumberControl({
     <NumberInput
       label={label}
       isLabelHidden
-      value={value}
+      value={liveNumber.value}
       placeholder={isRequired ? undefined : 'unset'}
       hasClear={!isRequired}
       onChange={liveNumber.handleChange}
