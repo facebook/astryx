@@ -605,6 +605,25 @@ export interface MultiSelectorProps<
   searchPlaceholder?: string;
 
   /**
+   * Content shown in the panel when there are no options to show, and
+   * announced in a polite live region when the panel opens. Not shown while
+   * `isLoading` — the options have not arrived yet.
+   * @default 'No options'
+   */
+  emptyText?: ReactNode;
+
+  /**
+   * Content shown in the panel when a search query matches no options, and
+   * announced in a polite live region at the same time.
+   *
+   * The panel message is `role="presentation"`, so the live region is the only
+   * route to assistive tech: a string is announced verbatim, a richer node
+   * falls back to the default text since it cannot be spoken.
+   * @default 'No results found'
+   */
+  emptySearchText?: ReactNode;
+
+  /**
    * How to display selected items in the trigger.
    * - 'count': "3 selected"
    * - 'labels': "Name, Email, +3"
@@ -726,6 +745,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   selectAllLabel: selectAllLabelFromProps,
   hasSearch = false,
   searchPlaceholder: searchPlaceholderFromProps,
+  emptyText: emptyTextFromProps,
+  emptySearchText: emptySearchTextFromProps,
   triggerDisplay = 'count',
   formatValue,
   maxBadges = 3,
@@ -747,6 +768,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     selectAllLabelFromProps ?? t('@astryx.multiSelector.selectAll');
   const searchPlaceholder =
     searchPlaceholderFromProps ?? t('@astryx.multiSelector.searchPlaceholder');
+  const emptyText = emptyTextFromProps ?? t('@astryx.multiSelector.empty');
+  const emptySearchText =
+    emptySearchTextFromProps ?? t('@astryx.multiSelector.emptySearchResults');
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
     variant === 'ghost' && statusVariant === 'attached'
@@ -821,6 +845,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // Announce selection-count changes politely (comboboxes-7 announce path).
   // Toggling options / select-all previously produced no audible feedback.
   const announce = useAnnounce();
+
+  // The panel's empty message is role="presentation" and reaches assistive tech
+  // only through this live region, so the region has to speak whatever the
+  // panel shows. A ReactNode override cannot be spoken; fall back to the
+  // catalog copy for that case rather than announcing nothing.
+  const emptyAnnouncement =
+    typeof emptyText === 'string'
+      ? emptyText
+      : t('@astryx.multiSelector.empty');
+  const emptySearchAnnouncement =
+    typeof emptySearchText === 'string'
+      ? emptySearchText
+      : t('@astryx.multiSelector.emptySearchResults');
   const announceSelection = useCallback(
     (nextValue: string[]) => {
       const total = selectableItems.length;
@@ -940,15 +977,53 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         announce('');
         return;
       }
+      // While isLoading the panel deliberately shows nothing, so announcing a
+      // result would put a claim in the one channel the screen has gone quiet
+      // for.
+      if (isLoading) {
+        announce('');
+        return;
+      }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
-          ? t('@astryx.multiSelector.emptySearchResults')
+          ? emptySearchAnnouncement
           : t('@astryx.multiSelector.resultCount', {count}),
       );
     },
-    [announce, selectableItems, t],
+    [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
   );
+
+  // The panel's empty message is role="presentation", so this region is the
+  // only route to assistive tech. It has to watch the STATE rather than the
+  // open event: the panel can become empty either on open or when a fetch
+  // lands with nothing in it, and an open-only announcement leaves the second
+  // case silent while the message sits on screen. The ref makes it fire once
+  // per arrival at that state rather than on every re-render.
+  const announcedEmptyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const isPanelEmpty =
+      popover.isOpen &&
+      !isLoading &&
+      searchQuery === '' &&
+      selectableItems.length === 0;
+    if (!isPanelEmpty) {
+      announcedEmptyRef.current = null;
+      return;
+    }
+    if (announcedEmptyRef.current === emptyAnnouncement) {
+      return;
+    }
+    announcedEmptyRef.current = emptyAnnouncement;
+    announce(emptyAnnouncement);
+  }, [
+    popover.isOpen,
+    isLoading,
+    searchQuery,
+    selectableItems.length,
+    emptyAnnouncement,
+    announce,
+  ]);
 
   // Handle toggle
   // Clear all selected values. Shared by the clear button and the keyboard
@@ -1416,7 +1491,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // message out of the listbox's accessibility tree (role="listbox" only
     // permits option/group children); the no-results outcome is announced
     // via the result-count live region instead.
-    if (realItemCount === 0) {
+    // While isLoading the options have not arrived yet, so asserting either
+    // message would be a claim the component cannot make; the trigger's
+    // spinner covers it.
+    if (realItemCount === 0 && !isLoading) {
       elements.push(
         <div
           key="empty"
@@ -1425,7 +1503,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             themeProps('multi-selector-empty-state'),
             stylex.props(styles.emptyState),
           )}>
-          No results found
+          {searchQuery ? emptySearchText : emptyText}
         </div>,
       );
       return elements;
@@ -1515,7 +1593,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     flushPending();
 
     return elements;
-  }, [options, renderItem, sortedItems, searchQuery, hasSelectAll]);
+  }, [
+    options,
+    renderItem,
+    sortedItems,
+    searchQuery,
+    hasSelectAll,
+    isLoading,
+    emptyText,
+    emptySearchText,
+  ]);
 
   // The detached message box renders its own leading status icon, so the
   // on-field icon would duplicate it — keep the chevron indicator instead.

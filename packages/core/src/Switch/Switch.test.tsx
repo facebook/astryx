@@ -823,3 +823,13 @@ describe('forced colors (WCAG 1.4.11)', () => {
     expect(getForcedColorsRules()).not.toContain('color-mix');
   });
 });
+
+describe('label theme target', () => {
+  it('names its own label so a theme can style it apart from a field label', () => {
+    // See CheckboxInput: the control names the label it owns.
+    render(<Switch label="Wi-Fi" value={false} onChange={() => {}} />);
+    const label = screen.getByText('Wi-Fi').closest('label');
+    expect(label).toHaveClass('astryx-field-label');
+    expect(label).toHaveClass('astryx-switch-label');
+  });
+});

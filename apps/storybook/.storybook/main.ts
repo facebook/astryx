@@ -113,6 +113,9 @@ const config: StorybookConfig = {
               '@astryxdesign/theme-neutral/*': [
                 path.join(rootDir, 'packages/themes/neutral/src/*'),
               ],
+              '@astryxdesign/theme-probe/*': [
+                path.join(rootDir, 'packages/themes/probe/src/*'),
+              ],
               '@astryxdesign/theme-stone/*': [
                 path.join(rootDir, 'packages/themes/stone/src/*'),
               ],
@@ -161,6 +164,10 @@ const config: StorybookConfig = {
           '@astryxdesign/theme-neutral': path.resolve(
             rootDir,
             'packages/themes/neutral/src/source.ts',
+          ),
+          '@astryxdesign/theme-probe': path.resolve(
+            rootDir,
+            'packages/themes/probe/src/source.ts',
           ),
           '@astryxdesign/theme-stone': path.resolve(
             rootDir,

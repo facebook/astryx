@@ -19,7 +19,7 @@ describe('astryx theme targets', () => {
     expect(status).toBe(0);
     expect(stdout).toMatch(/^switch\s+Switch\s+size\s+checked, disabled$/m);
     expect(stdout).toMatch(/^switch-thumb\s+Switch\s+size\s+checked$/m);
-    expect(stdout).toMatch(/3 across 1 component/);
+    expect(stdout).toMatch(/4 across 1 component/);
   });
 
   it('lists the whole surface when unfiltered', async () => {

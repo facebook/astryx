@@ -325,7 +325,12 @@ export const Creatable: Story = {
           hasCreate
           placeholder="Type a tag and press Enter..."
         />
-        <p style={{marginTop: 8, fontSize: 14, color: '#666'}}>
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 14,
+            color: 'var(--color-text-secondary)',
+          }}>
           {tags.length} tag{tags.length !== 1 ? 's' : ''} added
         </p>
       </div>
@@ -428,7 +433,8 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<SearchableItem[]>([]);
     const [b, setB] = useState<SearchableItem[]>([]);
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
         <Tokenizer
           label="Attached (default)"
           searchSource={userSource}

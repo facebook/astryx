@@ -18,6 +18,7 @@
 import type {DefinedTheme} from './defineTheme';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
+import {dataTokenDefaults} from './domainTokens/dataTokens';
 import {cssVar, classPrefix, dataAttrNamespace} from '../naming';
 
 /**
@@ -124,7 +125,7 @@ export interface ThemeRulesSplit {
 }
 
 /**
- * Output from generateThemeCSS — two CSS blocks for different layers.
+ * Output from generateThemeCSS — three CSS blocks for different layers.
  */
 export interface ThemeCSSOutput {
   /**
@@ -139,6 +140,13 @@ export interface ThemeCSSOutput {
    * theme component overrides take effect. Empty string if no rules.
    */
   component: string;
+  /**
+   * The `--color-data-*` defaults at `:root`, identical for every theme.
+   * Should be injected into @layer astryx-base — where StyleX puts the core
+   * token defaults — so a theme's own value outranks it and a nested theme
+   * inherits its parent's override.
+   */
+  base: string;
 }
 
 // =============================================================================
@@ -759,10 +767,32 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
 }
 
 /**
+ * The `--color-data-*` defaults as one unscoped `:root` block.
+ *
+ * Core tokens reach CSS once, at `:root`, from StyleX's `defineVars` output in
+ * `@layer astryx-base`; a theme's own scope block then carries only the tokens
+ * that theme overrides, which is why a nested theme inherits its parent's
+ * override instead of shadowing it. Data tokens are not StyleX vars, so nothing
+ * declares them — this is their equivalent, and callers put it in
+ * `@layer astryx-base` so a theme's override wins by layer rather than by
+ * specificity. Seeding it per theme scope instead re-declares the default
+ * inside every nested theme, which is the shadowing this shape avoids.
+ *
+ * @internal Reached from outside `packages/core` as `generateThemeCSS().base`.
+ */
+export function generateDataTokenDefaultsCSS(): string {
+  const declarations = Object.entries(dataTokenDefaults)
+    .map(([prop, value]) => `  ${prop}: ${value};`)
+    .join('\n');
+  return `:root {\n${declarations}\n}`;
+}
+
+/**
  * Generate layered CSS for a theme — runtime path.
  *
- * Returns two CSS blocks for injection into different layers:
+ * Returns three CSS blocks for injection into different layers:
  * - `prose`: @scope'd element defaults → inject into @layer reset
+ * - `base`: the `:root` data-token defaults → inject into @layer astryx-base
  * - `component`: @scope'd token + .astryx-* overrides → inject into @layer astryx-theme
  *
  * This separation ensures prose defaults (what bare HTML looks like in a theme)
@@ -795,5 +825,9 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
       : onMediaCss;
   }
 
-  return {prose: proseCss, component: componentCss};
+  return {
+    prose: proseCss,
+    component: componentCss,
+    base: generateDataTokenDefaultsCSS(),
+  };
 }

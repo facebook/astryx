@@ -11,8 +11,9 @@
  * The standard variant treats `width` as the preferred surface width, then
  * clamps it to the dynamic viewport with spacing-token gutters so narrow
  * viewports keep content and controls on screen without changing the public API.
- * Fullscreen dialogs preserve the same padding floor while honoring safe-area
- * insets, and fade in without the centered-dialog translate/scale motion.
+ * Fullscreen dialogs add safe-area protection to the default padding fallback
+ * while preserving explicit prop/theme padding overrides, and fade in without
+ * the centered-dialog translate/scale motion.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Dialog/Dialog.doc.mjs (props table, features, implementation notes)
@@ -131,6 +132,27 @@ const enterFullscreen = stylex.keyframes({
   to: {opacity: 1},
 });
 
+const dialogFullscreenSafeAreaBlockStartPadding = `var(--astryx-dialog-padding-block-start, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-top, 0px))))`;
+const dialogFullscreenSafeAreaBlockEndPadding = `var(--astryx-dialog-padding-block-end, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-bottom, 0px))))`;
+const dialogFullscreenSafeAreaInlineStartPaddingLtr = `var(--astryx-dialog-padding-inline-start, var(--astryx-dialog-padding-inline, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-left, 0px)))))`;
+const dialogFullscreenSafeAreaInlineStartPaddingRtl = `var(--astryx-dialog-padding-inline-start, var(--astryx-dialog-padding-inline, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-right, 0px)))))`;
+const dialogFullscreenSafeAreaInlineEndPaddingLtr = `var(--astryx-dialog-padding-inline-end, var(--astryx-dialog-padding-inline, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-right, 0px)))))`;
+const dialogFullscreenSafeAreaInlineEndPaddingRtl = `var(--astryx-dialog-padding-inline-end, var(--astryx-dialog-padding-inline, var(--astryx-dialog-padding, max(${spacingVars['--spacing-4']}, env(safe-area-inset-left, 0px)))))`;
+
+/** @internal Verified by Dialog.test.tsx; not re-exported from the package entry point. */
+export const dialogFullscreenSafeAreaPaddingContract = {
+  blockStart: dialogFullscreenSafeAreaBlockStartPadding,
+  blockEnd: dialogFullscreenSafeAreaBlockEndPadding,
+  inlineStart: {
+    ltr: dialogFullscreenSafeAreaInlineStartPaddingLtr,
+    rtl: dialogFullscreenSafeAreaInlineStartPaddingRtl,
+  },
+  inlineEnd: {
+    ltr: dialogFullscreenSafeAreaInlineEndPaddingLtr,
+    rtl: dialogFullscreenSafeAreaInlineEndPaddingRtl,
+  },
+} as const;
+
 /**
  * Dialog styles using native <dialog> element
  * Uses ::backdrop pseudo-element for overlay
@@ -191,14 +213,16 @@ const styles = stylex.create({
     },
   },
   fullscreenSafeArea: {
-    paddingBlockStart:
-      'max(var(--container-padding-block-start), env(safe-area-inset-top, 0px))',
-    paddingBlockEnd:
-      'max(var(--container-padding-block-end), env(safe-area-inset-bottom, 0px))',
-    paddingInlineStart:
-      'max(var(--container-padding-inline-start), env(safe-area-inset-left, 0px))',
-    paddingInlineEnd:
-      'max(var(--container-padding-inline-end), env(safe-area-inset-right, 0px))',
+    paddingBlockStart: dialogFullscreenSafeAreaBlockStartPadding,
+    paddingBlockEnd: dialogFullscreenSafeAreaBlockEndPadding,
+    paddingInlineStart: {
+      default: dialogFullscreenSafeAreaInlineStartPaddingLtr,
+      ':is([dir="rtl"] *)': dialogFullscreenSafeAreaInlineStartPaddingRtl,
+    },
+    paddingInlineEnd: {
+      default: dialogFullscreenSafeAreaInlineEndPaddingLtr,
+      ':is([dir="rtl"] *)': dialogFullscreenSafeAreaInlineEndPaddingRtl,
+    },
   },
   inner: {
     display: 'flex',
@@ -628,7 +652,7 @@ export function Dialog({
         !useThemeDefault &&
           effectivePadding !== 4 &&
           containerPaddingBlockEndVarStyles[effectivePadding],
-        isFullscreen && styles.fullscreenSafeArea,
+        isFullscreen && useThemeDefault && styles.fullscreenSafeArea,
       )}>
       <DialogContext value={dialogContextValue}>{children}</DialogContext>
     </div>

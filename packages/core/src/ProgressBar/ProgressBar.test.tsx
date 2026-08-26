@@ -839,3 +839,27 @@ describe('ProgressBar', () => {
     });
   });
 });
+
+describe('ProgressBar theme target names', () => {
+  it('renders the deprecated classes beside the current ones', () => {
+    const {container} = render(
+      <ProgressBar
+        value={50}
+        label="Progress"
+        marks={[{value: 80, label: 'M'}]}
+      />,
+    );
+    expect(container.querySelector('.astryx-progress-bar')).toHaveClass(
+      'astryx-progressbar',
+    );
+    expect(container.querySelector('.astryx-progress-bar-track')).toHaveClass(
+      'astryx-progressbar-track',
+    );
+    expect(container.querySelector('.astryx-progress-bar-fill')).toHaveClass(
+      'astryx-progressbar-fill',
+    );
+    expect(container.querySelector('.astryx-progress-bar-mark')).toHaveClass(
+      'astryx-progressbar-mark',
+    );
+  });
+});

@@ -400,6 +400,58 @@ describe('HoverCard', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('omits aria-expanded on a trigger whose role does not support it', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Timestamp details">
+        <time dateTime="2026-08-25" tabIndex={0}>
+          2 hours ago
+        </time>
+      </HoverCard>,
+    );
+    const trigger = screen.getByText('2 hours ago');
+    expect(trigger.tagName).toBe('TIME');
+    // Global attributes are valid on any element, so the popup relationship is
+    // still advertised.
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    // aria-expanded is not: <time> has no role that supports it, and emitting
+    // it is a critical axe aria-allowed-attr violation.
+    expect(trigger).not.toHaveAttribute('aria-expanded');
+  });
+
+  it('keeps aria-expanded on a role-less trigger that declares a supporting role', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <span role="button" tabIndex={0}>
+          Trigger
+        </span>
+      </HoverCard>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('leaves a role-less trigger own aria-expanded untouched', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <span aria-expanded="true">Trigger</span>
+      </HoverCard>,
+    );
+    const trigger = screen.getByText('Trigger');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('keeps aria-expanded on triggers whose implicit role supports it', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <input type="button" value="Trigger" />
+      </HoverCard>,
+    );
+    expect(screen.getByRole('button')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
   it('keeps aria-describedby on the trigger when no label is provided', () => {
     render(
       <HoverCard content={<span>Card content</span>}>
@@ -503,7 +555,8 @@ describe('HoverCard', () => {
     const wrapper = screen.getByText('Just text, no element');
     expect(wrapper.tagName).toBe('SPAN');
     expect(wrapper).toHaveAttribute('aria-haspopup', 'dialog');
-    expect(wrapper).toHaveAttribute('aria-expanded', 'false');
+    // The wrapper is a role-less <span>; aria-expanded is invalid there.
+    expect(wrapper).not.toHaveAttribute('aria-expanded');
     // While closed, the layer is not in the DOM, so aria-controls is unset.
     expect(wrapper).not.toHaveAttribute('aria-controls');
     expect(wrapper).not.toHaveAttribute('aria-describedby');
@@ -1071,6 +1124,23 @@ describe('HoverCard', () => {
       await waitFor(() => {
         expect(onOpenChange).toHaveBeenCalledWith(true);
       });
+    });
+  });
+});
+
+describe('HoverCard theme target names', () => {
+  it('renders the deprecated class beside the current one on the card surface', async () => {
+    render(
+      <HoverCard content={<span>Card content</span>} delay={0}>
+        <button type="button">Trigger</button>
+      </HoverCard>,
+    );
+    fireEvent.mouseEnter(screen.getByRole('button', {name: 'Trigger'}));
+
+    await waitFor(() => {
+      const layer = screen.getByText('Card content').closest('[popover]');
+      expect(layer).toHaveClass('astryx-hover-card');
+      expect(layer).toHaveClass('astryx-hovercard');
     });
   });
 });

@@ -30,6 +30,8 @@ import {fileURLToPath} from 'node:url';
 import {capture, scout} from './lib/capture.mjs';
 import {analyzeTargeting, buildVerdict, compareCaptures} from './lib/compare.mjs';
 import {buildPlan, readStoryIndex} from './lib/plan.mjs';
+import {READ_TARGETS, emptyAccumulator, fold} from './lib/probe-reach.mjs';
+import {AXES, PROBE_TOKENS, READ_AXES} from './lib/probe-axes.mjs';
 import {renderReport} from './lib/report.mjs';
 import {accept, incomparable, readBaseline} from './lib/baseline.mjs';
 import {loadConfig, loadThemeOverrides, loadThemingTargets} from './lib/sources.mjs';
@@ -54,6 +56,19 @@ const tiers = (flag('tiers') ?? config.tiers.join(',')).split(',').filter(Boolea
 const sample = flag('sample') ? Number(flag('sample')) : null;
 /** Restrict the plan to story ids containing any of these — for debugging a shot, never for a gate run. */
 const only = (flag('only') ?? '').split(',').filter(Boolean);
+/** For the `component` tier: the components a PR touched. */
+const components = (flag('components') ?? '').split(',').filter(Boolean);
+/**
+ * Above this many shots the run declines instead of capturing.
+ *
+ * A sweeping PR — a token change, a shared hook, a rename across the system —
+ * would put hundreds of diffs in front of a reviewer who has no way to judge
+ * them one by one, and the honest answer is that a per-PR check is the wrong
+ * instrument for that change: the daily gate reviews it against the whole
+ * baseline instead. Declining loudly beats either timing out or dumping a
+ * report nobody can read.
+ */
+const maxShots = flag('max-shots') ? Number(flag('max-shots')) : Infinity;
 
 /**
  * Which stories the scout needs to look at: every story of a component some
@@ -77,17 +92,19 @@ function storiesToScout(stories, targets, themeOverrides) {
 async function plan() {
   const [targets, themeOverrides] = await Promise.all([
     loadThemingTargets(REPO_ROOT),
-    loadThemeOverrides(REPO_ROOT),
+    loadThemeOverrides(REPO_ROOT, config.probeTheme),
   ]);
   const stories = readStoryIndex(storybookDir, Object.keys(config.excludeStories));
 
   let observations;
-  if (!has('no-scout') && tiers.includes('theme-matrix')) {
+  if (!has('no-scout') && (tiers.includes('theme-matrix') || tiers.includes('probe'))) {
     const cachePath = flag('observations');
     if (cachePath && fs.existsSync(cachePath)) {
       observations = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
     } else {
-      const storyIds = storiesToScout(stories, targets, themeOverrides);
+      const storyIds = tiers.includes('probe')
+        ? stories.map(story => story.id)
+        : storiesToScout(stories, targets, themeOverrides);
       process.stderr.write(`Scouting ${storyIds.length} stories for theming targets…\n`);
       observations = await scout({
         storyIds,
@@ -106,6 +123,8 @@ async function plan() {
     observations,
     defaultTheme: config.defaultTheme,
     tiers,
+    components,
+    probeTheme: config.probeTheme,
   });
   // A sample is for trying the rig out, never for a gate run: it is taken
   // evenly across the plan so it spans components rather than the first few.
@@ -163,6 +182,34 @@ function stageReportImages({reportDir, keys, currentDir, baselinePath}) {
 
 async function check() {
   const shots = await plan();
+
+  // Over budget: say so in the verdict rather than capturing. The report and
+  // the PR comment both render this, so a skipped check is visible as a
+  // decision, never as a silent pass.
+  if (shots.length > maxShots) {
+    const verdict = {
+      version: 1,
+      status: 'skipped',
+      generatedAt: new Date().toISOString(),
+      reason: `${shots.length} shots exceeds the ${maxShots}-shot budget${components.length ? ` (${components.length} components touched)` : ''} — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
+      counts: {total: shots.length, unchanged: 0, changed: 0, added: 0, removed: 0, failed: 0},
+      components,
+      changes: [],
+    };
+    fs.mkdirSync(outDir, {recursive: true});
+    fs.writeFileSync(path.join(outDir, 'verdict.json'), `${JSON.stringify(verdict, null, 2)}\n`);
+    const summary = `## Visual gate: skipped\n\n${verdict.reason}\n`;
+    process.stdout.write(summary);
+    if (flag('summary-output')) fs.writeFileSync(flag('summary-output'), summary);
+    if (process.env.GITHUB_OUTPUT) {
+      fs.appendFileSync(
+        process.env.GITHUB_OUTPUT,
+        `status=skipped\nchanged=0\nadded=0\nfailed=0\ntotal=${shots.length}\n`,
+      );
+    }
+    return EXIT.clean;
+  }
+
   process.stderr.write(`Visual gate: ${shots.length} shots (${tiers.join(', ')})\n`);
   const {manifest, failures} = await runCapture(shots);
 
@@ -182,11 +229,12 @@ async function check() {
     diffDir: path.join(reportDir, 'diff'),
     threshold: config.threshold,
     maxDiffPixels: config.maxDiffPixels,
+    scoped: components.length > 0,
   });
 
   const [targets, themeOverrides] = await Promise.all([
     loadThemingTargets(REPO_ROOT),
-    loadThemeOverrides(REPO_ROOT),
+    loadThemeOverrides(REPO_ROOT, config.probeTheme),
   ]);
   const targeting = analyzeTargeting({
     observedTargets: manifest.observedTargets,
@@ -200,7 +248,7 @@ async function check() {
     baselineManifest,
     targeting,
     failures,
-    context: {...manifest.context, tiers, baselineExists: exists},
+    context: {...manifest.context, tiers, baselineExists: exists, scoped: components.length > 0, components},
   });
 
   stageReportImages({
@@ -301,6 +349,115 @@ async function main() {
     }
     case 'check':
       return check();
+    case 'reach': {
+      // The assertion a pixel diff cannot make: did each target's override
+      // actually arrive? No baseline, no images — the probe theme's unique
+      // per-selector colour is the fingerprint, so this is an equality test.
+      const {chromium} = await import('playwright');
+      const {serveDirectory} = await import('./lib/capture.mjs');
+      const stories = readStoryIndex(storybookDir, Object.keys(config.excludeStories));
+      const subject = only.length
+        ? stories.filter(story => only.some(f => story.storyId ?? story.id.includes(f)))
+        : stories;
+      const server = await serveDirectory(storybookDir);
+      const origin = `http://127.0.0.1:${server.port}`;
+      const browser = await chromium.launch();
+      const page = await browser.newPage({viewport: config.viewport});
+      const acc = emptyAccumulator();
+      const axisHits = {
+        tokens: new Set(),
+        icon: new Set(),
+        indicator: new Set(),
+        fonts: new Set(),
+        syntax: new Set(),
+      };
+      let done = 0;
+      for (const story of subject) {
+        try {
+          await page.goto(
+            `${origin}/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story&globals=astryxTheme:${config.probeTheme};colorMode:light`,
+            {waitUntil: 'load', timeout: 30000},
+          );
+          await page.waitForSelector('#storybook-root > *', {timeout: 20000});
+          await page.evaluate(() => document.fonts.ready);
+          fold(acc, await page.evaluate(READ_TARGETS), story.id);
+          // The other five axes. A single story proves tokens and fonts; the
+          // registry swaps and syntax need a story that renders one, so these
+          // accumulate across the walk.
+          const axes = await page.evaluate(READ_AXES);
+          for (const [name, value] of Object.entries(axes.tokens)) {
+            if (value && value === PROBE_TOKENS[name]) axisHits.tokens.add(name);
+          }
+          for (const kind of Object.keys(axes.swaps)) axisHits[kind]?.add(kind);
+          if (/AstryxProbeFace/.test(axes.fontFamily)) axisHits.fonts.add('body');
+          for (const color of axes.syntax) {
+            if (/^rgb\(/.test(color)) axisHits.syntax.add(color);
+          }
+        } catch {
+          // A story that will not render contributes no readings; the visual
+          // tier reports it as a capture failure.
+        }
+        if (++done % 100 === 0) process.stderr.write(`  read ${done}/${subject.length}\n`);
+      }
+      await browser.close();
+      await server.close();
+
+      const declared = (await loadThemingTargets(REPO_ROOT)).map(t => t.key);
+      const unseen = [...new Set(declared)].filter(
+        key => !acc.verified.has(key) && !acc.failures.has(key) && !acc.shadowed.has(key),
+      );
+      // An axis with nothing rendering it is UNVERIFIABLE, not passing — the
+      // difference is the whole point, and reporting it as green is how a
+      // check ends up asserting nothing.
+      const axisReport = {
+        components: {
+          verified: acc.verified.size,
+          missed: acc.failures.size,
+          ...AXES.components,
+        },
+        tokens: {verified: axisHits.tokens.size, of: Object.keys(PROBE_TOKENS).length, ...AXES.tokens},
+        icons: {verified: axisHits.icon.size > 0, ...AXES.icons},
+        indicators: {verified: axisHits.indicator.size > 0, ...AXES.indicators},
+        fonts: {verified: axisHits.fonts.size > 0, ...AXES.fonts},
+        syntax: {verified: axisHits.syntax.size, ...AXES.syntax},
+      };
+
+      const out = {
+        version: 1,
+        generatedAt: new Date().toISOString(),
+        axes: axisReport,
+        verified: [...acc.verified].sort(),
+        failures: Object.fromEntries([...acc.failures].sort()),
+        shadowed: Object.fromEntries([...acc.shadowed].sort()),
+        neverRendered: unseen.sort(),
+      };
+      fs.mkdirSync(outDir, {recursive: true});
+      fs.writeFileSync(path.join(outDir, 'reach.json'), `${JSON.stringify(out, null, 2)}\n`);
+
+      process.stdout.write('theme axes:\n');
+      for (const [name, info] of Object.entries(axisReport)) {
+        const value =
+          typeof info.verified === 'boolean'
+            ? info.verified
+              ? 'reached'
+              : 'NOT REACHED'
+            : `${info.verified}${info.of ? `/${info.of}` : ''} reached`;
+        process.stdout.write(`  ${name.padEnd(12)} ${value}\n`);
+      }
+      process.stdout.write(
+        `\ncomponent targets\n` +
+          `reached the pixels:              ${out.verified.length}\n` +
+          `shares an element with another:  ${Object.keys(out.shadowed).length}\n` +
+          `override did NOT arrive:         ${Object.keys(out.failures).length}\n` +
+          `no story renders it:             ${out.neverRendered.length}\n`,
+      );
+      for (const [key, info] of Object.entries(out.failures).slice(0, 30)) {
+        process.stdout.write(
+          `  ${key.padEnd(30)} got ${String(info.got).padEnd(22)} want ${info.expected}  (${info.storyId})\n`,
+        );
+      }
+      return Object.keys(out.failures).length > 0 ? EXIT.changed : EXIT.clean;
+    }
     case 'flaky': {
       // A gate that cries wolf gets ignored, so the exclusion list is
       // evidence, not guesswork: capture the same build twice and name every
@@ -369,7 +526,7 @@ async function main() {
     }
     default:
       process.stderr.write(
-        'Usage: gate.mjs <flaky|plan|capture|check|accept> [--storybook-dir dir] [--baseline dir] [--out dir] [--tiers a,b] [--sample n]\n',
+        'Usage: gate.mjs <flaky|plan|capture|check|reach|accept> [--storybook-dir dir] [--baseline dir] [--out dir] [--tiers a,b] [--sample n]\n',
       );
       return EXIT.crashed;
   }

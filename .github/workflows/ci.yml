@@ -255,6 +255,27 @@ jobs:
           path: apps/storybook/dist/
           retention-days: 30
 
+      # pr-visual reads each theme's built source to learn which targets that
+      # theme styles — a theme's component map is what defineTheme returns, not
+      # a literal in its source. This job has already built them; shipping the
+      # artifact keeps that job on a download instead of a second full build.
+      #
+      # core's dist ships with them because importing a built theme executes
+      # `import {defineTheme} from '@astryxdesign/core/theme'`, which pnpm
+      # resolves through the workspace link into packages/core/dist.
+      #
+      # Two paths, so the artifact is rooted at their common ancestor
+      # (packages/) — the download below unpacks it there.
+      - name: Upload built themes and core
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dists-${{ steps.urls.outputs.short_hash }}
+          path: |
+            packages/themes/*/dist/
+            packages/core/dist/
+          retention-days: 1
+
       - name: Analyze components
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: |
@@ -516,6 +537,116 @@ jobs:
   # job summary but don't block the merge, while the suite is observed for
   # flake. To promote: drop continue-on-error and add `pr-rtl` to required
   # checks. See apps/storybook/rtl-audit/README.md.
+  # Visual regression, scoped to the components a PR touched. Sibling to
+  # pr-a11y and pr-rtl: same build-storybook artifact, same analysis.json
+  # scoping, so a PR pays only for what it changed — a median PR is ~16 shots
+  # (~10s) against the 642 the daily release gate takes.
+  #
+  # Deeper than the daily gate where it looks: the release gate shoots ONE
+  # representative story per component, this shoots EVERY story of the touched
+  # component in EVERY theme that styles it.
+  #
+  # SKIPS ITSELF WHEN A PR IS TOO BROAD (--max-shots). A token or shared-hook
+  # change puts hundreds of diffs in front of a reviewer who cannot judge them
+  # one by one, and a per-PR check is the wrong instrument for that change —
+  # the daily gate reviews it against the whole baseline instead. The skip
+  # states its reason in the PR comment rather than vanishing.
+  #
+  # SOFT / NON-BLOCKING (continue-on-error) while the suite earns trust: the
+  # verdict surfaces in the job summary and the PR comment, and the release
+  # gate is the blocking one. To promote: drop continue-on-error.
+  pr-visual:
+    needs: [build-storybook, check-components]
+    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
+    runs-on: 2-core-ubuntu-arm
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-analysis
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Download built themes and core
+        uses: actions/download-artifact@v8
+        with:
+          name: dists-${{ needs.build-storybook.outputs.short_hash }}
+          path: packages
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      # The downloaded theme builds import Core's consumer-facing dist files.
+      # Rebuild only Core here so those imports resolve without repeating the
+      # full workspace build that produced the theme artifact.
+      - name: Build Core dependency for theme inspection
+        run: pnpm -F @astryxdesign/core build
+
+      - name: Fetch visual baseline from gh-pages
+        run: |
+          set -eu
+          rm -rf /tmp/gh-pages
+          git clone --depth=1 --filter=blob:none --sparse --single-branch --branch gh-pages \
+            "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
+          git -C /tmp/gh-pages sparse-checkout set visual-gate/baseline
+          mkdir -p .visual-baseline
+          if [ -d /tmp/gh-pages/visual-gate/baseline ]; then
+            cp -r /tmp/gh-pages/visual-gate/baseline/. .visual-baseline/
+          fi
+
+      - name: Run the visual gate for the touched components
+        id: visual
+        run: |
+          set -eu
+          COMPONENTS=$(jq -r '(.newComponents + .modifiedComponents) | join(",")' analysis.json)
+          if [ -z "$COMPONENTS" ]; then
+            echo "No component changes resolved from analysis.json — nothing to shoot."
+            exit 0
+          fi
+          echo "Components: $COMPONENTS"
+          set +e
+          node .github/scripts/visual-gate/gate.mjs check \
+            --storybook-dir apps/storybook/dist \
+            --baseline .visual-baseline \
+            --out .visual-run \
+            --tiers component \
+            --components "$COMPONENTS" \
+            --max-shots 240 \
+            --no-scout \
+            --summary-output visual-summary.md
+          code=$?
+          [ -f visual-summary.md ] && cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
+          # Exit 2 is "changed", which is a question for the reviewer, not a
+          # broken job. Only a crash (1) is a failure.
+          [ "$code" -eq 1 ] && exit 1
+          exit 0
+
+      - name: Upload visual verdict and report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-pr-report
+          path: |
+            .visual-run/verdict.json
+            .visual-run/report/
+          retention-days: 7
+          if-no-files-found: ignore
+
   pr-rtl:
     needs: [build-storybook, check-components]
     if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'

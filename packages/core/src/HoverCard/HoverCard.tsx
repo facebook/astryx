@@ -32,6 +32,66 @@ export type {
   HoverCardTouchTrigger,
 } from './useHoverCard';
 
+// `aria-haspopup` and `aria-controls` are global, so any trigger may carry
+// them. `aria-expanded` is not. This is the ARIA 1.2 "Supported States and
+// Properties" list for it — deliberately the narrow reading: axe accepts the
+// attribute on rather more roles, since it also allows every subclass of these,
+// so a role outside this set is not necessarily a violation. Widening it is
+// safe; the set is a floor, not the spec's ceiling. The same rule is applied in
+// Chat/useTriggerMenu.tsx, which only emits the combobox attributes once the
+// element is actually a combobox.
+const EXPANDABLE_ROLES = new Set([
+  'application',
+  'button',
+  'checkbox',
+  'columnheader',
+  'combobox',
+  'gridcell',
+  'link',
+  'listbox',
+  'menuitem',
+  'menuitemcheckbox',
+  'menuitemradio',
+  'row',
+  'rowheader',
+  'switch',
+  'tab',
+  'treeitem',
+]);
+
+const BUTTON_INPUT_TYPES = new Set(['button', 'submit', 'reset', 'image']);
+
+// Deliberately partial, and unlisted elements are read as role-less: dropping
+// aria-expanded where it might have been legal costs an AT user a state they
+// can still infer, whereas emitting it where it is illegal is a critical
+// aria-allowed-attr defect.
+function supportsAriaExpanded(el: HTMLElement): boolean {
+  const explicit = el.getAttribute('role')?.trim().split(/\s+/)[0];
+  if (explicit) {
+    return EXPANDABLE_ROLES.has(explicit);
+  }
+  switch (el.tagName) {
+    case 'BUTTON':
+    case 'SUMMARY':
+      return true;
+    case 'A':
+    case 'AREA':
+      return el.hasAttribute('href');
+    case 'INPUT':
+      // The button-flavoured input types map to role="button"; every other
+      // type maps to a textbox-family role, which does not take it.
+      return BUTTON_INPUT_TYPES.has(
+        (el as HTMLInputElement).type?.toLowerCase(),
+      );
+    case 'SELECT':
+      // combobox when it is a single-line picker, listbox otherwise; both
+      // support aria-expanded.
+      return true;
+    default:
+      return false;
+  }
+}
+
 const styles = stylex.create({
   wrapperContents: {
     display: 'contents',
@@ -265,12 +325,17 @@ export function HoverCard({
       // trigger with the dialog's content (aria-describedby is for plain-text
       // descriptions, not navigable regions). See #5049.
       //
+      // aria-expanded only goes on a trigger whose role permits it. A role-less
+      // trigger (Timestamp's <time>/<span>) gets haspopup + controls, which are
+      // global, and no expanded state.
+      //
       // Merge rather than overwrite: the trigger may already carry its own
       // popup semantics (e.g. a menu button wrapped in a labelled HoverCard),
       // so preserve the existing values and restore them on cleanup.
       const existingHaspopup = firstChild.getAttribute('aria-haspopup');
       const existingControls = firstChild.getAttribute('aria-controls');
       const existingExpanded = firstChild.getAttribute('aria-expanded');
+      const canExpand = supportsAriaExpanded(firstChild);
 
       firstChild.setAttribute('aria-haspopup', 'dialog');
       // Only point aria-controls at the layer while it is open and in the DOM.
@@ -287,7 +352,13 @@ export function HoverCard({
       } else {
         firstChild.removeAttribute('aria-controls');
       }
-      firstChild.setAttribute('aria-expanded', String(hoverCard.isOpen));
+      if (canExpand) {
+        firstChild.setAttribute('aria-expanded', String(hoverCard.isOpen));
+      } else if (existingExpanded) {
+        firstChild.setAttribute('aria-expanded', existingExpanded);
+      } else {
+        firstChild.removeAttribute('aria-expanded');
+      }
 
       return () => {
         hoverCard.ref(null);
@@ -354,7 +425,8 @@ export function HoverCard({
           tabIndex={0}
           aria-haspopup={label ? 'dialog' : undefined}
           aria-controls={label && hoverCard.isOpen ? hoverCard.id : undefined}
-          aria-expanded={label ? hoverCard.isOpen : undefined}
+          // No aria-expanded: this wrapper is a role-less <span>, and
+          // aria-expanded is invalid on it (see EXPANDABLE_ROLES above).
           aria-describedby={label ? undefined : hoverCard.describedBy}
           {...stylex.props(
             styles.wrapperInline,
