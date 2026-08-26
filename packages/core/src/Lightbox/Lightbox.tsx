@@ -366,9 +366,9 @@ export function Lightbox({
   // Reset zoom on image change
   useEffect(() => {
     // Reset image view state when the active media item changes.
-    // eslint-disable-next-line @eslint-react/set-state-in-effect
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- reset view state when the active media item changes
     setZoom(1);
-    // eslint-disable-next-line @eslint-react/set-state-in-effect
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- reset view state when the active media item changes
     setPan({x: 0, y: 0});
   }, [index, currentItem?.src]);
 

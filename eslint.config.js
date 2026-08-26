@@ -28,6 +28,24 @@ const isStrictMode = process.env.ASTRYX_STRICT_LINT === '1' || process.env.CI ==
 const astryxConfig = isStrictMode ? astryxPlugin.configs.strict : astryxPlugin.configs.recommended;
 const reactSeverity = isStrictMode ? 'error' : 'warn';
 
+const legacyLongInlineCommentAllowlist = [
+  {
+    file: 'packages/core/src/DateInput/MonthScroller.tsx',
+    startsWith: 'Put the scroller back on a pane boundary once the gesture is over.',
+    reason: 'The iOS virtualized-scroll correction from https://github.com/facebook/astryx/pull/5319 still needs a dedicated hook.',
+  },
+  {
+    file: 'packages/core/src/DateInput/TouchDateField.tsx',
+    startsWith: 'The month and year, as one layer that fades in and out on top.',
+    reason: 'The touch-picker cover protocol from https://github.com/facebook/astryx/pull/5243 still needs a focused style abstraction.',
+  },
+  {
+    file: 'packages/core/src/Stepper/Step.tsx',
+    startsWith: '===================== CONNECTOR FILL =====================',
+    reason: 'The shared connector model from https://github.com/facebook/astryx/pull/5201 still needs a focused style abstraction.',
+  },
+];
+
 // The internal plugin is plain untyped JS (kept out of the lint/type surface),
 // so its inferred shape doesn't satisfy ESLint's strict `Plugin` type. One
 // localized assertion here keeps every `plugins` entry below type-checked.
@@ -256,6 +274,9 @@ export default defineConfig(
       // announce() live-region messages are user-facing text; the rule checks
       // them as call arguments (callees defaults to ['announce']).
       '@astryx/no-hardcoded-i18n-string': isStrictMode ? 'error' : 'warn',
+      '@astryx/no-long-inline-comment-block': [reactSeverity, {
+        allow: legacyLongInlineCommentAllowlist,
+      }],
     },
   },
   // What a disabled control says to the pointer is a defect wherever it
@@ -430,6 +451,8 @@ export default defineConfig(
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/consistent-type-assertions": "off",
       "react-compiler/react-compiler": "off",
+      '@astryx/require-effect-disable-reason': 'off',
+      '@astryx/no-long-inline-comment-block': 'off',
       // Test harnesses wrap components in sized/positioned <div>s to set up a
       // scenario; that scaffolding is not shipped DOM.
       "@astryx/no-style-only-wrapper": "off",

@@ -20,6 +20,8 @@
  * - no-unstable-merged-refs: Flags render-time mergeRefs callbacks and unstable callback inputs to useMergedRefs
  * - no-light-dark-outside-theme: Flags CSS light-dark() in component source (a light/dark decision belongs to the theme layer, where a token pair reaches both schemes in every theme)
  * - no-raw-color: Flags a raw colour value (hex, rgb(), hsl(), oklch(), …) anywhere in component source, including inside light-dark()/color-mix(), behind a const, in a template literal, or as a var() fallback — the shapes no-hardcoded-styles cannot see
+ * - require-effect-disable-reason: Requires a reason on every set-state-in-effect suppression
+ * - no-long-inline-comment-block: Redirects 20-line implementation narratives to a named hook or file docblock
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -47,6 +49,8 @@ import noHoverOnDisabledRule from './no-hover-on-disabled.js';
 import disabledCursorRule from './disabled-cursor.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 import noUnstableMergedRefsRule from './no-unstable-merged-refs.js';
+import requireEffectDisableReasonRule from './require-effect-disable-reason.js';
+import noLongInlineCommentBlockRule from './no-long-inline-comment-block.js';
 import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
 import requireBasePropsRule from './require-base-props.js';
@@ -347,6 +351,8 @@ const plugin = {
     'disabled-cursor': disabledCursorRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
     'no-unstable-merged-refs': noUnstableMergedRefsRule,
+    'require-effect-disable-reason': requireEffectDisableReasonRule,
+    'no-long-inline-comment-block': noLongInlineCommentBlockRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
     'copyright-header': copyrightHeaderRule,
@@ -418,6 +424,8 @@ plugin.configs.strict = {
     '@astryx/disabled-cursor': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/no-unstable-merged-refs': 'error',
+    '@astryx/require-effect-disable-reason': 'error',
+    '@astryx/no-long-inline-comment-block': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
     '@astryx/copyright-header': 'error',
@@ -489,6 +497,8 @@ plugin.configs.recommended = {
     '@astryx/disabled-cursor': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/no-unstable-merged-refs': 'error',
+    '@astryx/require-effect-disable-reason': 'warn',
+    '@astryx/no-long-inline-comment-block': 'warn',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',
     '@astryx/copyright-header': 'error',

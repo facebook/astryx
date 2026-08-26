@@ -18,6 +18,48 @@ This plugin implements a two-tier linting strategy:
 
 ## Rules
 
+### `@astryx/require-effect-disable-reason`
+
+Requires every suppression of `@eslint-react/set-state-in-effect` to include a
+non-empty `-- reason`:
+
+```tsx
+// eslint-disable-next-line @eslint-react/set-state-in-effect -- size comes from ResizeObserver after layout
+setSize(measuredSize);
+```
+
+This rule does not decide whether an Effect is justified. It makes each
+exception visible and reviewable; reviewers still decide whether the state
+comes from an external system or whether render/event-time derivation would be
+better. It intentionally does not require a comment on every Effect.
+
+**Scope:** core production source. Tests are excluded. Local lint warns; strict
+lint and CI error. Main had two reasonless suppressions when this rule was
+introduced; both were mechanically annotated.
+
+### `@astryx/no-long-inline-comment-block`
+
+Reports a contiguous implementation comment spanning **20 or more physical
+lines** inside a function or object expression. Adjacent `//` comments count as
+one block when only whitespace separates them; a `/* … */` comment counts by its
+source span.
+
+Move the full protocol to a named hook or file-level docblock and keep only the
+local invariant beside the implementation. File docblocks and docblocks before
+top-level named hooks are outside the rule by construction.
+
+**Scope:** core production source. Tests are excluded. Local lint warns; strict
+lint and CI error. The initial baseline has three exact, documented exceptions,
+tied to their opening text so another long block in the same file still fails:
+
+- `DateInput/MonthScroller.tsx` — iOS virtualized-scroll correction from [PR #5319](https://github.com/facebook/astryx/pull/5319).
+- `DateInput/TouchDateField.tsx` — touch-picker cover protocol from [PR #5243](https://github.com/facebook/astryx/pull/5243).
+- `Stepper/Step.tsx` — shared connector model from [PR #5201](https://github.com/facebook/astryx/pull/5201).
+
+This is a structure rule, not a prose-quality rule. It cannot judge whether a
+short comment is useful or whether extraction belongs in a hook versus a file
+docblock; those remain review decisions.
+
 ### `@astryx/no-raw-intl-locale`
 
 `InternationalizationProvider` is the sole user-facing locale source. This
