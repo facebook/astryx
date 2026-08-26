@@ -70,13 +70,22 @@ export const FullBleedGeometry: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
         <div data-full-bleed-fixture="hug" style={fullBleedFixtureStyle}>
-          <TabList value={value} onChange={setValue} isFullBleed>
+          <TabList
+            value={value}
+            onChange={setValue}
+            aria-label="Hug full-bleed geometry"
+            isFullBleed>
             <Tab value="home" label="Home" />
             <Tab value="projects" label="Projects" />
           </TabList>
         </div>
         <div data-full-bleed-fixture="fill" style={fullBleedFixtureStyle}>
-          <TabList value={value} onChange={setValue} layout="fill" isFullBleed>
+          <TabList
+            value={value}
+            onChange={setValue}
+            aria-label="Fill full-bleed geometry"
+            layout="fill"
+            isFullBleed>
             <Tab value="home" label="Home" />
             <Tab value="projects" label="Projects" />
             <TabMenu
