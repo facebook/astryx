@@ -649,6 +649,25 @@ interface SelectorPropsBase<
   searchPlaceholder?: string;
 
   /**
+   * Content shown in the panel when there are no options to show, and
+   * announced in a polite live region when the panel opens. Not shown while
+   * `isLoading` — the options have not arrived yet.
+   * @default 'No options'
+   */
+  emptyText?: ReactNode;
+
+  /**
+   * Content shown in the panel when a search query matches no options, and
+   * announced in a polite live region at the same time.
+   *
+   * The panel message is `role="presentation"`, so the live region is the only
+   * route to assistive tech: a string is announced verbatim, a richer node
+   * falls back to the default text since it cannot be spoken.
+   * @default 'No results found'
+   */
+  emptySearchText?: ReactNode;
+
+  /**
    * Position placement relative to the trigger.
    *
    * Omit to use the selector's default selected-item overlay behavior: the
@@ -794,6 +813,8 @@ export function Selector<T extends SelectorOptionType>(
     indicatorPosition = 'end',
     hasSearch = false,
     searchPlaceholder: searchPlaceholderFromProps,
+    emptyText: emptyTextFromProps,
+    emptySearchText: emptySearchTextFromProps,
     placement,
     isDefaultOpen = false,
     'data-testid': testId,
@@ -802,12 +823,16 @@ export function Selector<T extends SelectorOptionType>(
     className,
     style,
     hasClear: hasClearProp,
+    id,
     ...rest
   } = props as SelectorPropsClearable<T>;
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const searchPlaceholder =
     searchPlaceholderFromProps ?? t('@astryx.selector.searchPlaceholder');
+  const emptyText = emptyTextFromProps ?? t('@astryx.selector.empty');
+  const emptySearchText =
+    emptySearchTextFromProps ?? t('@astryx.selector.emptySearchResults');
   const hasClear = hasClearProp === true;
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
@@ -817,7 +842,10 @@ export function Selector<T extends SelectorOptionType>(
 
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;
-  const triggerId = useId();
+  const generatedTriggerId = useId();
+  // A caller's `id` lands on the trigger either way, so the internal identity
+  // has to be that same value or the label and listbox point at nothing.
+  const triggerId = id ?? generatedTriggerId;
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
@@ -831,6 +859,9 @@ export function Selector<T extends SelectorOptionType>(
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
+  // Mirrors searchQuery for the seed path, which runs before focus reaches the
+  // input and so cannot read the rendered state.
+  const searchQueryRef = useRef('');
   // A typed query shows the search row's clear (✕) button, which becomes
   // the next tab stop after the search input.
   const hasQuery = searchQuery.length > 0;
@@ -839,6 +870,17 @@ export function Selector<T extends SelectorOptionType>(
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
   const announce = useAnnounce();
+
+  // The panel's empty message is role="presentation" and reaches assistive tech
+  // only through this live region, so the region has to speak whatever the
+  // panel shows. A ReactNode override cannot be spoken; fall back to the
+  // catalog copy for that case rather than announcing nothing.
+  const emptyAnnouncement =
+    typeof emptyText === 'string' ? emptyText : t('@astryx.selector.empty');
+  const emptySearchAnnouncement =
+    typeof emptySearchText === 'string'
+      ? emptySearchText
+      : t('@astryx.selector.emptySearchResults');
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the trigger container (which already exists)
@@ -907,6 +949,7 @@ export function Selector<T extends SelectorOptionType>(
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
+    searchQueryRef.current = '';
     resetTypeaheadRef.current();
     // Clear any lingering result count when the popover closes so stale status
     // text does not linger in the a11y tree.
@@ -935,27 +978,75 @@ export function Selector<T extends SelectorOptionType>(
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
 
-  // Announce the filtered result count from the query-change handler (matching
+  // Announce the filtered result count from the query-change handlers (matching
   // BaseTypeahead) rather than a reactive effect: computing the count for the
   // next query here fires the announcement exactly once per keystroke and does
-  // not re-speak on unrelated re-renders.
-  const handleSearchChange = useCallback(
+  // not re-speak on unrelated re-renders. Split out from handleSearchChange so
+  // the type-to-open seed below reaches the same live region — a query the user
+  // typed is a query however it arrived.
+  const announceSearchResults = useCallback(
     (nextQuery: string) => {
-      setSearchQuery(nextQuery);
       if (nextQuery.length === 0) {
         // Emptying the query clears the region rather than announcing a count.
+        announce('');
+        return;
+      }
+      // While isLoading the panel deliberately shows nothing, so announcing a
+      // result would put a claim in the one channel the screen has gone quiet
+      // for.
+      if (isLoading) {
         announce('');
         return;
       }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
-          ? t('@astryx.selector.emptySearchResults')
+          ? emptySearchAnnouncement
           : t('@astryx.selector.resultCount', {count}),
       );
     },
-    [announce, selectableItems, t],
+    [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
   );
+
+  const handleSearchChange = useCallback(
+    (nextQuery: string) => {
+      setSearchQuery(nextQuery);
+      searchQueryRef.current = nextQuery;
+      announceSearchResults(nextQuery);
+    },
+    [announceSearchResults],
+  );
+
+  // The panel's empty message is role="presentation", so this region is the
+  // only route to assistive tech. It has to watch the STATE rather than the
+  // open event: the panel can become empty either on open or when a fetch
+  // lands with nothing in it, and an open-only announcement leaves the second
+  // case silent while the message sits on screen. The ref makes it fire once
+  // per arrival at that state rather than on every re-render.
+  const announcedEmptyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const isPanelEmpty =
+      popover.isOpen &&
+      !isLoading &&
+      searchQuery === '' &&
+      selectableItems.length === 0;
+    if (!isPanelEmpty) {
+      announcedEmptyRef.current = null;
+      return;
+    }
+    if (announcedEmptyRef.current === emptyAnnouncement) {
+      return;
+    }
+    announcedEmptyRef.current = emptyAnnouncement;
+    announce(emptyAnnouncement);
+  }, [
+    popover.isOpen,
+    isLoading,
+    searchQuery,
+    selectableItems.length,
+    emptyAnnouncement,
+    announce,
+  ]);
 
   // Calculate offset to position selected item over trigger. Explicit
   // placement opts out of the selector-specific overlay behavior and uses the
@@ -992,10 +1083,20 @@ export function Selector<T extends SelectorOptionType>(
   }, [onChange, changeAction, startTransition, setOptimisticValue]);
 
   // Type-to-find appends to the query rather than replacing it: characters
-  // typed before focus reaches the search input must not be dropped.
-  const appendSearchQuery = useCallback((char: string) => {
-    setSearchQuery(query => query + char);
-  }, []);
+  // typed before focus reaches the search input must not be dropped. The ref
+  // is what makes that safe without a state updater — it advances
+  // synchronously, so a second character seeded in the same tick still sees
+  // the first, and the announcement can be computed here rather than inside a
+  // setState callback.
+  const appendSearchQuery = useCallback(
+    (char: string) => {
+      const nextQuery = searchQueryRef.current + char;
+      searchQueryRef.current = nextQuery;
+      setSearchQuery(nextQuery);
+      announceSearchResults(nextQuery);
+    },
+    [announceSearchResults],
+  );
 
   const commitValue = useCallback(
     (newValue: string) => {
@@ -1313,8 +1414,11 @@ export function Selector<T extends SelectorOptionType>(
   const renderOptions = useCallback(() => {
     const isSearching = hasSearch && Boolean(searchQuery);
 
-    // Nothing matched across every group/option: show the empty state.
-    if (isSearching && filteredItems.length === 0) {
+    // Nothing to show — either the query matched nothing, or no options were
+    // given at all. Both render the same slot with different copy. While
+    // isLoading the options have not arrived yet, so asserting either would be
+    // a claim the component cannot make; the trigger's spinner covers it.
+    if (filteredItems.length === 0 && !isLoading) {
       // role="presentation" keeps the message out of the listbox's
       // accessibility tree (role="listbox" only permits option/group
       // children); the no-results outcome is announced via the
@@ -1327,7 +1431,7 @@ export function Selector<T extends SelectorOptionType>(
             themeProps('selector-empty-state'),
             stylex.props(styles.emptyState),
           )}>
-          No results found
+          {isSearching ? emptySearchText : emptyText}
         </div>,
       ];
     }
@@ -1401,7 +1505,16 @@ export function Selector<T extends SelectorOptionType>(
     }
 
     return elements;
-  }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
+  }, [
+    options,
+    renderItem,
+    hasSearch,
+    searchQuery,
+    filteredItems,
+    isLoading,
+    emptyText,
+    emptySearchText,
+  ]);
 
   // The detached message box renders its own leading status icon, so the
   // on-field icon would duplicate it — keep the chevron indicator instead.

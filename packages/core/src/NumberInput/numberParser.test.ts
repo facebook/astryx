@@ -6,6 +6,7 @@ import {formatEditableNumber, parseLocaleNumber} from './numberParser';
 const NBSP = '\u00A0';
 const NARROW_NBSP = '\u202F';
 const APOSTROPHE = '\u2019';
+const MIDDLE_DOT = '\u00B7';
 
 /**
  * The contract, enumerated. A row is `[input, locale, expected]`, and `null`
@@ -53,6 +54,9 @@ const CORPUS: [string, string, number | null][] = [
   ['1.5e3', 'de-DE', 1500],
   ['1.234', 'de-DE', 1234],
   ['1.2345', 'de-DE', 1.2345],
+  // The same text in the other comma-decimal locale: fr-FR groups with a
+  // space, so a full stop has no grouping reading there and stays the point.
+  ['1.234', 'fr-FR', 1.234],
 
   // Decimals and signs.
   ['1,234.56', 'en-US', 1234.56],
@@ -142,6 +146,11 @@ const CORPUS: [string, string, number | null][] = [
   ['800-555-1212', 'en-US', null],
   ['2024-01-15', 'en-US', null],
 
+  // U+00B7 was in the alphabet as the Catalan middle dot. Catalan groups with
+  // a full stop, and no locale ICU resolves writes it between digits at all.
+  [`1${MIDDLE_DOT}234${MIDDLE_DOT}567`, 'en-US', null],
+  [`1${MIDDLE_DOT}234${MIDDLE_DOT}567`, 'ca-ES', null],
+
   // The field has no percent semantics, so a percent sign is not dropped:
   // committing 45 for `45%` is off by a factor of a hundred.
   ['45%', 'en-US', null],
@@ -174,6 +183,9 @@ describe('formatEditableNumber', () => {
     [1.5, 'en-US', '1.5'],
     [1.5, 'de-DE', '1,5'],
     [-1234.56, 'fr-FR', '-1234,56'],
+    // Only the decimal separator is localized. The digits stay as `String`
+    // writes them, which is what the field shows at rest when no `formatValue`
+    // is given, so localizing them here would flip the script on focus.
     [3.5, 'ar-SA', '3٫5'],
     // No grouping: the text has to be editable, and a separator the person did
     // not type is one they have to delete.

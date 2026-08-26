@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -941,6 +942,222 @@ describe('Selector', () => {
       const listbox = screen.getByRole('listbox', h);
       const empty = within(listbox).getByText('No results found');
       expect(empty).toHaveAttribute('role', 'presentation');
+    });
+
+    it('renders emptySearchText in place of the default message', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      const listbox = screen.getByRole('listbox', h);
+      expect(
+        within(listbox).getByText('Nothing like that here'),
+      ).toBeInTheDocument();
+      expect(
+        within(listbox).queryByText('No results found'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('renders emptyText, not emptySearchText, with no options and no query', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[]}
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+      const listbox = screen.getByRole('listbox', h);
+      expect(within(listbox).getByText('No options')).toBeInTheDocument();
+      expect(
+        within(listbox).queryByText('Nothing like that here'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('announces emptySearchText, not the catalog default', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      // The panel message is role="presentation", so the live region is the
+      // only thing a screen reader gets — it has to say the same words.
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+      );
+    });
+
+    it('announces the empty state when opened with no options', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[]}
+          onChange={() => {}}
+          emptyText="Add a fruit first"
+        />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+      );
+    });
+
+    it('shows and announces nothing while isLoading', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector label="Fruit" options={[]} onChange={() => {}} isLoading />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      // useAnnounce writes on the next animation frame, so an immediate read
+      // would pass whether or not anything was announced.
+      await act(
+        async () =>
+          void (await new Promise(resolve => requestAnimationFrame(resolve))),
+      );
+
+      // The options have not arrived, so "No options" would be a claim the
+      // component cannot make; the trigger's spinner carries the state.
+      const listbox = screen.getByRole('listbox', h);
+      expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    });
+
+    it('announces nothing while isLoading, matching the silent panel', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          isLoading
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      // useAnnounce writes on the next animation frame, so an immediate read
+      // would pass whether or not anything was announced.
+      await act(
+        async () =>
+          void (await new Promise(resolve => requestAnimationFrame(resolve))),
+      );
+
+      // The panel is deliberately blank while loading; the live region is the
+      // only channel left, so a result there would be a claim the screen
+      // refuses to make.
+      const listbox = screen.getByRole('listbox', h);
+      expect(
+        within(listbox).queryByText('Nothing like that here'),
+      ).not.toBeInTheDocument();
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    });
+
+    it('announces the seeded query from type-to-open', async () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText="Nothing like that here"
+        />,
+      );
+      // Typing on the closed trigger opens the popup and seeds the query. That
+      // path bypasses the search input's own change handler, so it has to
+      // announce for itself.
+      const trigger = screen.getByRole('button', {name: 'Fruit'});
+      trigger.focus();
+      fireEvent.keyDown(trigger, {key: 'z'});
+
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+      );
+    });
+
+    it('announces the empty state when a load finishes with no options', async () => {
+      const user = userEvent.setup();
+      function Fetching() {
+        const [isLoading, setIsLoading] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setIsLoading(false)}>
+              land
+            </button>
+            <Selector
+              label="Fruit"
+              options={[]}
+              onChange={() => {}}
+              isLoading={isLoading}
+              emptyText="Add a fruit first"
+            />
+          </>
+        );
+      }
+      render(<Fetching />);
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      // Open while loading: nothing on screen, nothing spoken.
+      await act(
+        async () =>
+          void (await new Promise(resolve => requestAnimationFrame(resolve))),
+      );
+      expect(politeRegion()?.textContent ?? '').toBe('');
+
+      // The fetch lands empty while the panel is open. The message appears, so
+      // the region owes the same words — an open-only announcement misses this.
+      await user.click(screen.getByRole('button', {name: 'land'}));
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+      );
+    });
+
+    it('renders emptyText when there are no options and no search input', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[]}
+          onChange={() => {}}
+          emptyText="Add a fruit first"
+        />,
+      );
+      // Without hasSearch the trigger itself is the combobox.
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      const listbox = screen.getByRole('listbox', h);
+      expect(
+        within(listbox).getByText('Add a fruit first'),
+      ).toBeInTheDocument();
     });
 
     it('calls onChange when selecting a filtered option', async () => {
@@ -2124,6 +2341,55 @@ describe('Selector', () => {
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
     });
+  });
+});
+
+describe('Selector caller-supplied id', () => {
+  it('names the listbox with the id the caller put on the trigger', () => {
+    render(<Selector label="Fruit" options={OPTIONS} id="fruit-picker" />);
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveAttribute('id', 'fruit-picker');
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
+  });
+
+  it('names the search-variant listbox with the caller id', () => {
+    render(
+      <Selector label="Fruit" options={OPTIONS} id="fruit-picker" hasSearch />,
+    );
+
+    const trigger = document.getElementById('fruit-picker');
+    expect(trigger?.tagName).toBe('BUTTON');
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
+  });
+
+  it('points the field label at the caller id', () => {
+    render(<Selector label="Fruit" options={OPTIONS} id="fruit-picker" />);
+
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+    expect(trigger).toHaveAttribute('id', 'fruit-picker');
+    expect(screen.getByLabelText('Fruit')).toBe(trigger);
+  });
+
+  it('generates the trigger id when the caller supplies none', () => {
+    render(<Selector label="Fruit" options={OPTIONS} />);
+
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+    expect(trigger.id).not.toBe('');
+    expect(screen.getByLabelText('Fruit')).toBe(trigger);
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
   });
 });
 

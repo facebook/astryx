@@ -7,7 +7,13 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {defineTheme, generateThemeCSS, generateThemeRules} from './index';
+import {
+  dataTokenDefaults,
+  defineTheme,
+  generateThemeCSS,
+  generateThemeRules,
+} from './index';
+import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 
 const defaultInput = {
   name: 'default',
@@ -736,6 +742,63 @@ describe('renamed theme targets', () => {
     expect(mark).toContain('--_progressbar-mark-width: 3px');
     expect(rules('progressbar-mark', {width: '3px'})).toContain(
       '--_progressbar-mark-width: 3px',
+    );
+  });
+});
+
+describe('data visualization tokens', () => {
+  const scopeBlock = (theme: Parameters<typeof generateThemeRules>[0]) =>
+    generateThemeRules(theme).find(r => r.includes(':scope'));
+
+  it('seeds the whole palette once, at :root', () => {
+    const css = generateDataTokenDefaultsCSS();
+
+    expect(css.startsWith(':root {')).toBe(true);
+    for (const [name, value] of Object.entries(dataTokenDefaults)) {
+      expect(css).toContain(`${name}: ${value};`);
+    }
+  });
+
+  it('leaves the defaults out of a theme scope block', () => {
+    // A scope block that re-declared them would shadow a parent theme's
+    // override in every nested <Theme>, which no other token family does.
+    expect(scopeBlock(defineTheme({name: 'data-bare'}))).toBeUndefined();
+  });
+
+  it("puts only the theme's own data token in its scope block", () => {
+    const block = scopeBlock(
+      defineTheme({
+        name: 'data-override',
+        tokens: {'--color-data-categorical-blue': ['#123456', '#654321']},
+      }),
+    )!;
+
+    expect(block).toContain(
+      '--color-data-categorical-blue: light-dark(#123456, #654321);',
+    );
+    expect(block.match(/--color-data-/g)).toHaveLength(1);
+    expect(block).not.toContain('--color-data-categorical-orange');
+  });
+
+  it('carries the palette in the base block, not the scoped stylesheet', () => {
+    const {base, component, prose} = generateThemeCSS(
+      defineTheme({name: 'data-css'}),
+    );
+
+    expect(base).toContain('--color-data-neutral:');
+    expect(base).toContain('--color-data-blue-3:');
+    expect(component).not.toContain('--color-data-');
+    expect(prose).not.toContain('--color-data-');
+  });
+
+  it('gives every theme the same base block', () => {
+    expect(generateThemeCSS(defineTheme({name: 'data-a'})).base).toBe(
+      generateThemeCSS(
+        defineTheme({
+          name: 'data-b',
+          tokens: {'--color-data-categorical-blue': '#00A3FF'},
+        }),
+      ).base,
     );
   });
 });

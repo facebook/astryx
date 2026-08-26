@@ -10,9 +10,11 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {useState} from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
+import {InternationalizationProvider} from '../i18n';
 import {InputGroup} from '../InputGroup';
 import {NumberInput} from './NumberInput';
 import {defineTheme} from '../theme/defineTheme';
@@ -268,6 +270,31 @@ describe('NumberInput', () => {
       expect(input).toHaveAttribute('aria-valuenow', '1234');
     });
 
+    it('keeps ARIA value text on the committed value while an edit is pending', () => {
+      function ControlledNumberInput() {
+        const [controlledValue, setControlledValue] = useState(1234);
+        return (
+          <NumberInput
+            label="Revenue"
+            value={controlledValue}
+            onChange={setControlledValue}
+            formatValue={number => `$${number.toLocaleString('en-US')}`}
+          />
+        );
+      }
+      render(<ControlledNumberInput />);
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '4200'}});
+
+      expect(input).toHaveAttribute('aria-valuenow', '1234');
+      expect(input).toHaveAttribute('aria-valuetext', '$1,234');
+
+      fireEvent.blur(input);
+      expect(input).toHaveAttribute('aria-valuenow', '4200');
+      expect(input).toHaveAttribute('aria-valuetext', '$4,200');
+    });
+
     it('shows the raw numeric value while focused and restores formatting on blur', () => {
       render(
         <NumberInput
@@ -325,7 +352,7 @@ describe('NumberInput', () => {
   });
 
   describe('onChange validation', () => {
-    it('calls onChange with valid number when typing', async () => {
+    it('commits a valid number on blur', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
       render(
@@ -335,8 +362,10 @@ describe('NumberInput', () => {
       const input = screen.getByRole('spinbutton');
       await user.click(input);
       await user.type(input, '42');
+      expect(handleChange).not.toHaveBeenCalled();
 
-      expect(handleChange).toHaveBeenCalledWith(4);
+      await user.tab();
+      expect(handleChange).toHaveBeenCalledTimes(1);
       expect(handleChange).toHaveBeenCalledWith(42);
     });
 
@@ -356,9 +385,7 @@ describe('NumberInput', () => {
       await user.click(input);
       await user.type(input, '10');
 
-      // 1 is valid (<=5), but 10 is not
-      expect(handleChange).toHaveBeenCalledWith(1);
-      expect(handleChange).not.toHaveBeenCalledWith(10);
+      expect(handleChange).not.toHaveBeenCalled();
     });
 
     it('does not call onChange when value is below min', async () => {
@@ -397,9 +424,7 @@ describe('NumberInput', () => {
       await user.click(input);
       await user.type(input, '3.5');
 
-      // 3 is valid, but 3.5 is not
-      expect(handleChange).toHaveBeenCalledWith(3);
-      expect(handleChange).not.toHaveBeenCalledWith(3.5);
+      expect(handleChange).not.toHaveBeenCalled();
     });
 
     it('calls onChange for decimal when isIntegerOnly is false', async () => {
@@ -412,8 +437,139 @@ describe('NumberInput', () => {
       const input = screen.getByRole('spinbutton');
       await user.click(input);
       await user.type(input, '3.5');
+      expect(handleChange).not.toHaveBeenCalled();
 
+      await user.tab();
       expect(handleChange).toHaveBeenCalledWith(3.5);
+    });
+  });
+
+  describe('invalid draft commit policy', () => {
+    function ControlledNumberInput({
+      initialValue = 7,
+      locale = 'en-US',
+    }: {
+      initialValue?: number | null;
+      locale?: 'en-US' | 'de-DE';
+    }) {
+      const [controlledValue, setControlledValue] = useState<number | null>(
+        initialValue,
+      );
+      return (
+        <InternationalizationProvider locale={locale}>
+          <NumberInput
+            label="Quantity"
+            value={controlledValue}
+            onChange={setControlledValue}
+          />
+          <output data-testid="committed">{String(controlledValue)}</output>
+        </InternationalizationProvider>
+      );
+    }
+
+    async function exerciseInvalidDraft(
+      entry: 'typing' | 'input',
+      commit: 'blur' | 'Enter',
+    ) {
+      const user = userEvent.setup();
+      render(<ControlledNumberInput />);
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      if (entry === 'typing') {
+        await user.type(input, '1·234·567');
+      } else {
+        fireEvent.input(input, {target: {value: '1·234·567'}});
+      }
+
+      expect(input).toHaveValue('1·234·567');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByTestId('committed')).toHaveTextContent('7');
+
+      if (commit === 'blur') {
+        await user.tab();
+        expect(input).toHaveValue('7');
+        expect(input).not.toHaveAttribute('aria-invalid');
+      } else {
+        await user.keyboard('{Enter}');
+        expect(input).toHaveValue('1·234·567');
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+      }
+      expect(screen.getByTestId('committed')).toHaveTextContent('7');
+    }
+
+    it('rejects a sequentially typed invalid draft on blur', async () => {
+      await exerciseInvalidDraft('typing', 'blur');
+    });
+
+    it('rejects a one-shot invalid draft on blur', async () => {
+      await exerciseInvalidDraft('input', 'blur');
+    });
+
+    it('rejects a sequentially typed invalid draft on Enter', async () => {
+      await exerciseInvalidDraft('typing', 'Enter');
+    });
+
+    it('rejects a one-shot invalid draft on Enter', async () => {
+      await exerciseInvalidDraft('input', 'Enter');
+    });
+
+    it('commits a valid localized grouped number as one edit', async () => {
+      const user = userEvent.setup();
+      render(<ControlledNumberInput locale="de-DE" />);
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      await user.type(input, '1.234.567');
+
+      expect(screen.getByTestId('committed')).toHaveTextContent('7');
+      await user.tab();
+      expect(screen.getByTestId('committed')).toHaveTextContent('1234567');
+      expect(input).toHaveValue('1234567');
+    });
+
+    it('keeps a controlled update behind an invalid focused draft', () => {
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <NumberInput label="Quantity" value={7} onChange={onChange} />,
+      );
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '1·234·567'}});
+
+      rerender(<NumberInput label="Quantity" value={9} onChange={onChange} />);
+      expect(input).toHaveValue('1·234·567');
+      fireEvent.blur(input);
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('9');
+    });
+
+    it('waits for IME composition to finish before committing', () => {
+      const onChange = vi.fn();
+      render(<NumberInput label="Quantity" value={7} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '42'}});
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(onChange).not.toHaveBeenCalled();
+
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith(42);
+    });
+
+    it('steps from the committed value when the draft is invalid', () => {
+      const onChange = vi.fn();
+      render(<NumberInput label="Quantity" value={7} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '1·234·567'}});
+      fireEvent.keyDown(input, {key: 'ArrowUp'});
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith(8);
+      expect(input).toHaveValue('7');
     });
   });
 
@@ -537,6 +693,233 @@ describe('NumberInput', () => {
       await user.keyboard('{Enter}');
 
       expect(handleEnter).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('range clamping on commit', () => {
+    it('commits an over-max entry at max on blur', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Page"
+          value={null}
+          onChange={handleChange}
+          min={1}
+          max={2}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '100');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(2);
+    });
+
+    it('commits an over-max entry at max on Enter', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Rating"
+          value={null}
+          onChange={handleChange}
+          max={5}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10');
+      handleChange.mockClear();
+      await user.keyboard('{Enter}');
+
+      expect(handleChange).toHaveBeenCalledWith(5);
+    });
+
+    it('commits a below-min entry at min', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Age"
+          value={null}
+          onChange={handleChange}
+          min={0}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '-5');
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(0);
+    });
+
+    it('does not clamp while typing', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Rating"
+          value={null}
+          onChange={handleChange}
+          max={5}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10');
+
+      // The entry stays exactly as typed until it is committed.
+      expect(input).toHaveValue('10');
+      expect(handleChange).not.toHaveBeenCalledWith(5);
+    });
+
+    it('displays the clamped value after commit', async () => {
+      const user = userEvent.setup();
+      function ControlledNumberInput() {
+        const [value, setValue] = useState<number>(1);
+        return (
+          <NumberInput
+            label="Page"
+            value={value}
+            onChange={setValue}
+            min={1}
+            max={2}
+            isIntegerOnly
+          />
+        );
+      }
+      render(<ControlledNumberInput />);
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      await user.type(input, '100');
+      await user.tab();
+
+      expect(input).toHaveValue('2');
+    });
+
+    it('shows the clamped value in the field after Enter', async () => {
+      const user = userEvent.setup();
+      function ControlledNumberInput() {
+        const [value, setValue] = useState<number | null>(null);
+        return (
+          <NumberInput
+            label="Rating"
+            value={value}
+            onChange={setValue}
+            min={1}
+            max={5}
+          />
+        );
+      }
+      render(<ControlledNumberInput />);
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10{Enter}');
+
+      // Still focused: the field must not keep showing the rejected entry.
+      expect(input).toHaveValue('5');
+    });
+
+    it('reverts an entry that is not a usable number', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          max={10}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '12.5');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('');
+    });
+
+    it('rounds a fractional max inwards for an integer-only field', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          max={9.5}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '20');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(9);
+    });
+
+    it('rounds a fractional min inwards for an integer-only field', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          min={0.5}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '0');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(1);
+    });
+
+    it('does not clamp when no value can satisfy both bounds', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          min={5}
+          max={2}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('');
     });
   });
 
@@ -817,6 +1200,32 @@ describe('NumberInput', () => {
       expect(data.get('revenue')).toBe('1234');
     });
 
+    it('submits the committed value in formatted mode until an edit commits', () => {
+      function ControlledForm() {
+        const [controlledValue, setControlledValue] = useState(7);
+        return (
+          <form>
+            <NumberInput
+              label="Quantity"
+              htmlName="quantity"
+              value={controlledValue}
+              onChange={setControlledValue}
+              formatValue={String}
+            />
+          </form>
+        );
+      }
+      const {container} = render(<ControlledForm />);
+      const form = container.querySelector('form')!;
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '42'}});
+
+      expect(new FormData(form).get('quantity')).toBe('7');
+      fireEvent.blur(input);
+      expect(new FormData(form).get('quantity')).toBe('42');
+    });
+
     it('is excluded from form data when disabled', () => {
       const {container} = render(
         <form>
@@ -1052,6 +1461,25 @@ describe('NumberInput', () => {
       expect(
         screen.queryByRole('button', {name: 'Clear Qty'}),
       ).not.toBeInTheDocument();
+    });
+
+    it('keeps Tab moving forward when an empty field has an invalid draft', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <NumberInput label="Qty" value={null} onChange={() => {}} hasClear />
+          <button type="button">Next field</button>
+        </>,
+      );
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, 'invalid');
+      expect(
+        screen.queryByRole('button', {name: 'Clear Qty'}),
+      ).not.toBeInTheDocument();
+
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'Next field'})).toHaveFocus();
     });
 
     it('does not show clear button when hasClear is false', () => {

@@ -673,6 +673,24 @@ describe('Timestamp', () => {
       expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
     });
 
+    it('does not put aria-expanded on the role-less hover-card trigger', async () => {
+      render(
+        <Timestamp
+          value={Date.now() / 1000 - 3600}
+          format="relative"
+          data-testid="ts"
+        />,
+      );
+      const trigger = screen.getByTestId('ts').parentElement;
+      // The trigger is Text's <span>, which has no role, so aria-expanded is
+      // invalid on it (axe aria-allowed-attr, critical). aria-haspopup is
+      // global and still advertises the dialog.
+      await waitFor(() => {
+        expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+      });
+      expect(trigger).not.toHaveAttribute('aria-expanded');
+    });
+
     it('shows the hover card when the timestamp receives keyboard focus', async () => {
       const user = userEvent.setup();
       render(

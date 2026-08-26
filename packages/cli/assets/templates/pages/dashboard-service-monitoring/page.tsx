@@ -727,7 +727,7 @@ interface ChartLine {
 const BLUE = 'var(--color-data-categorical-blue, #0171E3)';
 const ORANGE = 'var(--color-data-categorical-orange, #EB6E00)';
 const PURPLE = 'var(--color-data-categorical-purple, #6B1EFD)';
-const TEAL = 'var(--color-data-categorical-teal, #008E80)';
+const TEAL = 'var(--color-data-categorical-teal, #08A3A3)';
 
 const LATENCY_LINES: ChartLine[] = [
   {key: 'p50', name: 'p50', color: BLUE},

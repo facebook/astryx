@@ -9,9 +9,21 @@
  * People paste numbers out of spreadsheets, and a spreadsheet writes them
  * grouped, signed, and decorated. This reads those back. Everything locale
  * specific — the grouping and decimal separators, the group sizes, the digit
- * script — is derived from Intl and Unicode rather than a table, and anything
- * that could mean two different numbers returns null so the field stays
- * visibly invalid instead of committing a guess.
+ * script — is derived from Intl and Unicode rather than a table, and text that
+ * no reading fits returns null so the field stays visibly invalid instead of
+ * committing a guess. Where both readings are well formed the locale's wins,
+ * the way utils/dateParser.ts settles an ambiguous date by locale preference.
+ * Grouping is well formed only when every group fits the locale's own sizes:
+ * the last exactly the primary size, each inner one exactly the secondary, the
+ * first no longer than that. So de-DE `1.234` is 1234, while `1.2345` (last
+ * group too long) and `1234.567` (too much ahead of it) keep the full stop as
+ * a decimal point. Groups of three fit every locale, so a separator repeated
+ * with three-digit groups is grouping in all of them and `1,234,567` reads the
+ * same everywhere; for a space or apostrophe, which no locale writes as a
+ * decimal point, one occurrence is enough, so en-US `1 234` is 1234.
+ *
+ * That paragraph is executable: numberParser.docblock.test.ts implements it as
+ * code, quote by quote, and fails when the parser and the words disagree.
  *
  * Which characters may separate digits at all is the one thing that is NOT
  * read off the input: SEPARATOR_CHARS below is a bounded alphabet, the same
@@ -20,6 +32,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/NumberInput/NumberInput.tsx
  * - /packages/core/src/NumberInput/numberParser.test.ts
+ * - /packages/core/src/NumberInput/numberParser.docblock.test.ts
  */
 
 import type {Locale} from '../i18n';
@@ -81,15 +94,19 @@ const INVISIBLES = /[\u200B-\u200D\u200E\u200F\u061C\u2066-\u2069\uFEFF]/g;
 const MINUS_SIGNS = '\u2212\u2012\u2013-';
 
 /**
- * Every character a locale writes between digits: comma, full stop, space
- * (the whole space family folds to it under NFKC), the Swiss apostrophes, the
- * Catalan middle dot, and the Arabic decimal and thousands separators.
+ * Every character a locale writes between digits. Sweeping every language ICU
+ * resolves, in every region, yields seven: comma, full stop, apostrophe,
+ * space (the whole space family folds to it under NFKC), the Arabic decimal
+ * and thousands separators, and U+060C — which only nqo writes, and which
+ * this alphabet leaves out. U+2019 is here in its place: no locale writes it,
+ * but the corpus pins it as the Swiss spelling.
  *
  * The alphabet is bounded on purpose. Read the candidates off the input
  * instead and any repeated character is grouping, so a hyphenated ID commits
- * as a number.
+ * as a number. It bounds characters and not shapes: a full stop is a real
+ * separator, so `192.168.100.200` is four well-formed groups.
  */
-const SEPARATOR_CHARS = ",.' \u2019\u00B7\u066B\u066C";
+const SEPARATOR_CHARS = ",.' \u2019\u066B\u066C";
 const NUMBER_BODY = new RegExp(`^[0-9${SEPARATOR_CHARS}]+$`);
 /** No grouping and at most one full stop: the format `Number()` reads. */
 const MACHINE_NUMBER = /^(?:\d+\.?\d*|\.\d+)$/;
@@ -198,7 +215,7 @@ function readUnder(
  * beats the decimal-point reading.
  */
 function isGroupOnlySeparator(separator: string): boolean {
-  return /^[\s'\u2019\u00B7]$/.test(separator);
+  return /^[\s'\u2019]$/.test(separator);
 }
 
 function toPlainNumber(

@@ -78,6 +78,7 @@ Named test oracles:
 - `packages/core/src/Calendar/Calendar.test.tsx`
 - `packages/core/src/NumberInput/NumberInput.test.tsx`
 - `packages/core/src/NumberInput/numberParser.test.ts`
+- `packages/core/src/NumberInput/numberParser.docblock.test.ts`
 - `packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx`
 - `packages/core/src/Timestamp/tooltipEntries.test.ts`
 - `packages/core/src/PowerSearch/formatFilterValue.test.ts`
