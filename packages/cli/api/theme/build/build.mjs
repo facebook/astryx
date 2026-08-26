@@ -1166,8 +1166,15 @@ export async function themeBuild(
     if (component.length > 0) {
       const componentInner = component.join('\n\n');
       const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
-      // #3658: also emit attribute-specific rules so <Theme mode> can override color-scheme
-      const colorSchemeDecl = componentScope.includes('light-dark(')
+      // #3658: also emit attribute-specific rules so <Theme mode> can override color-scheme.
+      // Decided from the theme's own values, not the generated block: that
+      // block also carries the data-token defaults, which are light-dark()
+      // pairs, so a substring check on it would fire for every theme.
+      const themeOwnValues = JSON.stringify([
+        resolvedTheme.tokens ?? {},
+        resolvedTheme.components ?? {},
+      ]);
+      const colorSchemeDecl = themeOwnValues.includes('light-dark(')
         ? '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n'
         : '';
       cssParts.push(
