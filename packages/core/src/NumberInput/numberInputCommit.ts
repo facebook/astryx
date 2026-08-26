@@ -22,7 +22,7 @@ interface NumberInputValidationOptions {
 }
 
 export type NumberInputCommitDecision =
-  | {type: 'commit'; value: number; shouldNormalizeDraft: boolean}
+  | {type: 'commit'; value: number; didClamp: boolean}
   | {type: 'clear'}
   | {type: 'revert'};
 
@@ -96,6 +96,6 @@ export function resolveNumberInputCommit(
   return {
     type: 'commit',
     value: committedValue,
-    shouldNormalizeDraft: committedValue !== value,
+    didClamp: committedValue !== value,
   };
 }

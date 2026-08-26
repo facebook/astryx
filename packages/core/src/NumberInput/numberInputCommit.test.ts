@@ -27,7 +27,7 @@ describe('resolveNumberInputCommit', () => {
     ).toEqual({
       type: 'commit',
       value: 1234567,
-      shouldNormalizeDraft: false,
+      didClamp: false,
     });
   });
 
@@ -48,7 +48,7 @@ describe('resolveNumberInputCommit', () => {
         isIntegerOnly: true,
         hasClear: false,
       }),
-    ).toEqual({type: 'commit', value: 2, shouldNormalizeDraft: true});
+    ).toEqual({type: 'commit', value: 2, didClamp: true});
   });
 
   it('distinguishes a clearable empty draft from a revert', () => {

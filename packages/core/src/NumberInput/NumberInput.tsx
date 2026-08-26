@@ -677,7 +677,7 @@ export function NumberInput({
   );
 
   const commitPendingInput = useCallback(
-    (preserveDraft: boolean) => {
+    (trigger: 'blur' | 'Enter') => {
       if (pendingInput === null) {
         return;
       }
@@ -690,8 +690,8 @@ export function NumberInput({
         hasClear: !!hasClear,
       });
       if (
-        !preserveDraft ||
-        (decision.type === 'commit' && decision.shouldNormalizeDraft)
+        trigger === 'blur' ||
+        (decision.type === 'commit' && decision.didClamp)
       ) {
         setPendingInput(null);
       }
@@ -710,7 +710,7 @@ export function NumberInput({
   // Blur ends the edit and displays the resulting committed value.
   const handleBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
-      commitPendingInput(false);
+      commitPendingInput('blur');
       setIsFocused(false);
       onBlur?.(e);
     },
@@ -781,7 +781,7 @@ export function NumberInput({
         return;
       }
       if (e.key === 'Enter') {
-        commitPendingInput(true);
+        commitPendingInput('Enter');
         onEnter?.();
       }
       onKeyDown?.(e);
@@ -909,7 +909,9 @@ export function NumberInput({
         data-autofocus={hasAutoFocus || undefined}
         aria-valuemin={min ?? undefined}
         aria-valuemax={max ?? undefined}
-        aria-valuenow={valueForStepping ?? undefined}
+        // The ARIA value and hidden form input expose the committed value;
+        // pendingInput is still an uncommitted edit and may be invalid.
+        aria-valuenow={value ?? undefined}
         aria-valuetext={
           value == null || !formatValue ? undefined : formattedValue
         }
@@ -945,12 +947,15 @@ export function NumberInput({
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
         {!isInputValid ? 'Invalid number' : ''}
       </VisuallyHidden>
-      {hasClear && value != null && !isDisabled && !isReadOnly && (
-        <InputClearButton
-          label={t('@astryx.numberInput.clearLabel', {label})}
-          onClick={handleClear}
-        />
-      )}
+      {hasClear &&
+        (value != null || (pendingInput !== null && pendingInput !== '')) &&
+        !isDisabled &&
+        !isReadOnly && (
+          <InputClearButton
+            label={t('@astryx.numberInput.clearLabel', {label})}
+            onClick={handleClear}
+          />
+        )}
       {statusIcon}
       {hasNumberSteppers && (
         <div {...stylex.props(styles.numberSteppers)}>

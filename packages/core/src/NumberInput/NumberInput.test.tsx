@@ -270,6 +270,31 @@ describe('NumberInput', () => {
       expect(input).toHaveAttribute('aria-valuenow', '1234');
     });
 
+    it('keeps ARIA value text on the committed value while an edit is pending', () => {
+      function ControlledNumberInput() {
+        const [controlledValue, setControlledValue] = useState(1234);
+        return (
+          <NumberInput
+            label="Revenue"
+            value={controlledValue}
+            onChange={setControlledValue}
+            formatValue={number => `$${number.toLocaleString('en-US')}`}
+          />
+        );
+      }
+      render(<ControlledNumberInput />);
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '4200'}});
+
+      expect(input).toHaveAttribute('aria-valuenow', '1234');
+      expect(input).toHaveAttribute('aria-valuetext', '$1,234');
+
+      fireEvent.blur(input);
+      expect(input).toHaveAttribute('aria-valuenow', '4200');
+      expect(input).toHaveAttribute('aria-valuetext', '$4,200');
+    });
+
     it('shows the raw numeric value while focused and restores formatting on blur', () => {
       render(
         <NumberInput
@@ -1175,6 +1200,32 @@ describe('NumberInput', () => {
       expect(data.get('revenue')).toBe('1234');
     });
 
+    it('submits the committed value until a text edit commits', () => {
+      function ControlledForm() {
+        const [controlledValue, setControlledValue] = useState(7);
+        return (
+          <form>
+            <NumberInput
+              label="Quantity"
+              htmlName="quantity"
+              value={controlledValue}
+              onChange={setControlledValue}
+              formatValue={String}
+            />
+          </form>
+        );
+      }
+      const {container} = render(<ControlledForm />);
+      const form = container.querySelector('form')!;
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '42'}});
+
+      expect(new FormData(form).get('quantity')).toBe('7');
+      fireEvent.blur(input);
+      expect(new FormData(form).get('quantity')).toBe('42');
+    });
+
     it('is excluded from form data when disabled', () => {
       const {container} = render(
         <form>
@@ -1410,6 +1461,20 @@ describe('NumberInput', () => {
       expect(
         screen.queryByRole('button', {name: 'Clear Qty'}),
       ).not.toBeInTheDocument();
+    });
+
+    it('shows the clear button for a pending draft before it commits', () => {
+      const onChange = vi.fn();
+      render(
+        <NumberInput label="Qty" value={null} onChange={onChange} hasClear />,
+      );
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '42'}});
+
+      fireEvent.click(screen.getByRole('button', {name: 'Clear Qty'}));
+      expect(input).toHaveValue('');
+      expect(onChange).toHaveBeenCalledWith(null);
     });
 
     it('does not show clear button when hasClear is false', () => {
