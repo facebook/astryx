@@ -823,8 +823,5 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
       : onMediaCss;
   }
 
-  return {
-    prose: proseCss,
-    component: componentCss,
-  };
+  return {prose: proseCss, component: componentCss};
 }

@@ -4,6 +4,7 @@ import {describe, it, expect, vi} from 'vitest';
 import type {IconRegistry} from '../Icon/globalIconRegistry';
 import type {DefinedTheme} from './defineTheme';
 import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
+import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -117,9 +118,8 @@ describe('generateThemeCSS', () => {
   });
 
   it('declares the data palette for a theme that never mentions it', () => {
-    const {base, component} = generateThemeCSS(
-      defineTheme({name: 'chartless'}),
-    );
+    const {component} = generateThemeCSS(defineTheme({name: 'chartless'}));
+    const base = generateDataTokenDefaultsCSS();
     expect(base).toContain('--color-data-categorical-blue:');
     expect(base).toContain('--color-data-gray-1:');
     expect(component).not.toContain('--color-data-');
@@ -130,7 +130,8 @@ describe('generateThemeCSS', () => {
       name: 'brand-charts',
       tokens: {'--color-data-categorical-blue': '#00A3FF'},
     });
-    const {base, component} = generateThemeCSS(theme);
+    const {component} = generateThemeCSS(theme);
+    const base = generateDataTokenDefaultsCSS();
     expect(component).toContain('--color-data-categorical-blue: #00A3FF;');
     // The siblings the theme did not name stay in the shared base block, so a
     // nested theme inherits the parent's override instead of the default.
