@@ -235,7 +235,11 @@ const dynamicStyles = stylex.create({
   }),
 });
 
+// A column that declares its alignment states it, including the one that lands
+// where an undeclared column happens to sit: `textAlign` inherits, so leaving
+// `:---` unstyled hands it to whatever the table is nested in.
 const cellAlignStyles = stylex.create({
+  start: {textAlign: 'start'},
   center: {textAlign: 'center'},
   end: {textAlign: 'end'},
 });
@@ -1477,6 +1481,7 @@ function renderBlock(
                     key={i}
                     xstyle={[
                       dynamicStyles.cellMinWidth(`${colMinWidths[i]}px`),
+                      node.alignments[i] === 'left' && cellAlignStyles.start,
                       node.alignments[i] === 'center' && cellAlignStyles.center,
                       node.alignments[i] === 'right' && cellAlignStyles.end,
                     ]}>
@@ -1503,6 +1508,7 @@ function renderBlock(
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table cells are positional by row and column
                     key={j}
                     xstyle={[
+                      node.alignments[j] === 'left' && cellAlignStyles.start,
                       node.alignments[j] === 'center' && cellAlignStyles.center,
                       node.alignments[j] === 'right' && cellAlignStyles.end,
                     ]}>
