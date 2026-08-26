@@ -46,6 +46,24 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
+    // A badge is one line by construction — fixed height, `nowrap` — so a
+    // label wider than the space available has to go somewhere. Without these
+    // it went *outside* its container: `nowrap` with nothing to clip it
+    // neither wraps nor truncates, it just escapes, and lands on whatever sits
+    // beside it. `minWidth: 0` matters as much as the max: as a flex item the
+    // automatic minimum size would otherwise hold the badge at its full text
+    // width and push the clamp back out again.
+    maxWidth: '100%',
+    minWidth: 0,
+  },
+  // The ellipsis goes on the label rather than the badge itself, because
+  // `text-overflow` needs a block container and taking the root off
+  // `inline-flex` to get one would cost the icon its centring. The label is a
+  // flex item, so it needs its own `minWidth: 0` for the same reason as above.
+  label: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    minWidth: 0,
   },
 });
 
@@ -174,7 +192,7 @@ export function Badge({
       )}
       {...props}>
       {icon}
-      {label}
+      <span {...stylex.props(styles.label)}>{label}</span>
     </span>
   );
 }
