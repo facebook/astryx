@@ -64,8 +64,6 @@ const RESOLVED_DIAMETER = '--_spinner-ring-diameter';
 const RESOLVED_RAIL = '--_spinner-ring-rail';
 const RESOLVED_GEOMETRY_VARS = [RESOLVED_DIAMETER, RESOLVED_RAIL];
 
-let didRegisterVars = false;
-
 /**
  * Register the resolved geometry vars as `<length>`.
  *
@@ -89,10 +87,6 @@ let didRegisterVars = false;
  * and report a var no theme can select.
  */
 function registerSpinnerVars(): void {
-  if (didRegisterVars) {
-    return;
-  }
-  didRegisterVars = true;
   if (
     typeof CSS === 'undefined' ||
     typeof CSS.registerProperty !== 'function'
@@ -114,6 +108,23 @@ function registerSpinnerVars(): void {
     }
   }
 }
+
+// Registering an inherited property with an `initial-value` invalidates style
+// for the whole document, so this runs when the module is evaluated rather
+// than when a spinner mounts. A spinner is the loading indicator: it mounts
+// onto a page that is already rendered, with someone already waiting, and the
+// recalc it triggers there is paid on the full tree. At import the tree is
+// whatever has rendered so far, which for a bundle loaded in the head is
+// nothing.
+//
+// It is safe at module scope in both directions. The `typeof CSS` guard above
+// keeps it out of the server render, and tree-shaking cannot strip it from a
+// build that renders a spinner: core's `sideEffects` allowlist does not name
+// this file, so a bundle that never imports `Spinner` drops the module whole —
+// registration and all, which is the outcome you want — while one that does
+// import it keeps the module, and a bare call is not something a bundler may
+// elide.
+registerSpinnerVars();
 
 /**
  * Pin every ring's rotation to the document timeline's origin instead of its
@@ -147,10 +158,7 @@ function pinRingsToTimelineOrigin(): void {
 /**
  * Ref callback for the ring: the one place a mounted ring touches the DOM.
  *
- * The registration rides here rather than at module scope so it stays out of
- * the server render and out of a bundler's reach, and rather than in an effect
- * so it lands before the first paint. It reads nothing back — the geometry is
- * resolved by the cascade, not in JS.
+ * It reads nothing back — the geometry is resolved by the cascade, not in JS.
  */
 function syncRotationPhase(
   svg: SVGSVGElement | null,
@@ -158,7 +166,6 @@ function syncRotationPhase(
   if (svg == null) {
     return undefined;
   }
-  registerSpinnerVars();
   // jsdom implements no Web Animations, and this runs in every consumer's
   // component tests.
   if (typeof svg.getAnimations !== 'function') {

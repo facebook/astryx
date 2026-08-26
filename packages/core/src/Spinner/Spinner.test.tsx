@@ -334,3 +334,64 @@ describe('Spinner ring', () => {
     }
   });
 });
+
+describe('geometry var registration', () => {
+  /** The shape `registerSpinnerVars` passes; jsdom implements no real one. */
+  type Descriptor = {
+    name: string;
+    syntax: string;
+    inherits: boolean;
+    initialValue: string;
+  };
+  const stubRegisterProperty = (fn: (d: Descriptor) => void) => {
+    (
+      CSS as unknown as {registerProperty: (d: Descriptor) => void}
+    ).registerProperty = fn;
+  };
+
+  afterEach(() => {
+    delete (CSS as unknown as {registerProperty?: unknown}).registerProperty;
+    vi.resetModules();
+  });
+
+  it('registers when the module is imported, not when a spinner mounts', async () => {
+    // Registering an inherited property with an `initial-value` invalidates
+    // style for the whole document. A spinner mounts onto a page that has
+    // already rendered, so paying it there is paying it on the full tree —
+    // measured at 29ms against 12ms on an 11k-element page. At import the page
+    // is whatever has rendered so far, which for a bundle in the head is
+    // nothing. This pins the timing: it fails if the call moves back into a
+    // ref callback, an effect, or the component body.
+    const registerProperty = vi.fn<(d: Descriptor) => void>();
+    stubRegisterProperty(registerProperty);
+
+    vi.resetModules();
+    await import('./Spinner');
+
+    expect(registerProperty.mock.calls.map(([d]) => d.name)).toEqual([
+      '--_spinner-ring-diameter',
+      '--_spinner-ring-rail',
+    ]);
+    // Both are `<length>` with an initial value, which is what makes a themed
+    // `0` mean `0px` inside the `calc()` rather than poisoning it.
+    for (const [descriptor] of registerProperty.mock.calls) {
+      expect(descriptor.syntax).toBe('<length>');
+      expect(descriptor.inherits).toBe(true);
+      expect(descriptor.initialValue).toBe('0px');
+    }
+  });
+
+  it('survives a second evaluation, and does not need the DOM', async () => {
+    // Two copies of the package on one page, or a fast-refresh re-evaluation:
+    // registerProperty throws on a duplicate rather than replacing, and the
+    // existing registration is this same one.
+    const registerProperty = vi.fn<(d: Descriptor) => void>(() => {
+      throw new Error('InvalidModificationError');
+    });
+    stubRegisterProperty(registerProperty);
+
+    vi.resetModules();
+    await expect(import('./Spinner')).resolves.toBeDefined();
+    expect(registerProperty).toHaveBeenCalledTimes(2);
+  });
+});
