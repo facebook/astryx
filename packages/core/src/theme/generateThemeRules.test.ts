@@ -780,14 +780,13 @@ describe('data visualization tokens', () => {
     expect(block).not.toContain('--color-data-categorical-orange');
   });
 
-  it('carries the palette in the defaults block, not the scoped stylesheet', () => {
+  it('keeps the palette out of the scoped stylesheet', () => {
+    // The palette's own contents are asserted once, against
+    // `dataTokenDefaults`, in `seeds the whole palette once, at :root` above.
     const {component, prose} = generateThemeCSS(
       defineTheme({name: 'data-css'}),
     );
-    const base = generateDataTokenDefaultsCSS();
 
-    expect(base).toContain('--color-data-neutral:');
-    expect(base).toContain('--color-data-blue-3:');
     expect(component).not.toContain('--color-data-');
     expect(prose).not.toContain('--color-data-');
   });

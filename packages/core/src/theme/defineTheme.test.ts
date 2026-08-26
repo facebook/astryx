@@ -4,7 +4,6 @@ import {describe, it, expect, vi} from 'vitest';
 import type {IconRegistry} from '../Icon/globalIconRegistry';
 import type {DefinedTheme} from './defineTheme';
 import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
-import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -117,26 +116,24 @@ describe('generateThemeCSS', () => {
     expect(css).toContain('font-family: var(--font-family-heading)');
   });
 
-  it('declares the data palette for a theme that never mentions it', () => {
+  it('keeps the data palette out of a theme that never mentions it', () => {
+    // That the palette IS declared is covered by `seeds the whole palette
+    // once, at :root` in generateThemeRules.test.ts. It is theme-independent,
+    // so there is nothing about it a theme can be used to assert.
     const {component} = generateThemeCSS(defineTheme({name: 'chartless'}));
-    const base = generateDataTokenDefaultsCSS();
-    expect(base).toContain('--color-data-categorical-blue:');
-    expect(base).toContain('--color-data-gray-1:');
     expect(component).not.toContain('--color-data-');
   });
 
-  it('keeps the rest of the data palette when one data token is overridden', () => {
+  it('puts only the named data token in the theme block, not its siblings', () => {
     const theme = defineTheme({
       name: 'brand-charts',
       tokens: {'--color-data-categorical-blue': '#00A3FF'},
     });
     const {component} = generateThemeCSS(theme);
-    const base = generateDataTokenDefaultsCSS();
     expect(component).toContain('--color-data-categorical-blue: #00A3FF;');
-    // The siblings the theme did not name stay in the shared base block, so a
-    // nested theme inherits the parent's override instead of the default.
+    // Leaving the siblings out of the theme's own block is what lets a nested
+    // theme inherit a parent's override instead of shadowing it.
     expect(component).not.toContain('--color-data-categorical-orange');
-    expect(base).toContain('--color-data-categorical-orange:');
     // Defaults reach the stylesheet without entering the theme's own tokens,
     // which are what `astryx theme build` reports as overrides.
     expect(theme.tokens['--color-data-categorical-orange']).toBeUndefined();

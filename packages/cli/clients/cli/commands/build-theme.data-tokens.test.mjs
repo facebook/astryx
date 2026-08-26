@@ -26,6 +26,7 @@ import * as os from 'node:os';
 // is deliberately not part of `@astryxdesign/core/theme`'s public surface, and
 // this suite is the guard that the build's independent formatting matches it.
 import {generateDataTokenDefaultsCSS} from '../../../../core/src/theme/generateThemeRules';
+import {dataTokenDefaults as sourceDataTokenDefaults} from '../../../../core/src/theme/domainTokens/dataTokens';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 
@@ -111,6 +112,19 @@ describe('theme build data token output', () => {
     const css = await buildTheme(tmpDir, 'charts-parity', {
       tokens: {'--color-accent': '#0077B6'},
     });
+
+    // The expectation below comes from core's SOURCE; the stylesheet came from
+    // core's dist. ensureCoreBuilt() only checks that dist exists, never that
+    // it is current, so a dist older than the source would fail the byte
+    // comparison with a colour mismatch that reads as formatter drift. Name
+    // that case first.
+    const {dataTokenDefaults: builtDataTokenDefaults} = await import(
+      '@astryxdesign/core/theme'
+    );
+    expect(
+      builtDataTokenDefaults,
+      'packages/core/dist is stale — run `pnpm -F @astryxdesign/core build`',
+    ).toEqual(sourceDataTokenDefaults);
 
     // The build formats this block itself, from the public `dataTokenDefaults`
     // export; the runtime formats it in core. Nothing else holds the two
