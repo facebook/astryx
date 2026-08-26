@@ -834,12 +834,12 @@ export function NumberInput({
 
   // Handle clear button click
   const handleClear = useCallback(() => {
-    if (hasClear) {
+    if (hasClear && value != null) {
       onChange(null);
     }
     setPendingInput(null);
     inputRef.current?.focus();
-  }, [hasClear, onChange]);
+  }, [hasClear, onChange, value]);
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =

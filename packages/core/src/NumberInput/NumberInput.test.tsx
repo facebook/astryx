@@ -1200,7 +1200,7 @@ describe('NumberInput', () => {
       expect(data.get('revenue')).toBe('1234');
     });
 
-    it('submits the committed value until a text edit commits', () => {
+    it('submits the committed value in formatted mode until an edit commits', () => {
       function ControlledForm() {
         const [controlledValue, setControlledValue] = useState(7);
         return (
@@ -1474,7 +1474,7 @@ describe('NumberInput', () => {
 
       fireEvent.click(screen.getByRole('button', {name: 'Clear Qty'}));
       expect(input).toHaveValue('');
-      expect(onChange).toHaveBeenCalledWith(null);
+      expect(onChange).not.toHaveBeenCalled();
     });
 
     it('does not show clear button when hasClear is false', () => {
