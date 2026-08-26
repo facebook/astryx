@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
+import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import {
   VStack,
   HStack,
@@ -521,6 +522,28 @@ export const ThemeAddedVariant: Story = {
           <Card width={200}>
             <p {...stylex.props(styles.text)}>default</p>
           </Card>
+        </div>
+        <div>
+          <h4 {...stylex.props(styles.heading)}>brand, selected</h4>
+          <SelectableCard
+            label="brand, selected"
+            isSelected
+            onChange={() => {}}
+            variant="brand"
+            width={200}>
+            <p {...stylex.props(styles.text, styles.textInherit)}>selected</p>
+          </SelectableCard>
+        </div>
+        <div>
+          <h4 {...stylex.props(styles.heading)}>brand, unselected</h4>
+          <SelectableCard
+            label="brand, unselected"
+            isSelected={false}
+            onChange={() => {}}
+            variant="brand"
+            width={200}>
+            <p {...stylex.props(styles.text, styles.textInherit)}>unselected</p>
+          </SelectableCard>
         </div>
       </div>
     </Theme>

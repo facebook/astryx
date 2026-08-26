@@ -153,6 +153,14 @@ const styles = stylex.create({
     borderColor: colorVars['--color-border-yellow'],
     '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-yellow']}`,
   },
+  // A theme-added variant paints with colours the component cannot know, so no
+  // token is guaranteed to contrast with it — the accent ring disappears
+  // against an accent fill. currentColor is guaranteed: the ring is exactly as
+  // visible as the card's own text, which the theme has to get right anyway.
+  selectedUnknown: {
+    borderColor: 'currentColor',
+    '--_card-ring': 'inset 0 0 0 2px currentColor',
+  },
 });
 
 const selectedStyleForVariant = (variant: CardVariant) => {
@@ -182,10 +190,9 @@ const selectedStyleForVariant = (variant: CardVariant) => {
     case 'yellow':
       return styles.selectedYellow;
     // CardVariant is open — a theme can add a variant this switch has never
-    // seen, and it still has to look selected. Falls back to the accent ring
-    // the neutral variants use.
+    // seen, and it still has to look selected.
     default:
-      return styles.selected;
+      return styles.selectedUnknown;
   }
 };
 
