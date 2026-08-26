@@ -59,22 +59,39 @@ if (!['pass', 'changed', 'failed', 'skipped'].includes(verdict.status)) {
 if (String(verdict.context?.runId ?? '') !== runId) {
   fail(`verdict run ${verdict.context?.runId ?? 'missing'} does not match ${runId}`);
 }
+if (verdict.context?.runAttempt && String(verdict.context.runAttempt) !== runAttempt) {
+  fail(`verdict attempt ${verdict.context.runAttempt} does not match ${runAttempt}`);
+}
+if (!SHA.test(verdict.context?.sha ?? '')) {
+  fail('verdict tested SHA is missing or invalid');
+}
 if (verdict.context?.headSha && verdict.context.headSha !== headSha) {
   fail(`verdict head ${verdict.context.headSha} does not match trusted head ${headSha}`);
 }
 if (!Array.isArray(verdict.changes) || verdict.changes.length > MAX_CHANGES) {
   fail(`invalid change count ${verdict.changes?.length ?? 'missing'}`);
 }
+if (!Array.isArray(verdict.added) || !Array.isArray(verdict.removed)) {
+  fail('added/removed shot lists are missing');
+}
+if (verdict.changes.length + verdict.added.length + verdict.removed.length > MAX_CHANGES) {
+  fail('visual delta bundle exceeds the review budget');
+}
 
 const seen = new Set();
+const validateKey = key => {
+  if (!KEY.test(key ?? '')) fail(`invalid shot key ${JSON.stringify(key)}`);
+  if (seen.has(key)) fail(`duplicate shot key ${key}`);
+  seen.add(key);
+};
 for (const change of verdict.changes) {
-  if (!KEY.test(change.key ?? '')) fail(`invalid shot key ${JSON.stringify(change.key)}`);
-  if (seen.has(change.key)) fail(`duplicate shot key ${change.key}`);
-  seen.add(change.key);
+  validateKey(change.key);
   if (!Number.isFinite(Number(change.diffPixels)) || Number(change.diffPixels) < 0) {
     fail(`invalid diff pixel count for ${change.key}`);
   }
 }
+for (const key of verdict.added) validateKey(key);
+for (const key of verdict.removed) validateKey(key);
 
 fs.rmSync(output, {recursive: true, force: true});
 for (const kind of ['before', 'after', 'diff']) {
@@ -82,8 +99,8 @@ for (const kind of ['before', 'after', 'diff']) {
 }
 
 /** Decode + re-encode: validates the bytes and strips ancillary metadata. */
-function copyPng(kind, key) {
-  const source = path.join(input, 'report', kind, `${key}.png`);
+function copyPng(kind, key, sourceDir = path.join(input, 'report', kind)) {
+  const source = path.join(sourceDir, `${key}.png`);
   if (!fs.existsSync(source)) fail(`${kind}/${key}.png is missing`);
   const stat = fs.lstatSync(source);
   if (!stat.isFile() || stat.isSymbolicLink()) fail(`${kind}/${key}.png is not a regular file`);
@@ -109,6 +126,12 @@ function copyPng(kind, key) {
 for (const {key} of verdict.changes) {
   for (const kind of ['before', 'after', 'diff']) copyPng(kind, key);
 }
+// New stable shots have no before/diff, but their AFTER is the image a human
+// accepts and the post-merge verifier must reproduce. Preserve it now; the
+// Actions artifact expires and the per-PR path is deleted when the PR closes.
+for (const key of verdict.added) {
+  copyPng('after', key, path.join(input, 'shots'));
+}
 
 const evidence = {
   version: 1,
@@ -118,6 +141,11 @@ const evidence = {
   testedSha: verdict.context?.sha ?? null,
   baseSha: verdict.context?.baseSha ?? null,
   run: {id: Number(runId), attempt: Number(runAttempt)},
+  deltas: [
+    ...verdict.changes.map(change => ({key: change.key, kind: 'changed'})),
+    ...verdict.added.map(key => ({key, kind: 'added'})),
+    ...verdict.removed.map(key => ({key, kind: 'removed'})),
+  ],
   verdict,
 };
 fs.writeFileSync(path.join(output, 'evidence.json'), `${JSON.stringify(evidence, null, 2)}\n`);

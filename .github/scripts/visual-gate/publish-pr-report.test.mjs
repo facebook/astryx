@@ -46,6 +46,8 @@ function writeFixture(overrides = {}) {
         diffPixels: 4,
       },
     ],
+    added: [],
+    removed: [],
     ...overrides.verdict,
   };
   fs.mkdirSync(input, {recursive: true});
@@ -95,6 +97,32 @@ describe('trusted PR visual publisher', () => {
     expect(fs.existsSync(path.join(output, 'before', 'core-button--default__neutral-light.png'))).toBe(true);
     const evidence = JSON.parse(fs.readFileSync(path.join(output, 'evidence.json'), 'utf8'));
     expect(evidence).toMatchObject({pr: 42, headSha: HEAD, testedSha: 'b'.repeat(40)});
+  });
+
+  it('preserves the after image for a newly added stable shot', () => {
+    const key = 'core-new--default__neutral-light';
+    writeFixture({
+      key,
+      verdict: {
+        status: 'changed',
+        changes: [],
+        added: [key],
+        removed: [],
+        counts: {total: 1, changed: 0, added: 1, removed: 0, failed: 0},
+      },
+    });
+    // Added shots come from capture/shots, not report/after.
+    fs.mkdirSync(path.join(input, 'shots'), {recursive: true});
+    fs.writeFileSync(path.join(input, 'shots', `${key}.png`), png());
+    run();
+    expect(fs.existsSync(path.join(output, 'after', `${key}.png`))).toBe(true);
+    const evidence = JSON.parse(fs.readFileSync(path.join(output, 'evidence.json'), 'utf8'));
+    expect(evidence.deltas).toEqual([{key, kind: 'added'}]);
+  });
+
+  it('rejects a key repeated across changed/added/removed lists', () => {
+    writeFixture({verdict: {added: ['core-button--default__neutral-light']}});
+    expect(() => run()).toThrow(/duplicate shot key/);
   });
 
   it('rejects an artifact that claims another run', () => {

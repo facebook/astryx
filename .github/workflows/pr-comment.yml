@@ -24,6 +24,12 @@ on:
 
 permissions: {}
 
+# A newer run for the same branch supersedes an older comment/publication. The
+# trusted identity step also fails a stale run after the PR head moves.
+concurrency:
+  group: pr-comment-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
 jobs:
   comment:
     # Only for CI runs triggered by a pull request.
@@ -69,6 +75,10 @@ jobs:
             });
             if (pr.head.sha !== run.head_sha) {
               core.setFailed(`Run head ${run.head_sha} is stale; PR head is ${pr.head.sha}`);
+              return;
+            }
+            if (pr.head.repo.full_name !== run.head_repository.full_name) {
+              core.setFailed(`Run repository ${run.head_repository.full_name} does not match PR head ${pr.head.repo.full_name}`);
               return;
             }
             if (pr.base.repo.full_name !== `${owner}/${repo}`) {
@@ -124,7 +134,9 @@ jobs:
           const meta = JSON.parse(fs.readFileSync('pr-analysis/pr-meta.json', 'utf8'));
           const fail = (message) => { console.error(`::error::${message}`); process.exit(1); };
           if (String(meta.prNumber) !== process.env.EXPECTED_PR) fail('artifact PR number does not match trusted PR');
-          if (!process.env.EXPECTED_HEAD.startsWith(String(meta.shortHash))) fail('artifact head does not match trusted PR head');
+          const shortHash = String(meta.shortHash ?? '');
+          if (!/^[0-9a-f]{7,40}$/.test(shortHash)) fail('artifact head is not a valid hash');
+          if (!process.env.EXPECTED_HEAD.startsWith(shortHash)) fail('artifact head does not match trusted PR head');
           if (String(meta.runId) !== process.env.EXPECTED_RUN) fail('artifact run id does not match workflow_run');
           NODE
 
