@@ -55,6 +55,10 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 
 const styles = stylex.create({
   interactive: {
+    // Declared here, on the element that carries the `astryx-selectable-card`
+    // target, so a theme has something to override — the ring for a variant
+    // only the theme knows about reads it (see selectedUnknown).
+    '--selectable-card-ring-color': colorVars['--color-accent'],
     position: 'relative',
     cursor: {
       default: 'pointer',
@@ -157,9 +161,9 @@ const styles = stylex.create({
   // token is guaranteed to contrast with it — an accent ring disappears against
   // an accent fill, and an outset one is no better. The theme that supplied the
   // fill is the only thing that can pick a ring, so it gets a lever beside it;
-  // the accent fallback keeps every built-in unchanged.
+  // the var defaults to the accent, keeping every built-in unchanged.
   selectedUnknown: {
-    '--_card-ring': `inset 0 0 0 2px var(--selectable-card-ring-color, ${colorVars['--color-accent']})`,
+    '--_card-ring': 'inset 0 0 0 2px var(--selectable-card-ring-color)',
   },
 });
 
