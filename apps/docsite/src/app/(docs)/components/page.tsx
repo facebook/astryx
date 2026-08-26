@@ -21,7 +21,7 @@ import {Card} from '@astryxdesign/core/Card';
 import {CodeExampleBlock} from '../../../components/CodeExampleBlock';
 import {components as componentRegistry} from '../../../generated/componentRegistry';
 import {showcaseRegistry} from '../../../generated/showcaseRegistry';
-import {GALLERY_CATEGORIES} from '../../../generated/galleryShowcaseRegistry';
+import {GALLERY_CATEGORIES} from '../../../lib/galleryCategories.mjs';
 import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
 import {layout} from '../../../layout.stylex';
 

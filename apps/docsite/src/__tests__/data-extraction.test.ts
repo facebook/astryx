@@ -21,11 +21,11 @@ import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
+import {eagerShowcases} from '../generated/galleryShowcaseRegistry';
 import {
-  eagerShowcases,
   EAGER_SHOWCASE_COUNT,
   GALLERY_CATEGORIES,
-} from '../generated/galleryShowcaseRegistry';
+} from '../lib/galleryCategories.mjs';
 import {exampleRegistry} from '../generated/exampleRegistry';
 
 const REPO_ROOT = path.resolve(

@@ -17,8 +17,9 @@
  *   - blockRegistry.ts     — showcases + example blocks from CLI templates
  *   - templateRegistry.ts  — page-level templates from CLI templates
  *   - docsRegistry.ts      — long-form documentation topics from CLI docs/
- *   - galleryShowcaseRegistry.ts — gallery category order + the eagerly
- *     imported showcases for the tiles above the fold
+ *   - galleryShowcaseRegistry.ts — the eagerly imported showcases for the
+ *     gallery tiles above the fold (which tiles those are comes from the
+ *     authored order in src/lib/galleryCategories.mjs)
  */
 
 import * as fs from 'node:fs';
@@ -30,6 +31,10 @@ import {
   buildTypeDefinitionIndex,
   collectPropTypeRefs,
 } from '../src/lib/typeDefinitions.mjs';
+import {
+  GALLERY_CATEGORIES,
+  EAGER_SHOWCASE_COUNT,
+} from '../src/lib/galleryCategories.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCSITE_ROOT = path.resolve(__dirname, '..');
@@ -1488,43 +1493,6 @@ ${importLines}
 // ── 8. Gallery Showcase Registry ───────────────────────────────────────
 
 /**
- * Category display order for the /components gallery. The gallery renders
- * categories in this order, so it also fixes which tiles are at the top of
- * the page — which is what `EAGER_SHOWCASE_COUNT` below counts off.
- *
- * Sourced from component .doc.mjs `category` fields.
- */
-const GALLERY_CATEGORIES = [
-  'Action',
-  'Chat',
-  'Container',
-  'Content',
-  'Data Input',
-  'Data Visualization',
-  'Feedback & Status',
-  'Layout',
-  'Navigation',
-  'Overlay',
-  'Table & List',
-  'Utility',
-];
-
-/**
- * How many gallery tiles are rendered eagerly — statically imported, so they
- * are part of the page chunk and server-render into the prerendered HTML
- * instead of waiting for hydration plus a chunk fetch.
- *
- * 12 covers everything in the viewport up to a 2560x1440 display (measured:
- * 6 tiles in view at 1440x900, 9 at 1920x1080, 10 at 2560x1440) and lands on
- * a category boundary — all of Action, plus the first two of Chat. The 12
- * showcase sources total ~9 KB of TSX.
- *
- * Raising this is cheap but not free: every eager showcase pulls the
- * components it uses into the initial page chunk.
- */
-const EAGER_SHOWCASE_COUNT = 12;
-
-/**
  * Does this component get a tile in the /components gallery? Mirrors the
  * filtering in src/app/(docs)/components/page.tsx.
  */
@@ -1539,13 +1507,12 @@ function isGalleryComponent(comp) {
 }
 
 /**
- * Emits the gallery's category order and the eager (statically imported)
- * showcases for the tiles above the fold.
+ * Emits the eagerly imported (statically bundled) showcases for the tiles at
+ * the top of the gallery.
  *
- * The eager set has to be the first N tiles in *render* order, so the order
- * is computed here from the same inputs the page renders from and exported
- * for the page to consume — rather than duplicated in the page, where it
- * could silently drift out of step with this map.
+ * The eager set is defined as "the first EAGER_SHOWCASE_COUNT tiles in render
+ * order", so it is derived here from the authored order in
+ * src/lib/galleryCategories.mjs — the same module the page renders from.
  */
 function generateGalleryShowcaseRegistry(allComponents, showcaseEntries) {
   console.log('Generating gallery showcase registry...');
@@ -1582,16 +1549,13 @@ import type {ComponentType} from 'react';
 
 ${importLines}
 
-/** Category display order for the /components gallery. */
-export const GALLERY_CATEGORIES = ${JSON.stringify(GALLERY_CATEGORIES, null, 2)} as const;
-
-/** How many gallery tiles render eagerly (see generate-data.mjs). */
-export const EAGER_SHOWCASE_COUNT = ${EAGER_SHOWCASE_COUNT};
-
 /**
- * Showcases for the first ${EAGER_SHOWCASE_COUNT} gallery tiles, statically imported so they
- * server-render into the page's HTML. Every other tile loads its showcase
- * lazily through showcaseRegistry.
+ * Showcases for the first EAGER_SHOWCASE_COUNT gallery tiles, statically
+ * imported so they server-render into the page's HTML. Every other tile
+ * loads its showcase lazily through showcaseRegistry.
+ *
+ * Which tiles those are follows from the authored gallery order in
+ * src/lib/galleryCategories.mjs.
  */
 export const eagerShowcases: Record<string, ComponentType> = {
 ${mapLines}
