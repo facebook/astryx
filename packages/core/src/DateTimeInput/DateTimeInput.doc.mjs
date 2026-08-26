@@ -120,14 +120,14 @@ export const docs = {
       name: 'timeIncrement',
       type: '1 | 5 | 10 | 15 | 30',
       description:
-        'Minutes to add or subtract when using arrow keys in the time input.',
+        'Minutes to add or subtract when using arrow keys in the desktop time input. Ignored on the mobile touch sheet, where time is changed with wheels.',
       default: '1',
     },
     {
       name: 'timeOptionInterval',
       type: '5 | 10 | 15 | 30 | 60',
       description:
-        'Minute cadence for a dropdown of preset times on the time portion. Set it to turn the time field into a combobox listing every valid time at that cadence (60 gives a 12 AM to 11 PM list). Omitted, the time field stays a plain text input and gains no combobox semantics. Typed entry keeps working either way, so a time between two options is still reachable. Independent of timeIncrement, which governs arrow-key stepping.',
+        'Minute cadence for a dropdown of preset times on the desktop time portion. Set it to turn the desktop time field into a combobox listing every valid time at that cadence (60 gives a 12 AM to 11 PM list). Omitted, the desktop time field stays a plain text input and gains no combobox semantics. Typed entry keeps working either way, so a time between two options is still reachable. Ignored on the mobile touch sheet, where the wheels expose every hour/minute/second.',
     },
     {
       name: 'hasClear',
@@ -146,7 +146,7 @@ export const docs = {
       name: 'timePlaceholder',
       type: 'string',
       description:
-        'Placeholder text shown in the time portion when no time is selected.',
+        'Placeholder text shown in the desktop time portion when no time is selected. Ignored on the mobile touch sheet, where the time panel is labelled and uses wheels rather than an empty text input.',
       default: "'Select a time'",
     },
     {
@@ -176,7 +176,8 @@ export const docs = {
     {
       name: 'numberOfMonths',
       type: '1 | 2',
-      description: 'Number of months displayed simultaneously in the calendar.',
+      description:
+        'Number of months displayed simultaneously in the desktop calendar popover. Ignored on the mobile touch sheet, whose Date panel always shows one swipe-paged month at a time.',
       default: '1',
     },
     {
@@ -201,7 +202,11 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-time-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-date-time-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
       {
         className: 'astryx-date-time-input-date-segment',
         visualProps: ['size', 'status'],
@@ -218,7 +223,7 @@ export const docs = {
   },
   usage: {
     description:
-      'DateTimeInput combines a calendar popover with a time input for selecting both a date and time in a single interaction flow. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
+      'DateTimeInput combines date and time selection in one field. On mouse/trackpad devices it uses a calendar popover plus text time input; on coarse-pointer devices it opens a bottom sheet with Date and Time sections, a swipable month calendar, and accessible time wheels. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [
       {
         guidance: true,
@@ -283,19 +288,19 @@ export const docs = {
         name: 'Calendar popover',
         required: false,
         description:
-          'A month grid that appears when the icon is clicked or the date input is focused.',
+          'A month grid that appears in a popover on desktop, or in the mobile bottom sheet on coarse-pointer devices.',
       },
       {
         name: 'Time input',
         required: true,
         description:
-          'A text input for entering the time, displayed beside the date input.',
+          'A text input for entering the time on desktop; accessible hour/minute/second wheels in the mobile bottom sheet.',
       },
       {
         name: 'Time options popover',
         required: false,
         description:
-          'A list of preset times at the timeOptionInterval cadence, shown when that prop is set and the time input is clicked or opened with Alt+ArrowDown.',
+          'A desktop-only list of preset times at the timeOptionInterval cadence, shown when that prop is set and the time input is clicked or opened with Alt+ArrowDown.',
       },
       {
         name: 'Clear button',
@@ -317,7 +322,7 @@ export const docsZh = {
   displayName: 'Date Time Input',
   usage: {
     description:
-      'DateTimeInput combines a calendar popover with a time input for selecting both a date and time in a single interaction flow. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
+      'DateTimeInput combines date and time selection in one field. On mouse/trackpad devices it uses a calendar popover plus text time input; on coarse-pointer devices it opens a bottom sheet with Date and Time sections, a swipable month calendar, and accessible time wheels. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [
       {
         guidance: true,
@@ -451,7 +456,8 @@ export const docsZh = {
     {
       name: 'timeIncrement',
       type: '1 | 5 | 10 | 15 | 30',
-      description: '在时间输入中按箭头键时增减的分钟数。',
+      description:
+        '在桌面时间输入中按箭头键时增减的分钟数。在移动触摸面板中会被忽略，时间通过滚轮更改。',
       default: '1',
     },
     {
@@ -469,7 +475,8 @@ export const docsZh = {
     {
       name: 'timePlaceholder',
       type: 'string',
-      description: '时间部分未选择时间时显示的占位符文本。',
+      description:
+        '桌面时间部分未选择时间时显示的占位符文本。在移动触摸面板中会被忽略，时间面板使用标签和滚轮。',
       default: "'Select a time'",
     },
     {
@@ -497,13 +504,15 @@ export const docsZh = {
     {
       name: 'numberOfMonths',
       type: '1 | 2',
-      description: '日历中同时显示的月份数量。',
+      description:
+        '桌面日历弹出层中同时显示的月份数量。在移动触摸面板中会被忽略，日期面板一次显示一个可滑动月份。',
       default: '1',
     },
     {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
-      description: '日历中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
+      description:
+        '日历中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
       default: '0',
     },
     {
@@ -515,7 +524,11 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-time-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-date-time-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
       {
         className: 'astryx-date-time-input-date-segment',
         visualProps: ['size', 'status'],
@@ -538,7 +551,7 @@ export const docsDense = {
     'combined date + time picker with calendar popover and time input',
   usage: {
     description:
-      'DateTimeInput combines a calendar popover with a time input for selecting both a date and time. Use for scheduling, events, deadlines, or any form field needing a datetime.',
+      'DateTimeInput combines date and time selection. Desktop uses a calendar popover plus time input; coarse pointers use a bottom sheet with Date/Time sections and time wheels. Use for scheduling, events, deadlines, or any form field needing a datetime.',
     bestPractices: [
       {
         guidance: true,
@@ -600,19 +613,23 @@ export const docsDense = {
     dateConstraints: 'custom constraint fns to disable specific dates',
     hasSeconds: 'include seconds in time portion',
     hourFormat: "display format. '12h' shows AM/PM; '24h' uses 24-hour",
-    timeIncrement: 'minutes to add/subtract on arrow keys in time input',
+    timeIncrement:
+      'desktop only: minutes to add/subtract on arrow keys in time input; mobile uses wheels',
     timeOptionInterval:
-      'minute cadence for a preset-time dropdown on the time input; omitted = plain text input, no combobox. typed entry still works',
+      'desktop only: minute cadence for a preset-time dropdown on the time input; omitted = plain text input, no combobox. mobile uses wheels',
     hasClear: 'Shows clear button when datetime is set',
     placeholder: 'date-portion placeholder when empty',
-    timePlaceholder: 'time-portion placeholder when empty',
+    timePlaceholder:
+      'desktop time-portion placeholder when empty; ignored on mobile touch sheet',
     timeLabel:
       'accessible label for the time input; defaults to "{label} time"',
     size: 'input control size',
     status: 'error/warning/success status w/ message',
     labelTooltip: 'tooltip text via info icon at label end',
-    numberOfMonths: 'months shown simultaneously in calendar',
-    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
+    numberOfMonths:
+      'desktop calendar months shown simultaneously; ignored on mobile touch sheet',
+    weekStartsOn:
+      'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };
