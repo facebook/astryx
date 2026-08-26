@@ -256,9 +256,50 @@ describe('Drawer', () => {
         // Still open while the slide-out transition plays
         expect(dialog).toHaveAttribute('open');
         act(() => {
+          vi.advanceTimersByTime(250);
+        });
+        expect(dialog).toHaveAttribute('open');
+        act(() => {
           vi.advanceTimersByTime(300);
         });
         expect(dialog).not.toHaveAttribute('open');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('closes as soon as the slide-out transition ends', () => {
+      vi.useFakeTimers();
+      try {
+        render(<Harness />);
+        fireEvent.click(screen.getByRole('button', {name: 'Open inspector'}));
+        const dialog = screen.getByRole('dialog', {hidden: true});
+
+        fireEvent.click(screen.getByRole('button', {name: 'Close inspector'}));
+        expect(dialog).toHaveAttribute('open');
+
+        // The transition is authoritative — no need to wait out the backstop.
+        act(() => {
+          fireEvent.transitionEnd(dialog, {propertyName: 'transform'});
+        });
+        expect(dialog).not.toHaveAttribute('open');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('keeps sliding while a transitionend for another property arrives', () => {
+      vi.useFakeTimers();
+      try {
+        render(<Harness />);
+        fireEvent.click(screen.getByRole('button', {name: 'Open inspector'}));
+        const dialog = screen.getByRole('dialog', {hidden: true});
+
+        fireEvent.click(screen.getByRole('button', {name: 'Close inspector'}));
+        act(() => {
+          fireEvent.transitionEnd(dialog, {propertyName: 'opacity'});
+        });
+        expect(dialog).toHaveAttribute('open');
       } finally {
         vi.useRealTimers();
       }
@@ -579,7 +620,7 @@ describe('Drawer', () => {
   describe('container padding isolation', () => {
     it('resets container padding custom properties on the root dialog element', () => {
       render(
-        <Drawer isOpen onClose={() => {}} label="Details">
+        <Drawer isOpen onOpenChange={() => {}} label="Details">
           Content
         </Drawer>,
       );

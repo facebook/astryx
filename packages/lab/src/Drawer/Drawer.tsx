@@ -26,10 +26,11 @@
  * - `show()` when `hasScrim={false}` — non-modal overlay; the page behind
  *   stays interactive (e.g. master-detail inspectors).
  *
- * Entry animation uses `@starting-style` + `transition-behavior:
- * allow-discrete` (see CLAUDE.md dialog-entry pattern); exit slides out
- * before a delayed `dialog.close()` releases the top layer and restores
- * focus to the element that opened the drawer.
+ * Entry animation uses `@starting-style`; exit slides out before
+ * `dialog.close()` releases the top layer and restores focus to the element
+ * that opened the drawer. React owns `display` for both legs rather than a
+ * discrete `display` transition, so the panel stops painting in the same
+ * commit as `close()` — see the `rendered` style for why that matters.
  *
  * Sibling drawers coordinate through a module-level LIFO registry: Escape
  * closes only the top (last-opened) drawer, and non-modal drawers stack
@@ -50,6 +51,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {
@@ -112,6 +114,54 @@ function isTopDrawer(id: string): boolean {
 }
 
 // =============================================================================
+// Exit timing
+// =============================================================================
+
+/** Slack past the computed transition before the backstop gives up waiting. */
+const EXIT_BACKSTOP_BUFFER_MS = 50;
+
+/**
+ * Hold used when the transition duration cannot be read — an unresolved
+ * `var()` outside a real browser. Picking a fixed number would otherwise make
+ * an assumption about the consumer's theme.
+ */
+const EXIT_FALLBACK_MS = 250;
+
+/**
+ * The panel's own transition duration, in ms, read off the element rather
+ * than assumed: `--duration-medium` is a theme token and themes rewrite it
+ * (the shipped y2k theme uses 250ms, the default 410ms). Returns null when the
+ * value is unreadable.
+ */
+function readTransitionMs(element: HTMLElement): number | null {
+  const computed = window.getComputedStyle(element);
+  const durations = parseTimes(computed.transitionDuration);
+  const delays = parseTimes(computed.transitionDelay);
+  if (durations.length === 0 || durations.includes(null)) {
+    return null;
+  }
+  return durations.reduce<number>(
+    (longest, duration, index) =>
+      Math.max(longest, (duration ?? 0) + (delays[index % delays.length] ?? 0)),
+    0,
+  );
+}
+
+function parseTimes(value: string): Array<number | null> {
+  return value.split(',').map(part => {
+    const trimmed = part.trim();
+    const time = Number.parseFloat(trimmed);
+    if (!Number.isFinite(time)) {
+      return null;
+    }
+    if (trimmed.endsWith('ms')) {
+      return time;
+    }
+    return trimmed.endsWith('s') ? time * 1000 : null;
+  });
+}
+
+// =============================================================================
 // Styles
 // =============================================================================
 
@@ -149,22 +199,30 @@ const styles = stylex.create({
     insetBlockStart: 0,
     insetBlockEnd: 0,
     height: '100dvh',
-    // Closed state. `display` participates in the transition with
-    // allow-discrete so it flips to none only after the slide-out finishes
-    // (@starting-style covers the none -> flex entry).
+    // Closed state. `display` is owned by React (see `rendered`), not by a
+    // discrete `display` transition, so only `transform` animates here.
     display: 'none',
-    transitionProperty: 'transform, display',
+    transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    transitionBehavior: 'allow-discrete',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
     },
   },
-  // Open state applied via isOpen prop, not :where([open]) — attribute
+  // Rendered while the drawer is open AND while it slides out. Applied from
+  // React state, not from a discrete `display` transition: `close()` drops the
+  // dialog out of the top layer, and any ancestor that establishes a
+  // containing block for fixed positioning (transform, filter, container-type,
+  // contain) then becomes the origin for the panel's `position: fixed`. A
+  // panel still painting after `close()` therefore snaps back INTO the layout
+  // and covers the page for the rest of the hold. Owning `display` lets the
+  // hide land in the same commit as `close()`, so no frame is ever painted
+  // outside the top layer.
+  //
+  // Applied via the isOpen/exit state, not :where([open]) — attribute
   // selectors have zero specificity and can lose to default styles
   // depending on CSS source order (same rationale as Dialog/MobileNav).
-  open: {
+  rendered: {
     display: 'flex',
   },
   // start/end transforms flip under RTL so the panel always slides in from
@@ -418,9 +476,19 @@ export function Drawer({
   }, [onOpenChange]);
   // z-index assigned by the registry on open (non-modal stacking only).
   const [stackZ, setStackZ] = useState(NON_MODAL_BASE_Z);
+  // Whether the panel paints: true while open and for the whole slide-out.
+  const [isRendered, setIsRendered] = useState(isOpen);
 
-  // Open/close the native dialog. close() is delayed so the slide-out
-  // transition can play; focus restore happens after close() because a
+  // Adjusted during render, not in an effect: the panel has to be rendered in
+  // the same commit that targets the open transform, or @starting-style has
+  // nothing to animate from.
+  if (isOpen && !isRendered) {
+    setIsRendered(true);
+  }
+
+  // Open/close the native dialog. close() waits for the slide-out to finish,
+  // and the panel stops rendering in the same commit so it is never painted
+  // outside the top layer. Focus restore happens after close() because a
   // modal dialog makes the rest of the document inert (focus() on the
   // trigger would silently fail while the dialog is still open).
   useEffect(() => {
@@ -452,20 +520,52 @@ export function Drawer({
           autofocusTarget.focus();
         }
       }
-    } else if (dialog.open) {
-      const duration = window.matchMedia('(prefers-reduced-motion: reduce)')
-        .matches
-        ? 10
-        : 250;
-      closeTimeoutRef.current = setTimeout(() => {
-        dialog.close();
-        // Return focus to the element that opened the drawer.
-        triggerElementRef.current?.focus();
-        triggerElementRef.current = null;
-      }, duration);
+      return;
     }
 
+    if (!dialog.open) {
+      return;
+    }
+
+    let hasFinished = false;
+    const finish = () => {
+      if (hasFinished) {
+        return;
+      }
+      hasFinished = true;
+      dialog.removeEventListener('transitionend', handleTransitionEnd);
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+      dialog.close();
+      // flushSync, not a plain setState: React's default scheduling can land
+      // the commit after the next paint, and that one frame is exactly the
+      // bug — the panel painted outside the top layer. Both happen in this
+      // task, so the browser never gets to paint between them.
+      flushSync(() => {
+        setIsRendered(false);
+      });
+      // Return focus to the element that opened the drawer.
+      triggerElementRef.current?.focus();
+      triggerElementRef.current = null;
+    };
+    // The transition is authoritative; the timer is only a backstop for when
+    // no transition runs at all (already at the closed transform, or a theme
+    // with a zero duration).
+    function handleTransitionEnd(event: TransitionEvent) {
+      if (event.target === dialog && event.propertyName === 'transform') {
+        finish();
+      }
+    }
+    dialog.addEventListener('transitionend', handleTransitionEnd);
+    closeTimeoutRef.current = setTimeout(
+      finish,
+      (readTransitionMs(dialog) ?? EXIT_FALLBACK_MS) + EXIT_BACKSTOP_BUFFER_MS,
+    );
+
     return () => {
+      dialog.removeEventListener('transitionend', handleTransitionEnd);
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = null;
@@ -567,7 +667,7 @@ export function Drawer({
           overlayPaddingReset.reset,
           sideStyle,
           dynamicStyles.inlineSize(widthValue, mobileWidth),
-          isOpen && styles.open,
+          isRendered && styles.rendered,
           isOpen && sideOpenStyle,
           hasScrim ? styles.scrim : dynamicStyles.stackZ(stackZ),
           hasScrim && isOpen && styles.scrimOpen,
