@@ -63,7 +63,7 @@ export const docs = {
     {
       name: 'isFullBleed',
       type: 'boolean',
-      description: "Makes the tab strip escape its parent's container padding, extending to the container's content edges (cancels the nearest padded Layout container's --container-padding-* custom properties with negative margins). Stretches a tab bar to a header's content edges so a hasDivider underline spans the full content width, replacing the negative-margin CSS that case otherwise needs. Matches Divider's isFullBleed: inline (start/end) edges only; block-edge docking stays with the surrounding layout.",
+      description: "Makes the tab strip escape its parent's container padding, extending to the container's content edges (cancels the nearest padded Layout container's --container-padding-* custom properties with negative margins). The inner strip pads back by the portion of the container inset that is not already supplied by the first or last tab stop, keeping edge labels aligned while a hasDivider underline spans the full content width. Matches Divider's isFullBleed: inline (start/end) edges only; block-edge docking stays with the surrounding layout.",
       default: 'false',
     },
     {

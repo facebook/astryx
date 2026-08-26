@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useState, type CSSProperties} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {TabList, Tab, TabMenu} from '@astryxdesign/core/TabList';
 import {Button} from '@astryxdesign/core/Button';
@@ -34,6 +34,138 @@ export const Default: Story = {
         <Tab value="projects" label="Projects" />
         <Tab value="settings" label="Settings" />
       </TabList>
+    );
+  },
+};
+
+const FULL_BLEED_FIXTURE_PADDING = 16;
+const fullBleedFixtureStyle: CSSProperties & {
+  '--container-padding-inline-start': string;
+  '--container-padding-inline-end': string;
+} = {
+  boxSizing: 'border-box',
+  width: 480,
+  paddingInline: FULL_BLEED_FIXTURE_PADDING,
+  '--container-padding-inline-start': `${FULL_BLEED_FIXTURE_PADDING}px`,
+  '--container-padding-inline-end': `${FULL_BLEED_FIXTURE_PADDING}px`,
+};
+
+function assertGeometry(label: string, actual: number, expected: number) {
+  if (Math.abs(actual - expected) > 0.5) {
+    throw new Error(
+      `${label}: expected ${expected.toFixed(2)}px, received ${actual.toFixed(2)}px`,
+    );
+  }
+}
+
+/**
+ * Browser geometry guard for `isFullBleed`. The strip must escape the
+ * wrapper's padding while the first label returns to the content inset. The
+ * strip-pad assertion also pins TabList's restated stop-padding token to the
+ * padding the real Tab paints; changing either side breaks this story.
+ */
+export const FullBleedGeometry: Story = {
+  render: () => {
+    const [value, setValue] = useState('home');
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+        <div data-full-bleed-fixture="hug" style={fullBleedFixtureStyle}>
+          <TabList value={value} onChange={setValue} isFullBleed>
+            <Tab value="home" label="Home" />
+            <Tab value="projects" label="Projects" />
+          </TabList>
+        </div>
+        <div data-full-bleed-fixture="fill" style={fullBleedFixtureStyle}>
+          <TabList value={value} onChange={setValue} layout="fill" isFullBleed>
+            <Tab value="home" label="Home" />
+            <Tab value="projects" label="Projects" />
+            <TabMenu
+              label="More"
+              options={[
+                {value: 'settings', label: 'Settings'},
+                {value: 'billing', label: 'Billing'},
+              ]}
+            />
+          </TabList>
+        </div>
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+    const wrapper = canvasElement.querySelector<HTMLElement>(
+      '[data-full-bleed-fixture="hug"]',
+    );
+    const strip = wrapper?.querySelector<HTMLElement>('.astryx-tab-strip');
+    const firstStop = strip?.querySelector<HTMLElement>(
+      '[data-tab-value="home"]',
+    );
+    const firstLabel = firstStop?.querySelector<HTMLElement>('span span');
+    const fillWrapper = canvasElement.querySelector<HTMLElement>(
+      '[data-full-bleed-fixture="fill"]',
+    );
+    const fillStrip =
+      fillWrapper?.querySelector<HTMLElement>('.astryx-tab-strip');
+    const lastStop = fillStrip?.querySelector<HTMLElement>('[data-tab-menu]');
+
+    if (
+      !wrapper ||
+      !strip ||
+      !firstStop ||
+      !firstLabel ||
+      !fillWrapper ||
+      !fillStrip ||
+      !lastStop
+    ) {
+      throw new Error('Full-bleed geometry fixture did not render as expected');
+    }
+
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const stripRect = strip.getBoundingClientRect();
+    const firstStopRect = firstStop.getBoundingClientRect();
+    const lastStopRect = lastStop.getBoundingClientRect();
+    const fillWrapperRect = fillWrapper.getBoundingClientRect();
+    const firstLabelRect = firstLabel.getBoundingClientRect();
+    const stopPadding = Number.parseFloat(
+      getComputedStyle(firstStop).paddingInlineStart,
+    );
+    const lastStopPadding = Number.parseFloat(
+      getComputedStyle(lastStop).paddingInlineEnd,
+    );
+    const stripPadding = Number.parseFloat(
+      getComputedStyle(strip).paddingInlineStart,
+    );
+    const stripPaddingEnd = Number.parseFloat(
+      getComputedStyle(fillStrip).paddingInlineEnd,
+    );
+    const contentInset = wrapperRect.left + FULL_BLEED_FIXTURE_PADDING;
+    const contentEnd = fillWrapperRect.right - FULL_BLEED_FIXTURE_PADDING;
+
+    assertGeometry('strip box start', stripRect.left, wrapperRect.left);
+    assertGeometry('first label start', firstLabelRect.left, contentInset);
+    assertGeometry(
+      'stop padding coupling',
+      stripPadding,
+      FULL_BLEED_FIXTURE_PADDING - stopPadding,
+    );
+    assertGeometry(
+      'first stop content start',
+      firstStopRect.left + stopPadding,
+      contentInset,
+    );
+    assertGeometry(
+      'TabMenu padding coupling',
+      stripPaddingEnd,
+      FULL_BLEED_FIXTURE_PADDING - lastStopPadding,
+    );
+    assertGeometry(
+      'last stop content end',
+      lastStopRect.right - lastStopPadding,
+      contentEnd,
     );
   },
 };
