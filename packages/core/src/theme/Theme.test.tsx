@@ -1,11 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {render, cleanup} from '@testing-library/react';
 import React from 'react';
 import {Theme} from './Theme';
 import {defineTheme} from './defineTheme';
 import {dataTokenDefaults} from './domainTokens';
+
+const {generateThemeCSSSpy} = vi.hoisted(() => ({
+  generateThemeCSSSpy: vi.fn(),
+}));
+
+vi.mock('./defineTheme', async importOriginal => {
+  const actual = await importOriginal<typeof import('./defineTheme')>();
+  generateThemeCSSSpy.mockImplementation(actual.generateThemeCSS);
+  return {...actual, generateThemeCSS: generateThemeCSSSpy};
+});
 
 const testTheme = defineTheme({
   name: 'test',
@@ -26,6 +36,7 @@ describe('Theme', () => {
     // Clean up documentElement state before each test
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.removeAttribute('data-astryx-theme');
+    generateThemeCSSSpy.mockClear();
   });
 
   afterEach(() => {
@@ -232,5 +243,28 @@ describe('Theme', () => {
 
     cleanup();
     expect(baseTags()).toHaveLength(0);
+  });
+
+  it('generates a theme once across nested and sibling mounts', () => {
+    render(
+      <Theme theme={testTheme}>
+        <Theme theme={testTheme}>
+          <span>nested</span>
+        </Theme>
+      </Theme>,
+    );
+    render(
+      <Theme theme={testTheme}>
+        <span>sibling</span>
+      </Theme>,
+    );
+
+    expect(generateThemeCSSSpy).toHaveBeenCalledTimes(1);
+    expect(baseTags()).toHaveLength(1);
+
+    const injected = Array.from(document.querySelectorAll('style'))
+      .map(tag => tag.textContent ?? '')
+      .join('\n');
+    expect(injected.match(/:root\s*\{/g)).toHaveLength(1);
   });
 });

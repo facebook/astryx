@@ -701,7 +701,6 @@ export {
   generateThemeRulesSplit,
   generateOnMediaCSS,
   generateThemeCSS,
-  generateDataTokenDefaultsCSS,
   type ThemeRulesSplit,
   type ThemeCSSOutput,
 } from './generateThemeRules';

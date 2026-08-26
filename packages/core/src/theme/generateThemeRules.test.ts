@@ -10,10 +10,10 @@ import {describe, it, expect} from 'vitest';
 import {
   dataTokenDefaults,
   defineTheme,
-  generateDataTokenDefaultsCSS,
   generateThemeCSS,
   generateThemeRules,
 } from './index';
+import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 
 const defaultInput = {
   name: 'default',

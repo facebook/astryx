@@ -98,4 +98,18 @@ describe('theme build data token output', () => {
     expect(themeBlock).not.toContain('--color-data-categorical-orange');
     expect(themeBlock).not.toContain('--color-data-gray-1');
   });
+
+  it('emits the bytes the runtime generator emits', async () => {
+    const tokens = {'--color-accent': '#0077B6'};
+    const css = await buildTheme(tmpDir, 'charts-parity', {tokens});
+
+    const {defineTheme, generateThemeCSS} = await import(
+      '@astryxdesign/core/theme'
+    );
+    const {base} = generateThemeCSS(
+      defineTheme({name: 'charts-parity', tokens}),
+    );
+
+    expect(css).toContain(`@layer astryx-base {\n${base}\n}`);
+  });
 });

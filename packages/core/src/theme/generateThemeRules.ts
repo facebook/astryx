@@ -777,6 +777,8 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
  * `@layer astryx-base` so a theme's override wins by layer rather than by
  * specificity. Seeding it per theme scope instead re-declares the default
  * inside every nested theme, which is the shadowing this shape avoids.
+ *
+ * @internal Reached from outside `packages/core` as `generateThemeCSS().base`.
  */
 export function generateDataTokenDefaultsCSS(): string {
   const declarations = Object.entries(dataTokenDefaults)

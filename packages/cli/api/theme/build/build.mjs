@@ -62,14 +62,14 @@ import {
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
-/** @type {any} */ let _generateDataTokenDefaultsCSS = null;
+/** @type {any} */ let _generateThemeCSS = null;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
-  _generateDataTokenDefaultsCSS = coreTheme.generateDataTokenDefaultsCSS;
+  _generateThemeCSS = coreTheme.generateThemeCSS;
 } catch (e) {
   // Capture the reason so the theme action can surface a precise, actionable
   // error. We don't throw here: this module is imported eagerly by the CLI
@@ -1195,15 +1195,21 @@ export async function themeBuild(
       return null;
     }
     // The data-token defaults are theme-independent and go in @layer
-    // astryx-base, below the theme's own overrides — the runtime path injects
-    // the same block (generateThemeCSS's `base`), and the two must not diverge.
+    // astryx-base, below the theme's own overrides. Taken from the runtime's
+    // own generator so the two paths cannot emit different bytes.
     // Placed after the reset block and before the theme block: a layer's order
     // is fixed by where it is first declared, so emitting it anywhere else in
     // the file would invert reset < astryx-base < astryx-theme for a consumer
     // who imports this stylesheet on its own.
-    if (_generateDataTokenDefaultsCSS) {
-      const baseBlock = `@layer astryx-base {\n${_generateDataTokenDefaultsCSS()}\n}`;
-      cssParts.splice(prose.length > 0 ? 1 : 0, 0, baseBlock);
+    const baseCss = _generateThemeCSS
+      ? _generateThemeCSS(resolvedTheme).base
+      : '';
+    if (baseCss) {
+      cssParts.splice(
+        prose.length > 0 ? 1 : 0,
+        0,
+        `@layer astryx-base {\n${baseCss}\n}`,
+      );
     }
     css = cssParts.join('\n\n') + '\n';
   }

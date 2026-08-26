@@ -21,7 +21,6 @@ export type {MediaThemeProps, MediaThemeMode} from './MediaTheme';
 export {
   defineTheme,
   generateThemeCSS,
-  generateDataTokenDefaultsCSS,
   generateOnMediaCSS,
   generateThemeRules,
   generateThemeRulesSplit,
