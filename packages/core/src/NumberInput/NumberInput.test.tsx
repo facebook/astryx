@@ -1463,18 +1463,23 @@ describe('NumberInput', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('shows the clear button for a pending draft before it commits', () => {
-      const onChange = vi.fn();
+    it('keeps Tab moving forward when an empty field has an invalid draft', async () => {
+      const user = userEvent.setup();
       render(
-        <NumberInput label="Qty" value={null} onChange={onChange} hasClear />,
+        <>
+          <NumberInput label="Qty" value={null} onChange={() => {}} hasClear />
+          <button type="button">Next field</button>
+        </>,
       );
       const input = screen.getByRole('spinbutton');
-      fireEvent.focus(input);
-      fireEvent.input(input, {target: {value: '42'}});
+      await user.click(input);
+      await user.type(input, 'invalid');
+      expect(
+        screen.queryByRole('button', {name: 'Clear Qty'}),
+      ).not.toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole('button', {name: 'Clear Qty'}));
-      expect(input).toHaveValue('');
-      expect(onChange).not.toHaveBeenCalled();
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'Next field'})).toHaveFocus();
     });
 
     it('does not show clear button when hasClear is false', () => {

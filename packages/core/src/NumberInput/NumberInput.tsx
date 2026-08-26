@@ -834,12 +834,12 @@ export function NumberInput({
 
   // Handle clear button click
   const handleClear = useCallback(() => {
-    if (hasClear && value != null) {
+    if (hasClear) {
       onChange(null);
     }
     setPendingInput(null);
     inputRef.current?.focus();
-  }, [hasClear, onChange, value]);
+  }, [hasClear, onChange]);
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
@@ -947,15 +947,12 @@ export function NumberInput({
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
         {!isInputValid ? 'Invalid number' : ''}
       </VisuallyHidden>
-      {hasClear &&
-        (value != null || (pendingInput !== null && pendingInput !== '')) &&
-        !isDisabled &&
-        !isReadOnly && (
-          <InputClearButton
-            label={t('@astryx.numberInput.clearLabel', {label})}
-            onClick={handleClear}
-          />
-        )}
+      {hasClear && value != null && !isDisabled && !isReadOnly && (
+        <InputClearButton
+          label={t('@astryx.numberInput.clearLabel', {label})}
+          onClick={handleClear}
+        />
+      )}
       {statusIcon}
       {hasNumberSteppers && (
         <div {...stylex.props(styles.numberSteppers)}>

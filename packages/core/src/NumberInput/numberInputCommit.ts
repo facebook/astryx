@@ -4,11 +4,13 @@
  * @file numberInputCommit.ts
  * @input A NumberInput draft and the field's validation constraints
  * @output A single commit, clear, or revert decision for the whole draft
- * @position Internal NumberInput draft validation and commit policy; locale text interpretation stays in numberParser.ts
+ * @position Shared internal draft validation and commit policy for NumberInput and its live consumers
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/NumberInput/NumberInput.tsx
  * - /packages/core/src/NumberInput/numberInputCommit.test.ts
+ * - /packages/core/src/Table/plugins/filtering/useTableFiltering.tsx
+ * - /packages/core/src/PowerSearch/PowerSearchValueEditor.tsx
  */
 
 import type {Locale} from '../i18n';
