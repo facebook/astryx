@@ -14,6 +14,7 @@ import {useState} from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
+import {InternationalizationProvider} from '../i18n';
 import {InputGroup} from '../InputGroup';
 import {NumberInput} from './NumberInput';
 import {defineTheme} from '../theme/defineTheme';
@@ -326,7 +327,7 @@ describe('NumberInput', () => {
   });
 
   describe('onChange validation', () => {
-    it('calls onChange with valid number when typing', async () => {
+    it('commits a valid number on blur', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
       render(
@@ -336,8 +337,10 @@ describe('NumberInput', () => {
       const input = screen.getByRole('spinbutton');
       await user.click(input);
       await user.type(input, '42');
+      expect(handleChange).not.toHaveBeenCalled();
 
-      expect(handleChange).toHaveBeenCalledWith(4);
+      await user.tab();
+      expect(handleChange).toHaveBeenCalledTimes(1);
       expect(handleChange).toHaveBeenCalledWith(42);
     });
 
@@ -357,9 +360,7 @@ describe('NumberInput', () => {
       await user.click(input);
       await user.type(input, '10');
 
-      // 1 is valid (<=5), but 10 is not
-      expect(handleChange).toHaveBeenCalledWith(1);
-      expect(handleChange).not.toHaveBeenCalledWith(10);
+      expect(handleChange).not.toHaveBeenCalled();
     });
 
     it('does not call onChange when value is below min', async () => {
@@ -398,9 +399,7 @@ describe('NumberInput', () => {
       await user.click(input);
       await user.type(input, '3.5');
 
-      // 3 is valid, but 3.5 is not
-      expect(handleChange).toHaveBeenCalledWith(3);
-      expect(handleChange).not.toHaveBeenCalledWith(3.5);
+      expect(handleChange).not.toHaveBeenCalled();
     });
 
     it('calls onChange for decimal when isIntegerOnly is false', async () => {
@@ -413,8 +412,139 @@ describe('NumberInput', () => {
       const input = screen.getByRole('spinbutton');
       await user.click(input);
       await user.type(input, '3.5');
+      expect(handleChange).not.toHaveBeenCalled();
 
+      await user.tab();
       expect(handleChange).toHaveBeenCalledWith(3.5);
+    });
+  });
+
+  describe('invalid draft commit policy', () => {
+    function ControlledNumberInput({
+      initialValue = 7,
+      locale = 'en-US',
+    }: {
+      initialValue?: number | null;
+      locale?: 'en-US' | 'de-DE';
+    }) {
+      const [controlledValue, setControlledValue] = useState<number | null>(
+        initialValue,
+      );
+      return (
+        <InternationalizationProvider locale={locale}>
+          <NumberInput
+            label="Quantity"
+            value={controlledValue}
+            onChange={setControlledValue}
+          />
+          <output data-testid="committed">{String(controlledValue)}</output>
+        </InternationalizationProvider>
+      );
+    }
+
+    async function exerciseInvalidDraft(
+      entry: 'typing' | 'input',
+      commit: 'blur' | 'Enter',
+    ) {
+      const user = userEvent.setup();
+      render(<ControlledNumberInput />);
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      if (entry === 'typing') {
+        await user.type(input, '1·234·567');
+      } else {
+        fireEvent.input(input, {target: {value: '1·234·567'}});
+      }
+
+      expect(input).toHaveValue('1·234·567');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByTestId('committed')).toHaveTextContent('7');
+
+      if (commit === 'blur') {
+        await user.tab();
+        expect(input).toHaveValue('7');
+        expect(input).not.toHaveAttribute('aria-invalid');
+      } else {
+        await user.keyboard('{Enter}');
+        expect(input).toHaveValue('1·234·567');
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+      }
+      expect(screen.getByTestId('committed')).toHaveTextContent('7');
+    }
+
+    it('rejects a sequentially typed invalid draft on blur', async () => {
+      await exerciseInvalidDraft('typing', 'blur');
+    });
+
+    it('rejects a one-shot invalid draft on blur', async () => {
+      await exerciseInvalidDraft('input', 'blur');
+    });
+
+    it('rejects a sequentially typed invalid draft on Enter', async () => {
+      await exerciseInvalidDraft('typing', 'Enter');
+    });
+
+    it('rejects a one-shot invalid draft on Enter', async () => {
+      await exerciseInvalidDraft('input', 'Enter');
+    });
+
+    it('commits a valid localized grouped number as one edit', async () => {
+      const user = userEvent.setup();
+      render(<ControlledNumberInput locale="de-DE" />);
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      await user.type(input, '1.234.567');
+
+      expect(screen.getByTestId('committed')).toHaveTextContent('7');
+      await user.tab();
+      expect(screen.getByTestId('committed')).toHaveTextContent('1234567');
+      expect(input).toHaveValue('1234567');
+    });
+
+    it('keeps a controlled update behind an invalid focused draft', () => {
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <NumberInput label="Quantity" value={7} onChange={onChange} />,
+      );
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '1·234·567'}});
+
+      rerender(<NumberInput label="Quantity" value={9} onChange={onChange} />);
+      expect(input).toHaveValue('1·234·567');
+      fireEvent.blur(input);
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('9');
+    });
+
+    it('waits for IME composition to finish before committing', () => {
+      const onChange = vi.fn();
+      render(<NumberInput label="Quantity" value={7} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '42'}});
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(onChange).not.toHaveBeenCalled();
+
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith(42);
+    });
+
+    it('steps from the committed value when the draft is invalid', () => {
+      const onChange = vi.fn();
+      render(<NumberInput label="Quantity" value={7} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '1·234·567'}});
+      fireEvent.keyDown(input, {key: 'ArrowUp'});
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith(8);
+      expect(input).toHaveValue('7');
     });
   });
 
