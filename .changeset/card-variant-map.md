@@ -8,6 +8,6 @@
 
 `keyof CardVariantMap` resolves to exactly the thirteen values `CardVariant` had, so no existing call site changes. A variant a theme adds falls through to base styles and the theme's own `card['variant:<name>']` rule paints it.
 
-On SelectableCard that variant's selection ring is drawn in `currentColor`, because the component cannot know what the theme painted and no token is guaranteed to contrast with it. So a theme rule that adds a variant should set `color` alongside `backgroundColor`, or style `.astryx-selectable-card` — which reflects both `variant` and `selected` — to own the ring itself.
+On SelectableCard that variant's selection ring is drawn in `--selectable-card-ring-color`, defaulting to the accent. No token the component could pick is guaranteed to contrast with a fill the component cannot know, so a theme rule that adds a variant sets the ring colour in the same rule as its `backgroundColor`.
 
 @cixzhang

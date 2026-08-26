@@ -293,6 +293,10 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   // other.
   '--_card-elevation',
   '--_card-ring',
+  // The colour inside that composed ring, for a variant only a theme knows.
+  // It is one component of one shadow in the list, so no standard property
+  // maps onto it either — a theme sets it beside the fill it has to contrast.
+  '--selectable-card-ring-color',
 ]);
 
 // ---------------------------------------------------------------------------

@@ -502,6 +502,10 @@ const brandVariantTheme = defineTheme({
       'variant:brand': {
         backgroundColor: 'var(--color-accent)',
         color: 'var(--color-on-accent)',
+        // The ring for a variant Card has never seen: the theme picks it,
+        // because no token the component could pick is guaranteed to contrast
+        // with this fill.
+        '--selectable-card-ring-color': 'var(--color-on-accent)',
       },
     },
   },

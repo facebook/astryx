@@ -22,11 +22,11 @@
  * }
  * ```
  *
- * Pair the theme rule's `backgroundColor` with a `color`. SelectableCard draws
- * an added variant's selection ring in `currentColor` — it cannot know what the
- * theme painted — so a fill with no `color` leaves the ring invisible against
- * it. A theme that would rather own the ring can style
- * `.astryx-selectable-card`, which reflects both `variant` and `selected`.
+ * Pair the theme rule's `backgroundColor` with `--selectable-card-ring-color`.
+ * SelectableCard rings an added variant in that var, defaulting to the accent —
+ * no token the component could pick is guaranteed to contrast with a fill it
+ * cannot know, so the theme that supplied the fill picks the ring, in the same
+ * rule.
  */
 export interface CardVariantMap {
   default: true;

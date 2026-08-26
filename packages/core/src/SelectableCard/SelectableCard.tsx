@@ -154,12 +154,12 @@ const styles = stylex.create({
     '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-yellow']}`,
   },
   // A theme-added variant paints with colours the component cannot know, so no
-  // token is guaranteed to contrast with it — the accent ring disappears
-  // against an accent fill. currentColor is guaranteed: the ring is exactly as
-  // visible as the card's own text, which the theme has to get right anyway.
+  // token is guaranteed to contrast with it — an accent ring disappears against
+  // an accent fill, and an outset one is no better. The theme that supplied the
+  // fill is the only thing that can pick a ring, so it gets a lever beside it;
+  // the accent fallback keeps every built-in unchanged.
   selectedUnknown: {
-    borderColor: 'currentColor',
-    '--_card-ring': 'inset 0 0 0 2px currentColor',
+    '--_card-ring': `inset 0 0 0 2px var(--selectable-card-ring-color, ${colorVars['--color-accent']})`,
   },
 });
 
