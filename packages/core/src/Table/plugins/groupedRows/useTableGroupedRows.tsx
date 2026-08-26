@@ -85,44 +85,17 @@ export interface UseTableGroupedRowsConfig<T extends Record<string, unknown>> {
   onToggleGroup: (groupKey: string) => void;
   /**
    * Custom renderer for a group header's content (right of the chevron).
-   * Defaults to `<groupKey> (<count>)`, or `<groupKey> (<count> of <total>)`
-   * while `getGroupTotal` reports more rows than this page holds.
-   *
-   * `count` is what this page contains; `total` is the whole result set, and
-   * equals `count` unless `getGroupTotal` says otherwise.
+   * Defaults to `<groupKey> (<count>)`.
    */
   renderGroupHeader?: (
     groupKey: string,
     count: number,
     collapsed: boolean,
-    total: number,
   ) => ReactNode;
   /** Stable key for a real row. Falls back to a positional key when omitted. */
   getRowKey?: (item: T) => string;
   /** Explicit group ordering; groups not listed keep first-seen order after these. */
   groupOrder?: string[];
-  /**
-   * How many rows a section holds in the whole result set, when that is more
-   * than `data` carries. Grouping runs on the rows it is handed, so under
-   * pagination or infinite scroll it can only count the current page — a
-   * section reads "6" and silently becomes "10" as the reader scrolls, a
-   * number that looks like a total but is a progress meter. Supply this and
-   * the header says "6 of 10" until the section is fully loaded.
-   *
-   * Return `undefined` for a group whose total is unknown; it falls back to
-   * the page count.
-   *
-   * @example
-   * ```
-   * useTableGroupedRows({
-   *   data: pageRows,
-   *   groupBy: r => r.team,
-   *   getGroupTotal: key => totalsFromServer.get(key),
-   *   ...
-   * })
-   * ```
-   */
-  getGroupTotal?: (groupKey: string) => number | undefined;
 }
 
 export interface UseTableGroupedRowsResult<T extends Record<string, unknown>> {
@@ -161,19 +134,23 @@ const styles = stylex.create({
   },
   // The cell spans every column, so on a table scrolled sideways the heading
   // would slide out of view while the columns it names stay pinned. Sticking
-  // the inner row to the start edge keeps the chevron and the label together
-  // and on screen. `fit-content` because a flex child would otherwise stretch
-  // to the cell's full width and have nothing to slide within.
+  // the inner span to the start edge keeps the chevron and the label together
+  // and on screen.
   headerInner: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     insetInlineStart: 0,
     position: 'sticky',
-    width: 'fit-content',
     // No inline start padding on the cell, so the chevron aligns with the
     // table's leading edge (Ernest review #1).
     paddingInlineStart: spacingVars['--spacing-1'],
+  },
+  // Applied alongside headerInner when using the built-in default heading.
+  // A custom `renderGroupHeader` may need the full column width, so the
+  // shrink-wrap is opt-in rather than unconditional.
+  headerInnerFitContent: {
+    width: 'fit-content',
   },
   // Standalone chevron button with no heavy chrome (transparent, borderless,
   // zero padding) so the icon sits flush with the start of the table
@@ -272,9 +249,6 @@ const styles = stylex.create({
  * list and every page holds a scatter of sections instead, so loading more
  * splices rows into the middle and new headings appear above the fold.
  *
- * Pass `getGroupTotal` alongside it, or each heading counts only the page it
- * can see and reads as a total while it is really a progress meter.
- *
  * @example
  * ```
  * const ordered = useMemo(
@@ -282,12 +256,10 @@ const styles = stylex.create({
  *   [filtered, sortKeys],
  * );
  * const page = ordered.slice(0, loadedCount);
- * const totals = useMemo(() => countBy(ordered, r => r.team), [ordered]);
  *
  * const grouped = useTableGroupedRows({
  *   data: page,
  *   groupBy: r => r.team,
- *   getGroupTotal: key => totals.get(key),
  *   collapsedGroups,
  *   onToggleGroup,
  * });
@@ -305,7 +277,6 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
     renderGroupHeader,
     getRowKey: getRowKeyProp,
     groupOrder,
-    getGroupTotal,
   } = config;
 
   const flattened = useMemo((): T[] => {
@@ -389,25 +360,12 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
         const header = item as unknown as GroupHeader;
         const collapsed = collapsedGroups.has(header.groupKey);
         const toggle = () => onToggleGroup(header.groupKey);
-        // `count` is this page; `total` is the result set. They differ only
-        // for a section still filling under pagination, which is exactly the
-        // case a bare count reads as a total and gets wrong.
-        const total = getGroupTotal?.(header.groupKey) ?? header.count;
         const content: ReactNode = renderGroupHeader ? (
-          renderGroupHeader(header.groupKey, header.count, collapsed, total)
+          renderGroupHeader(header.groupKey, header.count, collapsed)
         ) : (
           <span {...stylex.props(styles.label)}>
             {header.groupKey}{' '}
-            <span {...stylex.props(styles.count)}>
-              (
-              {header.count < total
-                ? t('@astryx.tableGroupedRows.partialCount', {
-                    count: header.count,
-                    total,
-                  })
-                : total}
-              )
-            </span>
+            <span {...stylex.props(styles.count)}>({header.count})</span>
           </span>
         );
         return {
@@ -426,7 +384,11 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             // to the actual number of columns, so the header always spans the
             // full width without the plugin knowing the column count.
             <td colSpan={999} {...stylex.props(styles.headerCell)}>
-              <span {...stylex.props(styles.headerInner)}>
+              <span
+                {...stylex.props(
+                  styles.headerInner,
+                  !renderGroupHeader && styles.headerInnerFitContent,
+                )}>
                 {/* Standalone chevron button, flush with the table's start
                     edge (no heavy button chrome) — the keyboard control. */}
                 <button
@@ -467,7 +429,7 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
         };
       },
     }),
-    [collapsedGroups, getGroupTotal, onToggleGroup, renderGroupHeader, t],
+    [collapsedGroups, onToggleGroup, renderGroupHeader, t],
   );
 
   return {plugin, data: flattened, idKey};

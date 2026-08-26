@@ -28,7 +28,6 @@ function Harness({
   rows = people,
   initialCollapsed = EMPTY,
   renderGroupHeader,
-  getGroupTotal,
 }: {
   rows?: Person[];
   initialCollapsed?: Set<string>;
@@ -36,9 +35,7 @@ function Harness({
     groupKey: string,
     count: number,
     collapsed: boolean,
-    total: number,
   ) => React.ReactNode;
-  getGroupTotal?: (groupKey: string) => number | undefined;
 }) {
   const [collapsedGroups, setCollapsed] = useState(initialCollapsed);
   const onToggleGroup = useCallback((key: string) => {
@@ -59,7 +56,6 @@ function Harness({
     onToggleGroup,
     getRowKey: p => p.id,
     renderGroupHeader,
-    getGroupTotal,
   });
   return (
     <Table
@@ -168,52 +164,6 @@ describe('useTableGroupedRows', () => {
     );
     expect(screen.getByText('Core::2::open')).toBeInTheDocument();
     expect(screen.getByText('Infra::1::open')).toBeInTheDocument();
-  });
-
-  describe('getGroupTotal', () => {
-    it('reads "n of total" while a section is still filling', () => {
-      // Core shows 2 of the 5 rows the result set holds; Infra is complete.
-      render(<Harness getGroupTotal={key => (key === 'Core' ? 5 : 1)} />);
-      expect(screen.getByText('(2 of 5)')).toBeInTheDocument();
-      expect(screen.getByText('(1)')).toBeInTheDocument();
-    });
-
-    it('reads a bare count once the page holds the whole section', () => {
-      render(<Harness getGroupTotal={key => (key === 'Core' ? 2 : 1)} />);
-      expect(screen.getByText('(2)')).toBeInTheDocument();
-      expect(screen.queryByText('(2 of 2)')).not.toBeInTheDocument();
-    });
-
-    it('falls back to the page count for a group with no known total', () => {
-      render(<Harness getGroupTotal={() => undefined} />);
-      expect(screen.getByText('(2)')).toBeInTheDocument();
-      expect(screen.getByText('(1)')).toBeInTheDocument();
-    });
-
-    it('passes the total to renderGroupHeader', () => {
-      render(
-        <Harness
-          getGroupTotal={key => (key === 'Core' ? 5 : undefined)}
-          renderGroupHeader={(key, count, _collapsed, total) => (
-            <span>{`${key}::${count}::${total}`}</span>
-          )}
-        />,
-      );
-      expect(screen.getByText('Core::2::5')).toBeInTheDocument();
-      // No reported total, so the renderer still gets a usable number.
-      expect(screen.getByText('Infra::1::1')).toBeInTheDocument();
-    });
-
-    it('keeps the total on a collapsed section', () => {
-      render(
-        <Harness
-          initialCollapsed={new Set(['Core'])}
-          getGroupTotal={key => (key === 'Core' ? 5 : 1)}
-        />,
-      );
-      expect(screen.getByText('(2 of 5)')).toBeInTheDocument();
-      expect(screen.queryByText('Alice')).not.toBeInTheDocument();
-    });
   });
 
   it('renders nothing (no group headers) for empty data', () => {

@@ -160,15 +160,22 @@ function applyRowSelectionStyle(
   // Written on every pass, not just when painting: the flag can flip while a
   // row is already selected, and the wash has to come back off.
   const wash = isSelected && hasRowHighlight ? selectedBgColor : '';
-  el.style.backgroundColor = wash;
+  if (el.style.backgroundColor !== wash) {
+    el.style.backgroundColor = wash;
+  }
   // A pinned column paints its own opaque background over the row, so the
   // wash alone stops at the freeze line. Publishing it as the row overlay is
   // what lets useTableStickyColumns replay it on those cells — the same
   // contract TableRow honours for striping and hover.
+  const currentOverlay = el.style.getPropertyValue(ROW_OVERLAY_VAR);
   if (wash === '') {
-    el.style.removeProperty(ROW_OVERLAY_VAR);
+    if (currentOverlay !== '') {
+      el.style.removeProperty(ROW_OVERLAY_VAR);
+    }
   } else {
-    el.style.setProperty(ROW_OVERLAY_VAR, wash);
+    if (currentOverlay !== wash) {
+      el.style.setProperty(ROW_OVERLAY_VAR, wash);
+    }
   }
 }
 
