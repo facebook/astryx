@@ -22,10 +22,6 @@ import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {eagerShowcases} from '../generated/galleryShowcaseRegistry';
-import {
-  EAGER_SHOWCASE_COUNT,
-  GALLERY_CATEGORIES,
-} from '../lib/galleryCategories.mjs';
 import {exampleRegistry} from '../generated/exampleRegistry';
 
 const REPO_ROOT = path.resolve(
@@ -1041,7 +1037,27 @@ describe('LinkProvider utility page', () => {
  * the same inputs the page uses and pin the eager set to the top of it.
  */
 describe('galleryShowcaseRegistry', () => {
-  /** Mirrors the tile filtering in src/app/(docs)/components/page.tsx. */
+  /**
+   * The gallery's category order lives in the page itself. Reading it back
+   * out of the source keeps this test honest without putting a second copy
+   * of the order anywhere — if the page is reordered, the expectations below
+   * follow it, and the eager list is what has to catch up.
+   */
+  const GALLERY_PAGE = path.join(
+    REPO_ROOT,
+    'apps/docsite/src/app/(docs)/components/page.tsx',
+  );
+  const pageSource = fs.readFileSync(GALLERY_PAGE, 'utf-8');
+  const categories = [
+    ...pageSource
+      .slice(
+        pageSource.indexOf('const CATEGORIES = ['),
+        pageSource.indexOf('] as const;'),
+      )
+      .matchAll(/'([^']+)'/g),
+  ].map(m => m[1]);
+
+  /** Mirrors the tile filtering in the same page. */
   const isGalleryComponent = (comp: ComponentEntry) =>
     !comp.isHiddenFromOverview &&
     !comp.hidden &&
@@ -1049,27 +1065,43 @@ describe('galleryShowcaseRegistry', () => {
     Boolean(comp.category) &&
     comp.group !== 'Utilities';
 
-  const galleryOrder = GALLERY_CATEGORIES.flatMap(cat =>
+  /** Gallery render order: categories in display order, then registry order. */
+  const galleryOrder = categories.flatMap(cat =>
     (components['@astryxdesign/core'] ?? []).filter(
       c => c.category === cat && isGalleryComponent(c),
     ),
   );
 
-  it('renders every gallery category', () => {
-    const categories = new Set(
+  it('reads the gallery category order out of the page', () => {
+    expect(categories.length).toBeGreaterThan(5);
+    expect(categories).toContain('Action');
+    expect(galleryOrder.length).toBeGreaterThan(50);
+  });
+
+  it('renders every category some component declares', () => {
+    const declared = new Set(
       (components['@astryxdesign/core'] ?? [])
         .filter(isGalleryComponent)
         .map(c => c.category),
     );
-    for (const cat of categories) {
-      expect(GALLERY_CATEGORIES).toContain(cat);
+    for (const cat of declared) {
+      expect(
+        categories,
+        `category "${cat}" has no section on the page`,
+      ).toContain(cat);
     }
   });
 
-  it('eagerly imports exactly the first EAGER_SHOWCASE_COUNT tiles that have a showcase', () => {
+  /**
+   * The point of the eager set is that those tiles are the ones a visitor
+   * sees first. If the gallery is reordered and this list isn't, the page
+   * pays the chunk cost for tiles that are no longer on top and still shows
+   * a skeleton for the ones that are.
+   */
+  it('eagerly imports exactly the tiles at the top of the gallery', () => {
     const expected = galleryOrder
       .filter(c => showcaseRegistry[c.name] != null)
-      .slice(0, EAGER_SHOWCASE_COUNT)
+      .slice(0, Object.keys(eagerShowcases).length)
       .map(c => c.name);
     expect(Object.keys(eagerShowcases)).toEqual(expected);
   });
@@ -1090,9 +1122,9 @@ describe('galleryShowcaseRegistry', () => {
   });
 
   it('keeps the eager set small enough to stay off the critical path', () => {
-    expect(Object.keys(eagerShowcases).length).toBe(EAGER_SHOWCASE_COUNT);
     // 12 covers a 2560x1440 viewport. Well past that and the page chunk is
     // carrying components nobody sees before they scroll.
-    expect(EAGER_SHOWCASE_COUNT).toBeLessThanOrEqual(16);
+    expect(Object.keys(eagerShowcases).length).toBeGreaterThanOrEqual(6);
+    expect(Object.keys(eagerShowcases).length).toBeLessThanOrEqual(16);
   });
 });

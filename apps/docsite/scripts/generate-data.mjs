@@ -17,9 +17,8 @@
  *   - blockRegistry.ts     — showcases + example blocks from CLI templates
  *   - templateRegistry.ts  — page-level templates from CLI templates
  *   - docsRegistry.ts      — long-form documentation topics from CLI docs/
- *   - galleryShowcaseRegistry.ts — the eagerly imported showcases for the
- *     gallery tiles above the fold (which tiles those are comes from the
- *     authored order in src/lib/galleryCategories.mjs)
+ *   - galleryShowcaseRegistry.ts — statically imported showcases for the
+ *     gallery tiles above the fold (see EAGER_SHOWCASE_COMPONENTS below)
  */
 
 import * as fs from 'node:fs';
@@ -31,10 +30,6 @@ import {
   buildTypeDefinitionIndex,
   collectPropTypeRefs,
 } from '../src/lib/typeDefinitions.mjs';
-import {
-  GALLERY_CATEGORIES,
-  EAGER_SHOWCASE_COUNT,
-} from '../src/lib/galleryCategories.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCSITE_ROOT = path.resolve(__dirname, '..');
@@ -1493,48 +1488,56 @@ ${importLines}
 // ── 8. Gallery Showcase Registry ───────────────────────────────────────
 
 /**
- * Does this component get a tile in the /components gallery? Mirrors the
- * filtering in src/app/(docs)/components/page.tsx.
- */
-function isGalleryComponent(comp) {
-  return (
-    !comp.isHiddenFromOverview &&
-    !comp.hidden &&
-    !comp.name.startsWith('use') &&
-    Boolean(comp.category) &&
-    comp.group !== 'Utilities'
-  );
-}
-
-/**
- * Emits the eagerly imported (statically bundled) showcases for the tiles at
- * the top of the gallery.
+ * Components whose showcase is statically imported, so it is part of the
+ * /components page chunk and server-renders into the prerendered HTML
+ * instead of waiting for hydration plus a chunk fetch.
  *
- * The eager set is defined as "the first EAGER_SHOWCASE_COUNT tiles in render
- * order", so it is derived here from the authored order in
- * src/lib/galleryCategories.mjs — the same module the page renders from.
+ * These are the tiles at the top of the gallery, in render order. 12 covers
+ * everything in the viewport up to a 2560x1440 display (measured: 6 tiles in
+ * view at 1440x900, 9 at 1920x1080, 10 at 2560x1440) and lands on a category
+ * boundary — all of Action, plus the first two of Chat. Their sources total
+ * ~9 KB of TSX.
+ *
+ * Reordering the gallery's categories in src/app/(docs)/components/page.tsx
+ * changes which tiles are on top, so this list has to move with it; the
+ * `galleryShowcaseRegistry` tests fail when the two disagree.
+ *
+ * Adding to the list is cheap but not free: every eager showcase pulls the
+ * components it uses into the initial page chunk.
  */
-function generateGalleryShowcaseRegistry(allComponents, showcaseEntries) {
+const EAGER_SHOWCASE_COMPONENTS = [
+  'Button',
+  'ButtonGroup',
+  'DropdownMenu',
+  'IconButton',
+  'Link',
+  'MoreMenu',
+  'SegmentedControl',
+  'ToggleButton',
+  'ToggleButtonGroup',
+  'Toolbar',
+  'ChatComposer',
+  'ChatLayout',
+];
+
+/** Emits the statically imported showcases for the tiles above the fold. */
+function generateGalleryShowcaseRegistry(showcaseEntries) {
   console.log('Generating gallery showcase registry...');
 
   const showcaseByComponent = new Map(
     showcaseEntries.map(e => [e.exampleFor, e.basename]),
   );
-  const coreComponents = allComponents['@astryxdesign/core'] ?? [];
 
-  // Gallery render order: categories in display order, components within a
-  // category in registry order.
   const eager = [];
-  for (const category of GALLERY_CATEGORIES) {
-    for (const comp of coreComponents) {
-      if (comp.category !== category || !isGalleryComponent(comp)) continue;
-      const basename = showcaseByComponent.get(comp.name);
-      // A component with no showcase renders an empty tile — it costs nothing
-      // to render and doesn't consume an eager slot.
-      if (basename) eager.push({name: comp.name, basename});
-      if (eager.length === EAGER_SHOWCASE_COUNT) break;
+  for (const name of EAGER_SHOWCASE_COMPONENTS) {
+    const basename = showcaseByComponent.get(name);
+    if (!basename) {
+      throw new Error(
+        `EAGER_SHOWCASE_COMPONENTS lists "${name}", which has no showcase block. ` +
+          `Remove it, or give the component a showcase.`,
+      );
     }
-    if (eager.length === EAGER_SHOWCASE_COUNT) break;
+    eager.push({name, basename});
   }
 
   const importLines = eager
@@ -1550,12 +1553,12 @@ import type {ComponentType} from 'react';
 ${importLines}
 
 /**
- * Showcases for the first EAGER_SHOWCASE_COUNT gallery tiles, statically
- * imported so they server-render into the page's HTML. Every other tile
- * loads its showcase lazily through showcaseRegistry.
+ * Showcases for the gallery tiles above the fold, statically imported so
+ * they server-render into the page's HTML. Every other tile loads its
+ * showcase lazily through showcaseRegistry.
  *
- * Which tiles those are follows from the authored gallery order in
- * src/lib/galleryCategories.mjs.
+ * The set is authored as EAGER_SHOWCASE_COMPONENTS in
+ * scripts/generate-data.mjs.
  */
 export const eagerShowcases: Record<string, ComponentType> = {
 ${mapLines}
@@ -1761,10 +1764,7 @@ async function main() {
   const {blogPostCount} = await generateBlogRegistry();
   const showcaseCopied = generateShowcaseRegistry();
   const examplesCopied = generateExampleRegistry();
-  const eagerCount = generateGalleryShowcaseRegistry(
-    allComponents,
-    showcaseCopied,
-  );
+  const eagerCount = generateGalleryShowcaseRegistry(showcaseCopied);
 
   console.log(`\nSummary:`);
   console.log(`  ${packages.length} packages`);

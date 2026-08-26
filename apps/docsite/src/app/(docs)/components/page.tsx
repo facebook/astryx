@@ -21,12 +21,30 @@ import {Card} from '@astryxdesign/core/Card';
 import {CodeExampleBlock} from '../../../components/CodeExampleBlock';
 import {components as componentRegistry} from '../../../generated/componentRegistry';
 import {showcaseRegistry} from '../../../generated/showcaseRegistry';
-import {GALLERY_CATEGORIES} from '../../../lib/galleryCategories.mjs';
 import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
 import {layout} from '../../../layout.stylex';
 
 const FIGMA_LIBRARY_URL =
   'https://www.figma.com/community/file/1659998707120781098/astryx-library-community';
+
+/**
+ * Category display order for the overview page.
+ * Sourced from component .doc.mjs `category` fields.
+ */
+const CATEGORIES = [
+  'Action',
+  'Chat',
+  'Container',
+  'Content',
+  'Data Input',
+  'Data Visualization',
+  'Feedback & Status',
+  'Layout',
+  'Navigation',
+  'Overlay',
+  'Table & List',
+  'Utility',
+] as const;
 
 /**
  * Which components have a showcase to put in their tile.
@@ -106,7 +124,7 @@ export default function ComponentsGalleryPage() {
   /** Group items by category */
   const groupedByCategory = useMemo(() => {
     const map = new Map<string, CategoryItem[]>();
-    for (const cat of GALLERY_CATEGORIES) {
+    for (const cat of CATEGORIES) {
       map.set(cat, []);
     }
     for (const item of categorizedItems) {
@@ -182,7 +200,7 @@ export default function ComponentsGalleryPage() {
           </HStack>
         </VStack>
 
-        {GALLERY_CATEGORIES.map(cat => {
+        {CATEGORIES.map(cat => {
           const items = groupedByCategory.get(cat) ?? [];
           if (items.length === 0) {
             return null;
