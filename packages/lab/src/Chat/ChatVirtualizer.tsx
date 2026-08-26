@@ -155,9 +155,9 @@ export interface ChatVirtualizerProps<T> {
   className?: string;
 }
 
-type Mode =
-  | {kind: 'end'; distance: number}
-  | {kind: 'anchor'; key: string; viewportOffset: number};
+type AnchorMode = {kind: 'anchor'; key: string; viewportOffset: number};
+
+type Mode = {kind: 'end'; distance: number} | AnchorMode;
 
 type Win = {start: number; end: number};
 
@@ -495,6 +495,42 @@ export function ChatVirtualizer<T>(
     };
   };
 
+  // The same reference frame, MEASURED instead of derived.
+  //
+  // anchorAt computes viewportOffset as `offsets[idx] - y`, which is exactly
+  // the anchored row's painted top — but only while painted == model +
+  // gestureAdj holds. The top-spacer clamp breaks that: at the very top of the
+  // list there is nothing above to absorb a negative adjustment into, so the
+  // spacer stops at 0 while gestureAdj keeps its full value, and every derived
+  // position is wrong by the difference. Reading a rendered row's real rect
+  // skips the broken map: viewportOffset is DEFINED as where the row actually
+  // is, so the restore reproduces the current picture by construction, and
+  // scrollTop is free to move as far as it needs to.
+  //
+  // Same row anchorAt would pick — the one covering the viewport top — so this
+  // is a drop-in, not a change of semantics. Returns null when no row is
+  // rendered, and the caller falls back to the derived form.
+  const anchorFromPaint = (el: HTMLElement): AnchorMode | null => {
+    const g = geo.current;
+    const box = el.getBoundingClientRect();
+    const h = el.clientHeight;
+    let best: AnchorMode | null = null;
+    for (const [key, rowEl] of rowEls.current) {
+      if (!rowEl.isConnected || !g.index.has(key)) {
+        continue;
+      }
+      const r = rowEl.getBoundingClientRect();
+      const top = r.top - box.top;
+      if (r.bottom - box.top <= 0 || top >= h) {
+        continue;
+      }
+      if (best === null || top < best.viewportOffset) {
+        best = {kind: 'anchor', key, viewportOffset: top};
+      }
+    }
+    return best;
+  };
+
   // Scroll offset at which our content starts. Zero when we own the scroller;
   // in attach mode the caller's container can put padding, a header or a
   // sticky region above us, and every offset in `geo` is relative to our first
@@ -728,6 +764,31 @@ export function ChatVirtualizer<T>(
   if (prevData.current !== data) {
     prevData.current = data;
     geoChanged.current = true;
+    // HEAD CHANGE (loading older history, or trimming it). Rows arrived above
+    // everything currently placed, so the restore owes a correction the size
+    // of the whole new page — hundreds of thousands of px, paid across several
+    // passes as those rows measure in. That is a CONVERGENCE, and treating it
+    // as one is what stops the live-anchor refresh from re-deriving the anchor
+    // from a scrollTop that is still mid-flight.
+    //
+    // Measured before this: loading 300 older rows from scrollTop 0 slipped
+    // the view one row in 7 runs of 12, permanently. The refresh fired at
+    // scrollTop 76147 of a ~127856 target and rewrote the anchor to a row in
+    // the newly loaded page — after which the list held the wrong row
+    // faithfully forever. `userScrolled` is sticky and the user must scroll to
+    // reach the top, so the refresh was armed the whole time.
+    //
+    // Safe against wedging: every gesture path already clears `converging`
+    // (wheel, touch, and the dead-anchor fallback), so a user who scrolls
+    // takes the viewport back immediately.
+    const head = data.length > 0 ? String(keyExtractor(data[0], 0)) : null;
+    if (
+      head !== null &&
+      geo.current.keys.length > 0 &&
+      geo.current.keys[0] !== head
+    ) {
+      converging.current = true;
+    }
   }
 
   // Runs BEFORE this commit's DOM mutations (the useInsertionEffect
@@ -975,21 +1036,27 @@ export function ChatVirtualizer<T>(
       // machinery growth as a user pushing away).
       //
       // The re-statement itself is UNCONDITIONAL, because it is also what
-      // hands the gesture adjustment back: anchorAt reads through
-      // paintOrigin, so whatever the spacer is still carrying folds into the
-      // stored viewportOffset, and zeroing the adjustment below leaves the
-      // sync one balancing scrollTop write — spacer and position move in the
-      // same task, nothing paints in between. Skipping the fold on a tap
+      // hands the gesture adjustment back: the stored viewportOffset is where
+      // the anchored row actually IS, so zeroing the adjustment below leaves
+      // the sync one balancing scrollTop write — spacer and position move in
+      // the same task, nothing paints in between. Skipping the fold on a tap
       // dropped the adjustment on the floor instead (measured: a tap right
       // after a long drag, while measurements were still landing, jumped
       // 10680px).
+      //
+      // It reads that offset from the DOM (anchorFromPaint) rather than
+      // deriving it, so a clamped spacer cannot make the two disagree: a drag
+      // ending at the top moved the page 182px on release with the derived
+      // form and 0px with this one, while mid-history the scroll still travels
+      // (435px, 1218px) with the picture holding at 0-1px. The derived form
+      // stays as the fallback for a list with nothing rendered.
       if (!converging.current) {
         const atEnd = gestureMoved.current
           ? max - el.scrollTop <= endThresholdRef.current
           : mode.current.kind === 'end';
         mode.current = atEnd
           ? {kind: 'end', distance: 0}
-          : anchorAt(el.scrollTop);
+          : (anchorFromPaint(el) ?? anchorAt(el.scrollTop));
         userAway.current = 0;
         // The fold is a MACHINE repositioning: the adjustment now lives only
         // in the folded viewportOffset, and the live-anchor refresh — which

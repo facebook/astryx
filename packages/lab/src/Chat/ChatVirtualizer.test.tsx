@@ -216,4 +216,79 @@ describe('ChatVirtualizer', () => {
     );
     expect(container.querySelector('[data-pkey="1"]')).toBe(before);
   });
+
+  // ---- History prepend ---------------------------------------------------
+  // Loading older messages inserts ABOVE everything placed, so the restore
+  // owes a correction the size of the whole page. The component treats that as
+  // a convergence; what jsdom can check is the CONTRACT the convergence rests
+  // on — that a prepend leaves the rows the user is looking at untouched, so
+  // there is a stable identity to converge toward. (Geometry: a 300-row
+  // prepend from scrollTop 0 slipped the view a row in 7 runs of 12 before
+  // this and 0 of 12 after; numbers in the PR.)
+
+  const listOf = (data: Row[]) => (
+    <ChatVirtualizer<Row>
+      data={data}
+      keyExtractor={m => String(m.id)}
+      renderItem={({item}) => <span>{item.text}</span>}
+      estimatedItemSize={100}
+    />
+  );
+
+  it('a prepend re-indexes rows without renumbering their keys', () => {
+    const {container, rerender} = render(listOf(rows(3)));
+    const keysBefore = [...container.querySelectorAll('[data-pkey]')].map(e =>
+      e.getAttribute('data-pkey'),
+    );
+    rerender(
+      listOf([
+        {id: 'older-a', text: 'a'},
+        {id: 'older-b', text: 'b'},
+        ...rows(3),
+      ]),
+    );
+    const keysAfter = [...container.querySelectorAll('[data-pkey]')].map(e =>
+      e.getAttribute('data-pkey'),
+    );
+    // Every message that was on screen still answers to the same key at a new
+    // index. Keying by index instead renumbers all of them, and the anchor
+    // then names a different message — which is what makes a prepend jump.
+    for (const k of keysBefore) {
+      expect(keysAfter).toContain(k);
+    }
+    expect(container.querySelector('[data-pkey="older-b"]')).not.toBeNull();
+    // Deliberately NOT asserting DOM node identity: a window that recomputes
+    // across the intermediate render may legitimately unmount and remount a
+    // row, and pinning that would be testing React's reconciliation, not this
+    // component's contract.
+  });
+
+  it('survives a gesture that ends with nothing rendered', () => {
+    vi.useFakeTimers();
+    try {
+      const el = scroller();
+      const {rerender} = attachedList(el, rows(5));
+      touch(el, 'touchstart', 1);
+      // The list empties under the finger — the flush has no row to read a
+      // reference frame off, and must fall back rather than throw.
+      rerender(
+        <ChatVirtualizer<Row>
+          data={[]}
+          keyExtractor={m => String(m.id)}
+          renderItem={({item}) => <span>{item.text}</span>}
+          estimatedItemSize={100}
+          scrollElement={el}
+        />,
+      );
+      touch(el, 'touchend', 0);
+      expect(() => {
+        act(() => {
+          vi.advanceTimersByTime(500);
+        });
+      }).not.toThrow();
+      el.remove();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
