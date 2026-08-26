@@ -168,9 +168,11 @@ const styles = stylex.create({
     transition: 'background-color 600ms ease',
     zIndex: 0,
   },
-  // Blurred aurora glow — fixed, in the same 1200px box as the cards so blobs
-  // and cards stay aligned. Capped to 100vw to avoid horizontal scroll. Blob
-  // centers sit under the card clusters; colors come from --aurora-* per slide.
+  // Blurred aurora glow — in the same 1200px box as the cards so blobs and
+  // cards stay aligned; pinned at >=1024px and scrolling away with the hero
+  // below that (see `position`). Capped to 100vw to avoid horizontal scroll.
+  // Blob centers sit under the card clusters; colors come from --aurora-* per
+  // slide.
   backdropGlow: {
     // Desktop: fixed, part of the pin-and-cover effect alongside heroContent
     // and the cards stage. Narrow: absolute within heroScope (position:
