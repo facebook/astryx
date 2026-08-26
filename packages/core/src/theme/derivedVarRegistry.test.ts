@@ -274,6 +274,10 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--_avatar-group-overlap',
   '--_codeblock-gutter-width',
   '--_tab-indicator-bottom',
+  // One term inside a composed translateY() on the toast's enter/exit
+  // transition, set per stack position. A theme author writes `transform`
+  // on a toast, not this one offset within it.
+  '--_toast-slide-y',
   // Hit-area outset on a ::after overlay, and whether that overlay is
   // generated at all — `inset` and `content` on a pseudo-element are not
   // properties a theme author sets on the component.

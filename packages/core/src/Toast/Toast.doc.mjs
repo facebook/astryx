@@ -70,6 +70,9 @@ export const docs = {
     targets: [
       {className: 'astryx-toast', visualProps: ['type']},
     ],
+    vars: [
+      {name: '--_toast-slide-y', description: 'Distance and direction a toast translates on the block axis as it enters and leaves. ToastViewport sets it from `position` so a stack slides towards the edge it is pinned to: negative for a top-pinned stack, positive for a bottom-pinned one.', default: 'var(--spacing-2)', private: true},
+    ],
   },
 
   usage: {

@@ -255,6 +255,10 @@ describe('Toast blur timer pause', () => {
 describe('ToastViewport region ARIA', () => {
   it('exposes the notifications region without a prohibited aria-modal', () => {
     renderViewport(<ShowToastButton />);
+    // The region only exists once the viewport is holding a toast.
+    act(() => {
+      fireEvent.click(screen.getByText('Trigger'));
+    });
     const region = screen.getByRole('region', {name: 'Notifications'});
     // aria-modal is only valid on role="dialog"/"alertdialog"; a region must
     // not declare it (axe: aria-allowed-attr).
@@ -484,5 +488,304 @@ describe('toast timer lifecycle (#3589)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('small-screen fit and safe areas (#5470)', () => {
+  function viewportEl(): HTMLElement {
+    // The viewport is the fixed container the toast wrappers live in.
+    const wrapper = document.querySelector('[data-toast-id]');
+    return (wrapper?.parentElement ??
+      document.querySelector<HTMLElement>('[role="region"]'))!;
+  }
+
+  it('reserves the device safe area on every edge', () => {
+    renderViewport(<ShowToastButton options={INFO_A} triggerLabel="Show" />);
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    const computed = window.getComputedStyle(viewportEl());
+    // StyleX emits the block longhands physically (padding-top/bottom); the
+    // block axis needs no direction handling, so that is equivalent.
+    expect(computed.paddingTop).toContain('safe-area-inset-top');
+    expect(computed.paddingBottom).toContain('safe-area-inset-bottom');
+    expect(computed.paddingInlineStart).toContain('safe-area-inset-left');
+    expect(computed.paddingInlineEnd).toContain('safe-area-inset-right');
+    // The design gutter is still the floor on a device with no insets.
+    expect(computed.paddingInlineStart).toContain('--spacing-4');
+    // Gutters have to count against the width, not add to it.
+    expect(computed.boxSizing).toBe('border-box');
+  });
+
+  it('swaps which physical inset each inline edge reads under RTL', () => {
+    renderViewport(<ShowToastButton options={INFO_A} triggerLabel="Show" />);
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    // env() insets are physical while the padding is logical, so the RTL rule
+    // has to point inline-start at the RIGHT inset (and vice versa) or the
+    // notch gutter lands on the wrong edge.
+    const rules = [...document.styleSheets]
+      .flatMap(sheet => {
+        try {
+          return [...sheet.cssRules].map(r => r.cssText);
+        } catch {
+          return [];
+        }
+      })
+      .filter(text => text.includes('[dir="rtl"]'));
+    expect(
+      rules.some(
+        text =>
+          text.includes('padding-inline-start') &&
+          text.includes('safe-area-inset-right'),
+      ),
+    ).toBe(true);
+    expect(
+      rules.some(
+        text =>
+          text.includes('padding-inline-end') &&
+          text.includes('safe-area-inset-left'),
+      ),
+    ).toBe(true);
+  });
+
+  it('sizes the toast against its container instead of a hardcoded 100vw gutter', () => {
+    renderViewport(<ShowToastButton options={INFO_A} triggerLabel="Show" />);
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    const toast = document.querySelector('[data-toast-id] [role="status"]')!;
+    const computed = window.getComputedStyle(toast);
+    expect(computed.maxWidth).toBe('100%');
+    expect(computed.maxWidth).not.toContain('vw');
+  });
+});
+
+describe('long and translated message content (#5470)', () => {
+  const LONG_URL: ToastOptions = {
+    body: 'https://example.com/reports/exports/aVeryLongUnbreakableIdentifier',
+  };
+
+  it('breaks a word with no break opportunity instead of overflowing', () => {
+    renderViewport(<ShowToastButton options={LONG_URL} triggerLabel="Show" />);
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    const body = screen.getByText(LONG_URL.body as string);
+    expect(window.getComputedStyle(body).overflowWrap).toBe('anywhere');
+  });
+
+  it('holds the trailing controls to one line box so they stay level with the first line', () => {
+    renderViewport(<ShowToastButton options={INFO_A} triggerLabel="Show" />);
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    const dismiss = screen.getByRole('button', {name: 'Dismiss notification'});
+    const endContent = dismiss.parentElement!;
+    const computed = window.getComputedStyle(endContent);
+    // One body line box — controls taller than a line overflow it centered,
+    // which lands them on the first line however far the body wraps.
+    expect(computed.height).toBe(
+      'calc(var(--text-body-size) * var(--text-body-leading))',
+    );
+    expect(computed.alignItems).toBe('center');
+  });
+});
+
+describe('stack gap and collapse (#5470)', () => {
+  it('separates stacked toasts by 8px, and drops the gap below the last one', () => {
+    renderViewport(
+      <>
+        <ShowToastButton options={INFO_A} triggerLabel="Show A" />
+        <ShowToastButton options={INFO_B} triggerLabel="Show B" />
+      </>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show A'));
+    });
+    act(() => {
+      fireEvent.click(screen.getByText('Show B'));
+    });
+    const wrappers = document.querySelectorAll<HTMLElement>('[data-toast-id]');
+    expect(wrappers).toHaveLength(2);
+    expect(window.getComputedStyle(wrappers[0]).paddingBottom).toBe(
+      'var(--spacing-2)',
+    );
+  });
+
+  it('collapses a dismissed toast rather than removing it outright', () => {
+    renderViewport(<ShowToastButton options={INFO_A} triggerLabel="Show" />);
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    const wrapper = document.querySelector<HTMLElement>('[data-toast-id]')!;
+    const id = wrapper.getAttribute('data-toast-id')!;
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    // Still mounted, animating its row down to nothing — the stack closes the
+    // space instead of jumping by the toast's height.
+    const dismissing = document.querySelector<HTMLElement>(
+      `[data-toast-id="${id}"]`,
+    )!;
+    const computed = window.getComputedStyle(dismissing);
+    expect(computed.gridTemplateRows).toBe('0fr');
+    expect(computed.paddingBottom).toBe('0px');
+    expect(computed.transitionProperty).toContain('grid-template-rows');
+    act(() => {
+      completeExit(id);
+    });
+    expect(document.querySelector(`[data-toast-id="${id}"]`)).toBeNull();
+  });
+
+  it('collapses a toast pushed past maxVisible instead of blinking it out', () => {
+    render(
+      <ToastViewport isTopLayer={false} maxVisible={2}>
+        <ShowToastButton options={INFO_A} triggerLabel="Show" />
+      </ToastViewport>,
+    );
+    for (let i = 0; i < 3; i++) {
+      act(() => {
+        fireEvent.click(screen.getByText('Show'));
+      });
+    }
+    // Three toasts, a window of two: the displaced one stays mounted for one
+    // collapse, and is inert while it has no room.
+    const wrappers = [
+      ...document.querySelectorAll<HTMLElement>('[data-toast-id]'),
+    ];
+    expect(wrappers).toHaveLength(3);
+    expect(wrappers[0]).toHaveAttribute('inert');
+    expect(wrappers[1]).not.toHaveAttribute('inert');
+    expect(window.getComputedStyle(wrappers[0]).gridTemplateRows).toBe('0fr');
+    // Its controls are out of reach while it is collapsed.
+    expect(
+      within(wrappers[0]).getByRole('button', {
+        name: 'Dismiss notification',
+        hidden: true,
+      }),
+    ).toBeInTheDocument();
+
+    // Room opens up: it comes back by expanding, not by popping in.
+    const lastId = wrappers[2].getAttribute('data-toast-id')!;
+    act(() => {
+      fireEvent.click(
+        within(wrappers[2]).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    act(() => {
+      completeExit(lastId);
+    });
+    const requeued = document.querySelector<HTMLElement>('[data-toast-id]')!;
+    expect(requeued).not.toHaveAttribute('inert');
+    expect(window.getComputedStyle(requeued).gridTemplateRows).toBe('1fr');
+  });
+
+  it('does not burn a queued toast\u2019s auto-hide timer while it is unseen', () => {
+    vi.useFakeTimers();
+    try {
+      const onHide = vi.fn();
+      render(
+        <ToastViewport isTopLayer={false} maxVisible={1}>
+          <ShowToastButton
+            options={{body: 'Queued', autoHideDuration: 3000, onHide}}
+            triggerLabel="Show queued"
+          />
+          <ShowToastButton options={INFO_B} triggerLabel="Show B" />
+        </ToastViewport>,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show queued'));
+      });
+      act(() => {
+        fireEvent.click(screen.getByText('Show B'));
+      });
+      // The first toast is now queued behind the second. Its timer must not
+      // run down while it is collapsed and out of sight.
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('entry direction follows the pinned edge (#5470)', () => {
+  it.each([
+    ['bottomEnd', 'var(--spacing-2)'],
+    ['bottomStart', 'var(--spacing-2)'],
+    ['topEnd', 'calc(var(--spacing-2) * -1)'],
+    ['topStart', 'calc(var(--spacing-2) * -1)'],
+  ] as const)('slides %s toasts from their own edge', (position, expected) => {
+    render(
+      <ToastViewport isTopLayer={false} position={position}>
+        <ShowToastButton options={INFO_A} triggerLabel="Show" />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    const viewport = screen.getByRole('region', {name: 'Notifications'});
+    // A top-pinned stack drops in from above (negative), a bottom-pinned one
+    // rises from below (positive). Toast reads this for both enter and exit.
+    expect(
+      window.getComputedStyle(viewport).getPropertyValue('--_toast-slide-y'),
+    ).toBe(expected);
+  });
+});
+
+describe('the notifications landmark (#5470)', () => {
+  it('is absent while the viewport holds no toasts', () => {
+    renderViewport(<ShowToastButton options={INFO_A} triggerLabel="Show" />);
+    // Nothing has been shown: an empty viewport must not add a permanent,
+    // empty "Notifications" landmark to the page.
+    expect(
+      screen.queryByRole('region', {name: 'Notifications'}),
+    ).not.toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    expect(
+      screen.getByRole('region', {name: 'Notifications'}),
+    ).toBeInTheDocument();
+
+    const id = document
+      .querySelector('[data-toast-id]')!
+      .getAttribute('data-toast-id')!;
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    act(() => {
+      completeExit(id);
+    });
+    expect(
+      screen.queryByRole('region', {name: 'Notifications'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('is not duplicated by a nested viewport', () => {
+    render(
+      <ToastViewport isTopLayer={false}>
+        <ToastViewport isTopLayer={false}>
+          <ShowToastButton options={INFO_A} triggerLabel="Show" />
+        </ToastViewport>
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    // The inner viewport shadows the outer one's context, so the outer can
+    // never hold a toast — and an empty viewport is no longer a landmark.
+    expect(screen.getAllByRole('region', {name: 'Notifications'})).toHaveLength(
+      1,
+    );
   });
 });

@@ -28,7 +28,28 @@ const styles = stylex.create({
     zIndex: 500,
     display: 'flex',
     flexDirection: 'column',
-    padding: spacingVars['--spacing-4'],
+    // The edge gutter has to clear the device's safe area — a notch, a home
+    // indicator, or a rounded corner — not just the 16px design gutter.
+    // env() insets are PHYSICAL, so the inline axis cannot just pair
+    // inline-start with inset-left: under `dir="rtl"` inline-start is the
+    // right edge and the gutter would be reserved on the wrong side. The
+    // property stays logical; the inset it reads is what swaps.
+    paddingBlockStart: `max(${spacingVars['--spacing-4']}, env(safe-area-inset-top, 0px))`,
+    paddingBlockEnd: `max(${spacingVars['--spacing-4']}, env(safe-area-inset-bottom, 0px))`,
+    paddingInlineStart: {
+      default: `max(${spacingVars['--spacing-4']}, env(safe-area-inset-left, 0px))`,
+      ':is([dir="rtl"] *)': `max(${spacingVars['--spacing-4']}, env(safe-area-inset-right, 0px))`,
+    },
+    paddingInlineEnd: {
+      default: `max(${spacingVars['--spacing-4']}, env(safe-area-inset-right, 0px))`,
+      ':is([dir="rtl"] *)': `max(${spacingVars['--spacing-4']}, env(safe-area-inset-left, 0px))`,
+    },
+    // Never wider than the screen, gutters included, so the toasts inside get
+    // a content box they can size themselves against (Toast: max-width: 100%).
+    // Stated rather than inherited: core's reset is :where()-scoped, so a
+    // consumer without it would otherwise get content-box here.
+    boxSizing: 'border-box',
+    maxInlineSize: '100%',
     pointerEvents: 'none',
     // Reset popover styles — the popover attribute puts us in the top
     // layer (above dialogs), but we don't want its default styles.
@@ -39,6 +60,13 @@ const styles = stylex.create({
     background: 'none',
     backgroundColor: 'transparent',
     overflow: 'visible',
+  },
+  // Which way a toast slides on enter and exit: towards the edge the stack is
+  // pinned to, so a top stack drops in from the top and a bottom stack rises
+  // from the bottom. Read by Toast's @starting-style and exiting styles.
+  slideFromBottom: {'--_toast-slide-y': spacingVars['--spacing-2']},
+  slideFromTop: {
+    '--_toast-slide-y': `calc(${spacingVars['--spacing-2']} * -1)`,
   },
   bottomEnd: {bottom: 0, insetInlineEnd: 0, alignItems: 'flex-end'},
   bottomStart: {bottom: 0, insetInlineStart: 0, alignItems: 'flex-start'},
@@ -76,10 +104,10 @@ const styles = stylex.create({
   // viewport's own padding. Which child that is flips with the flex direction
   // the position sets.
   toastWrapperGap: {
-    paddingBlockEnd: {default: spacingVars['--spacing-3'], ':last-child': 0},
+    paddingBlockEnd: {default: spacingVars['--spacing-2'], ':last-child': 0},
   },
   toastWrapperGapReversed: {
-    paddingBlockEnd: {default: spacingVars['--spacing-3'], ':first-child': 0},
+    paddingBlockEnd: {default: spacingVars['--spacing-2'], ':first-child': 0},
   },
   toastWrapperExiting: {
     gridTemplateRows: '0fr',
@@ -130,6 +158,10 @@ export interface ToastViewportProps {
  * Container that renders and manages toast notifications. Place at the root
  * of your app to enable useToast(). Toasts stack with enter/exit
  * animations and auto-promote to the CSS top layer.
+ *
+ * The stack's edge gutter clears the device safe area, and toasts slide in
+ * from — and back out towards — the edge `position` pins them to. The
+ * "Notifications" landmark is published only while a toast is on screen.
  *
  * @example
  * ```
@@ -325,7 +357,10 @@ export function ToastViewport({
       const nextNode = el.querySelector<HTMLElement>(
         `[data-toast-id="${target}"]`,
       );
-      const focusable = getFocusable(nextNode) ?? nextNode;
+      // A queued toast is rendered but collapsed and inert — it cannot take
+      // focus, so fall through to restoring the previously-focused element.
+      const candidate = nextNode?.hasAttribute('inert') ? null : nextNode;
+      const focusable = getFocusable(candidate) ?? candidate;
       if (focusable) {
         focusable.focus();
         return;
@@ -351,7 +386,14 @@ export function ToastViewport({
     [addToast, removeToast, findByUniqueID],
   );
 
-  const visibleToasts = toasts.slice(-maxVisible);
+  // Render one toast past the window. A toast pushed out by a newer one then
+  // collapses the way a dismissed one does, instead of blinking out and
+  // snapping the whole stack down by its height; by the time an even newer
+  // toast retires it from the DOM it is already at zero height, so that
+  // removal is invisible. It never leaves `toasts`, so a queued toast still
+  // comes back when room opens up — now by expanding rather than popping in.
+  const renderedToasts = toasts.slice(-(maxVisible + 1));
+  const queuedCount = Math.max(renderedToasts.length - maxVisible, 0);
   const insetStyle: React.CSSProperties = {};
   if (inset?.top) {
     insetStyle.top = inset.top;
@@ -432,38 +474,57 @@ export function ToastViewport({
   const gapStyle = isReversed
     ? styles.toastWrapperGapReversed
     : styles.toastWrapperGap;
+  const slideStyle = isReversed ? styles.slideFromTop : styles.slideFromBottom;
 
   return (
     <ToastContext value={contextValue}>
       {children}
       <div
         ref={viewportRef}
-        role="region"
-        aria-label={t('@astryx.toast.viewport')}
+        // Only a viewport that is actually holding a toast is a landmark. An
+        // empty one would put a permanent, empty "Notifications" region in
+        // every screen reader's landmark list — and since a nested viewport
+        // shadows the outer one's context for its subtree (the outer can then
+        // never receive a toast), it is also what stopped nested providers
+        // from advertising the same landmark twice.
+        role={hasToasts ? 'region' : undefined}
+        aria-label={hasToasts ? t('@astryx.toast.viewport') : undefined}
         tabIndex={-1}
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.
         popover={isTopLayer ? 'manual' : undefined}
-        {...mergeProps(stylex.props(styles.viewport, posStyle), {
+        {...mergeProps(stylex.props(styles.viewport, posStyle, slideStyle), {
           style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
         })}>
-        {visibleToasts.map(entry => {
+        {renderedToasts.map((entry, index) => {
           const o = entry.options;
           const type = o.type ?? 'info';
-          const isAutoHide = o.isAutoHide ?? (type === 'error' ? false : true);
+          // Beyond the visible window: collapsed to nothing and waiting for
+          // room. Its auto-hide timer must not burn down while it is unseen,
+          // which is what unmounting used to take care of.
+          const isQueued = index < queuedCount;
+          const isAutoHide = isQueued
+            ? false
+            : (o.isAutoHide ?? (type === 'error' ? false : true));
           const dur = o.autoHideDuration ?? 5000;
-          const isExiting = exitingIds.has(entry.id);
+          const isDismissing = exitingIds.has(entry.id);
+          const isExiting = isDismissing || isQueued;
           return (
             <div
               key={entry.id}
               data-toast-id={entry.id}
+              // Collapsed to zero height but still in the DOM — keep it out of
+              // the tab order and the accessibility tree until it is shown.
+              inert={isQueued ? true : undefined}
               {...stylex.props(
                 styles.toastWrapper,
                 gapStyle,
                 isExiting && styles.toastWrapperExiting,
               )}
               onTransitionEnd={
-                isExiting
+                // Only a *dismissed* toast unmounts when its collapse ends; a
+                // queued one has to stay mounted so it can expand again.
+                isDismissing
                   ? (e: React.TransitionEvent) => {
                       if (e.propertyName === 'grid-template-rows') {
                         handleExited(entry.id);

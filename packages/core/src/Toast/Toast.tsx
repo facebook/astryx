@@ -30,7 +30,13 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     borderRadius: radiusVars['--radius-container'],
     width: 400,
-    maxWidth: 'min(100%, calc(100vw - 32px))',
+    // Shrink to whatever the container allows instead of subtracting a
+    // hardcoded gutter from 100vw. Inside ToastViewport the container is the
+    // viewport's content box, which already reserves the edge gutter *and*
+    // the device's safe-area insets — so a notched phone in landscape, a
+    // custom `inset`, and a desktop scrollbar are all accounted for here
+    // without this file knowing any of the numbers.
+    maxWidth: '100%',
     boxShadow: shadowVars['--shadow-med'],
     opacity: 1,
     fontFamily: typographyVars['--font-family-body'],
@@ -43,9 +49,12 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0.01ms',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+    // Slide in from — and back out towards — the edge the stack is pinned to.
+    // ToastViewport sets --_toast-slide-y per position; the fallback keeps a
+    // standalone <Toast> (previews, docs) sliding up from below as before.
     '@starting-style': {
       opacity: 0,
-      transform: 'translateY(8px)',
+      transform: 'translateY(var(--_toast-slide-y, 8px))',
     },
   },
   variantDefault: {
@@ -63,17 +72,27 @@ const styles = stylex.create({
   content: {
     flex: 1,
     minWidth: 0,
+    // A URL, an ID, or a long compound word in a translated string has no
+    // break opportunity of its own and would otherwise spill past the toast's
+    // rounded edge. `anywhere` (not `break-word`) also shrinks the min-content
+    // width, so the flex row can actually reach the narrow size it is given.
+    overflowWrap: 'anywhere',
   },
   exiting: {
     opacity: 0,
-    transform: 'translateY(-8px)',
+    transform: 'translateY(var(--_toast-slide-y, 8px))',
   },
   endContent: {
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    marginBlock: `calc(${spacingVars['--spacing-1']} * -1)`,
+    // Reserve exactly one line box so the controls stay optically level with
+    // the FIRST line of the body when the message wraps. Controls taller than
+    // a line (the 28px icon button, an Undo button, a Badge) overflow this box
+    // symmetrically, which centers them on that line — where a plain
+    // flex-start alignment would hang them below it.
+    blockSize: `calc(${typeScaleDefaults['--text-body-size']} * ${typeScaleDefaults['--text-body-leading']})`,
     marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
 });
