@@ -62,12 +62,14 @@ import {
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
+/** @type {any} */ let _generateDataTokenDefaultsCSS = null;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
+  _generateDataTokenDefaultsCSS = coreTheme.generateDataTokenDefaultsCSS;
 } catch (e) {
   // Capture the reason so the theme action can surface a precise, actionable
   // error. We don't throw here: this module is imported eagerly by the CLI
@@ -1167,9 +1169,9 @@ export async function themeBuild(
       const componentInner = component.join('\n\n');
       const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
       // #3658: also emit attribute-specific rules so <Theme mode> can override color-scheme.
-      // Decided from the theme's own values, not the generated block: that
-      // block also carries the data-token defaults, which are light-dark()
-      // pairs, so a substring check on it would fire for every theme.
+      // Decided from the theme's own values, not the generated CSS: that CSS
+      // also carries the data-token defaults, which are light-dark() pairs, so
+      // a substring check on it would fire for every theme.
       const themeOwnValues = JSON.stringify([
         resolvedTheme.tokens ?? {},
         resolvedTheme.components ?? {},
@@ -1191,6 +1193,17 @@ export async function themeBuild(
     if (cssParts.length === 0) {
       logger.log('No overrides found — nothing to build.');
       return null;
+    }
+    // The data-token defaults are theme-independent and go in @layer
+    // astryx-base, below the theme's own overrides — the runtime path injects
+    // the same block (generateThemeCSS's `base`), and the two must not diverge.
+    // Placed after the reset block and before the theme block: a layer's order
+    // is fixed by where it is first declared, so emitting it anywhere else in
+    // the file would invert reset < astryx-base < astryx-theme for a consumer
+    // who imports this stylesheet on its own.
+    if (_generateDataTokenDefaultsCSS) {
+      const baseBlock = `@layer astryx-base {\n${_generateDataTokenDefaultsCSS()}\n}`;
+      cssParts.splice(prose.length > 0 ? 1 : 0, 0, baseBlock);
     }
     css = cssParts.join('\n\n') + '\n';
   }

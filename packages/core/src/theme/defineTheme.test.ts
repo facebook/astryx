@@ -117,10 +117,12 @@ describe('generateThemeCSS', () => {
   });
 
   it('declares the data palette for a theme that never mentions it', () => {
-    const theme = defineTheme({name: 'chartless'});
-    const css = generateThemeTestCSS(theme);
-    expect(css).toContain('--color-data-categorical-blue:');
-    expect(css).toContain('--color-data-gray-1:');
+    const {base, component} = generateThemeCSS(
+      defineTheme({name: 'chartless'}),
+    );
+    expect(base).toContain('--color-data-categorical-blue:');
+    expect(base).toContain('--color-data-gray-1:');
+    expect(component).not.toContain('--color-data-');
   });
 
   it('keeps the rest of the data palette when one data token is overridden', () => {
@@ -128,9 +130,12 @@ describe('generateThemeCSS', () => {
       name: 'brand-charts',
       tokens: {'--color-data-categorical-blue': '#00A3FF'},
     });
-    const css = generateThemeTestCSS(theme);
-    expect(css).toContain('--color-data-categorical-blue: #00A3FF;');
-    expect(css).toContain('--color-data-categorical-orange:');
+    const {base, component} = generateThemeCSS(theme);
+    expect(component).toContain('--color-data-categorical-blue: #00A3FF;');
+    // The siblings the theme did not name stay in the shared base block, so a
+    // nested theme inherits the parent's override instead of the default.
+    expect(component).not.toContain('--color-data-categorical-orange');
+    expect(base).toContain('--color-data-categorical-orange:');
     // Defaults reach the stylesheet without entering the theme's own tokens,
     // which are what `astryx theme build` reports as overrides.
     expect(theme.tokens['--color-data-categorical-orange']).toBeUndefined();

@@ -370,12 +370,12 @@ function PortfolioChart() {
           <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
             <stop
               offset="5%"
-              stopColor="var(--color-data-categorical-green, #22c55e)"
+              stopColor="var(--color-data-categorical-green, #0B991F)"
               stopOpacity={0.3}
             />
             <stop
               offset="95%"
-              stopColor="var(--color-data-categorical-green, #22c55e)"
+              stopColor="var(--color-data-categorical-green, #0B991F)"
               stopOpacity={0.05}
             />
           </linearGradient>
@@ -417,7 +417,7 @@ function PortfolioChart() {
         <Area
           type="linear"
           dataKey="value"
-          stroke="var(--color-data-categorical-green, #22c55e)"
+          stroke="var(--color-data-categorical-green, #0B991F)"
           strokeWidth={1.5}
           fill="url(#portfolioGradient)"
           dot={false}
@@ -434,7 +434,7 @@ function Sparkline({data, positive}: {data: number[]; positive: boolean}) {
   const chartData = data.map((v, i) => ({i, v}));
   const color = positive
     ? 'var(--color-data-categorical-green, #0B991F)'
-    : 'var(--color-data-categorical-red, #E5484D)';
+    : 'var(--color-data-categorical-red, #F5394F)';
   return (
     <ResponsiveContainer width="100%" height={40}>
       <LineChart
@@ -503,7 +503,7 @@ function TrendSparkline({data, positive}: {data: number[]; positive: boolean}) {
   const chartData = data.map((v, i) => ({i, v}));
   const color = positive
     ? 'var(--color-data-categorical-green, #0B991F)'
-    : 'var(--color-data-categorical-red, #E5484D)';
+    : 'var(--color-data-categorical-red, #F5394F)';
   return (
     <ResponsiveContainer width="100%" height={24}>
       <LineChart

@@ -99,6 +99,16 @@ ThemeNestingContext.displayName = 'ThemeNestingContext';
 const injectedThemes = new Set<string>();
 
 /**
+ * How many mounted `Theme`s are relying on the injected data-token defaults.
+ *
+ * The defaults are one document-wide `:root` block, shared by every theme, so
+ * they are injected once and removed only when the last unbuilt `Theme`
+ * unmounts — tearing them down with whichever provider happened to inject them
+ * would strip the palette from the providers still mounted.
+ */
+let dataTokenDefaultsRefCount = 0;
+
+/**
  * Hook to inject theme CSS into the document.
  * Built themes (from `astryx theme build`) skip injection — their CSS
  * is in a separate file imported by the consumer.
@@ -112,62 +122,84 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
       return;
     }
 
+    const {prose, component, base} = generateThemeCSS(theme);
+    const cleanups: (() => void)[] = [];
+
+    // Data token defaults go into @layer astryx-base, where StyleX puts the
+    // core token defaults, so a theme's own `--color-data-*` outranks them by
+    // layer. Appended (never prepended) so it cannot register `astryx-base`
+    // ahead of `reset` and invert the layer order.
+    if (base) {
+      if (dataTokenDefaultsRefCount++ === 0) {
+        const baseStyle = document.createElement('style');
+        baseStyle.setAttribute(dataAttr('theme-base'), '');
+        baseStyle.textContent = `@layer astryx-base {\n${base}\n}`;
+        document.head.appendChild(baseStyle);
+      }
+      cleanups.push(() => {
+        if (--dataTokenDefaultsRefCount === 0) {
+          document.querySelector(`style[${dataAttr('theme-base')}]`)?.remove();
+        }
+      });
+    }
+
     const themeKey = `astryx-theme-${theme.name}`;
-    if (injectedThemes.has(themeKey)) {
-      return;
+    if (!injectedThemes.has(themeKey)) {
+      // One-time perf hint per theme
+      warnOnce(
+        `theme-injection:${theme.name}`,
+        'Theme',
+        `"${theme.name}" is using runtime style injection. ` +
+          `For better performance, use the pre-built theme:\n\n` +
+          `  import {${theme.name}Theme} from '@astryxdesign/theme-${theme.name}/built';\n` +
+          `  import '@astryxdesign/theme-${theme.name}/theme.css';\n\n` +
+          `For custom themes, run \`npx @astryxdesign/cli theme build <file>\` to generate ` +
+          `the built artifacts.`,
+      );
+
+      if (prose || component) {
+        // Prose defaults go into @layer reset — lowest priority, scoped to
+        // the theme region. Any class-based style (StyleX, .xds-*) wins.
+        if (prose) {
+          const proseStyle = document.createElement('style');
+          proseStyle.setAttribute(dataAttr('theme-prose'), theme.name);
+          proseStyle.setAttribute(dataAttr('id'), id);
+          proseStyle.textContent = `@layer reset {\n${prose}\n}`;
+          document.head.appendChild(proseStyle);
+        }
+
+        // Component overrides go into @layer astryx-theme — above StyleX layers
+        // so themes can intentionally restyle components.
+        if (component) {
+          const compStyle = document.createElement('style');
+          compStyle.setAttribute(dataAttr('theme'), theme.name);
+          compStyle.setAttribute(dataAttr('id'), id);
+          compStyle.textContent = `@layer astryx-theme {\n${component}\n}`;
+          document.head.appendChild(compStyle);
+        }
+
+        injectedThemes.add(themeKey);
+
+        cleanups.push(() => {
+          // Remove both prose and component style tags (matched by the new
+          // astryx id marker, which is always written above).
+          const proseEl = document.querySelector(
+            `style[${dataAttr('theme-prose')}="${theme.name}"][${dataAttr('id')}="${id}"]`,
+          );
+          const compEl = document.querySelector(
+            `style[${dataAttr('theme')}="${theme.name}"][${dataAttr('id')}="${id}"]`,
+          );
+          proseEl?.remove();
+          compEl?.remove();
+          injectedThemes.delete(themeKey);
+        });
+      }
     }
-
-    // One-time perf hint per theme
-    warnOnce(
-      `theme-injection:${theme.name}`,
-      'Theme',
-      `"${theme.name}" is using runtime style injection. ` +
-        `For better performance, use the pre-built theme:\n\n` +
-        `  import {${theme.name}Theme} from '@astryxdesign/theme-${theme.name}/built';\n` +
-        `  import '@astryxdesign/theme-${theme.name}/theme.css';\n\n` +
-        `For custom themes, run \`npx @astryxdesign/cli theme build <file>\` to generate ` +
-        `the built artifacts.`,
-    );
-
-    const {prose, component} = generateThemeCSS(theme);
-    if (!prose && !component) {
-      return;
-    }
-
-    // Prose defaults go into @layer reset — lowest priority, scoped to
-    // the theme region. Any class-based style (StyleX, .xds-*) wins.
-    if (prose) {
-      const proseStyle = document.createElement('style');
-      proseStyle.setAttribute(dataAttr('theme-prose'), theme.name);
-      proseStyle.setAttribute(dataAttr('id'), id);
-      proseStyle.textContent = `@layer reset {\n${prose}\n}`;
-      document.head.appendChild(proseStyle);
-    }
-
-    // Component overrides go into @layer astryx-theme — above StyleX layers
-    // so themes can intentionally restyle components.
-    if (component) {
-      const compStyle = document.createElement('style');
-      compStyle.setAttribute(dataAttr('theme'), theme.name);
-      compStyle.setAttribute(dataAttr('id'), id);
-      compStyle.textContent = `@layer astryx-theme {\n${component}\n}`;
-      document.head.appendChild(compStyle);
-    }
-
-    injectedThemes.add(themeKey);
 
     return () => {
-      // Remove both prose and component style tags (matched by the new
-      // astryx id marker, which is always written above).
-      const proseEl = document.querySelector(
-        `style[${dataAttr('theme-prose')}="${theme.name}"][${dataAttr('id')}="${id}"]`,
-      );
-      const compEl = document.querySelector(
-        `style[${dataAttr('theme')}="${theme.name}"][${dataAttr('id')}="${id}"]`,
-      );
-      proseEl?.remove();
-      compEl?.remove();
-      injectedThemes.delete(themeKey);
+      for (const cleanup of cleanups) {
+        cleanup();
+      }
     };
   }, [theme, id]);
 }
