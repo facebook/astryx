@@ -109,7 +109,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Children mode: compose the table yourself from TableHeader / TableBody / TableFooter, each holding TableRow and TableCell, instead of using data-driven rendering. The children are passed straight to the <table>, so the section is yours to supply — a TableRow placed directly in Table emits <table><tr>, which is invalid HTML and mismatches on hydration (the parser inserts an implied <tbody> for server-rendered markup; React does not on the client). Data-driven mode renders the sections for you.',
+      description: 'Children mode: compose the table yourself from TableHeader / TableBody / TableFooter, each holding TableRow and TableCell, instead of using data-driven rendering. The children are passed straight to the <table>, so the section is yours to supply. A TableRow placed directly in Table emits <table><tr>, which is invalid HTML and mismatches on hydration (the parser inserts an implied <tbody> for server-rendered markup; React does not on the client). Data-driven mode renders the sections for you.',
     },
     {
       name: 'xstyle',
@@ -189,7 +189,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
       { guidance: true, description: 'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.' },
-      { guidance: true, description: 'Children mode: wrap rows in TableHeader/TableBody/TableFooter. <table> cannot hold a <tr> directly — parser adds an implied <tbody> for SSR markup, React does not on the client, so unwrapped rows mismatch on hydration.' },
+      { guidance: true, description: 'Children mode: wrap rows in TableHeader/TableBody/TableFooter. <table> cannot hold a <tr> directly; the parser adds an implied <tbody> for SSR markup, React does not on the client, so unwrapped rows mismatch on hydration.' },
       { guidance: true, description: 'Set explicit width on every column via proportional() or pixel(). proportional(1) = equal flex w/ 120px min preventing collapse on narrow viewports. Omitting width skips the minimum.' },
       { guidance: true, description: 'Data-driven API is RSC-safe: proportional(), pixel(), column defs w/o function props work in Server Components. renderCell (any function prop) requires a "use client" wrapper.' },
       { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
