@@ -123,9 +123,17 @@ const styles = stylex.create({
     },
     height: 'auto',
   },
-  // Sticky, zero-height layer hosting the overlap cards so they pin with the
-  // hero and don't intercept clicks.
-  cardsLayer: {
+  // The hero's pinned layer: the aurora glow rides here with the overlap
+  // cards, so both pin with the hero and don't intercept clicks.
+  //
+  // Sticky, not fixed. Sticky pins to the viewport exactly like fixed but is
+  // bounded by its container, so the layer stops existing on screen once the
+  // hero band has scrolled by and can never paint into the strip an overscroll
+  // opens past the end of the page. Zero height is what makes that work: a
+  // sticky box only stays pinned for the slack between its own height and its
+  // container's, so a zero-height layer gets the whole band to travel, and the
+  // visuals inside it are positioned absolutely against it.
+  pinLayer: {
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
     height: 0,
@@ -169,26 +177,24 @@ const styles = stylex.create({
     zIndex: 0,
   },
   // Blurred aurora glow — in the same 1200px box as the cards so blobs and
-  // cards stay aligned; pinned at >=1024px and scrolling away with the hero
-  // below that (see `position`). Capped to 100vw to avoid horizontal scroll.
-  // Blob centers sit under the card clusters; colors come from --aurora-* per
-  // slide.
+  // cards stay aligned; it rides pinLayer with them. Capped to 100vw to avoid
+  // horizontal scroll. Blob centers sit under the card clusters; colors come
+  // from --aurora-* per slide.
   backdropGlow: {
     // Desktop: fixed, part of the pin-and-cover effect alongside heroContent
-    // and the cards stage. Narrow: absolute within heroScope (position:
-    // relative), so it scrolls away with the hero instead of staying pinned
-    // for the whole page — a fixed glow below 1024px reached past the footer
-    // into the bottom-overscroll gap. That exposure is what the app-global
-    // `overscroll-behavior-y: none` in globals.css was suppressing, at the
-    // cost of pull-to-refresh on every route on mobile; bounding the glow
-    // here is what lets that rule scope to desktop widths (#5392).
+    // and the cards stage. Narrow: absolute against pinLayer, which is sticky
+    // and so pins this exactly as `fixed` did while the hero is on screen —
+    // but bounded, so the glow can't reach past the footer into the
+    // bottom-overscroll gap. That exposure is what the app-global
+    // `overscroll-behavior-y: none` was suppressing at the cost of
+    // pull-to-refresh on every mobile route; bounding the glow is what lets
+    // the rule scope to desktop widths (#5392).
     position: {
       default: 'absolute',
       '@media (min-width: 1024px)': 'fixed',
     },
-    // heroScope already starts below the header (it's the sibling after
-    // navBackdrop in document flow), so the absolute case needs no offset;
-    // only the fixed case has to clear the header itself.
+    // pinLayer already carries the header offset, so the absolute case needs
+    // none; only the fixed case has to clear the header itself.
     top: {
       default: 0,
       '@media (min-width: 1024px)': 'var(--appshell-header-height, 0px)',
@@ -451,19 +457,19 @@ export function HeroReelCards() {
     <Theme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
       <div {...stylex.props(styles.themeFill)} aria-hidden="true" />
       <div {...stylex.props(styles.navBackdrop)} aria-hidden="true" />
-      <div
-        aria-hidden="true"
-        {...stylex.props(
-          styles.backdropGlow,
-          dynamic.aurora(
-            active.aurora.left,
-            active.aurora.center,
-            active.aurora.right,
-          ),
-        )}
-      />
-      {/* Floating cards layer */}
-      <div {...stylex.props(styles.cardsLayer)}>
+      {/* Pinned layer: aurora glow underneath, floating cards over it. */}
+      <div {...stylex.props(styles.pinLayer)}>
+        <div
+          aria-hidden="true"
+          {...stylex.props(
+            styles.backdropGlow,
+            dynamic.aurora(
+              active.aurora.left,
+              active.aurora.center,
+              active.aurora.right,
+            ),
+          )}
+        />
         <HeroFloatingCards content={active.content} mounted={shown} />
       </div>
     </Theme>
