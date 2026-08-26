@@ -75,6 +75,32 @@ const maxShots = flag('max-shots') ? Number(flag('max-shots')) : Infinity;
 const storyPackages = (flag('story-packages') ?? config.stableStoryPackages.join(','))
   .split(',')
   .filter(Boolean);
+/** A trusted, exact shot list used only to recapture an accepted merged result. */
+const planFile = flag('plan-file');
+
+function readExactPlan(file) {
+  const shots = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
+  if (!Array.isArray(shots) || shots.length > 5000) {
+    throw new Error('Exact visual plan must contain at most 5000 trusted shots.');
+  }
+  const keys = new Set();
+  for (const shot of shots) {
+    if (
+      !/^[A-Za-z0-9._-]{1,240}$/.test(shot?.key ?? '') ||
+      typeof shot.storyId !== 'string' ||
+      !shot.storyId ||
+      typeof shot.theme !== 'string' ||
+      !shot.theme ||
+      !['light', 'dark'].includes(shot.mode) ||
+      !Array.isArray(shot.reasons)
+    ) {
+      throw new Error(`Exact visual plan contains an invalid shot: ${JSON.stringify(shot)}`);
+    }
+    if (keys.has(shot.key)) throw new Error(`Exact visual plan repeats ${shot.key}.`);
+    keys.add(shot.key);
+  }
+  return shots;
+}
 
 /**
  * Which stories the scout needs to look at: every story of a component some
@@ -96,6 +122,7 @@ function storiesToScout(stories, targets, themeOverrides) {
 
 /** @returns {Promise<import('./lib/plan.mjs').Shot[]>} */
 async function plan() {
+  if (planFile) return readExactPlan(planFile);
   const [targets, themeOverrides] = await Promise.all([
     loadThemingTargets(REPO_ROOT),
     loadThemeOverrides(REPO_ROOT, config.probeTheme),
@@ -210,9 +237,23 @@ async function check() {
       status: 'skipped',
       generatedAt: new Date().toISOString(),
       reason: `${shots.length} shots exceeds the ${maxShots}-shot budget${components.length ? ` (${components.length} components touched)` : ''} — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
+      context: {
+        sha: process.env.GITHUB_SHA ?? null,
+        headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
+        baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
+        ref: process.env.GITHUB_REF ?? null,
+        runId: process.env.GITHUB_RUN_ID ?? null,
+        runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+        tiers,
+        scoped: components.length > 0,
+        components,
+      },
       counts: {total: shots.length, unchanged: 0, changed: 0, added: 0, removed: 0, failed: 0},
       components,
       changes: [],
+      added: [],
+      removed: [],
+      failures: [],
     };
     fs.mkdirSync(outDir, {recursive: true});
     fs.writeFileSync(path.join(outDir, 'verdict.json'), `${JSON.stringify(verdict, null, 2)}\n`);
