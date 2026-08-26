@@ -14,6 +14,7 @@ import {
 } from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
 import {Heading} from '@astryxdesign/core/Text';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {
   colorVars,
   spacingVars,
@@ -467,6 +468,54 @@ export const ColorVariants: Story = {
         </div>
       ))}
     </div>
+  ),
+};
+
+/**
+ * `brand` is not one of Card's variants. The theme adds it: the module
+ * augmentation widens `CardVariantMap` so `variant="brand"` type-checks, and
+ * `card['variant:brand']` supplies the paint. Card itself has no style for the
+ * value, so it falls through to base styles and the theme rule is what shows —
+ * here a dashed accent border no built-in variant can produce.
+ */
+declare module '@astryxdesign/core/Card' {
+  interface CardVariantMap {
+    brand: true;
+  }
+}
+
+const brandVariantTheme = defineTheme({
+  name: 'card-brand-variant-demo',
+  components: {
+    card: {
+      'variant:brand': {
+        backgroundColor: 'var(--color-background-blue)',
+        borderWidth: 'var(--border-width)',
+        borderStyle: 'dashed',
+        borderColor: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemeAddedVariant: Story = {
+  render: () => (
+    <Theme theme={brandVariantTheme}>
+      <div {...stylex.props(styles.storyWrapper)}>
+        <div>
+          <h4 {...stylex.props(styles.heading)}>brand (added by the theme)</h4>
+          <Card width={200} variant="brand">
+            <p {...stylex.props(styles.text)}>brand</p>
+          </Card>
+        </div>
+        <div>
+          <h4 {...stylex.props(styles.heading)}>default (built in)</h4>
+          <Card width={200}>
+            <p {...stylex.props(styles.text)}>default</p>
+          </Card>
+        </div>
+      </div>
+    </Theme>
   ),
 };
 

@@ -181,6 +181,11 @@ const selectedStyleForVariant = (variant: CardVariant) => {
       return styles.selectedTeal;
     case 'yellow':
       return styles.selectedYellow;
+    // CardVariant is open — a theme can add a variant this switch has never
+    // seen, and it still has to look selected. Falls back to the accent ring
+    // the neutral variants use.
+    default:
+      return styles.selected;
   }
 };
 

@@ -3,7 +3,7 @@
 /**
  * @file Card.tsx
  * @input Uses container utility, StyleX
- * @output Exports Card component and CardProps
+ * @output Exports Card component, CardProps, CardVariant types
  * @position Core card container component
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -28,13 +28,16 @@ import type {Elevation, SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import type {CardVariantMap} from './index';
 
 // =============================================================================
 // Variant type
 // =============================================================================
 
 /**
- * Background color variant for Card.
+ * Background color variant for Card, derived from CardVariantMap.
+ * Extensible via module augmentation of CardVariantMap.
+ *
  * - `default`: standard card background with visible border
  * - `transparent`: no background, no visible border — for grouping content without visual weight
  * - `muted`: subtle muted background for de-emphasised cards
@@ -46,20 +49,7 @@ import {themeProps} from '../utils/themeProps';
  * keeping content geometry faithful to the spacing scale and identical to the
  * borderless variants. Themes can override borderWidth/borderColor.
  */
-export type CardVariant =
-  | 'default'
-  | 'transparent'
-  | 'muted'
-  | 'blue'
-  | 'cyan'
-  | 'gray'
-  | 'green'
-  | 'orange'
-  | 'pink'
-  | 'purple'
-  | 'red'
-  | 'teal'
-  | 'yellow';
+export type CardVariant = keyof CardVariantMap;
 
 // =============================================================================
 // Styles
@@ -295,6 +285,8 @@ export function Card({
         themeProps('card', {variant, elevation}),
         stylex.props(
           styles.card,
+          // A theme's own variant is not a key here: the lookup is undefined,
+          // StyleX drops it, and the theme rule paints over base styles.
           variantStyles[variant],
           elevationStyles[elevation],
           hasFixedHeight && styles.scrollable,
