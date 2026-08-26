@@ -39,6 +39,7 @@ import {
 import {ChatVirtualizer, type ChatVirtualizerHandle} from '@astryxdesign/lab';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -136,6 +137,25 @@ function makeCorpus(count: number): DemoMessage[] {
       }
       out.push({id: `m-${i}`, role: 'assistant', text});
     }
+  }
+  return out;
+}
+
+// Older history arrives with ids of its own, never a renumbering of the ones
+// already on screen — the contract identity anchoring rests on. Keying by array
+// index instead would rename every message the reader is looking at.
+function makeOlderPage(page: number, count: number): DemoMessage[] {
+  const out: DemoMessage[] = [];
+  for (let i = 0; i < count; i++) {
+    const isUser = i % 2 === 0;
+    out.push({
+      id: `older-${page}-${i}`,
+      role: isUser ? 'user' : 'assistant',
+      text: isUser
+        ? `Earlier question ${i / 2 + 1} from page ${page + 1} of history.`
+        : REPLY_SENTENCES[(page + i) % REPLY_SENTENCES.length] +
+          (i % 5 === 1 ? `\n\n${CODE_FENCE}\n` : ''),
+    });
   }
   return out;
 }
@@ -311,6 +331,8 @@ function VirtScrollButton({
 // comparison is a story switch, not a control that turns the subject off.
 // =============================================================================
 
+const OLDER_PAGE_SIZE = 300;
+
 const STREAM_SPEEDS = {
   relaxed: {intervalMs: 50, minChunk: 1, maxChunk: 3},
   default: {intervalMs: 25, minChunk: 2, maxChunk: 6},
@@ -336,6 +358,7 @@ function TranscriptDemo({
     makeCorpus(messageCount),
   );
   const [isStreaming, setIsStreaming] = useState(false);
+  const olderPages = useRef(0);
   const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const virtApiRef = useRef<ChatVirtualizerHandle | null>(null);
   const scrollElRef = useRef<HTMLElement | null>(null);
@@ -348,8 +371,16 @@ function TranscriptDemo({
       clearInterval(streamRef.current);
       setIsStreaming(false);
       setMessages(makeCorpus(messageCount));
+      olderPages.current = 0;
     }
   }, [messageCount]);
+
+  // Scroll to the top, then load a page: the row you are reading must not move
+  // while a few hundred unmeasured messages are inserted above it.
+  const loadOlder = useCallback(() => {
+    const page = olderPages.current++;
+    setMessages(prev => [...makeOlderPage(page, OLDER_PAGE_SIZE), ...prev]);
+  }, []);
   useEffect(() => () => clearInterval(streamRef.current), []);
 
   // startAtTop demos the OTHER half of the imperative API: anchorToKey pins
@@ -417,6 +448,13 @@ function TranscriptDemo({
             : 'Same corpus and stream, no virtualization — send a message ' +
               'at 3000 rows and watch the fps counter.'}
         </Text>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={loadOlder}
+          label={`Load ${OLDER_PAGE_SIZE} older messages`}>
+          {`Load ${OLDER_PAGE_SIZE} older`}
+        </Button>
         <StatusPill
           total={messages.length}
           virtualized={virtualized}

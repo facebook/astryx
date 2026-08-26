@@ -95,6 +95,14 @@ export interface ChatVirtualizerProps<T> {
   /**
    * Static estimate (px) for unmeasured rows, or a function — a function is
    * authoritative and never overridden by the running averages.
+   *
+   * Bias it LOW. The two directions are not symmetric: an estimate that is too
+   * small makes content grow as it measures, which extends the scroll range
+   * below you and leaves your position valid; one that is too large makes it
+   * shrink, and the browser then clamps scrollTop into a range that just got
+   * smaller — a position loss nothing can undo. The default errs small on
+   * purpose, and raising it past typical row height is the one setting that
+   * can make a drag look broken.
    */
   estimatedItemSize?: number | ((item: T, index: number) => number);
   /**
@@ -246,19 +254,15 @@ export function ChatVirtualizer<T>(
   const rafRetry = React.useRef<number | null>(null);
   const prevScrollerRef = React.useRef<HTMLElement | null>(null);
   // ---- Touch write-gate --------------------------------------------------
-  // While a touch gesture owns the viewport (finger down, plus the settle
-  // window after lift-off), the machinery does not write scrollTop AT ALL.
-  // Two measured failures forced this: near the bottom, per-event restores
-  // erase a slow drag's displacement faster than it can escape the re-engage
-  // zone (599/600 frames reverted — a hard deadlock, identical in Blink and
-  // WebKit); and a write during momentum cancels the fling. Corrections are
-  // not accumulated as a ledger — the reference frame is declarative, so the
-  // post-gesture flush is just one ordinary syncAndRestore from the
-  // re-stated mode. Nothing stale can replay.
+  // While a gesture owns the viewport (finger down, plus the settle window
+  // after lift-off) the machinery writes no scrollTop at all: near the bottom,
+  // per-event restores erase a slow drag's displacement faster than it
+  // accumulates, and a write during momentum cancels the fling. Nothing is
+  // queued as a ledger — the reference frame is declarative, so the flush is
+  // one ordinary syncAndRestore from the re-stated mode.
   //
-  // Phases: 'idle' → 'down' (finger on glass) → 'settling' (lifted, momentum
-  // may still be running) → 'idle'. One value, not a pair of booleans: the
-  // gate is exactly "not idle", and no combination can contradict itself.
+  // Phases: 'idle' → 'down' → 'settling' (lifted, momentum may still run) →
+  // 'idle'. One value, not two booleans: the gate is exactly "not idle".
   const gesturePhase = React.useRef<'idle' | 'down' | 'settling'>('idle');
   const touchSettleTimer = React.useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -273,17 +277,14 @@ export function ChatVirtualizer<T>(
   // distance the stream itself had grown, and silently disengage.
   const gestureMoved = React.useRef(false);
   const gestureHeld = (): boolean => gesturePhase.current !== 'idle';
-  // Spacer-side compensation while the write-gate holds. Rows measuring in
-  // during the drag land their (real - estimate) deltas in the geometry, and
-  // with scrollTop untouchable the content would drift under the finger
-  // (measured: ±46-90px per mount batch, a visible crawl through cold
-  // history). Document flow gives us a second knob absolute-positioned
-  // virtualizers don't have: the TOP SPACER absorbs the delta instead — each
-  // pass re-anchors the row at the viewport top across the recompute and
-  // rolls the difference into this adjustment, so every on-screen position is
-  // invariant with zero scrollTop writes. The flush folds the accumulated
-  // adjustment into the adopted anchor and zeroes it in the same atomic pass
-  // (spacers + one scrollTop write, same task, no painted transient).
+  // Spacer-side compensation while the gate holds. Rows measuring in during a
+  // drag land their (real - estimate) deltas in the geometry, and with
+  // scrollTop untouchable the content would crawl under the finger. Document
+  // flow gives a second knob a transform-positioned virtualizer lacks: the TOP
+  // SPACER absorbs the delta instead — each pass re-anchors the row at the
+  // viewport top across the recompute and rolls the difference in here, so
+  // on-screen positions stay invariant with zero scrollTop writes. The flush
+  // folds it into the adopted anchor and zeroes it in the same atomic pass.
   const gestureAdj = React.useRef(0);
   // Convergence protection (generalized from a one-shot landing flag):
   // whenever a declarative target is set (mount landing, or any imperative
@@ -305,19 +306,14 @@ export function ChatVirtualizer<T>(
 
   // Running average of everything measured so far. A static estimate that
   // undershoots makes the bottom RECEDE while scrolling toward it: each cold
-  // row that mounts adds (real - est) px of newly discovered distance, and a
-  // mouse wheel at ~120px/click cannot outrun a 158px/row discovery rate —
-  // measured as "wheel cannot reach the bottom; trackpad (faster) can".
-  // Once samples exist they price unmeasured rows, so mounting a cold row
-  // discovers ~nothing. An estimatedItemSize FUNCTION is authoritative and
-  // never overridden (the consumer knows more than an average does).
-  // Raw averages accumulate continuously — one bucket per item type when
-  // getItemType is given, plus a global cold-start bucket — but the
-  // EFFECTIVE price is gated (see effectiveAvg): hysteresis >10%, never
-  // while converging, only in scroll-quiet, and every move marks the
-  // geometry dirty. Each gate has a measured failure behind it (landings
-  // chasing a moving sum 200px off; 1.1% repricing jitter at fast scroll; a
-  // deterministic 44px anchor miss without the dirty mark).
+  // row that mounts adds (real - est) px of newly discovered distance, faster
+  // than a mouse wheel can close it. Once samples exist they price unmeasured
+  // rows, so mounting a cold row discovers ~nothing. An estimatedItemSize
+  // FUNCTION is authoritative and never overridden — the consumer knows more
+  // than an average does. Averages accumulate per item type when getItemType
+  // is given, plus a global cold-start bucket, but the EFFECTIVE price is
+  // gated: hysteresis, never while converging, only in scroll-quiet, and every
+  // move marks the geometry dirty (see effectiveAvg).
   const bucketsRef = React.useRef(new Map<string, Bucket>());
   const typeByKey = React.useRef(new Map<string, string>());
   const bucket = (t: string): Bucket => {
@@ -495,21 +491,12 @@ export function ChatVirtualizer<T>(
     };
   };
 
-  // The same reference frame, MEASURED instead of derived.
-  //
-  // anchorAt computes viewportOffset as `offsets[idx] - y`, which is exactly
-  // the anchored row's painted top — but only while painted == model +
-  // gestureAdj holds. The top-spacer clamp breaks that: at the very top of the
-  // list there is nothing above to absorb a negative adjustment into, so the
-  // spacer stops at 0 while gestureAdj keeps its full value, and every derived
-  // position is wrong by the difference. Reading a rendered row's real rect
-  // skips the broken map: viewportOffset is DEFINED as where the row actually
-  // is, so the restore reproduces the current picture by construction, and
-  // scrollTop is free to move as far as it needs to.
-  //
-  // Same row anchorAt would pick — the one covering the viewport top — so this
-  // is a drop-in, not a change of semantics. Returns null when no row is
-  // rendered, and the caller falls back to the derived form.
+  // The same reference frame, MEASURED instead of derived. anchorAt's
+  // `offsets[idx] - y` IS the anchored row's painted top, but only while
+  // painted == model + gestureAdj holds — and the top spacer clamps at 0 when
+  // there is nothing above to absorb into, leaving every derived position
+  // wrong by the difference. Reading the row's real rect skips the broken map.
+  // Same row anchorAt would pick; null when nothing is rendered.
   const anchorFromPaint = (el: HTMLElement): AnchorMode | null => {
     const g = geo.current;
     const box = el.getBoundingClientRect();
@@ -765,22 +752,12 @@ export function ChatVirtualizer<T>(
     prevData.current = data;
     geoChanged.current = true;
     // HEAD CHANGE (loading older history, or trimming it). Rows arrived above
-    // everything currently placed, so the restore owes a correction the size
-    // of the whole new page — hundreds of thousands of px, paid across several
-    // passes as those rows measure in. That is a CONVERGENCE, and treating it
-    // as one is what stops the live-anchor refresh from re-deriving the anchor
-    // from a scrollTop that is still mid-flight.
-    //
-    // Measured before this: loading 300 older rows from scrollTop 0 slipped
-    // the view one row in 7 runs of 12, permanently. The refresh fired at
-    // scrollTop 76147 of a ~127856 target and rewrote the anchor to a row in
-    // the newly loaded page — after which the list held the wrong row
-    // faithfully forever. `userScrolled` is sticky and the user must scroll to
-    // reach the top, so the refresh was armed the whole time.
-    //
-    // Safe against wedging: every gesture path already clears `converging`
-    // (wheel, touch, and the dead-anchor fallback), so a user who scrolls
-    // takes the viewport back immediately.
+    // everything placed, so the restore owes a correction the size of the whole
+    // page, paid across several passes as those rows measure in. That is a
+    // CONVERGENCE, and treating it as one stops the live-anchor refresh from
+    // re-deriving the anchor from a scrollTop still mid-flight — which
+    // otherwise freezes the intermediate position as the new anchor, for good.
+    // Cannot wedge: every gesture path already clears `converging`.
     const head = data.length > 0 ? String(keyExtractor(data[0], 0)) : null;
     if (
       head !== null &&
@@ -972,19 +949,13 @@ export function ChatVirtualizer<T>(
     }
     prevScrollerRef.current = el;
     // Intent signals break convergence early: wheel/touchstart are USER INPUT,
-    // unlike scroll events (which mix in our own writes and clamps).
+    // unlike scroll events, which mix in our own writes and clamps.
     //
-    // Wheel-up additionally unpins follow IMMEDIATELY (the semantic one
-    // production transcript virtualizer ships), because the scroll-event path
-    // cannot be trusted for this during a stream: a follow write can land
-    // between the browser moving scrollTop and our handler reading it, so
-    // the user's own upward movement reads back as our echo and the
-    // disengage is swallowed (measured: a scroll-up during an active stream
-    // stayed pinned, the viewport snapped straight back to the bottom).
-    // Acting on the wheel event itself needs no scrollTop read, so there is
-    // no window to race. Re-engaging stays position-based — dist <=
-    // endThreshold at a user scroll event — with the scroll-to-bottom button
-    // as the declarative path back mid-stream.
+    // Wheel-up additionally unpins follow IMMEDIATELY: during a stream a follow
+    // write can land between the browser moving scrollTop and our handler
+    // reading it, so the user's own upward movement reads back as our echo and
+    // the disengage is swallowed. The wheel event itself needs no scrollTop
+    // read, so there is no window to race. Re-engaging stays position-based.
     const onWheel = (e: Event): void => {
       converging.current = false;
       if (
@@ -1031,25 +1002,16 @@ export function ChatVirtualizer<T>(
       // Re-state the reference frame from the resting position. Whether the
       // gesture MOVED decides the semantics only: a real scroll re-judges
       // follow against the bottom edge, while a plain tap keeps the mode it
-      // had (a tap during a stream must not disengage follow — the distance
-      // grew under the gate with no writes, and re-judging would read that
-      // machinery growth as a user pushing away).
+      // had — the distance grew under the gate with no writes, and re-judging
+      // would read that machinery growth as a user pushing away.
       //
-      // The re-statement itself is UNCONDITIONAL, because it is also what
-      // hands the gesture adjustment back: the stored viewportOffset is where
-      // the anchored row actually IS, so zeroing the adjustment below leaves
-      // the sync one balancing scrollTop write — spacer and position move in
-      // the same task, nothing paints in between. Skipping the fold on a tap
-      // dropped the adjustment on the floor instead (measured: a tap right
-      // after a long drag, while measurements were still landing, jumped
-      // 10680px).
-      //
-      // It reads that offset from the DOM (anchorFromPaint) rather than
-      // deriving it, so a clamped spacer cannot make the two disagree: a drag
-      // ending at the top moved the page 182px on release with the derived
-      // form and 0px with this one, while mid-history the scroll still travels
-      // (435px, 1218px) with the picture holding at 0-1px. The derived form
-      // stays as the fallback for a list with nothing rendered.
+      // The re-statement is UNCONDITIONAL, because it is also what hands the
+      // gesture adjustment back: the stored viewportOffset is where the
+      // anchored row actually IS, so zeroing the adjustment below leaves the
+      // sync one balancing scrollTop write, spacers and position moving in the
+      // same task. Skipping the fold on a tap dropped it on the floor instead.
+      // The offset comes from the DOM (anchorFromPaint) rather than being
+      // derived, so a clamped spacer cannot make the two disagree.
       if (!converging.current) {
         const atEnd = gestureMoved.current
           ? max - el.scrollTop <= endThresholdRef.current
