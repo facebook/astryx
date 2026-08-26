@@ -15,6 +15,7 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   borderVars,
   colorVars,
@@ -86,48 +87,53 @@ const styles = stylex.create({
   },
 });
 
-// Background variant styles — each maps to a design token
-const variantStyles = stylex.create({
-  default: {
-    backgroundColor: colorVars['--color-background-card'],
+// Background variant styles — each maps to a design token. Typed as PARTIAL
+// over CardVariant: a theme can add a variant, and the record deliberately has
+// no entry for it, so the lookup is undefined, StyleX drops it, and the card
+// takes base styles for the theme rule to paint over.
+const variantStyles: Partial<Record<CardVariant, StyleXStyles>> = stylex.create(
+  {
+    default: {
+      backgroundColor: colorVars['--color-background-card'],
+    },
+    transparent: {
+      backgroundColor: 'transparent',
+    },
+    muted: {
+      backgroundColor: colorVars['--color-background-muted'],
+    },
+    blue: {
+      backgroundColor: colorVars['--color-background-blue'],
+    },
+    cyan: {
+      backgroundColor: colorVars['--color-background-cyan'],
+    },
+    gray: {
+      backgroundColor: colorVars['--color-background-gray'],
+    },
+    green: {
+      backgroundColor: colorVars['--color-background-green'],
+    },
+    orange: {
+      backgroundColor: colorVars['--color-background-orange'],
+    },
+    pink: {
+      backgroundColor: colorVars['--color-background-pink'],
+    },
+    purple: {
+      backgroundColor: colorVars['--color-background-purple'],
+    },
+    red: {
+      backgroundColor: colorVars['--color-background-red'],
+    },
+    teal: {
+      backgroundColor: colorVars['--color-background-teal'],
+    },
+    yellow: {
+      backgroundColor: colorVars['--color-background-yellow'],
+    },
   },
-  transparent: {
-    backgroundColor: 'transparent',
-  },
-  muted: {
-    backgroundColor: colorVars['--color-background-muted'],
-  },
-  blue: {
-    backgroundColor: colorVars['--color-background-blue'],
-  },
-  cyan: {
-    backgroundColor: colorVars['--color-background-cyan'],
-  },
-  gray: {
-    backgroundColor: colorVars['--color-background-gray'],
-  },
-  green: {
-    backgroundColor: colorVars['--color-background-green'],
-  },
-  orange: {
-    backgroundColor: colorVars['--color-background-orange'],
-  },
-  pink: {
-    backgroundColor: colorVars['--color-background-pink'],
-  },
-  purple: {
-    backgroundColor: colorVars['--color-background-purple'],
-  },
-  red: {
-    backgroundColor: colorVars['--color-background-red'],
-  },
-  teal: {
-    backgroundColor: colorVars['--color-background-teal'],
-  },
-  yellow: {
-    backgroundColor: colorVars['--color-background-yellow'],
-  },
-});
+);
 
 // Elevation → shadow-token map. Sets the private --_card-elevation variable
 // (not box-shadow directly) so it composes with --_card-ring in the shadow
