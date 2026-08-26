@@ -15,8 +15,9 @@
  * SYNC: When the close timing in Dialog.tsx changes, update these tests.
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, act} from '@testing-library/react';
+import {render, screen, act, fireEvent} from '@testing-library/react';
 import {Dialog, parseExitDurationMs} from './Dialog';
 
 const EXIT_MS = 250;
@@ -182,5 +183,46 @@ describe('Dialog exit animation', () => {
     act(() => unmount());
 
     expect(dialog).not.toHaveAttribute('open');
+  });
+
+  it('lets a second Escape dismiss the parent while the inner dialog exits', () => {
+    const onOuterChange = vi.fn();
+    const onInnerChange = vi.fn();
+
+    function NestedDialogs() {
+      const [isOuterOpen, setIsOuterOpen] = useState(true);
+      const [isInnerOpen, setIsInnerOpen] = useState(true);
+      return (
+        <Dialog
+          isOpen={isOuterOpen}
+          onOpenChange={next => {
+            onOuterChange(next);
+            setIsOuterOpen(next);
+          }}
+          aria-label="Outer dialog">
+          <Dialog
+            isOpen={isInnerOpen}
+            onOpenChange={next => {
+              onInnerChange(next);
+              setIsInnerOpen(next);
+            }}
+            aria-label="Inner dialog">
+            Content
+          </Dialog>
+        </Dialog>
+      );
+    }
+
+    mockExitDuration(`${EXIT_MS}ms`);
+    render(<NestedDialogs />);
+
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(onInnerChange).toHaveBeenCalledTimes(1);
+    expect(onOuterChange).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(onInnerChange).toHaveBeenCalledTimes(1);
+    expect(onOuterChange).toHaveBeenCalledOnce();
+    expect(onOuterChange).toHaveBeenCalledWith(false);
   });
 });
