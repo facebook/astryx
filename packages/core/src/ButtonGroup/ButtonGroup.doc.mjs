@@ -46,8 +46,8 @@ export const docs = {
       {guidance: false, description: "Don't mix wildly different actions. A Save button next to a Delete button in the same group is confusing."},
       {guidance: false, description: "Don't use ButtonGroup for navigation. Use SegmentedControl or TabList for switching between views."},
       {guidance: false, description: "Don't nest ButtonGroups. If you need multiple groups, place them side by side with a gap."},
-      {guidance: true, description: 'Name the group for what its buttons act on. The label is the group\u2019s accessible name and a screen reader reads it before each member.'},
-      {guidance: true, description: 'Keep the group a single Tab stop. Arrow keys move between members along the orientation, Home/End jump to the ends, and disabled members are skipped — the WAI-ARIA APG roving tabindex technique: https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/#kbd_roving_tabindex'},
+      {guidance: true, description: 'Name the group for what its buttons act on. The label is the group\'s accessible name and a screen reader reads it before each member.'},
+      {guidance: true, description: 'Keep the group a single Tab stop. Arrow keys move between members along the orientation, Home/End jump to the ends, and disabled members are skipped. This is the WAI-ARIA APG roving tabindex technique: https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/#kbd_roving_tabindex'},
       {guidance: false, description: "Don't disable the group to show that an action is in flight. A disabled member drops focus, so a keyboard user loses their place; leave the group enabled and show progress on the button that started the work."},
     ],
     anatomy: [

@@ -31,6 +31,7 @@ import {capture, scout} from './lib/capture.mjs';
 import {analyzeTargeting, buildVerdict, compareCaptures} from './lib/compare.mjs';
 import {buildPlan, readStoryIndex} from './lib/plan.mjs';
 import {READ_TARGETS, emptyAccumulator, fold} from './lib/probe-reach.mjs';
+import {AXES, PROBE_TOKENS, READ_AXES} from './lib/probe-axes.mjs';
 import {renderReport} from './lib/report.mjs';
 import {accept, incomparable, readBaseline} from './lib/baseline.mjs';
 import {loadConfig, loadThemeOverrides, loadThemingTargets} from './lib/sources.mjs';
@@ -363,6 +364,13 @@ async function main() {
       const browser = await chromium.launch();
       const page = await browser.newPage({viewport: config.viewport});
       const acc = emptyAccumulator();
+      const axisHits = {
+        tokens: new Set(),
+        icon: new Set(),
+        indicator: new Set(),
+        fonts: new Set(),
+        syntax: new Set(),
+      };
       let done = 0;
       for (const story of subject) {
         try {
@@ -373,6 +381,18 @@ async function main() {
           await page.waitForSelector('#storybook-root > *', {timeout: 20000});
           await page.evaluate(() => document.fonts.ready);
           fold(acc, await page.evaluate(READ_TARGETS), story.id);
+          // The other five axes. A single story proves tokens and fonts; the
+          // registry swaps and syntax need a story that renders one, so these
+          // accumulate across the walk.
+          const axes = await page.evaluate(READ_AXES);
+          for (const [name, value] of Object.entries(axes.tokens)) {
+            if (value && value === PROBE_TOKENS[name]) axisHits.tokens.add(name);
+          }
+          for (const kind of Object.keys(axes.swaps)) axisHits[kind]?.add(kind);
+          if (/AstryxProbeFace/.test(axes.fontFamily)) axisHits.fonts.add('body');
+          for (const color of axes.syntax) {
+            if (/^rgb\(/.test(color)) axisHits.syntax.add(color);
+          }
         } catch {
           // A story that will not render contributes no readings; the visual
           // tier reports it as a capture failure.
@@ -386,9 +406,26 @@ async function main() {
       const unseen = [...new Set(declared)].filter(
         key => !acc.verified.has(key) && !acc.failures.has(key) && !acc.shadowed.has(key),
       );
+      // An axis with nothing rendering it is UNVERIFIABLE, not passing — the
+      // difference is the whole point, and reporting it as green is how a
+      // check ends up asserting nothing.
+      const axisReport = {
+        components: {
+          verified: acc.verified.size,
+          missed: acc.failures.size,
+          ...AXES.components,
+        },
+        tokens: {verified: axisHits.tokens.size, of: Object.keys(PROBE_TOKENS).length, ...AXES.tokens},
+        icons: {verified: axisHits.icon.size > 0, ...AXES.icons},
+        indicators: {verified: axisHits.indicator.size > 0, ...AXES.indicators},
+        fonts: {verified: axisHits.fonts.size > 0, ...AXES.fonts},
+        syntax: {verified: axisHits.syntax.size, ...AXES.syntax},
+      };
+
       const out = {
         version: 1,
         generatedAt: new Date().toISOString(),
+        axes: axisReport,
         verified: [...acc.verified].sort(),
         failures: Object.fromEntries([...acc.failures].sort()),
         shadowed: Object.fromEntries([...acc.shadowed].sort()),
@@ -397,8 +434,19 @@ async function main() {
       fs.mkdirSync(outDir, {recursive: true});
       fs.writeFileSync(path.join(outDir, 'reach.json'), `${JSON.stringify(out, null, 2)}\n`);
 
+      process.stdout.write('theme axes:\n');
+      for (const [name, info] of Object.entries(axisReport)) {
+        const value =
+          typeof info.verified === 'boolean'
+            ? info.verified
+              ? 'reached'
+              : 'NOT REACHED'
+            : `${info.verified}${info.of ? `/${info.of}` : ''} reached`;
+        process.stdout.write(`  ${name.padEnd(12)} ${value}\n`);
+      }
       process.stdout.write(
-        `reached the pixels:              ${out.verified.length}\n` +
+        `\ncomponent targets\n` +
+          `reached the pixels:              ${out.verified.length}\n` +
           `shares an element with another:  ${Object.keys(out.shadowed).length}\n` +
           `override did NOT arrive:         ${Object.keys(out.failures).length}\n` +
           `no story renders it:             ${out.neverRendered.length}\n`,

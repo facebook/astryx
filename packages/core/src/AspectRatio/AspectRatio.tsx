@@ -53,14 +53,14 @@ export interface AspectRatioProps extends BaseProps<HTMLDivElement> {
    *   `astryx-base` cascade layer, and unlayered CSS wins over layered
    *   rules regardless of specificity.
    *
+   * A responsive ratio is set in CSS, not on the component. For example, a 3:1
+   * hero can become 3:2 when its container narrows by targeting the element's
+   * class from a container query:
+   * `@container gallery (max-width: 720px) { .gallery-hero { aspect-ratio: 3 / 2; } }`.
+   *
    * @example
    * ```
-   * // 3:1 hero that becomes 3:2 when its container stacks
-   * <AspectRatio ratio={3 / 1} className="gallery-hero">…</AspectRatio>
-   *
-   * // CSS: @container gallery (max-width: 720px) {
-   * //   .gallery-hero { aspect-ratio: 3 / 2; }
-   * // }
+   * <AspectRatio ratio={3 / 1} className="gallery-hero">...</AspectRatio>
    * ```
    */
   ratio: number;
