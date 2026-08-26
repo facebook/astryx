@@ -149,6 +149,21 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   onOpenChange?: (isOpen: boolean) => void;
 
   /**
+   * Entries derived from the query text rather than fetched for it — today,
+   * Tokenizer's "Create ...".
+   *
+   * They are appended to whatever the search returned, and they are offered
+   * whatever `minQueryLength` says: that threshold exists to avoid a fetch
+   * that is too broad to be worth making, and these cost no fetch. A field
+   * that can create `QA` should not stop being able to just because a search
+   * for `QA` would match too much.
+   *
+   * Receives the results they will be appended to, so a caller can decline to
+   * offer an entry that duplicates one.
+   */
+  queryEntries?: (query: string, results: T[]) => T[];
+
+  /**
    * Debounce delay in ms before triggering search after typing.
    * Set to 0 for synchronous/local search sources that don't need debouncing.
    * @default 150
@@ -366,6 +381,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   hasAutoFocus = false,
   onChangeQuery,
   onOpenChange,
+  queryEntries,
   inputId: externalInputId,
   ariaDescribedBy,
   ariaLabelledBy,
@@ -484,7 +500,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           return;
         }
         resultsGenRef.current = gen;
-        const shown = searchResults.slice(0, maxMenuItems);
+        const fetched = searchResults.slice(0, maxMenuItems);
+        const shown = [...fetched, ...(queryEntries?.(searchQuery, fetched) ?? [])];
         setResults(shown);
         setHighlightedIndex(shown.length > 0 ? 0 : -1);
         if (searchResults.length > 0 || searchQuery.length > 0) {
@@ -517,6 +534,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       showLayer,
       announce,
       emptySearchResultsText,
+      queryEntries,
       t,
     ],
   );
@@ -569,7 +587,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       ) {
         searchGenRef.current++;
         searchSource.cancel?.();
-        setResults([]);
+        // A query too short to search can still carry entries derived from
+        // the text itself. `hasSearched` stays false either way, so the menu
+        // never reports "no results" for a query nobody looked for.
+        const derived = queryEntries?.(newQuery, []) ?? [];
+        setResults(derived);
+        setHighlightedIndex(derived.length > 0 ? 0 : -1);
         setHasSearched(false);
         // Bumping the generation abandons any in-flight search, which means
         // its own `finally` will decline to clear this — so clear it here or
@@ -578,7 +601,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         setIsLoading(false);
         // Clear any lingering result-count / no-results announcement.
         announce('');
-        popover.hide();
+        if (derived.length > 0) {
+          showLayer();
+        } else {
+          popover.hide();
+        }
         return;
       }
 
@@ -600,6 +627,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       onChangeQuery,
       hasEntriesOnFocus,
       minQueryLength,
+      queryEntries,
+      showLayer,
       performSearch,
       performBootstrap,
       popover,

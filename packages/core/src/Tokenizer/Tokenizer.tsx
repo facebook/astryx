@@ -548,36 +548,47 @@ export function Tokenizer<T extends SearchableItem>({
     () => ({
       search: async (query: string) => {
         const results = await searchSource.search(query);
-        const filtered = results.filter(item => !selectedIds.has(item.id));
-
-        // Append a "Create: X" synthetic item when hasCreate is true,
-        // the user has typed something, and it doesn't exactly match an
-        // existing result.
-        if (hasCreate && query.trim()) {
-          const trimmed = query.trim();
-          const alreadyExists =
-            selectedIds.has(trimmed) ||
-            filtered.some(
-              item => item.label.toLowerCase() === trimmed.toLowerCase(),
-            );
-          if (!alreadyExists) {
-            const creatableItem = {
-              id: `${CREATABLE_ID_PREFIX}${trimmed}`,
-              label: `Create "${trimmed}"`,
-              auxiliaryData: {__createdValue: trimmed},
-            } as unknown as T;
-            filtered.push(creatableItem);
-          }
-        }
-
-        return filtered;
+        return results.filter(item => !selectedIds.has(item.id));
       },
       bootstrap: async () => {
         const results = await searchSource.bootstrap();
         return results.filter(item => !selectedIds.has(item.id));
       },
     }),
-    [searchSource, selectedIds, hasCreate],
+    [searchSource, selectedIds],
+  );
+
+  /**
+   * The "Create X" entry. It is derived from the typed text, not fetched for
+   * it, so it is offered through `queryEntries` rather than appended to the
+   * search results — which is what keeps it available when the query is too
+   * short to search. `minQueryLength` is there to avoid a fetch too broad to
+   * be worth making; creating `QA` costs no fetch, and a field that can
+   * create it should not stop being able to.
+   */
+  const createEntries = useCallback(
+    (query: string, results: T[]): T[] => {
+      const trimmed = query.trim();
+      if (!hasCreate || trimmed === '') {
+        return [];
+      }
+      const alreadyExists =
+        selectedIds.has(trimmed) ||
+        results.some(
+          item => item.label.toLowerCase() === trimmed.toLowerCase(),
+        );
+      if (alreadyExists) {
+        return [];
+      }
+      return [
+        {
+          id: `${CREATABLE_ID_PREFIX}${trimmed}`,
+          label: `Create "${trimmed}"`,
+          auxiliaryData: {__createdValue: trimmed},
+        } as unknown as T,
+      ];
+    },
+    [hasCreate, selectedIds],
   );
 
   const emptySource: SearchSource<T> = useMemo(
@@ -802,6 +813,7 @@ export function Tokenizer<T extends SearchableItem>({
         inputId={inputId}
         ariaDescribedBy={ariaDescribedBy}
         onChangeQuery={onChangeQuery}
+        queryEntries={createEntries}
         debounceMs={debounceMs}
         onKeyDown={handleKeyDown}
         anchorRef={wrapperRef}

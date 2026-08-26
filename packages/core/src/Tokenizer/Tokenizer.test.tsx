@@ -637,6 +637,98 @@ describe('Tokenizer', () => {
       bootstrap: () => [],
     };
 
+    it('still offers Create below minQueryLength, and does not search', async () => {
+      // The threshold exists to avoid a fetch too broad to be worth making.
+      // Creating costs no fetch, so a field that can create `QA` should not
+      // stop being able to just because a search for `QA` would match too
+      // much. Reported on #5385.
+      const search = vi.fn(() => []);
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={{search, bootstrap: () => []}}
+          value={[]}
+          onChange={onChange}
+          hasCreate
+          minQueryLength={3}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'QA'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      // Offered...
+      expect(screen.queryByText('Create "QA"')).toBeInTheDocument();
+      // ...without the source ever being asked.
+      expect(search).not.toHaveBeenCalled();
+      // ...and it commits.
+      fireEvent.click(screen.getByText('Create "QA"'));
+      expect(onChange).toHaveBeenCalledWith(
+        [expect.objectContaining({id: 'QA', label: 'QA'})],
+        expect.objectContaining({type: 'create'}),
+      );
+    });
+
+    it('offers no menu below the threshold without hasCreate', async () => {
+      // The negative control for the case above: with nothing to derive from
+      // the text, a below-threshold query still opens nothing, and never
+      // reports "no results" for a query that was not searched.
+      const search = vi.fn(() => []);
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={{search, bootstrap: () => []}}
+          value={[]}
+          onChange={() => {}}
+          minQueryLength={3}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'QA'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(search).not.toHaveBeenCalled();
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByText('No results found')).not.toBeInTheDocument();
+    });
+
+    it('does not offer Create below the threshold for a token already held', async () => {
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={{search: () => [], bootstrap: () => []}}
+          value={[{id: 'QA', label: 'QA'}]}
+          onChange={() => {}}
+          hasCreate
+          minQueryLength={3}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'QA'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(screen.queryByText('Create "QA"')).not.toBeInTheDocument();
+    });
+
     it('shows a "Create" option when typing with hasCreate', async () => {
       render(
         <Tokenizer
