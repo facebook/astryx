@@ -11,7 +11,8 @@ folding. On a case-insensitive filesystem `astryx component button` resolved to
 `findHookDoc(core, 'mediaquery')` returned `.../hooks/useMediaquery.doc.mjs` — a
 spelling that exists nowhere, and that breaks any consumer reading it on Linux.
 The probes now verify each path segment against its parent's real directory
-listing, so every host resolves the same names to the same real paths. The
+listing, so these component and hook lookups resolve the same names to the
+same real paths on every host. The
 deliberate case-insensitive hook lookup is unchanged; it now returns the file's
 true casing.
 
