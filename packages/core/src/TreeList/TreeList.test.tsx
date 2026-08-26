@@ -145,6 +145,18 @@ describe('TreeList', () => {
     expect(screen.getByTestId('tree')).toBeInTheDocument();
   });
 
+  it('forwards aria-label to the tree element', () => {
+    render(<TreeList items={simpleItems} aria-label="File tree" />);
+    const tree = screen.getByRole('tree');
+    expect(tree).toHaveAttribute('aria-label', 'File tree');
+  });
+
+  it('forwards id to the root element', () => {
+    render(<TreeList items={simpleItems} id="file-tree" />);
+    const root = screen.getByRole('tree').parentElement;
+    expect(root).toHaveAttribute('id', 'file-tree');
+  });
+
   it('renders description text', () => {
     const items: TreeListItemData[] = [
       {id: 'a', label: 'Label', description: 'Description text'},
