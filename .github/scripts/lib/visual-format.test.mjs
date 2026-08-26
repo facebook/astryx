@@ -121,13 +121,14 @@ describe('buildVisualSection', () => {
           },
         ],
       }),
-      'https://facebook.github.io/astryx/pr/123/visual/',
+      'https://facebook.github.io/astryx/pr/123/visual/head/run/',
+      'https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/',
     );
     expect(section).toContain(
-      'https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/before/core-button--primary__y2k-light.png',
+      'https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/before/core-button--primary__y2k-light.png',
     );
-    expect(section).toContain('raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/after/core-button--primary__y2k-light.png');
-    expect(section).toContain('raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/diff/core-button--primary__y2k-light.png');
+    expect(section).toContain('raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/after/core-button--primary__y2k-light.png');
+    expect(section).toContain('raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/diff/core-button--primary__y2k-light.png');
     expect(section).toContain('<th>Before</th><th>After</th><th>Diff</th>');
   });
 

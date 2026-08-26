@@ -16,10 +16,11 @@ const {inline, num, safeUrl} = require('./report-text');
  * the daily gate.
  *
  * @param {object|null} verdict - the gate's verdict.json, or null when the job did not run
- * @param {string} [reportUrl] - published report for this PR, if there is one
+ * @param {string} [reportUrl] - immutable published report for this run
+ * @param {string} [imageUrl] - immutable raw-image base for inline evidence
  * @returns {string} markdown
  */
-function buildVisualSection(verdict, reportUrl) {
+function buildVisualSection(verdict, reportUrl, imageUrl) {
   if (!verdict) return '';
 
   // Verdict fields are report data: render them as literal inline text (and
@@ -67,11 +68,8 @@ function buildVisualSection(verdict, reportUrl) {
   // deployment can be delayed or errored independently of the gh-pages push;
   // coupling inline evidence to that deployment produced six broken images in
   // the first live demo even though every PNG existed in the branch.
-  const rawBase = reportBase?.match(
-    /^https:\/\/facebook\.github\.io\/astryx\/pr\/(\d+)\/visual\/$/,
-  )?.[1];
-  const imageBase = rawBase
-    ? `https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/${rawBase}/visual/`
+  const imageBase = safeUrl(imageUrl)
+    ? `${safeUrl(imageUrl).replace(/\/+$/, '')}/`
     : reportBase;
   const evidence = imageBase
     ? verdict.changes
