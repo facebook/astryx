@@ -7,7 +7,12 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {defineTheme, generateThemeCSS, generateThemeRules} from './index';
+import {
+  dataTokenDefaults,
+  defineTheme,
+  generateThemeCSS,
+  generateThemeRules,
+} from './index';
 
 const defaultInput = {
   name: 'default',
@@ -737,5 +742,49 @@ describe('renamed theme targets', () => {
     expect(rules('progressbar-mark', {width: '3px'})).toContain(
       '--_progressbar-mark-width: 3px',
     );
+  });
+});
+
+describe('data visualization tokens', () => {
+  const scopeBlock = (theme: Parameters<typeof generateThemeRules>[0]) =>
+    generateThemeRules(theme).find(r => r.includes(':scope'))!;
+
+  it('declares the whole data palette in every theme scope', () => {
+    const block = scopeBlock(defineTheme({name: 'data-bare'}));
+
+    for (const [name, value] of Object.entries(dataTokenDefaults)) {
+      expect(block).toContain(`${name}: ${value};`);
+    }
+  });
+
+  it('lets a theme token replace its default in place, once', () => {
+    const block = scopeBlock(
+      defineTheme({
+        name: 'data-override',
+        tokens: {'--color-data-categorical-blue': ['#123456', '#654321']},
+      }),
+    );
+
+    expect(block).toContain(
+      '--color-data-categorical-blue: light-dark(#123456, #654321);',
+    );
+    expect(block).not.toContain(
+      `--color-data-categorical-blue: ${dataTokenDefaults['--color-data-categorical-blue']};`,
+    );
+    expect(block.match(/--color-data-categorical-blue:/g)).toHaveLength(1);
+    expect(block).toContain(
+      `--color-data-categorical-orange: ${dataTokenDefaults['--color-data-categorical-orange']};`,
+    );
+  });
+
+  it('carries the palette into the scoped component stylesheet', () => {
+    const {component, prose} = generateThemeCSS(
+      defineTheme({name: 'data-css'}),
+    );
+
+    expect(component).toContain('@scope ([data-astryx-theme="data-css"])');
+    expect(component).toContain('--color-data-neutral:');
+    expect(component).toContain('--color-data-blue-3:');
+    expect(prose).not.toContain('--color-data-');
   });
 });
