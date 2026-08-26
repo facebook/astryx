@@ -6,13 +6,14 @@ import React from 'react';
 import {Theme} from './Theme';
 import {defineTheme} from './defineTheme';
 import {dataTokenDefaults} from './domainTokens';
+import type * as DefineThemeModule from './defineTheme';
 
 const {generateThemeCSSSpy} = vi.hoisted(() => ({
   generateThemeCSSSpy: vi.fn(),
 }));
 
 vi.mock('./defineTheme', async importOriginal => {
-  const actual = await importOriginal<typeof import('./defineTheme')>();
+  const actual = await importOriginal<typeof DefineThemeModule>();
   generateThemeCSSSpy.mockImplementation(actual.generateThemeCSS);
   return {...actual, generateThemeCSS: generateThemeCSSSpy};
 });
