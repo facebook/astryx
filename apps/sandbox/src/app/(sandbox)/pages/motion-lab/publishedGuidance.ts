@@ -51,7 +51,7 @@ export const GUIDANCE_CONFLICTS: ReadonlyArray<GuidanceConflict> = [
     resolution:
       'Decide which document is right before writing any code. If the proposal wins, the rewrite of this paragraph ships in the same stack as the layerAnimations change, and the rubric cannot gate anything until it does.',
     severity: 'reversal',
-    href: '/motion/exit-gap',
+    href: '/pages/motion-lab/exit-gap/',
   },
   {
     id: 'reduced-motion-delete',
@@ -65,7 +65,7 @@ export const GUIDANCE_CONFLICTS: ReadonlyArray<GuidanceConflict> = [
     resolution:
       'Needs a designer and accessibility sign-off, then a rewrite of this paragraph. The 39-file sweep writes whichever branch is chosen 39 times, so it cannot start first.',
     severity: 'reversal',
-    href: '/motion/reduced-motion',
+    href: '/pages/motion-lab/reduced-motion/',
   },
   {
     id: 'exit-matches-entrance',
@@ -79,7 +79,7 @@ export const GUIDANCE_CONFLICTS: ReadonlyArray<GuidanceConflict> = [
     resolution:
       'Extend the paragraph rather than replace it: same path, opposite curve, shorter duration.',
     severity: 'extension',
-    href: '/motion/tokens',
+    href: '/pages/motion-lab/tokens/',
   },
   {
     id: 'trigger-anchored',
@@ -92,7 +92,7 @@ export const GUIDANCE_CONFLICTS: ReadonlyArray<GuidanceConflict> = [
       'The same rule, and the page already carries the exemption the rubric needs. Criterion 8 can cite this paragraph instead of re-arguing it.',
     resolution: 'No change needed. Cite the published text in the rubric.',
     severity: 'aligned',
-    href: '/motion/rubric',
+    href: '/pages/motion-lab/rubric/',
   },
   {
     id: 'frequency',
@@ -106,7 +106,7 @@ export const GUIDANCE_CONFLICTS: ReadonlyArray<GuidanceConflict> = [
     resolution:
       'No change needed. The rubric formalises what the page already says.',
     severity: 'aligned',
-    href: '/motion/violations',
+    href: '/pages/motion-lab/violations/',
   },
   {
     id: 'direction',
@@ -119,7 +119,7 @@ export const GUIDANCE_CONFLICTS: ReadonlyArray<GuidanceConflict> = [
     resolution:
       'Add a directionality criterion, or fold it into criterion 4 (semantic correctness) so the rubric is a superset of the published guidance rather than a divergent list.',
     severity: 'extension',
-    href: '/motion/rubric',
+    href: '/pages/motion-lab/rubric/',
   },
   {
     id: 'blocking',
@@ -133,7 +133,7 @@ export const GUIDANCE_CONFLICTS: ReadonlyArray<GuidanceConflict> = [
     resolution:
       'Write the input-during-exit rule into the presence primitive\u2019s contract, and cite this paragraph when doing it.',
     severity: 'extension',
-    href: '/motion/exit-gap',
+    href: '/pages/motion-lab/exit-gap/',
   },
 ];
 

@@ -146,7 +146,7 @@ export const OPEN_QUESTIONS: ReadonlyArray<OpenQuestion> = [
       'A design review at house level. Astryx has deliberately refused polymorphism, and a render-prop shape may fit the conventions better than asChild.',
     blocks:
       'Motion blocker 3, and equally router links and drag-and-drop. It should not be decided on motion\u2019s evidence alone.',
-    href: '/motion/library',
+    href: '/pages/motion-lab/library/',
     hrefLabel: 'The three blockers',
     urgency: 'can run late',
   },
@@ -157,7 +157,7 @@ export const OPEN_QUESTIONS: ReadonlyArray<OpenQuestion> = [
       'A call on whether a theme carries motion personality as well as colour and type.',
     blocks:
       'The token work. Adding springs to the theme contract after it ships is a breaking change, so this is decided before Foundation lands even if no theme overrides them at first.',
-    href: '/motion/springs',
+    href: '/pages/motion-lab/springs/',
     hrefLabel: 'Tune the four springs',
     urgency: 'decide first',
   },
@@ -168,7 +168,7 @@ export const OPEN_QUESTIONS: ReadonlyArray<OpenQuestion> = [
       'A designer and an accessibility sign-off. Note that delete is not the status quo by accident — it is what the published page instructs, so degrading is a policy change.',
     blocks:
       'The 36-file sweep, which writes whichever branch is chosen 36 times, and the reduced-motion hook, which has to return a policy rather than a boolean.',
-    href: '/motion/reduced-motion',
+    href: '/pages/motion-lab/reduced-motion/',
     hrefLabel: 'Both policies, side by side',
     urgency: 'decide before the sweep',
   },
@@ -179,7 +179,7 @@ export const OPEN_QUESTIONS: ReadonlyArray<OpenQuestion> = [
       'A prototype of press feedback on the independent scale property. The evidence supports the brief: Button transitions transform at Button/Button.tsx:90 and takes scale(0.98) on :active, so it is exactly the conflict the brief describes.',
     blocks:
       'Rubric criterion 12, and the press token. The middle path costs one property name.',
-    href: '/motion/library',
+    href: '/pages/motion-lab/library/',
     hrefLabel: 'transform vs scale vs none',
     urgency: 'decide before publishing',
   },
@@ -190,7 +190,7 @@ export const OPEN_QUESTIONS: ReadonlyArray<OpenQuestion> = [
       'A repo-convention call. Wiki keeps the published page clean; it also means reviewers and consumers read different documents, which is part of why the transform-only rule never reached anyone outside the team.',
     blocks:
       'Rubric publication, and whether consumers can self-assess before promotion.',
-    href: '/motion/rubric',
+    href: '/pages/motion-lab/rubric/',
     hrefLabel: 'The bench',
     urgency: 'decide before publishing',
   },
@@ -201,7 +201,7 @@ export const OPEN_QUESTIONS: ReadonlyArray<OpenQuestion> = [
       'A bake-off verdict. It probably has no single winner — a table row cannot be a grid container — so the honest answer may be one technique with a documented exception.',
     blocks:
       'Converging nine surfaces, and any new disclosure surface built meanwhile.',
-    href: '/motion/previews',
+    href: '/pages/motion-lab/previews/',
     hrefLabel: 'The three techniques',
     urgency: 'decide before the sweep',
   },
@@ -213,7 +213,7 @@ export const OPEN_QUESTIONS: ReadonlyArray<OpenQuestion> = [
       'A ruling. The scale stops at 1300ms, so StatusDot at 2s and Chat at 1.5s bypass it entirely; both are in the hardcoded list because of it.',
     blocks:
       'Those two sites in the sweep, and the definition of --duration-continuous.',
-    href: '/motion/tokens',
+    href: '/pages/motion-lab/tokens/',
     hrefLabel: 'The duration scale',
     urgency: 'decide before the sweep',
   },
@@ -224,7 +224,7 @@ export const OPEN_QUESTIONS: ReadonlyArray<OpenQuestion> = [
       'A decision on the shape, not the values. Recommendation: one shared vocabulary, per-platform values — the same names resolving to different numbers, the way the colour tokens already work. Two vocabularies means two rubrics and two docs pages.',
     blocks:
       'Token naming, so it is cheap now and expensive after the sweep. Raised in review on the Semantic motion tokens deliverable.',
-    href: '/motion/tokens',
+    href: '/pages/motion-lab/tokens/',
     hrefLabel: 'The proposed vocabulary',
     urgency: 'decide first',
   },
@@ -235,7 +235,7 @@ export const OPEN_QUESTIONS: ReadonlyArray<OpenQuestion> = [
       'A call on what the theme contract exposes. The Collapsible reveal already introduced per-component theme-tunable motion, a sixth theming mechanism no doc describes, so the answer affects more than motion.',
     blocks:
       'The docs rewrite, and the springs question above — both are asking what a theme is allowed to retune. Raised in review on Deliverables.',
-    href: '/motion/export',
+    href: '/pages/motion-lab/export/',
     hrefLabel: 'What the lab emits',
     urgency: 'decide before publishing',
   },

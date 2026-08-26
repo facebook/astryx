@@ -16,8 +16,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 
+// This script sits inside the lab it feeds, so everything the lab needs is in
+// one directory: the pages, the shared modules, the generated data, and the
+// generator that produces it.
 const HERE = path.dirname(url.fileURLToPath(import.meta.url));
-const APP = path.resolve(HERE, '..');
+const APP = path.resolve(HERE, '../../../../..');
 const REPO = path.resolve(APP, '../..');
 // In the monorepo the audit reads the real package sources, so lab is
 // measurable too — it is a published package here, not an absent dependency.
@@ -25,7 +28,7 @@ const PACKAGES = [
   {name: 'core', root: path.join(REPO, 'packages/core/src')},
   {name: 'lab', root: path.join(REPO, 'packages/lab/src')},
 ];
-const OUT = path.join(APP, 'src/motion/__generated__/motionAudit.ts');
+const OUT = path.join(HERE, '__generated__/motionAudit.ts');
 
 for (const pkg of PACKAGES) {
   if (!fs.existsSync(pkg.root)) {

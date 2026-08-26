@@ -20,104 +20,104 @@ export type MotionSection = {
 
 export const MOTION_SECTIONS: ReadonlyArray<MotionSection> = [
   {
-    href: '/motion',
+    href: '/pages/motion-lab/',
     title: 'Overview',
     group: 'Start',
     decides:
       'Whether the audit in the brief matches the code, and which decisions are actually blocking.',
   },
   {
-    href: '/motion/published',
+    href: '/pages/motion-lab/published/',
     title: 'Against the published page',
     group: 'Start',
     decides:
       'Which proposals are bug fixes and which are reversals of guidance Astryx publishes today.',
   },
   {
-    href: '/motion/tokens',
+    href: '/pages/motion-lab/tokens/',
     title: 'Semantic tokens',
     group: 'Foundation',
     decides:
       'Whether six easings and eight durations are the right vocabulary, and what each value should be.',
   },
   {
-    href: '/motion/springs',
+    href: '/pages/motion-lab/springs/',
     title: 'Springs',
     group: 'Foundation',
     decides:
       'Whether the four named springs feel right, and whether they belong in the theme contract.',
   },
   {
-    href: '/motion/js-mirror',
+    href: '/pages/motion-lab/js-mirror/',
     title: 'JS token mirror',
     group: 'Foundation',
     decides:
       'What the mirror has to expose for charts, canvas and motion libraries.',
   },
   {
-    href: '/motion/export',
+    href: '/pages/motion-lab/export/',
     title: 'Export tuning',
     group: 'Foundation',
     decides:
       'Nothing — it emits whatever the rest of the lab has been tuned to.',
   },
   {
-    href: '/motion/exit-gap',
+    href: '/pages/motion-lab/exit-gap/',
     title: 'The exit gap',
     group: 'Presence',
     decides:
       'Whether presence surfaces should animate out at all, and what enter and exit cost.',
   },
   {
-    href: '/motion/bugs',
+    href: '/pages/motion-lab/bugs/',
     title: 'Small bugs',
     group: 'Presence',
     decides:
       'Which of the structural findings are real once you look at the code.',
   },
   {
-    href: '/motion/violations',
+    href: '/pages/motion-lab/violations/',
     title: 'Hardcoded values',
     group: 'Enforcement',
     decides:
       'What each hardcoded site becomes, and whether the swap is visible at all.',
   },
   {
-    href: '/motion/rubric',
+    href: '/pages/motion-lab/rubric/',
     title: 'Rubric bench',
     group: 'Enforcement',
     decides:
       'Whether each criterion is checkable, and what a pass and a fail look like.',
   },
   {
-    href: '/motion/reduced-motion',
+    href: '/pages/motion-lab/reduced-motion/',
     title: 'Reduced motion',
     group: 'Enforcement',
     decides: 'Degrade or delete. The decision the 36-file sweep is waiting on.',
   },
   {
-    href: '/motion/previews',
+    href: '/pages/motion-lab/previews/',
     title: 'Live previews',
     group: 'Coverage',
     decides:
       'The coverage work: indicators, disclosure, chips, skeletons, lists.',
   },
   {
-    href: '/motion/preview-plan',
+    href: '/pages/motion-lab/preview-plan/',
     title: 'Preview plan',
     group: 'Coverage',
     decides:
       'What every remaining preview has to show before it is worth building.',
   },
   {
-    href: '/motion/library',
+    href: '/pages/motion-lab/library/',
     title: 'Motion library',
     group: 'Compatibility',
     decides:
       'The three blockers, and whether Button keeps its press transition.',
   },
   {
-    href: '/motion/plan',
+    href: '/pages/motion-lab/plan/',
     title: 'Plan & open questions',
     group: 'Plan',
     decides: 'Sequence, gates, and who has to answer what.',

@@ -15,8 +15,8 @@
  */
 
 import type {ReactNode} from 'react';
-import {MotionLabProvider} from '../../../../motion/MotionLabStore';
-import {MotionLabShell} from '../../../../motion/MotionLabShell';
+import {MotionLabProvider} from './MotionLabStore';
+import {MotionLabShell} from './MotionLabShell';
 
 export default function MotionLabLayout({children}: {children: ReactNode}) {
   return (

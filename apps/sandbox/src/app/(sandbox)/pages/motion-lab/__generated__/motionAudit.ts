@@ -558,7 +558,7 @@ export const HARDCODED_SITES: ReadonlyArray<HardcodedSite> = [
     file: 'core/Table/plugins/groupedRows/useTableGroupedRows.tsx',
     package: 'core',
     component: 'Table',
-    line: 163,
+    line: 179,
     kind: 'duration',
     prop: 'transitionDuration',
     value: '150ms',
@@ -707,7 +707,7 @@ export const DURATION_WITHOUT_CURVE: ReadonlyArray<SiteRef> = [
     file: 'core/Table/plugins/groupedRows/useTableGroupedRows.tsx',
     package: 'core',
     component: 'Table',
-    line: 161,
+    line: 177,
     decl: "transitionDuration: '150ms'",
   },
   {
@@ -899,7 +899,7 @@ export const TRANSFORM_TRANSITIONS: ReadonlyArray<SiteRef> = [
     file: 'core/Table/plugins/groupedRows/useTableGroupedRows.tsx',
     package: 'core',
     component: 'Table',
-    line: 162,
+    line: 178,
     decl: "transitionProperty: 'transform'",
   },
   {
