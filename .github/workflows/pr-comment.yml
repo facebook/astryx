@@ -104,7 +104,11 @@ jobs:
               '--analysis', 'pr-analysis/analysis.json',
               '--a11y', a11yPath,
               ...(fs.existsSync('visual/verdict.json')
-                ? ['--visual', 'visual/verdict.json']
+                ? [
+                    '--visual', 'visual/verdict.json',
+                    '--visual-report-url',
+                    `https://facebook.github.io/astryx/pr/${prNumber}/visual/`,
+                  ]
                 : []),
               '--storybook-url', meta.storybookUrl || '',
               '--sandbox-url', meta.sandboxUrl || '',
