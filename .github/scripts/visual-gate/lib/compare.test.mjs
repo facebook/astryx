@@ -181,13 +181,13 @@ describe('buildVerdict', () => {
     expect(verdict.status).toBe('failed');
   });
 
-  it('does not fail a run just because shots were added', () => {
+  it('requires acceptance when stable shots are added or removed', () => {
     const verdict = buildVerdict({
       ...base,
       comparison: {changes: [], added: ['b'], removed: ['c'], unchanged: []},
       failures: [],
     });
-    expect(verdict.status).toBe('pass');
+    expect(verdict.status).toBe('changed');
     expect(verdict.counts).toMatchObject({added: 1, removed: 1});
   });
 });
