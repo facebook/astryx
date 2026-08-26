@@ -18,6 +18,7 @@
 import type {DefinedTheme} from './defineTheme';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
+import {dataTokenDefaults} from './domainTokens/dataTokens';
 import {cssVar, classPrefix, dataAttrNamespace} from '../naming';
 
 /**
@@ -344,7 +345,13 @@ export function generateThemeRules(theme: DefinedTheme): string[] {
   const val = (key: string): string => tokens[key] || `var(${key})`;
 
   // 1. Token block — CSS custom properties on :scope
-  const tokenEntries = Object.entries(tokens);
+  //
+  // Data tokens are not StyleX vars, so no other layer declares them: until a
+  // theme happened to override one by name, `var(--color-data-*)` resolved to
+  // nothing. Seeding the block with the defaults makes the palette resolvable,
+  // and a theme's own value replaces its default within this one rule, so
+  // precedence is settled by the merge rather than by the cascade.
+  const tokenEntries = Object.entries({...dataTokenDefaults, ...tokens});
   if (tokenEntries.length > 0) {
     const declarations = tokenEntries
       .map(([prop, value]) => `    ${prop}: ${value};`)
