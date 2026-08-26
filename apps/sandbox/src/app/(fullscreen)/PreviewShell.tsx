@@ -309,9 +309,11 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
     if (!iframe?.contentWindow) {
       return;
     }
+    // The iframe is loaded from a relative src, so its origin is our own —
+    // address it explicitly (and the receiver checks the sender's origin too).
     iframe.contentWindow.postMessage(
       {type: 'astryx-theme-sync', theme: themeName, mode},
-      '*',
+      window.location.origin,
     );
   }, [themeName, mode]);
 

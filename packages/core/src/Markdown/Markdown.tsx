@@ -561,14 +561,19 @@ const headingStyles = {
 const DANGEROUS_URL_PATTERN = /^(javascript|data|vbscript):/i;
 
 function sanitizeUrl(url: string): string | null {
-  const trimmed = url.trim();
-  if (trimmed.length === 0) {
+  // Strip control characters before testing, the same normalization the
+  // parser's isSafeUrl applies — the anchored pattern must see the URL the
+  // way a browser will. Return the normalized value so the stripped
+  // characters don't ride along into an attribute or component override.
+  // eslint-disable-next-line no-control-regex -- control chars are the bypass
+  const normalized = url.replace(/[\x00-\x1f\x7f]/g, '').trim();
+  if (normalized.length === 0) {
     return null;
   }
-  if (DANGEROUS_URL_PATTERN.test(trimmed)) {
+  if (DANGEROUS_URL_PATTERN.test(normalized)) {
     return null;
   }
-  return trimmed;
+  return normalized;
 }
 
 // ---------------------------------------------------------------------------

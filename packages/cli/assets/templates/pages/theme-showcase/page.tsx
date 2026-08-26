@@ -153,14 +153,16 @@ const styles: Record<string, CSSProperties> = {
     flex: 1,
   },
   quantityInput: {
-    // minWidth (not a hard width) so the field grows to fit the digit + the
-    // theme's input padding. A fixed 40px was too tight on themes with larger
-    // padding / bigger type scale (e.g. Matcha, Y2K), clipping the value.
-    minWidth: 64,
     flexShrink: 0,
   },
+  // `auto` basis so the button wraps to its own line rather than ellipsizing.
   cartButton: {
-    flex: 1,
+    flex: '1 1 auto',
+    minWidth: 0,
+  },
+  cartRow: {
+    width: '100%',
+    minWidth: 0,
   },
 };
 
@@ -236,6 +238,18 @@ const inlineStyles: Record<string, CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
   },
+  // Flex bases, not grid tracks: the checkout form needs a width floor, and the
+  // chat wraps to its own row rather than squeezing it under one.
+  checkoutColumn: {
+    flex: '1 1 300px',
+    minWidth: 0,
+    display: 'grid',
+  },
+  chatColumn: {
+    flex: '2 1 520px',
+    minWidth: 0,
+    display: 'grid',
+  },
 };
 
 const PRODUCT_IMAGE_KEYS = ['watch', 'headphones', 'backpack'];
@@ -284,8 +298,7 @@ const DEFAULT_PRODUCTS: ProductSpec[] = [
 // scaffolded template renders real imagery without needing local public assets.
 const DEFAULT_IMAGES: Record<string, string> = {
   watch: '/template-assets/Neutral-Watch.png',
-  headphones:
-    '/template-assets/Neutral-Headphones.png',
+  headphones: '/template-assets/Neutral-Headphones.png',
   backpack: '/template-assets/Neutral-Backpack.png',
   wallet: '/template-assets/Neutral-Wallet.png',
   tumbler: '/template-assets/Neutral-Tumbler.png',
@@ -350,14 +363,14 @@ function CardShowcase({
 
   return (
     <VStack gap={8}>
-      <Grid columns={columns} gap={4}>
-        <GridSpan columns={1}>
+      <HStack gap={4} wrap="wrap">
+        <div style={inlineStyles.checkoutColumn}>
           <CheckoutCard isMobile={isMobile} />
-        </GridSpan>
-        <GridSpan columns={isMobile ? 1 : 2}>
+        </div>
+        <div style={inlineStyles.chatColumn}>
           <ChatCard />
-        </GridSpan>
-      </Grid>
+        </div>
+      </HStack>
       <Grid columns={columns} gap={4}>
         <GridSpan columns={isMobile ? 1 : 3}>
           <InventoryCard images={images} inventory={inventory} />
@@ -472,7 +485,12 @@ function StorePreview({
                           }}>
                           {p.description}
                         </Text>
-                        <HStack gap={2} vAlign="center" hAlign="center">
+                        <HStack
+                          gap={2}
+                          vAlign="center"
+                          hAlign="center"
+                          wrap="wrap"
+                          style={styles.cartRow}>
                           <NumberInput
                             label="Quantity"
                             isLabelHidden
@@ -481,6 +499,7 @@ function StorePreview({
                             min={1}
                             max={99}
                             size="sm"
+                            width={72}
                             style={styles.quantityInput}
                           />
                           <Button
@@ -506,7 +525,7 @@ function StorePreview({
 
 function CheckoutCard({isMobile}: {isMobile: boolean}) {
   return (
-    <Card padding={5} style={styles.card}>
+    <Card padding={isMobile ? 4 : 5} style={styles.card}>
       <VStack gap={4} style={styles.checkoutStack}>
         <Heading level={2}>Checkout</Heading>
 
@@ -560,7 +579,7 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
             <Text type="supporting" weight="bold">
               Payment method
             </Text>
-            <Grid columns={isMobile ? 1 : {minWidth: 70, max: 3}} gap={2}>
+            <Grid columns={isMobile ? 1 : {minWidth: 80, max: 3}} gap={2}>
               <SelectableCard
                 label="Pay with card"
                 isSelected={true}
@@ -614,7 +633,7 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
             placeholder="1234 1234 1234 1234"
             value=""
             onChange={() => {}}
-            startIcon={<CreditCard size={16} />}
+            startIcon={isMobile ? undefined : <CreditCard size={16} />}
             size="lg"
           />
 
