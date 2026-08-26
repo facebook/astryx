@@ -21,7 +21,7 @@ import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
-import {eagerShowcases} from '../generated/galleryShowcaseRegistry';
+import {eagerShowcases} from '../components/eagerShowcases';
 import {exampleRegistry} from '../generated/exampleRegistry';
 
 const REPO_ROOT = path.resolve(
@@ -1036,7 +1036,7 @@ describe('LinkProvider utility page', () => {
  * any loading state. These tests recompute the gallery's render order from
  * the same inputs the page uses and pin the eager set to the top of it.
  */
-describe('galleryShowcaseRegistry', () => {
+describe('galleryEagerShowcases', () => {
   /**
    * The gallery's category order lives in the page itself. Reading it back
    * out of the source keeps this test honest without putting a second copy

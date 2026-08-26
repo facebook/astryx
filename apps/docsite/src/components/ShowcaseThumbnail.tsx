@@ -26,7 +26,8 @@ import {Theme} from '@astryxdesign/core/theme';
 import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {useThemeMode} from '../app/providers';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
-import {eagerShowcases} from '../generated/galleryShowcaseRegistry';
+
+import {eagerShowcases} from './eagerShowcases';
 
 /** Distance from the viewport at which a lazy tile starts loading. */
 const LAZY_ROOT_MARGIN = '400px';
