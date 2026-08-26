@@ -117,11 +117,7 @@ function RegistrySpecimen() {
           value={checked}
           onChange={setChecked}
         />
-        <Switch
-          label="Switch indicator"
-          value={enabled}
-          onChange={setEnabled}
-        />
+        <Switch label="Switch control" value={enabled} onChange={setEnabled} />
         <RadioList label="Radio indicator" value={radio} onChange={setRadio}>
           <RadioListItem label="First" value="one" />
           <RadioListItem label="Second" value="two" />
