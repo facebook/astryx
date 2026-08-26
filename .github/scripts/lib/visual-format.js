@@ -63,7 +63,17 @@ function buildVisualSection(verdict, reportUrl) {
   const reportBase = safeReportUrl
     ? `${safeReportUrl.replace(/\/+$/, '')}/`
     : null;
-  const evidence = reportBase
+  // GitHub comments fetch raw branch images directly. The repository's Pages
+  // deployment can be delayed or errored independently of the gh-pages push;
+  // coupling inline evidence to that deployment produced six broken images in
+  // the first live demo even though every PNG existed in the branch.
+  const rawBase = reportBase?.match(
+    /^https:\/\/facebook\.github\.io\/astryx\/pr\/(\d+)\/visual\/$/,
+  )?.[1];
+  const imageBase = rawBase
+    ? `https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/${rawBase}/visual/`
+    : reportBase;
+  const evidence = imageBase
     ? verdict.changes
         .slice(0, 3)
         .map(change => {
@@ -76,9 +86,9 @@ function buildVisualSection(verdict, reportUrl) {
 <table>
 <tr><th>Before</th><th>After</th><th>Diff</th></tr>
 <tr>
-<td><img src="${reportBase}before/${key}.png" width="300" alt="Before visual regression frame"></td>
-<td><img src="${reportBase}after/${key}.png" width="300" alt="After visual regression frame"></td>
-<td><img src="${reportBase}diff/${key}.png" width="300" alt="Pixel difference frame"></td>
+<td><img src="${imageBase}before/${key}.png" width="300" alt="Before visual regression frame"></td>
+<td><img src="${imageBase}after/${key}.png" width="300" alt="After visual regression frame"></td>
+<td><img src="${imageBase}diff/${key}.png" width="300" alt="Pixel difference frame"></td>
 </tr>
 </table>
 </details>`;

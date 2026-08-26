@@ -105,20 +105,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      # pr-visual already produced a static before / after / diff report.
-      # Download it best-effort and copy it beside the PR preview — never execute
-      # PR-controlled report code in this privileged workflow_run job.
-      - name: Download visual regression report
-        id: dl-visual
-        if: steps.parse.outputs.deploy == 'true'
-        uses: actions/download-artifact@v8
-        with:
-          name: visual-pr-report
-          path: visual-report
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
       - name: Verify preview artifacts are present
         id: verify
         if: steps.parse.outputs.deploy == 'true'
@@ -163,16 +149,6 @@ jobs:
             cp -r storybook-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
             mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
             cp -r sandbox-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/
-
-            # The report is optional: PRs with no component change skip
-            # pr-visual. When present, publish all relative before/after/diff
-            # assets so the report works as a normal web page and its images can
-            # render inline in the PR comment.
-            if [ -f visual-report/report/index.html ]; then
-              mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/visual
-              cp -r visual-report/report/. /tmp/gh-pages/pr/${PR_NUMBER}/visual/
-              echo "Visual report: https://facebook.github.io/astryx/pr/${PR_NUMBER}/visual/"
-            fi
 
             cd /tmp/gh-pages
             git add -A
