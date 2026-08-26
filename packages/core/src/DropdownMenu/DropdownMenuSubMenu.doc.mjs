@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Dropdown Menu Submenu',
   isHiddenFromOverview: true,
   description:
-    'A single menu row that reveals a nested flyout of its own items. The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled); its children become the flyout content. Opens inline-end with viewport auto-flip; Right/Enter/Space opens and focuses the first item, Left/Escape closes and returns focus to the trigger (Right/Left swap in RTL). For data-driven menus, give a menu item a nested `items` array instead of using this component directly.',
+    'A single menu row that reveals a nested flyout of its own items. The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled); its children become the flyout content. Place inside DropdownMenu, ContextMenu, or a standalone Menu. Opens inline-end with viewport auto-flip; Right/Enter/Space opens and focuses the first item, Left/Escape closes and returns focus to the trigger (Right/Left swap in RTL). The flyout is its own top-layer element, so it is not clipped by a scrolling content box. For data-driven menus, give a menu item a nested `items` array instead of using this component directly.',
   playground: {
     defaults: {label: 'Move to'},
   },
@@ -47,12 +47,13 @@ export const docs = {
       type: 'boolean',
       default: 'false',
       description:
-        'Show a spinner in place of the caret, e.g. while a lazy submenu\'s children are loading.',
+        "Show a spinner in place of the caret, e.g. while a lazy submenu's children are loading.",
     },
     {
       name: 'menuWidth',
       type: 'number | string',
-      description: 'Fixed flyout width. Defaults to sizing to its content (min 160px).',
+      description:
+        'Fixed flyout width. Defaults to sizing to its content (min 160px).',
     },
     {
       name: 'onOpenChange',

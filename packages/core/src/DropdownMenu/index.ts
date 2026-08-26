@@ -57,6 +57,10 @@ export {
   type DropdownMenuSubMenuProps,
 } from './DropdownMenuSubMenu';
 
+// Menu — standalone role="menu" body (no trigger, no layer). Compose with
+// DropdownMenuSubMenu inside ComplexSelector (popupRole="none").
+export {Menu, type MenuProps, type MenuFocusOnOpen} from './Menu';
+
 // Menu-coordination context — public so consumers can build custom menu items
 // that read the menu size / close the menu.
 export {

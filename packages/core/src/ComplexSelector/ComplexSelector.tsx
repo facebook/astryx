@@ -5,7 +5,8 @@
 /**
  * @file ComplexSelector.tsx
  * @input Uses React, StyleX, Field, Icon slots, Layer positioning, and usePopover
- * @output Exports a rich-selector shell with exact token-sized input and ghost triggers, plus an imperative open/close handle
+ * @output Exports a rich-selector shell with exact token-sized input and ghost
+ *   triggers, an imperative open/close handle, and popupRole for composing Menu
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -288,6 +289,20 @@ export interface ComplexSelectorProps<Value> extends Omit<
   handleRef?: React.Ref<ComplexSelectorHandle>;
   /** StyleX styles for the popup content container. */
   contentXstyle?: StyleXStyles;
+  /**
+   * ARIA role stamped on the popup surface.
+   *
+   * - `'dialog'` (default): a labeled dialog. Use for custom selector
+   *   content (grids, calendars, trees).
+   * - `'none'`: no role on the surface, so the content's own role (a
+   *   `Menu`, a listbox) is what is announced. Required when composing
+   *   `Menu` + `DropdownMenuSubMenu` inside the popup — a `role="menu"`
+   *   wrapped in a `role="dialog"` announces a dialog the user never asked
+   *   for.
+   *
+   * @default 'dialog'
+   */
+  popupRole?: 'dialog' | 'none';
   /** Test ID for the trigger container. */
   'data-testid'?: string;
 }
@@ -344,6 +359,7 @@ export function ComplexSelector<Value>({
   alignment = 'start',
   handleRef,
   contentXstyle,
+  popupRole = 'dialog',
   xstyle,
   className,
   style,
@@ -385,9 +401,10 @@ export function ComplexSelector<Value>({
   }, []);
 
   const popover = usePopover({
-    dialogLabel: label,
+    dialogLabel: popupRole === 'dialog' ? label : undefined,
     hasCloseButton: false,
-    hasAutoFocus: true,
+    hasAutoFocus: popupRole === 'dialog',
+    role: popupRole,
     surfaceTarget: 'complex-selector-popup',
     onHide: handlePopoverHide,
   });
@@ -501,7 +518,7 @@ export function ComplexSelector<Value>({
           ref={triggerRef}
           id={triggerId}
           type="button"
-          aria-haspopup="dialog"
+          aria-haspopup={popupRole === 'dialog' ? 'dialog' : 'true'}
           aria-expanded={isOpen}
           aria-controls={contentId}
           aria-describedby={ariaDescribedBy}
