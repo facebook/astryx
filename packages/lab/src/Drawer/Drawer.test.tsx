@@ -617,6 +617,39 @@ describe('Drawer', () => {
     });
   });
 
+  describe('exit anchoring', () => {
+    it('slides out to the side it opened from, even if the prop flips', () => {
+      // The common consumer shape: `side` is derived from the same state that
+      // drives isOpen, so it reverts to the default the moment the drawer
+      // closes. The panel must still leave by the edge it came in from.
+      function Harness() {
+        const [side, setSide] = useState<'start' | 'end' | null>(null);
+        return (
+          <>
+            <button type="button" onClick={() => setSide('start')}>
+              Open from start
+            </button>
+            <Drawer
+              isOpen={side != null}
+              onOpenChange={isOpen => !isOpen && setSide(null)}
+              label="Filters"
+              side={side ?? 'end'}>
+              Content
+            </Drawer>
+          </>
+        );
+      }
+      render(<Harness />);
+      fireEvent.click(screen.getByRole('button', {name: 'Open from start'}));
+      const dialog = screen.getByRole('dialog', {hidden: true});
+      expect(dialog).toHaveAttribute('data-side', 'start');
+
+      fireEvent.keyDown(dialog, {key: 'Escape'});
+      // Mid-exit: the live prop is now 'end', the anchor must still be 'start'.
+      expect(dialog).toHaveAttribute('data-side', 'start');
+    });
+  });
+
   describe('container padding isolation', () => {
     it('resets container padding custom properties on the root dialog element', () => {
       render(

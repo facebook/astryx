@@ -651,8 +651,21 @@ export function Drawer({
     ? MOBILE_WIDTH_FULL
     : `min(${widthValue}, calc(100dvw - ${MOBILE_PAGE_REVEAL}px))`;
 
-  const sideStyle = side === 'start' ? styles.start : styles.end;
-  const sideOpenStyle = side === 'start' ? styles.startOpen : styles.endOpen;
+  // The side the panel is ANCHORED to, which is the side it must slide back
+  // out to. Latched at open, because a consumer commonly derives `side` from
+  // the same state that drives `isOpen` (`side={selected?.side ?? 'end'}`):
+  // that state clears on close, so the live prop flips mid-exit and the panel
+  // teleports to the other edge and slides out the wrong way. Children stay
+  // mounted for the exit for the same reason; so does the anchor.
+  const exitSideRef = useRef(side);
+  if (isOpen) {
+    exitSideRef.current = side;
+  }
+  const anchoredSide = isOpen ? side : exitSideRef.current;
+
+  const sideStyle = anchoredSide === 'start' ? styles.start : styles.end;
+  const sideOpenStyle =
+    anchoredSide === 'start' ? styles.startOpen : styles.endOpen;
 
   // Filter out native `open` to prevent InvalidStateError when passed
   const {open: _open, ...safeProps} = props as Record<string, unknown>;
@@ -661,7 +674,7 @@ export function Drawer({
     <dialog
       ref={mergeRefs(ref, dialogRef)}
       {...mergeProps(
-        themeProps('drawer', {side}),
+        themeProps('drawer', {side: anchoredSide}),
         stylex.props(
           styles.dialog,
           overlayPaddingReset.reset,
