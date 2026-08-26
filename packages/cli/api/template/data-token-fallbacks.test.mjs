@@ -17,7 +17,10 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {dataTokenDefaults} from '@astryxdesign/core/theme';
 
-const TEMPLATES_DIR = path.dirname(fileURLToPath(import.meta.url));
+const TEMPLATES_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../assets/templates',
+);
 const CALL_SITE = /var\(\s*(--color-data-[a-z0-9-]+)\s*,\s*([^)]+?)\s*\)/g;
 
 /** The light side of a `light-dark(a, b)` pair — what a template falls back to. */
