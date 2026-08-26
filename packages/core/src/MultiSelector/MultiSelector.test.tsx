@@ -1379,6 +1379,54 @@ describe('MultiSelector', () => {
       expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '-1');
     });
 
+    it('does not open the popup when isLoading is true (click)', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={[]}
+          value={[]}
+          onChange={() => {}}
+          isLoading
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('does not open the popup when isLoading is true (ArrowDown)', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={[]}
+          value={[]}
+          onChange={() => {}}
+          isLoading
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      await user.keyboard('{ArrowDown}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('keeps the trigger focusable while isLoading (not disabled)', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={[]}
+          value={[]}
+          onChange={() => {}}
+          isLoading
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).not.toHaveAttribute('disabled');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
+    });
+
     it('opens the listbox with ArrowDown from a focused trigger', async () => {
       const user = userEvent.setup();
       render(
