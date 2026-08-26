@@ -69,6 +69,38 @@ describe('Card', () => {
     expect(new Set(classes).size).toBe(4);
   });
 
+  // Deriving the prop from CardVariantMap must not change which values it
+  // accepts. A key added to or dropped from the map fails to type-check here:
+  // a missing one against Record<CardVariant, true>, an extra one as an excess
+  // property.
+  const builtInVariants: Record<CardVariant, true> = {
+    default: true,
+    transparent: true,
+    muted: true,
+    blue: true,
+    cyan: true,
+    gray: true,
+    green: true,
+    orange: true,
+    pink: true,
+    purple: true,
+    red: true,
+    teal: true,
+    yellow: true,
+  };
+
+  it('accepts exactly the thirteen built-in variants, each reflected', () => {
+    const variants = Object.keys(builtInVariants) as CardVariant[];
+    expect(variants).toHaveLength(13);
+    for (const variant of variants) {
+      const {container} = render(<Card variant={variant}>C</Card>);
+      expect(container.firstElementChild).toHaveAttribute(
+        'data-variant',
+        variant,
+      );
+    }
+  });
+
   describe('a variant a theme added', () => {
     // The cast stands in for the module augmentation `astryx theme build`
     // emits; that the augmentation itself widens the prop is covered by
