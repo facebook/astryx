@@ -236,6 +236,27 @@ const inlineStyles: Record<string, CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
   },
+  // Checkout + chat share a row at roughly 1:2 while both flex bases fit, then
+  // the chat drops to its own full-width row. A grid track can't express that:
+  // its width is a fraction of however many tracks happen to fit, so the
+  // checkout column swings with the track count and lands anywhere from 200px
+  // up. The checkout form is the densest content in the showcase — a card
+  // number, an expiry/CVC pair, a country selector, and a labelled pay button —
+  // and below ~300px those fields clip their own text, worst on themes with a
+  // larger spacing scale (Matcha's --spacing-5 card padding alone eats 60px).
+  // A flex basis makes 300px the floor instead of the accident: the row wraps
+  // before the checkout is squeezed under it. display:grid matches GridSpan so
+  // the card still stretches to the row height.
+  checkoutColumn: {
+    flex: '1 1 300px',
+    minWidth: 0,
+    display: 'grid',
+  },
+  chatColumn: {
+    flex: '2 1 520px',
+    minWidth: 0,
+    display: 'grid',
+  },
 };
 
 const PRODUCT_IMAGE_KEYS = ['watch', 'headphones', 'backpack'];
@@ -284,8 +305,7 @@ const DEFAULT_PRODUCTS: ProductSpec[] = [
 // scaffolded template renders real imagery without needing local public assets.
 const DEFAULT_IMAGES: Record<string, string> = {
   watch: '/template-assets/Neutral-Watch.png',
-  headphones:
-    '/template-assets/Neutral-Headphones.png',
+  headphones: '/template-assets/Neutral-Headphones.png',
   backpack: '/template-assets/Neutral-Backpack.png',
   wallet: '/template-assets/Neutral-Wallet.png',
   tumbler: '/template-assets/Neutral-Tumbler.png',
@@ -350,14 +370,14 @@ function CardShowcase({
 
   return (
     <VStack gap={8}>
-      <Grid columns={columns} gap={4}>
-        <GridSpan columns={1}>
+      <HStack gap={4} wrap="wrap">
+        <div style={inlineStyles.checkoutColumn}>
           <CheckoutCard isMobile={isMobile} />
-        </GridSpan>
-        <GridSpan columns={isMobile ? 1 : 2}>
+        </div>
+        <div style={inlineStyles.chatColumn}>
           <ChatCard />
-        </GridSpan>
-      </Grid>
+        </div>
+      </HStack>
       <Grid columns={columns} gap={4}>
         <GridSpan columns={isMobile ? 1 : 3}>
           <InventoryCard images={images} inventory={inventory} />
@@ -506,7 +526,11 @@ function StorePreview({
 
 function CheckoutCard({isMobile}: {isMobile: boolean}) {
   return (
-    <Card padding={5} style={styles.card}>
+    // A phone gives this card ~340px to work with, and on themes with a large
+    // spacing scale --spacing-5 of padding per side spends enough of it that
+    // the card number field can no longer show a full 16-digit number. One step
+    // down buys that room back where it is scarcest.
+    <Card padding={isMobile ? 4 : 5} style={styles.card}>
       <VStack gap={4} style={styles.checkoutStack}>
         <Heading level={2}>Checkout</Heading>
 
@@ -560,7 +584,12 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
             <Text type="supporting" weight="bold">
               Payment method
             </Text>
-            <Grid columns={isMobile ? 1 : {minWidth: 70, max: 3}} gap={2}>
+            {/* 80, not 70: a 70px track leaves too little room inside the
+                card's own padding for "Google" to sit on one line once the
+                theme's spacing scale is large (Matcha, Y2K), so the word broke
+                mid-glyph. At 80 the three cards drop to 2 + 1 instead of
+                breaking, and still sit three-across wherever they fit. */}
+            <Grid columns={isMobile ? 1 : {minWidth: 80, max: 3}} gap={2}>
               <SelectableCard
                 label="Pay with card"
                 isSelected={true}
@@ -614,7 +643,10 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
             placeholder="1234 1234 1234 1234"
             value=""
             onChange={() => {}}
-            startIcon={<CreditCard size={16} />}
+            // The icon is decorative — the label already names the field — and
+            // it plus its gap costs more width than a 16-digit number can spare
+            // on a small phone. Drop it there rather than truncate the number.
+            startIcon={isMobile ? undefined : <CreditCard size={16} />}
             size="lg"
           />
 
