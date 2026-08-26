@@ -500,7 +500,7 @@ const brandVariantTheme = defineTheme({
 
 export const ThemeAddedVariant: Story = {
   render: () => (
-    <Theme theme={brandVariantTheme}>
+    <Theme theme={brandVariantTheme} mode="light">
       <div {...stylex.props(styles.storyWrapper)}>
         <div>
           <h4 {...stylex.props(styles.heading)}>brand (added by the theme)</h4>
