@@ -152,15 +152,31 @@ const styles: Record<string, CSSProperties> = {
   cardDescription: {
     flex: 1,
   },
+  // The quantity field is sized by NumberInput's `width` prop, not from here —
+  // a `style` width only reaches the control, so the label and status would
+  // stay their own width and the field would come apart. All this adds is the
+  // flex behaviour: hold the assigned width rather than absorbing the row's
+  // slack, since a two-digit quantity needs far less room than the button.
   quantityInput: {
-    // minWidth (not a hard width) so the field grows to fit the digit + the
-    // theme's input padding. A fixed 40px was too tight on themes with larger
-    // padding / bigger type scale (e.g. Matcha, Y2K), clipping the value.
-    minWidth: 64,
     flexShrink: 0,
   },
+  // `auto` basis, not 0: flex breaks lines on the basis, so the button asks for
+  // its label's full width and drops to its own line when the card can't give
+  // it. A 0 basis would keep it on the row and ellipsize the label instead.
+  // Shrink stays enabled only as a floor for a card too narrow even for the
+  // wrapped button.
   cartButton: {
-    flex: 1,
+    flex: '1 1 auto',
+    minWidth: 0,
+  },
+  // Without an explicit width this row is shrink-to-fit, because the enclosing
+  // VStack centers rather than stretches its children. It would then size to
+  // its contents and, being centered, overflow the card at BOTH edges once
+  // those contents outgrew it. Pinning it to the card width makes the row the
+  // constraint the two controls resolve against.
+  cartRow: {
+    width: '100%',
+    minWidth: 0,
   },
 };
 
@@ -492,7 +508,12 @@ function StorePreview({
                           }}>
                           {p.description}
                         </Text>
-                        <HStack gap={2} vAlign="center" hAlign="center">
+                        <HStack
+                          gap={2}
+                          vAlign="center"
+                          hAlign="center"
+                          wrap="wrap"
+                          style={styles.cartRow}>
                           <NumberInput
                             label="Quantity"
                             isLabelHidden
@@ -501,6 +522,7 @@ function StorePreview({
                             min={1}
                             max={99}
                             size="sm"
+                            width={72}
                             style={styles.quantityInput}
                           />
                           <Button
