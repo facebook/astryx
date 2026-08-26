@@ -152,28 +152,14 @@ const styles: Record<string, CSSProperties> = {
   cardDescription: {
     flex: 1,
   },
-  // The quantity field is sized by NumberInput's `width` prop, not from here —
-  // a `style` width only reaches the control, so the label and status would
-  // stay their own width and the field would come apart. All this adds is the
-  // flex behaviour: hold the assigned width rather than absorbing the row's
-  // slack, since a two-digit quantity needs far less room than the button.
   quantityInput: {
     flexShrink: 0,
   },
-  // `auto` basis, not 0: flex breaks lines on the basis, so the button asks for
-  // its label's full width and drops to its own line when the card can't give
-  // it. A 0 basis would keep it on the row and ellipsize the label instead.
-  // Shrink stays enabled only as a floor for a card too narrow even for the
-  // wrapped button.
+  // `auto` basis so the button wraps to its own line rather than ellipsizing.
   cartButton: {
     flex: '1 1 auto',
     minWidth: 0,
   },
-  // Without an explicit width this row is shrink-to-fit, because the enclosing
-  // VStack centers rather than stretches its children. It would then size to
-  // its contents and, being centered, overflow the card at BOTH edges once
-  // those contents outgrew it. Pinning it to the card width makes the row the
-  // constraint the two controls resolve against.
   cartRow: {
     width: '100%',
     minWidth: 0,
@@ -252,17 +238,8 @@ const inlineStyles: Record<string, CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
   },
-  // Checkout + chat share a row at roughly 1:2 while both flex bases fit, then
-  // the chat drops to its own full-width row. A grid track can't express that:
-  // its width is a fraction of however many tracks happen to fit, so the
-  // checkout column swings with the track count and lands anywhere from 200px
-  // up. The checkout form is the densest content in the showcase — a card
-  // number, an expiry/CVC pair, a country selector, and a labelled pay button —
-  // and below ~300px those fields clip their own text, worst on themes with a
-  // larger spacing scale (Matcha's --spacing-5 card padding alone eats 60px).
-  // A flex basis makes 300px the floor instead of the accident: the row wraps
-  // before the checkout is squeezed under it. display:grid matches GridSpan so
-  // the card still stretches to the row height.
+  // Flex bases, not grid tracks: the checkout form needs a width floor, and the
+  // chat wraps to its own row rather than squeezing it under one.
   checkoutColumn: {
     flex: '1 1 300px',
     minWidth: 0,
@@ -548,10 +525,6 @@ function StorePreview({
 
 function CheckoutCard({isMobile}: {isMobile: boolean}) {
   return (
-    // A phone gives this card ~340px to work with, and on themes with a large
-    // spacing scale --spacing-5 of padding per side spends enough of it that
-    // the card number field can no longer show a full 16-digit number. One step
-    // down buys that room back where it is scarcest.
     <Card padding={isMobile ? 4 : 5} style={styles.card}>
       <VStack gap={4} style={styles.checkoutStack}>
         <Heading level={2}>Checkout</Heading>
@@ -606,11 +579,6 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
             <Text type="supporting" weight="bold">
               Payment method
             </Text>
-            {/* 80, not 70: a 70px track leaves too little room inside the
-                card's own padding for "Google" to sit on one line once the
-                theme's spacing scale is large (Matcha, Y2K), so the word broke
-                mid-glyph. At 80 the three cards drop to 2 + 1 instead of
-                breaking, and still sit three-across wherever they fit. */}
             <Grid columns={isMobile ? 1 : {minWidth: 80, max: 3}} gap={2}>
               <SelectableCard
                 label="Pay with card"
@@ -665,9 +633,6 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
             placeholder="1234 1234 1234 1234"
             value=""
             onChange={() => {}}
-            // The icon is decorative — the label already names the field — and
-            // it plus its gap costs more width than a 16-digit number can spare
-            // on a small phone. Drop it there rather than truncate the number.
             startIcon={isMobile ? undefined : <CreditCard size={16} />}
             size="lg"
           />
