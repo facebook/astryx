@@ -294,6 +294,16 @@ export function ChatVirtualizer<T>(
   // retrying until the target is reached. Only INTENT signals (wheel/touch,
   // not scroll effects — those mix in our own writes) break it early.
   const converging = React.useRef(true);
+  // Prices hold still while a declared target is in flight: the destination is
+  // an offset in the geometry, and repricing mid-flight moves it out from under
+  // the target. The release gets a rAF pass of its own, so whatever the
+  // averages then owe is derived from a settled geometry rather than appended
+  // to the pass that just landed. (LegendList snapshots the averages for the
+  // duration of a programmatic scroll; virtua reprices once and returns the
+  // displacement for the caller to apply as a jump. The invariant all of them
+  // hold is that a price move and its position correction are one step.)
+  const priceFreeze = React.useRef(true);
+  const rafRelease = React.useRef<number | null>(null);
   const [win, setWin] = React.useState<Win>({start: 0, end: -1});
   const winRef = React.useRef(win);
   winRef.current = win;
@@ -345,35 +355,68 @@ export function ChatVirtualizer<T>(
   // global average, or the static estimate), so a type first encountered
   // mid-scroll is not a cliff — zero-initialized buckets made the first
   // per-type pricing a mass repricing event.
+  // READ ONLY. Whether a price MOVES is decided once per pass, in
+  // repriceBuckets — never here, which runs per row.
   const effectiveAvg = (t: string, baseline: number): number => {
     const b = bucketsRef.current.get(t);
-    if (!b || b.count === 0) {
-      return baseline;
+    return !b || b.count === 0 || b.eff === 0 ? baseline : b.eff;
+  };
+
+  // ONE repricing decision per pass, taken before the geometry is rebuilt, so
+  // a pass always prices every row from the same set of numbers.
+  //
+  // This used to live inside effectiveAvg — inside recompute's O(N) row loop —
+  // and one of its gates is a CLOCK READING. A loop long enough to straddle the
+  // instant that gate opens repriced the tail of the list and not the head: the
+  // pass published a geometry that was internally inconsistent, restored
+  // scrollTop against it, and consumed geoChanged, so the next pass — the one
+  // holding the consistent geometry — found the flag clear and never wrote. The
+  // odds scale with loop length, and the gate re-crosses 250ms after every
+  // gesture, so it is a size-amplified race rather than a large-list-only bug.
+  const repriceBuckets = (): void => {
+    if (typeof estimatedItemSize === 'function') {
+      return; // a function estimate is authoritative — nothing to reprice
     }
+    if (converging.current || priceFreeze.current) {
+      return;
+    }
+    // Sampled ONCE per pass, and only while scrolling is QUIET: a repricing
+    // event moves every unmeasured offset at once, so landing it mid-scroll
+    // costs a frame of up-to-step-size deviation. A quarter second of silence
+    // defers the same correction into frames nobody is watching. (Streams
+    // reprice freely — machinery echoes are not user events.)
+    const quiet = performance.now() - lastUserEventT.current > 250;
     // Shrinkage toward the inherited baseline: the baseline counts as
     // PRIOR_SAMPLES virtual samples, so a young bucket's mean is mostly
-    // baseline (1 real sample = 1/(1+K) weight) and the data takes over
-    // smoothly as samples accumulate. Replaces a hard min-count gate —
-    // same protection against single-sample noise, no cliff at the
-    // threshold crossing.
-    const raw = (b.sum + PRIOR_SAMPLES * baseline) / (b.count + PRIOR_SAMPLES);
-    if (b.eff === 0) {
-      b.eff = baseline > 0 ? baseline : raw;
+    // baseline and the data takes over smoothly as samples accumulate.
+    const settle = (b: Bucket | undefined, baseline: number): number => {
+      if (!b || b.count === 0) {
+        return baseline;
+      }
+      const raw =
+        (b.sum + PRIOR_SAMPLES * baseline) / (b.count + PRIOR_SAMPLES);
+      if (b.eff === 0) {
+        b.eff = baseline > 0 ? baseline : raw;
+      }
+      if (quiet && Math.abs(raw - b.eff) > b.eff * 0.1) {
+        b.eff = raw;
+        geoChanged.current = true;
+      }
+      return b.eff;
+    };
+    // Global first: it is the baseline every type bucket shrinks toward, so it
+    // has to settle before they read it.
+    const global = settle(
+      bucketsRef.current.get(GLOBAL_BUCKET),
+      estimatedItemSize,
+    );
+    if (getItemType) {
+      for (const [t, b] of bucketsRef.current) {
+        if (t !== GLOBAL_BUCKET) {
+          settle(b, global);
+        }
+      }
     }
-    if (
-      !converging.current &&
-      // ...and only while scrolling is QUIET: a repricing event moves every
-      // unmeasured offset at once, costing ~one frame at up-to-step-size
-      // deviation if it lands mid-scroll. A quarter second of scroll silence
-      // defers the same correction into frames nobody is watching. (Streams
-      // reprice freely — machinery echoes are not user events.)
-      performance.now() - lastUserEventT.current > 250 &&
-      Math.abs(raw - b.eff) > b.eff * 0.1
-    ) {
-      b.eff = raw;
-      geoChanged.current = true;
-    }
-    return b.eff;
   };
   const estOf = (item: T, i: number): number => {
     if (typeof estimatedItemSize === 'function') {
@@ -653,6 +696,7 @@ export function ChatVirtualizer<T>(
       gestureHeld() && geo.current.keys.length > 0
         ? anchorAt(el.scrollTop)
         : null;
+    repriceBuckets();
     recompute();
     if (heldAnchor !== null) {
       const t = targetFor(heldAnchor, el);
@@ -715,6 +759,19 @@ export function ChatVirtualizer<T>(
       Math.abs(el.scrollTop - target) <= CONVERGE_EPSILON_PX
     ) {
       converging.current = false;
+      // Hold prices one pass longer than the convergence, then let a pass that
+      // SEES the settled numbers derive and write the scrollTop they imply.
+      if (priceFreeze.current) {
+        if (rafRelease.current !== null) {
+          cancelAnimationFrame(rafRelease.current);
+        }
+        rafRelease.current = requestAnimationFrame(() => {
+          rafRelease.current = null;
+          priceFreeze.current = false;
+          geoChanged.current = true;
+          syncRef.current();
+        });
+      }
     }
     // The window must cover the DESIRED position, not the stale scrollTop:
     // in end mode a newly appended tail row would otherwise never enter the
@@ -765,6 +822,7 @@ export function ChatVirtualizer<T>(
       geo.current.keys[0] !== head
     ) {
       converging.current = true;
+      priceFreeze.current = true;
     }
   }
 
@@ -826,6 +884,9 @@ export function ChatVirtualizer<T>(
       if (rafRetry.current !== null) {
         cancelAnimationFrame(rafRetry.current);
       }
+      if (rafRelease.current !== null) {
+        cancelAnimationFrame(rafRelease.current);
+      }
     },
     [],
   );
@@ -837,6 +898,7 @@ export function ChatVirtualizer<T>(
   // (committed semantics; no blank flash on long jumps).
   const declare = (m: Mode): void => {
     mode.current = m;
+    priceFreeze.current = true;
     userScrolledRef.current = false;
     userAway.current = 0;
     converging.current = true;
@@ -958,6 +1020,7 @@ export function ChatVirtualizer<T>(
     // read, so there is no window to race. Re-engaging stays position-based.
     const onWheel = (e: Event): void => {
       converging.current = false;
+      priceFreeze.current = false;
       if (
         (e as WheelEvent).deltaY < 0 &&
         mode.current.kind === 'end' &&
@@ -1034,6 +1097,7 @@ export function ChatVirtualizer<T>(
     };
     const onTouchStart = (): void => {
       converging.current = false;
+      priceFreeze.current = false;
       // A second finger landing during the settle window re-opens the same
       // gesture rather than starting a new one: the adjustment the spacer is
       // carrying belongs to a frame that has not been handed back yet.
