@@ -887,14 +887,31 @@ const GROUPING_OPTIONS: ReadonlyArray<{value: GroupField; label: string}> = [
 ];
 
 /**
+ * The words a section is titled with. The group key is what the heading prints,
+ * so it has to be the label and not the stored value — grouping by status would
+ * otherwise head its sections "on_hold". Technician and customer are stored as
+ * their own labels already, which is what the fallback covers.
+ */
+function groupKeyOf(job: ServiceJob, field: GroupField): string {
+  if (field === 'none') {
+    return '';
+  }
+  const stored = String(job[field]);
+  return VALUE_LABELS[stored] ?? stored;
+}
+
+/**
  * Section order per field. Without it the sections would come out in whatever
  * order the active sort happened to surface them, so status and priority take
  * their canonical severity order and the two name fields stay alphabetical.
+ *
+ * Listed as labels, because that is what groupKeyOf produces and these have to
+ * match it to rank anything.
  */
 const GROUP_ORDERS: Record<GroupField, string[]> = {
   none: [],
-  status: Object.keys(STATUS_META),
-  priority: Object.keys(PRIORITY_META),
+  status: Object.keys(STATUS_META).map(k => VALUE_LABELS[k] ?? k),
+  priority: Object.keys(PRIORITY_META).map(k => VALUE_LABELS[k] ?? k),
   technician: TECHNICIANS,
   customer: CUSTOMERS,
 };
@@ -1936,8 +1953,9 @@ export default function TableFilterTemplate() {
     return [...byQuery].sort((a, b) => {
       if (groupRank != null) {
         const cmp =
-          (groupRank.get(String(a[groupField])) ?? Number.MAX_SAFE_INTEGER) -
-          (groupRank.get(String(b[groupField])) ?? Number.MAX_SAFE_INTEGER);
+          (groupRank.get(groupKeyOf(a, groupField)) ??
+            Number.MAX_SAFE_INTEGER) -
+          (groupRank.get(groupKeyOf(b, groupField)) ?? Number.MAX_SAFE_INTEGER);
         if (cmp !== 0) {
           return cmp;
         }
@@ -1969,7 +1987,7 @@ export default function TableFilterTemplate() {
   // Grouped, the page unit is the section; flat, it is the row. Passing the
   // key only while grouping keeps an ungrouped view on even page sizes.
   const batchGroupKey = useMemo(
-    () => (isGrouped ? (job: ServiceJob) => String(job[groupField]) : null),
+    () => (isGrouped ? (job: ServiceJob) => groupKeyOf(job, groupField) : null),
     [groupField, isGrouped],
   );
 
@@ -2256,34 +2274,11 @@ export default function TableFilterTemplate() {
   }, []);
 
   const groupBy = useCallback(
-    (item: ServiceJob) =>
-      groupField === 'none' ? '' : String(item[groupField]),
+    (item: ServiceJob) => groupKeyOf(item, groupField),
     [groupField],
   );
 
   const getRowKey = useCallback((item: ServiceJob) => item.id, []);
-
-  /**
-   * Rows group on the stored value, so the header has to restate it in the
-   * words the cells use. Technician and customer are stored as their own
-   * labels already, which is what the fallback covers.
-   */
-  const renderGroupHeader = useCallback(
-    // `count` is the whole section, not a running tally: batches stop on
-    // section boundaries, so a section is only ever rendered complete.
-    (groupKey: string, count: number) => (
-      // The plugin lays its header out as a flex row, so two siblings need
-      // no wrapper — and Text renders a span, which the span around it can
-      // hold.
-      <>
-        <Text type="label">{VALUE_LABELS[groupKey] ?? groupKey}</Text>
-        <Text type="supporting" color="secondary">
-          {count} {count === 1 ? 'job' : 'jobs'}
-        </Text>
-      </>
-    ),
-    [],
-  );
 
   const {
     plugin: groupPlugin,
@@ -2297,7 +2292,11 @@ export default function TableFilterTemplate() {
     groupBy,
     collapsedGroups,
     onToggleGroup: toggleGroup,
-    renderGroupHeader,
+    // No renderGroupHeader on purpose. The plugin only pins the heading to the
+    // start edge for its built-in one — a custom heading is left full width,
+    // which leaves a sticky element no room to travel, so chevron and label
+    // scroll off a sideways-scrolled table. The default already sets the label
+    // and its count in two weights, which is what a custom one was doing here.
     getRowKey,
     groupOrder: GROUP_ORDERS[groupField],
   });
