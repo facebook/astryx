@@ -35,6 +35,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     fontSize: 14,
   },
+  // Lets the ThemeAddedVariant story's card colour reach its own text.
+  textInherit: {
+    color: 'inherit',
+  },
   storyWrapper: {
     display: 'flex',
     gap: spacingVars['--spacing-6'],
@@ -476,7 +480,13 @@ export const ColorVariants: Story = {
  * augmentation widens `CardVariantMap` so `variant="brand"` type-checks, and
  * `card['variant:brand']` supplies the paint. Card itself has no style for the
  * value, so it falls through to base styles and the theme rule is what shows —
- * here a dashed accent border no built-in variant can produce.
+ * here an accent fill no built-in variant produces.
+ *
+ * The added variant is background-only, which is the shape the axis carries:
+ * Card subtracts a border's width from its padding for `default` alone, so a
+ * theme rule that paints a border sits a border-width proud of the cards
+ * beside it. That is true of a theme override on a built-in variant today and
+ * is not this axis to fix.
  */
 declare module '@astryxdesign/core/Card' {
   interface CardVariantMap {
@@ -489,10 +499,8 @@ const brandVariantTheme = defineTheme({
   components: {
     card: {
       'variant:brand': {
-        backgroundColor: 'var(--color-background-blue)',
-        borderWidth: 'var(--border-width)',
-        borderStyle: 'dashed',
-        borderColor: 'var(--color-accent)',
+        backgroundColor: 'var(--color-accent)',
+        color: 'var(--color-on-accent)',
       },
     },
   },
@@ -505,7 +513,7 @@ export const ThemeAddedVariant: Story = {
         <div>
           <h4 {...stylex.props(styles.heading)}>brand (added by the theme)</h4>
           <Card width={200} variant="brand">
-            <p {...stylex.props(styles.text)}>brand</p>
+            <p {...stylex.props(styles.text, styles.textInherit)}>brand</p>
           </Card>
         </div>
         <div>
