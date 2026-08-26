@@ -42,6 +42,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
 import {generateThemeCSS, type DefinedTheme} from './defineTheme';
+import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
@@ -141,7 +142,8 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
         `the built artifacts.`,
     );
 
-    const {prose, component, base} = generateThemeCSS(theme);
+    const {prose, component} = generateThemeCSS(theme);
+    const base = generateDataTokenDefaultsCSS();
     injectedThemes.add(themeKey);
     const cleanups: (() => void)[] = [() => injectedThemes.delete(themeKey)];
 

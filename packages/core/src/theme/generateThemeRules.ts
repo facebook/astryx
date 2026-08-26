@@ -125,7 +125,7 @@ export interface ThemeRulesSplit {
 }
 
 /**
- * Output from generateThemeCSS — three CSS blocks for different layers.
+ * Output from generateThemeCSS — two CSS blocks for different layers.
  */
 export interface ThemeCSSOutput {
   /**
@@ -140,13 +140,6 @@ export interface ThemeCSSOutput {
    * theme component overrides take effect. Empty string if no rules.
    */
   component: string;
-  /**
-   * The `--color-data-*` defaults at `:root`, identical for every theme.
-   * Should be injected into @layer astryx-base — where StyleX puts the core
-   * token defaults — so a theme's own value outranks it and a nested theme
-   * inherits its parent's override.
-   */
-  base: string;
 }
 
 // =============================================================================
@@ -778,7 +771,10 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
  * specificity. Seeding it per theme scope instead re-declares the default
  * inside every nested theme, which is the shadowing this shape avoids.
  *
- * @internal Reached from outside `packages/core` as `generateThemeCSS().base`.
+ * @internal Not exported from `@astryxdesign/core/theme`: the `<Theme>`
+ * runtime is the only caller. `astryx theme build` formats the same block from
+ * the public `dataTokenDefaults` export, and a CLI test asserts the two are
+ * byte-identical.
  */
 export function generateDataTokenDefaultsCSS(): string {
   const declarations = Object.entries(dataTokenDefaults)
@@ -790,14 +786,16 @@ export function generateDataTokenDefaultsCSS(): string {
 /**
  * Generate layered CSS for a theme — runtime path.
  *
- * Returns three CSS blocks for injection into different layers:
+ * Returns two CSS blocks for injection into different layers:
  * - `prose`: @scope'd element defaults → inject into @layer reset
- * - `base`: the `:root` data-token defaults → inject into @layer astryx-base
  * - `component`: @scope'd token + .astryx-* overrides → inject into @layer astryx-theme
  *
  * This separation ensures prose defaults (what bare HTML looks like in a theme)
  * sit at reset-layer priority where any class-based style wins, while component
  * overrides sit above StyleX so themes can restyle components intentionally.
+ *
+ * The theme-independent `--color-data-*` defaults are not part of this output:
+ * see `generateDataTokenDefaultsCSS`.
  */
 export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
   const {component, prose} = generateThemeRulesSplit(theme);
@@ -828,6 +826,5 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
   return {
     prose: proseCss,
     component: componentCss,
-    base: generateDataTokenDefaultsCSS(),
   };
 }

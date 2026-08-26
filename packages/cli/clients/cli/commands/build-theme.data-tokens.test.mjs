@@ -12,12 +12,20 @@
  *
  * Building requires a compiled @astryxdesign/core, so this suite builds core
  * once in beforeAll via the shared ensureCoreBuilt() helper.
+ *
+ * The build formats the defaults block itself, from the public
+ * `dataTokenDefaults` export; core formats it for the runtime. This suite is
+ * what keeps those two independent formattings byte-identical.
  */
 
 import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+// Core's own generator, imported from source rather than from the package: it
+// is deliberately not part of `@astryxdesign/core/theme`'s public surface, and
+// this suite is the guard that the build's independent formatting matches it.
+import {generateDataTokenDefaultsCSS} from '../../../../core/src/theme/generateThemeRules';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 
@@ -100,16 +108,23 @@ describe('theme build data token output', () => {
   });
 
   it('emits the bytes the runtime generator emits', async () => {
-    const tokens = {'--color-accent': '#0077B6'};
-    const css = await buildTheme(tmpDir, 'charts-parity', {tokens});
+    const css = await buildTheme(tmpDir, 'charts-parity', {
+      tokens: {'--color-accent': '#0077B6'},
+    });
 
-    const {defineTheme, generateThemeCSS} = await import(
-      '@astryxdesign/core/theme'
-    );
-    const {base} = generateThemeCSS(
-      defineTheme({name: 'charts-parity', tokens}),
-    );
+    // The build formats this block itself, from the public `dataTokenDefaults`
+    // export; the runtime formats it in core. Nothing else holds the two
+    // together, so compare the bytes — a changed indent or separator in either
+    // one fails here.
+    const runtimeBase = generateDataTokenDefaultsCSS();
+    const marker = '@layer astryx-base {\n';
+    const start = css.indexOf(marker);
+    expect(start).toBeGreaterThanOrEqual(0);
 
-    expect(css).toContain(`@layer astryx-base {\n${base}\n}`);
+    const bodyStart = start + marker.length;
+    expect(css.slice(bodyStart, bodyStart + runtimeBase.length)).toBe(
+      runtimeBase,
+    );
+    expect(css.slice(bodyStart + runtimeBase.length)).toMatch(/^\n\}/);
   });
 });
