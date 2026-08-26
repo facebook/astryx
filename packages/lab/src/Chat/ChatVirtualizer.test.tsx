@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {render, act} from '@testing-library/react';
 import {createRef} from 'react';
 import {ChatVirtualizer, type ChatVirtualizerHandle} from './ChatVirtualizer';
@@ -94,6 +94,113 @@ describe('ChatVirtualizer', () => {
       // to follow-at-end on the next pass (dead-anchor fallback).
       ref.current?.anchorToKey('missing-key', 0);
     });
+  });
+
+  // ---- Touch write-gate --------------------------------------------------
+  // jsdom has no compositor, so these pin the STATE MACHINE (which events
+  // open and close the gate, and what the gate suppresses), not the geometry
+  // it protects. The painted-position numbers behind it are in the PR.
+
+  function attachedList(el: HTMLElement, data: Row[] = rows(50)) {
+    return renderList(data, {scrollElement: el});
+  }
+
+  const scroller = (): HTMLElement => {
+    const el = document.createElement('div');
+    Object.defineProperty(el, 'clientHeight', {value: 400, writable: true});
+    Object.defineProperty(el, 'scrollHeight', {value: 5000, writable: true});
+    el.scrollTop = 2000;
+    document.body.appendChild(el);
+    return el;
+  };
+
+  const touch = (el: HTMLElement, type: string, remaining = 0): void => {
+    const e = new Event(type, {bubbles: false});
+    Object.defineProperty(e, 'touches', {value: {length: remaining}});
+    act(() => {
+      el.dispatchEvent(e);
+    });
+  };
+
+  it('suppresses scroll writes while a finger is down', () => {
+    const el = scroller();
+    attachedList(el);
+    touch(el, 'touchstart', 1);
+    const at = (el.scrollTop = 1234);
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+    expect(el.scrollTop).toBe(at);
+    touch(el, 'touchend', 0);
+    el.remove();
+  });
+
+  it('starts settling only when the last finger lifts', () => {
+    vi.useFakeTimers();
+    try {
+      const el = scroller();
+      attachedList(el);
+      touch(el, 'touchstart', 1);
+      touch(el, 'touchstart', 2);
+      // First lift with a finger still on the glass must NOT settle: a
+      // two-finger drag would take a scroll write under the remaining
+      // finger.
+      touch(el, 'touchend', 1);
+      const held = (el.scrollTop = 900);
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(el.scrollTop).toBe(held);
+      touch(el, 'touchend', 0);
+      el.remove();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('releases the gate on touchcancel (system gesture takeover)', () => {
+    vi.useFakeTimers();
+    try {
+      const el = scroller();
+      attachedList(el);
+      touch(el, 'touchstart', 1);
+      touch(el, 'touchcancel', 0);
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      // Gate released: a later declaration reaches scrollTop again. Without
+      // the touchcancel binding the gate would hold forever, because no
+      // touchend ever arrives for a system-gesture takeover.
+      expect(() => {
+        act(() => {
+          el.dispatchEvent(new Event('scroll'));
+        });
+      }).not.toThrow();
+      el.remove();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('unmounting mid-gesture leaves no pending settle timer', () => {
+    vi.useFakeTimers();
+    try {
+      const el = scroller();
+      const {unmount} = attachedList(el);
+      touch(el, 'touchstart', 1);
+      touch(el, 'touchend', 0);
+      unmount();
+      // The in-flight touch keeps targeting the old element, so the timer
+      // must die with the listeners rather than fire onto a dead tree.
+      expect(() => {
+        act(() => {
+          vi.advanceTimersByTime(2000);
+        });
+      }).not.toThrow();
+      el.remove();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps row identity stable across data replacement', () => {

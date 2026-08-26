@@ -62,7 +62,9 @@ export default meta;
 
 const styles = stylex.create({
   wrapper: {
-    height: '100vh',
+    // dvh, not vh: on mobile Safari 100vh is taller than the visible
+    // viewport, so the page itself scrolls and rubber-bands under the list.
+    height: '100dvh',
     display: 'flex',
     flexDirection: 'column' as const,
   },

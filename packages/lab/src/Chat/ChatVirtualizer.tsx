@@ -53,6 +53,16 @@ const PRIOR_SAMPLES = 5;
 // corrupting the whole geometry. Heights stay imperative; React only
 // manages this one property, so its style diffing never touches height.
 const spacerStyle: React.CSSProperties = {flexShrink: 0};
+// Momentum ("fling") outlives touchend and emits no further touch events, so
+// the end of a gesture is detected as scroll silence, not as an event. Also
+// the retry interval while the gesture is still settling.
+//
+// No platform test gates this: a programmatic scrollTop write cancels an
+// in-flight fling wherever momentum belongs to the scroll view (iOS WebKit,
+// Android), and where it does not (a macOS trackpad, whose momentum arrives
+// as wheel events) there are no touch events to put the gate in the first
+// place. Sniffing the UA would only have made this path miss touchscreens.
+const TOUCH_SETTLE_MS = 150;
 
 export type ChatVirtualizerMeasureMode = 'ro' | 'sync';
 
@@ -235,6 +245,46 @@ export function ChatVirtualizer<T>(
   const geoChanged = React.useRef(false);
   const rafRetry = React.useRef<number | null>(null);
   const prevScrollerRef = React.useRef<HTMLElement | null>(null);
+  // ---- Touch write-gate --------------------------------------------------
+  // While a touch gesture owns the viewport (finger down, plus the settle
+  // window after lift-off), the machinery does not write scrollTop AT ALL.
+  // Two measured failures forced this: near the bottom, per-event restores
+  // erase a slow drag's displacement faster than it can escape the re-engage
+  // zone (599/600 frames reverted — a hard deadlock, identical in Blink and
+  // WebKit); and a write during momentum cancels the fling. Corrections are
+  // not accumulated as a ledger — the reference frame is declarative, so the
+  // post-gesture flush is just one ordinary syncAndRestore from the
+  // re-stated mode. Nothing stale can replay.
+  //
+  // Phases: 'idle' → 'down' (finger on glass) → 'settling' (lifted, momentum
+  // may still be running) → 'idle'. One value, not a pair of booleans: the
+  // gate is exactly "not idle", and no combination can contradict itself.
+  const gesturePhase = React.useRef<'idle' | 'down' | 'settling'>('idle');
+  const touchSettleTimer = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  // Timestamp of the last scroll event of ANY origin during the gesture —
+  // the settle clock, which must include momentum's own scrolls.
+  const lastGestureScrollT = React.useRef(0);
+  // Did the USER move the viewport this gesture? Only non-echo scrolls count.
+  // Kept apart from the clock above because a browser clamp (a spacer shrink
+  // near the bottom) is movement for settling purposes but is NOT intent:
+  // treating it as such let a plain tap mid-stream re-judge follow against a
+  // distance the stream itself had grown, and silently disengage.
+  const gestureMoved = React.useRef(false);
+  const gestureHeld = (): boolean => gesturePhase.current !== 'idle';
+  // Spacer-side compensation while the write-gate holds. Rows measuring in
+  // during the drag land their (real - estimate) deltas in the geometry, and
+  // with scrollTop untouchable the content would drift under the finger
+  // (measured: ±46-90px per mount batch, a visible crawl through cold
+  // history). Document flow gives us a second knob absolute-positioned
+  // virtualizers don't have: the TOP SPACER absorbs the delta instead — each
+  // pass re-anchors the row at the viewport top across the recompute and
+  // rolls the difference into this adjustment, so every on-screen position is
+  // invariant with zero scrollTop writes. The flush folds the accumulated
+  // adjustment into the adopted anchor and zeroes it in the same atomic pass
+  // (spacers + one scrollTop write, same task, no painted transient).
+  const gestureAdj = React.useRef(0);
   // Convergence protection (generalized from a one-shot landing flag):
   // whenever a declarative target is set (mount landing, or any imperative
   // scrollTo*), the list is "converging" — scroll events may not flip the
@@ -379,7 +429,7 @@ export function ChatVirtualizer<T>(
     if (g.keys.length === 0) {
       return {start: 0, end: -1};
     }
-    const top = (desiredTop ?? el.scrollTop) - originRef.current;
+    const top = (desiredTop ?? el.scrollTop) - paintOrigin();
     const start = indexAt(Math.max(0, top - overscanTopRef.current));
     const bottomEdge = top + el.clientHeight + overscanBottomRef.current;
     // When the query reaches past the content, include the last row by
@@ -405,7 +455,12 @@ export function ChatVirtualizer<T>(
   const writeSpacers = (w: Win, floor = false): void => {
     const g = geo.current;
     const empty = w.end < w.start || g.offsets.length === 0;
-    const top = empty ? 0 : g.offsets[w.start];
+    // gestureAdj shifts the whole window block without touching scrollTop
+    // (0 outside a touch gesture). Clamped at the very top of the list —
+    // there is no spacer left to absorb into there.
+    const top = empty
+      ? 0
+      : Math.max(0, g.offsets[w.start] + gestureAdj.current);
     const belowEnd = empty
       ? 0
       : w.end + 1 < g.offsets.length
@@ -431,7 +486,7 @@ export function ChatVirtualizer<T>(
   // geometry, and the reverse: the anchor for whatever is at a scroll offset.
   const anchorAt = (scrollTop: number): Mode => {
     const g = geo.current;
-    const y = scrollTop - originRef.current;
+    const y = scrollTop - paintOrigin();
     const idx = indexAt(y);
     return {
       kind: 'anchor',
@@ -468,12 +523,19 @@ export function ChatVirtualizer<T>(
     );
     return originRef.current;
   };
+  // Where the model's zero sits ON SCREEN. Identical to the origin except
+  // while the touch write-gate holds, when the top spacer carries an extra
+  // offset (gestureAdj) that shifts every painted position. Converting
+  // through this one function keeps painted space and model space from ever
+  // being mixed: anchors read scrollTop through it, targets write back
+  // through it.
+  const paintOrigin = (): number => originRef.current + gestureAdj.current;
 
   // Desired scrollTop for a reference frame, clamped to the scrollable range.
   // null when the anchored row no longer exists in the data.
   const targetFor = (m: Mode, el: HTMLElement): number | null => {
     const g = geo.current;
-    const origin = originRef.current;
+    const origin = paintOrigin();
     let raw;
     const below = belowRef.current;
     if (m.kind === 'end') {
@@ -558,7 +620,23 @@ export function ChatVirtualizer<T>(
         geoChanged.current = true;
       }
     }
+    // While the write-gate holds, the correction this pass would have written
+    // to scrollTop goes into the spacer instead. Anchor to whatever is at the
+    // viewport top BEFORE the recompute (identity, so a long momentum keeps
+    // re-anchoring to what is on screen now), then absorb the resulting
+    // target delta: painted positions come out bit-identical, with no
+    // scrollTop write to cancel momentum or fight the finger.
+    const heldAnchor =
+      gestureHeld() && geo.current.keys.length > 0
+        ? anchorAt(el.scrollTop)
+        : null;
     recompute();
+    if (heldAnchor !== null) {
+      const t = targetFor(heldAnchor, el);
+      if (t !== null) {
+        gestureAdj.current -= t - el.scrollTop;
+      }
+    }
     writeSpacers(winRef.current);
 
     // restore scrollTop from the stored reference frame
@@ -582,7 +660,7 @@ export function ChatVirtualizer<T>(
         target = targetFor(mode.current, el);
       }
     }
-    if (target !== null && geoChanged.current) {
+    if (target !== null && geoChanged.current && !gestureHeld()) {
       geoChanged.current = false;
       if (Math.abs(el.scrollTop - target) > 0.5) {
         el.scrollTop = target;
@@ -619,8 +697,14 @@ export function ChatVirtualizer<T>(
     // in end mode a newly appended tail row would otherwise never enter the
     // window and its growth stay invisible to the geometry; for a declared
     // anchor it is what renders the destination before the position lands.
+    // While the write-gate holds, the viewport belongs to the finger — the
+    // desired target is not going to be written, so the window tracks the
+    // ACTUAL position (rows must keep mounting under the drag).
     setWindowIfChanged(
-      computeWindow(el, target === null ? el.scrollTop : target),
+      computeWindow(
+        el,
+        target === null || gestureHeld() ? el.scrollTop : target,
+      ),
     );
     // Entry/exit claim: if scrollTop moved during this pass — by our write OR
     // by a SILENT BROWSER CLAMP during a transient layout (spacers not yet
@@ -756,6 +840,12 @@ export function ChatVirtualizer<T>(
     }
     const prevEventST = lastEventST.current;
     lastEventST.current = el.scrollTop;
+    if (gestureHeld()) {
+      lastGestureScrollT.current = performance.now();
+      if (!isEcho) {
+        gestureMoved.current = true;
+      }
+    }
     if (!isEcho && !converging.current) {
       const g = geo.current;
       const dist = el.scrollHeight - el.clientHeight - el.scrollTop;
@@ -834,10 +924,9 @@ export function ChatVirtualizer<T>(
     // no window to race. Re-engaging stays position-based — dist <=
     // endThreshold at a user scroll event — with the scroll-to-bottom button
     // as the declarative path back mid-stream.
-    const cancel = (e: Event): void => {
+    const onWheel = (e: Event): void => {
       converging.current = false;
       if (
-        e.type === 'wheel' &&
         (e as WheelEvent).deltaY < 0 &&
         mode.current.kind === 'end' &&
         el.scrollTop > 0
@@ -848,12 +937,103 @@ export function ChatVirtualizer<T>(
         lastUserEventT.current = performance.now();
       }
     };
+    // Touch write-gate state machine (see gesturePhase for why it exists).
+    // touchstart is also an INTENT signal and breaks convergence, the way a
+    // wheel event does; touchcancel is the system-gesture exit (an edge
+    // swipe, an incoming call) and must release the gate like a touchend, or
+    // it holds forever.
+    const clearSettleTimer = (): void => {
+      if (touchSettleTimer.current !== null) {
+        clearTimeout(touchSettleTimer.current);
+        touchSettleTimer.current = null;
+      }
+    };
+    const flushGesture = (): void => {
+      touchSettleTimer.current = null;
+      // Engines report scrollHeight as at least clientHeight, so this is
+      // never negative in practice (verified in both) — clamped anyway to
+      // hold the same invariant targetFor does.
+      const max = Math.max(0, el.scrollHeight - el.clientHeight);
+      // Two ways the gesture is not over yet, both retried by polling:
+      // momentum is still running (no touch events accompany it, so silence
+      // is the only signal), or the list is inside an elastic overscroll,
+      // where a write snaps the bounce onto the clamp and discards where the
+      // user actually let go.
+      const coasting =
+        performance.now() - lastGestureScrollT.current < TOUCH_SETTLE_MS;
+      const bouncing = el.scrollTop < 0 || el.scrollTop > max + 1;
+      if (coasting || bouncing) {
+        touchSettleTimer.current = setTimeout(flushGesture, TOUCH_SETTLE_MS);
+        return;
+      }
+      gesturePhase.current = 'idle';
+      // Re-state the reference frame from the resting position. Whether the
+      // gesture MOVED decides the semantics only: a real scroll re-judges
+      // follow against the bottom edge, while a plain tap keeps the mode it
+      // had (a tap during a stream must not disengage follow — the distance
+      // grew under the gate with no writes, and re-judging would read that
+      // machinery growth as a user pushing away).
+      //
+      // The re-statement itself is UNCONDITIONAL, because it is also what
+      // hands the gesture adjustment back: anchorAt reads through
+      // paintOrigin, so whatever the spacer is still carrying folds into the
+      // stored viewportOffset, and zeroing the adjustment below leaves the
+      // sync one balancing scrollTop write — spacer and position move in the
+      // same task, nothing paints in between. Skipping the fold on a tap
+      // dropped the adjustment on the floor instead (measured: a tap right
+      // after a long drag, while measurements were still landing, jumped
+      // 10680px).
+      if (!converging.current) {
+        const atEnd = gestureMoved.current
+          ? max - el.scrollTop <= endThresholdRef.current
+          : mode.current.kind === 'end';
+        mode.current = atEnd
+          ? {kind: 'end', distance: 0}
+          : anchorAt(el.scrollTop);
+        userAway.current = 0;
+        // The fold is a MACHINE repositioning: the adjustment now lives only
+        // in the folded viewportOffset, and the live-anchor refresh — which
+        // re-derives from scrollTop once the adjustment is gone — would
+        // erase it, dropping the balancing write while the spacers revert
+        // (measured: +148px). Machine-driven regime holds the fold until the
+        // user actually scrolls again.
+        userScrolledRef.current = false;
+      }
+      gestureAdj.current = 0;
+      geoChanged.current = true;
+      syncRef.current();
+    };
+    const onTouchStart = (): void => {
+      converging.current = false;
+      // A second finger landing during the settle window re-opens the same
+      // gesture rather than starting a new one: the adjustment the spacer is
+      // carrying belongs to a frame that has not been handed back yet.
+      if (gesturePhase.current === 'idle') {
+        lastGestureScrollT.current = 0;
+        gestureMoved.current = false;
+      }
+      gesturePhase.current = 'down';
+      clearSettleTimer();
+    };
+    const onTouchEnd = (e: Event): void => {
+      // Fingers left on the glass still own the viewport — only the LAST
+      // lift starts settling, or a two-finger drag would get a scrollTop
+      // write under the remaining finger.
+      const remaining = (e as TouchEvent).touches?.length ?? 0;
+      if (gesturePhase.current !== 'down' || remaining > 0) {
+        return;
+      }
+      gesturePhase.current = 'settling';
+      touchSettleTimer.current = setTimeout(flushGesture, TOUCH_SETTLE_MS);
+    };
     const prevAnchor = el.style.overflowAnchor;
     el.style.overflowAnchor = 'none';
     const scrollHandler = (): void => onScrollRef.current();
     el.addEventListener('scroll', scrollHandler, {passive: true});
-    el.addEventListener('wheel', cancel, {passive: true});
-    el.addEventListener('touchstart', cancel, {passive: true});
+    el.addEventListener('wheel', onWheel, {passive: true});
+    el.addEventListener('touchstart', onTouchStart, {passive: true});
+    el.addEventListener('touchend', onTouchEnd, {passive: true});
+    el.addEventListener('touchcancel', onTouchEnd, {passive: true});
     // Observe the CONTAINER too (rows alone miss clientHeight changes): a
     // window resize or a growing composer moves the end-mode target and the
     // window coverage without any row changing size. Container entries have
@@ -862,8 +1042,22 @@ export function ChatVirtualizer<T>(
     return () => {
       el.style.overflowAnchor = prevAnchor;
       el.removeEventListener('scroll', scrollHandler);
-      el.removeEventListener('wheel', cancel);
-      el.removeEventListener('touchstart', cancel);
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchcancel', onTouchEnd);
+      // A mid-gesture unbind would strand the gate: the in-flight touch
+      // keeps targeting the OLD element (implicit touch capture), so the
+      // replacement never delivers the touchend that releases it. Reset the
+      // whole state machine with the listeners that maintained it. The
+      // adjustment is dropped rather than folded — the element carrying it
+      // in its spacer is going away, and the replacement re-derives its own
+      // frame from the mode on its first pass.
+      clearSettleTimer();
+      gesturePhase.current = 'idle';
+      lastGestureScrollT.current = 0;
+      gestureMoved.current = false;
+      gestureAdj.current = 0;
       roRef.current?.unobserve(el);
     };
   }, [scrollElement]);
