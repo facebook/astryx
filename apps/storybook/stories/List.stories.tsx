@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useState, type CSSProperties} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {Avatar} from '@astryxdesign/core/Avatar';
@@ -32,11 +32,11 @@ const meta: Meta<typeof List> = {
       control: 'boolean',
       description: 'Whether to show dividers between items',
     },
-    isEdgeAligned: {
+    isFullBleed: {
       control: 'boolean',
       description:
-        "Cancel the items' built-in horizontal inset so row text aligns " +
-        'flush with the container edge',
+        "Cancel each item's inset up to the padded container edge so row " +
+        'text aligns with full-bleed siblings',
     },
     listStyle: {
       control: 'select',
@@ -118,13 +118,22 @@ export const Spacious: Story = {
   ),
 };
 
-export const EdgeAligned: Story = {
+const fullBleedContainerStyle: CSSProperties & {
+  '--container-padding-inline-start': string;
+  '--container-padding-inline-end': string;
+} = {
+  paddingInline: 16,
+  '--container-padding-inline-start': '16px',
+  '--container-padding-inline-end': '16px',
+};
+
+export const FullBleed: Story = {
   render: args => (
-    <div>
+    <div style={fullBleedContainerStyle}>
       <Text type="label" size="lg">
         Order items
       </Text>
-      <List isEdgeAligned {...args}>
+      <List isFullBleed {...args}>
         <ListItem
           label="Solstice Mug"
           description="Ceramic, 12 oz"
@@ -147,12 +156,12 @@ export const EdgeAligned: Story = {
     docs: {
       description: {
         story:
-          "isEdgeAligned cancels the items' built-in horizontal inset " +
-          'with a matching negative margin so row text aligns flush with ' +
-          'full-bleed siblings like the heading above. The cancelling ' +
-          'margin reads the same variable the items derive their inline ' +
-          'padding from, so it tracks density and theme padding overrides ' +
-          'automatically.',
+          "isFullBleed cancels the smaller of each item's horizontal inset " +
+          'and its container padding so row text aligns with full-bleed ' +
+          'siblings like the heading above. The cancelling margin reads the ' +
+          'same variable the items derive their inline padding from, so it ' +
+          'tracks density and theme padding overrides automatically while ' +
+          'zero-padding containers stay unchanged.',
       },
     },
   },

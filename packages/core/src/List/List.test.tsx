@@ -256,25 +256,25 @@ describe('List', () => {
   });
 
   // ===========================================================================
-  // Edge alignment
+  // Full bleed
   // ===========================================================================
 
-  it('does not apply edge-aligned styles by default', () => {
+  it('does not apply full-bleed styles by default', () => {
     const {container} = render(
       <List>
         <ListItem label="Item" />
       </List>,
     );
     const item = container.querySelector('li')!;
-    expect(item.className).not.toContain('edgeAligned');
+    expect(item.className).not.toContain('fullBleed');
   });
 
-  it('applies the cancelling margin to each item when isEdgeAligned', () => {
+  it('applies the clamped cancelling margin to each item when isFullBleed', () => {
     // The margin lives on the row element itself — the only place that can
     // read --_item-inset-inline, which Item sets on the same element (custom
     // properties cascade downward, so the <ul> cannot read it).
     const {container} = render(
-      <List isEdgeAligned>
+      <List isFullBleed>
         <ListItem label="Item 1" />
         <ListItem label="Item 2" />
       </List>,
@@ -282,11 +282,9 @@ describe('List', () => {
     const items = container.querySelectorAll('li');
     expect(items).toHaveLength(2);
     for (const item of items) {
-      expect(item.className).toContain('edgeAligned');
+      expect(item.className).toContain('fullBleed');
     }
-    expect(container.querySelector('ul')!.className).not.toContain(
-      'edgeAligned',
-    );
+    expect(container.querySelector('ul')!.className).not.toContain('fullBleed');
   });
 
   it('uses the same var-derived cancel for every density', () => {
@@ -295,34 +293,32 @@ describe('List', () => {
     // overrides on `item`) share one style.
     for (const density of ['compact', 'balanced', 'spacious'] as const) {
       const {container, unmount} = render(
-        <List isEdgeAligned density={density}>
+        <List isFullBleed density={density}>
           <ListItem label="Item" />
         </List>,
       );
-      expect(container.querySelector('li')!.className).toContain('edgeAligned');
+      expect(container.querySelector('li')!.className).toContain('fullBleed');
       unmount();
     }
   });
 
-  it('does not pull the header when isEdgeAligned', () => {
+  it('does not pull the header when isFullBleed', () => {
     // The negative margin lives on the row elements, so the header keeps its
     // position and the row text aligns up to it.
     const {container} = render(
-      <List isEdgeAligned header={<span>Items</span>}>
+      <List isFullBleed header={<span>Items</span>}>
         <ListItem label="Item" />
       </List>,
     );
-    expect(container.querySelector('li')!.className).toContain('edgeAligned');
+    expect(container.querySelector('li')!.className).toContain('fullBleed');
     const ul = container.querySelector('ul')!;
-    expect(ul.className).not.toContain('edgeAligned');
-    expect(ul.parentElement?.className).not.toContain('edgeAligned');
+    expect(ul.className).not.toContain('fullBleed');
+    expect(ul.parentElement?.className).not.toContain('fullBleed');
   });
 
   it('does not apply the cancelling margin to a ListItem outside a List', () => {
     const {container} = render(<ListItem label="Standalone" />);
-    expect(container.querySelector('li')!.className).not.toContain(
-      'edgeAligned',
-    );
+    expect(container.querySelector('li')!.className).not.toContain('fullBleed');
   });
 
   // ===========================================================================

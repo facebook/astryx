@@ -416,7 +416,7 @@ describe('derived var expansion', () => {
   });
 
   it('emits paddingInline AND internal inset var for item', () => {
-    // The inset var is what keeps List's isEdgeAligned cancel in sync with a
+    // The inset var is what keeps List's isFullBleed cancel in sync with a
     // themed row padding — the padding override alone would move the text
     // while the cancel keeps the default width.
     const theme = defineTheme({

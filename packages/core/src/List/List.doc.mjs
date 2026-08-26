@@ -42,10 +42,10 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'isEdgeAligned',
+      name: 'isFullBleed',
       type: 'boolean',
       description:
-        "Align item content flush with the container edge by cancelling the items' built-in horizontal inset with a matching negative margin. The margin reads the same variable the items derive their inline padding from, so it tracks density and theme padding overrides automatically. Use when the list sits under a section heading so row text lines up with the heading text.",
+        "Align item content flush with the padded container edge by cancelling the smaller of each item's built-in horizontal inset and the container's published inline padding. The margin reads the same variable the items derive their inline padding from, so it tracks density and theme padding overrides automatically without pulling rows outside zero-padding or full-bleed surfaces. Use when the list sits under a section heading so row text lines up with the heading text.",
       default: 'false',
     },
     {
