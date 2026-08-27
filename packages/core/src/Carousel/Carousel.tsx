@@ -150,6 +150,12 @@ export interface CarouselProps extends BaseProps<HTMLDivElement> {
 // Styles
 // =============================================================================
 
+// The overflow hook calls a sub-pixel remainder "no more scroll". The focus
+// hand-off in scrollBy has to use the same threshold, or it moves focus a
+// press early or a press late.
+// SYNC: /packages/core/src/hooks/useScrollOverflow.ts
+const SCROLL_EDGE_TOLERANCE = 1;
+
 const styles = stylex.create({
   root: {
     position: 'relative',
@@ -176,12 +182,6 @@ const styles = stylex.create({
     },
     scrollbarWidth: 'none',
     maskImage: 'none',
-    transitionProperty: 'mask-image',
-    transitionDuration: {
-      default: durationVars['--duration-medium'],
-      '@media (prefers-reduced-motion: reduce)': '0ms',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
   },
   fadeStart: {
     maskImage: `linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 2px, black ${spacingVars['--spacing-1']})`,
@@ -341,6 +341,8 @@ export function Carousel({
   const t = useTranslator();
   const ariaLabel = ariaLabelFromProps ?? t('@astryx.carousel.label');
   const scrollElRef = useRef<HTMLElement | null>(null);
+  const startButtonRef = useRef<HTMLButtonElement>(null);
+  const endButtonRef = useRef<HTMLButtonElement>(null);
   const {scrollRef, overflowStart, overflowEnd, hasOverflow} =
     useScrollOverflow();
 
@@ -396,10 +398,10 @@ export function Carousel({
   }, []);
 
   const scrollBy = useCallback(
-    (direction: -1 | 1) => {
+    (direction: -1 | 1): boolean => {
       const el = scrollElRef.current;
       if (!el) {
-        return;
+        return false;
       }
       // Respect the user's reduced-motion preference — mirrors the CSS
       // scroll-behavior override so button-driven scrolling doesn't animate
@@ -423,21 +425,60 @@ export function Carousel({
         const atStart = direction === -1 && !overflowStart;
         if (atEnd || atStart) {
           el.scrollBy({left: rtlSign * -direction * el.scrollWidth, behavior});
-          return;
+          return false;
         }
       }
 
       const firstChild = el.firstElementChild as HTMLElement | null;
       const itemWidth = firstChild ? firstChild.offsetWidth : 0;
       const amount = el.clientWidth - itemWidth * 0.5;
+      const distance = Math.max(amount, itemWidth);
       el.scrollBy({
         // `direction` is the logical intent (-1 = toward content start, +1 =
         // toward content end).
-        left: rtlSign * direction * Math.max(amount, itemWidth),
+        left: rtlSign * direction * distance,
         behavior,
       });
+
+      // Report whether this press uses up the direction it went in. The button
+      // that drove it disables on that transition, and the browser drops focus
+      // off a control it disables, so the caller hands focus to the opposite
+      // button first. Predicted here rather than watched from an effect,
+      // because the scroll is smooth and the overflow state lands frames later.
+      // scrollLeft is negative under RTL, so compare logical distance travelled.
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      const next = Math.abs(el.scrollLeft) + direction * distance;
+      return direction === 1
+        ? next >= maxScroll - SCROLL_EDGE_TOLERANCE
+        : next <= SCROLL_EDGE_TOLERANCE;
     },
     [hasLoop, hasOverflow, overflowStart, overflowEnd],
+  );
+
+  // Keep the keyboard user where they are. Without this, pressing the trailing
+  // button on the last slide disables it under them and focus falls to <body>,
+  // so the next Tab restarts from the top of the document. Focus goes to the
+  // scroll container rather than the opposite button: at the moment of the
+  // press that button is still disabled (its enabling state lands with the
+  // next render), and focus() on a disabled control is a no-op. The container
+  // is a permanent tab stop inside the labelled region and pans with the
+  // arrow keys, so the user keeps both their place and a way to scroll.
+  const scrollFromButton = useCallback(
+    (direction: -1 | 1) => {
+      const pressed =
+        direction === 1 ? endButtonRef.current : startButtonRef.current;
+      const exhausted = scrollBy(direction);
+      if (!exhausted || !pressed) {
+        return;
+      }
+      // Only rescue focus the press itself is about to lose. A programmatic
+      // click from elsewhere must not pull focus into the carousel.
+      if (pressed.ownerDocument.activeElement !== pressed) {
+        return;
+      }
+      scrollElRef.current?.focus();
+    },
+    [scrollBy],
   );
 
   const scrollToIndex = useCallback((index: number) => {
@@ -523,12 +564,20 @@ export function Carousel({
         ref={composedRef}
         tabIndex={0}
         onWheel={handleWheel}
-        {...stylex.props(
-          styles.scroller,
-          gapStyles[gap],
-          padding != null && paddingStyles[padding],
-          hasSnap && styles.snap,
-          fadeStyle,
+        {...mergeProps(
+          themeProps('carousel-scroller', {
+            gap,
+            padding,
+            snap: hasSnap ? 'snap' : null,
+            edgeFade: hasEdgeFade ? 'edge-fade' : null,
+          }),
+          stylex.props(
+            styles.scroller,
+            gapStyles[gap],
+            padding != null && paddingStyles[padding],
+            hasSnap && styles.snap,
+            fadeStyle,
+          ),
         )}>
         {slides.map((child, index) => (
           // APG carousel pattern: each slide container is a group with
@@ -560,6 +609,7 @@ export function Carousel({
                 !canScrollStart && styles.buttonHidden,
               )}>
               <Button
+                ref={startButtonRef}
                 icon={
                   <Icon
                     icon="chevronLeft"
@@ -572,11 +622,13 @@ export function Carousel({
                 size="sm"
                 isIconOnly
                 // Disabled when there's nothing to scroll toward. Keeps the
-                // button mounted (stable layout/focus) but removes it from the
-                // tab order and a11y tree while it's visually hidden, so
-                // keyboard users don't land on an invisible control.
+                // button mounted (stable layout) but removes it from the tab
+                // order and a11y tree while it's visually hidden, so keyboard
+                // users don't land on an invisible control. scrollFromButton
+                // hands focus to the opposite button when a press is what
+                // disables this one.
                 isDisabled={!canScrollStart}
-                onClick={() => scrollBy(-1)}
+                onClick={() => scrollFromButton(-1)}
                 xstyle={styles.buttonRadiusOverride}
               />
             </div>
@@ -587,6 +639,7 @@ export function Carousel({
                 !canScrollEnd && styles.buttonHidden,
               )}>
               <Button
+                ref={endButtonRef}
                 icon={
                   <Icon
                     icon="chevronRight"
@@ -601,7 +654,7 @@ export function Carousel({
                 // See "Scroll left" — disabled while visually hidden so the
                 // button stays mounted but out of the tab order / a11y tree.
                 isDisabled={!canScrollEnd}
-                onClick={() => scrollBy(1)}
+                onClick={() => scrollFromButton(1)}
                 xstyle={styles.buttonRadiusOverride}
               />
             </div>
