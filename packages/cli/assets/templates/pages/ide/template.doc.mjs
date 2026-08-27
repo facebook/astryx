@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'IDE',
   displayName: 'IDE',
-  description:
-    'Code editor workspace with file explorer, tabbed editor, terminal panel, and properties sidebar, all resizable and collapsible.',
+  description: 'Code editor workspace for writing software: file tree, tabbed source panes, terminal docked below, and a properties sidebar, all resizable and collapsible. Development environment or code workbench.',
   isReady: true,
   category: 'Tools - IDE',
 };

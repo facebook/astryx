@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Shell Nav',
   displayName: 'Shell Nav',
-  description:
-    'A top + side nav app shell with a File/Edit/View/Window/Help menu bar plus command-palette search, a resizable file-tree SideNav, and a static grey-card tabbed code editor.',
+  description: 'Desktop chrome combining a top menu bar and left sidebar: File, Edit and Window menus, command palette search, and a resizable file tree wrapped around placeholder content. Application frame or navigation scaffold.',
   isReady: true,
   category: 'Shell - Top Nav + Left Sidebar',
 };

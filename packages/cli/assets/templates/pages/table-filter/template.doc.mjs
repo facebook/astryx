@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Filterable Table',
   displayName: 'Filterable Table',
-  description:
-    'Filterable data table with a token filter bar that swaps to PowerSearch, saved views, view options for columns and grouping, and a resizable detail panel.',
+  description: 'Filterable record list for narrowing a large dataset: token filter bar that swaps to full query search, saved views, column and grouping options, and a resizable detail panel. Data grid with facets.',
   isReady: true,
   category: 'Table - Filtering',
 };

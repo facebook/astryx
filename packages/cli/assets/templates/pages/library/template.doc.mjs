@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Card Grid',
   displayName: 'Card Grid',
-  description: 'Browsable grid of components organized by category with tabs and filters',
+  description: 'Browsable catalog of entries organized by topic: search box, category filter tabs, and a responsive card grid with an empty state. Component index, pattern directory, or asset library.',
   isReady: true,
   category: 'Content - Card Grid',
 };

@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Centered Hero',
   displayName: 'Centered Hero',
-  description:
-    'Centered headline, description, and CTA buttons above a wide hero image.',
+  description: 'Marketing landing header with a centered headline, short blurb, and two call-to-action buttons above a wide full-bleed photo. Hero banner or splash intro.',
   isReady: true,
   category: 'Gallery - Hero',
 };

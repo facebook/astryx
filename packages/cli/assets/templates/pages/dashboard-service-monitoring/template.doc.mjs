@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Service Monitoring Dashboard',
   displayName: 'Service Monitoring Dashboard',
-  description:
-    'Live-ops service-health dashboard: traffic-light KPI tiles with sparklines, and multi-line latency and request-volume charts with a 1h/1d/7d window, beside a triage rail split into two independently scrolling sections: active alerts over a worst-first per-service breakdown with inline status coloring. Global environment, region, and auto-refresh controls; the rail folds into the content column as two cards below 1024px.',
+  description: 'Live service health monitoring for on-call triage: traffic-light uptime tiles with sparklines, latency and request volume charts over a one-hour to seven-day window, and an alert rail with worst-first per-service breakdown. Observability reporting.',
   isReady: false,
   category: 'Dashboard - Monitoring',
 };

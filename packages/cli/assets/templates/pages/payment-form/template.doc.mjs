@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Checkout Form',
   displayName: 'Checkout Form',
-  description: 'Secure checkout page with billing info, card details, and order summary.',
+  description: 'Checkout form for completing a purchase: contact email, shipping address, delivery method choice, card details, and an order summary with totals. Billing, payment, or cart confirmation.',
   isReady: true,
   category: 'Form - Checkout',
 };

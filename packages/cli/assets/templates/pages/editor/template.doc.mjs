@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Page Editor',
   displayName: 'Page Editor',
-  description: 'Block-based page builder with sidebar config and live preview',
+  description: 'Drag-and-drop builder for assembling a layout from blocks: block list, property inspector for the selected block, reorder and delete controls, and a live canvas preview. Visual composer or website builder.',
   isReady: true,
   category: 'Tools - Page Editor',
 };

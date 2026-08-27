@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Searchable Table',
   displayName: 'Searchable Table',
-  description:
-    'Data table page with power search filtering and action toolbar.',
+  description: 'Record list with query search filtering and an action toolbar above sortable rows. Data grid, item roster, or admin index.',
   isReady: true,
   category: 'Table - Basic',
 };

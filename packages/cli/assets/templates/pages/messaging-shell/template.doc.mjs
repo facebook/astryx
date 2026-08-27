@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Messaging Shell',
   displayName: 'Messaging Shell',
-  description:
-    'Slack-style messaging shell with a four-column frame (workspace rail, channel sidebar, message stream, thread panel) built on the Chat component family: dense rows, zero cards.',
+  description: 'Team chat workspace for following channel conversations: workspace rail, channel sidebar, dense message stream, and a threaded reply panel. Slack-style messaging, direct message inbox, or group discussion.',
   isReady: false,
   category: 'Shell - Messaging',
 };

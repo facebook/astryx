@@ -4,7 +4,7 @@
 export const doc = {
   name: 'Side Gallery',
   displayName: 'Side Gallery',
-  description: 'Text and CTA on the left with an image collage on the right',
+  description: 'Split marketing section with copy and a call-to-action beside an image collage: headline, blurb, and topic links next to a photo cluster. Half-and-half feature banner.',
   type: 'page',
   isReady: true,
   category: 'Gallery - Side',

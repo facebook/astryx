@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Grouped Table',
   displayName: 'Grouped Table',
-  description:
-    'Grouped data table with collapsible status sections, PowerSearch, and a resizable detail panel.',
+  description: 'Record list bundled into collapsible sections by status: grouped rows with counts, query search, and a resizable inspector for the selected row. Grouped data grid or categorized roster.',
   isReady: true,
   category: 'Table - Grouped',
 };

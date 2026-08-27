@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Blank',
   displayName: 'Blank',
-  description: 'Minimal page scaffold',
+  description: 'Empty starting point for a brand new route: bare heading and content region, no data, charts, or navigation. Blank scaffold, stub, or placeholder to start from.',
   isReady: true,
   scaffold: true,
   category: 'Shell - Blank',

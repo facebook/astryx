@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'AI Chat Conversation',
   displayName: 'AI Chat Conversation',
-  description: 'AI assistant conversation view with tool calls, system messages, markdown, code blocks, multi-bubble grouping, and a resizable artifact preview panel for generated documents',
+  description: 'Assistant chat conversation for reading an AI transcript: tool call output, system message, markdown and code block rendering, plus a resizable artifact preview for generated documents. Chatbot or copilot thread.',
   isReady: true,
   category: 'AI Chat - Conversation',
 };

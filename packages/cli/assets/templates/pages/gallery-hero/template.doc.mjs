@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Gallery Hero',
   displayName: 'Gallery Hero',
-  description:
-    'Centered headline, description, and CTA buttons above a three-image gallery grid.',
+  description: 'Marketing landing header with a centered headline, blurb, and call-to-action buttons above a three-image photo grid. Hero banner, splash intro, or gallery masthead.',
   isReady: true,
   category: 'Gallery - Hero',
 };

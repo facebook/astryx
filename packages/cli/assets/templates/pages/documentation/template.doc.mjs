@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Documentation Catalog',
   displayName: 'Documentation Catalog',
-  description: 'Documentation landing page with hero banner and component category grid organized by Core, Layout, Navigation, and Form.',
+  description: 'Documentation home for browsing reference material by topic: hero banner above a category grid linking core, layout, navigation, and form sections. Docs index, guide catalog, or API landing.',
   isReady: true,
   category: 'Content - Documentation Catalog',
 };

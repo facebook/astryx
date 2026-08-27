@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Portfolio Dashboard',
   displayName: 'Portfolio Dashboard',
-  description: 'Investment portfolio dashboard with KPI metrics, area chart, and top asset holdings',
+  description: 'Investment portfolio tracker for monitoring holdings and returns: balance and gain metrics, allocation area chart over time, and a ranked table of top positions. Brokerage, asset, or fund performance.',
   isReady: true,
   category: 'Dashboard - Portfolio',
   isHiddenFromOverview: true,

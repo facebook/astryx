@@ -4,8 +4,7 @@
 export const doc = {
   name: 'Product Gallery',
   displayName: 'Product Gallery',
-  description:
-    'Card grid of products with images, titles, descriptions, and prices',
+  description: 'Shoppable card grid of merchandise: product photo, title, short blurb, and price per tile. Storefront catalog, category listing, or ecommerce browse.',
   type: 'page',
   isReady: true,
   category: 'Gallery - Product',
