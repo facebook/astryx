@@ -28,18 +28,19 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {usePopover} from '../Popover/usePopover';
+import {usePopoverInternal} from '../Popover/usePopover';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import type {IconName} from '../Icon';
 import {
   Field,
-  InputClearButton,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
   type FieldStatusVariant,
 } from '../Field';
+import {useKeepLayerOpenProps} from '../Layer/useLayer';
+import {InternalInputClearButton} from '../Field/InputClearButton';
 import {Divider} from '../Divider';
 import {Spinner} from '../Spinner';
 import {PanelSearchInput} from '../Field/PanelSearchInput';
@@ -937,7 +938,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     triggerRef.current?.focus();
   }, [announce]);
 
-  const popover = usePopover({
+  const popover = usePopoverInternal({
     hasLightDismiss: true,
     onHide: handleLayerHide,
     hasCloseButton: false,
@@ -949,6 +950,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // `usePopover` owns — not on the scrolling list inside it.
     surfaceTarget: 'multi-selector-popup',
   });
+  const keepOpenProps = useKeepLayerOpenProps(popover.id, popover.isOpen);
 
   // Open dropdown on mount when isDefaultOpen is true
   useEffect(() => {
@@ -1156,6 +1158,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onKeyDown,
     onItemMouseEnter,
   } = useMultiCombobox({
+    wasJustDismissed: popover.wasJustDismissed,
     selectableItems: sortedItems,
     isDisabled,
     isOpen: popover.isOpen,
@@ -1699,7 +1702,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           ))}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value.length > 0 && !isDisabled && (
-          <InputClearButton
+          <InternalInputClearButton
+            {...keepOpenProps}
             label={t('@astryx.multiSelector.clearAll', {label})}
             onClick={handleClear}
             iconClassName={stableClassName('multi-selector-clear-icon')}
@@ -1718,6 +1722,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               type="button"
               aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
               aria-describedby={statusTooltip.describedBy}
+              {...keepOpenProps}
               onClick={e => e.stopPropagation()}
               {...stylex.props(
                 focusOutlineStyles.focusVisible,
