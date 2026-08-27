@@ -208,11 +208,13 @@ export interface OverflowListProps extends BaseProps<HTMLDivElement> {
    *   the row actually overflows. Hold the collapsed set in state initialised
    *   to `[]` and it is correct at every moment; if you remount the list while
    *   keeping that state, reset it yourself.
-   * - Reports are keyed on the collapsed range, so an unrelated re-render, or
-   *   a fresh inline callback each render, does not re-fire it.
+   * - Reports are keyed on the collapsed items' original indices and React
+   *   keys. Membership and order changes report even when the count stays the
+   *   same; unrelated re-renders and callback identity changes do not.
    *
-   * Items are identified by `index`; look up your own data with it rather than
-   * storing `child`.
+   * Give dynamic children stable React keys. Items include their current
+   * original `index`; use it to look up your own data rather than storing
+   * `child`.
    *
    * @example
    * ```
@@ -304,14 +306,14 @@ export function OverflowList({
   // so the indicator renders at its maximum possible width.
   const measureIndicator = overflowRenderer?.(allItems);
 
-  // Reported from a layout effect, not during render, so a menu the consumer
-  // owns updates in the same frame the items collapse. Keyed on the collapsed
-  // range so unrelated re-renders (or a new inline callback) don't re-fire.
-  // Seeded with the first render's key because that render is pre-measurement:
-  // `visibleCount` still optimistically equals `itemCount`, so reporting it
-  // would announce "nothing collapsed" before anything has been measured.
-  const overflowKey = `${collapseFrom}:${itemCount}:${visibleCount}`;
-  const reportedKeyRef = useRef(overflowKey);
+  // Report after measurement, before paint, so a standing menu updates in the
+  // same frame as the visible row. Keys distinguish membership and order while
+  // suppressing callback-only or unrelated re-renders. The initial empty key
+  // suppresses the optimistic pre-measurement render.
+  const overflowKey = JSON.stringify(
+    overflowItems.map(({child, index}) => [index, child.key]),
+  );
+  const reportedKeyRef = useRef('[]');
   const overflowItemsRef = useRef(overflowItems);
   overflowItemsRef.current = overflowItems;
 

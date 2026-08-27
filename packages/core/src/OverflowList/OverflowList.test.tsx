@@ -17,8 +17,10 @@
  */
 
 import {describe, it, expect, beforeAll, afterAll, vi} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, within, act} from '@testing-library/react';
+import {useState} from 'react';
 import {OverflowList} from './OverflowList';
+import type {OverflowItem} from './OverflowList';
 
 const originalOffsetWidth = Object.getOwnPropertyDescriptor(
   HTMLElement.prototype,
@@ -28,12 +30,27 @@ const originalResizeObserver = (
   globalThis as unknown as {ResizeObserver?: unknown}
 ).ResizeObserver;
 
-/** No-op ResizeObserver — the shared observer fires its initial callback
- * synchronously on observe(), so the algorithm still measures on mount. */
+const resizeObservers = new Set<StubResizeObserver>();
+
+/** ResizeObserver stub with an explicit trigger for resize-path tests. */
 class StubResizeObserver {
+  constructor(private callback: ResizeObserverCallback) {
+    resizeObservers.add(this);
+  }
+
   observe(): void {}
   unobserve(): void {}
-  disconnect(): void {}
+  disconnect(): void {
+    resizeObservers.delete(this);
+  }
+
+  takeRecords(): ResizeObserverEntry[] {
+    return [];
+  }
+
+  trigger(target: Element): void {
+    this.callback([{target} as ResizeObserverEntry], this);
+  }
 }
 
 beforeAll(() => {
@@ -88,10 +105,27 @@ const indicator =
     </span>
   );
 
+/** Notify the shared observer that an element's size changed. */
+function triggerResize(target: Element): void {
+  act(() => {
+    for (const observer of resizeObservers) {
+      observer.trigger(target);
+    }
+  });
+}
+
 /** The indices the most recent onOverflowChange call reported. */
 function indicesOf(spy: {mock: {calls: unknown[][]}}): number[] {
   const last = spy.mock.calls[spy.mock.calls.length - 1];
   return (last[0] as {index: number}[]).map(i => i.index);
+}
+
+/** The labels the most recent onOverflowChange call reported. */
+function labelsOf(spy: {mock: {calls: unknown[][]}}): string[] {
+  const last = spy.mock.calls[spy.mock.calls.length - 1];
+  return (last[0] as OverflowItem[]).map(item =>
+    String(item.child.props.children),
+  );
 }
 
 describe('OverflowList', () => {
@@ -629,6 +663,8 @@ describe('OverflowList', () => {
           {items}
         </OverflowList>,
       );
+      triggerResize(visibleContainer());
+      expect(onOverflowChange).toHaveBeenCalledTimes(2);
       expect(indicesOf(onOverflowChange)).toEqual([]);
     });
 
@@ -668,6 +704,153 @@ describe('OverflowList', () => {
         </OverflowList>,
       );
       expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports same-count membership and order changes', () => {
+      const onOverflowChange = vi.fn();
+      const renderItems = (labels: string[]) =>
+        labels.map(label => (
+          <button type="button" data-w="40" key={label}>
+            {label}
+          </button>
+        ));
+      const {rerender} = render(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {renderItems(['A', 'B', 'C'])}
+        </OverflowList>,
+      );
+      expect(labelsOf(onOverflowChange)).toEqual(['B', 'C']);
+
+      rerender(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {renderItems(['A', 'C', 'B'])}
+        </OverflowList>,
+      );
+      expect(labelsOf(onOverflowChange)).toEqual(['C', 'B']);
+
+      rerender(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {renderItems(['A', 'D', 'B'])}
+        </OverflowList>,
+      );
+      expect(onOverflowChange).toHaveBeenCalledTimes(3);
+      expect(labelsOf(onOverflowChange)).toEqual(['D', 'B']);
+    });
+
+    it('uses a replacement callback only for the next set change', () => {
+      const first = vi.fn();
+      const second = vi.fn();
+      const items = [
+        <button type="button" data-w="40" key="a">
+          A
+        </button>,
+        <button type="button" data-w="40" key="b">
+          B
+        </button>,
+      ];
+      const {rerender} = render(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          onOverflowChange={first}>
+          {items}
+        </OverflowList>,
+      );
+      expect(first).toHaveBeenCalledTimes(1);
+
+      rerender(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          onOverflowChange={second}>
+          {items}
+        </OverflowList>,
+      );
+      expect(second).not.toHaveBeenCalled();
+
+      rerender(
+        <OverflowList
+          gap={0}
+          data-w="1000"
+          data-testid="ov"
+          onOverflowChange={second}>
+          {items}
+        </OverflowList>,
+      );
+      triggerResize(visibleContainer());
+      expect(first).toHaveBeenCalledTimes(1);
+      expect(second).toHaveBeenCalledTimes(1);
+      expect(indicesOf(second)).toEqual([]);
+    });
+
+    it('settles when the callback stores the collapsed set in state', () => {
+      const onReport = vi.fn();
+
+      function Harness() {
+        const [hidden, setHidden] = useState<OverflowItem[]>([]);
+        return (
+          <>
+            <output data-testid="hidden-count">{hidden.length}</output>
+            <OverflowList
+              gap={0}
+              data-w="60"
+              data-testid="ov"
+              onOverflowChange={items => {
+                onReport(items);
+                setHidden(items);
+              }}>
+              <button type="button" data-w="40">
+                A
+              </button>
+              <button type="button" data-w="40">
+                B
+              </button>
+            </OverflowList>
+          </>
+        );
+      }
+
+      render(<Harness />);
+      expect(onReport).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('hidden-count')).toHaveTextContent('1');
+    });
+
+    it('does not report after unmount', () => {
+      const onOverflowChange = vi.fn();
+      const {unmount} = render(
+        <OverflowList
+          gap={0}
+          data-w="60"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+        </OverflowList>,
+      );
+      const container = visibleContainer();
+      expect(onOverflowChange).toHaveBeenCalledTimes(1);
+
+      unmount();
+      triggerResize(container);
+      expect(onOverflowChange).toHaveBeenCalledTimes(1);
     });
 
     it('reports the leading items with collapseFrom="start"', () => {
