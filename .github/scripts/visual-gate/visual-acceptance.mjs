@@ -11,13 +11,13 @@
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
-import {createRequire} from 'node:module';
 import path from 'node:path';
 
 import {
   isVisualAcceptanceEndpointMaintainer,
   isVisualAcceptanceRecordMaintainer,
 } from './authorization.mjs';
+import {canonicalizePng} from './lib/canonical-png.mjs';
 import {readStoryIndex, shotKey, storiesInPackages} from './lib/plan.mjs';
 
 const args = process.argv.slice(2);
@@ -76,14 +76,25 @@ function evidenceRoot(pages, pr, head) {
 }
 
 function evidenceAt(pages, pr, head, run, attempt) {
-  if (!Number.isSafeInteger(run) || run <= 0 || !Number.isSafeInteger(attempt) || attempt <= 0) {
+  if (
+    !Number.isSafeInteger(run) ||
+    run <= 0 ||
+    !Number.isSafeInteger(attempt) ||
+    attempt <= 0
+  ) {
     fail('invalid evidence run/attempt');
   }
-  const dir = path.join(evidenceRoot(pages, pr, head), String(run), String(attempt));
-  if (!fs.existsSync(dir)) fail(`no published evidence for run ${run}/${attempt}`);
+  const dir = path.join(
+    evidenceRoot(pages, pr, head),
+    String(run),
+    String(attempt),
+  );
+  if (!fs.existsSync(dir))
+    fail(`no published evidence for run ${run}/${attempt}`);
   const evidence = readJSON(path.join(dir, 'evidence.json'));
   validateEvidence(evidence, {pr, head, run});
-  if (evidence.run.attempt !== attempt) fail('evidence attempt identity mismatch');
+  if (evidence.run.attempt !== attempt)
+    fail('evidence attempt identity mismatch');
   return {dir, evidence};
 }
 
@@ -109,7 +120,8 @@ function latestEvidence(pages, pr, head, {required = true} = {}) {
     .filter(entry => entry.isDirectory() && /^\d+$/.test(entry.name))
     .map(entry => Number(entry.name))
     .sort((a, b) => b - a);
-  const dir = attempts.length > 0 ? path.join(runDir, String(attempts[0])) : runDir;
+  const dir =
+    attempts.length > 0 ? path.join(runDir, String(attempts[0])) : runDir;
   const evidence = readJSON(path.join(dir, 'evidence.json'));
   validateEvidence(evidence, {pr, head, run});
   if (attempts.length > 0 && evidence.run.attempt !== attempts[0]) {
@@ -268,7 +280,14 @@ function recordPath(pages, pr, head, run, attempt) {
 }
 
 function pointerPath(pages, pr, head) {
-  return path.join(pages, 'visual-gate', 'acceptances', String(pr), head, 'current.json');
+  return path.join(
+    pages,
+    'visual-gate',
+    'acceptances',
+    String(pr),
+    head,
+    'current.json',
+  );
 }
 
 function accept() {
@@ -294,7 +313,13 @@ function accept() {
   if (!Number.isSafeInteger(commentId) || commentId <= 0)
     fail('invalid comment id');
 
-  const {dir: evidenceDir, evidence} = evidenceAt(pages, pr, head, runId, runAttempt);
+  const {dir: evidenceDir, evidence} = evidenceAt(
+    pages,
+    pr,
+    head,
+    runId,
+    runAttempt,
+  );
   if (evidence.verdict.status !== 'changed' || evidence.deltas.length === 0) {
     fail('current visual bundle has no delta to accept');
   }
@@ -506,7 +531,10 @@ function validateAcceptance(value, expected = {}) {
       validateShot(entry.shot, entry.key);
       if (expected.dir) {
         const archived = path.join(expected.dir, 'after', `${entry.key}.png`);
-        if (!fs.existsSync(archived) || shaFile(archived) !== entry.afterSha256) {
+        if (
+          !fs.existsSync(archived) ||
+          shaFile(archived) !== entry.afterSha256
+        ) {
           fail(`archived AFTER is missing or changed for ${entry.key}`);
         }
       }
@@ -522,7 +550,9 @@ function validateAcceptance(value, expected = {}) {
 
 function trustedPlan() {
   const scope = readJSON(path.resolve(flag('scope')));
-  const baseline = readJSON(path.join(path.resolve(flag('baseline')), 'manifest.json'));
+  const baseline = readJSON(
+    path.join(path.resolve(flag('baseline')), 'manifest.json'),
+  );
   const storybookDir = path.resolve(flag('storybook-dir'));
   const output = path.resolve(flag('output'));
   if (
@@ -535,15 +565,25 @@ function trustedPlan() {
   }
 
   const baselineEntries = Object.entries(baseline.shots ?? {});
-  const baselineThemes = [...new Set(baselineEntries.map(([, shot]) => shot.theme))].filter(Boolean);
+  const baselineThemes = [
+    ...new Set(baselineEntries.map(([, shot]) => shot.theme)),
+  ].filter(Boolean);
   const shots = scope.broadStableVisual
-    ? baselineEntries.map(([key, shot]) => ({...shot, key, reasons: ['trusted:broad']}))
+    ? baselineEntries.map(([key, shot]) => ({
+        ...shot,
+        key,
+        reasons: ['trusted:broad'],
+      }))
     : [];
 
   if (scope.stableComponents.length > 0 || scope.stableThemes.length > 0) {
-    const indexed = storiesInPackages(readStoryIndex(storybookDir, []), ['Core']);
+    const indexed = storiesInPackages(readStoryIndex(storybookDir, []), [
+      'Core',
+    ]);
     const stories = new Map();
-    const newTheme = scope.stableThemes.some(theme => !baselineThemes.includes(theme));
+    const newTheme = scope.stableThemes.some(
+      theme => !baselineThemes.includes(theme),
+    );
     for (const [, shot] of baselineEntries) {
       if (
         newTheme ||
@@ -554,9 +594,11 @@ function trustedPlan() {
       }
     }
     for (const story of indexed) {
-      if (scope.stableComponents.includes(story.component)) stories.set(story.id, story);
+      if (scope.stableComponents.includes(story.component))
+        stories.set(story.id, story);
     }
-    const themes = scope.stableThemes.length > 0 ? scope.stableThemes : baselineThemes;
+    const themes =
+      scope.stableThemes.length > 0 ? scope.stableThemes : baselineThemes;
     for (const story of stories.values()) {
       for (const theme of themes) {
         for (const mode of ['light', 'dark']) {
@@ -579,7 +621,9 @@ function trustedPlan() {
     fail(`trusted visual plan has invalid size ${unique.length}`);
   }
   writeJSON(output, unique);
-  process.stdout.write(`Wrote ${unique.length} trusted PR shot(s) to ${output}.\n`);
+  process.stdout.write(
+    `Wrote ${unique.length} trusted PR shot(s) to ${output}.\n`,
+  );
 }
 
 function plan() {
@@ -593,19 +637,6 @@ function plan() {
   writeJSON(output, shots);
   process.stdout.write(
     `Wrote ${shots.length} post-merge shot(s) to ${output}.\n`,
-  );
-}
-
-const require = createRequire(import.meta.url);
-
-function samePixels(first, second) {
-  const {PNG} = require('pngjs');
-  const a = PNG.sync.read(fs.readFileSync(first));
-  const b = PNG.sync.read(fs.readFileSync(second));
-  return (
-    a.width === b.width &&
-    a.height === b.height &&
-    Buffer.compare(a.data, b.data) === 0
   );
 }
 
@@ -686,8 +717,23 @@ function promote() {
     if (!fs.existsSync(recaptured) || !capturedShot) {
       fail(`post-merge capture is missing ${entry.key}`);
     }
-    if (capturedShot.sha256 !== shaFile(recaptured)) {
+    const rawRecapturedSha256 = shaFile(recaptured);
+    if (capturedShot.sha256 !== rawRecapturedSha256) {
       fail(`post-merge manifest hash does not match ${entry.key}`);
+    }
+    let canonical;
+    try {
+      canonical = canonicalizePng(fs.readFileSync(recaptured));
+    } catch (error) {
+      fail(
+        `post-merge capture is not a valid PNG for ${entry.key}: ${error.message}`,
+      );
+    }
+    const canonicalSha256 = shaBytes(canonical.bytes);
+    if (canonicalSha256 !== entry.afterSha256) {
+      fail(
+        `canonical post-merge hash does not match accepted AFTER for ${entry.key}`,
+      );
     }
     for (const field of ['storyId', 'theme', 'mode']) {
       if (capturedShot[field] !== entry.shot[field]) {
@@ -696,14 +742,24 @@ function promote() {
         );
       }
     }
-    if (!samePixels(acceptedAfter, recaptured)) {
-      fail(`post-merge pixels do not match accepted AFTER for ${entry.key}`);
+    if (
+      capturedShot.width !== canonical.width ||
+      capturedShot.height !== canonical.height
+    ) {
+      fail(`post-merge dimensions do not match ${entry.key}`);
     }
-    actions.push({entry, baselineFile, recaptured, capturedShot});
+    actions.push({
+      entry,
+      baselineFile,
+      canonicalBytes: canonical.bytes,
+      capturedShot: {...capturedShot, sha256: canonicalSha256},
+    });
   }
 
   if (actions.every(action => action.alreadyPromoted)) {
-    process.stdout.write(`Accepted visual bundle for PR #${acceptance.pr} was already promoted.\n`);
+    process.stdout.write(
+      `Accepted visual bundle for PR #${acceptance.pr} was already promoted.\n`,
+    );
     return;
   }
 
@@ -713,7 +769,7 @@ function promote() {
       if (fs.existsSync(action.baselineFile)) fs.rmSync(action.baselineFile);
       delete manifest.shots[action.entry.key];
     } else {
-      fs.copyFileSync(action.recaptured, action.baselineFile);
+      fs.writeFileSync(action.baselineFile, action.canonicalBytes);
       manifest.shots[action.entry.key] = action.capturedShot;
     }
   }
@@ -763,5 +819,7 @@ switch (command) {
     promote();
     break;
   default:
-    fail('usage: visual-acceptance.mjs <accept|state|trusted-plan|plan|promote>');
+    fail(
+      'usage: visual-acceptance.mjs <accept|state|trusted-plan|plan|promote>',
+    );
 }

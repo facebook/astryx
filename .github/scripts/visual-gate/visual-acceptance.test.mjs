@@ -10,6 +10,8 @@ import {fileURLToPath} from 'node:url';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {PNG} from 'pngjs';
 
+import {canonicalizePng} from './lib/canonical-png.mjs';
+
 const SCRIPT = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   'visual-acceptance.mjs',
@@ -133,7 +135,15 @@ function writeEvidence({
   attempt = 1,
   status = 'changed',
 } = {}) {
-  const dir = path.join(pages, 'pr', '42', 'visual', HEAD, String(run), String(attempt));
+  const dir = path.join(
+    pages,
+    'pr',
+    '42',
+    'visual',
+    HEAD,
+    String(run),
+    String(attempt),
+  );
   fs.mkdirSync(path.join(dir, 'after'), {recursive: true});
   if (status === 'changed' && kind !== 'removed') {
     fs.writeFileSync(path.join(dir, 'after', `${key}.png`), after);
@@ -295,7 +305,9 @@ describe('visual acceptance', () => {
       delete record.decision.roleName;
       delete record.decision.effectivePermission;
       writeJSON(acceptanceFile(), record);
-      expect(JSON.parse(run('state', {pages, pr: 42, head: HEAD}))).toMatchObject({
+      expect(
+        JSON.parse(run('state', {pages, pr: 42, head: HEAD})),
+      ).toMatchObject({
         state: 'success',
         reason: 'accepted',
       });
@@ -383,10 +395,12 @@ describe('visual acceptance', () => {
 
   it('returns success for a clean trusted capture without acceptance', () => {
     writeEvidence({run: 124, status: 'pass'});
-    expect(JSON.parse(run('state', {pages, pr: 42, head: HEAD}))).toMatchObject({
-      state: 'success',
-      reason: 'clean',
-    });
+    expect(JSON.parse(run('state', {pages, pr: 42, head: HEAD}))).toMatchObject(
+      {
+        state: 'success',
+        reason: 'clean',
+      },
+    );
   });
 
   it('derives a trusted component plan from baseline themes and the Storybook index', () => {
@@ -417,7 +431,9 @@ describe('visual acceptance', () => {
       'storybook-dir': storybook,
       output,
     });
-    expect(JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key)).toEqual([
+    expect(
+      JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key),
+    ).toEqual([
       'core-button--default__neutral-light',
       'core-button--default__neutral-dark',
     ]);
@@ -441,7 +457,9 @@ describe('visual acceptance', () => {
       'storybook-dir': storybook,
       output,
     });
-    expect(JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key)).toEqual([
+    expect(
+      JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key),
+    ).toEqual([
       'core-button--default__new-theme-light',
       'core-button--default__new-theme-dark',
     ]);
@@ -462,7 +480,9 @@ describe('visual acceptance', () => {
       'storybook-dir': root,
       output,
     });
-    expect(JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key)).toEqual([KEY]);
+    expect(
+      JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key),
+    ).toEqual([KEY]);
   });
 
   it('allows the trusted 520-shot broad plan through the capture CLI', () => {
@@ -478,9 +498,13 @@ describe('visual acceptance', () => {
     }));
     const file = path.join(root, 'large-plan.json');
     writeJSON(file, plan);
-    const printed = execFileSync(process.execPath, [GATE, 'plan', '--plan-file', file], {
-      encoding: 'utf8',
-    });
+    const printed = execFileSync(
+      process.execPath,
+      [GATE, 'plan', '--plan-file', file],
+      {
+        encoding: 'utf8',
+      },
+    );
     expect(printed).toContain('520 shots');
   });
 
@@ -512,7 +536,9 @@ describe('visual acceptance', () => {
       'storybook-dir': storybook,
       output,
     });
-    expect(JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key)).toEqual([
+    expect(
+      JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key),
+    ).toEqual([
       KEY,
       'core-new--default__neutral-light',
       'core-new--default__neutral-dark',
@@ -521,7 +547,15 @@ describe('visual acceptance', () => {
 
   it('accepts a trusted 520-delta broad bundle', () => {
     const runId = 130;
-    const dir = path.join(pages, 'pr', '42', 'visual', HEAD, String(runId), '1');
+    const dir = path.join(
+      pages,
+      'pr',
+      '42',
+      'visual',
+      HEAD,
+      String(runId),
+      '1',
+    );
     const deltas = [];
     fs.mkdirSync(path.join(dir, 'after'), {recursive: true});
     for (let index = 0; index < 520; index += 1) {
@@ -631,7 +665,129 @@ describe('visual acceptance', () => {
     });
   });
 
-  it('rejects changed post-merge pixels and a stale merge identity', () => {
+  it.each([
+    {kind: 'changed', key: KEY, runId: 123},
+    {kind: 'added', key: 'core-new--default__neutral-light', runId: 124},
+  ])(
+    'canonicalizes equivalent raw PNG bytes when promoting a $kind shot',
+    ({kind, key, runId}) => {
+      if (kind === 'added') writeEvidence({kind, key, run: runId});
+      run('accept', acceptanceFlags({'run-id': runId}));
+      const record = acceptanceFile(runId);
+      const accepted = fs.readFileSync(
+        path.join(path.dirname(record), 'after', `${key}.png`),
+      );
+      const decoded = PNG.sync.read(accepted);
+      decoded.gamma = 0.45455;
+      const rawRecapture = PNG.sync.write(decoded, {deflateLevel: 0});
+      expect(rawRecapture).not.toEqual(accepted);
+      expect(PNG.sync.read(rawRecapture).data).toEqual(
+        PNG.sync.read(accepted).data,
+      );
+      expect(canonicalizePng(rawRecapture).bytes).toEqual(accepted);
+
+      const capture = path.join(root, `capture-${kind}`);
+      fs.mkdirSync(path.join(capture, 'shots'), {recursive: true});
+      fs.writeFileSync(path.join(capture, 'shots', `${key}.png`), rawRecapture);
+      writeJSON(path.join(capture, 'manifest.json'), {
+        version: 1,
+        platform: 'linux-arm64',
+        browser: 'chromium-140.0',
+        viewport: {width: 1280, height: 900},
+        capturedAt: '2026-08-26T22:00:00.000Z',
+        context: {sha: MERGE},
+        shots: {
+          [key]: {
+            ...SHOT,
+            sha256: digest(rawRecapture),
+            width: 2,
+            height: 2,
+          },
+        },
+      });
+
+      expect(
+        run('promote', {
+          pages,
+          acceptance: record,
+          capture,
+          'merge-sha': MERGE,
+        }),
+      ).toContain('Promoted accepted visual bundle');
+      expect(
+        fs.readFileSync(
+          path.join(pages, 'visual-gate', 'baseline', 'shots', `${key}.png`),
+        ),
+      ).toEqual(accepted);
+      const baselineManifest = JSON.parse(
+        fs.readFileSync(
+          path.join(pages, 'visual-gate', 'baseline', 'manifest.json'),
+          'utf8',
+        ),
+      );
+      expect(baselineManifest.shots[key].sha256).toBe(digest(accepted));
+    },
+  );
+
+  it('promotes a removed shot without an AFTER hash or recaptured file', () => {
+    writeEvidence({kind: 'removed', run: 125});
+    run('accept', acceptanceFlags({'run-id': 125}));
+    const capture = path.join(root, 'capture-removed');
+    fs.mkdirSync(capture);
+    writeJSON(path.join(capture, 'manifest.json'), {
+      version: 1,
+      platform: 'linux-arm64',
+      browser: 'chromium-140.0',
+      viewport: {width: 1280, height: 900},
+      capturedAt: '2026-08-26T22:00:00.000Z',
+      context: {sha: MERGE},
+      shots: {},
+    });
+
+    expect(
+      run('promote', {
+        pages,
+        acceptance: acceptanceFile(125),
+        capture,
+        'merge-sha': MERGE,
+      }),
+    ).toContain('Promoted accepted visual bundle');
+    expect(
+      fs.existsSync(
+        path.join(pages, 'visual-gate', 'baseline', 'shots', `${KEY}.png`),
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects a merged recapture whose canonical pixels changed', () => {
+    run('accept', acceptanceFlags());
+    const capture = path.join(root, 'capture-changed-pixels');
+    const changed = png(0, 255, 0);
+    fs.mkdirSync(path.join(capture, 'shots'), {recursive: true});
+    fs.writeFileSync(path.join(capture, 'shots', `${KEY}.png`), changed);
+    writeJSON(path.join(capture, 'manifest.json'), {
+      version: 1,
+      platform: 'linux-arm64',
+      browser: 'chromium-140.0',
+      viewport: {width: 1280, height: 900},
+      capturedAt: '2026-08-26T22:00:00.000Z',
+      context: {sha: MERGE},
+      shots: {
+        [KEY]: {...SHOT, sha256: digest(changed), width: 2, height: 2},
+      },
+    });
+
+    expect(
+      fail('promote', {
+        pages,
+        acceptance: acceptanceFile(),
+        capture,
+        'merge-sha': MERGE,
+      }),
+    ).toMatch(/canonical post-merge hash does not match accepted AFTER/);
+  });
+
+  it('rejects a stale merge identity', () => {
     run('accept', acceptanceFlags());
     const capture = path.join(root, 'capture');
     fs.mkdirSync(path.join(capture, 'shots'), {recursive: true});

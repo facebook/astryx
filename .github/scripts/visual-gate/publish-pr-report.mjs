@@ -13,9 +13,9 @@
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import {PNG} from 'pngjs';
 
 import {incomparable} from './lib/baseline.mjs';
+import {canonicalizePng} from './lib/canonical-png.mjs';
 import {buildVerdict, compareCaptures} from './lib/compare.mjs';
 import {shotKey} from './lib/plan.mjs';
 import {renderReport} from './lib/report.mjs';
@@ -35,7 +35,10 @@ const headSha = flag('head-sha') ?? '';
 const runId = flag('run-id') ?? '';
 const runAttempt = flag('run-attempt') ?? '';
 const config = JSON.parse(
-  fs.readFileSync(new URL('./visual-gate.config.json', import.meta.url), 'utf8'),
+  fs.readFileSync(
+    new URL('./visual-gate.config.json', import.meta.url),
+    'utf8',
+  ),
 );
 
 const KEY = /^[A-Za-z0-9._-]{1,240}$/;
@@ -64,25 +67,33 @@ function shaFile(file) {
 function copyPng(source, target, label) {
   if (!fs.existsSync(source)) fail(`${label} is missing`);
   const stat = fs.lstatSync(source);
-  if (!stat.isFile() || stat.isSymbolicLink()) fail(`${label} is not a regular file`);
-  if (stat.size <= 0 || stat.size > MAX_PNG_BYTES) fail(`${label} has invalid size`);
+  if (!stat.isFile() || stat.isSymbolicLink())
+    fail(`${label} is not a regular file`);
+  if (stat.size <= 0 || stat.size > MAX_PNG_BYTES)
+    fail(`${label} has invalid size`);
   let image;
   try {
-    image = PNG.sync.read(fs.readFileSync(source), {checkCRC: true});
+    image = canonicalizePng(fs.readFileSync(source));
   } catch (error) {
     fail(`${label} is not a valid PNG: ${error.message}`);
   }
-  if (image.width <= 0 || image.height <= 0 || image.width > MAX_EDGE || image.height > MAX_EDGE) {
+  if (
+    image.width <= 0 ||
+    image.height <= 0 ||
+    image.width > MAX_EDGE ||
+    image.height > MAX_EDGE
+  ) {
     fail(`${label} has invalid dimensions ${image.width}x${image.height}`);
   }
   fs.mkdirSync(path.dirname(target), {recursive: true});
-  fs.writeFileSync(target, PNG.sync.write(image));
+  fs.writeFileSync(target, image.bytes);
   return image;
 }
 
 if (!Number.isSafeInteger(pr) || pr <= 0) fail('invalid PR number');
 if (!SHA.test(headSha)) fail('invalid trusted head SHA');
-if (!/^\d+$/.test(runId) || !/^\d+$/.test(runAttempt)) fail('invalid run identity');
+if (!/^\d+$/.test(runId) || !/^\d+$/.test(runAttempt))
+  fail('invalid run identity');
 if (
   scope?.hasStableVisual !== true ||
   typeof scope.broadStableVisual !== 'boolean' ||
@@ -95,7 +106,10 @@ if (
 }
 
 const manifestPath = path.join(input, 'manifest.json');
-if (!fs.existsSync(manifestPath) || fs.lstatSync(manifestPath).isSymbolicLink()) {
+if (
+  !fs.existsSync(manifestPath) ||
+  fs.lstatSync(manifestPath).isSymbolicLink()
+) {
   fail('trusted capture manifest is missing or symbolic');
 }
 const manifest = readJSON(manifestPath);
@@ -128,7 +142,8 @@ const blocker = incomparable(baselineManifest, manifest);
 if (blocker) fail(`baseline is not comparable: ${blocker}`);
 
 const entries = Object.entries(manifest.shots);
-if (entries.length > MAX_SHOTS) fail(`trusted capture exceeds ${MAX_SHOTS} shots`);
+if (entries.length > MAX_SHOTS)
+  fail(`trusted capture exceeds ${MAX_SHOTS} shots`);
 for (const [key, shot] of entries) {
   if (
     !KEY.test(key) ||
@@ -154,19 +169,30 @@ const sourceNames = fs.existsSync(sourceShots)
   ? fs.readdirSync(sourceShots, {withFileTypes: true})
   : [];
 const sourceKeys = sourceNames.map(entry => {
-  if (!entry.isFile() || entry.isSymbolicLink() || !entry.name.endsWith('.png')) {
+  if (
+    !entry.isFile() ||
+    entry.isSymbolicLink() ||
+    !entry.name.endsWith('.png')
+  ) {
     fail(`unexpected capture entry ${entry.name}`);
   }
   return entry.name.slice(0, -4);
 });
-if (sourceKeys.length !== entries.length || sourceKeys.some(key => !manifest.shots[key])) {
+if (
+  sourceKeys.length !== entries.length ||
+  sourceKeys.some(key => !manifest.shots[key])
+) {
   fail('capture PNG set does not match its manifest');
 }
 
 const trustedManifest = {...manifest, shots: {}};
 for (const [key, shot] of entries) {
   const target = path.join(output, 'current', `${key}.png`);
-  const image = copyPng(path.join(sourceShots, `${key}.png`), target, `shots/${key}.png`);
+  const image = copyPng(
+    path.join(sourceShots, `${key}.png`),
+    target,
+    `shots/${key}.png`,
+  );
   trustedManifest.shots[key] = {
     ...shot,
     sha256: shaFile(target),
@@ -179,8 +205,10 @@ const baselineEntries = Object.entries(baselineManifest.shots ?? {});
 const expected = scope.broadStableVisual
   ? baselineEntries.map(([key]) => key)
   : baselineEntries
-      .filter(([, shot]) =>
-        scope.stableComponents.includes(shot.component) || scope.stableThemes.includes(shot.theme),
+      .filter(
+        ([, shot]) =>
+          scope.stableComponents.includes(shot.component) ||
+          scope.stableThemes.includes(shot.theme),
       )
       .map(([key]) => key);
 if (entries.length === 0 && expected.length === 0) {
@@ -203,7 +231,11 @@ const verdict = buildVerdict({
   comparison,
   currentManifest: trustedManifest,
   baselineManifest,
-  targeting: {unexercisedOverrides: [], undeclaredTargets: [], uncoveredTargets: []},
+  targeting: {
+    unexercisedOverrides: [],
+    undeclaredTargets: [],
+    uncoveredTargets: [],
+  },
   failures: [],
   context: {...manifest.context, trustedScope: scope},
 });
@@ -212,17 +244,31 @@ const beforeSha256 = {};
 for (const change of verdict.changes) {
   const key = change.key;
   const baselineFile = path.join(baseline, 'shots', `${key}.png`);
-  copyPng(baselineFile, path.join(output, 'before', `${key}.png`), `baseline/${key}.png`);
-  fs.copyFileSync(path.join(output, 'current', `${key}.png`), path.join(output, 'after', `${key}.png`));
+  copyPng(
+    baselineFile,
+    path.join(output, 'before', `${key}.png`),
+    `baseline/${key}.png`,
+  );
+  fs.copyFileSync(
+    path.join(output, 'current', `${key}.png`),
+    path.join(output, 'after', `${key}.png`),
+  );
   beforeSha256[key] = shaFile(baselineFile);
 }
 for (const key of verdict.added) {
-  fs.copyFileSync(path.join(output, 'current', `${key}.png`), path.join(output, 'after', `${key}.png`));
+  fs.copyFileSync(
+    path.join(output, 'current', `${key}.png`),
+    path.join(output, 'after', `${key}.png`),
+  );
   beforeSha256[key] = null;
 }
 for (const key of verdict.removed) {
   const baselineFile = path.join(baseline, 'shots', `${key}.png`);
-  copyPng(baselineFile, path.join(output, 'before', `${key}.png`), `baseline/${key}.png`);
+  copyPng(
+    baselineFile,
+    path.join(output, 'before', `${key}.png`),
+    `baseline/${key}.png`,
+  );
   beforeSha256[key] = shaFile(baselineFile);
 }
 
@@ -263,8 +309,14 @@ const evidence = {
 };
 
 fs.rmSync(path.join(output, 'current'), {recursive: true, force: true});
-fs.writeFileSync(path.join(output, 'evidence.json'), `${JSON.stringify(evidence, null, 2)}\n`);
-fs.writeFileSync(path.join(output, 'verdict.json'), `${JSON.stringify(verdict, null, 2)}\n`);
+fs.writeFileSync(
+  path.join(output, 'evidence.json'),
+  `${JSON.stringify(evidence, null, 2)}\n`,
+);
+fs.writeFileSync(
+  path.join(output, 'verdict.json'),
+  `${JSON.stringify(verdict, null, 2)}\n`,
+);
 fs.writeFileSync(
   path.join(output, 'index.html'),
   renderReport(verdict, {

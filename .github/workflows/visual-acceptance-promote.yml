@@ -120,22 +120,23 @@ jobs:
               echo "::error::A newer visual acceptance superseded the reviewed record"
               exit 1
             fi
+            ACCEPTED_IDENTITY=$(jq -er '[.pr, .headSha, .run.id, .run.attempt] | @tsv' \
+              "$PAGES/$RECORD")
+            IFS=$'\t' read -r ACCEPTED_PR ACCEPTED_HEAD ACCEPTED_RUN ACCEPTED_ATTEMPT <<< "$ACCEPTED_IDENTITY"
+            if [ "$ACCEPTED_PR" != "$PR_NUMBER" ] || \
+               [ "$ACCEPTED_HEAD" != "$HEAD_SHA" ] || \
+               [ "$RECORD_REL" != "${ACCEPTED_RUN}/${ACCEPTED_ATTEMPT}/acceptance.json" ]; then
+              echo "::error::Visual acceptance record identity does not match this merged head"
+              exit 1
+            fi
             LATEST=$(gh api \
               "repos/${GITHUB_REPOSITORY}/actions/runs?event=pull_request&head_sha=${HEAD_SHA}&per_page=100" \
               --jq '[.workflow_runs[] | select(.name == "CI")][0] | [.id, .run_attempt, .status] | @tsv')
             IFS=$'\t' read -r LATEST_RUN LATEST_ATTEMPT LATEST_STATUS <<< "$LATEST"
-            ACCEPTED_RUN=$(jq -r '.run.id' "$PAGES/$RECORD")
-            ACCEPTED_ATTEMPT=$(jq -r '.run.attempt' "$PAGES/$RECORD")
             if [ "$LATEST_RUN" != "$ACCEPTED_RUN" ] || \
                [ "$LATEST_ATTEMPT" != "$ACCEPTED_ATTEMPT" ] || \
                [ "$LATEST_STATUS" != "completed" ]; then
               echo "::error::Accepted evidence is not from the latest completed CI attempt"
-              exit 1
-            fi
-            node .github/scripts/visual-gate/visual-acceptance.mjs state \
-              --pages "$PAGES" --pr "$PR_NUMBER" --head "$HEAD_SHA" > "$RUNNER_TEMP/promotion-state.json"
-            if [ "$(jq -r '.state + ":" + .reason' "$RUNNER_TEMP/promotion-state.json")" != "success:accepted" ]; then
-              echo "::error::Accepted evidence is no longer the latest visual result"
               exit 1
             fi
             node .github/scripts/visual-gate/visual-acceptance.mjs promote \
