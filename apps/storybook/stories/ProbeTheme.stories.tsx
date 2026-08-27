@@ -194,7 +194,9 @@ function AllAxesSheet() {
 
         <AxisCard title="5 · Typography">
           <Stack direction="vertical" gap={2}>
-            <Heading level={2}>AstryxProbeFace heading</Heading>
+            <Heading level={2} accessibilityLevel={3}>
+              AstryxProbeFace heading
+            </Heading>
             <Text type="body">Body text inherits the probe font token.</Text>
             <Text type="code">const fontAxis = 'covered';</Text>
           </Stack>
