@@ -178,7 +178,12 @@ jobs:
               const response = await github.rest.repos.getCollaboratorPermissionLevel({
                 owner, repo, username: context.actor,
               });
-              permission = response.data.user.permission;
+              const actor = response.data.user;
+              permission = actor.permissions?.admin
+                ? 'admin'
+                : actor.permissions?.maintain
+                  ? 'maintain'
+                  : actor.permission;
             } catch (error) {
               if (error.status !== 404) throw error;
             }

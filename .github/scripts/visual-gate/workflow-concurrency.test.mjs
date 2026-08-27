@@ -70,6 +70,18 @@ describe('visual acceptance workflow concurrency', () => {
     expect(accept).toContain('pull-requests: write');
   });
 
+  it('normalizes GitHub role flags before authorizing a maintainer', () => {
+    const value = workflow('visual-acceptance.yml');
+    const authorize = value.slice(
+      value.indexOf('  authorize:'),
+      value.indexOf('  accept:'),
+    );
+
+    expect(authorize).toContain('actor.permissions?.admin');
+    expect(authorize).toContain('actor.permissions?.maintain');
+    expect(authorize).toContain("? 'maintain'");
+  });
+
   it('uses the same head identity for post-merge promotion', () => {
     const value = workflow('visual-acceptance-promote.yml');
 
