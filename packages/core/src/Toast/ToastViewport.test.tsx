@@ -30,7 +30,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import React from 'react';
+import React, {useState} from 'react';
 import {readFileSync} from 'node:fs';
 import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {Button} from '../Button';
@@ -1255,7 +1255,9 @@ describe('toast timer lifecycle (#3589)', () => {
         const [showsClose, setShowsClose] = useState(true);
         return (
           <div>
-            <button type="button" onClick={() => setShowsClose(value => !value)}>
+            <button
+              type="button"
+              onClick={() => setShowsClose(value => !value)}>
               Toggle nested close
             </button>
             {showsClose && (
@@ -1283,9 +1285,11 @@ describe('toast timer lifecycle (#3589)', () => {
       act(() => {
         fireEvent.click(screen.getByText('Show'));
       });
-      expect(within(screen.getByTestId('nested-dismiss')).getByRole('button', {
-        name: 'Dismiss notification',
-      })).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('nested-dismiss')).getByRole('button', {
+          name: 'Dismiss notification',
+        }),
+      ).toBeInTheDocument();
       expect(closeButtons()).toHaveLength(1);
 
       // Only NestedLayout rerenders. Toast does not, so this specifically
