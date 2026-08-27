@@ -164,6 +164,7 @@ describe('theme build custom-variant augmentations', () => {
           },
           breadcrumbs: { 'variant:customBreadcrumbs': { color: 'currentColor' } },
           button: { 'variant:customButton': { backgroundColor: 'transparent' } },
+          card: { 'variant:customCard': { backgroundColor: 'transparent' } },
           dialog: { 'variant:customDialog': { backgroundColor: 'transparent' } },
           divider: { 'variant:customDivider': { borderColor: 'currentColor' } },
           'field-status': { 'variant:customFieldStatus': { color: 'currentColor' } },
@@ -204,6 +205,7 @@ describe('theme build custom-variant augmentations', () => {
         `import {Banner} from '@astryxdesign/core/Banner';\n` +
         `import {Breadcrumbs} from '@astryxdesign/core/Breadcrumbs';\n` +
         `import {Button} from '@astryxdesign/core/Button';\n` +
+        `import {Card} from '@astryxdesign/core/Card';\n` +
         `import {Dialog} from '@astryxdesign/core/Dialog';\n` +
         `import {Divider} from '@astryxdesign/core/Divider';\n` +
         `import {FieldStatus} from '@astryxdesign/core/FieldStatus';\n` +
@@ -222,6 +224,7 @@ describe('theme build custom-variant augmentations', () => {
         `      <Banner title="Banner" status="customBannerStatus" container="customBannerContainer" />\n` +
         `      <Breadcrumbs variant="customBreadcrumbs">Crumbs</Breadcrumbs>\n` +
         `      <Button label="Button" variant="customButton" />\n` +
+        `      <Card variant="customCard">Card</Card>\n` +
         `      <Dialog isOpen onOpenChange={() => {}} variant="customDialog">Body</Dialog>\n` +
         `      <Divider variant="customDivider" />\n` +
         `      <FieldStatus type="success" message="Ok" variant="customFieldStatus" />\n` +

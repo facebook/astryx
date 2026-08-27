@@ -23,6 +23,7 @@ import userEvent from '@testing-library/user-event';
 import {Typeahead} from './Typeahead';
 import {BaseTypeahead} from './BaseTypeahead';
 import type {SearchSource, SearchableItem} from './types';
+import {InternationalizationProvider} from '../i18n';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -132,21 +133,94 @@ describe('BaseTypeahead', () => {
 
   it('announces the result count to a live region (comboboxes-6)', async () => {
     render(
-      <BaseTypeahead
-        searchSource={fruitSource}
-        value={null}
-        onChange={() => {}}
-        debounceMs={0}
-      />,
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.typeahead.resultCount':
+              '{count, number} {count, plural, one {résultat} other {résultats}}',
+          },
+        }}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </InternationalizationProvider>,
     );
     const input = screen.getByRole('combobox');
+    // "Ap" matches Apple only — the singular ICU branch.
     fireEvent.change(input, {target: {value: 'Ap'}});
 
     await waitFor(() => {
       const region = document.querySelector(
         '[data-astryx-live-region="polite"]',
       );
-      expect(region?.textContent).toMatch(/\d+ results?/);
+      // Exact, so the plural branch ("1 résultats") would fail.
+      expect(region?.textContent).toBe('1 résultat');
+    });
+  });
+
+  it('announces the plural result count', async () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.typeahead.resultCount':
+              '{count, number} {count, plural, one {résultat} other {résultats}}',
+          },
+        }}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </InternationalizationProvider>,
+    );
+    const input = screen.getByRole('combobox');
+    // "err" matches Cherry and Elderberry.
+    fireEvent.change(input, {target: {value: 'err'}});
+
+    await waitFor(() => {
+      const region = document.querySelector(
+        '[data-astryx-live-region="polite"]',
+      );
+      expect(region?.textContent).toBe('2 résultats');
+    });
+  });
+
+  it('speaks the result count from a provider catalog', async () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        messages={{
+          fr: {
+            '@astryx.typeahead.resultCount': {
+              defaultMessage:
+                '{count, number} {count, plural, one {résultat} other {résultats}}',
+            },
+          },
+        }}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </InternationalizationProvider>,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'err'}});
+
+    await waitFor(() => {
+      const region = document.querySelector(
+        '[data-astryx-live-region="polite"]',
+      );
+      // Same key through the catalog path rather than `overrides`.
+      expect(region?.textContent).toBe('2 résultats');
     });
   });
 
@@ -344,6 +418,55 @@ describe('BaseTypeahead focus-out', () => {
     await waitFor(() => {
       expect(input).toHaveAttribute('aria-expanded', 'false');
     });
+  });
+
+  it('closes the list on the Tab keydown, before the blur it produces', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    input.focus();
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // No blur is fired here on purpose: dismissing from the blur instead lets
+    // the popover close mid-focus-move, which Chrome answers by dropping
+    // focus to <body>.
+    fireEvent.keyDown(input, {key: 'Tab'});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('Tab from the input with the list open moves focus to the next control', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+        <button type="button">Next</button>
+      </>,
+    );
+    const input = screen.getByRole('combobox');
+    input.focus();
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    await user.keyboard('{Tab}');
+    expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
   });
 
   it('keeps the dropdown open when focus moves into the anchor wrapper', async () => {
@@ -655,6 +778,160 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
   });
 });
 
+describe('BaseTypeahead minQueryLength', () => {
+  it('does not search or open the menu below the threshold', async () => {
+    const search = vi.fn((query: string) =>
+      fruits.filter(f => f.label.toLowerCase().includes(query.toLowerCase())),
+    );
+    render(
+      <BaseTypeahead
+        searchSource={{search, bootstrap: () => []}}
+        value={null}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(search).not.toHaveBeenCalled();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    // Positive control: the third character crosses the threshold, so the
+    // same harness does see the search and the open menu.
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(search).toHaveBeenCalledExactlyOnceWith('App');
+  });
+
+  it('closes the menu again when the query falls back below the threshold', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('does not fall back to bootstrap entries on ArrowDown below the threshold', async () => {
+    const bootstrap = vi.fn(() => fruits.slice(0, 3));
+    render(
+      <BaseTypeahead
+        searchSource={{search: () => [], bootstrap}}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    bootstrap.mockClear();
+
+    // Typing below the threshold closes the bootstrap menu...
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    // ...and ArrowDown must not re-open it with entries that ignore the
+    // two characters already typed.
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(bootstrap).not.toHaveBeenCalled();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('searches on the first character when minQueryLength is not set', async () => {
+    const search = vi.fn(() => fruits.slice(0, 1));
+    render(
+      <BaseTypeahead
+        searchSource={{search, bootstrap: () => []}}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'A'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(search).toHaveBeenCalledExactlyOnceWith('A');
+  });
+
+  it('stops reporting "Loading" when the query falls below the threshold mid-search', async () => {
+    // Falling below the threshold abandons the in-flight search by bumping the
+    // search generation, which also makes that search decline to clear the
+    // loading flag on its way out. Backspacing from three characters to two on
+    // a remote source is the everyday way to hit it, and the field would
+    // otherwise report "Loading" to a screen reader until the third character
+    // went back in.
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const search = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    render(
+      <BaseTypeahead
+        searchSource={{search, bootstrap: () => []}}
+        value={null}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await act(async () => {
+      settle(fruits.slice(0, 1));
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
 describe('BaseTypeahead hasSearched reset', () => {
   it('does not show "No results found" after selecting an item and re-entering', async () => {
     const onChange = vi.fn();
@@ -795,6 +1072,41 @@ describe('Typeahead edit mode', () => {
 
     // onChange should not have been called — value restored
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('does not exit edit mode on a composing Escape (IME)', async () => {
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+      />,
+    );
+
+    // Enter edit mode by clicking the token; the input uncollapses and
+    // rejoins the Tab order (tabindex is cleared).
+    const tokenText = screen.getByText(fruits[0].label);
+    fireEvent.click(tokenText.closest('div')!);
+    await act(async () => {
+      await new Promise(r => requestAnimationFrame(r));
+    });
+    const input = screen.getByRole('combobox');
+    expect(input).not.toHaveAttribute('tabindex', '-1');
+
+    // BaseTypeahead invokes this external handler before its own IME guard, so
+    // a composing Escape (isComposing / legacy keyCode 229) — which an IME uses
+    // to cancel the pending candidate — must not exit edit mode here.
+    fireEvent.keyDown(input, {key: 'Escape', isComposing: true});
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex', '-1');
+    fireEvent.keyDown(input, {key: 'Escape', keyCode: 229});
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex', '-1');
+
+    // A real, non-composing Escape still exits edit mode: the token is
+    // restored and the collapsed input drops back out of the Tab order.
+    fireEvent.keyDown(input, {key: 'Escape'});
+    expect(screen.getByRole('combobox')).toHaveAttribute('tabindex', '-1');
   });
 });
 

@@ -145,6 +145,18 @@ describe('TreeList', () => {
     expect(screen.getByTestId('tree')).toBeInTheDocument();
   });
 
+  it('forwards aria-label to the tree element', () => {
+    render(<TreeList items={simpleItems} aria-label="File tree" />);
+    const tree = screen.getByRole('tree');
+    expect(tree).toHaveAttribute('aria-label', 'File tree');
+  });
+
+  it('forwards id to the root element', () => {
+    render(<TreeList items={simpleItems} id="file-tree" />);
+    const root = screen.getByRole('tree').parentElement;
+    expect(root).toHaveAttribute('id', 'file-tree');
+  });
+
   it('renders description text', () => {
     const items: TreeListItemData[] = [
       {id: 'a', label: 'Label', description: 'Description text'},
@@ -192,6 +204,43 @@ describe('TreeList', () => {
     render(<TreeList items={simpleItems} />);
     const tree = screen.getByRole('tree');
     expect(tree).not.toHaveAttribute('aria-labelledby');
+  });
+
+  it('prefers the visible header id over caller aria-labelledby when header exists', () => {
+    render(
+      <TreeList
+        items={simpleItems}
+        header={<span>File Tree</span>}
+        aria-labelledby="external-label"
+      />,
+    );
+    const tree = screen.getByRole('tree');
+    const headerId = tree.getAttribute('aria-labelledby');
+    expect(headerId).toBeTruthy();
+    expect(headerId).not.toBe('external-label');
+    const headerEl = document.getElementById(headerId!);
+    expect(headerEl?.textContent).toBe('File Tree');
+  });
+
+  it('uses caller aria-labelledby on the headerless path', () => {
+    render(<TreeList items={simpleItems} aria-labelledby="external-label" />);
+    const tree = screen.getByRole('tree');
+    expect(tree).toHaveAttribute('aria-labelledby', 'external-label');
+  });
+
+  it('ignores caller aria-label when a header names the tree', () => {
+    render(
+      <TreeList
+        items={simpleItems}
+        header={<span>File Tree</span>}
+        aria-label="External name"
+      />,
+    );
+    const tree = screen.getByRole('tree');
+    expect(tree).not.toHaveAttribute('aria-label');
+    const headerId = tree.getAttribute('aria-labelledby');
+    const headerEl = document.getElementById(headerId!);
+    expect(headerEl?.textContent).toBe('File Tree');
   });
 
   // ===========================================================================

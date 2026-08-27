@@ -27,7 +27,9 @@ const chocolateSyntax = defineSyntaxTheme({
     tag: ['#8c3a3a', '#d47a7a'],
     attribute: ['#8C5927', '#d4a06a'],
     property: ['#3a7c6b', '#70c4b0'],
-    punctuation: ['#B88859', '#6b5540'],
+    // #B88859/#6b5540 failed WCAG AA against the syntax background: 3.06:1
+    // light, 2.56:1 dark. #5386.
+    punctuation: ['#9e622e', '#cb884d'], // 4.84:1 / 6.12:1
     background: ['#FFFCF7', '#1c1610'],
   },
 });
@@ -176,8 +178,11 @@ export const chocolateTheme = defineTheme({
 
     // =========================================================================
     // Radius — soft and rounded
+    //   --radius-none and --radius-full are always fixed and must never be
+    //   scaled by a theme (see defineTheme's radius config docs) — 0 and
+    //   9999px respectively, matching @astryxdesign/core's own defaults.
     // =========================================================================
-    '--radius-none': '0.125rem',
+    '--radius-none': '0px',
     '--radius-inner': '0.375rem',
     '--radius-element': '0.625rem',
     '--radius-container': '0.75rem',

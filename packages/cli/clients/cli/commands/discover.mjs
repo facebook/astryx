@@ -15,6 +15,8 @@ import {jsonOut} from '../../../foundation/response/json.mjs';
 import {emit, section, text, record, records, list, code} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {discover as discoverApi} from '../../../api/discover/discover.mjs';
+import {Project} from '../../../foundation/config/project.mjs';
+import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as discoverCommand} from './discover.doc.mjs';
@@ -40,6 +42,16 @@ export function registerDiscover(program) {
       const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
       const run = getCliInvocation();
+
+      // Non-blocking nudge: if any configured integration has validation
+      // issues, print one compact line to stderr pointing at
+      // validate-integration. Best-effort; suppressed in --json mode.
+      try {
+        const project = await Project.load(process.cwd());
+        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+      } catch {
+        // Never let the nudge break the command.
+      }
 
       let result;
       try {

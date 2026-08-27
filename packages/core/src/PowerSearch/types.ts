@@ -384,6 +384,8 @@ export interface PowerSearchAuxData {
   readonly filterValue?: FilterValue;
   /** Index in the filters array (for editing/removing). */
   readonly filterIndex?: number;
+  /** Section heading for field-browser entries. */
+  readonly group?: string;
 }
 
 export type PowerSearchItem = SearchableItem<PowerSearchAuxData>;

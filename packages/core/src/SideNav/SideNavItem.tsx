@@ -47,12 +47,13 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {SizeProvider} from '../SizeContext/SizeContext';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {
   useSideNavCollapse,
   SideNavCollapseContext,
@@ -62,6 +63,7 @@ import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -164,16 +166,11 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
-    },
-    ':active': {
-      backgroundColor: colorVars['--color-overlay-pressed'],
-    },
   },
   // Primary action element inside the split-action row (link or button).
   // Flex:1 so it fills remaining space, giving a wide click target.
@@ -200,7 +197,10 @@ const styles = stylex.create({
     fontWeight: 'inherit',
     lineHeight: 'inherit',
     textAlign: 'start',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // No border and no background: `usePopover` paints the panel this renders
   // into. Drawing a second surface here put square corners inside its rounded
@@ -457,6 +457,7 @@ export function SideNavItem({
     hasCloseButton: false,
     dialogLabel: t('@astryx.sideNavItem.submenuLabel', {label}),
   });
+  const mergedTriggerRef = useMergedRefs(ref, popover.triggerRef);
 
   // Collapse state for items with children
   const itemCollapsibleConfig = useMemo(
@@ -560,6 +561,7 @@ export function SideNavItem({
       }),
       focusOutlineProps.focusVisible(
         navItemStyles.item,
+        interactionOverlayStyles.backgroundColor,
         navItemStyles[size],
         styles.itemCollapsed,
         size === 'sm' && styles.itemCollapsedSm,
@@ -574,7 +576,7 @@ export function SideNavItem({
       return (
         <div {...stylex.props(styles.root, xstyle)}>
           <button
-            ref={mergeRefs(ref, popover.triggerRef)}
+            ref={mergedTriggerRef}
             type="button"
             {...rest}
             {...hoverTriggerProps}
@@ -665,6 +667,7 @@ export function SideNavItem({
 
   const itemStyleArgs = [
     navItemStyles.item,
+    interactionOverlayStyles.backgroundColor,
     navItemStyles[size],
     isSelected && navItemStyles.selected,
     isDisabled && navItemStyles.disabled,
@@ -740,7 +743,10 @@ export function SideNavItem({
             }
             aria-expanded={!isItemCollapsed}
             aria-controls={`${id}-children`}
-            {...focusOutlineProps.focusVisible(styles.expandToggle)}>
+            {...focusOutlineProps.focusVisible(
+              styles.expandToggle,
+              interactionOverlayStyles.backgroundColor,
+            )}>
             <Icon
               icon="chevronDown"
               size="lg"

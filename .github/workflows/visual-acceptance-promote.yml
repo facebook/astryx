@@ -1,0 +1,189 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Promote a PR acceptance only after the merged commit reproduces every reviewed
+# AFTER frame. The job is serialized with manual baseline promotion, and each
+# key carries its baseline preimage hash so concurrent decisions cannot overwrite
+# one another silently.
+
+name: Visual acceptance promotion
+
+on:
+  pull_request_target:
+    branches: ['main']
+    types: [closed]
+
+permissions: {}
+
+concurrency:
+  # Shares the head-branch lock with rerun invalidation and acceptance. A new
+  # requested run cancels an older promotion before it can publish stale pixels;
+  # cross-PR baseline races are rejected by preimage hashes and push retries.
+  group: visual-acceptance-head-${{ github.event.pull_request.head.repo.id }}-${{ github.event.pull_request.head.ref }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: github.event.pull_request.merged == true
+    runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 20
+    permissions:
+      actions: write
+      contents: write
+      statuses: write
+    steps:
+      - name: Checkout the merged result
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Find an acceptance for the merged head
+        id: acceptance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          PAGES="$RUNNER_TEMP/visual-acceptance-pages"
+          git clone --depth=1 --single-branch --branch gh-pages \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$PAGES"
+          ROOT="$PAGES/visual-gate/acceptances/${PR_NUMBER}/${HEAD_SHA}"
+          POINTER="$ROOT/current.json"
+          if [ ! -f "$POINTER" ]; then
+            echo "No visual acceptance was recorded for this merged head."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          RECORD_REL=$(jq -r '.record // empty' "$POINTER")
+          if ! printf '%s' "$RECORD_REL" | grep -Eq '^[0-9]+/[0-9]+/acceptance\.json$'; then
+            echo "::error::Visual acceptance pointer is invalid"
+            exit 1
+          fi
+          RECORD="$ROOT/$RECORD_REL"
+          if [ ! -f "$RECORD" ]; then
+            echo "::error::Visual acceptance record is missing"
+            exit 1
+          fi
+          {
+            echo "found=true"
+            echo "record=$RECORD"
+            echo "record_rel=$RECORD_REL"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node and pnpm
+        if: steps.acceptance.outputs.found == 'true'
+        uses: ./.github/actions/setup
+
+      - name: Build the merged Storybook
+        if: steps.acceptance.outputs.found == 'true'
+        run: pnpm build && pnpm -F @astryxdesign/storybook build
+
+      - name: Install Chromium
+        if: steps.acceptance.outputs.found == 'true'
+        run: npx playwright install chromium
+
+      - name: Recapture exactly the accepted shots
+        if: steps.acceptance.outputs.found == 'true'
+        env:
+          GITHUB_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          ACCEPTANCE: ${{ steps.acceptance.outputs.record }}
+        run: |
+          set -eu
+          node .github/scripts/visual-gate/visual-acceptance.mjs plan \
+            --acceptance "$ACCEPTANCE" \
+            --output accepted-plan.json
+          node .github/scripts/visual-gate/gate.mjs capture \
+            --storybook-dir apps/storybook/dist \
+            --out .visual-merged \
+            --plan-file accepted-plan.json
+
+      - name: Verify and promote the baseline
+        id: promote
+        if: steps.acceptance.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          RECORD_REL: ${{ steps.acceptance.outputs.record_rel }}
+        run: |
+          set -eu
+          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          PAGES="$RUNNER_TEMP/visual-promote-pages"
+          RECORD="visual-gate/acceptances/${PR_NUMBER}/${HEAD_SHA}/${RECORD_REL}"
+          for attempt in 1 2 3 4 5; do
+            rm -rf "$PAGES"
+            git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" "$PAGES"
+            CURRENT_REL=$(jq -r '.record // empty' \
+              "$PAGES/visual-gate/acceptances/${PR_NUMBER}/${HEAD_SHA}/current.json")
+            if [ "$CURRENT_REL" != "$RECORD_REL" ]; then
+              echo "::error::A newer visual acceptance superseded the reviewed record"
+              exit 1
+            fi
+            ACCEPTED_IDENTITY=$(jq -er '[.pr, .headSha, .run.id, .run.attempt] | @tsv' \
+              "$PAGES/$RECORD")
+            IFS=$'\t' read -r ACCEPTED_PR ACCEPTED_HEAD ACCEPTED_RUN ACCEPTED_ATTEMPT <<< "$ACCEPTED_IDENTITY"
+            if [ "$ACCEPTED_PR" != "$PR_NUMBER" ] || \
+               [ "$ACCEPTED_HEAD" != "$HEAD_SHA" ] || \
+               [ "$RECORD_REL" != "${ACCEPTED_RUN}/${ACCEPTED_ATTEMPT}/acceptance.json" ]; then
+              echo "::error::Visual acceptance record identity does not match this merged head"
+              exit 1
+            fi
+            LATEST=$(gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/runs?event=pull_request&head_sha=${HEAD_SHA}&per_page=100" \
+              --jq '[.workflow_runs[] | select(.name == "CI")][0] | [.id, .run_attempt, .status] | @tsv')
+            IFS=$'\t' read -r LATEST_RUN LATEST_ATTEMPT LATEST_STATUS <<< "$LATEST"
+            if [ "$LATEST_RUN" != "$ACCEPTED_RUN" ] || \
+               [ "$LATEST_ATTEMPT" != "$ACCEPTED_ATTEMPT" ] || \
+               [ "$LATEST_STATUS" != "completed" ]; then
+              echo "::error::Accepted evidence is not from the latest completed CI attempt"
+              exit 1
+            fi
+            node .github/scripts/visual-gate/visual-acceptance.mjs promote \
+              --pages "$PAGES" \
+              --acceptance "$PAGES/$RECORD" \
+              --capture .visual-merged \
+              --merge-sha "$MERGE_SHA"
+            git -C "$PAGES" config user.name "github-actions[bot]"
+            git -C "$PAGES" config user.email "github-actions[bot]@users.noreply.github.com"
+            git -C "$PAGES" add visual-gate/baseline
+            if git -C "$PAGES" diff --cached --quiet; then
+              echo "Baseline already contains the accepted pixels."
+              exit 0
+            fi
+            git -C "$PAGES" commit -m "visual baseline: accepted PR #${PR_NUMBER}"
+            if git -C "$PAGES" push origin gh-pages; then
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          echo "::error::Could not promote the accepted baseline after 5 attempts"
+          exit 1
+
+      - name: Run a fresh release gate
+        if: steps.promote.outcome == 'success'
+        uses: actions/github-script@v9
+        with:
+          retries: 3
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              ...context.repo,
+              workflow_id: 'release-gate.yml',
+              ref: context.payload.repository.default_branch,
+            });
+
+      - name: Mark a post-merge verification failure
+        if: failure() && steps.acceptance.outputs.found == 'true'
+        uses: actions/github-script@v9
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          retries: 3
+          script: |
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: process.env.HEAD_SHA,
+              context: 'visual-acceptance',
+              state: 'failure',
+              description: 'Merged pixels did not promote to the visual baseline.',
+            });

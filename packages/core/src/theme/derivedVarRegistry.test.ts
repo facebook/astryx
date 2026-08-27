@@ -85,6 +85,9 @@ const STRUCTURAL_VARS = new Set([
   '--table-row-overlay',
   '--separator-display',
   '--astryx-section-padding',
+  // Private counterpart of the public token above: one ancestor Section's
+  // padding, propagated down the tree. Structural, never authored by a theme.
+  '--_section-padding-propagated',
 ]);
 
 /**
@@ -164,9 +167,6 @@ function discoverComponents(): ComponentInfo[] {
         allVars.add(v);
       }
     }
-    if (allVars.size === 0) {
-      continue;
-    }
 
     // Only check component directories (those with a doc file named after the
     // directory). Match against the on-disk listing rather than existsSync so
@@ -188,6 +188,16 @@ function discoverComponents(): ComponentInfo[] {
       /* skip */
     }
 
+    // A directory earns a check by declaring a var OR by documenting a
+    // derived[] entry. Bailing on the var count alone (as this did) hid every
+    // component that is themeable purely through an expansion strategy —
+    // `{property: 'padding', expand: 'container'}` names no var, so such a
+    // component declares nothing and its registry↔doc consistency check
+    // silently never ran.
+    if (allVars.size === 0 && docDerived.length === 0) {
+      continue;
+    }
+
     results.push({
       dir,
       sourceVars: [...allVars],
@@ -203,6 +213,7 @@ function discoverComponents(): ComponentInfo[] {
 // ---------------------------------------------------------------------------
 
 const DIR_TO_REGISTRY_KEY: Record<string, string> = {
+  Avatar: 'avatar',
   Banner: 'banner',
   Button: 'button',
   Card: 'card',
@@ -211,12 +222,13 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Dialog: 'dialog',
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
-  HoverCard: 'hovercard',
+  HoverCard: 'hover-card',
+  NumberInput: 'number-input',
   Popover: 'popover',
-  ProgressBar: 'progressbar-mark',
+  ProgressBar: 'progress-bar-mark',
   Section: 'section',
   SegmentedControl: 'segmented-control',
-  TextArea: 'textarea',
+  TextArea: 'text-area',
 };
 
 /**
@@ -262,6 +274,15 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--_avatar-group-overlap',
   '--_codeblock-gutter-width',
   '--_tab-indicator-bottom',
+  // Hit-area outset on a ::after overlay, and whether that overlay is
+  // generated at all — `inset` and `content` on a pseudo-element are not
+  // properties a theme author sets on the component.
+  '--_thumbnail-hit-inset',
+  '--_input-clear-hit-inset',
+  '--_input-clear-hit-content',
+  // Placement-driven motion is private Toast behavior. A theme author controls
+  // the surface transform as a whole, not this one offset within it.
+  '--_toast-slide-y',
   // Indentation and row-spacing metrics: --tree-list-indent is the authorable
   // step, --_tree-indent the per-row distance TreeListItem computes from it.
   // --tree-list-row-gap is applied as half a padding-block on each row wrapper,
@@ -275,6 +296,19 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   // other.
   '--_card-elevation',
   '--_card-ring',
+  // The colour inside that composed ring, for a variant only a theme knows.
+  // It is one component of one shadow in the list, so no standard property
+  // maps onto it either — a theme sets it beside the fill it has to contrast.
+  '--selectable-card-ring-color',
+  // The spinner's ring is drawn as an SVG circle, so none of its four vars is
+  // a CSS property of the element carrying the theme target: `width` and
+  // `borderWidth` would name a box the ring is not, and a `color` mapping
+  // would take the label's text color with it. They are public vars a theme
+  // sets directly under a size- or shade-variant key.
+  '--spinner-diameter',
+  '--spinner-stroke-width',
+  '--spinner-color',
+  '--spinner-track-color',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -401,6 +435,21 @@ describe('getDerivedVars', () => {
     expect(getDerivedVars('unknown', 'borderRadius')).toEqual([]);
   });
 
+  it('resolves a deprecated key to the entries of the key that replaced it', () => {
+    // A theme written against the old spelling still selects the element (the
+    // component emits both classes), so its derived vars must still expand —
+    // otherwise the rule lands and the var half of it silently does nothing.
+    expect(getDerivedVars('hovercard', 'borderRadius')).toEqual(
+      getDerivedVars('hover-card', 'borderRadius'),
+    );
+    expect(getDerivedVars('textarea', 'paddingInline')).toEqual(
+      getDerivedVars('text-area', 'paddingInline'),
+    );
+    expect(getDerivedVars('progressbar-mark', 'width')).toEqual(
+      getDerivedVars('progress-bar-mark', 'width'),
+    );
+  });
+
   it('returns empty for unregistered property', () => {
     expect(getDerivedVars('card', 'color')).toEqual([]);
   });
@@ -423,4 +472,52 @@ describe('getDerivedVars', () => {
       expect(result[0].replaces).toBe(true);
     }
   });
+});
+
+// ---------------------------------------------------------------------------
+// Read check: a registered var nothing reads is a dead theming knob
+// ---------------------------------------------------------------------------
+
+/**
+ * Every source file under packages/core/src, concatenated once.
+ *
+ * `--_popover-radius` shipped documented and registered while `usePopover`
+ * hardcoded its radius, so `popover: {borderRadius}` set a var no element ever
+ * read. Sync between source, docs and registry cannot catch that: the three
+ * agreed with each other, and none of them required a reader.
+ */
+function readAllSource(dir: string): string {
+  let out = '';
+  for (const entry of readdirSync(dir, {withFileTypes: true})) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out += readAllSource(path);
+    } else if (
+      (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) &&
+      !entry.name.includes('.test.') &&
+      !entry.name.endsWith('.d.ts')
+    ) {
+      out += readFileSync(path, 'utf-8');
+    }
+  }
+  return out;
+}
+
+describe('registered derived vars are read by component styles', () => {
+  const source = readAllSource(SRC_DIR);
+
+  for (const [component, entries] of Object.entries(derivedVarRegistry)) {
+    for (const varName of entries.flatMap(e => e.vars ?? [])) {
+      it(`${component}: ${varName} is read via var()`, () => {
+        expect(
+          source.includes(`var(${varName})`) ||
+            source.includes(`var(${varName},`),
+          `${varName} is registered as the derived var for a CSS property on ` +
+            `\`${component}\`, but no component reads it. A theme setting that ` +
+            `property would write a var nothing consumes. Read it in the ` +
+            `element's StyleX styles, or drop the derived entry.`,
+        ).toBe(true);
+      });
+    }
+  }
 });

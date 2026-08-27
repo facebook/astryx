@@ -152,7 +152,7 @@ function App() {
         },
         {
           type: 'prose',
-          text: 'For an annotated map of the whole surface — every defineTheme field, the token families, and the component override syntax, each with the CLI command that prints its reference — run `astryx theme template`. It writes `theme.template.ts` into your project to read and copy from (`astryx init --features theme` writes it as part of project setup).',
+          text: 'For an annotated map of the whole surface (every defineTheme field, the token families, and the component override syntax, each with the CLI command that prints its reference), run `astryx theme template`. It writes `theme.template.ts` into your project to read and copy from (`astryx init --features theme` writes it as part of project setup).',
         },
       ],
     },
@@ -162,7 +162,7 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values.',
+          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
         },
         {
           type: 'code',
@@ -172,7 +172,8 @@ function App() {
 
 const myTheme = defineTheme({
   name: 'my-theme',
-  color: { accent: '#7B61FF', neutralStyle: 'cool' },
+  // accent: single hex, or [light, dark] tuple to seed each scheme separately
+  color: { accent: ['#7B61FF', '#9B85FF'], neutralStyle: 'cool' },
   typography: {
     scale: { base: 14, ratio: 1.2 },
     body: { family: 'Inter', fallbacks: '-apple-system, sans-serif' },
@@ -181,7 +182,7 @@ const myTheme = defineTheme({
   motion: { fast: 175, medium: 410, ratio: 0.75 },
   tokens: {
     // Explicit overrides take precedence over scale-generated values
-    '--color-accent': ['#7B61FF', '#9B85FF'],
+    '--color-background-body': ['#FFFFFF', '#0A0A0A'],
   },
   components: {
     button: { 'variant:primary': { color: 'white' } },
@@ -195,7 +196,7 @@ const myTheme = defineTheme({
             [
               'color',
               '--color-accent, --color-background-*, --color-text-*, --color-border, etc.',
-              'accent? (hex; omit for neutral-only), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
+              'accent? (hex or [light, dark] tuple; omit for neutral-only), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
             ],
             [
               'typography.scale',
@@ -253,9 +254,14 @@ const brandTheme = defineTheme({
             ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
             ['components', 'Deep-merged: child component rules override matching keys from the base.'],
             ['icons', 'Shallow-merged: child icons override matching names from the base.'],
-            ['fonts', 'Base fonts included first, then child fonts appended.'],
+            ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
+            ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
             ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
           ],
+        },
+        {
+          type: 'prose',
+          text: 'Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme\'s CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.',
         },
       ],
     },
@@ -294,7 +300,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Run `astryx component <Name>` to see a component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
+          text: 'Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
         },
         {
           type: 'list',
@@ -416,6 +422,10 @@ import './themes/ocean.css';
 <Theme theme={oceanTheme}>
   <App />
 </Theme>`,
+        },
+        {
+          type: 'prose',
+          text: 'The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app\'s job. See `astryx docs typography` for the full recipe.',
         },
       ],
     },

@@ -132,6 +132,8 @@ export const docs = {
         visualProps: ['size'],
         states: ['checked', 'disabled'],
       },
+      {className: 'astryx-checkbox-indicator-check', visualProps: ['size']},
+      {className: 'astryx-checkbox-indicator-dash', visualProps: ['size']},
       {
         className: 'astryx-radio-indicator',
         visualProps: ['size'],

@@ -176,6 +176,12 @@ interface UseComboboxOptions {
    * lands in the search input, which then owns its own typing.
    */
   onSearchSeed?: (char: string) => void;
+  /**
+   * Whether the browser's light dismiss just closed the popup. The trigger
+   * click that follows belongs to that same press, so acting on it would
+   * reopen the popup the user just closed.
+   */
+  wasJustDismissed?: () => boolean;
   listboxId: string;
 }
 
@@ -208,6 +214,7 @@ export function useCombobox({
   onSelect,
   onClear,
   onSearchSeed,
+  wasJustDismissed,
   listboxId,
 }: UseComboboxOptions): UseComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -244,7 +251,7 @@ export function useCombobox({
   );
 
   const onTriggerClick = useCallback(() => {
-    if (isDisabled) {
+    if (isDisabled || wasJustDismissed?.()) {
       return;
     }
     if (isOpen) {
@@ -256,7 +263,15 @@ export function useCombobox({
         setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
       }
     }
-  }, [isDisabled, isOpen, onOpen, closeAndReset, findSelectedIndex, hasSearch]);
+  }, [
+    isDisabled,
+    wasJustDismissed,
+    isOpen,
+    onOpen,
+    closeAndReset,
+    findSelectedIndex,
+    hasSearch,
+  ]);
 
   const onItemMouseEnter = useCallback(
     (item: SelectorOptionData, index: number) => {

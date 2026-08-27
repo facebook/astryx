@@ -201,8 +201,11 @@ export const gothicTheme = defineTheme({
 
     // =========================================================================
     // Radius — subtle rounding (original gothic)
+    //   --radius-none and --radius-full are always fixed and must never be
+    //   scaled by a theme (see defineTheme's radius config docs) — 0 and
+    //   9999px respectively, matching @astryxdesign/core's own defaults.
     // =========================================================================
-    '--radius-none': '0.125rem',
+    '--radius-none': '0px',
     '--radius-inner': '0.25rem',
     '--radius-element': '0.5rem',
     '--radius-container': '0.75rem',

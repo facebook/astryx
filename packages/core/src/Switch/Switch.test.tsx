@@ -262,6 +262,22 @@ describe('Switch', () => {
     expect(screen.getByLabelText('Toggle row')).toBeInTheDocument();
   });
 
+  it('drops the label gap when isLabelHidden so the row is only as wide as the track', () => {
+    const {rerender} = render(
+      <Switch
+        label="Toggle row"
+        isLabelHidden
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const row = screen.getByRole('switch').parentElement!.parentElement!;
+    expect(getComputedStyle(row).gap).toMatch(/^0(px)?$/);
+
+    rerender(<Switch label="Toggle row" value={false} onChange={() => {}} />);
+    expect(getComputedStyle(row).gap).not.toMatch(/^0(px)?$/);
+  });
+
   it('keeps description linked via aria-describedby when isLabelHidden', () => {
     render(
       <Switch
@@ -805,5 +821,15 @@ describe('forced colors (WCAG 1.4.11)', () => {
     );
     // And the tint never leaks into the forced-colors output.
     expect(getForcedColorsRules()).not.toContain('color-mix');
+  });
+});
+
+describe('label theme target', () => {
+  it('names its own label so a theme can style it apart from a field label', () => {
+    // See CheckboxInput: the control names the label it owns.
+    render(<Switch label="Wi-Fi" value={false} onChange={() => {}} />);
+    const label = screen.getByText('Wi-Fi').closest('label');
+    expect(label).toHaveClass('astryx-field-label');
+    expect(label).toHaveClass('astryx-switch-label');
   });
 });

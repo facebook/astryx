@@ -9,10 +9,90 @@
  * SYNC: When Dialog.tsx changes, update tests to match new behavior
  */
 
+import {readFileSync} from 'node:fs';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import {Dialog, resolveDialogPositionOffsets} from './Dialog';
+import {render, screen, fireEvent} from '@testing-library/react';
+import {
+  Dialog,
+  dialogFullscreenSafeAreaPaddingContract,
+  resolveDialogPositionOffsets,
+} from './Dialog';
 import {DialogHeader} from './DialogHeader';
+import {defineTheme, generateThemeCSS} from '../theme';
+
+function generateThemeTestCSS(
+  theme: Parameters<typeof generateThemeCSS>[0],
+): string {
+  return Object.values(generateThemeCSS(theme)).join('\n');
+}
+
+function extractConstDeclaration(source: string, name: string): string {
+  const start = source.indexOf(`const ${name} = stylex.keyframes({`);
+  if (start === -1) {
+    throw new Error(`Missing ${name} keyframes`);
+  }
+
+  const bodyStart = source.indexOf('{', start);
+  let depth = 0;
+  for (let index = bodyStart; index < source.length; index += 1) {
+    const char = source[index];
+    if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(start, index + 3);
+      }
+    }
+  }
+
+  throw new Error(`Unterminated ${name} keyframes`);
+}
+
+function extractThemeVars(css: string): Map<string, string> {
+  const vars = new Map<string, string>();
+  for (const match of css.matchAll(/(--astryx-dialog-[\w-]+):\s*([^;]+);/g)) {
+    vars.set(match[1], match[2].trim());
+  }
+  return vars;
+}
+
+function resolveCSSVarFallback(
+  value: string,
+  vars: ReadonlyMap<string, string>,
+): string {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('var(') || !trimmed.endsWith(')')) {
+    return trimmed;
+  }
+
+  const inner = trimmed.slice(4, -1);
+  let depth = 0;
+  let commaIndex = -1;
+  for (let index = 0; index < inner.length; index += 1) {
+    const char = inner[index];
+    if (char === '(') {
+      depth += 1;
+    } else if (char === ')') {
+      depth -= 1;
+    } else if (char === ',' && depth === 0) {
+      commaIndex = index;
+      break;
+    }
+  }
+
+  const varName = (
+    commaIndex === -1 ? inner : inner.slice(0, commaIndex)
+  ).trim();
+  const fallback = commaIndex === -1 ? '' : inner.slice(commaIndex + 1).trim();
+  return vars.has(varName)
+    ? vars.get(varName)!
+    : resolveCSSVarFallback(fallback, vars);
+}
+
+function normalizeCSSValue(value: string): string {
+  return value.replace(/\s+/g, '');
+}
 
 // Mock showModal and close methods since they're not fully implemented in jsdom
 beforeEach(() => {
@@ -144,6 +224,195 @@ describe('Dialog', () => {
     });
   });
 
+  describe('IME composition', () => {
+    // A CJK user presses Escape to cancel a half-formed character several times
+    // a sentence. jsdom models neither composition nor the close watcher, so
+    // these pin the wiring; the behaviour itself is measured in Chromium
+    // against the Layer Dismissal stories.
+    function DialogWithField({onOpenChange}: {onOpenChange: () => void}) {
+      return (
+        <Dialog isOpen onOpenChange={onOpenChange} aria-label="Filters">
+          <input aria-label="Search" />
+        </Dialog>
+      );
+    }
+
+    it('claims the composing Escape instead of letting the browser act', () => {
+      const onOpenChange = vi.fn();
+      render(<DialogWithField onOpenChange={onOpenChange} />);
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      });
+      Object.defineProperty(event, 'isComposing', {value: true});
+      screen.getByRole('textbox', {name: 'Search'}).dispatchEvent(event);
+
+      // Unclaimed, this press becomes a close request that arrives at
+      // handleCancel and closes the dialog on the same keystroke.
+      expect(event.defaultPrevented).toBe(true);
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('ignores a close request that arrives mid-composition', () => {
+      // The back gesture and the platform close watcher carry no composition
+      // state, so the dialog asks the stack rather than the event.
+      const onOpenChange = vi.fn();
+      render(<DialogWithField onOpenChange={onOpenChange} />);
+      const field = screen.getByRole('textbox', {name: 'Search'});
+
+      fireEvent.compositionStart(field);
+      const duringComposition = new Event('cancel', {cancelable: true});
+      screen.getByRole('dialog').dispatchEvent(duringComposition);
+
+      expect(duringComposition.defaultPrevented).toBe(true);
+      expect(onOpenChange).not.toHaveBeenCalled();
+
+      fireEvent.compositionEnd(field);
+      screen
+        .getByRole('dialog')
+        .dispatchEvent(new Event('cancel', {cancelable: true}));
+
+      expect(onOpenChange).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+  });
+
+  describe('nested-modal dismissal', () => {
+    function NestedModals({
+      isInnerOpen,
+      onOuterChange,
+      onInnerChange,
+    }: {
+      isInnerOpen: boolean;
+      onOuterChange: (isOpen: boolean) => void;
+      onInnerChange: (isOpen: boolean) => void;
+    }) {
+      return (
+        <Dialog
+          isOpen={true}
+          onOpenChange={onOuterChange}
+          purpose="info"
+          aria-label="Outer">
+          Outer content
+          <Dialog
+            isOpen={isInnerOpen}
+            onOpenChange={onInnerChange}
+            purpose="info"
+            aria-label="Inner">
+            Inner content
+          </Dialog>
+        </Dialog>
+      );
+    }
+
+    const getDialog = (label: string) =>
+      screen
+        .getAllByRole('dialog', {hidden: true})
+        .find(d => d.getAttribute('aria-label') === label)!;
+
+    const pressEscape = (target: Element) => {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    };
+
+    it('closes only the inner modal, not the outer, on Escape', () => {
+      const onOuterChange = vi.fn();
+      const onInnerChange = vi.fn();
+
+      render(
+        <NestedModals
+          isInnerOpen={true}
+          onOuterChange={onOuterChange}
+          onInnerChange={onInnerChange}
+        />,
+      );
+
+      const outer = getDialog('Outer');
+      const inner = getDialog('Inner');
+      expect(outer.contains(inner)).toBe(true);
+
+      pressEscape(inner);
+
+      expect(onInnerChange).toHaveBeenCalledTimes(1);
+      expect(onInnerChange).toHaveBeenCalledWith(false);
+      expect(onOuterChange).not.toHaveBeenCalled();
+    });
+
+    it('closes the outer modal on the next Escape once the inner one is gone', () => {
+      const onOuterChange = vi.fn();
+      const onInnerChange = vi.fn();
+
+      const {rerender} = render(
+        <NestedModals
+          isInnerOpen={true}
+          onOuterChange={onOuterChange}
+          onInnerChange={onInnerChange}
+        />,
+      );
+      rerender(
+        <NestedModals
+          isInnerOpen={false}
+          onOuterChange={onOuterChange}
+          onInnerChange={onInnerChange}
+        />,
+      );
+
+      pressEscape(getDialog('Outer'));
+
+      expect(onOuterChange).toHaveBeenCalledTimes(1);
+      expect(onOuterChange).toHaveBeenCalledWith(false);
+      expect(onInnerChange).not.toHaveBeenCalled();
+    });
+
+    it('closes the top-most modal on a browser-initiated cancel', () => {
+      const onOuterChange = vi.fn();
+      const onInnerChange = vi.fn();
+
+      render(
+        <NestedModals
+          isInnerOpen={true}
+          onOuterChange={onOuterChange}
+          onInnerChange={onInnerChange}
+        />,
+      );
+
+      const cancelEvent = new Event('cancel', {cancelable: true});
+      getDialog('Inner').dispatchEvent(cancelEvent);
+
+      expect(cancelEvent.defaultPrevented).toBe(true);
+      expect(onInnerChange).toHaveBeenCalledTimes(1);
+      expect(onInnerChange).toHaveBeenCalledWith(false);
+      expect(onOuterChange).not.toHaveBeenCalled();
+    });
+
+    it('leaves a modal that is not top-most open on a browser-initiated cancel', () => {
+      const onOuterChange = vi.fn();
+      const onInnerChange = vi.fn();
+
+      render(
+        <NestedModals
+          isInnerOpen={true}
+          onOuterChange={onOuterChange}
+          onInnerChange={onInnerChange}
+        />,
+      );
+
+      const cancelEvent = new Event('cancel', {cancelable: true});
+      getDialog('Outer').dispatchEvent(cancelEvent);
+
+      expect(cancelEvent.defaultPrevented).toBe(true);
+      expect(onOuterChange).not.toHaveBeenCalled();
+      expect(onInnerChange).not.toHaveBeenCalled();
+    });
+  });
+
   describe('variant: standard', () => {
     it('renders with default variant', () => {
       render(
@@ -181,6 +450,164 @@ describe('Dialog', () => {
         </Dialog>,
       );
       expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+  });
+
+  describe('responsive sizing', () => {
+    it('keeps the requested width but clamps standard dialogs to container and dynamic viewport gutters', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          width={600}
+          maxHeight="70dvh"
+          aria-label="Sized dialog">
+          Content
+        </Dialog>,
+      );
+
+      const dialog = screen.getByRole('dialog');
+      const inlineStyle = dialog.getAttribute('style') ?? '';
+      expect(inlineStyle).toContain('--x-width: 600px');
+      expect(inlineStyle).toContain(
+        '--x-maxWidth: min(100%, calc(100dvw - var(--spacing-4) - var(--spacing-4)))',
+      );
+      expect(inlineStyle).toContain('--x-maxHeight: 70dvh');
+    });
+
+    it('uses opacity-only fullscreen keyframes while standard dialogs keep directional movement', () => {
+      const source = readFileSync(
+        'packages/core/src/Dialog/Dialog.tsx',
+        'utf8',
+      );
+      const enterDirectional = extractConstDeclaration(
+        source,
+        'enterDirectional',
+      );
+      const enterFullscreen = extractConstDeclaration(
+        source,
+        'enterFullscreen',
+      );
+      const fullscreenOpen = source.slice(
+        source.indexOf('  fullscreenOpen: {'),
+        source.indexOf('  fullscreenSafeArea: {'),
+      );
+
+      expect(enterDirectional).toContain('transform');
+      expect(enterDirectional).toContain('translate(var(--dialog-dir-x');
+      expect(enterDirectional).toContain('scale(0.95)');
+      expect(enterFullscreen).toContain('opacity');
+      expect(enterFullscreen).not.toContain('transform');
+      expect(enterFullscreen).not.toContain('translate');
+      expect(enterFullscreen).not.toContain('scale(');
+      expect(fullscreenOpen).toContain('enterFullscreen');
+      expect(fullscreenOpen).not.toContain('enterDirectional');
+    });
+
+    it('maps fullscreen safe-area insets to logical sides in LTR and RTL', () => {
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineStart.ltr).toContain(
+        'safe-area-inset-left',
+      );
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineEnd.ltr).toContain(
+        'safe-area-inset-right',
+      );
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineStart.rtl).toContain(
+        'safe-area-inset-right',
+      );
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineEnd.rtl).toContain(
+        'safe-area-inset-left',
+      );
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineStart.rtl).not.toBe(
+        dialogFullscreenSafeAreaPaddingContract.inlineStart.ltr,
+      );
+      expect(dialogFullscreenSafeAreaPaddingContract.inlineEnd.rtl).not.toBe(
+        dialogFullscreenSafeAreaPaddingContract.inlineEnd.ltr,
+      );
+    });
+
+    it('protects default fullscreen content with safe-area padding', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          variant="fullscreen"
+          aria-label="Fullscreen dialog">
+          <div data-testid="child">Content</div>
+        </Dialog>,
+      );
+
+      const wrapper = screen.getByTestId('child').parentElement!;
+      const computed = window.getComputedStyle(wrapper);
+      expect(normalizeCSSValue(computed.paddingInlineStart)).toBe(
+        normalizeCSSValue(
+          dialogFullscreenSafeAreaPaddingContract.inlineStart.ltr,
+        ),
+      );
+      expect(normalizeCSSValue(computed.paddingInlineEnd)).toBe(
+        normalizeCSSValue(
+          dialogFullscreenSafeAreaPaddingContract.inlineEnd.ltr,
+        ),
+      );
+      expect(wrapper.parentElement!.tagName).toBe('DIALOG');
+    });
+
+    it('applies RTL fullscreen safe-area padding to the opposite logical edges', () => {
+      render(
+        <div dir="rtl">
+          <Dialog
+            isOpen={true}
+            onOpenChange={() => {}}
+            variant="fullscreen"
+            aria-label="Fullscreen RTL dialog">
+            <div data-testid="rtl-child">Content</div>
+          </Dialog>
+        </div>,
+      );
+
+      const wrapper = screen.getByTestId('rtl-child').parentElement!;
+      const computed = window.getComputedStyle(wrapper);
+      expect(normalizeCSSValue(computed.paddingInlineStart)).toBe(
+        normalizeCSSValue(
+          dialogFullscreenSafeAreaPaddingContract.inlineStart.rtl,
+        ),
+      );
+      expect(normalizeCSSValue(computed.paddingInlineEnd)).toBe(
+        normalizeCSSValue(
+          dialogFullscreenSafeAreaPaddingContract.inlineEnd.rtl,
+        ),
+      );
+    });
+
+    it('resolves theme zero padding before the default fullscreen safe-area fallback', () => {
+      const zeroPaddingTheme = defineTheme({
+        name: 'dialog-zero-padding-test',
+        components: {
+          dialog: {
+            base: {padding: '0'},
+          },
+        },
+      });
+
+      const vars = extractThemeVars(generateThemeTestCSS(zeroPaddingTheme));
+      expect(vars.get('--astryx-dialog-padding')).toBe('0');
+      expect(
+        resolveCSSVarFallback(
+          dialogFullscreenSafeAreaPaddingContract.blockStart,
+          vars,
+        ),
+      ).toBe('0');
+      expect(
+        resolveCSSVarFallback(
+          dialogFullscreenSafeAreaPaddingContract.inlineStart.ltr,
+          vars,
+        ),
+      ).toBe('0');
+      expect(
+        resolveCSSVarFallback(
+          dialogFullscreenSafeAreaPaddingContract.inlineEnd.rtl,
+          vars,
+        ),
+      ).toBe('0');
     });
   });
 
@@ -459,6 +886,30 @@ describe('Dialog', () => {
 
       expect(before).toHaveFocus();
       before.remove();
+    });
+  });
+
+  describe('container padding isolation', () => {
+    it('resets container padding custom properties on the root dialog element', () => {
+      render(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          Content
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const computed = window.getComputedStyle(dialog);
+      expect(
+        computed.getPropertyValue('--container-padding-inline-start'),
+      ).toBe('0px');
+      expect(computed.getPropertyValue('--container-padding-inline-end')).toBe(
+        '0px',
+      );
+      expect(computed.getPropertyValue('--container-padding-block-start')).toBe(
+        '0px',
+      );
+      expect(computed.getPropertyValue('--container-padding-block-end')).toBe(
+        '0px',
+      );
     });
   });
 });

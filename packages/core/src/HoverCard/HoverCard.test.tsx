@@ -25,6 +25,7 @@ import {StrictMode} from 'react';
 import {Button} from '../Button/Button';
 import {Theme, defineTheme} from '../theme';
 import {HoverCard} from './HoverCard';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -364,7 +365,94 @@ describe('HoverCard', () => {
     );
   });
 
-  it('injects aria-describedby on trigger', () => {
+  it('advertises a dialog popup on the trigger when labelled', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <button type="button">Trigger</button>
+      </HoverCard>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    // While closed, the layer is not in the DOM, so aria-controls must not
+    // point at a missing id (see DateInput). It is set once the card opens.
+    expect(trigger).not.toHaveAttribute('aria-controls');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('merges existing popup attributes on the trigger when labelled', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-controls="menu-id"
+          aria-expanded="true">
+          Trigger
+        </button>
+      </HoverCard>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    // The hover card's dialog popup is advertised, but the trigger's own
+    // popup semantics are preserved rather than overwritten.
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger.getAttribute('aria-controls')).toContain('menu-id');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('omits aria-expanded on a trigger whose role does not support it', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Timestamp details">
+        <time dateTime="2026-08-25" tabIndex={0}>
+          2 hours ago
+        </time>
+      </HoverCard>,
+    );
+    const trigger = screen.getByText('2 hours ago');
+    expect(trigger.tagName).toBe('TIME');
+    // Global attributes are valid on any element, so the popup relationship is
+    // still advertised.
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    // aria-expanded is not: <time> has no role that supports it, and emitting
+    // it is a critical axe aria-allowed-attr violation.
+    expect(trigger).not.toHaveAttribute('aria-expanded');
+  });
+
+  it('keeps aria-expanded on a role-less trigger that declares a supporting role', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <span role="button" tabIndex={0}>
+          Trigger
+        </span>
+      </HoverCard>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('leaves a role-less trigger own aria-expanded untouched', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <span aria-expanded="true">Trigger</span>
+      </HoverCard>,
+    );
+    const trigger = screen.getByText('Trigger');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('keeps aria-expanded on triggers whose implicit role supports it', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
+        <input type="button" value="Trigger" />
+      </HoverCard>,
+    );
+    expect(screen.getByRole('button')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('keeps aria-describedby on the trigger when no label is provided', () => {
     render(
       <HoverCard content={<span>Card content</span>}>
         <button type="button">Trigger</button>
@@ -372,9 +460,10 @@ describe('HoverCard', () => {
     );
     const trigger = screen.getByRole('button', {name: 'Trigger'});
     expect(trigger).toHaveAttribute('aria-describedby');
+    expect(trigger).not.toHaveAttribute('aria-haspopup');
   });
 
-  it('merges existing aria-describedby', () => {
+  it('preserves existing aria-describedby when no label is provided', () => {
     render(
       <HoverCard content={<span>Card content</span>}>
         <button type="button" aria-describedby="existing-id">
@@ -385,6 +474,34 @@ describe('HoverCard', () => {
     const trigger = screen.getByRole('button', {name: 'Trigger'});
     const describedBy = trigger.getAttribute('aria-describedby');
     expect(describedBy).toContain('existing-id');
+  });
+
+  it('updates aria-expanded when the labelled hover card opens and closes', async () => {
+    render(
+      <HoverCard
+        content={<span>Card content</span>}
+        label="Profile actions"
+        delay={0}>
+        <button type="button">Trigger</button>
+      </HoverCard>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).not.toHaveAttribute('aria-controls');
+
+    fireEvent.mouseEnter(trigger);
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      // The layer is in the DOM now, so aria-controls points at it.
+      expect(trigger).toHaveAttribute('aria-controls');
+    });
+
+    fireEvent.mouseLeave(trigger);
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      // The layer is gone from the DOM, so aria-controls is cleared.
+      expect(trigger).not.toHaveAttribute('aria-controls');
+    });
   });
 
   it('calls onOpenChange(true) when shown', async () => {
@@ -428,16 +545,33 @@ describe('HoverCard', () => {
 
   it('supports text-only children with inline wrapper', () => {
     render(
-      <HoverCard content={<span>Card content</span>}>
+      <HoverCard content={<span>Card content</span>} label="Profile actions">
         Just text, no element
       </HoverCard>,
     );
     // Text should be rendered
     expect(screen.getByText('Just text, no element')).toBeInTheDocument();
-    // Should have aria-describedby on the wrapper span
+    // When labelled, the wrapper advertises a dialog popup.
+    const wrapper = screen.getByText('Just text, no element');
+    expect(wrapper.tagName).toBe('SPAN');
+    expect(wrapper).toHaveAttribute('aria-haspopup', 'dialog');
+    // The wrapper is a role-less <span>; aria-expanded is invalid there.
+    expect(wrapper).not.toHaveAttribute('aria-expanded');
+    // While closed, the layer is not in the DOM, so aria-controls is unset.
+    expect(wrapper).not.toHaveAttribute('aria-controls');
+    expect(wrapper).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('keeps aria-describedby on text-only children when no label is provided', () => {
+    render(
+      <HoverCard content={<span>Card content</span>}>
+        Just text, no element
+      </HoverCard>,
+    );
     const wrapper = screen.getByText('Just text, no element');
     expect(wrapper.tagName).toBe('SPAN');
     expect(wrapper).toHaveAttribute('aria-describedby');
+    expect(wrapper).not.toHaveAttribute('aria-haspopup');
   });
 
   describe('isDefaultOpen', () => {
@@ -802,6 +936,211 @@ describe('HoverCard', () => {
       });
       consoleErrorSpy.mockRestore();
       container.remove();
+    });
+  });
+
+  describe('touch', () => {
+    // The modality is document-global; a tap in one case must not decide the
+    // next one's answer.
+    beforeEach(() => {
+      __resetInteractionModalityForTest();
+    });
+
+    /** A tap: the pointer sequence a finger produces before hover is faked. */
+    const tap = (element: HTMLElement) => {
+      // A finger's arrival fires pointerenter too, and that is the path a pen
+      // must not take — cover it here rather than starting at pointerdown.
+      fireEvent.pointerEnter(element, {pointerType: 'touch'});
+      fireEvent.pointerDown(element, {pointerType: 'touch'});
+      fireEvent.pointerUp(element, {pointerType: 'touch'});
+      // Touch synthesizes hover after the press; the card must not act on it.
+      fireEvent.mouseEnter(element);
+    };
+
+    it('opens on a tap when the trigger performs no action', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={300}>
+          Ruby Cheung
+        </HoverCard>,
+      );
+
+      tap(screen.getByText('Ruby Cheung'));
+
+      // Immediately: a tap is a decision, not hover intent, so no delay applies.
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('stays shut on a tap when the trigger performs an action', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={0}>
+          <button type="button">Save</button>
+        </HoverCard>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Save'});
+      tap(trigger);
+      // A tap focuses what it activates; that focus must not reopen the card.
+      fireEvent.focusIn(trigger);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    });
+
+    it('opens on a tap of an action trigger when touchTrigger is "tap"', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          touchTrigger="tap"
+          delay={0}>
+          <button type="button">Details</button>
+        </HoverCard>,
+      );
+
+      tap(screen.getByRole('button', {name: 'Details'}));
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('survives a tap on its own content', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<button type="button">Follow</button>}
+          onOpenChange={onOpenChange}
+          delay={0}
+          hideDelay={0}>
+          Ruby Cheung
+        </HoverCard>,
+      );
+
+      tap(screen.getByText('Ruby Cheung'));
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+      onOpenChange.mockClear();
+
+      const action = await screen.findByRole('button', {
+        name: 'Follow',
+        hidden: true,
+      });
+      fireEvent.pointerDown(action, {pointerType: 'touch'});
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+
+    it('closes on a tap outside', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <>
+          <HoverCard
+            content={<span>Card content</span>}
+            onOpenChange={onOpenChange}
+            delay={0}
+            hideDelay={0}>
+            Ruby Cheung
+          </HoverCard>
+          <button type="button">Elsewhere</button>
+        </>,
+      );
+
+      tap(screen.getByText('Ruby Cheung'));
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      fireEvent.pointerDown(screen.getByRole('button', {name: 'Elsewhere'}), {
+        pointerType: 'touch',
+      });
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('closes on a second tap of the trigger', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={0}
+          hideDelay={0}>
+          Ruby Cheung
+        </HoverCard>,
+      );
+
+      const trigger = screen.getByText('Ruby Cheung');
+      tap(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      tap(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('ignores the focus a tap leaves behind, but not keyboard focus', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={0}>
+          <button type="button">Save</button>
+        </HoverCard>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Save'});
+      // The tap goes to the button, as `auto` decides for an action trigger —
+      // and the focus it leaves behind must not put the card over the control
+      // the user just pressed.
+      tap(trigger);
+      fireEvent.focusIn(trigger);
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
+
+      // Reaching for the keyboard ends the touch interaction: the same trigger,
+      // focused by Tab, still opens.
+      fireEvent.keyDown(document, {key: 'Tab'});
+      fireEvent.focusIn(trigger);
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+  });
+});
+
+describe('HoverCard theme target names', () => {
+  it('renders the deprecated class beside the current one on the card surface', async () => {
+    render(
+      <HoverCard content={<span>Card content</span>} delay={0}>
+        <button type="button">Trigger</button>
+      </HoverCard>,
+    );
+    fireEvent.mouseEnter(screen.getByRole('button', {name: 'Trigger'}));
+
+    await waitFor(() => {
+      const layer = screen.getByText('Card content').closest('[popover]');
+      expect(layer).toHaveClass('astryx-hover-card');
+      expect(layer).toHaveClass('astryx-hovercard');
     });
   });
 });

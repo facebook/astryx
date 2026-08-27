@@ -104,6 +104,13 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'ui',
+          // A jsdom component suite can cost ~1.8s p95 per test where a
+          // comparable file costs ~80ms, so the 5s default leaves almost no
+          // headroom: on a busy machine slow-but-correct runs flake
+          // non-deterministically (every failure was "timed out in 5000ms",
+          // never a wrong value). Same budget as `node`, for the same reason.
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
           include: [
             'packages/core/src/**/*.test.{ts,tsx,mjs}',
             'packages/lab/src/**/*.test.{ts,tsx,mjs}',
@@ -142,6 +149,9 @@ export default defineConfig({
             'internal/**/*.test.{ts,tsx,mjs}',
             'scripts/**/*.test.{ts,tsx,mjs}',
             '.github/scripts/**/*.test.{ts,tsx,mjs}',
+            // Storybook config invariants (no DOM needed) — e.g. the
+            // workspace source-alias guard in .storybook/main.test.ts.
+            'apps/storybook/.storybook/**/*.test.{ts,tsx,mjs}',
           ],
           exclude: [
             ...configDefaults.exclude,

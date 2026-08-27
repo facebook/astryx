@@ -37,9 +37,7 @@ describe('Badge', () => {
       'yellow',
     ] as const;
 
-    const {rerender} = render(
-      <Badge variant={colors[0]} label={colors[0]} />,
-    );
+    const {rerender} = render(<Badge variant={colors[0]} label={colors[0]} />);
     expect(screen.getByText(colors[0])).toBeInTheDocument();
 
     for (const color of colors.slice(1)) {
@@ -72,6 +70,37 @@ describe('Badge', () => {
   it('spreads additional props', () => {
     render(<Badge data-testid="custom-badge" label="Test" />);
     expect(screen.getByTestId('custom-badge')).toBeInTheDocument();
+  });
+
+  describe('full-label fallback', () => {
+    it('carries the full text in title for a string label', () => {
+      // The label is clipped when it does not fit, so the full text has to be
+      // reachable. No measurement is involved, so this holds on the server too.
+      const {container} = render(<Badge label="Awaiting security review" />);
+      expect(container.firstElementChild).toHaveAttribute(
+        'title',
+        'Awaiting security review',
+      );
+    });
+
+    it('carries a number label too', () => {
+      const {container} = render(<Badge label={42} />);
+      expect(container.firstElementChild).toHaveAttribute('title', '42');
+    });
+
+    it('sets no title for a rich label', () => {
+      // Flattening a subtree to a string renders a guess — an icon or nested
+      // element reads differently — so it is left alone rather than guessed at.
+      const {container} = render(<Badge label={<strong>Rich</strong>} />);
+      expect(container.firstElementChild).not.toHaveAttribute('title');
+    });
+
+    it('sets no title for an empty string label', () => {
+      // Nothing to recover, so nothing to announce — the same guard
+      // `BaseTable` applies to a truncated header cell.
+      const {container} = render(<Badge label="" />);
+      expect(container.firstElementChild).not.toHaveAttribute('title');
+    });
   });
 
   it('renders astryx-* class names for theme targeting', () => {

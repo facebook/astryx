@@ -45,13 +45,14 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
-import {getInputARIA, mergeProps, mergeRefs} from '../utils';
+import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -110,6 +111,13 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
   hasEntriesOnFocus?: boolean;
   /** Max dropdown items. @default 10 */
   maxMenuItems?: number;
+  /**
+   * Minimum query length before the search source is queried. Below it no
+   * search runs and the menu stays closed — useful for remote sources where
+   * one or two characters match too much to be worth fetching.
+   * @default 1
+   */
+  minQueryLength?: number;
   /** Text shown when no results found. @default 'No results found' */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
@@ -167,7 +175,10 @@ const styles = stylex.create({
     // Standard padding minus border width to prevent height jump
     // when a token (28px) is added inside the input
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
-    cursor: 'text',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   token: {
     // Offset token so it sits 3px from the inner edge (4px from outer edge
@@ -244,6 +255,7 @@ export function Typeahead<T extends SearchableItem>({
   placeholder,
   hasEntriesOnFocus,
   maxMenuItems,
+  minQueryLength,
   emptySearchResultsText,
   isDisabled = false,
   disabledMessage,
@@ -369,6 +381,15 @@ export function Typeahead<T extends SearchableItem>({
   // Handle Escape during edit mode — restore token
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // BaseTypeahead invokes this external handler *before* its own IME
+      // guard, so we must guard here too: an IME candidate window uses Escape
+      // to cancel the pending composition, and that composing Escape fires
+      // before compositionend. Without this, a Korean/Japanese/Chinese user
+      // cancelling a candidate would instead exit edit mode and blur the
+      // field. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'Escape' && editingValue) {
         e.preventDefault();
         setIsEditing(false);
@@ -406,7 +427,7 @@ export function Typeahead<T extends SearchableItem>({
   const typeaheadContent = (
     <>
       <div
-        ref={mergeRefs(
+        ref={useMergedRefs(
           wrapperRef,
           disabledMessageTooltip.ref,
           inputGroup ? ref : undefined,
@@ -454,6 +475,7 @@ export function Typeahead<T extends SearchableItem>({
           placeholder={showToken ? undefined : placeholder}
           hasEntriesOnFocus={hasEntriesOnFocus}
           maxMenuItems={maxMenuItems}
+          minQueryLength={minQueryLength}
           emptySearchResultsText={emptySearchResultsText}
           isDisabled={isDisabled}
           hasAutoFocus={hasAutoFocus}

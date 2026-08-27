@@ -701,11 +701,14 @@ describe('DropdownMenuSubMenu theming slots', () => {
       name: /Move to/,
       hidden: true,
     });
-    // The indicator-icon slot wraps the chevron affordance inside the trigger
-    // row.
-    expect(
-      trigger.querySelector('.astryx-dropdown-menu-indicator-icon'),
-    ).toBeInTheDocument();
+    // The indicator-icon slot sits on the chevron glyph itself (the element
+    // that carries the icon size), so a theme can restyle its size/color
+    // directly.
+    const indicator = trigger.querySelector(
+      '.astryx-dropdown-menu-indicator-icon',
+    );
+    expect(indicator).toBeInTheDocument();
+    expect(indicator).toHaveClass('astryx-icon');
   });
 });
 

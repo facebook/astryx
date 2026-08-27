@@ -17,11 +17,13 @@
  */
 
 import {
+  useEffect,
   useId,
   useMemo,
   useRef,
   useState,
   useCallback,
+  type FocusEvent,
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
@@ -40,13 +42,18 @@ import {Tooltip} from '../Tooltip/Tooltip';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
-import {mergeProps, mergeRefs, rtlStyles} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {
+  getInteractionModality,
+  trackInteractionModality,
+} from '../utils/interactionModality';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Types
 // =============================================================================
@@ -174,19 +181,44 @@ const styles = stylex.create({
   },
   trackContainerHorizontal: {
     height: THUMB_SIZE,
+    // The whole track is the tap target (a click anywhere on it moves the
+    // slider), but it is only THUMB_SIZE (20px) tall — under the WCAG 2.5.8 AA
+    // 24px minimum. Floor its block size to 24px on touch pointers only. The
+    // rail and thumb center on 50%, so they stay put; only the invisible
+    // tappable area grows. Desktop (fine pointer) is unchanged.
+    minBlockSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
     width: '100%',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   trackContainerVertical: {
     width: THUMB_SIZE,
     height: 160,
+    // Same tap target, rotated: the vertical track is the thing you press, and
+    // it is only THUMB_SIZE (20px) wide. `minBlockSize` above floors the
+    // horizontal track's short axis; here the short axis is the inline one
+    // (the block size is already 160px), so floor that instead. The rail,
+    // fill, marks and thumb all center on the inline 50%, so they stay put;
+    // only the invisible tappable area grows. Desktop is unchanged.
+    minInlineSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
     flexDirection: 'column',
     justifyContent: 'center',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   trackContainerDisabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   track: {
     position: 'absolute',
@@ -232,7 +264,10 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: 'none',
-    cursor: 'grab',
+    cursor: {
+      default: 'grab',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
   },
   thumbHorizontal: {
@@ -249,14 +284,14 @@ const styles = stylex.create({
   thumbHover: {
     backgroundColor: {
       default: colorVars['--color-accent'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
   },
   thumbDisabled: {
     backgroundColor: colorVars['--color-background-muted'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   textValue: {
     fontFamily: typographyVars['--font-family-body'],
@@ -464,6 +499,36 @@ export function Slider({ref, ...props}: SliderProps) {
   const draggingThumbRef = useRef<number | null>(null);
   const [draggingThumb, setDraggingThumb] = useState<number | null>(null);
 
+  // A thumb is a div[role="slider"], and `handlePointerDown` focuses it from
+  // script after preventDefault — which Chromium treats as focus-visible, so
+  // dragging with a mouse drew the keyboard ring (measured: `:focus-visible`
+  // true on pointerdown). Gate the ring on how the user last interacted; the
+  // CSS condition stays `:focus-visible`, this only narrows it.
+  const [keyboardFocusThumb, setKeyboardFocusThumb] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    trackInteractionModality();
+  }, []);
+
+  const handleThumbFocus = useCallback(
+    (thumbIndex: number, _e: FocusEvent<HTMLDivElement>) => {
+      // A disabled thumb draws no ring even when it stays focusable for its
+      // reason tooltip, so there is nothing to track for one.
+      setKeyboardFocusThumb(
+        !isDisabled && getInteractionModality() === 'keyboard'
+          ? thumbIndex
+          : null,
+      );
+    },
+    [isDisabled],
+  );
+
+  const handleThumbBlur = useCallback((_e: FocusEvent<HTMLDivElement>) => {
+    setKeyboardFocusThumb(null);
+  }, []);
+
   // Disabled-reason tooltip. This is a *separate* useTooltip instance from the
   // per-thumb value bubble (the `<Tooltip>` component below): it anchors to the
   // track container and fires on hover/focus of the whole control. Disabled
@@ -650,6 +715,10 @@ export function Slider({ref, ...props}: SliderProps) {
         const thumbs = track.querySelectorAll<HTMLElement>('[role="slider"]');
         thumbs[thumbIndex]?.focus();
       }
+      // Also clear it explicitly: focusing an already-focused thumb fires no
+      // focus event, so a thumb the user had tabbed to would keep its ring
+      // through the drag.
+      setKeyboardFocusThumb(null);
 
       if (
         typeof (e.currentTarget as HTMLElement).setPointerCapture === 'function'
@@ -687,6 +756,13 @@ export function Slider({ref, ...props}: SliderProps) {
     (thumbIndex: number, e: KeyboardEvent<HTMLDivElement>) => {
       if (isDisabled) {
         return;
+      }
+      // Unlike a text field, a thumb has no caret to show where input is
+      // going, so a keypress after a mouse drag must bring the ring back.
+      // Ask the utility rather than assuming: a modifier chord (⌘R, ⌃C) is
+      // not navigation and must not re-ring a thumb the mouse is holding.
+      if (getInteractionModality() === 'keyboard') {
+        setKeyboardFocusThumb(thumbIndex);
       }
       const currentVal = values[thumbIndex];
       let newVal: number;
@@ -814,6 +890,8 @@ export function Slider({ref, ...props}: SliderProps) {
         aria-labelledby={!isRange ? labelID : undefined}
         aria-describedby={ariaDescribedBy}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
+        onFocus={e => handleThumbFocus(thumbIndex, e)}
+        onBlur={handleThumbBlur}
         {...mergeProps(
           themeProps('slider-thumb', {
             orientation,
@@ -825,7 +903,9 @@ export function Slider({ref, ...props}: SliderProps) {
               ? styles.thumbHorizontal
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
-            !isDisabled && focusOutlineStyles.focusVisible,
+            !isDisabled &&
+              keyboardFocusThumb === thumbIndex &&
+              focusOutlineStyles.focusVisible,
             isDisabled && styles.thumbDisabled,
           ),
           undefined,
@@ -936,7 +1016,7 @@ export function Slider({ref, ...props}: SliderProps) {
             />
           ))}
         <div
-          ref={mergeRefs(ref, trackRef, disabledMessageTooltip.ref)}
+          ref={useMergedRefs(ref, trackRef, disabledMessageTooltip.ref)}
           {...(isRange
             ? {role: 'group', 'aria-labelledby': labelID}
             : undefined)}
