@@ -10,6 +10,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/NumberInput/numberParser.ts (locale-aware parsing)
+ * - /packages/core/src/NumberInput/numberInputCommit.ts (draft commit policy)
  * - /packages/core/src/NumberInput/NumberInput.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/NumberInput/NumberInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/NumberInput/index.ts (exports if types change)
@@ -215,8 +216,8 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, useLocale} from '../i18n';
-import {formatEditableNumber, parseLocaleNumber} from './numberParser';
-import type {Locale} from '../i18n';
+import {formatEditableNumber} from './numberParser';
+import {parseNumberInput, resolveNumberInputCommit} from './numberInputCommit';
 
 interface NumberInputPropsBase extends Omit<
   BaseProps,
@@ -430,124 +431,6 @@ type NumberInputPropsClearable = NumberInputPropsBase & {
 export type NumberInputProps =
   NumberInputPropsNonClearable | NumberInputPropsClearable;
 
-/**
- * Read the typed or pasted text as a number, applying the shape rules (finite,
- * and integral when `isIntegerOnly`) but not the min/max range.
- */
-function parseNumericInput(
-  input: string,
-  options: {
-    isIntegerOnly?: boolean;
-    locale?: Locale;
-  },
-): number | null {
-  const trimmed = input.trim();
-  if (trimmed === '') {
-    return null;
-  }
-
-  const num = parseLocaleNumber(trimmed, options.locale);
-  if (num == null || !Number.isFinite(num)) {
-    return null;
-  }
-
-  if (options.isIntegerOnly && !Number.isInteger(num)) {
-    return null;
-  }
-
-  return num;
-}
-
-/**
- * Parse and validate a string input as a number.
- * Returns null if the input is not a valid number or fails validation.
- */
-function parseNumberInput(
-  input: string,
-  options: {
-    min?: number | null;
-    max?: number | null;
-    isIntegerOnly?: boolean;
-    locale?: Locale;
-  },
-): number | null {
-  const num = parseNumericInput(input, options);
-  if (num === null) {
-    return null;
-  }
-
-  // Check min constraint
-  if (options.min != null && num < options.min) {
-    return null;
-  }
-
-  // Check max constraint
-  if (options.max != null && num > options.max) {
-    return null;
-  }
-
-  return num;
-}
-
-/**
- * Parse a string input for commit (blur/Enter), clamping an out-of-range
- * number to the nearest bound.
- *
- * Rejecting an out-of-range entry outright leaves the last in-range prefix
- * committed, so typing 100 into a [1, 2] field lands on 1; the nearest bound
- * is what the entry actually asked for.
- */
-function parseNumberInputForCommit(
-  input: string,
-  options: {
-    min?: number | null;
-    max?: number | null;
-    isIntegerOnly?: boolean;
-    locale?: Locale;
-  },
-): number | null {
-  const num = parseNumericInput(input, options);
-  if (num === null) {
-    return null;
-  }
-
-  // The bound itself has to satisfy the field's own shape rule, or an
-  // integer-only field commits the fractional `max` it was handed. Round
-  // inwards, the same way stepping from empty does.
-  const {min, max} = getCommittableBounds(options);
-  // No number satisfies both, so there is nothing to clamp to.
-  if (min != null && max != null && min > max) {
-    return null;
-  }
-
-  if (min != null && num < min) {
-    return min;
-  }
-  if (max != null && num > max) {
-    return max;
-  }
-
-  return num;
-}
-
-function getCommittableBounds({
-  min,
-  max,
-  isIntegerOnly,
-}: {
-  min?: number | null;
-  max?: number | null;
-  isIntegerOnly?: boolean;
-}): {min: number | null; max: number | null} {
-  if (!isIntegerOnly) {
-    return {min: min ?? null, max: max ?? null};
-  }
-  return {
-    min: min == null ? null : Math.ceil(min),
-    max: max == null ? null : Math.floor(max),
-  };
-}
-
 type StepDirection = -1 | 1;
 
 function getDecimalPlaces(value: number): number {
@@ -634,7 +517,8 @@ function getSteppedValue({
 
 /**
  * A number input component for collecting numeric user input.
- * Only calls onChange when the entered value passes validation.
+ * Commits text edits on blur or Enter and only calls onChange when the whole
+ * draft passes validation.
  *
  * @example
  * ```
@@ -744,17 +628,6 @@ export function NumberInput({
     [isIntegerOnly, locale, max, min],
   );
 
-  const parseInputForCommit = useCallback(
-    (text: string) =>
-      parseNumberInputForCommit(text, {min, max, isIntegerOnly, locale}),
-    [isIntegerOnly, locale, max, min],
-  );
-
-  const parseNumeric = useCallback(
-    (text: string) => parseNumericInput(text, {isIntegerOnly, locale}),
-    [isIntegerOnly, locale],
-  );
-
   const formattedValue = useMemo(() => {
     if (value == null) {
       return '';
@@ -782,25 +655,18 @@ export function NumberInput({
     return parseInput(pendingInput) !== null;
   }, [pendingInput, parseInput]);
 
-  // Handle input text change - update immediately if valid
+  // Keep the whole text edit as a draft until an explicit commit boundary.
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       // Value can't change while showing a disabled message (the field is
       // read-only and non-native-disabled), but guard the handler too so the
-      // pending value and onChange never fire.
+      // pending value never changes.
       if (isDisabled || isReadOnly) {
         return;
       }
-      const newValue = e.target.value;
-      setPendingInput(newValue);
-
-      // If the input is valid, update immediately
-      const parsed = parseInput(newValue);
-      if (parsed !== null && parsed !== value) {
-        onChange(parsed);
-      }
+      setPendingInput(e.target.value);
     },
-    [value, onChange, parseInput, isDisabled, isReadOnly],
+    [isDisabled, isReadOnly],
   );
 
   // Handle focus
@@ -812,30 +678,45 @@ export function NumberInput({
     [onFocus],
   );
 
-  // Handle blur - validate and clear pending input
-  const handleBlur = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
-      if (pendingInput !== null) {
-        if (hasClear && pendingInput.trim() === '') {
-          // Keyboard clearing honors the clearable contract: an emptied
-          // input commits null instead of silently reverting on blur.
-          if (value != null) {
-            onChange(null);
-          }
-        } else {
-          const parsed = parseInputForCommit(pendingInput);
-          if (parsed !== null && parsed !== value) {
-            onChange(parsed);
-          }
-        }
+  const commitPendingInput = useCallback(
+    (trigger: 'blur' | 'Enter') => {
+      if (pendingInput === null) {
+        return;
       }
 
-      // Clear pending input - display will revert to formatted value
-      setPendingInput(null);
+      const decision = resolveNumberInputCommit(pendingInput, {
+        min,
+        max,
+        isIntegerOnly,
+        locale,
+        hasClear: !!hasClear,
+      });
+      if (
+        trigger === 'blur' ||
+        (decision.type === 'commit' && decision.didClamp)
+      ) {
+        setPendingInput(null);
+      }
+
+      if (decision.type === 'clear') {
+        if (hasClear && value != null) {
+          onChange(null);
+        }
+      } else if (decision.type === 'commit' && decision.value !== value) {
+        onChange(decision.value);
+      }
+    },
+    [hasClear, isIntegerOnly, locale, max, min, onChange, pendingInput, value],
+  );
+
+  // Blur ends the edit and displays the resulting committed value.
+  const handleBlur = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
+      commitPendingInput('blur');
       setIsFocused(false);
       onBlur?.(e);
     },
-    [pendingInput, value, onChange, parseInputForCommit, onBlur, hasClear],
+    [commitPendingInput, onBlur],
   );
 
   const valueForStepping = useMemo(() => {
@@ -902,43 +783,12 @@ export function NumberInput({
         return;
       }
       if (e.key === 'Enter') {
-        // Validate and commit on Enter
-        if (pendingInput !== null) {
-          if (hasClear && pendingInput.trim() === '') {
-            // Same clearable contract as blur: Enter on an emptied input
-            // commits null instead of reverting.
-            if (value != null) {
-              onChange(null);
-            }
-          } else {
-            const parsed = parseInputForCommit(pendingInput);
-            if (parsed !== null) {
-              // Enter otherwise keeps the pending text, which would leave a
-              // clamped entry showing the number that was not committed.
-              if (parsed !== parseNumeric(pendingInput)) {
-                setPendingInput(null);
-              }
-              if (parsed !== value) {
-                onChange(parsed);
-              }
-            }
-          }
-        }
+        commitPendingInput('Enter');
         onEnter?.();
       }
       onKeyDown?.(e);
     },
-    [
-      pendingInput,
-      value,
-      onChange,
-      parseInputForCommit,
-      parseNumeric,
-      onEnter,
-      onKeyDown,
-      hasClear,
-      stepValue,
-    ],
+    [commitPendingInput, onEnter, onKeyDown, stepValue],
   );
 
   // React's delegated wheel listener can be passive, so use a native,
@@ -1061,6 +911,8 @@ export function NumberInput({
         data-autofocus={hasAutoFocus || undefined}
         aria-valuemin={min ?? undefined}
         aria-valuemax={max ?? undefined}
+        // The ARIA value and hidden form input expose the committed value;
+        // pendingInput is still an uncommitted edit and may be invalid.
         aria-valuenow={value ?? undefined}
         aria-valuetext={
           value == null || !formatValue ? undefined : formattedValue

@@ -255,7 +255,11 @@ export function PlaygroundClient() {
   const searchParams = useSearchParams();
   const rawThemeParam = searchParams.get('theme');
   const themeParam =
-    rawThemeParam && rawThemeParam in themeByValue ? rawThemeParam : null;
+    // Object.hasOwn (not `in`): the param must match a real playground theme,
+    // not an inherited Object.prototype key like "constructor".
+    rawThemeParam && Object.hasOwn(themeByValue, rawThemeParam)
+      ? rawThemeParam
+      : null;
   const theme = themeParam ?? DEFAULT_PLAYGROUND_THEME;
   // The theme that seeds the Theme editor: the ?theme= theme on first load, then
   // whichever theme the user picks from "Themes". Changing it remounts the

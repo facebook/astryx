@@ -98,9 +98,10 @@ function a11yComponentFromTitle(title) {
 function ciComponentRoots(repoRoot) {
   const ci = read(repoRoot, CI_WORKFLOW);
   if (!ci) return [];
-  const match = ci.match(/git diff --name-only [^\n]*?\.\.\.HEAD --([^|\n]+)/);
-  if (!match) return [];
-  return match[1].trim().split(/\s+/).filter(Boolean);
+  const pathspec = ci.match(/git diff --name-only [^\n]*?\.\.\.HEAD --([^|\n]+)/);
+  if (pathspec) return pathspec[1].trim().split(/\s+/).filter(Boolean);
+  const filtered = ci.match(/grep -E ['"]\^packages\/\(([^)]+)\)\/src\/['"]/);
+  return filtered ? filtered[1].split('|').map(name => `packages/${name}/src/`) : [];
 }
 
 /** Story-id prefixes the RTL auto-discovery sweep covers. */

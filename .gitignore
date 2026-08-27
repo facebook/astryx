@@ -56,6 +56,13 @@ apps/sandbox/next-env.d.ts
 apps/example-nextjs-tailwind/.next
 .parity-test-results.json
 .worktree-parity-test
+
+# Scratch git worktrees. These live inside the repo for convenience, so without
+# an ignore a `git add -A` in the main tree sweeps an entire second checkout
+# into the commit.
+.worktrees/
+worktrees/
+
 # Patch files
 *.patch
 *.rej

@@ -2,9 +2,18 @@
 
 # Re-deploy Preview
 #
-# Manually re-deploys a PR's preview build (Storybook + Sandbox) to GitHub Pages.
-# Uses a retry-based git push instead of peaceiris/actions-gh-pages to avoid
-# concurrency conflicts with the main deploy workflow.
+# Manually re-deploys a PR's preview (Storybook + Sandbox) to GitHub Pages by
+# re-publishing the static artifacts its CI run already built — the same
+# artifacts deploy-preview.yml publishes automatically. Uses a retry-based git
+# push instead of peaceiris/actions-gh-pages to avoid concurrency conflicts
+# with the main deploy workflow.
+#
+# Safety: this NEVER checks out or runs PR-controlled code (mirroring
+# deploy-preview.yml and pr-comment.yml). It locates the PR's latest CI run for
+# its current head commit, downloads the pre-built storybook-<hash> /
+# sandbox-<hash> artifacts, and copies them into gh-pages. If the artifacts
+# have expired past retention, the fix is to re-run CI on the PR (which also
+# re-deploys the preview via deploy-preview.yml) — not to rebuild here.
 
 name: Re-deploy Preview
 
@@ -24,7 +33,7 @@ concurrency:
 
 jobs:
   redeploy-preview:
-    runs-on: 2-core-ubuntu-arm
+    runs-on: ubuntu-slim
     permissions:
       contents: write
       pull-requests: read
@@ -34,40 +43,69 @@ jobs:
       PR_NUMBER: ${{ github.event.inputs.pr_number }}
 
     steps:
-      - name: Get PR head SHA
+      - name: Locate the PR's CI run
         id: pr-info
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          HEAD_SHA=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json headRefOid --jq '.headRefOid')
+          # The PR number is an operator-typed input — require digits before it
+          # names a gh-pages path.
+          if ! echo "$PR_NUMBER" | grep -qE '^[0-9]+$'; then
+            echo "::error::PR number must be numeric, got: $PR_NUMBER"
+            exit 1
+          fi
+
+          HEAD_SHA=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json headRefOid --jq '.headRefOid')
+          SHORT_HASH="${HEAD_SHA:0:7}"
+
+          # Latest CI run for the PR's current head commit — its artifacts are
+          # what deploy-preview.yml published (or would have published).
+          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=50" \
+            --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")][0].id // empty')
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::No CI run found for PR #${PR_NUMBER} head ${HEAD_SHA} — re-run CI on the PR instead."
+            exit 1
+          fi
+
           echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "short_hash=$SHORT_HASH" >> "$GITHUB_OUTPUT"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout PR head commit
-        uses: actions/checkout@v7
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
         with:
-          ref: ${{ steps.pr-info.outputs.head_sha }}
+          name: storybook-${{ steps.pr-info.outputs.short_hash }}
+          path: storybook-dist
+          run-id: ${{ steps.pr-info.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
-      - name: Setup Node and pnpm
-        uses: ./.github/actions/setup
+      - name: Download Sandbox artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: sandbox-${{ steps.pr-info.outputs.short_hash }}
+          path: sandbox-dist
+          run-id: ${{ steps.pr-info.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
-      - name: Build core
-        run: pnpm build
-
-      - name: Build Storybook
-        run: pnpm -F @astryxdesign/storybook build
-
-      - name: Build Sandbox
-        env:
-          # GitHub Pages serves at <owner>.github.io/<repo>/, so the sandbox base
-          # path must include the repo name — otherwise root-absolute asset URLs
-          # drop the /<repo> segment and 404, breaking the preview's styles/JS.
-          SANDBOX_BASE_PATH: /${{ github.event.repository.name }}/pr/${{ github.event.inputs.pr_number }}/sandbox
-        run: pnpm -F @astryxdesign/sandbox build
+      - name: Verify preview artifacts are present
+        run: |
+          # Unlike deploy-preview.yml (best-effort on every CI completion), a
+          # manual re-deploy that can't find its artifacts should fail loudly
+          # with the actionable fix.
+          if [ -d storybook-dist ] && [ -n "$(ls -A storybook-dist 2>/dev/null)" ] && \
+             [ -d sandbox-dist ] && [ -n "$(ls -A sandbox-dist 2>/dev/null)" ]; then
+            exit 0
+          fi
+          echo "::error::Preview artifacts for run ${{ steps.pr-info.outputs.run_id }} are missing or expired — re-run CI on PR #${PR_NUMBER}; deploy-preview will publish the fresh preview automatically."
+          exit 1
 
       - name: Deploy to GitHub Pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Copies pre-built static output only — never builds or runs PR code.
           REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
           MAX_ATTEMPTS=5
           WORK_DIR="$PWD"
@@ -84,9 +122,11 @@ jobs:
 
             rm -rf /tmp/gh-pages/pr/${PR_NUMBER}
             mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}
-            cp -r apps/storybook/dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
+            cp -r storybook-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
             mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
-            cp -r apps/sandbox/out/* /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/
+            # Every preview points at the one shared main-sandbox asset copy.
+            find sandbox-dist -mindepth 1 -maxdepth 1 ! -name template-assets \
+              -exec cp -r {} /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/ \;
 
             cd /tmp/gh-pages
             git add -A

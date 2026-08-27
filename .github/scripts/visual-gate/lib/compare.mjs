@@ -205,7 +205,16 @@ export function buildVerdict({
     ]),
   }));
 
-  const status = failures.length > 0 ? 'failed' : changes.length > 0 ? 'changed' : 'pass';
+  // Added and removed stable shots are decisions too. A new story has no
+  // before image, but allowing it to pass silently creates baseline debt that
+  // the next run cannot resolve; a removed story can delete the only coverage
+  // for a target. Both need the same explicit acceptance as changed pixels.
+  const status =
+    failures.length > 0
+      ? 'failed'
+      : changes.length > 0 || comparison.added.length > 0 || comparison.removed.length > 0
+        ? 'changed'
+        : 'pass';
 
   return {
     version: 1,
