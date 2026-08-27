@@ -11,7 +11,6 @@
   "excludeStories": {
     "lab-chartstreamgl--*": "Streams live data on a setInterval; every frame is a different chart.",
     "lab-chartstreamperf--*": "Renders measured fps and frame times, which differ every run by construction.",
-    "lab-codeeditorperf--*": "Renders performance.now() mount timings on screen.",
-    "lab-usechartrange--*": "Advances its own domain on a setInterval while the shot is taken."
+    "lab-codeeditorperf--*": "Renders performance.now() mount timings on screen."
   }
 }

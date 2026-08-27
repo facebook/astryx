@@ -37,6 +37,33 @@ describe('buildVisualSection', () => {
     expect(section).toContain('900 shots exceeds the 240-shot budget');
   });
 
+  it('renders verdict strings as one-line literal text', () => {
+    const section = buildVisualSection(
+      verdict({status: 'skipped', reason: 'first line\n## not a heading, just <em>text</em>'}),
+    );
+    expect(section).toContain('first line ## not a heading, just &lt;em&gt;text&lt;/em&gt;');
+    expect(section).not.toContain('\n## not a heading');
+  });
+
+  it('keeps a change row a single table row whatever the field contents', () => {
+    const section = buildVisualSection(
+      verdict({
+        counts: {total: 2, unchanged: 1, changed: 1, added: 0, removed: 0, failed: 0},
+        changes: [
+          {component: 'Cell | with pipes', name: 'story\nnewline', theme: 'y2k', mode: 'light', diffPixels: '1234'},
+        ],
+      }),
+    );
+    expect(section).toContain('| Cell \\| with pipes | story newline | y2k | light | 1,234 |');
+  });
+
+  it('drops a report link that is not a plain https URL', () => {
+    const good = buildVisualSection(verdict({status: 'failed', counts: {total: 1, failed: 1}}), 'https://example.com/report');
+    expect(good).toContain('href="https://example.com/report"');
+    const bad = buildVisualSection(verdict({status: 'failed', counts: {total: 1, failed: 1}}), 'report.html" onmouseover="x');
+    expect(bad).not.toContain('View the report');
+  });
+
   it('lists each changed shot with the theme and mode it changed in', () => {
     const section = buildVisualSection(
       verdict({

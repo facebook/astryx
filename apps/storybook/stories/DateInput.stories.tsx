@@ -107,6 +107,12 @@ const meta: Meta<typeof DateInput> = {
       description:
         "Display format for the committed value, reusing Timestamp's vocabulary. Defaults to 'date_long' (long-month date).",
     },
+    nativePicker: {
+      control: 'radio',
+      options: ['touch', 'always', 'never'],
+      description:
+        'Whether the browser or Astryx draws the picker for each pointer type',
+    },
   },
 };
 
@@ -195,6 +201,40 @@ export const Formats: Story = {
               new Date(iso + 'T00:00'),
             )
           }
+        />
+      </div>
+    );
+  },
+};
+
+export const NativePickerModes: Story = {
+  name: 'Native picker modes',
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-03-21' as ISODateString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <DateInput
+          label="nativePicker='touch' (default)"
+          description="Native picker on a coarse pointer; Astryx picker otherwise"
+          value={value}
+          onChange={setValue}
+          nativePicker="touch"
+        />
+        <DateInput
+          label="nativePicker='always'"
+          description="Native picker wherever the browser supports it"
+          value={value}
+          onChange={setValue}
+          nativePicker="always"
+        />
+        <DateInput
+          label="nativePicker='never'"
+          description="Astryx picker on every pointer type"
+          value={value}
+          onChange={setValue}
+          nativePicker="never"
         />
       </div>
     );
