@@ -15,6 +15,7 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
+import {registerIcons, resetIcons} from '../Icon';
 import {InputGroup} from '../InputGroup';
 import {NumberInput} from './NumberInput';
 import {defineTheme} from '../theme/defineTheme';
@@ -26,6 +27,7 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 // file never match a leftover region.
 afterEach(() => {
   __resetLiveRegionsForTest();
+  resetIcons();
 });
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
@@ -2072,6 +2074,33 @@ describe('NumberInput stepping', () => {
       expect(
         screen.getByRole('button', {name: 'Decrement Quantity'}),
       ).toHaveAttribute('tabindex', '-1');
+    });
+
+    it('uses the NumberInput extension icon for both stepper buttons', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      registerIcons({
+        chevronDown: <svg data-testid="generic-chevron-down" />,
+        'numberInput:stepperDown': <svg data-testid="number-stepper-down" />,
+      });
+
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          hasNumberSteppers
+        />,
+      );
+
+      const stepperIcons = screen.getAllByTestId('number-stepper-down');
+      expect(stepperIcons).toHaveLength(2);
+      for (const icon of stepperIcons) {
+        expect(icon.parentElement).toHaveAttribute('data-size', 'xsm');
+      }
+      expect(
+        screen.queryByTestId('generic-chevron-down'),
+      ).not.toBeInTheDocument();
+      warnSpy.mockRestore();
     });
 
     it('steps the value and returns focus to the input', () => {

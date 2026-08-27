@@ -13,8 +13,10 @@ const SCRIPT = path.join(
   'gate.mjs',
 );
 const IDENTITY_ENV = [
+  'ASTRYX_VISUAL_SHA',
   'ASTRYX_VISUAL_RUN_ID',
   'ASTRYX_VISUAL_RUN_ATTEMPT',
+  'GITHUB_SHA',
   'GITHUB_RUN_ID',
   'GITHUB_RUN_ATTEMPT',
 ];
@@ -60,8 +62,13 @@ afterEach(() => fs.rmSync(root, {recursive: true, force: true}));
 describe('visual gate capture identity', () => {
   it('records the GitHub run identity by default', () => {
     expect(
-      captureContext({GITHUB_RUN_ID: '123', GITHUB_RUN_ATTEMPT: '2'}),
+      captureContext({
+        GITHUB_SHA: 'a'.repeat(40),
+        GITHUB_RUN_ID: '123',
+        GITHUB_RUN_ATTEMPT: '2',
+      }),
     ).toMatchObject({
+      sha: 'a'.repeat(40),
       runId: '123',
       runAttempt: '2',
     });
@@ -70,26 +77,38 @@ describe('visual gate capture identity', () => {
   it('records an explicit trusted recapture identity ahead of workflow defaults', () => {
     expect(
       captureContext({
+        GITHUB_SHA: 'a'.repeat(40),
         GITHUB_RUN_ID: '999',
         GITHUB_RUN_ATTEMPT: '4',
+        ASTRYX_VISUAL_SHA: 'b'.repeat(40),
         ASTRYX_VISUAL_RUN_ID: '123',
         ASTRYX_VISUAL_RUN_ATTEMPT: '2',
       }),
-    ).toMatchObject({runId: '123', runAttempt: '2'});
+    ).toMatchObject({
+      sha: 'b'.repeat(40),
+      runId: '123',
+      runAttempt: '2',
+    });
   });
 
   it('records missing identity as null', () => {
-    expect(captureContext()).toMatchObject({runId: null, runAttempt: null});
+    expect(captureContext()).toMatchObject({
+      sha: null,
+      runId: null,
+      runAttempt: null,
+    });
   });
 
   it('preserves invalid explicit identity for downstream rejection', () => {
     expect(
       captureContext({
+        GITHUB_SHA: 'a'.repeat(40),
         GITHUB_RUN_ID: '999',
         GITHUB_RUN_ATTEMPT: '4',
+        ASTRYX_VISUAL_SHA: 'invalid',
         ASTRYX_VISUAL_RUN_ID: '',
         ASTRYX_VISUAL_RUN_ATTEMPT: 'invalid',
       }),
-    ).toMatchObject({runId: '', runAttempt: 'invalid'});
+    ).toMatchObject({sha: 'invalid', runId: '', runAttempt: 'invalid'});
   });
 });

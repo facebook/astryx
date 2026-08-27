@@ -41,33 +41,119 @@ describe('visual acceptance workflow concurrency', () => {
       value.indexOf('  authorize:'),
       value.indexOf('  accept:'),
     );
+    const authorizeCheckout = authorize.slice(
+      authorize.indexOf('      - name: Checkout trusted default-branch code'),
+      authorize.indexOf('      - name: Authorize and resolve the decision'),
+    );
     const accept = value.slice(value.indexOf('  accept:'));
 
     expect(initialize).toContain(
       'group: visual-acceptance-head-${{ github.event.pull_request.head.repo.id }}-${{ github.event.pull_request.head.ref }}',
     );
     expect(initialize).toContain('cancel-in-progress: true');
+    expect(initialize).toContain('pull-requests: read');
+    expect(initialize).not.toContain('pull-requests: write');
+    expect(initialize).not.toContain('issues: write');
+    expect(initialize).not.toContain('removeLabel');
+    expect(initialize).toContain(
+      "state: scope.hasStableVisual ? 'pending' : 'success'",
+    );
+    expect(initialize).toContain("'No stable visual scope.'");
     expect(authorize).not.toContain(': write');
-    expect(authorize).not.toContain('actions/checkout');
+    expect(authorize).toContain('actions/checkout@v7');
+    expect(authorizeCheckout).not.toContain('ref:');
+    expect(authorize).toContain('visualAcceptanceIdentity(response.data)');
+    expect(authorize).toContain(
+      'isVisualAcceptanceEndpointMaintainer(identity)',
+    );
+    expect(authorize).toContain(
+      "core.setOutput('effective_permission', identity.effectivePermission)",
+    );
+    expect(authorize).toContain(
+      "core.setOutput('role_name', identity.roleName ?? '')",
+    );
+    expect(authorize).not.toContain('author_association');
     expect(authorize).not.toContain('issues.createComment');
     expect(authorize).not.toContain('createCommitStatus');
     expect(accept).toContain('needs: authorize');
     expect(accept).toContain(
+      'EFFECTIVE_PERMISSION: ${{ needs.authorize.outputs.effective_permission }}',
+    );
+    expect(accept).toContain(
+      'ROLE_NAME: ${{ needs.authorize.outputs.role_name }}',
+    );
+    expect(accept).toContain('--effective-permission "$EFFECTIVE_PERMISSION"');
+    expect(accept).toContain('--role-name "$ROLE_NAME"');
+    expect(accept).toContain(
       'group: visual-acceptance-head-${{ needs.authorize.outputs.head_repo_id }}-${{ needs.authorize.outputs.head_ref }}',
     );
     expect(accept).toContain('cancel-in-progress: false');
+    expect(accept).toContain('pull-requests: write');
+    expect(accept).not.toContain('issues: write');
   });
 
-  it('grants PR mutation permission wherever labels and comments are projected', () => {
-    const value = workflow('visual-acceptance.yml');
-    const initialize = value.slice(
-      value.indexOf('  initialize:'),
-      value.indexOf('  authorize:'),
+  it('invalidates the advisory label only in the trusted workflow_run publisher', () => {
+    const value = workflow('pr-comment.yml');
+    const invalidate = value.slice(
+      value.indexOf('  invalidate:'),
+      value.indexOf('  comment:'),
     );
+
+    expect(invalidate).toContain('pull-requests: write');
+    expect(invalidate).toContain('statuses: write');
+    expect(invalidate).toContain('createCommitStatus');
+    expect(invalidate).toContain('issues.removeLabel');
+    expect(invalidate.indexOf('createCommitStatus')).toBeLessThan(
+      invalidate.indexOf('issues.removeLabel'),
+    );
+    const publisher = value.slice(value.indexOf('  comment:'));
+    expect(publisher).toContain("if (state.reason === 'accepted')");
+    expect(publisher).toContain('issues.addLabels');
+    expect(publisher).toContain('issues.removeLabel');
+  });
+
+  it('passes source CI identity without overriding reserved GitHub variables', () => {
+    const value = workflow('pr-comment.yml');
+    const capture = value.slice(
+      value.indexOf('      - name: Capture the trusted stable visual scope'),
+      value.indexOf('      # The Storybook bundle is untrusted.'),
+    );
+
+    expect(capture).toContain(
+      'ASTRYX_VISUAL_SHA: ${{ steps.identity.outputs.head_sha }}',
+    );
+    expect(capture).toContain(
+      'ASTRYX_VISUAL_RUN_ID: ${{ steps.identity.outputs.run_id }}',
+    );
+    expect(capture).toContain(
+      'ASTRYX_VISUAL_RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}',
+    );
+    expect(capture).not.toContain('GITHUB_SHA:');
+    expect(capture).not.toContain('GITHUB_RUN_ID:');
+    expect(capture).not.toContain('GITHUB_RUN_ATTEMPT:');
+  });
+
+  it('uses the documented collaborator permission response shape', () => {
+    const value = workflow('visual-acceptance.yml');
+    const authorize = value.slice(
+      value.indexOf('  authorize:'),
+      value.indexOf('  accept:'),
+    );
+
+    expect(authorize).toContain('visualAcceptanceIdentity(response.data)');
+    expect(authorize).not.toContain('response.data.user.permission');
+  });
+
+  it('installs the dependencies used by the acceptance archive script', () => {
+    const value = workflow('visual-acceptance.yml');
     const accept = value.slice(value.indexOf('  accept:'));
 
-    expect(initialize).toContain('pull-requests: write');
-    expect(accept).toContain('pull-requests: write');
+    expect(accept.indexOf('uses: ./.github/actions/setup')).toBeGreaterThan(-1);
+    expect(accept.indexOf('uses: ./.github/actions/setup')).toBeLessThan(
+      accept.indexOf(
+        'node .github/scripts/visual-gate/visual-acceptance.mjs accept',
+      ),
+    );
   });
 
   it('uses the same head identity for post-merge promotion', () => {
@@ -77,22 +163,5 @@ describe('visual acceptance workflow concurrency', () => {
       'group: visual-acceptance-head-${{ github.event.pull_request.head.repo.id }}-${{ github.event.pull_request.head.ref }}',
     );
     expect(value).not.toContain('visual-acceptance-pr-');
-  });
-
-  it('passes triggering CI identity through dedicated capture variables', () => {
-    const value = workflow('pr-comment.yml');
-    const capture = value.slice(
-      value.indexOf('      - name: Capture the trusted stable visual scope'),
-      value.indexOf('      # The Storybook bundle is untrusted.'),
-    );
-
-    expect(capture).toContain(
-      'ASTRYX_VISUAL_RUN_ID: ${{ steps.identity.outputs.run_id }}',
-    );
-    expect(capture).toContain(
-      'ASTRYX_VISUAL_RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}',
-    );
-    expect(capture).not.toContain('GITHUB_RUN_ID:');
-    expect(capture).not.toContain('GITHUB_RUN_ATTEMPT:');
   });
 });
