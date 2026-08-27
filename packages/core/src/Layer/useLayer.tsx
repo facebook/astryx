@@ -1045,8 +1045,14 @@ export function useLayer(options: FixedLayerOptions): FixedLayerReturn;
 export function useLayer(
   options: ContextLayerOptions | FixedLayerOptions,
 ): ContextLayerReturn | FixedLayerReturn {
-  const {wasJustDismissed: _, ...layer} = useLayerImplementation(options);
-  return layer;
+  const layer = useLayerImplementation(options);
+  // Stripping wasJustDismissed via spread would build a fresh object on every
+  // call even when `layer` itself is unchanged, defeating the memoization
+  // useLayerImplementation does for exactly this purpose.
+  return useMemo(() => {
+    const {wasJustDismissed: _, ...rest} = layer;
+    return rest;
+  }, [layer]);
 }
 
 /** @internal Shared with usePopover; not exported from the package barrel. */
