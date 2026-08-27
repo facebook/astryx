@@ -134,7 +134,7 @@ function writeCommandShims(root) {
   fs.chmodSync(gitShim, 0o755);
 
   const ghShim = path.join(bin, 'gh');
-  fs.writeFileSync(ghShim, '#!/bin/sh\nprintf "%b\\n" "$GH_LATEST"\n');
+  fs.writeFileSync(ghShim, '#!/bin/sh\nprintf "%s\\n" "$GH_RUNS_JSON"\n');
   fs.chmodSync(ghShim, 0o755);
 
   const sleepShim = path.join(bin, 'sleep');
@@ -259,7 +259,11 @@ function makeFixture(mutate) {
   return {root, remote, sandbox, bin, after};
 }
 
-function runPromotion({fixture, latest = '123\\t1\\tcompleted', race = false}) {
+function runPromotion({
+  fixture,
+  latest = {id: 123, run_attempt: 1, status: 'completed'},
+  race = false,
+}) {
   const marker = path.join(fixture.root, 'race-injected');
   const result = spawnSync(
     '/bin/bash',
@@ -277,7 +281,10 @@ function runPromotion({fixture, latest = '123\\t1\\tcompleted', race = false}) {
         MERGE_SHA: MERGE,
         RECORD_REL,
         RUNNER_TEMP: path.join(fixture.root, 'runner'),
-        GH_LATEST: latest,
+        GITHUB_OUTPUT: path.join(fixture.root, 'github-output'),
+        GH_RUNS_JSON: JSON.stringify({
+          workflow_runs: [{name: 'CI', ...latest}],
+        }),
         TEST_INJECT_RACE: race ? '1' : '0',
         TEST_RACE_MARKER: marker,
         TEST_REAL_GIT: execFileSync('which', ['git'], {
@@ -327,6 +334,40 @@ describe('visual acceptance promotion workflow', () => {
     });
   });
 
+  it('is idempotent when the same recovery is dispatched twice', () => {
+    const fixture = makeFixture();
+    const first = runPromotion({fixture});
+    expect(first.status, `${first.stdout}\n${first.stderr}`).toBe(0);
+    const second = runPromotion({fixture});
+    expect(second.status, `${second.stdout}\n${second.stderr}`).toBe(0);
+    expect(second.stdout).toContain(
+      'Accepted visual bundle for PR #42 was already promoted.',
+    );
+
+    const final = path.join(fixture.root, 'duplicate-final');
+    git(
+      fixture.root,
+      'clone',
+      '-q',
+      '--branch',
+      'gh-pages',
+      fixture.remote,
+      final,
+    );
+    const manifest = JSON.parse(
+      fs.readFileSync(
+        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+        'utf8',
+      ),
+    );
+    expect(manifest.decisions).toHaveLength(1);
+    expect(
+      fs.readFileSync(
+        path.join(final, 'visual-gate', 'baseline', 'shots', `${KEY}.png`),
+      ),
+    ).toEqual(fixture.after);
+  });
+
   it.each([
     {
       name: 'a stale current pointer',
@@ -346,7 +387,7 @@ describe('visual acceptance promotion workflow', () => {
     },
     {
       name: 'a superseded CI run',
-      latest: '124\\t1\\tcompleted',
+      latest: {id: 124, run_attempt: 1, status: 'completed'},
       error: /not from the latest completed CI attempt/,
     },
     {
@@ -365,7 +406,7 @@ describe('visual acceptance promotion workflow', () => {
         record.run.id = 124;
         writeJSON(acceptance, record);
       },
-      latest: '124\\t1\\tcompleted',
+      latest: {id: 124, run_attempt: 1, status: 'completed'},
       error: /record identity does not match this merged head/,
     },
     {
@@ -392,8 +433,8 @@ describe('visual acceptance promotion workflow', () => {
 
   it('does not consult ephemeral PR evidence during promotion', () => {
     const script = workflowStepScript('Verify and promote the baseline');
-    expect(script).toContain('current.json');
-    expect(script).toContain('LATEST_STATUS');
+    expect(script).toContain('promotion-identity.mjs resolve-acceptance');
+    expect(script).toContain('--expected-record-rel "$RECORD_REL"');
     expect(script).toContain('visual-acceptance.mjs promote');
     expect(script).not.toContain('visual-acceptance.mjs state');
     expect(script).not.toContain('/pr/');

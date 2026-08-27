@@ -41,14 +41,10 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: visual-baseline
-  cancel-in-progress: false
-
 jobs:
   promote:
     runs-on: ubuntu-slim
-    timeout-minutes: 20
+    timeout-minutes: 90
     permissions:
       contents: write
       actions: read # download-artifact from another run
@@ -59,6 +55,11 @@ jobs:
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
 
+      - name: Queue baseline publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/visual-gate/lib/baseline-publication-lock.mjs enqueue
+
       - name: Download the capture being promoted
         uses: actions/download-artifact@v8
         with:
@@ -66,6 +67,11 @@ jobs:
           run-id: ${{ inputs.run_id }}
           github-token: ${{ github.token }}
           path: .visual-run
+
+      - name: Wait for the baseline publication turn
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/visual-gate/lib/baseline-publication-lock.mjs wait
 
       - name: Fetch the current baseline
         run: |
@@ -111,6 +117,12 @@ jobs:
           done
           echo "::error::Could not push the updated baseline"
           exit 1
+
+      - name: Release the baseline publication turn
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/visual-gate/lib/baseline-publication-lock.mjs release
 
       - name: Summary
         run: |

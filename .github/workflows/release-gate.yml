@@ -300,7 +300,7 @@ jobs:
             # Keep the twenty most recent run directories; the report images are
             # only useful while the change they describe is still a live question.
             ls -1d /tmp/gh-pages/visual-gate/*/ 2>/dev/null \
-              | grep -Ev '/(baseline|latest)/$' \
+              | grep -Ev '/(baseline|latest|publication-queue)/$' \
               | sort -V | head -n -20 | xargs -r rm -rf
 
             cd /tmp/gh-pages

@@ -196,12 +196,136 @@ describe('visual acceptance workflow concurrency', () => {
     );
   });
 
-  it('uses the same head identity for post-merge promotion', () => {
+  it('serializes normal, recovery, and manual publication without Actions cancellation', () => {
     const value = workflow('visual-acceptance-promote.yml');
+    const manual = workflow('visual-baseline.yml');
+    const helper =
+      'node .github/scripts/visual-gate/lib/baseline-publication-lock.mjs';
 
-    expect(value).toContain(
-      'group: visual-acceptance-head-${{ github.event.pull_request.head.repo.id }}-${{ github.event.pull_request.head.ref }}',
+    expect(value).toContain('workflow_dispatch:');
+    expect(value).toContain("context.ref !== 'refs/heads/main'");
+    expect(value).toContain('Checkout trusted current main');
+    expect(value).toContain('Checkout the resolved merged result');
+    expect(value).toContain('allow-unsafe-pr-checkout: true');
+    expect(value.indexOf('compareCommitsWithBasehead')).toBeLessThan(
+      value.indexOf('allow-unsafe-pr-checkout: true'),
     );
-    expect(value).not.toContain('visual-acceptance-pr-');
+    expect(value).toContain('ref: main');
+    for (const command of ['enqueue', 'wait', 'release']) {
+      expect(value.match(new RegExp(`${helper} ${command}`, 'g'))).toHaveLength(
+        1,
+      );
+      expect(
+        manual.match(new RegExp(`${helper} ${command}`, 'g')),
+      ).toHaveLength(1);
+    }
+    expect(value).not.toContain('group: visual-baseline');
+    expect(manual).not.toContain('group: visual-baseline');
+    expect(value.indexOf('Recapture exactly the accepted shots')).toBeLessThan(
+      value.indexOf('Wait for the baseline publication turn'),
+    );
+    expect(
+      value.indexOf('Wait for the baseline publication turn'),
+    ).toBeLessThan(value.indexOf('Verify and promote the baseline'));
+    expect(value).toContain('--expected-record-rel "$RECORD_REL"');
+    expect(workflow('pr-comment.yml')).toContain(
+      'Post-merge promotion does not join this cancellation group',
+    );
+    expect(
+      manual.indexOf('Wait for the baseline publication turn'),
+    ).toBeLessThan(manual.indexOf('Fetch the current baseline'));
+    expect(workflow('release-gate.yml')).toContain(
+      "grep -Ev '/(baseline|latest|publication-queue)/$'",
+    );
+    expect(value).toContain(
+      "context.eventName === 'workflow_dispatch' ? 'true' : 'false'",
+    );
+  });
+
+  it('projects every known validation or publication failure from an always-running job', () => {
+    const value = workflow('visual-acceptance-promote.yml');
+    const status = value.slice(value.indexOf('  project-status:'));
+
+    expect(status).toContain('if: always()');
+    expect(status).toContain('statuses: write');
+    expect(status).toContain('needs: [resolve, promote]');
+    expect(status).toContain('needs.resolve.outputs.failure_description');
+    expect(status).toContain('needs.promote.outputs.failure_description');
+    expect(status).toContain('promotionStatusProjection');
+    expect(status).toContain('target_url: process.env.TARGET_URL');
+    expect(status).toContain("if (projection.state === 'failure')");
+    expect(status).toContain('core.setFailed(projection.description)');
+    expect(value.match(/core\.setOutput\('head_sha'/g)).toHaveLength(1);
+    expect(value.indexOf('compareCommitsWithBasehead')).toBeLessThan(
+      value.indexOf("core.setOutput('head_sha'"),
+    );
+    expect(value).toContain('core.setFailed(failure.description)');
+    const beforeStatus = value.slice(0, value.indexOf('  project-status:'));
+    expect(beforeStatus).toContain("state: 'pending'");
+    expect(beforeStatus).not.toContain("state: 'success'");
+    expect(beforeStatus).not.toContain("state: 'failure'");
+    const promoteJob = value.slice(
+      value.indexOf('  promote:'),
+      value.indexOf('  project-status:'),
+    );
+    expect(promoteJob).toContain(
+      "needs.resolve.outputs.acceptance_found == 'true'",
+    );
+    expect(
+      promoteJob.slice(0, promoteJob.indexOf('    runs-on:')),
+    ).not.toContain('mutation_deferred');
+    expect(promoteJob).toContain('Confirm trusted active-retry deferral');
+    expect(promoteJob).toContain('deferred=true');
+    expect(promoteJob).toContain("if: steps.defer.outputs.deferred != 'true'");
+    expect(value).toContain(
+      "mutation_deferred: ${{ steps.defer.outputs.deferred == 'true' || steps.acceptance.outputs.deferred == 'true' || steps.promote.outputs.deferred == 'true' }}",
+    );
+    expect(status).toContain(
+      "MUTATION_DEFERRED: ${{ needs.promote.outputs.mutation_deferred == 'true' }}",
+    );
+    expect(status).not.toContain('needs.resolve.outputs.mutation_deferred');
+    const projectionCall = status.slice(
+      status.indexOf('const projection = promotionStatusProjection({'),
+    );
+    expect(projectionCall).toContain(
+      'promotionResult: recoveryOperationResult({',
+    );
+    expect(projectionCall).toContain(
+      'mutationDeferred: process.env.MUTATION_DEFERRED',
+    );
+    expect(projectionCall).toContain(
+      'failureDescription: process.env.FAILURE_DESCRIPTION',
+    );
+  });
+
+  it('marks success only after publication, gate dispatch, and lock release finish', () => {
+    const value = workflow('visual-acceptance-promote.yml');
+    const gate = value.slice(
+      value.indexOf('      - name: Run a fresh release gate'),
+      value.indexOf('      - name: Release the baseline publication turn'),
+    );
+    const release = value.slice(
+      value.indexOf('      - name: Release the baseline publication turn'),
+      value.indexOf('      - name: Mark trusted recovery complete'),
+    );
+    const complete = value.slice(
+      value.indexOf('      - name: Mark trusted recovery complete'),
+      value.indexOf('  project-status:'),
+    );
+
+    expect(value).toContain('publication_confirmed=true');
+    expect(gate).toContain(
+      "steps.promote.outputs.publication_confirmed == 'true'",
+    );
+    expect(gate).toContain('fresh release gate dispatch failed');
+    expect(release).toContain('if: always()');
+    expect(release).toContain('lock release failed');
+    expect(complete).toContain("steps.gate.outcome == 'success'");
+    expect(complete).toContain("steps.release.outcome == 'success'");
+    expect(complete).toContain('recovery_complete=true');
+    expect(value).toContain(
+      'RECOVERY_COMPLETE: ${{ needs.promote.outputs.recovery_complete }}',
+    );
+    expect(value).toContain('recoveryOperationResult({');
   });
 });

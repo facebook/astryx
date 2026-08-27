@@ -25,8 +25,11 @@ on:
 permissions: {}
 
 # The event already carries a stable head-repository/branch identity. Acquire
-# this shared lock before resolving the PR so a rerun can cancel any older
-# acceptance, report publication, or promotion mutation for the same head.
+# this shared lock before resolving the PR so a rerun can cancel older
+# invalidation, report-publication, or acceptance mutations for the same head.
+# Post-merge promotion does not join this cancellation group: it serializes
+# durably with every baseline publisher, then recaptures the merged commit and
+# requires its canonical pixels to match the latest completed accepted CI.
 concurrency:
   group: visual-acceptance-head-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: ${{ github.event.action == 'requested' || github.event.action == 'in_progress' }}
