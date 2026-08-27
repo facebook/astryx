@@ -261,7 +261,6 @@ export function useOverflow(
           calculate();
         });
         mutationObserver.observe(el, {
-          attributes: true,
           characterData: true,
           childList: true,
           subtree: true,

@@ -85,7 +85,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Measures children rendered in a hidden container to determine how many fit in the available width without flickering. Uses ResizeObserver to react to container and measured-child size changes. The measurement container should hold all items plus an optional overflow indicator element (identified by a data-overflow-indicator attribute).',
+      'Measures children rendered in a hidden container to determine how many fit in the available width without flickering. Uses ResizeObserver for container and measured-child size changes, and MutationObserver for measured-child content or order changes. The measurement container should hold all items plus an optional overflow indicator element (identified by a data-overflow-indicator attribute).',
     bestPractices: [
       {
         guidance: true,
@@ -113,7 +113,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Measures children rendered in hidden container to determine how many fit in available width w/o flickering. Uses ResizeObserver to react to container and measured-child size changes. Measurement container should hold all items plus optional overflow indicator element (identified by data-overflow-indicator attribute).',
+    'Measures children rendered in hidden container to determine how many fit in available width w/o flickering. Uses ResizeObserver for container and measured-child size changes, and MutationObserver for measured-child content or order changes. Measurement container should hold all items plus optional overflow indicator element (identified by data-overflow-indicator attribute).',
   paramDescriptions: {
     itemCount: 'total # items to measure for overflow.',
     options: 'config for overflow behavior.',
@@ -133,7 +133,7 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Measures children rendered in hidden container to determine how many fit in available width w/o flickering. Uses ResizeObserver to react to container and measured-child size changes. Measurement container should hold all items plus optional overflow indicator element (identified by data-overflow-indicator attribute).',
+      'Measures children rendered in hidden container to determine how many fit in available width w/o flickering. Uses ResizeObserver for container and measured-child size changes, and MutationObserver for measured-child content or order changes. Measurement container should hold all items plus optional overflow indicator element (identified by data-overflow-indicator attribute).',
     bestPractices: [
       {
         guidance: true,
