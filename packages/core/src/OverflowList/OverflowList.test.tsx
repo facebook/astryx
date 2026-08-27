@@ -124,7 +124,7 @@ function indicesOf(spy: {mock: {calls: unknown[][]}}): number[] {
 function labelsOf(spy: {mock: {calls: unknown[][]}}): string[] {
   const last = spy.mock.calls[spy.mock.calls.length - 1];
   return (last[0] as OverflowItem[]).map(item =>
-    String(item.child.props.children),
+    String((item.child.props as {children?: unknown}).children),
   );
 }
 
@@ -747,6 +747,50 @@ describe('OverflowList', () => {
       );
       expect(onOverflowChange).toHaveBeenCalledTimes(3);
       expect(labelsOf(onOverflowChange)).toEqual(['D', 'B']);
+    });
+
+    it('reports only the measured set when the number of children changes', () => {
+      const onOverflowChange = vi.fn();
+      const renderItems = (labels: string[], width: number) =>
+        labels.map(label => (
+          <button type="button" data-w={width} key={label}>
+            {label}
+          </button>
+        ));
+      const {rerender} = render(
+        <OverflowList
+          gap={0}
+          data-w="220"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {renderItems(['A', 'B', 'C', 'D', 'E'], 100)}
+        </OverflowList>,
+      );
+      expect(indicesOf(onOverflowChange)).toEqual([2, 3, 4]);
+
+      rerender(
+        <OverflowList
+          gap={0}
+          data-w="220"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {renderItems(['Go', 'Up'], 40)}
+        </OverflowList>,
+      );
+      expect(onOverflowChange).toHaveBeenCalledTimes(2);
+      expect(indicesOf(onOverflowChange)).toEqual([]);
+
+      rerender(
+        <OverflowList
+          gap={0}
+          data-w="220"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {renderItems(['A', 'B', 'C', 'D', 'E'], 100)}
+        </OverflowList>,
+      );
+      expect(onOverflowChange).toHaveBeenCalledTimes(3);
+      expect(indicesOf(onOverflowChange)).toEqual([2, 3, 4]);
     });
 
     it('uses a replacement callback only for the next set change', () => {
