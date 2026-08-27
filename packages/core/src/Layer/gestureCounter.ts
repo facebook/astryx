@@ -37,8 +37,8 @@ function listen() {
   // Capture phase: the count must advance before any handler reads it.
   document.addEventListener('pointerdown', advance, true);
   document.addEventListener('keydown', advance, true);
-  // Bubble phase lets a trigger install tracking from its own first click.
-  document.addEventListener('click', markClicked);
+  // Capture phase observes the click even when a consumer stops propagation.
+  document.addEventListener('click', markClicked, true);
 }
 
 /**

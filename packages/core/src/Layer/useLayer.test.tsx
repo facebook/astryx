@@ -1125,7 +1125,7 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
     expect(getByTestId('state')).toHaveTextContent('open');
   });
 
-  it('acts on a synthesized click after click-first light dismiss', async () => {
+  it('acts on a synthesized click after a stopped click-first dismissal', async () => {
     const user = userEvent.setup();
     const {container, getByRole, getByTestId} = render(
       <GuardedTriggerHarness />,
@@ -1134,6 +1134,9 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
 
     await user.click(trigger);
     fireEvent.pointerDown(document.body);
+    document.body.addEventListener('click', event => event.stopPropagation(), {
+      once: true,
+    });
     fireEvent.click(document.body);
     lightDismiss(container);
     expect(getByTestId('state')).toHaveTextContent('closed');

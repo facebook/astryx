@@ -702,16 +702,42 @@ function useLayerImplementation(
       return;
     }
     dismissedByGestureRef.current = currentGesture();
+    const view = doc.defaultView;
+    let forgetTimer: number | null = null;
     const forget = () => {
       dismissedByGestureRef.current = null;
-      doc.removeEventListener('click', forget);
-      forgetDismissalRef.current = null;
+      doc.removeEventListener('click', scheduleForget, true);
+      if (forgetTimer !== null) {
+        view?.clearTimeout(forgetTimer);
+        forgetTimer = null;
+      }
+      if (forgetDismissalRef.current === forget) {
+        forgetDismissalRef.current = null;
+      }
     };
-    doc.addEventListener('click', forget);
+    const scheduleForget = () => {
+      doc.removeEventListener('click', scheduleForget, true);
+      // The next task keeps the dismissal armed through React's click handler.
+      if (view) {
+        forgetTimer = view.setTimeout(() => {
+          forgetTimer = null;
+          if (forgetDismissalRef.current === forget) {
+            forget();
+          }
+        }, 0);
+      } else {
+        forget();
+      }
+    };
+    doc.addEventListener('click', scheduleForget, true);
     forgetDismissalRef.current = forget;
   }, []);
 
-  useEffect(() => () => forgetDismissalRef.current?.(), []);
+  useEffect(() => {
+    // Install capture-phase gesture tracking before the first interaction.
+    currentGesture();
+    return () => forgetDismissalRef.current?.();
+  }, []);
 
   // Reconcile browser-initiated closes (light-dismiss, popover="auto" stack
   // eviction). These are the only cases where the DOM mutates without going
