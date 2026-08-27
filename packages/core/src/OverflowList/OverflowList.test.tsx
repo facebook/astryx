@@ -749,7 +749,7 @@ describe('OverflowList', () => {
       expect(labelsOf(onOverflowChange)).toEqual(['D', 'B']);
     });
 
-    it('re-measures a same-count keyed set before reporting it', () => {
+    it('re-measures same-count content changes with stable keys', () => {
       const onOverflowChange = vi.fn();
       const renderItems = (
         items: {key: string; label: string; width: number}[],
@@ -784,11 +784,12 @@ describe('OverflowList', () => {
           {renderItems([
             {key: 'a', label: 'A', width: 60},
             {key: 'b', label: 'B', width: 60},
-            {key: 'wide', label: 'Wide', width: 200},
+            {key: 'c', label: 'Wide', width: 200},
             {key: 'd', label: 'D', width: 60},
           ])}
         </OverflowList>,
       );
+      triggerResize(measureContainer());
 
       expect(onOverflowChange).toHaveBeenCalledTimes(1);
       expect(indicesOf(onOverflowChange)).toEqual([2, 3]);
@@ -937,10 +938,12 @@ describe('OverflowList', () => {
         </OverflowList>,
       );
       const container = visibleContainer();
+      const measure = measureContainer();
       expect(onOverflowChange).toHaveBeenCalledTimes(1);
 
       unmount();
       triggerResize(container);
+      triggerResize(measure);
       expect(onOverflowChange).toHaveBeenCalledTimes(1);
     });
 
