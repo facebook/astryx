@@ -151,10 +151,16 @@ export interface CarouselProps extends BaseProps<HTMLDivElement> {
 // =============================================================================
 
 // The overflow hook calls a sub-pixel remainder "no more scroll". The focus
-// hand-off in scrollBy has to use the same threshold, or it moves focus a
-// press early or a press late.
+// hand-off reads the settled position against the same threshold, or it
+// disagrees with the state that actually disables the button.
 // SYNC: /packages/core/src/hooks/useScrollOverflow.ts
 const SCROLL_EDGE_TOLERANCE = 1;
+
+// How long to wait for a scroll to settle when `scrollend` never arrives:
+// either the browser does not support it, or the press moved nothing so no
+// scroll events were emitted at all. Matches Outline's navigation settle.
+// SYNC: /packages/core/src/Outline/useScrollSpy.ts
+const SCROLL_SETTLE_TIMEOUT_MS = 1200;
 
 const styles = stylex.create({
   root: {
@@ -343,6 +349,9 @@ export function Carousel({
   const scrollElRef = useRef<HTMLElement | null>(null);
   const startButtonRef = useRef<HTMLButtonElement>(null);
   const endButtonRef = useRef<HTMLButtonElement>(null);
+  // Cancels a pending focus hand-off: the settle listener and its fallback
+  // timer, which outlive the press that armed them.
+  const teardownRef = useRef<(() => void) | null>(null);
   const {scrollRef, overflowStart, overflowEnd, hasOverflow} =
     useScrollOverflow();
 
@@ -363,6 +372,8 @@ export function Carousel({
       layer.hide();
     }
   }, [hasButtons, layer]);
+
+  useEffect(() => () => teardownRef.current?.(), []);
 
   const composedRef = useCallback(
     (el: HTMLDivElement | null) => {
@@ -398,10 +409,10 @@ export function Carousel({
   }, []);
 
   const scrollBy = useCallback(
-    (direction: -1 | 1): boolean => {
+    (direction: -1 | 1) => {
       const el = scrollElRef.current;
       if (!el) {
-        return false;
+        return;
       }
       // Respect the user's reduced-motion preference — mirrors the CSS
       // scroll-behavior override so button-driven scrolling doesn't animate
@@ -425,77 +436,91 @@ export function Carousel({
         const atStart = direction === -1 && !overflowStart;
         if (atEnd || atStart) {
           el.scrollBy({left: rtlSign * -direction * el.scrollWidth, behavior});
-        } else {
-          const firstChild = el.firstElementChild as HTMLElement | null;
-          const itemWidth = firstChild ? firstChild.offsetWidth : 0;
-          const amount = el.clientWidth - itemWidth * 0.5;
-          el.scrollBy({
-            left: rtlSign * direction * Math.max(amount, itemWidth),
-            behavior,
-          });
+          return;
         }
-        // Looping keeps both buttons enabled at both edges, so no press can
-        // disable the control the user is on and there is nothing to rescue.
-        return false;
       }
 
       const firstChild = el.firstElementChild as HTMLElement | null;
       const itemWidth = firstChild ? firstChild.offsetWidth : 0;
       const amount = el.clientWidth - itemWidth * 0.5;
-      const distance = Math.max(amount, itemWidth);
-      // Read the position BEFORE scrolling. Under reduced motion the scroll is
-      // instant, so reading it afterwards counts this step twice and the edge
-      // looks one press nearer than it is. scrollLeft is negative under RTL, so
-      // this is the logical distance travelled from the start.
-      const from = Math.abs(el.scrollLeft);
       el.scrollBy({
         // `direction` is the logical intent (-1 = toward content start, +1 =
         // toward content end).
-        left: rtlSign * direction * distance,
+        left: rtlSign * direction * Math.max(amount, itemWidth),
         behavior,
       });
-
-      // Report whether this press uses up the direction it went in. The button
-      // that drove it disables on that transition, and the browser drops focus
-      // off a control it disables, so the caller rescues focus first. Predicted
-      // here rather than watched from an effect, because the overflow state
-      // lands frames after a smooth scroll.
-      const maxScroll = el.scrollWidth - el.clientWidth;
-      const next = from + direction * distance;
-      return direction === 1
-        ? next >= maxScroll - SCROLL_EDGE_TOLERANCE
-        : next <= SCROLL_EDGE_TOLERANCE;
     },
     [hasLoop, hasOverflow, overflowStart, overflowEnd],
   );
+
+  // Is the container resting against the edge it was pushed toward? Read from
+  // the element rather than predicted from the press: reduced motion lands the
+  // scroll instantly and mandatory scroll-snap lands it somewhere the press did
+  // not ask for, and a prediction was wrong about each in turn. scrollLeft is
+  // negative under RTL, so this is the logical distance from the start.
+  const isRestingAtEdge = useCallback((el: HTMLElement, direction: -1 | 1) => {
+    const position = Math.abs(el.scrollLeft);
+    return direction === 1
+      ? position >= el.scrollWidth - el.clientWidth - SCROLL_EDGE_TOLERANCE
+      : position <= SCROLL_EDGE_TOLERANCE;
+  }, []);
 
   // Keep the keyboard user where they are. Without this, pressing the trailing
   // button on the last slide disables it under them and focus falls to <body>,
   // so the next Tab restarts from the top of the document. Focus goes to the
   // scroll container rather than the opposite button: at the moment of the
-  // press that button is still disabled (its enabling state lands with the
-  // next render), and focus() on a disabled control is a no-op. The container
-  // is a permanent tab stop inside the labelled region and pans with the
-  // arrow keys, so the user keeps both their place and a way to scroll.
+  // press that button is still disabled (its enabling state lands with the next
+  // render), and focus() on a disabled control is a no-op. The container is a
+  // permanent tab stop inside the labelled region and pans with the arrow keys,
+  // so the user keeps both their place and a way to scroll.
   const scrollFromButton = useCallback(
     (direction: -1 | 1) => {
+      const el = scrollElRef.current;
       const pressed =
         direction === 1 ? endButtonRef.current : startButtonRef.current;
-      const exhausted = scrollBy(direction);
-      if (!exhausted || !pressed) {
+      // Only rescue focus this press is about to lose. A programmatic click
+      // from elsewhere must not pull focus into the carousel, and looping keeps
+      // both buttons enabled at both edges so no press can disable one.
+      const shouldRescue =
+        el != null &&
+        pressed != null &&
+        pressed.ownerDocument.activeElement === pressed &&
+        !(hasLoop && hasOverflow);
+      if (!shouldRescue) {
+        scrollBy(direction);
         return;
       }
-      // Only rescue focus the press itself is about to lose. A programmatic
-      // click from elsewhere must not pull focus into the carousel.
-      if (pressed.ownerDocument.activeElement !== pressed) {
-        return;
-      }
-      // preventScroll matters: focus() otherwise scrolls the container into
-      // view, which cancels the smooth scroll this very press just started and
-      // leaves the carousel where it was.
-      scrollElRef.current?.focus({preventScroll: true});
+
+      // Arm settle detection BEFORE scrolling: under reduced motion the scroll
+      // lands instantly, so a listener attached afterwards never hears it.
+      const settle = () => {
+        teardownRef.current?.();
+        if (!isRestingAtEdge(el, direction)) {
+          return;
+        }
+        // React disables the button from the same measurement, which may
+        // already have dropped focus to the body. Rescue either state and leave
+        // anywhere else alone: the user has moved on.
+        const active = pressed.ownerDocument.activeElement;
+        if (active !== pressed && active !== pressed.ownerDocument.body) {
+          return;
+        }
+        // preventScroll matters: a plain focus() scrolls the container into
+        // view, which cancels the smooth scroll this press just started.
+        el.focus({preventScroll: true});
+      };
+      const timer = window.setTimeout(settle, SCROLL_SETTLE_TIMEOUT_MS);
+      el.addEventListener('scrollend', settle, {once: true});
+      teardownRef.current?.();
+      teardownRef.current = () => {
+        window.clearTimeout(timer);
+        el.removeEventListener('scrollend', settle);
+        teardownRef.current = null;
+      };
+
+      scrollBy(direction);
     },
-    [scrollBy],
+    [scrollBy, isRestingAtEdge, hasLoop, hasOverflow],
   );
 
   const scrollToIndex = useCallback((index: number) => {

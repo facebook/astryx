@@ -501,8 +501,18 @@ describe('Carousel', () => {
     // jsdom doesn't lay out elements, so fake an overflowing scroll container
     // whose scrollLeft actually moves when scrollBy is called. The component
     // predicts the edge from these numbers, which is what the hand-off uses.
-    function makeScrollable(el: HTMLElement, scrollWidth: number) {
+    // jsdom has no layout and no scrollend, so fake an overflowing container
+    // whose scrollBy moves scrollLeft and then settles, the way a browser does.
+    // `land` decides where the container comes to rest: the default clamps to
+    // the requested delta, and the snap arm overrides it to model mandatory
+    // scroll-snap carrying the container past what the press asked for.
+    function makeScrollable(
+      el: HTMLElement,
+      scrollWidth: number,
+      land?: (requested: number, maxScroll: number) => number,
+    ) {
       const clientWidth = 200;
+      const maxScroll = scrollWidth - clientWidth;
       Object.defineProperty(el, 'scrollWidth', {
         value: scrollWidth,
         configurable: true,
@@ -517,14 +527,13 @@ describe('Carousel', () => {
         configurable: true,
       });
       el.scrollBy = ((options: ScrollToOptions) => {
-        el.scrollLeft = Math.max(
+        const requested = Math.max(
           0,
-          Math.min(
-            scrollWidth - clientWidth,
-            el.scrollLeft + (options.left ?? 0),
-          ),
+          Math.min(maxScroll, el.scrollLeft + (options.left ?? 0)),
         );
+        el.scrollLeft = land ? land(requested, maxScroll) : requested;
         fireEvent.scroll(el);
+        el.dispatchEvent(new Event('scrollend'));
       }) as HTMLElement['scrollBy'];
       fireEvent.scroll(el);
     }
@@ -571,6 +580,28 @@ describe('Carousel', () => {
 
       expect(next).toBeEnabled();
       expect(document.activeElement).toBe(next);
+    });
+
+    it('hands off when scroll-snap carries the container past what the press asked for', async () => {
+      const user = userEvent.setup();
+      render(
+        <Carousel hasSnap aria-label="Gallery">
+          <div>Item 1</div>
+          <div>Item 2</div>
+          <div>Item 3</div>
+        </Carousel>,
+      );
+      // 700 gives 500 of travel against a 200 step, so the press alone lands
+      // mid-run. Mandatory snapping then carries it to the end, which is the
+      // case a press cannot predict.
+      makeScrollable(getScroller(), 700, (_requested, maxScroll) => maxScroll);
+
+      const next = screen.getByLabelText('Scroll right');
+      await user.click(next);
+
+      expect(next).toBeDisabled();
+      expect(document.activeElement).toBe(getScroller());
+      expect(document.activeElement).not.toBe(document.body);
     });
 
     it('does not move focus when hasLoop keeps both buttons enabled', async () => {
