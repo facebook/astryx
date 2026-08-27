@@ -137,7 +137,7 @@ export function useOverflow(
   const containerElRef = useRef<HTMLElement | null>(null);
   const measureElRef = useRef<HTMLElement | null>(null);
   const observedElRef = useRef<HTMLElement | null>(null);
-  const observedMeasureElementsRef = useRef<Element[]>([]);
+  const observedMeasureElRef = useRef<HTMLElement | null>(null);
   const measureMutationObserverRef = useRef<MutationObserver | null>(null);
 
   const calculate = useCallback(() => {
@@ -239,10 +239,10 @@ export function useOverflow(
 
   const measureRef = useCallback(
     (el: HTMLElement | null) => {
-      for (const observed of observedMeasureElementsRef.current) {
-        unobserveResize(observed);
+      if (observedMeasureElRef.current) {
+        unobserveResize(observedMeasureElRef.current);
+        observedMeasureElRef.current = null;
       }
-      observedMeasureElementsRef.current = [];
       measureMutationObserverRef.current?.disconnect();
       measureMutationObserverRef.current = null;
 
@@ -251,30 +251,21 @@ export function useOverflow(
         return;
       }
 
-      const observeMeasureElements = () => {
-        for (const observed of observedMeasureElementsRef.current) {
-          unobserveResize(observed);
-        }
-
-        let isRegistering = true;
-        const onResize = () => {
-          if (!isRegistering) {
-            calculate();
-          }
-        };
-        const elements = [el, ...Array.from(el.children)];
-        for (const element of elements) {
-          observeResize(element, onResize);
-        }
-        isRegistering = false;
-        observedMeasureElementsRef.current = elements;
+      observeResize(el, () => {
         calculate();
-      };
+      });
+      observedMeasureElRef.current = el;
 
-      observeMeasureElements();
-      if (typeof MutationObserver !== 'undefined') {
-        const mutationObserver = new MutationObserver(observeMeasureElements);
-        mutationObserver.observe(el, {childList: true});
+      if (typeof MutationObserver !== 'undefined' && el instanceof Node) {
+        const mutationObserver = new MutationObserver(() => {
+          calculate();
+        });
+        mutationObserver.observe(el, {
+          attributes: true,
+          characterData: true,
+          childList: true,
+          subtree: true,
+        });
         measureMutationObserverRef.current = mutationObserver;
       }
     },

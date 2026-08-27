@@ -841,7 +841,7 @@ describe('OverflowList', () => {
       expect(indicesOf(onOverflowChange)).toEqual([2]);
     });
 
-    it('re-measures same-count content changes with stable keys', () => {
+    it('re-measures same-count content changes with stable keys', async () => {
       const onOverflowChange = vi.fn();
       const renderItems = (
         items: {key: string; label: string; width: number}[],
@@ -881,12 +881,13 @@ describe('OverflowList', () => {
           ])}
         </OverflowList>,
       );
-      triggerResize(measureContainer());
 
-      expect(onOverflowChange).toHaveBeenCalledTimes(1);
-      expect(indicesOf(onOverflowChange)).toEqual([2, 3]);
-      expect(visibleContainer()).toHaveTextContent('AB');
-      expect(visibleContainer()).not.toHaveTextContent('Wide');
+      await waitFor(() => {
+        expect(onOverflowChange).toHaveBeenCalledTimes(1);
+        expect(indicesOf(onOverflowChange)).toEqual([2, 3]);
+        expect(visibleContainer()).toHaveTextContent('AB');
+        expect(visibleContainer()).not.toHaveTextContent('Wide');
+      });
     });
 
     it('reports only the measured set when the number of children changes', () => {
