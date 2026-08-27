@@ -758,19 +758,28 @@ export function ChatVirtualizer<T>(
       dataRef.current.length > 0 &&
       Math.abs(el.scrollTop - target) <= CONVERGE_EPSILON_PX
     ) {
-      converging.current = false;
-      // Hold prices one pass longer than the convergence, then let a pass that
-      // SEES the settled numbers derive and write the scrollTop they imply.
+      // Reaching the target does not end a HEAD-CHANGE convergence: the rows
+      // that arrived above are still measuring in, so the prices and the
+      // offsets keep moving for several more passes. Both halves of the
+      // protection therefore lift on the SAME later pass — one that sees the
+      // settled numbers. Releasing the anchor half here instead let the
+      // live-anchor refresh re-derive from a scrollTop still mid-settle and
+      // freeze that intermediate position as the new reference frame
+      // (measured: a 300-row prepend read at the top moved the reader 33-53px
+      // and kept it, every time).
       if (priceFreeze.current) {
         if (rafRelease.current !== null) {
           cancelAnimationFrame(rafRelease.current);
         }
         rafRelease.current = requestAnimationFrame(() => {
           rafRelease.current = null;
+          converging.current = false;
           priceFreeze.current = false;
           geoChanged.current = true;
           syncRef.current();
         });
+      } else {
+        converging.current = false;
       }
     }
     // The window must cover the DESIRED position, not the stale scrollTop:
