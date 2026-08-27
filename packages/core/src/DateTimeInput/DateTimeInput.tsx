@@ -402,9 +402,8 @@ export interface DateTimeInputProps extends Omit<
   placeholder?: string;
 
   /**
-   * Placeholder text shown in the desktop time portion when no time is selected.
-   * Ignored on the mobile touch sheet, where the time panel is labelled and uses
-   * wheels rather than an empty text input.
+   * Placeholder text shown in the time portion when no time is selected.
+   * On touch, this appears in the closed time segment before a time is chosen.
    * @default "Select a time"
    */
   timePlaceholder?: string;

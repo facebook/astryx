@@ -791,6 +791,14 @@
     "defaultMessage": "Time",
     "description": "Visible label for the Time segment in the mobile DateTimeInput bottom sheet."
   },
+  "@astryx.dateTimeInput.openTimePicker": {
+    "defaultMessage": "Open {label}",
+    "description": "Aria label for the clock button in the mobile DateTimeInput closed time segment. `{label}` is the accessible name of the time input, for example `Meeting time`."
+  },
+  "@astryx.dateTimeInput.saveDatePicking": {
+    "defaultMessage": "Save date",
+    "description": "Primary button at the bottom of the Date panel in the mobile DateTimeInput bottom sheet. It does not close the sheet; it accepts the date step and moves to the Time panel. Use sentence case in English and title case only when appropriate for the locale."
+  },
   "@astryx.dateTimeInput.hourWheel": {
     "defaultMessage": "Hour",
     "description": "Accessible name for the hour wheel in the mobile DateTimeInput bottom sheet."

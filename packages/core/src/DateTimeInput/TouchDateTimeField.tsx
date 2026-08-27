@@ -72,6 +72,7 @@ import {
   formatDisplayTime24h,
   formatISOTime,
   isImeKeyEvent,
+  isRenderable,
   isTimeInRange,
   clampTime,
   mergeProps,
@@ -85,6 +86,7 @@ import {
   plainDateFormat,
   plainDateFromISO,
   plainDateToday,
+  type PlainDate,
 } from '../utils/plainDate';
 import {
   MonthScroller,
@@ -192,6 +194,22 @@ const styles = stylex.create({
   },
   inputDisabled: {
     cursor: 'default',
+  },
+  touchRow: {
+    display: 'flex',
+    inlineSize: '100%',
+    minInlineSize: 0,
+    gap: spacingVars['--spacing-2'],
+  },
+  touchDateWrapper: {
+    flex: 1,
+    flexBasis: 0,
+    minInlineSize: 0,
+  },
+  touchTimeWrapper: {
+    flex: 1,
+    flexBasis: 0,
+    minInlineSize: 0,
   },
   touchInput: {
     caretColor: 'transparent',
@@ -347,6 +365,17 @@ const styles = stylex.create({
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+function parseValidISODate(date: ISODateString | undefined): PlainDate | null {
+  if (date == null || !ISO_DATE.test(date)) {
+    return null;
+  }
+  try {
+    return plainDateFromISO(date);
+  } catch {
+    return null;
+  }
+}
+
 function normalizeISOTime(
   time: ISOTimeString | undefined,
   hasSeconds: boolean,
@@ -421,8 +450,7 @@ export function TouchDateTimeField({
   timeOptionInterval: _timeOptionInterval,
   hasClear = false,
   placeholder: placeholderFromProps,
-  // Desktop-only: the mobile sheet has a dedicated Time panel instead of a second placeholder.
-  timePlaceholder: _timePlaceholderFromProps,
+  timePlaceholder: timePlaceholderFromProps,
   timeLabel,
   size: sizeProp,
   status,
@@ -442,14 +470,19 @@ export function TouchDateTimeField({
   const {locale} = use(InternationalizationContext);
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateTimeInput.placeholder');
+  const timePlaceholder =
+    timePlaceholderFromProps ?? t('@astryx.dateTimeInput.timePlaceholder');
   const resolvedTimeLabel =
     timeLabel ?? t('@astryx.dateTimeInput.timeSuffix', {label});
   const size = useSize(sizeProp, 'md');
-  const id = useId();
+  const dateInputId = useId();
+  const timeInputId = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const mergedInputRef = useMergedRefs(ref, inputRef);
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
+  const timeInputRef = useRef<HTMLInputElement | null>(null);
+  const timeSegmentRef = useRef<HTMLButtonElement | null>(null);
+  const mergedDateInputRef = useMergedRefs(ref, dateInputRef);
   const scrollerHandleRef = useRef<MonthScrollerHandle | null>(null);
 
   const [, startTransition] = useTransition();
@@ -504,10 +537,7 @@ export function TouchDateTimeField({
 
   const today = useMemo(() => plainDateToday(), []);
   const selectedDate = useMemo(
-    () =>
-      valueParts.date != null && ISO_DATE.test(valueParts.date)
-        ? plainDateFromISO(valueParts.date)
-        : null,
+    () => parseValidISODate(valueParts.date),
     [valueParts.date],
   );
   const fallbackTime = useMemo(() => getDefaultTime(hasSeconds), [hasSeconds]);
@@ -533,13 +563,6 @@ export function TouchDateTimeField({
       setDraftTime(undefined);
     }
   }, [normalizedValueTime, optimisticValue]);
-
-  useEffect(() => {
-    if (isEffectivelyDisabled && isSheetOpen) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- disabled/loading fields must not leave an interactive sheet open
-      setIsSheetOpen(false);
-    }
-  }, [isEffectivelyDisabled, isSheetOpen]);
 
   const [anchorMonthIndex] = useState(() =>
     monthIndexOf(selectedDate ?? plainDateToday()),
@@ -585,23 +608,22 @@ export function TouchDateTimeField({
     locale,
   );
 
-  const displayValue = useMemo(() => {
-    if (!valueParts.date || !ISO_DATE.test(valueParts.date)) {
+  const dateDisplayValue = useMemo(() => {
+    if (selectedDate == null) {
       return '';
     }
-    const dateText = plainDateFormat(
-      plainDateFromISO(valueParts.date),
-      DATE_FORMAT_LONG,
-      locale,
-    );
-    const timeText = normalizedValueTime
+    return plainDateFormat(selectedDate, DATE_FORMAT_LONG, locale);
+  }, [selectedDate, locale]);
+
+  const timeDisplayValue = useMemo(() => {
+    const displayTime = normalizedValueTime ?? draftTime;
+    return displayTime
       ? (hourFormat === '12h' ? formatDisplayTime12h : formatDisplayTime24h)(
-          normalizedValueTime,
+          displayTime,
           hasSeconds,
         )
       : '';
-    return timeText ? `${dateText}, ${timeText}` : dateText;
-  }, [valueParts.date, normalizedValueTime, hourFormat, hasSeconds, locale]);
+  }, [draftTime, normalizedValueTime, hourFormat, hasSeconds]);
 
   const timeBoundsForDate = useCallback(
     (date: ISODateString | undefined) => ({
@@ -647,13 +669,42 @@ export function TouchDateTimeField({
     ],
   );
 
-  const openSheet = useCallback(() => {
-    if (!isEffectivelyDisabled) {
-      setIsWheelOpen(false);
-      setActivePanel('date');
-      setIsSheetOpen(true);
+  const openSheet = useCallback(
+    (panel: TouchDateTimePanel) => {
+      if (!isEffectivelyDisabled) {
+        setIsWheelOpen(false);
+        setActivePanel(panel);
+        setIsSheetOpen(true);
+      }
+    },
+    [isEffectivelyDisabled],
+  );
+
+  const closeSheet = useCallback(() => {
+    if (selectedDate == null) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- The shared close path is also used by the disabled/loading effect.
+      setDraftTime(undefined);
     }
-  }, [isEffectivelyDisabled]);
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- The shared close path is also used by the disabled/loading effect.
+    setIsSheetOpen(false);
+  }, [selectedDate]);
+
+  const handleSheetOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (nextOpen) {
+        setIsSheetOpen(true);
+      } else {
+        closeSheet();
+      }
+    },
+    [closeSheet],
+  );
+
+  useEffect(() => {
+    if (isEffectivelyDisabled && isSheetOpen) {
+      closeSheet();
+    }
+  }, [closeSheet, isEffectivelyDisabled, isSheetOpen]);
 
   const stepMonth = useCallback(
     (delta: number) => {
@@ -865,7 +916,7 @@ export function TouchDateTimeField({
   }, [activePanel, isWheelOpen]);
 
   const handleInputKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
+    (event: React.KeyboardEvent, panel: TouchDateTimePanel) => {
       if (isImeKeyEvent(event.nativeEvent)) {
         return;
       }
@@ -876,7 +927,7 @@ export function TouchDateTimeField({
         event.key === 'Spacebar'
       ) {
         event.preventDefault();
-        openSheet();
+        openSheet(panel);
       }
     },
     [openSheet],
@@ -892,19 +943,33 @@ export function TouchDateTimeField({
     [],
   );
 
-  const handleClear = useCallback(() => {
-    fireChange(undefined);
-    setDraftTime(undefined);
-    setIsSheetOpen(false);
-    const field = inputRef.current;
-    if (field == null) {
-      return;
-    }
-    clearFocusTimerRef.current = window.setTimeout(() => {
-      clearFocusTimerRef.current = null;
-      field.focus({preventScroll: true});
-    }, 0);
-  }, [fireChange]);
+  const timeSegmentFocusTimerRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (timeSegmentFocusTimerRef.current != null) {
+        clearTimeout(timeSegmentFocusTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  const handleClear = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      fireChange(undefined);
+      setDraftTime(undefined);
+      setIsSheetOpen(false);
+      const field = dateInputRef.current;
+      if (field == null) {
+        return;
+      }
+      clearFocusTimerRef.current = window.setTimeout(() => {
+        clearFocusTimerRef.current = null;
+        field.focus({preventScroll: true});
+      }, 0);
+    },
+    [fireChange],
+  );
 
   const surface = (
     <div {...stylex.props(styles.touchSurface)}>
@@ -921,6 +986,7 @@ export function TouchDateTimeField({
           label={t('@astryx.dateTimeInput.dateTab')}
         />
         <SegmentedControlItem
+          ref={timeSegmentRef}
           value="time"
           label={t('@astryx.dateTimeInput.timeTab')}
         />
@@ -1036,8 +1102,19 @@ export function TouchDateTimeField({
                   variant="primary"
                   size="md"
                   width="100%"
-                  label={t('@astryx.dateInput.savePicking')}
-                  onClick={() => setIsSheetOpen(false)}
+                  label={t('@astryx.dateTimeInput.saveDatePicking')}
+                  isDisabled={selectedDate == null}
+                  onClick={() => {
+                    setIsWheelOpen(false);
+                    setActivePanel('time');
+                    if (timeSegmentFocusTimerRef.current != null) {
+                      clearTimeout(timeSegmentFocusTimerRef.current);
+                    }
+                    timeSegmentFocusTimerRef.current = window.setTimeout(() => {
+                      timeSegmentFocusTimerRef.current = null;
+                      timeSegmentRef.current?.focus({preventScroll: true});
+                    }, 0);
+                  }}
                 />
               </div>
             </div>
@@ -1141,7 +1218,7 @@ export function TouchDateTimeField({
               size="md"
               width="100%"
               label={t('@astryx.dateInput.savePicking')}
-              onClick={() => setIsSheetOpen(false)}
+              onClick={closeSheet}
             />
           </div>
         </div>
@@ -1154,7 +1231,7 @@ export function TouchDateTimeField({
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
-      inputID={id}
+      inputID={dateInputId}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -1182,79 +1259,167 @@ export function TouchDateTimeField({
             status: status?.type ?? null,
             disabled: isDisabled ? 'disabled' : null,
           }),
-          stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            isEffectivelyDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status &&
-              !isEffectivelyDisabled &&
-              inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-            xstyle,
-          ),
+          stylex.props(styles.touchRow, xstyle),
           className,
           style,
         )}>
-        <button
-          type="button"
-          onClick={openSheet}
-          disabled={isEffectivelyDisabled}
-          aria-label={t('@astryx.dateInput.openCalendar')}
-          tabIndex={-1}
-          {...stylex.props(
-            focusOutlineStyles.focusVisible,
-            styles.iconButton,
-            isEffectivelyDisabled && styles.iconButtonDisabled,
+        <div
+          onClick={event => {
+            if (event.target === event.currentTarget) {
+              openSheet('date');
+            }
+          }}
+          {...mergeProps(
+            themeProps('date-time-input-date-segment', {
+              size,
+              status: status?.type ?? null,
+            }),
+            stylex.props(
+              inputWrapperStyles.base,
+              sizeStyles[size],
+              styles.touchDateWrapper,
+              isEffectivelyDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status &&
+                !isEffectivelyDisabled &&
+                inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+            ),
           )}>
-          <Icon
-            icon="calendar"
-            size="sm"
-            color="secondary"
-            {...themeProps('date-time-input-toggle-icon', {
-              state: isSheetOpen ? 'expanded' : 'collapsed',
-            })}
+          <button
+            type="button"
+            onClick={() => openSheet('date')}
+            disabled={isEffectivelyDisabled}
+            aria-label={t('@astryx.dateInput.openCalendar')}
+            tabIndex={-1}
+            {...stylex.props(
+              focusOutlineStyles.focusVisible,
+              styles.iconButton,
+              isEffectivelyDisabled && styles.iconButtonDisabled,
+            )}>
+            <Icon
+              icon="calendar"
+              size="sm"
+              color="secondary"
+              {...themeProps('date-time-input-toggle-icon', {
+                state: isSheetOpen ? 'expanded' : 'collapsed',
+              })}
+            />
+          </button>
+          <input
+            ref={mergedDateInputRef}
+            id={dateInputId}
+            type="text"
+            role="combobox"
+            value={dateDisplayValue}
+            readOnly
+            inputMode="none"
+            onChange={() => {}}
+            onClick={() => openSheet('date')}
+            onKeyDown={event => handleInputKeyDown(event, 'date')}
+            placeholder={placeholder}
+            disabled={isEffectivelyDisabled && !showsDisabledMessage}
+            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            aria-describedby={ariaDescribedBy}
+            aria-required={isEffectivelyRequired ? 'true' : undefined}
+            aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-busy={isBusy || undefined}
+            aria-expanded={isSheetOpen && activePanel === 'date'}
+            aria-haspopup="dialog"
+            aria-autocomplete="none"
+            autoComplete="off"
+            {...stylex.props(
+              styles.input,
+              styles.touchInput,
+              isEffectivelyDisabled && styles.inputDisabled,
+            )}
           />
-        </button>
-        <input
-          ref={mergedInputRef}
-          id={id}
-          type="text"
-          role="combobox"
-          value={displayValue}
-          readOnly
-          inputMode="none"
-          onChange={() => {}}
-          onClick={openSheet}
-          onKeyDown={handleInputKeyDown}
-          placeholder={placeholder}
-          disabled={isEffectivelyDisabled && !showsDisabledMessage}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          aria-describedby={ariaDescribedBy}
-          aria-required={isEffectivelyRequired ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
-          aria-busy={isBusy || undefined}
-          aria-expanded={isSheetOpen}
-          aria-haspopup="dialog"
-          aria-autocomplete="none"
-          autoComplete="off"
-          {...stylex.props(
-            styles.input,
-            styles.touchInput,
-            isEffectivelyDisabled && styles.inputDisabled,
+          {hasClear && value !== undefined && !isEffectivelyDisabled && (
+            <InputClearButton
+              label={t('@astryx.dateInput.clear', {label})}
+              onClick={handleClear}
+            />
           )}
-        />
-        {hasClear && value !== undefined && !isEffectivelyDisabled && (
-          <InputClearButton
-            label={t('@astryx.dateInput.clear', {label})}
-            onClick={handleClear}
+          {isBusy && <Spinner size="sm" />}
+          {isRenderable(statusIcon) && statusIcon}
+        </div>
+
+        <div
+          onClick={event => {
+            if (event.target === event.currentTarget) {
+              openSheet('time');
+            }
+          }}
+          {...mergeProps(
+            themeProps('date-time-input-time-segment', {
+              size,
+              status: status?.type ?? null,
+            }),
+            stylex.props(
+              inputWrapperStyles.base,
+              sizeStyles[size],
+              styles.touchTimeWrapper,
+              isEffectivelyDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status &&
+                !isEffectivelyDisabled &&
+                inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+            ),
+          )}>
+          <button
+            type="button"
+            onClick={() => openSheet('time')}
+            disabled={isEffectivelyDisabled}
+            aria-label={t('@astryx.dateTimeInput.openTimePicker', {
+              label: resolvedTimeLabel,
+            })}
+            tabIndex={-1}
+            {...stylex.props(
+              focusOutlineStyles.focusVisible,
+              styles.iconButton,
+              isEffectivelyDisabled && styles.iconButtonDisabled,
+            )}>
+            <Icon
+              icon="clock"
+              size="sm"
+              color="secondary"
+              {...themeProps('date-time-input-clock-icon')}
+            />
+          </button>
+          <input
+            ref={timeInputRef}
+            id={timeInputId}
+            type="text"
+            role="combobox"
+            value={timeDisplayValue}
+            readOnly
+            inputMode="none"
+            onChange={() => {}}
+            onClick={() => openSheet('time')}
+            onKeyDown={event => handleInputKeyDown(event, 'time')}
+            placeholder={timePlaceholder}
+            disabled={isEffectivelyDisabled && !showsDisabledMessage}
+            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            aria-label={resolvedTimeLabel}
+            aria-describedby={ariaDescribedBy}
+            aria-required={isEffectivelyRequired ? 'true' : undefined}
+            aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-busy={isBusy || undefined}
+            aria-expanded={isSheetOpen && activePanel === 'time'}
+            aria-haspopup="dialog"
+            aria-autocomplete="none"
+            autoComplete="off"
+            {...stylex.props(
+              styles.input,
+              styles.touchInput,
+              isEffectivelyDisabled && styles.inputDisabled,
+            )}
           />
-        )}
-        {isBusy && <Spinner size="sm" />}
-        {statusIcon}
+        </div>
         <BottomSheet
           isOpen={isSheetOpen}
-          onOpenChange={setIsSheetOpen}
+          onOpenChange={handleSheetOpenChange}
           label={t('@astryx.dateTimeInput.dialogLabel')}
           height="hug">
           <div {...stylex.props(styles.touchSheetBody)}>{surface}</div>

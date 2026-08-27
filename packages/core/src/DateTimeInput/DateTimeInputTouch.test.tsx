@@ -21,6 +21,7 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest';
+import {useState} from 'react';
 import {readFileSync} from 'node:fs';
 import {render, screen, fireEvent, within} from '@testing-library/react';
 import {DateTimeInput} from './DateTimeInput';
@@ -68,13 +69,47 @@ function withMonthLayout<T>(fn: () => T): T {
   }
 }
 
-function openSheet(): HTMLElement {
-  const field = screen.getByRole('combobox');
+function dateField(label = 'Meeting'): HTMLElement {
+  return screen.getByRole('combobox', {name: label});
+}
+
+function timeField(label = 'Meeting time'): HTMLElement {
+  return screen.getByRole('combobox', {name: label});
+}
+
+function dateSegment(): HTMLElement {
+  const segment = document.querySelector(
+    '.astryx-date-time-input-date-segment',
+  );
+  if (!(segment instanceof HTMLElement)) {
+    throw new Error('date segment not found');
+  }
+  return segment;
+}
+
+function timeSegment(): HTMLElement {
+  const segment = document.querySelector(
+    '.astryx-date-time-input-time-segment',
+  );
+  if (!(segment instanceof HTMLElement)) {
+    throw new Error('time segment not found');
+  }
+  return segment;
+}
+
+function openDateSheet(label = 'Meeting'): HTMLElement {
+  const field = dateField(label);
   fireEvent.click(field);
   return field;
 }
 
-function openTimePanel(): void {
+function openTimeSheet(label = 'Meeting time'): HTMLElement {
+  const field = timeField(label);
+  fireEvent.click(field);
+  return field;
+}
+
+function switchToTimePanel(): void {
   fireEvent.click(screen.getByRole('radio', {name: 'Time'}));
 }
 
@@ -83,6 +118,17 @@ function optionIn(listName: string, optionName: string): HTMLElement {
     'option',
     {name: optionName},
   );
+}
+
+function ControlledDateTimeInput({
+  initialValue,
+}: {
+  initialValue?: ISODateTimeString;
+}) {
+  const [value, setValue] = useState<ISODateTimeString | undefined>(
+    initialValue,
+  );
+  return <DateTimeInput label="Meeting" value={value} onChange={setValue} />;
 }
 
 beforeAll(() => {
@@ -120,7 +166,7 @@ describe('DateTimeInput touch surface', () => {
   it('uses the bottom-sheet picker on a coarse pointer', () => {
     withMonthLayout(() => {
       render(<DateTimeInput label="Meeting" onChange={() => {}} />);
-      const field = screen.getByRole('combobox');
+      const field = dateField();
 
       expect(field).toHaveAttribute('readonly');
       expect(field).toHaveAttribute('inputmode', 'none');
@@ -146,12 +192,148 @@ describe('DateTimeInput touch surface', () => {
     expect(screen.getByLabelText('Meeting time')).toBeInTheDocument();
   });
 
+  it('closed touch fields display separate values and placeholders', () => {
+    const {rerender} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} />,
+    );
+    expect(dateField()).toHaveAttribute('placeholder', 'Select a date');
+    expect(timeField()).toHaveAttribute('placeholder', 'Select a time');
+    expect(dateField()).toHaveValue('');
+    expect(timeField()).toHaveValue('');
+
+    rerender(
+      <DateTimeInput
+        label="Meeting"
+        value={'2026-03-15T14:30' as ISODateTimeString}
+        onChange={() => {}}
+      />,
+    );
+    expect(dateField()).toHaveValue('March 15, 2026');
+    expect(timeField()).toHaveValue('2:30 PM');
+    expect(dateField()).not.toHaveValue('March 15, 2026, 2:30 PM');
+  });
+
+  it('uses a custom timePlaceholder on the touch time segment', () => {
+    render(
+      <DateTimeInput
+        label="Meeting"
+        timePlaceholder="Pick a time"
+        onChange={() => {}}
+      />,
+    );
+    expect(timeField()).toHaveAttribute('placeholder', 'Pick a time');
+  });
+
+  it('does not wire focus to reopen the sheet after dismissal', () => {
+    const source = readFileSync(
+      'packages/core/src/DateTimeInput/TouchDateTimeField.tsx',
+      'utf8',
+    );
+    expect(source).not.toContain('onFocus=');
+    expect(source).not.toContain('handleDateFocus');
+    expect(source).not.toContain('handleTimeFocus');
+  });
+
+  it('opens directly to Date from the date segment and calendar icon', () => {
+    render(
+      <DateTimeInput
+        label="Meeting"
+        value={'2026-03-15T09:30' as ISODateTimeString}
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(dateField());
+    expect(screen.getByRole('radio', {name: 'Date'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(dateField()).toHaveAttribute('aria-expanded', 'true');
+    expect(timeField()).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Save date'}));
+    expect(screen.getByRole('radio', {name: 'Time'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Open calendar'}));
+    expect(screen.getByRole('radio', {name: 'Date'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
+  it('opens directly to Time from the time segment and clock affordance with no date', () => {
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    fireEvent.click(timeField());
+    expect(screen.getByRole('radio', {name: 'Time'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(dateField()).toHaveAttribute('aria-expanded', 'false');
+    expect(timeField()).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Open Meeting time'}));
+    expect(screen.getByRole('radio', {name: 'Time'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
+  it('opens from date and time segment padding clicks', () => {
+    render(
+      <DateTimeInput
+        label="Meeting"
+        value={'2026-03-15T09:30' as ISODateTimeString}
+        onChange={() => {}}
+      />,
+    );
+
+    fireEvent.click(dateSegment());
+    expect(screen.getByRole('radio', {name: 'Date'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Save date'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+    fireEvent.click(timeSegment());
+    expect(screen.getByRole('radio', {name: 'Time'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
+  it('keyboard activation opens the corresponding touch panel', () => {
+    render(
+      <DateTimeInput
+        label="Meeting"
+        value={'2026-03-15T09:30' as ISODateTimeString}
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.keyDown(dateField(), {key: 'Enter'});
+    expect(screen.getByRole('radio', {name: 'Date'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Save date'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+    fireEvent.keyDown(timeField(), {key: ' '});
+    expect(screen.getByRole('radio', {name: 'Time'})).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
   it('switches between inert date and time panels with the pill control', () => {
     withMonthLayout(() => {
       const {container} = render(
         <DateTimeInput label="Meeting" onChange={() => {}} />,
       );
-      openSheet();
+      openDateSheet();
 
       const datePanel = container.querySelector(
         '[data-panel="date"]',
@@ -162,13 +344,15 @@ describe('DateTimeInput touch surface', () => {
       expect(datePanel).not.toHaveAttribute('aria-hidden');
       expect(timePanel).toHaveAttribute('aria-hidden', 'true');
 
-      openTimePanel();
+      switchToTimePanel();
       expect(datePanel).toHaveAttribute('aria-hidden', 'true');
       expect(timePanel).not.toHaveAttribute('aria-hidden');
       expect(screen.getByRole('radio', {name: 'Time'})).toHaveAttribute(
         'aria-checked',
         'true',
       );
+      expect(dateField()).toHaveAttribute('aria-expanded', 'false');
+      expect(timeField()).toHaveAttribute('aria-expanded', 'true');
     });
   });
 
@@ -176,7 +360,7 @@ describe('DateTimeInput touch surface', () => {
     const onChange = vi.fn();
     withMonthLayout(() => {
       render(<DateTimeInput label="Meeting" onChange={onChange} />);
-      openSheet();
+      openDateSheet();
 
       fireEvent.click(
         screen.getByRole('button', {name: 'Saturday, March 21, 2026'}),
@@ -194,12 +378,13 @@ describe('DateTimeInput touch surface', () => {
     const onChange = vi.fn();
     withMonthLayout(() => {
       render(<DateTimeInput label="Meeting" onChange={onChange} />);
-      openSheet();
-      openTimePanel();
+      openTimeSheet();
 
       fireEvent.click(optionIn('AM/PM', 'PM'));
       fireEvent.click(optionIn('Hour', '3'));
       fireEvent.click(optionIn('Minute', '45'));
+      expect(timeField()).toHaveValue('3:45 PM');
+      expect(dateField()).toHaveValue('');
       expect(onChange).not.toHaveBeenCalled();
 
       fireEvent.click(screen.getByRole('radio', {name: 'Date'}));
@@ -208,6 +393,59 @@ describe('DateTimeInput touch surface', () => {
       );
       expect(onChange).toHaveBeenCalledWith('2026-03-21T15:45');
     });
+  });
+
+  it('keeps an uncommitted time draft across Date and Time tab switches', () => {
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    openTimeSheet();
+
+    fireEvent.click(optionIn('AM/PM', 'PM'));
+    fireEvent.click(optionIn('Hour', '3'));
+    fireEvent.click(optionIn('Minute', '45'));
+    fireEvent.click(screen.getByRole('radio', {name: 'Date'}));
+    expect(timeField()).toHaveValue('3:45 PM');
+
+    switchToTimePanel();
+    expect(timeField()).toHaveValue('3:45 PM');
+  });
+
+  it('clears an uncommitted time draft when Time Save closes without a date', () => {
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    openTimeSheet();
+
+    fireEvent.click(optionIn('AM/PM', 'PM'));
+    fireEvent.click(optionIn('Hour', '3'));
+    fireEvent.click(optionIn('Minute', '45'));
+    expect(timeField()).toHaveValue('3:45 PM');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+    expect(timeField()).toHaveValue('');
+  });
+
+  it('clears an uncommitted time draft when dismissed with Escape', () => {
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    openTimeSheet();
+
+    fireEvent.click(optionIn('AM/PM', 'PM'));
+    fireEvent.click(optionIn('Hour', '3'));
+    fireEvent.click(optionIn('Minute', '45'));
+    expect(timeField()).toHaveValue('3:45 PM');
+
+    fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
+    expect(timeField()).toHaveValue('');
+  });
+
+  it('clears an uncommitted time draft when dismissed from the scrim', () => {
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    openTimeSheet();
+
+    fireEvent.click(optionIn('AM/PM', 'PM'));
+    fireEvent.click(optionIn('Hour', '3'));
+    fireEvent.click(optionIn('Minute', '45'));
+    expect(timeField()).toHaveValue('3:45 PM');
+
+    fireEvent.click(screen.getByRole('dialog'));
+    expect(timeField()).toHaveValue('');
   });
 
   it('commits 12-hour wheel changes against the controlled date', () => {
@@ -219,8 +457,8 @@ describe('DateTimeInput touch surface', () => {
         onChange={onChange}
       />,
     );
-    openSheet();
-    openTimePanel();
+    openDateSheet();
+    switchToTimePanel();
 
     fireEvent.click(optionIn('Hour', '3'));
     expect(onChange).toHaveBeenCalledWith('2026-03-15T15:30');
@@ -236,8 +474,8 @@ describe('DateTimeInput touch surface', () => {
         onChange={onChange}
       />,
     );
-    openSheet();
-    openTimePanel();
+    openDateSheet();
+    switchToTimePanel();
 
     fireEvent.click(optionIn('Hour', '09'));
     expect(onChange).toHaveBeenCalledWith('2026-03-15T09:30');
@@ -253,8 +491,8 @@ describe('DateTimeInput touch surface', () => {
         onChange={onChange}
       />,
     );
-    openSheet();
-    openTimePanel();
+    openDateSheet();
+    switchToTimePanel();
 
     fireEvent.click(optionIn('Second', '45'));
     expect(onChange).toHaveBeenCalledWith('2026-03-15T14:30:45');
@@ -271,8 +509,8 @@ describe('DateTimeInput touch surface', () => {
         onChange={() => {}}
       />,
     );
-    openSheet();
-    openTimePanel();
+    openDateSheet();
+    switchToTimePanel();
 
     expect(optionIn('Hour', '08')).toHaveAttribute('aria-disabled', 'true');
     expect(optionIn('Hour', '09')).not.toHaveAttribute('aria-disabled');
@@ -282,12 +520,12 @@ describe('DateTimeInput touch surface', () => {
   it('preserves the browsed month when switching Date to Time and back', () => {
     withMonthLayout(() => {
       render(<DateTimeInput label="Meeting" onChange={() => {}} />);
-      openSheet();
+      openDateSheet();
 
       fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
       expect(screen.getByText('April 2026')).toBeInTheDocument();
 
-      openTimePanel();
+      switchToTimePanel();
       fireEvent.click(screen.getByRole('radio', {name: 'Date'}));
       expect(screen.getByText('April 2026')).toBeInTheDocument();
       expect(document.querySelector('[data-scroller="months"]')).not.toBeNull();
@@ -310,6 +548,7 @@ describe('DateTimeInput touch surface', () => {
     };
 
     for (const name of [
+      'touchRow',
       'touchSheetBody',
       'touchSurface',
       'touchPanelStack',
@@ -319,6 +558,9 @@ describe('DateTimeInput touch surface', () => {
       'touchTimeWheels',
     ]) {
       expect(styleBlock(name)).toContain("inlineSize: '100%'");
+      expect(styleBlock(name)).toContain('minInlineSize: 0');
+    }
+    for (const name of ['touchDateWrapper', 'touchTimeWrapper']) {
       expect(styleBlock(name)).toContain('minInlineSize: 0');
     }
   });
@@ -334,12 +576,12 @@ describe('DateTimeInput touch surface', () => {
         changeAction={changeAction}
       />,
     );
-    openSheet();
-    openTimePanel();
+    openDateSheet();
+    switchToTimePanel();
 
     fireEvent.click(optionIn('Hour', '3'));
     expect(onChange).toHaveBeenCalledWith('2026-03-15T15:30');
-    expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
+    expect(dateField()).toHaveAttribute('aria-busy', 'true');
 
     fireEvent.click(optionIn('Minute', '45'));
     expect(onChange).toHaveBeenCalledWith('2026-03-15T15:45');
@@ -356,8 +598,8 @@ describe('DateTimeInput touch surface', () => {
           onChange={onChange}
         />,
       );
-      openSheet();
-      openTimePanel();
+      openDateSheet();
+      switchToTimePanel();
       fireEvent.click(optionIn('Hour', '3'));
 
       fireEvent.click(screen.getByRole('radio', {name: 'Date'}));
@@ -379,7 +621,7 @@ describe('DateTimeInput touch surface', () => {
           onChange={onChange}
         />,
       );
-      openSheet();
+      openDateSheet();
       const disabledDay = screen.getByRole('button', {
         name: 'Saturday, March 21, 2026',
       });
@@ -400,7 +642,7 @@ describe('DateTimeInput touch surface', () => {
           onChange={onChange}
         />,
       );
-      const field = openSheet();
+      const field = openDateSheet();
 
       fireEvent.click(screen.getByRole('button', {name: 'Reset'}));
       expect(onChange).toHaveBeenCalledWith(undefined);
@@ -412,14 +654,139 @@ describe('DateTimeInput touch surface', () => {
     });
   });
 
-  it('Save closes the sheet without changing the value', () => {
+  it('keeps Save date disabled until a valid date exists', () => {
+    withMonthLayout(() => {
+      render(<ControlledDateTimeInput />);
+      openDateSheet();
+      const saveDateButton = screen.getByRole('button', {name: 'Save date'});
+
+      expect(saveDateButton).toBeDisabled();
+      fireEvent.click(saveDateButton);
+      expect(screen.getByRole('radio', {name: 'Date'})).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      expect(timeField()).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('enables Save date after a controlled date selection updates value', () => {
+    vi.useFakeTimers();
+    withMonthLayout(() => {
+      render(<ControlledDateTimeInput />);
+      openDateSheet();
+      const saveDateButton = screen.getByRole('button', {name: 'Save date'});
+      expect(saveDateButton).toBeDisabled();
+
+      fireEvent.click(
+        screen.getByRole('button', {name: 'Saturday, March 21, 2026'}),
+      );
+      expect(dateField()).toHaveValue('March 21, 2026');
+      expect(saveDateButton).not.toBeDisabled();
+
+      fireEvent.click(saveDateButton);
+      expect(dateField()).toHaveAttribute('aria-expanded', 'false');
+      expect(timeField()).toHaveAttribute('aria-expanded', 'true');
+      const timeTab = screen.getByRole('radio', {name: 'Time'});
+      expect(timeTab).toHaveAttribute('aria-checked', 'true');
+
+      vi.runAllTimers();
+      expect(timeTab).toHaveFocus();
+    });
+    vi.useRealTimers();
+  });
+
+  it('disables Save date after Reset clears the controlled date', () => {
+    withMonthLayout(() => {
+      render(
+        <ControlledDateTimeInput
+          initialValue={'2026-03-15T10:00' as ISODateTimeString}
+        />,
+      );
+      openDateSheet();
+      const saveDateButton = screen.getByRole('button', {name: 'Save date'});
+      expect(saveDateButton).not.toBeDisabled();
+
+      fireEvent.click(screen.getByRole('button', {name: 'Reset'}));
+      expect(dateField()).toHaveValue('');
+      expect(saveDateButton).toBeDisabled();
+
+      fireEvent.click(saveDateButton);
+      expect(screen.getByRole('radio', {name: 'Date'})).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      expect(timeField()).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('Save date advances to Time, focuses the Time tab, and does not change the value', () => {
+    vi.useFakeTimers();
     const onChange = vi.fn();
     withMonthLayout(() => {
-      render(<DateTimeInput label="Meeting" onChange={onChange} />);
-      const field = openSheet();
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T10:00' as ISODateTimeString}
+          onChange={onChange}
+        />,
+      );
+      openDateSheet();
+      const timeTab = screen.getByRole('radio', {name: 'Time'});
 
+      fireEvent.click(screen.getByRole('button', {name: 'Save date'}));
+
+      expect(dateField()).toHaveAttribute('aria-expanded', 'false');
+      expect(timeField()).toHaveAttribute('aria-expanded', 'true');
+      expect(timeTab).toHaveAttribute('aria-checked', 'true');
+      expect(document.querySelector('[data-panel="time"]')).not.toHaveAttribute(
+        'aria-hidden',
+      );
+      expect(onChange).not.toHaveBeenCalled();
+
+      vi.runAllTimers();
+      expect(timeTab).toHaveFocus();
+    });
+    vi.useRealTimers();
+  });
+
+  it('Save after keyboard opening does not refocus-reopen the sheet', () => {
+    withMonthLayout(() => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T10:00' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+      const field = dateField();
+      field.focus();
+      fireEvent.keyDown(field, {key: 'Enter'});
+      expect(field).toHaveAttribute('aria-expanded', 'true');
+
+      fireEvent.click(screen.getByRole('button', {name: 'Save date'}));
       fireEvent.click(screen.getByRole('button', {name: 'Save'}));
       expect(field).toHaveAttribute('aria-expanded', 'false');
+      expect(timeField()).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('Time Save closes the sheet without changing the value', () => {
+    const onChange = vi.fn();
+    withMonthLayout(() => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T10:00' as ISODateTimeString}
+          onChange={onChange}
+        />,
+      );
+      openDateSheet();
+      fireEvent.click(screen.getByRole('button', {name: 'Save date'}));
+
+      fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+      expect(dateField()).toHaveAttribute('aria-expanded', 'false');
+      expect(timeField()).toHaveAttribute('aria-expanded', 'false');
       expect(onChange).not.toHaveBeenCalled();
     });
   });
@@ -435,8 +802,8 @@ describe('DateTimeInput touch surface', () => {
         onChange={() => {}}
       />,
     );
-    openSheet();
-    openTimePanel();
+    openDateSheet();
+    switchToTimePanel();
 
     expect(optionIn('Second', '29')).toHaveAttribute('aria-disabled', 'true');
     expect(optionIn('Second', '30')).not.toHaveAttribute('aria-disabled');
@@ -451,9 +818,8 @@ describe('DateTimeInput touch surface', () => {
         onChange={() => {}}
       />,
     );
-    expect(
-      screen.getByDisplayValue('March 15, 2026, 10:00 AM'),
-    ).toBeInTheDocument();
+    expect(dateField()).toHaveValue('March 15, 2026');
+    expect(timeField()).toHaveValue('10:00 AM');
 
     rerender(
       <DateTimeInput
@@ -462,9 +828,8 @@ describe('DateTimeInput touch surface', () => {
         onChange={() => {}}
       />,
     );
-    expect(
-      screen.getByDisplayValue('March 16, 2026, 6:45 PM'),
-    ).toBeInTheDocument();
+    expect(dateField()).toHaveValue('March 16, 2026');
+    expect(timeField()).toHaveValue('6:45 PM');
   });
 
   it('clears the whole datetime and restores focus on the next task', () => {
@@ -478,11 +843,12 @@ describe('DateTimeInput touch surface', () => {
         onChange={onChange}
       />,
     );
-    const field = screen.getByRole('combobox');
+    const field = dateField();
     const focusSpy = vi.spyOn(field, 'focus');
 
     fireEvent.click(screen.getByRole('button', {name: 'Clear Meeting'}));
     expect(onChange).toHaveBeenCalledWith(undefined);
+    expect(field).toHaveAttribute('aria-expanded', 'false');
     expect(focusSpy).not.toHaveBeenCalled();
 
     vi.runAllTimers();
@@ -501,7 +867,7 @@ describe('DateTimeInput touch surface', () => {
         onChange={onChange}
       />,
     );
-    const loadingField = screen.getByRole('combobox');
+    const loadingField = dateField();
     fireEvent.click(loadingField);
     expect(loadingField).toHaveAttribute('aria-expanded', 'false');
     expect(
@@ -516,10 +882,11 @@ describe('DateTimeInput touch surface', () => {
         onChange={onChange}
       />,
     );
-    const field = screen.getByRole('combobox');
+    const field = dateField();
     fireEvent.click(field);
-    openTimePanel();
-    expect(field).toHaveAttribute('aria-expanded', 'true');
+    switchToTimePanel();
+    expect(field).toHaveAttribute('aria-expanded', 'false');
+    expect(timeField()).toHaveAttribute('aria-expanded', 'true');
 
     rerender(
       <DateTimeInput
@@ -534,6 +901,32 @@ describe('DateTimeInput touch surface', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('clicking the pending spinner inside an enabled date segment does not open the sheet', () => {
+    const onChange = vi.fn();
+    const changeAction = vi.fn(async () => new Promise<void>(() => {}));
+    const {container} = render(
+      <DateTimeInput
+        label="Meeting"
+        value={'2026-03-15T14:30' as ISODateTimeString}
+        changeAction={changeAction}
+        onChange={onChange}
+      />,
+    );
+    openTimeSheet();
+    fireEvent.click(optionIn('Minute', '45'));
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+    const spinner = container.querySelector(
+      '.astryx-date-time-input-date-segment .astryx-spinner',
+    ) as HTMLElement;
+    expect(spinner).not.toBeNull();
+    expect(dateField()).not.toBeDisabled();
+
+    fireEvent.click(spinner);
+
+    expect(dateField()).toHaveAttribute('aria-expanded', 'false');
+    expect(timeField()).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('keeps a disabled reason reachable while blocking activation', () => {
     render(
       <DateTimeInput
@@ -543,7 +936,7 @@ describe('DateTimeInput touch surface', () => {
         onChange={() => {}}
       />,
     );
-    const field = screen.getByRole('combobox');
+    const field = dateField();
 
     expect(field).not.toBeDisabled();
     expect(field).toHaveAttribute('aria-disabled', 'true');

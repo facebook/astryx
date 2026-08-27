@@ -146,7 +146,7 @@ export const docs = {
       name: 'timePlaceholder',
       type: 'string',
       description:
-        'Placeholder text shown in the desktop time portion when no time is selected. Ignored on the mobile touch sheet, where the time panel is labelled and uses wheels rather than an empty text input.',
+        'Placeholder text shown in the time portion when no time is selected. On touch, this appears in the closed time segment before a time is chosen.',
       default: "'Select a time'",
     },
     {
@@ -223,7 +223,7 @@ export const docs = {
   },
   usage: {
     description:
-      'DateTimeInput combines date and time selection in one field. On mouse/trackpad devices it uses a calendar popover plus text time input; on coarse-pointer devices it opens a bottom sheet with Date and Time sections, a swipable month calendar, and accessible time wheels. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
+      'DateTimeInput combines date and time selection in one field. On mouse/trackpad devices it uses a calendar popover plus text time input; on coarse-pointer devices the closed control still has separate Date and Time segments, and either segment opens a bottom sheet with Date and Time sections, a swipable month calendar, and accessible time wheels. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [
       {
         guidance: true,
@@ -294,7 +294,7 @@ export const docs = {
         name: 'Time input',
         required: true,
         description:
-          'A text input for entering the time on desktop; accessible hour/minute/second wheels in the mobile bottom sheet.',
+          "A text input for entering the time on desktop; a read-only time segment opening accessible hour/minute/second wheels on touch. The touch Date panel's Save date action advances to Time; the Time panel's Save closes the sheet.",
       },
       {
         name: 'Time options popover',
@@ -322,7 +322,7 @@ export const docsZh = {
   displayName: 'Date Time Input',
   usage: {
     description:
-      'DateTimeInput combines date and time selection in one field. On mouse/trackpad devices it uses a calendar popover plus text time input; on coarse-pointer devices it opens a bottom sheet with Date and Time sections, a swipable month calendar, and accessible time wheels. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
+      'DateTimeInput combines date and time selection in one field. On mouse/trackpad devices it uses a calendar popover plus text time input; on coarse-pointer devices the closed control still has separate Date and Time segments, and either segment opens a bottom sheet with Date and Time sections, a swipable month calendar, and accessible time wheels. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [
       {
         guidance: true,
@@ -476,7 +476,7 @@ export const docsZh = {
       name: 'timePlaceholder',
       type: 'string',
       description:
-        '桌面时间部分未选择时间时显示的占位符文本。在移动触摸面板中会被忽略，时间面板使用标签和滚轮。',
+        '时间部分未选择时间时显示的占位符文本。在触摸设备上，这会显示在未选择时间的闭合时间段中。',
       default: "'Select a time'",
     },
     {
@@ -551,7 +551,7 @@ export const docsDense = {
     'combined date + time picker with calendar popover and time input',
   usage: {
     description:
-      'DateTimeInput combines date and time selection. Desktop uses a calendar popover plus time input; coarse pointers use a bottom sheet with Date/Time sections and time wheels. Use for scheduling, events, deadlines, or any form field needing a datetime.',
+      'DateTimeInput combines date and time selection. Desktop uses a calendar popover plus time input; coarse pointers show separate Date/Time closed segments that open a bottom sheet with matching sections, a Save date step, and final time-wheel Save. Use for scheduling, events, deadlines, or any form field needing a datetime.',
     bestPractices: [
       {
         guidance: true,
@@ -620,7 +620,7 @@ export const docsDense = {
     hasClear: 'Shows clear button when datetime is set',
     placeholder: 'date-portion placeholder when empty',
     timePlaceholder:
-      'desktop time-portion placeholder when empty; ignored on mobile touch sheet',
+      'time-portion placeholder when empty; shown on touch closed time segment',
     timeLabel:
       'accessible label for the time input; defaults to "{label} time"',
     size: 'input control size',

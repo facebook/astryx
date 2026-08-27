@@ -15,7 +15,7 @@ const meta: Meta<typeof DateTimeInput> = {
       description: {
         component:
           'A date-time field that fits the pointer it is used with. On a mouse or trackpad it renders the existing side-by-side date and time inputs: the date half opens a calendar popover, and the time half accepts typed entry plus optional preset times.\n\n' +
-          "Where the primary pointer is a finger (`pointer: coarse`), the same component opens a bottom sheet instead. A segmented Date/Time pill sits at the top of the sheet; Date reuses Astryx's custom swipable month picker and month/year wheels, and Time uses accessible hour/minute/second wheels. The public props are the same on both surfaces.\n\n" +
+          "Where the primary pointer is a finger (`pointer: coarse`), the closed control still renders separate Date and Time segments; tapping either segment opens a bottom sheet directly to the matching section. A segmented Date/Time pill stays at the top of the sheet for switching; Date reuses Astryx's custom swipable month picker and month/year wheels, its Save date action advances to Time, and Time uses accessible hour/minute/second wheels with the final Save action. The public props are the same on both surfaces.\n\n" +
           '**Seeing the touch surface:** open any story on a phone/tablet or in device emulation reporting a coarse pointer. No separate story is needed because the same component chooses the surface at runtime.',
       },
     },
