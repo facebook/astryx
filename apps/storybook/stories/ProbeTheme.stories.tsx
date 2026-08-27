@@ -67,7 +67,9 @@ function AxisCard({
   return (
     <Card>
       <div {...stylex.props(styles.axisCard)}>
-        <Heading level={3}>{title}</Heading>
+        <Heading level={3} accessibilityLevel={2}>
+          {title}
+        </Heading>
         {children}
       </div>
     </Card>
