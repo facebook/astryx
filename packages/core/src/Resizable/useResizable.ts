@@ -4,7 +4,8 @@
 
 /**
  * @file useResizable.ts
- * @input Resize configuration (defaultSize, minSizePx, maxSizePx, collapsible, snaps)
+ * @input Resize configuration (defaultSize, minSizePx, maxSizePx, snaps) and
+ *   collapse configuration (collapsible, defaultIsCollapsed, isCollapsed)
  * @output Hook return: size, isCollapsed, collapse/expand/resize methods, props for handle
  * @position Public hook; consumed by layout components via `resizable` prop
  */
@@ -44,15 +45,33 @@ export interface ResizableConfig {
   minWidth?: number;
   /** Maximum width in pixels. @default 480 */
   maxWidth?: number;
-  /** localStorage key for persisting width. */
+  /** localStorage key for persisting width and collapse state. */
   autoSaveId?: string;
   /** Called when the width changes (on drag end). */
   onWidthChange?: (width: number) => void;
+  /** Start collapsed (uncontrolled). A persisted entry wins over this. */
+  defaultIsCollapsed?: boolean;
+  /** Controlled collapse state. Pair with `onCollapseChange`. */
+  isCollapsed?: boolean;
+  /** Called when collapse state changes (via drag or programmatic). */
+  onCollapseChange?: (isCollapsed: boolean) => void;
 }
 
 export interface UseResizableSingleConfig extends ResizableRegionConfig {
   /** Unique key for localStorage persistence. */
   autoSaveId?: string;
+  /**
+   * Initial collapse state (uncontrolled). A persisted entry wins over it,
+   * so a restored session keeps the state the user left behind.
+   * Only honored when `collapsible` is true.
+   */
+  defaultIsCollapsed?: boolean;
+  /**
+   * Controlled collapse state. When set, the caller owns collapse:
+   * `collapse()`, `expand()` and a drag past the collapse threshold report
+   * through `onCollapseChange` instead of changing state here.
+   */
+  isCollapsed?: boolean;
   /** Called when size changes during drag. */
   onSizeChange?: (size: number) => void;
   /** Called when collapse state changes (via drag or programmatic). */
@@ -138,16 +157,55 @@ function clampSize(
   return clamped;
 }
 
-function loadPersistedSize(key: string): number | null {
+interface PersistedResizableState {
+  /** Expanded size in px, or null when the entry carries no usable size. */
+  size: number | null;
+  /**
+   * Collapse state when the entry was written, or null when the entry
+   * predates collapse persistence and says nothing about it.
+   */
+  isCollapsed: boolean | null;
+}
+
+/**
+ * Reads a persisted entry. Three formats exist in storage:
+ * - `{size, isCollapsed}` — the current format; `size` is the expanded size,
+ *   so the pre-collapse width survives a collapsed session
+ * - a plain non-zero number — a legacy width-only entry that never recorded
+ *   collapse, so `isCollapsed` is null (unknown)
+ * - a plain `0` — written by legacy collapse, which restored the region as a
+ *   zero-width expanded panel (#4790); read as "collapsed, no saved size"
+ */
+function loadPersistedState(key: string): PersistedResizableState | null {
   if (typeof window === 'undefined') {
     return null;
   }
   try {
     const raw = localStorage.getItem(STORAGE_PREFIX + key);
-    if (raw != null) {
-      const parsed = JSON.parse(raw);
-      if (typeof parsed === 'number') {
-        return parsed;
+    if (raw == null) {
+      return null;
+    }
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed === 'number') {
+      if (!Number.isFinite(parsed)) {
+        return null;
+      }
+      return parsed === 0
+        ? {size: null, isCollapsed: true}
+        : {size: parsed, isCollapsed: null};
+    }
+    if (typeof parsed === 'object' && parsed != null) {
+      const {size, isCollapsed} = parsed as {
+        size?: unknown;
+        isCollapsed?: unknown;
+      };
+      const hasSize =
+        typeof size === 'number' && Number.isFinite(size) && size > 0;
+      if (hasSize || isCollapsed === true) {
+        return {
+          size: hasSize ? size : null,
+          isCollapsed: isCollapsed === true,
+        };
       }
     }
   } catch {
@@ -156,12 +214,12 @@ function loadPersistedSize(key: string): number | null {
   return null;
 }
 
-function persistSize(key: string, size: number): void {
+function persistState(key: string, state: PersistedResizableState): void {
   if (typeof window === 'undefined') {
     return;
   }
   try {
-    localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(size));
+    localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(state));
   } catch {
     /* ignore */
   }
@@ -197,85 +255,111 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     collapsedSize = DEFAULT_COLLAPSED_SIZE,
     snaps = [],
     autoSaveId,
+    defaultIsCollapsed,
+    isCollapsed: controlledIsCollapsed,
     onSizeChange,
     onCollapseChange,
   } = config;
 
   const resolvedDefault = resolveDefaultSize(defaultSize);
-  const persisted = autoSaveId ? loadPersistedSize(autoSaveId) : null;
-  const initial = persisted ?? resolvedDefault;
+  const persisted = autoSaveId ? loadPersistedState(autoSaveId) : null;
+  const initial = persisted?.size ?? resolvedDefault;
 
+  // `size` is always the *expanded* size: collapse hides it behind the
+  // isCollapsed gate below rather than zeroing it, so the width the user had
+  // survives a collapse, a persist round-trip, and an expand.
   const [size, setSize] = useState(() =>
     clampSize(initial, minSizePx, maxSizePx, snaps),
   );
-  const [isCollapsed, setIsCollapsed] = useState(
-    () => persisted === 0 && collapsible,
+  const [uncontrolledIsCollapsed, setUncontrolledIsCollapsed] = useState(
+    () => persisted?.isCollapsed ?? defaultIsCollapsed ?? false,
   );
-  const preCollapseSizeRef = useRef(size);
+
+  const isControlled = controlledIsCollapsed !== undefined;
+  const isCollapsed =
+    collapsible &&
+    (isControlled ? controlledIsCollapsed : uncontrolledIsCollapsed);
   const dragStartSizeRef = useRef(size);
+
+  // Mirrors isCollapsed so the callbacks below read the live value instead of
+  // the one their last render captured. Two cases reach them from a stale
+  // closure: two imperative calls in one tick, and a drag — ResizeHandle
+  // registers its pointermove listener once at pointer down, so a whole
+  // gesture runs against one props snapshot.
+  const isCollapsedRef = useRef(isCollapsed);
+  isCollapsedRef.current = isCollapsed;
+
+  // Controlled callers own the state; collapse() and a drag past the
+  // threshold report through onCollapseChange and change nothing here.
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      if (!isControlled) {
+        isCollapsedRef.current = value;
+        setUncontrolledIsCollapsed(value);
+      }
+    },
+    [isControlled],
+  );
 
   useEffect(() => {
     if (autoSaveId) {
-      persistSize(autoSaveId, isCollapsed ? 0 : size);
+      persistState(autoSaveId, {size, isCollapsed});
     }
   }, [size, isCollapsed, autoSaveId]);
 
   const collapse = useCallback(() => {
-    if (!collapsible) {
+    // The already-collapsed guard keeps a repeated call from re-notifying a
+    // transition that already happened.
+    if (!collapsible || isCollapsedRef.current) {
       return;
     }
-    preCollapseSizeRef.current = size;
-    setIsCollapsed(true);
-    setSize(0);
+    setCollapsed(true);
     onCollapseChange?.(true);
     onSizeChange?.(0);
-  }, [collapsible, size, onCollapseChange, onSizeChange]);
+  }, [collapsible, setCollapsed, onCollapseChange, onSizeChange]);
 
   const expand = useCallback(() => {
-    setIsCollapsed(false);
-    const restored = preCollapseSizeRef.current || resolvedDefault;
-    const newSize = clampSize(restored, minSizePx, maxSizePx, snaps);
-    setSize(newSize);
-    onCollapseChange?.(false);
-    onSizeChange?.(newSize);
-  }, [
-    resolvedDefault,
-    minSizePx,
-    maxSizePx,
-    snaps,
-    onCollapseChange,
-    onSizeChange,
-  ]);
+    const wasCollapsed = isCollapsedRef.current;
+    setCollapsed(false);
+    if (wasCollapsed) {
+      onCollapseChange?.(false);
+    }
+    onSizeChange?.(size);
+  }, [setCollapsed, size, onCollapseChange, onSizeChange]);
 
   const resize = useCallback(
     (newSize: number) => {
       const clamped = clampSize(newSize, minSizePx, maxSizePx, snaps);
+      const wasCollapsed = isCollapsedRef.current;
       setSize(clamped);
-      setIsCollapsed(false);
+      setCollapsed(false);
+      // Resizing out of the collapsed state is an implicit expand — notify
+      // like the drag path does when it crosses back over the threshold.
+      if (wasCollapsed) {
+        onCollapseChange?.(false);
+      }
       onSizeChange?.(clamped);
     },
-    [minSizePx, maxSizePx, snaps, onSizeChange],
+    [minSizePx, maxSizePx, snaps, setCollapsed, onCollapseChange, onSizeChange],
   );
 
   const onResizeStart = useCallback(() => {
-    dragStartSizeRef.current = isCollapsed ? 0 : size;
-  }, [size, isCollapsed]);
+    dragStartSizeRef.current = isCollapsedRef.current ? 0 : size;
+  }, [size]);
 
   const onResizeMove = useCallback(
     (delta: number) => {
       const raw = dragStartSizeRef.current + delta;
       if (collapsible && raw < collapsedSize) {
-        if (!isCollapsed) {
-          preCollapseSizeRef.current = size;
+        if (!isCollapsedRef.current) {
+          setCollapsed(true);
           onCollapseChange?.(true);
+          onSizeChange?.(0);
         }
-        setIsCollapsed(true);
-        setSize(0);
-        onSizeChange?.(0);
         return;
       }
-      if (isCollapsed && raw >= collapsedSize) {
-        setIsCollapsed(false);
+      if (isCollapsedRef.current && raw >= collapsedSize) {
+        setCollapsed(false);
         onCollapseChange?.(false);
       }
       const clamped = clampSize(raw, minSizePx, maxSizePx, snaps);
@@ -285,8 +369,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     [
       collapsible,
       collapsedSize,
-      isCollapsed,
-      size,
+      setCollapsed,
       minSizePx,
       maxSizePx,
       snaps,

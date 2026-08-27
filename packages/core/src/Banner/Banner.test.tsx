@@ -15,6 +15,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Banner} from './Banner';
 import {registerIcons, resetIcons} from '../Icon';
+import {InternationalizationProvider} from '../i18n';
 
 describe('Banner', () => {
   afterEach(() => {
@@ -97,7 +98,9 @@ describe('Banner', () => {
 
   it('renders dismiss button when isDismissable', () => {
     render(<Banner status="info" title="Dismissable" isDismissable />);
-    expect(screen.getByRole('button', {name: 'Dismiss'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Dismiss Dismissable'}),
+    ).toBeInTheDocument();
   });
 
   it('calls onDismiss when dismiss button is clicked', async () => {
@@ -111,7 +114,7 @@ describe('Banner', () => {
         onDismiss={onDismiss}
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(screen.getByRole('button', {name: 'Dismiss Dismissable'}));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
@@ -126,7 +129,9 @@ describe('Banner', () => {
       />,
     );
     expect(screen.getByTestId('banner')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(
+      screen.getByRole('button', {name: 'Dismiss Self Dismissing'}),
+    );
     expect(screen.queryByTestId('banner')).not.toBeInTheDocument();
   });
 
@@ -142,16 +147,14 @@ describe('Banner', () => {
         data-testid="banner"
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(screen.getByRole('button', {name: 'Dismiss Dismissable'}));
     expect(screen.queryByTestId('banner')).not.toBeInTheDocument();
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   it('does not render dismiss button when isDismissable is false', () => {
     render(<Banner status="info" title="Not Dismissable" />);
-    expect(
-      screen.queryByRole('button', {name: 'Dismiss'}),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /^Dismiss/})).toBeNull();
   });
 
   it('renders endContent', () => {
@@ -235,7 +238,9 @@ describe('Banner', () => {
     );
     // No toggle exists, so nothing should carry disclosure state, and the
     // region needs no id for a button to point at.
-    const dismiss = screen.getByRole('button', {name: 'Dismiss'});
+    const dismiss = screen.getByRole('button', {
+      name: 'Dismiss Plain content',
+    });
     expect(dismiss).not.toHaveAttribute('aria-expanded');
     expect(dismiss).not.toHaveAttribute('aria-controls');
     expect(
@@ -343,7 +348,7 @@ describe('Banner', () => {
       b => b.getAttribute('aria-label') || b.textContent,
     );
     const expandIndex = buttonNames.indexOf('Expand');
-    const dismissIndex = buttonNames.indexOf('Dismiss');
+    const dismissIndex = buttonNames.indexOf('Dismiss Order Test');
     expect(expandIndex).toBeLessThan(dismissIndex);
   });
 
@@ -548,7 +553,9 @@ describe('Banner', () => {
       before.focus();
 
       await user.tab();
-      expect(screen.getByRole('button', {name: 'Dismiss'})).toHaveFocus();
+      expect(
+        screen.getByRole('button', {name: 'Dismiss Heads up'}),
+      ).toHaveFocus();
 
       await user.keyboard('{Enter}');
 
@@ -565,7 +572,7 @@ describe('Banner', () => {
           <Banner status="info" title="Heads up" isDismissable />
         </>,
       );
-      await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+      await user.click(screen.getByRole('button', {name: 'Dismiss Heads up'}));
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
   });
@@ -648,6 +655,64 @@ describe('Banner', () => {
     it('leaves it free for an endContent that renders nothing', () => {
       const {textColumn} = renderBanner(false);
       expect(getComputedStyle(textColumn).flexBasis).not.toBe('8rem');
+    });
+  });
+
+  describe('dismiss control naming', () => {
+    it('names stacked string-title banners distinctly', () => {
+      render(
+        <>
+          <Banner status="error" title="Upload invoice failed" isDismissable />
+          <Banner status="error" title="Delete report failed" isDismissable />
+        </>,
+      );
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
+        'Dismiss Upload invoice failed',
+        'Dismiss Delete report failed',
+      ]);
+      for (const button of buttons) {
+        expect(button).toHaveAccessibleDescription('Dismiss');
+      }
+    });
+
+    it('keeps the bare name and tooltip for a rich title', () => {
+      render(
+        <Banner status="info" title={<span>Rich title</span>} isDismissable />,
+      );
+      const button = screen.getByRole('button', {name: 'Dismiss'});
+      expect(button).toHaveAccessibleDescription('Dismiss');
+    });
+
+    it('uses a translated dismissLabel for a rich title and its tooltip', () => {
+      render(
+        <Banner
+          status="info"
+          title={<span>Wartungshinweis</span>}
+          isDismissable
+          dismissLabel="Wartungshinweis schließen"
+        />,
+      );
+      const button = screen.getByRole('button', {
+        name: 'Wartungshinweis schließen',
+      });
+      expect(button).toHaveAccessibleDescription('Wartungshinweis schließen');
+    });
+
+    it('keeps a translated verb when the titled message falls back to English', () => {
+      render(
+        <InternationalizationProvider
+          locale="de-DE"
+          overrides={{
+            'de-DE': {'@astryx.banner.dismiss': 'Schließen'},
+          }}>
+          <Banner status="info" title="Wartungshinweis" isDismissable />
+        </InternationalizationProvider>,
+      );
+      const button = screen.getByRole('button', {
+        name: 'Schließen Wartungshinweis',
+      });
+      expect(button).toHaveAccessibleDescription('Schließen');
     });
   });
 });
