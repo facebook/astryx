@@ -111,6 +111,20 @@ function componentOf(entry) {
 }
 
 /**
+ * Stable visual baselines are package-scoped. Storybook titles carry the
+ * package as their first segment (`Core/Button`, `Lab/Drawer`), so filtering
+ * here keeps canary-only stories out of both the plan and the target coverage
+ * analysis. `*` is an explicit audit override, never the release default.
+ *
+ * @param {ReturnType<typeof readStoryIndex>} stories
+ * @param {string[]} packages
+ */
+export function storiesInPackages(stories, packages) {
+  if (packages.includes('*')) return stories;
+  return stories.filter(story => packages.includes(story.title.split('/')[0]));
+}
+
+/**
  * One story per component: the first match against REPRESENTATIVE_NAMES, else
  * the first story in index order (which is source order, so it is stable).
  * @param {ReturnType<typeof readStoryIndex>} stories
@@ -147,6 +161,7 @@ function rank(name) {
  * @param {string} options.defaultTheme
  * @param {string[]} options.tiers - any of 'theme-matrix', 'surface', 'full', 'component', 'probe'
  * @param {string[]} [options.components] - for the 'component' tier: the components to cover
+ * @param {string[]} [options.matrixThemes] - restrict theme-matrix to changed shipped themes
  * @param {string} [options.probeTheme] - name of the generated coverage theme
  * @returns {Shot[]}
  */
@@ -158,6 +173,7 @@ export function buildPlan({
   defaultTheme,
   tiers,
   components = [],
+  matrixThemes = [],
   probeTheme = 'probe',
 }) {
   /** @type {Map<string, Shot>} */
@@ -211,7 +227,17 @@ export function buildPlan({
   }
 
   if (tiers.includes('theme-matrix')) {
-    for (const shot of themeMatrix({stories, targets, themeOverrides, observations})) {
+    const matrixOverrides = matrixThemes.length
+      ? Object.fromEntries(
+          Object.entries(themeOverrides).filter(([theme]) => matrixThemes.includes(theme)),
+        )
+      : themeOverrides;
+    for (const shot of themeMatrix({
+      stories,
+      targets,
+      themeOverrides: matrixOverrides,
+      observations,
+    })) {
       add(shot.shot, shot.reason);
     }
   }

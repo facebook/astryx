@@ -68,6 +68,29 @@ open .visual-run/report/index.html
 
 Exit codes are the contract: `0` pass, `1` crashed, `2` changed.
 
+### PR scope follows the release channel
+
+`pr-visual` compares only the stable published visual surface:
+
+- Core component change → every story of that component, light/dark, in every
+  shipped theme that styles it.
+- Published theme change → that theme's relevant target/story matrix.
+- Shared stable theming/token infrastructure → the full plan, which declines
+  visibly at the 240-shot review budget and defers to the daily gate.
+- A package with `package.json.astryx.canaryOnly: true` → no visual comparison,
+  no visual baseline, no capture-only smoke job. It still typechecks, unit-tests,
+  builds Storybook, and publishes to canary. Experimental pixels are not a
+  stable release decision and should not create a red check people learn to
+  ignore.
+
+The daily gate uses the same boundary: `stableStoryPackages` in
+`visual-gate.config.json` is currently `["Core"]`, so Lab/canary stories cannot
+hold a stable release. Pass `--story-packages '*'` only for an explicit
+non-release audit.
+
+`.github/scripts/visual-scope.mjs` owns that classification from package
+metadata; workflow YAML does not hard-code today's package names.
+
 `--sample 24` takes an even slice of the plan for a quick smoke test.
 `--observations <file>` caches the scout pass between runs.
 
