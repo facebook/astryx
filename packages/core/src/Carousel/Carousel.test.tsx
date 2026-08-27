@@ -672,6 +672,52 @@ describe('Carousel', () => {
       expect(document.activeElement).not.toBe(document.body);
     });
 
+    it('does not pull focus back after the person has left the button', () => {
+      render(
+        <Carousel aria-label="Gallery">
+          <div>Item 1</div>
+          <div>Item 2</div>
+          <div>Item 3</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      makeScrollable(scroller, 400);
+
+      // Touch an arrow, then leave it without pressing it. Landing on <body> is
+      // the case that matters: focus somewhere else is already ignored, so a
+      // stale tracker only bites when there is nothing else holding focus.
+      const next = screen.getByLabelText('Scroll right');
+      next.focus();
+      next.blur();
+      expect(document.activeElement).toBe(document.body);
+
+      // The carousel reaches the edge on its own: a swipe, a resize, anything
+      // that is not this person. Their focus is not the carousel's to take.
+      scroller.scrollLeft = 200;
+      fireEvent.scroll(scroller);
+
+      expect(screen.getByLabelText('Scroll right')).toBeDisabled();
+      expect(document.activeElement).toBe(document.body);
+    });
+
+    it('still hands off when the disable is what blurred the button', async () => {
+      const user = userEvent.setup();
+      render(
+        <Carousel aria-label="Gallery">
+          <div>Item 1</div>
+          <div>Item 2</div>
+          <div>Item 3</div>
+        </Carousel>,
+      );
+      makeScrollable(getScroller(), 400);
+
+      // The blur the commit causes must not read as the person leaving, or the
+      // hand-off never fires at all.
+      await user.click(screen.getByLabelText('Scroll right'));
+
+      expect(document.activeElement).toBe(screen.getByLabelText('Scroll left'));
+    });
+
     it('does not move focus on a press that leaves the direction available', async () => {
       const user = userEvent.setup();
       render(

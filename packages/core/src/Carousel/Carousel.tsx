@@ -656,6 +656,18 @@ export function Carousel({
                 onFocus={() => {
                   focusedNavRef.current = 'start';
                 }}
+                onBlur={event => {
+                  // Forget the person once they leave. React sets `disabled`
+                  // before the browser blurs the button, so the blur the commit
+                  // caused is distinguishable from the one they caused, and
+                  // only theirs clears the tracker. Without this the tracker
+                  // outlives them and a later edge -- reached by a swipe, a
+                  // resize, anything -- pulls focus back onto a control they
+                  // did not choose.
+                  if (!event.currentTarget.disabled) {
+                    focusedNavRef.current = null;
+                  }
+                }}
                 onClick={() => scrollBy(-1)}
                 xstyle={styles.buttonRadiusOverride}
               />
@@ -684,6 +696,18 @@ export function Carousel({
                 isDisabled={!canScrollEnd}
                 onFocus={() => {
                   focusedNavRef.current = 'end';
+                }}
+                onBlur={event => {
+                  // Forget the person once they leave. React sets `disabled`
+                  // before the browser blurs the button, so the blur the commit
+                  // caused is distinguishable from the one they caused, and
+                  // only theirs clears the tracker. Without this the tracker
+                  // outlives them and a later edge -- reached by a swipe, a
+                  // resize, anything -- pulls focus back onto a control they
+                  // did not choose.
+                  if (!event.currentTarget.disabled) {
+                    focusedNavRef.current = null;
+                  }
                 }}
                 onClick={() => scrollBy(1)}
                 xstyle={styles.buttonRadiusOverride}
