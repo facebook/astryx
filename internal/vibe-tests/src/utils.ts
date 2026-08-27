@@ -7,6 +7,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as http from 'node:http';
 import * as crypto from 'node:crypto';
 import type {TestPrompt, TestSet} from './types.js';
 
@@ -200,6 +201,130 @@ export function timestamp(): string {
 }
 
 /**
+ * Serve a directory of static files on a random port.
+ * Returns the base URL and a close function.
+ * Shared by screenshot-previews.ts and axe-previews.ts.
+ */
+export function serveStatic(
+  dir: string,
+): Promise<{url: string; close: () => Promise<void>}> {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer((req, res) => {
+      const urlPath = decodeURIComponent(req.url || '/');
+      const filePath = path.join(dir, urlPath);
+
+      if (!fs.existsSync(filePath)) {
+        res.writeHead(404);
+        res.end('Not found');
+        return;
+      }
+
+      const ext = path.extname(filePath).toLowerCase();
+      const contentTypes: Record<string, string> = {
+        '.html': 'text/html',
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        '.png': 'image/png',
+        '.svg': 'image/svg+xml',
+        '.json': 'application/json',
+      };
+
+      const content = fs.readFileSync(filePath);
+      res.writeHead(200, {'Content-Type': contentTypes[ext] || 'text/plain'});
+      res.end(content);
+    });
+
+    server.listen(0, '127.0.0.1', () => {
+      const addr = server.address();
+      if (!addr || typeof addr === 'string') {
+        reject(new Error('Failed to get server address'));
+        return;
+      }
+      resolve({
+        url: `http://127.0.0.1:${addr.port}`,
+        close: () =>
+          new Promise<void>(r => {
+            server.close(() => r());
+          }),
+      });
+    });
+
+    server.on('error', reject);
+  });
+}
+
+/** One built preview HTML file discovered in an iteration directory. */
+export interface PreviewFile {
+  promptId: string;
+  target: string;
+  /** Absolute path to the preview HTML file */
+  path: string;
+}
+
+/**
+ * Enumerate built preview HTML files for an iteration — from
+ * previews/manifest.json when present, otherwise by scanning for .html
+ * files. Entries whose files are missing on disk are skipped.
+ * Shared by screenshot-previews.ts and axe-previews.ts.
+ */
+export function enumeratePreviews(
+  iterDir: string,
+  prompts?: string[],
+): PreviewFile[] {
+  const previewsDir = path.join(iterDir, 'previews');
+  const previewFiles: PreviewFile[] = [];
+
+  const manifestPath = path.join(previewsDir, 'manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    for (const [promptId, targets] of Object.entries(manifest)) {
+      if (prompts && !prompts.includes(promptId)) {
+        continue;
+      }
+      // A malformed entry (string instead of target map) would otherwise
+      // iterate as characters and leak garbage paths
+      if (typeof targets !== 'object' || targets == null) {
+        continue;
+      }
+      for (const [target, relPath] of Object.entries(
+        targets as Record<string, string>,
+      )) {
+        const fullPath = path.join(iterDir, relPath);
+        if (fs.existsSync(fullPath)) {
+          previewFiles.push({promptId, target, path: fullPath});
+        }
+      }
+    }
+    return previewFiles;
+  }
+
+  // No manifest — scan for HTML files directly
+  const scanDir = (dir: string) => {
+    if (!fs.existsSync(dir)) {
+      return;
+    }
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      if (entry.isDirectory()) {
+        scanDir(path.join(dir, entry.name));
+      } else if (entry.name.endsWith('.html')) {
+        const fullPath = path.join(dir, entry.name);
+        const promptId = path.basename(path.dirname(fullPath));
+        if (prompts && !prompts.includes(promptId)) {
+          continue;
+        }
+        previewFiles.push({
+          promptId,
+          target: path.basename(entry.name, '.html'),
+          path: fullPath,
+        });
+      }
+    }
+  };
+  scanDir(previewsDir);
+  return previewFiles;
+}
+
+/**
  * Result file entry from the JSON evaluation format.
  * Each JSON file is an array of these (one per trajectory depth).
  */
@@ -235,8 +360,7 @@ export function ensureTsxFiles(codeDir: string): string[] {
 
     try {
       const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as
-        | JsonResultEntry
-        | JsonResultEntry[];
+        JsonResultEntry | JsonResultEntry[];
 
       // Find the depth-0 entry (initial generation, before follow-ups)
       const entries = Array.isArray(data) ? data : [data];

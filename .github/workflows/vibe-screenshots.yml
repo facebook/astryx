@@ -93,6 +93,19 @@ jobs:
           npx tsx src/screenshot-previews.ts \
             --iterations "${{ github.event.inputs.iterations }}"
 
+      - name: Axe-scan all previews
+        run: |
+          cd internal/vibe-tests
+          npx tsx src/axe-previews.ts \
+            --iterations "${{ github.event.inputs.iterations }}"
+
+      - name: Upload axe results
+        uses: actions/upload-artifact@v7
+        with:
+          name: axe-results
+          path: internal/vibe-tests/results/*/axe-results.json
+          retention-days: 90
+
       - name: Upload screenshots
         uses: actions/upload-artifact@v7
         with:
