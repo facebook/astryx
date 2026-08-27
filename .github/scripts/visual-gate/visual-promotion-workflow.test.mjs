@@ -21,6 +21,7 @@ const SCRIPT = path.join(
   'visual-gate',
   'visual-acceptance.mjs',
 );
+const GATE = path.join(ROOT, '.github', 'scripts', 'visual-gate', 'gate.mjs');
 const WORKFLOW = path.join(
   ROOT,
   '.github',
@@ -81,12 +82,16 @@ function runAcceptance(command, flags) {
   return execFileSync(process.execPath, args, {encoding: 'utf8'});
 }
 
-function workflowStepScript(name) {
+function workflowStep(name) {
   const workflow = fs.readFileSync(WORKFLOW, 'utf8');
   const start = workflow.indexOf(`      - name: ${name}\n`);
   expect(start).toBeGreaterThan(-1);
   const next = workflow.indexOf('\n      - name:', start + 1);
-  const step = workflow.slice(start, next === -1 ? undefined : next);
+  return workflow.slice(start, next === -1 ? undefined : next);
+}
+
+function workflowStepScript(name) {
+  const step = workflowStep(name);
   const runMarker = '        run: |\n';
   const runStart = step.indexOf(runMarker);
   expect(runStart).toBeGreaterThan(-1);
@@ -249,7 +254,7 @@ function makeFixture(mutate) {
     shots: {[KEY]: {...SHOT, sha256: digest(after), width: 2, height: 2}},
   });
 
-  mutate?.({acceptance, baselineShot, pages});
+  mutate?.({acceptance, baselineShot, capture, pages});
   git(pages, 'add', '.');
   git(pages, 'commit', '-qm', 'record acceptance');
 
@@ -299,6 +304,69 @@ function runPromotion({
 }
 
 describe('visual acceptance promotion workflow', () => {
+  it('captures the resolved historical merge when workflow main differs', () => {
+    const currentMain = 'f'.repeat(40);
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'visual-promotion-capture-identity-'),
+    );
+    roots.push(root);
+    const plan = path.join(root, 'plan.json');
+    const output = path.join(root, 'output');
+    writeJSON(plan, [{...SHOT, key: KEY}]);
+
+    const step = workflowStep('Recapture exactly the accepted shots');
+    const gate = fs.readFileSync(GATE, 'utf8');
+    expect(step).toContain(
+      'ASTRYX_VISUAL_SHA: ${{ needs.resolve.outputs.merge_sha }}',
+    );
+    expect(step).not.toContain('GITHUB_SHA:');
+    const manifestContext = gate.slice(
+      gate.indexOf('manifest.context = {'),
+      gate.indexOf('fs.writeFileSync(', gate.indexOf('manifest.context = {')),
+    );
+    expect(manifestContext).toContain('...captureIdentity(),');
+
+    execFileSync(
+      process.execPath,
+      [GATE, 'check', '--plan-file', plan, '--max-shots', '0', '--out', output],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          GITHUB_SHA: currentMain,
+          ASTRYX_VISUAL_SHA: MERGE,
+        },
+      },
+    );
+    expect(
+      JSON.parse(fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'))
+        .context.sha,
+    ).toBe(MERGE);
+  });
+
+  it('shares the merge-bound recapture between recovery and normal close', () => {
+    const workflow = fs.readFileSync(WORKFLOW, 'utf8');
+    const capture = workflowStep('Recapture exactly the accepted shots');
+    const checkout = workflowStep('Checkout the resolved merged result');
+
+    expect(workflow).toContain('workflow_dispatch:');
+    expect(workflow).toContain('types: [closed]');
+    expect(
+      workflow.match(/- name: Recapture exactly the accepted shots/g),
+    ).toHaveLength(1);
+    expect(capture).toContain(
+      'ASTRYX_VISUAL_SHA: ${{ needs.resolve.outputs.merge_sha }}',
+    );
+    expect(capture).toContain(
+      '--storybook-dir .visual-merged-source/apps/storybook/dist',
+    );
+    expect(capture).toContain(
+      'node .github/scripts/visual-gate/gate.mjs capture',
+    );
+    expect(checkout).toContain('ref: ${{ needs.resolve.outputs.merge_sha }}');
+    expect(checkout).toContain('allow-unsafe-pr-checkout: true');
+  });
+
   it('retries from the immutable record after cleanup wins the first push race', () => {
     const fixture = makeFixture();
     const result = runPromotion({fixture, race: true});
@@ -408,6 +476,16 @@ describe('visual acceptance promotion workflow', () => {
       },
       latest: {id: 124, run_attempt: 1, status: 'completed'},
       error: /record identity does not match this merged head/,
+    },
+    {
+      name: 'the wrong merged capture identity',
+      mutate: ({capture}) => {
+        const manifestFile = path.join(capture, 'manifest.json');
+        const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+        manifest.context.sha = 'e'.repeat(40);
+        writeJSON(manifestFile, manifest);
+      },
+      error: /capture was produced for/,
     },
     {
       name: 'tampered archived pixels',

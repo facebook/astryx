@@ -314,7 +314,7 @@ jobs:
       - name: Recapture exactly the accepted shots
         if: steps.acceptance.outputs.found == 'true'
         env:
-          GITHUB_SHA: ${{ needs.resolve.outputs.merge_sha }}
+          ASTRYX_VISUAL_SHA: ${{ needs.resolve.outputs.merge_sha }}
           ACCEPTANCE: ${{ steps.acceptance.outputs.record }}
         run: |
           set -eu
