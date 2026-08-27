@@ -25,7 +25,6 @@ import React, {
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
-import {mergeProps} from '../utils';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
@@ -33,7 +32,6 @@ import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
-import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Helpers
@@ -243,7 +241,8 @@ const styles = stylex.create({
   anchorWrapper: {
     display: 'inline-flex',
   },
-  // Visual styles for the inner content container
+  // Content padding, applied to the popup surface so a theme's `padding`
+  // replaces it instead of nesting inside it.
   contentPadding: {
     paddingBlockStart: spacingVars['--spacing-3'],
     paddingBlockEnd: spacingVars['--spacing-3'],
@@ -322,16 +321,12 @@ export function Popover({
 }: PopoverProps): ReactElement {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const isControlled = isOpen !== undefined;
-  // Track when the popover was last hidden by light dismiss to prevent
-  // the trigger click from immediately re-opening it.
-  const lastHideTimeRef = useRef(0);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
   }, [onOpenChange]);
 
   const handlePopoverHide = useCallback(() => {
-    lastHideTimeRef.current = Date.now();
     onOpenChange?.(false);
   }, [onOpenChange]);
 
@@ -344,6 +339,13 @@ export function Popover({
     hasCloseButton,
     closeButtonLabel,
     hasAutoFocus,
+    // The surface is the box that paints background, radius and elevation, so
+    // it is the element the `popover` theme target has to sit on — a target on
+    // the content div inside it styles a box that paints nothing.
+    surfaceTarget: 'popover',
+    xstyle: [styles.contentPadding, xstyle],
+    className,
+    style,
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
@@ -353,11 +355,7 @@ export function Popover({
     if (!isEnabled) {
       return;
     }
-    // If the popover was just closed by light dismiss (clicking outside),
-    // the trigger click fires in the same event — skip re-opening.
-    if (Date.now() - lastHideTimeRef.current < 50) {
-      return;
-    }
+    // `toggle` absorbs a click that belongs to its own light dismiss.
     popover.toggle();
   }, [isEnabled, popover]);
 
@@ -511,24 +509,12 @@ export function Popover({
   if (anchorRef && children == null) {
     return (
       <>
-        {popover.render(
-          <div
-            data-testid={testId}
-            {...mergeProps(
-              themeProps('popover'),
-              stylex.props(styles.contentPadding, xstyle),
-              className,
-              style,
-            )}>
-            {content}
-          </div>,
-          {
-            placement,
-            alignment,
-            offset: spacingVars['--spacing-1'],
-            xstyle: [popoverXstyle, layerAnimations[placement]],
-          },
-        )}
+        {popover.render(<div data-testid={testId}>{content}</div>, {
+          placement,
+          alignment,
+          offset: spacingVars['--spacing-1'],
+          xstyle: [popoverXstyle, layerAnimations[placement]],
+        })}
       </>
     );
   }
@@ -548,24 +534,12 @@ export function Popover({
     return (
       <>
         {children(triggerProps)}
-        {popover.render(
-          <div
-            data-testid={testId}
-            {...mergeProps(
-              themeProps('popover'),
-              stylex.props(styles.contentPadding, xstyle),
-              className,
-              style,
-            )}>
-            {content}
-          </div>,
-          {
-            placement,
-            alignment,
-            offset: spacingVars['--spacing-1'],
-            xstyle: [popoverXstyle, layerAnimations[placement]],
-          },
-        )}
+        {popover.render(<div data-testid={testId}>{content}</div>, {
+          placement,
+          alignment,
+          offset: spacingVars['--spacing-1'],
+          xstyle: [popoverXstyle, layerAnimations[placement]],
+        })}
       </>
     );
   }
@@ -578,24 +552,12 @@ export function Popover({
           {children}
         </div>
       </InteractiveRoleContext>
-      {popover.render(
-        <div
-          data-testid={testId}
-          {...mergeProps(
-            themeProps('popover'),
-            stylex.props(styles.contentPadding, xstyle),
-            className,
-            style,
-          )}>
-          {content}
-        </div>,
-        {
-          placement,
-          alignment,
-          offset: spacingVars['--spacing-1'],
-          xstyle: [popoverXstyle, layerAnimations[placement]],
-        },
-      )}
+      {popover.render(<div data-testid={testId}>{content}</div>, {
+        placement,
+        alignment,
+        offset: spacingVars['--spacing-1'],
+        xstyle: [popoverXstyle, layerAnimations[placement]],
+      })}
     </>
   );
 }

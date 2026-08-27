@@ -9,37 +9,231 @@
 # write), so it can comment on fork PRs too — one code path for every PR, no
 # drift between a fork path and a same-repo path.
 #
-# Safety: this never checks out or runs PR-controlled code. It only downloads
-# the analysis + a11y artifacts (JSON) produced by CI and posts a comment. Do
-# not add checkout of the PR head or execution of PR code here.
+# Safety: resolves scope and PR identity from the GitHub API. Default-branch
+# code builds the capture plan, serves the PR's static Storybook to an isolated
+# browser with off-origin requests blocked, derives the comparison, re-encodes
+# PNGs, and generates the report. PR code is never checked out, imported into
+# Node, or given credentials; PR-produced HTML/JS is never published.
 
 name: PR Comment
 
 on:
   workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+    workflows: ['CI']
+    types: [requested, in_progress, completed]
 
 permissions: {}
 
+# The event already carries a stable head-repository/branch identity. Acquire
+# this shared lock before resolving the PR so a rerun can cancel any older
+# acceptance, report publication, or promotion mutation for the same head.
+concurrency:
+  group: visual-acceptance-head-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: ${{ github.event.action == 'requested' || github.event.action == 'in_progress' }}
+
 jobs:
-  comment:
-    # Only for CI runs triggered by a pull request.
+  resolve:
     if: github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-slim
     permissions:
+      pull-requests: read
+    outputs:
+      valid: ${{ steps.identity.outputs.valid }}
+      pr_number: ${{ steps.identity.outputs.pr_number }}
+      head_sha: ${{ steps.identity.outputs.head_sha }}
+    steps:
+      - name: Resolve trusted PR identity
+        id: identity
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const {owner, repo} = context.repo;
+            let numbers = (run.pull_requests || []).map((pr) => pr.number);
+            if (numbers.length === 0) {
+              // commits/{sha}/pulls only indexes base-repo branches, so a fork
+              // head returns [] (and run.pull_requests is empty on forks too).
+              // Resolve by the run's own head repo + branch instead; the
+              // exact-SHA check below keeps it pinned to this run.
+              const {data: byHead} = await github.rest.pulls.list({
+                owner, repo, state: 'open',
+                head: `${run.head_repository.owner.login}:${run.head_branch}`,
+                per_page: 100,
+              });
+              numbers = byHead.map((pr) => pr.number);
+            }
+            numbers = [...new Set(numbers)];
+            if (numbers.length !== 1) {
+              core.setFailed(`Expected exactly one open PR for run ${run.id}; found ${numbers.join(',') || 'none'}`);
+              return;
+            }
+            const {data: pr} = await github.rest.pulls.get({owner, repo, pull_number: numbers[0]});
+            if (pr.head.sha !== run.head_sha) {
+              core.setFailed(`Run head ${run.head_sha} is stale; PR head is ${pr.head.sha}`);
+              return;
+            }
+            core.setOutput('valid', 'true');
+            core.setOutput('pr_number', String(pr.number));
+            core.setOutput('head_sha', pr.head.sha);
+
+  invalidate:
+    needs: resolve
+    if: >-
+      (github.event.action == 'requested' || github.event.action == 'in_progress') &&
+      needs.resolve.outputs.valid == 'true'
+    runs-on: ubuntu-slim
+    permissions:
       pull-requests: write
+      statuses: write
+    steps:
+      - name: Invalidate visible approval for the new evidence run
+        uses: actions/github-script@v9
+        with:
+          retries: 3
+          script: |
+            const {owner, repo} = context.repo;
+            const run = context.payload.workflow_run;
+            const pr = Number('${{ needs.resolve.outputs.pr_number }}');
+            const head = '${{ needs.resolve.outputs.head_sha }}';
+            await github.rest.repos.createCommitStatus({
+              owner,
+              repo,
+              sha: head,
+              context: 'visual-acceptance',
+              state: 'pending',
+              description: `CI run ${run.id}/${run.run_attempt} is producing fresh visual evidence.`,
+            });
+            try {
+              await github.rest.issues.removeLabel({
+                owner, repo, issue_number: pr, name: 'visual-approved',
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+  comment:
+    needs: resolve
+    # Only for completed CI runs whose PR identity was resolved above.
+    if: >-
+      github.event.action == 'completed' &&
+      needs.resolve.outputs.valid == 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      pull-requests: write
+      statuses: write
       actions: read
+      contents: write # immutable validated visual evidence on gh-pages
     steps:
       - name: Checkout base repo (scripts only)
         uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      # Never trust the PR number inside a PR-produced artifact. Resolve the PR
+      # from the workflow_run through the GitHub API, then require its current
+      # head to be the run's head. A fork cannot redirect this privileged job
+      # at another PR by editing pr-meta.json.
+      - name: Resolve trusted PR identity
+        id: identity
+        uses: actions/github-script@v9
         with:
-          node-version: 24
+          script: |
+            const run = context.payload.workflow_run;
+            const {owner, repo} = context.repo;
+            let numbers = (run.pull_requests || []).map((pr) => pr.number);
+            if (numbers.length === 0) {
+              // Fork heads are invisible to commits/{sha}/pulls and to
+              // run.pull_requests — resolve by head repo + branch (see the
+              // resolve job above); the SHA and repo checks below still pin
+              // the result to this exact run.
+              const {data: byHead} = await github.rest.pulls.list({
+                owner, repo, state: 'open',
+                head: `${run.head_repository.owner.login}:${run.head_branch}`,
+                per_page: 100,
+              });
+              numbers = byHead.map((pr) => pr.number);
+            }
+            numbers = [...new Set(numbers)];
+            if (numbers.length !== 1) {
+              core.setFailed(`Expected exactly one PR for run ${run.id}; found ${numbers.join(',') || 'none'}`);
+              return;
+            }
+            const {data: pr} = await github.rest.pulls.get({
+              owner, repo, pull_number: numbers[0],
+            });
+            if (pr.head.sha !== run.head_sha) {
+              core.setFailed(`Run head ${run.head_sha} is stale; PR head is ${pr.head.sha}`);
+              return;
+            }
+            if (pr.head.repo.full_name !== run.head_repository.full_name) {
+              core.setFailed(`Run repository ${run.head_repository.full_name} does not match PR head ${pr.head.repo.full_name}`);
+              return;
+            }
+            if (pr.base.repo.full_name !== `${owner}/${repo}`) {
+              core.setFailed(`PR #${pr.number} targets another repository`);
+              return;
+            }
+            core.setOutput('valid', 'true');
+            core.setOutput('pr_number', String(pr.number));
+            core.setOutput('head_sha', pr.head.sha);
+            core.setOutput('head_repo', pr.head.repo.full_name);
+            core.setOutput('base_sha', pr.base.sha);
+            core.setOutput('run_id', String(run.id));
+            core.setOutput('run_attempt', String(run.run_attempt));
+
+      - name: Derive trusted stable visual scope
+        id: scope
+        if: steps.identity.outputs.valid == 'true'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs');
+            const {spawnSync} = require('node:child_process');
+            const {owner, repo} = context.repo;
+            const pullNumber = Number('${{ steps.identity.outputs.pr_number }}');
+            const {data: pr} = await github.rest.pulls.get({owner, repo, pull_number: pullNumber});
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number: pullNumber, per_page: 100,
+            });
+            const manifestPaths = new Set();
+            for (const {filename} of files) {
+              const theme = filename.match(/^packages\/themes\/([^/]+)\//);
+              const pkg = filename.match(/^packages\/([^/]+)\//);
+              if (theme) manifestPaths.add(`packages/themes/${theme[1]}/package.json`);
+              else if (pkg) manifestPaths.add(`packages/${pkg[1]}/package.json`);
+            }
+            const manifests = {};
+            const [headOwner, headRepo] = pr.head.repo.full_name.split('/');
+            for (const manifestPath of manifestPaths) {
+              try {
+                const {data} = await github.rest.repos.getContent({
+                  owner: headOwner, repo: headRepo, path: manifestPath, ref: pr.head.sha,
+                });
+                if (!Array.isArray(data) && data.content) {
+                  manifests[manifestPath] = JSON.parse(Buffer.from(data.content, 'base64').toString());
+                }
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            }
+            fs.writeFileSync('visual-scope-manifests.json', JSON.stringify(manifests));
+            const result = spawnSync(
+              process.execPath,
+              ['.github/scripts/visual-scope.mjs', '--manifests', 'visual-scope-manifests.json'],
+              {input: `${files.map((file) => file.filename).join('\n')}\n`, encoding: 'utf8'},
+            );
+            if (result.status !== 0) {
+              core.setFailed(result.stderr || 'Stable visual scope classification failed.');
+              return;
+            }
+            const scope = JSON.parse(result.stdout);
+            fs.writeFileSync('trusted-scope.json', JSON.stringify(scope));
+            core.setOutput('stable', String(scope.hasStableVisual));
+            core.setOutput('broad', String(scope.broadStableVisual));
 
       - name: Download analysis artifact from the CI run
+        if: steps.identity.outputs.valid == 'true'
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
@@ -49,6 +243,7 @@ jobs:
         continue-on-error: true
 
       - name: Download a11y artifact from the CI run
+        if: steps.identity.outputs.valid == 'true'
         uses: actions/download-artifact@v8
         with:
           name: a11y-report
@@ -57,21 +252,184 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Download visual verdict from the CI run
+      - name: Download Storybook for trusted visual capture
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad != 'true'
         uses: actions/download-artifact@v8
         with:
-          name: visual-pr-report
-          path: visual
+          pattern: storybook-*
+          path: apps/storybook/dist
+          merge-multiple: true
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+
+      - name: Cross-check artifact identity
+        if: steps.identity.outputs.valid == 'true' && hashFiles('pr-analysis/pr-meta.json') != ''
+        env:
+          EXPECTED_PR: ${{ steps.identity.outputs.pr_number }}
+          EXPECTED_HEAD: ${{ steps.identity.outputs.head_sha }}
+          EXPECTED_RUN: ${{ steps.identity.outputs.run_id }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const meta = JSON.parse(fs.readFileSync('pr-analysis/pr-meta.json', 'utf8'));
+          const fail = (message) => { console.error(`::error::${message}`); process.exit(1); };
+          if (String(meta.prNumber) !== process.env.EXPECTED_PR) fail('artifact PR number does not match trusted PR');
+          const shortHash = String(meta.shortHash ?? '');
+          if (!/^[0-9a-f]{7,40}$/.test(shortHash)) fail('artifact head is not a valid hash');
+          if (!process.env.EXPECTED_HEAD.startsWith(shortHash)) fail('artifact head does not match trusted PR head');
+          if (String(meta.runId) !== process.env.EXPECTED_RUN) fail('artifact run id does not match workflow_run');
+          NODE
+
+      - name: Fetch the trusted visual baseline
+        if: steps.identity.outputs.valid == 'true' && steps.scope.outputs.stable == 'true'
+        run: |
+          rm -rf /tmp/gh-pages
+          git clone --depth=1 --single-branch --branch gh-pages \
+            "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
+
+      - name: Capture the trusted stable visual scope
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad != 'true'
+        env:
+          ASTRYX_VISUAL_SHA: ${{ steps.identity.outputs.head_sha }}
+          ASTRYX_VISUAL_RUN_ID: ${{ steps.identity.outputs.run_id }}
+          ASTRYX_VISUAL_RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+          ASTRYX_PR_HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          ASTRYX_PR_BASE_SHA: ${{ steps.identity.outputs.base_sha }}
+        run: |
+          npx playwright install chromium
+          node .github/scripts/visual-gate/visual-acceptance.mjs trusted-plan \
+            --scope trusted-scope.json \
+            --baseline /tmp/gh-pages/visual-gate/baseline \
+            --storybook-dir apps/storybook/dist \
+            --output trusted-plan.json
+          node .github/scripts/visual-gate/gate.mjs capture \
+            --storybook-dir apps/storybook/dist \
+            --out trusted-capture \
+            --plan-file trusted-plan.json
+
+      - name: Derive trusted broad visual deferral
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad == 'true'
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          BASE_SHA: ${{ steps.identity.outputs.base_sha }}
+          RUN_ID: ${{ steps.identity.outputs.run_id }}
+          RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+        run: |
+          node .github/scripts/visual-gate/visual-acceptance.mjs trusted-defer \
+            --scope trusted-scope.json \
+            --baseline /tmp/gh-pages/visual-gate/baseline \
+            --output trusted-visual \
+            --pr "$PR_NUMBER" \
+            --head "$HEAD_SHA" \
+            --base "$BASE_SHA" \
+            --run-id "$RUN_ID" \
+            --run-attempt "$RUN_ATTEMPT"
+
+      # The Storybook bundle is untrusted. Default-branch code chooses the plan,
+      # captures it in an off-origin-blocked browser, derives the comparison,
+      # validates/re-encodes PNGs, and generates the report. PR-authored verdicts
+      # and job conclusions are never authority for the required status.
+      - name: Derive trusted visual evidence and report
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad != 'true'
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          RUN_ID: ${{ steps.identity.outputs.run_id }}
+          RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+        run: |
+          node .github/scripts/visual-gate/publish-pr-report.mjs \
+            --input trusted-capture \
+            --output trusted-visual \
+            --baseline /tmp/gh-pages/visual-gate/baseline \
+            --scope trusted-scope.json \
+            --pr "$PR_NUMBER" \
+            --head-sha "$HEAD_SHA" \
+            --run-id "$RUN_ID" \
+            --run-attempt "$RUN_ATTEMPT"
+
+      - name: Resolve trusted visual evidence path
+        id: visual
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true'
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          RUN_ID: ${{ steps.identity.outputs.run_id }}
+          RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+        run: |
+          test -f trusted-visual/evidence.json
+          test -f trusted-visual/verdict.json
+          test -f trusted-visual/index.html
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "path=pr/${PR_NUMBER}/visual/${HEAD_SHA}/${RUN_ID}/${RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish immutable visual evidence
+        id: publish
+        if: steps.visual.outputs.ready == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVIDENCE_PATH: ${{ steps.visual.outputs.path }}
+        run: |
+          set -eu
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          WORK_DIR="$PWD"
+          for attempt in 1 2 3 4 5; do
+            rm -rf /tmp/gh-pages
+            git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
+            DEST="/tmp/gh-pages/${EVIDENCE_PATH}"
+            if [ -e "$DEST" ]; then
+              if diff -qr "$WORK_DIR/trusted-visual" "$DEST" >/dev/null; then
+                echo "Immutable evidence already published"
+                echo "published=true" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              echo "::error::Immutable evidence path already exists with different bytes"
+              exit 1
+            fi
+            mkdir -p "$DEST"
+            cp -r "$WORK_DIR/trusted-visual/." "$DEST/"
+            cd /tmp/gh-pages
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add "$EVIDENCE_PATH"
+            git commit -m "Visual evidence: ${EVIDENCE_PATH}"
+            if git push origin gh-pages; then
+              echo "published=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            cd "$WORK_DIR"
+            sleep $((attempt * 2))
+          done
+          echo "::error::Could not publish visual evidence after 5 attempts"
+          exit 1
 
       - name: Generate and post PR comment
+        if: steps.identity.outputs.valid == 'true'
         uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          RUN_ID: ${{ steps.identity.outputs.run_id }}
+          VISUAL_PUBLISHED: ${{ steps.publish.outputs.published }}
+          VISUAL_PATH: ${{ steps.visual.outputs.path }}
         with:
           script: |
             const fs = require('node:fs');
-            const { execSync } = require('node:child_process');
+            const { execFileSync } = require('node:child_process');
 
             // The analysis artifact is only produced for non-docsite-only PRs.
             // If it's absent, there's nothing to report — exit quietly.
@@ -81,10 +439,11 @@ jobs:
               return;
             }
 
-            const meta = JSON.parse(fs.readFileSync('pr-analysis/pr-meta.json', 'utf8'));
-            const prNumber = parseInt(meta.prNumber, 10);
-            if (!prNumber) {
-              core.warning('No PR number in metadata — cannot comment.');
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const headSha = process.env.HEAD_SHA;
+            const runId = process.env.RUN_ID;
+            if (!prNumber || !headSha || !runId) {
+              core.setFailed('Trusted PR identity outputs are missing.');
               return;
             }
 
@@ -103,17 +462,27 @@ jobs:
               '.github/scripts/generate-pr-comment.js',
               '--analysis', 'pr-analysis/analysis.json',
               '--a11y', a11yPath,
-              ...(fs.existsSync('visual/verdict.json')
-                ? ['--visual', 'visual/verdict.json']
+              ...(fs.existsSync('trusted-visual/verdict.json')
+                ? [
+                    '--visual', 'trusted-visual/verdict.json',
+                    ...(process.env.VISUAL_PUBLISHED === 'true'
+                      ? [
+                          '--visual-report-url',
+                          `https://facebook.github.io/astryx/${process.env.VISUAL_PATH}/`,
+                          '--visual-image-url',
+                          `https://raw.githubusercontent.com/facebook/astryx/gh-pages/${process.env.VISUAL_PATH}/`,
+                        ]
+                      : []),
+                  ]
                 : []),
-              '--storybook-url', meta.storybookUrl || '',
-              '--sandbox-url', meta.sandboxUrl || '',
-              '--run-url', meta.runUrl || '',
+              '--storybook-url', `https://facebook.github.io/astryx/pr/${prNumber}/`,
+              '--sandbox-url', `https://facebook.github.io/astryx/pr/${prNumber}/sandbox/`,
+              '--run-url', `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`,
               '--pr-number', String(prNumber),
             ];
 
-            const body = execSync(`node ${args.map((a) => JSON.stringify(a)).join(' ')}`,
-              { encoding: 'utf8' });
+            // Argument vector, no shell — report inputs are data, not command text.
+            const body = execFileSync('node', args, { encoding: 'utf8' });
             fs.writeFileSync('pr-comment.md', body);
 
             const { owner, repo } = context.repo;
@@ -133,4 +502,73 @@ jobs:
                 owner, repo, issue_number: prNumber, body,
               });
               core.info(`Posted PR Analysis Report on #${prNumber}.`);
+            }
+
+      - name: Evaluate visual acceptance state
+        if: always() && steps.identity.outputs.valid == 'true'
+        env:
+          SCOPE_OUTCOME: ${{ steps.scope.outcome }}
+          HAS_STABLE_VISUAL: ${{ steps.scope.outputs.stable }}
+          VISUAL_READY: ${{ steps.visual.outputs.ready }}
+          VISUAL_PUBLISHED: ${{ steps.publish.outputs.published }}
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+        run: |
+          if [ "$SCOPE_OUTCOME" != "success" ]; then
+            printf '%s\n' '{"state":"failure","reason":"scope","description":"Stable visual scope could not be evaluated."}' > visual-state.json
+          elif [ "$HAS_STABLE_VISUAL" != "true" ]; then
+            printf '%s\n' '{"state":"success","reason":"scope","description":"No stable visual scope."}' > visual-state.json
+          elif [ "$VISUAL_READY" != "true" ] || [ "$VISUAL_PUBLISHED" != "true" ]; then
+            printf '%s\n' '{"state":"failure","reason":"capture","description":"Stable visual evidence could not be published."}' > visual-state.json
+          else
+            node .github/scripts/visual-gate/visual-acceptance.mjs state \
+              --pages /tmp/gh-pages --pr "$PR_NUMBER" --head "$HEAD_SHA" > visual-state.json
+          fi
+
+      - name: Publish visual acceptance status
+        if: always() && steps.identity.outputs.valid == 'true'
+        uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          VISUAL_PATH: ${{ steps.visual.outputs.path }}
+        with:
+          retries: 3
+          script: |
+            const fs = require('node:fs');
+            const {owner, repo} = context.repo;
+            const pr = Number(process.env.PR_NUMBER);
+            let state = {state: 'failure', reason: 'state', description: 'Visual acceptance state could not be evaluated.'};
+            if (fs.existsSync('visual-state.json')) {
+              try {
+                state = JSON.parse(fs.readFileSync('visual-state.json', 'utf8'));
+              } catch (error) {
+                core.warning(`Could not read visual state: ${error.message}`);
+              }
+            }
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: process.env.HEAD_SHA, context: 'visual-acceptance',
+              state: state.state, description: state.description.slice(0, 140),
+              ...(process.env.VISUAL_PATH
+                ? {target_url: `https://facebook.github.io/astryx/${process.env.VISUAL_PATH}/`}
+                : {}),
+            });
+            const label = 'visual-approved';
+            if (state.reason === 'accepted') {
+              try {
+                await github.rest.issues.getLabel({owner, repo, name: label});
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({
+                  owner, repo, name: label, color: '2da44e',
+                  description: 'Current visual bundle has an explicit acceptance record',
+                });
+              }
+              await github.rest.issues.addLabels({owner, repo, issue_number: pr, labels: [label]});
+            } else {
+              try {
+                await github.rest.issues.removeLabel({owner, repo, issue_number: pr, name: label});
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
             }

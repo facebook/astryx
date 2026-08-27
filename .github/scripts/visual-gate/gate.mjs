@@ -29,8 +29,9 @@ import {fileURLToPath} from 'node:url';
 
 import {capture, scout} from './lib/capture.mjs';
 import {analyzeTargeting, buildVerdict, compareCaptures} from './lib/compare.mjs';
-import {buildPlan, readStoryIndex} from './lib/plan.mjs';
+import {buildPlan, readStoryIndex, storiesInPackages} from './lib/plan.mjs';
 import {READ_TARGETS, emptyAccumulator, fold} from './lib/probe-reach.mjs';
+import {AXES, PROBE_TOKENS, READ_AXES} from './lib/probe-axes.mjs';
 import {renderReport} from './lib/report.mjs';
 import {accept, incomparable, readBaseline} from './lib/baseline.mjs';
 import {loadConfig, loadThemeOverrides, loadThemingTargets} from './lib/sources.mjs';
@@ -46,6 +47,12 @@ const flag = name => {
   return index === -1 ? null : argv[index + 1];
 };
 const has = name => argv.includes(`--${name}`);
+const captureIdentity = () => ({
+  sha: process.env.ASTRYX_VISUAL_SHA ?? process.env.GITHUB_SHA ?? null,
+  runId: process.env.ASTRYX_VISUAL_RUN_ID ?? process.env.GITHUB_RUN_ID ?? null,
+  runAttempt:
+    process.env.ASTRYX_VISUAL_RUN_ATTEMPT ?? process.env.GITHUB_RUN_ATTEMPT ?? null,
+});
 
 const config = loadConfig(REPO_ROOT);
 const storybookDir = path.resolve(flag('storybook-dir') ?? 'apps/storybook/dist');
@@ -57,6 +64,8 @@ const sample = flag('sample') ? Number(flag('sample')) : null;
 const only = (flag('only') ?? '').split(',').filter(Boolean);
 /** For the `component` tier: the components a PR touched. */
 const components = (flag('components') ?? '').split(',').filter(Boolean);
+/** For the `theme-matrix` tier: only these shipped themes changed. */
+const matrixThemes = (flag('themes') ?? '').split(',').filter(Boolean);
 /**
  * Above this many shots the run declines instead of capturing.
  *
@@ -68,6 +77,36 @@ const components = (flag('components') ?? '').split(',').filter(Boolean);
  * report nobody can read.
  */
 const maxShots = flag('max-shots') ? Number(flag('max-shots')) : Infinity;
+/** Storybook package groups that own the stable visual baseline. */
+const storyPackages = (flag('story-packages') ?? config.stableStoryPackages.join(','))
+  .split(',')
+  .filter(Boolean);
+/** A trusted, exact shot list used only to recapture an accepted merged result. */
+const planFile = flag('plan-file');
+
+function readExactPlan(file) {
+  const shots = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
+  if (!Array.isArray(shots) || shots.length > 5000) {
+    throw new Error('Exact visual plan must contain at most 5000 trusted shots.');
+  }
+  const keys = new Set();
+  for (const shot of shots) {
+    if (
+      !/^[A-Za-z0-9._-]{1,240}$/.test(shot?.key ?? '') ||
+      typeof shot.storyId !== 'string' ||
+      !shot.storyId ||
+      typeof shot.theme !== 'string' ||
+      !shot.theme ||
+      !['light', 'dark'].includes(shot.mode) ||
+      !Array.isArray(shot.reasons)
+    ) {
+      throw new Error(`Exact visual plan contains an invalid shot: ${JSON.stringify(shot)}`);
+    }
+    if (keys.has(shot.key)) throw new Error(`Exact visual plan repeats ${shot.key}.`);
+    keys.add(shot.key);
+  }
+  return shots;
+}
 
 /**
  * Which stories the scout needs to look at: every story of a component some
@@ -89,11 +128,16 @@ function storiesToScout(stories, targets, themeOverrides) {
 
 /** @returns {Promise<import('./lib/plan.mjs').Shot[]>} */
 async function plan() {
+  if (planFile) return readExactPlan(planFile);
   const [targets, themeOverrides] = await Promise.all([
     loadThemingTargets(REPO_ROOT),
     loadThemeOverrides(REPO_ROOT, config.probeTheme),
   ]);
-  const stories = readStoryIndex(storybookDir, Object.keys(config.excludeStories));
+  const indexedStories = readStoryIndex(
+    storybookDir,
+    Object.keys(config.excludeStories),
+  );
+  const stories = storiesInPackages(indexedStories, storyPackages);
 
   let observations;
   if (!has('no-scout') && (tiers.includes('theme-matrix') || tiers.includes('probe'))) {
@@ -123,6 +167,7 @@ async function plan() {
     defaultTheme: config.defaultTheme,
     tiers,
     components,
+    matrixThemes,
     probeTheme: config.probeTheme,
   });
   // A sample is for trying the rig out, never for a gate run: it is taken
@@ -154,9 +199,14 @@ async function runCapture(shots) {
     },
   });
   manifest.context = {
-    sha: process.env.GITHUB_SHA ?? null,
+    // `sha` is the tested synthetic merge tree on pull_request runs. Keep the
+    // contributor's head and the base separately: acceptance binds to the head
+    // humans reviewed, while post-merge verification bridges to the final
+    // squash commit by comparing rendered hashes.
+    ...captureIdentity(),
+    headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
+    baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
     ref: process.env.GITHUB_REF ?? null,
-    runId: process.env.GITHUB_RUN_ID ?? null,
   };
   fs.writeFileSync(
     path.join(outDir, 'manifest.json'),
@@ -191,9 +241,21 @@ async function check() {
       status: 'skipped',
       generatedAt: new Date().toISOString(),
       reason: `${shots.length} shots exceeds the ${maxShots}-shot budget${components.length ? ` (${components.length} components touched)` : ''} — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
+      context: {
+        ...captureIdentity(),
+        headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
+        baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
+        ref: process.env.GITHUB_REF ?? null,
+        tiers,
+        scoped: components.length > 0,
+        components,
+      },
       counts: {total: shots.length, unchanged: 0, changed: 0, added: 0, removed: 0, failed: 0},
       components,
       changes: [],
+      added: [],
+      removed: [],
+      failures: [],
     };
     fs.mkdirSync(outDir, {recursive: true});
     fs.writeFileSync(path.join(outDir, 'verdict.json'), `${JSON.stringify(verdict, null, 2)}\n`);
@@ -363,6 +425,13 @@ async function main() {
       const browser = await chromium.launch();
       const page = await browser.newPage({viewport: config.viewport});
       const acc = emptyAccumulator();
+      const axisHits = {
+        tokens: new Set(),
+        icon: new Set(),
+        indicator: new Set(),
+        fonts: new Set(),
+        syntax: new Set(),
+      };
       let done = 0;
       for (const story of subject) {
         try {
@@ -373,6 +442,18 @@ async function main() {
           await page.waitForSelector('#storybook-root > *', {timeout: 20000});
           await page.evaluate(() => document.fonts.ready);
           fold(acc, await page.evaluate(READ_TARGETS), story.id);
+          // The other five axes. A single story proves tokens and fonts; the
+          // registry swaps and syntax need a story that renders one, so these
+          // accumulate across the walk.
+          const axes = await page.evaluate(READ_AXES);
+          for (const [name, value] of Object.entries(axes.tokens)) {
+            if (value && value === PROBE_TOKENS[name]) axisHits.tokens.add(name);
+          }
+          for (const kind of Object.keys(axes.swaps)) axisHits[kind]?.add(kind);
+          if (/AstryxProbeFace/.test(axes.fontFamily)) axisHits.fonts.add('body');
+          for (const color of axes.syntax) {
+            if (/^rgb\(/.test(color)) axisHits.syntax.add(color);
+          }
         } catch {
           // A story that will not render contributes no readings; the visual
           // tier reports it as a capture failure.
@@ -386,9 +467,26 @@ async function main() {
       const unseen = [...new Set(declared)].filter(
         key => !acc.verified.has(key) && !acc.failures.has(key) && !acc.shadowed.has(key),
       );
+      // An axis with nothing rendering it is UNVERIFIABLE, not passing — the
+      // difference is the whole point, and reporting it as green is how a
+      // check ends up asserting nothing.
+      const axisReport = {
+        components: {
+          verified: acc.verified.size,
+          missed: acc.failures.size,
+          ...AXES.components,
+        },
+        tokens: {verified: axisHits.tokens.size, of: Object.keys(PROBE_TOKENS).length, ...AXES.tokens},
+        icons: {verified: axisHits.icon.size > 0, ...AXES.icons},
+        indicators: {verified: axisHits.indicator.size > 0, ...AXES.indicators},
+        fonts: {verified: axisHits.fonts.size > 0, ...AXES.fonts},
+        syntax: {verified: axisHits.syntax.size, ...AXES.syntax},
+      };
+
       const out = {
         version: 1,
         generatedAt: new Date().toISOString(),
+        axes: axisReport,
         verified: [...acc.verified].sort(),
         failures: Object.fromEntries([...acc.failures].sort()),
         shadowed: Object.fromEntries([...acc.shadowed].sort()),
@@ -397,8 +495,19 @@ async function main() {
       fs.mkdirSync(outDir, {recursive: true});
       fs.writeFileSync(path.join(outDir, 'reach.json'), `${JSON.stringify(out, null, 2)}\n`);
 
+      process.stdout.write('theme axes:\n');
+      for (const [name, info] of Object.entries(axisReport)) {
+        const value =
+          typeof info.verified === 'boolean'
+            ? info.verified
+              ? 'reached'
+              : 'NOT REACHED'
+            : `${info.verified}${info.of ? `/${info.of}` : ''} reached`;
+        process.stdout.write(`  ${name.padEnd(12)} ${value}\n`);
+      }
       process.stdout.write(
-        `reached the pixels:              ${out.verified.length}\n` +
+        `\ncomponent targets\n` +
+          `reached the pixels:              ${out.verified.length}\n` +
           `shares an element with another:  ${Object.keys(out.shadowed).length}\n` +
           `override did NOT arrive:         ${Object.keys(out.failures).length}\n` +
           `no story renders it:             ${out.neverRendered.length}\n`,

@@ -5,7 +5,7 @@
 /**
  * @file usePopover.tsx
  * @input Uses useLayer, useFocusTrap, React hooks
- * @output Exports usePopover hook for popover dialogs with focus trapping
+ * @output Exports usePopover and a package-internal trigger-aware variant.
  * @position Higher-level layer utility; used by DatePicker, Combobox, etc.
  *
  * Combines popover layer behavior with focus trap for dialog-like popovers.
@@ -17,7 +17,7 @@
 
 import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useLayer, type ContextRenderProps} from '../Layer/useLayer';
+import {useLayerInternal, type ContextRenderProps} from '../Layer/useLayer';
 import {useFocusTrap} from '../hooks/useFocusTrap';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -41,7 +41,8 @@ const styles = stylex.create({
   // Consumers that need a raw positioned layer should use useLayer instead.
   surface: {
     backgroundColor: colorVars['--color-background-popover'],
-    borderRadius: radiusVars['--radius-container'],
+    '--_popover-radius': radiusVars['--radius-container'],
+    borderRadius: 'var(--_popover-radius)',
     boxShadow: shadowVars['--shadow-low'],
   },
   // Focus trap container
@@ -110,6 +111,16 @@ export interface UsePopoverOptions {
    * `:popover-open`), pass `xstyle` via the `render()` call's props instead.
    */
   xstyle?: StyleXStyles;
+
+  /**
+   * Additional class name applied to the painted popover surface.
+   */
+  className?: string;
+
+  /**
+   * Inline styles applied to the painted popover surface.
+   */
+  style?: React.CSSProperties;
 
   /**
    * Whether clicking outside should dismiss the popover.
@@ -283,6 +294,10 @@ export interface UsePopoverReturn {
   };
 }
 
+interface InternalUsePopoverReturn extends UsePopoverReturn {
+  wasJustDismissed: () => boolean;
+}
+
 /**
  * Hook for creating popover dialogs with focus trapping.
  *
@@ -323,11 +338,15 @@ export interface UsePopoverReturn {
  * }
  * ```
  */
-export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
+function usePopoverImplementation(
+  options: UsePopoverOptions = {},
+): InternalUsePopoverReturn {
   const {
     onShow,
     onHide,
     xstyle,
+    className,
+    style,
     hasLightDismiss = true,
     hasEscapeDismiss = true,
     hasAutoFocus = true,
@@ -351,7 +370,7 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
   const skipAutoFocusRef = useRef(false);
 
   // Core layer for popover positioning
-  const layer = useLayer({
+  const layer = useLayerInternal({
     mode: 'context',
     lightDismiss: hasLightDismiss,
     onShow,
@@ -400,6 +419,9 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
 
   // Toggle function
   const toggle = useCallback(() => {
+    if (layer.wasJustDismissed()) {
+      return;
+    }
     if (layer.isOpen) {
       layer.hide();
     } else {
@@ -450,6 +472,8 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
                 hasSurface && styles.surface,
                 xstyle,
               ),
+              className,
+              style,
             )}>
             {children}
             {hasCloseButton && (
@@ -475,6 +499,8 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
       hasCloseButton,
       hasSurface,
       surfaceTarget,
+      className,
+      style,
       closeButtonLabel,
       contentRef,
       dialogLabel,
@@ -491,9 +517,22 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
     show,
     hide: layer.hide,
     toggle,
+    wasJustDismissed: layer.wasJustDismissed,
     isOpen: layer.isOpen,
     id: layer.id,
     render,
     triggerProps,
   };
+}
+
+export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
+  const {wasJustDismissed: _, ...popover} = usePopoverImplementation(options);
+  return popover;
+}
+
+/** @internal Used by trigger components; not exported from package barrels. */
+export function usePopoverInternal(
+  options: UsePopoverOptions = {},
+): InternalUsePopoverReturn {
+  return usePopoverImplementation(options);
 }

@@ -2,6 +2,21 @@
 
 'use client';
 
+/**
+ * @file Toast.tsx
+ * @input Uses React timers, Toast options, Button/Icon, MediaTheme, tokens, and
+ *   placement-derived motion variables inherited from ToastViewport
+ * @output Exports the rendered Toast surface and its pause/dismiss behavior
+ * @position Core implementation; rendered by ToastViewport and documented by Toast.doc.mjs
+ *
+ * SYNC: When Toast layout, timer pause, media theme, or dismissal behavior changes,
+ *   update these files to stay in sync:
+ * - /packages/core/src/Toast/ToastViewport.test.tsx
+ * - /packages/core/src/Toast/Toast.doc.mjs
+ * - /apps/storybook/stories/Toast.stories.tsx
+ * - /packages/cli/assets/templates/blocks/components/Toast/ (showcase blocks)
+ */
+
 import {useCallback, useEffect, useRef} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -24,13 +39,15 @@ import type {ToastType, ToastDismissReason} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+const TOAST_EDGE_DRIFT = spacingVars['--spacing-2'];
 const styles = stylex.create({
   root: {
     paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-4'],
     borderRadius: radiusVars['--radius-container'],
+    boxSizing: 'border-box',
     width: 400,
-    maxWidth: 'min(100%, calc(100vw - 32px))',
+    maxWidth: '100%',
     boxShadow: shadowVars['--shadow-med'],
     opacity: 1,
     fontFamily: typographyVars['--font-family-body'],
@@ -45,15 +62,17 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     '@starting-style': {
       opacity: 0,
-      transform: 'translateY(8px)',
+      transform: `translateY(var(--_toast-slide-y, ${TOAST_EDGE_DRIFT}))`,
     },
   },
   variantDefault: {
     backgroundColor: colorVars['--color-background-inverted'],
   },
+
   inner: {
     display: 'flex',
     alignItems: 'flex-start',
+    flexWrap: 'nowrap',
     gap: spacingVars['--spacing-3'],
     width: '100%',
   },
@@ -63,17 +82,22 @@ const styles = stylex.create({
   content: {
     flex: 1,
     minWidth: 0,
+    overflowWrap: 'anywhere',
   },
   exiting: {
     opacity: 0,
-    transform: 'translateY(-8px)',
+    transform: `translateY(var(--_toast-slide-y, ${TOAST_EDGE_DRIFT}))`,
   },
   endContent: {
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    marginBlock: `calc(${spacingVars['--spacing-1']} * -1)`,
+    // Keep every trailing control centered on the first 20px body line, even
+    // when the body wraps or a consumer supplies a control taller than the
+    // built-in 28px dismiss button. The action label should still stay short;
+    // the wrappers above let it break rather than widen the Toast.
+    blockSize: `calc(${typeScaleDefaults['--text-body-size']} * ${typeScaleDefaults['--text-body-leading']})`,
     marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
 });

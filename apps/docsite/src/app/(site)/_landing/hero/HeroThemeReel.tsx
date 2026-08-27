@@ -168,16 +168,20 @@ const styles = stylex.create({
     transition: 'background-color 600ms ease',
     zIndex: 0,
   },
-  // Blurred aurora glow — fixed, in the same 1200px box as the cards so blobs
-  // and cards stay aligned. Capped to 100vw to avoid horizontal scroll. Blob
-  // centers sit under the card clusters; colors come from --aurora-* per slide.
+  // Blurred aurora glow — in the same 1200px box as the cards so blobs and
+  // cards stay aligned; pinned at >=1024px and scrolling away with the hero
+  // below that (see `position`). Capped to 100vw to avoid horizontal scroll.
+  // Blob centers sit under the card clusters; colors come from --aurora-* per
+  // slide.
   backdropGlow: {
     // Desktop: fixed, part of the pin-and-cover effect alongside heroContent
     // and the cards stage. Narrow: absolute within heroScope (position:
     // relative), so it scrolls away with the hero instead of staying pinned
-    // for the whole page — a fixed glow below 1024px reached past the
-    // footer into the bottom-overscroll gap, which blocked pull-to-refresh
-    // from ever registering a release (#5392).
+    // for the whole page — a fixed glow below 1024px reached past the footer
+    // into the bottom-overscroll gap. That exposure is what the app-global
+    // `overscroll-behavior-y: none` in globals.css was suppressing, at the
+    // cost of pull-to-refresh on every route on mobile; bounding the glow
+    // here is what lets that rule scope to desktop widths (#5392).
     position: {
       default: 'absolute',
       '@media (min-width: 1024px)': 'fixed',

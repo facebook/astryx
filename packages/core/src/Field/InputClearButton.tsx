@@ -5,8 +5,7 @@
 /**
  * @file InputClearButton.tsx
  * @input Uses React, Button, Icon
- * @output Exports InputClearButton, the shared clear (✕) button rendered by
- *   every clearable input in the family.
+ * @output Exports the public InputClearButton and an internal popup-aware variant.
  * @position Shared primitive. Every input that renders a clear affordance —
  *   TextInput, NumberInput, TimeInput, DateInput, DateTimeInput,
  *   DateRangeInput, Selector, MultiSelector, Typeahead, Tokenizer, FileInput —
@@ -80,12 +79,24 @@ export interface InputClearButtonProps {
   iconClassName?: string;
 }
 
-export function InputClearButton({
+interface InternalInputClearButtonProps extends InputClearButtonProps {
+  onPointerDown: React.PointerEventHandler<HTMLElement>;
+  onClickCapture: React.MouseEventHandler<HTMLElement>;
+}
+
+type InputClearButtonRenderProps = InputClearButtonProps &
+  Partial<
+    Pick<InternalInputClearButtonProps, 'onPointerDown' | 'onClickCapture'>
+  >;
+
+function renderInputClearButton({
   label,
   onClick,
+  onPointerDown,
+  onClickCapture,
   xstyle,
   iconClassName,
-}: InputClearButtonProps): ReactNode {
+}: InputClearButtonRenderProps): ReactNode {
   const {className: iconTargetClassName} = themeProps('input-clear-icon');
   const {className: buttonTargetClassName} = themeProps('input-clear-button');
   return (
@@ -107,10 +118,23 @@ export function InputClearButton({
         />
       }
       onClick={onClick}
+      onPointerDown={onPointerDown}
+      onClickCapture={onClickCapture}
       isIconOnly
       xstyle={[styles.button, xstyle]}
     />
   );
+}
+
+export function InputClearButton(props: InputClearButtonProps): ReactNode {
+  return renderInputClearButton(props);
+}
+
+/** Internal variant used while popup-aware clear behavior is rolled out. */
+export function InternalInputClearButton(
+  props: InternalInputClearButtonProps,
+): ReactNode {
+  return renderInputClearButton(props);
 }
 
 InputClearButton.displayName = 'InputClearButton';

@@ -2344,6 +2344,55 @@ describe('Selector', () => {
   });
 });
 
+describe('Selector caller-supplied id', () => {
+  it('names the listbox with the id the caller put on the trigger', () => {
+    render(<Selector label="Fruit" options={OPTIONS} id="fruit-picker" />);
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveAttribute('id', 'fruit-picker');
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
+  });
+
+  it('names the search-variant listbox with the caller id', () => {
+    render(
+      <Selector label="Fruit" options={OPTIONS} id="fruit-picker" hasSearch />,
+    );
+
+    const trigger = document.getElementById('fruit-picker');
+    expect(trigger?.tagName).toBe('BUTTON');
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
+  });
+
+  it('points the field label at the caller id', () => {
+    render(<Selector label="Fruit" options={OPTIONS} id="fruit-picker" />);
+
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+    expect(trigger).toHaveAttribute('id', 'fruit-picker');
+    expect(screen.getByLabelText('Fruit')).toBe(trigger);
+  });
+
+  it('generates the trigger id when the caller supplies none', () => {
+    render(<Selector label="Fruit" options={OPTIONS} />);
+
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+    expect(trigger.id).not.toBe('');
+    expect(screen.getByLabelText('Fruit')).toBe(trigger);
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
+  });
+});
+
 describe('Selector statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
@@ -3256,6 +3305,41 @@ describe('Selector popup theme target', () => {
       expect(popup?.querySelector('[role="listbox"]')).not.toBeNull();
     },
   );
+
+  it('stays closed when the trigger click follows its own light dismiss (#5004)', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        placement="below"
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The browser dismissed the popup on pointerup and queued the toggle. When
+    // that event lands before the click — WebKit, or any engine under load —
+    // the click used to read a closed popup and reopen it.
+    fireEvent.pointerDown(trigger);
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+    // Synchronously: the click falls inside the one gesture the guard covers,
+    // as it does in a browser a few milliseconds behind the dismissal.
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
 });
 
 describe('Selector option-row theme target', () => {

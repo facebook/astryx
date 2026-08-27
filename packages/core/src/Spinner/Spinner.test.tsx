@@ -12,6 +12,8 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Spinner} from './Spinner';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
 /** sm/md/lg/xl, as Spinner.tsx defines them. */
 const SIZES = {
@@ -140,6 +142,85 @@ describe('Spinner', () => {
     const spinner = screen.getByTestId('spinner');
     expect(spinner.tagName.toLowerCase()).toBe('span');
   });
+
+  // The box has always been sized by an inline width/height written after the
+  // caller's `style`, so the component's own size wins over a `style={{width}}`
+  // passed in. Making the geometry themeable changed what that value is made
+  // of — a composed var rather than a number — and deliberately not where it is
+  // written: moving the sizing into a rule would have handed a caller's inline
+  // width a precedence over the box it has never had. This pins the precedence
+  // itself, which is the part a consumer could be depending on.
+  describe('box sizing', () => {
+    it.each(Object.entries(SIZES))(
+      'falls back to the %s frame where no stylesheet has declared the var',
+      (size, {diameter, border}) => {
+        render(
+          <Spinner size={size as keyof typeof SIZES} data-testid="spinner" />,
+        );
+        const box = screen.getByTestId('spinner');
+        const expected = `var(--_spinner-box-size, ${diameter + border * 2}px)`;
+        expect(box.style.width).toBe(expected);
+        expect(box.style.height).toBe(expected);
+      },
+    );
+
+    it('keeps its own size over a width the caller passes in style', () => {
+      render(
+        <Spinner
+          size="xl"
+          style={{width: 999, height: 999, opacity: 0.5}}
+          data-testid="spinner"
+        />,
+      );
+      const box = screen.getByTestId('spinner');
+      expect(box.style.width).toBe('var(--_spinner-box-size, 36px)');
+      expect(box.style.height).toBe('var(--_spinner-box-size, 36px)');
+      // Everything else the caller passed still applies — only the two
+      // properties the box owns are taken back.
+      expect(box.style.opacity).toBe('0.5');
+    });
+  });
+
+  // The themed geometry resolves in the cascade — jsdom implements no layout
+  // and no custom-property registration, so no test here can reach what a
+  // theme actually draws; that is verified in a browser and the numbers are in
+  // the PR. What IS a contract a unit test can hold is the routing: a theme
+  // writes an override against the documented key, and it has to come out on
+  // the selector the component reads from.
+  describe('a theme reaches the spinner through its public vars', () => {
+    const cssFor = (
+      components: Parameters<typeof defineTheme>[0]['components'],
+    ) =>
+      generateThemeCSS(defineTheme({name: 'spinner-theming', components}))
+        .component;
+
+    it('scopes a themed size to that size variant', () => {
+      // Asserting the whole rule, not just the declaration: the same var on
+      // the bare `.astryx-spinner` would resize every size at once, which is
+      // the bug a size-variant key exists to avoid.
+      expect(
+        cssFor({spinner: {'size:xl': {'--spinner-diameter': '2.5rem'}}}),
+      ).toContain('.astryx-spinner.xl {\n    --spinner-diameter: 2.5rem;');
+    });
+
+    it('scopes a themed color to that shade variant', () => {
+      expect(
+        cssFor({
+          spinner: {'shade:subtle': {'--spinner-track-color': 'transparent'}},
+        }),
+      ).toContain(
+        '.astryx-spinner.subtle {\n    --spinner-track-color: transparent;',
+      );
+    });
+
+    it('lets the base target set a value for every size and shade', () => {
+      expect(
+        cssFor({spinner: {base: {'--spinner-color': 'var(--color-brand)'}}}),
+      ).toContain(
+        '.astryx-spinner {\n    --spinner-color: var(--color-brand);',
+      );
+    });
+  });
 });
 
 describe('Spinner ring', () => {
@@ -195,6 +276,28 @@ describe('Spinner ring', () => {
       `rotate(-90 ${frame / 2} ${frame / 2})`,
     );
   });
+
+  // The authored dash is the size's own absolute pattern, and stays that way:
+  // it is what a render with no stylesheet draws, and it is byte-for-byte the
+  // pattern this component drew before the geometry became themeable. Scaling
+  // with a themed diameter is the rule's job — it composes the same two
+  // lengths out of the resolved diameter — and deliberately not `pathLength`'s,
+  // which rescales against the path length the UA measures on its own
+  // approximation of the circle and shortens the default arc by 0.64%.
+  it.each(Object.entries(SIZES))(
+    'leaves the %s arc its own absolute dash, with no pathLength',
+    (size, {diameter}) => {
+      render(
+        <Spinner size={size as keyof typeof SIZES} data-testid="spinner" />,
+      );
+      const {track, arc} = circles();
+      const [on, off] = dashOf(arc);
+      expect(on + off).toBeCloseTo(Math.PI * diameter, 6);
+      expect(arc.getAttribute('pathLength')).toBeNull();
+      // The track is a full ring, so it needs neither.
+      expect(track.getAttribute('pathLength')).toBeNull();
+    },
+  );
 
   // The whole point of the SVG ring: the colours come off the cascade, so
   // nothing has to resolve them in JS. A read reaching the paint path again
@@ -266,5 +369,66 @@ describe('Spinner ring', () => {
       // @ts-expect-error — removing the stub restores jsdom's real surface
       delete SVGElement.prototype.getAnimations;
     }
+  });
+});
+
+describe('geometry var registration', () => {
+  /** The shape `registerSpinnerVars` passes; jsdom implements no real one. */
+  type Descriptor = {
+    name: string;
+    syntax: string;
+    inherits: boolean;
+    initialValue: string;
+  };
+  const stubRegisterProperty = (fn: (d: Descriptor) => void) => {
+    (
+      CSS as unknown as {registerProperty: (d: Descriptor) => void}
+    ).registerProperty = fn;
+  };
+
+  afterEach(() => {
+    delete (CSS as unknown as {registerProperty?: unknown}).registerProperty;
+    vi.resetModules();
+  });
+
+  it('registers when the module is imported, not when a spinner mounts', async () => {
+    // Registering an inherited property with an `initial-value` invalidates
+    // style for the whole document. A spinner mounts onto a page that has
+    // already rendered, so paying it there is paying it on the full tree —
+    // measured at 29ms against 12ms on an 11k-element page. At import the page
+    // is whatever has rendered so far, which for a bundle in the head is
+    // nothing. This pins the timing: it fails if the call moves back into a
+    // ref callback, an effect, or the component body.
+    const registerProperty = vi.fn<(d: Descriptor) => void>();
+    stubRegisterProperty(registerProperty);
+
+    vi.resetModules();
+    await import('./Spinner');
+
+    expect(registerProperty.mock.calls.map(([d]) => d.name)).toEqual([
+      '--_spinner-ring-diameter',
+      '--_spinner-ring-stroke',
+    ]);
+    // Both are `<length>` with an initial value, which is what makes a themed
+    // `0` mean `0px` inside the `calc()` rather than poisoning it.
+    for (const [descriptor] of registerProperty.mock.calls) {
+      expect(descriptor.syntax).toBe('<length>');
+      expect(descriptor.inherits).toBe(true);
+      expect(descriptor.initialValue).toBe('0px');
+    }
+  });
+
+  it('survives a second evaluation, and does not need the DOM', async () => {
+    // Two copies of the package on one page, or a fast-refresh re-evaluation:
+    // registerProperty throws on a duplicate rather than replacing, and the
+    // existing registration is this same one.
+    const registerProperty = vi.fn<(d: Descriptor) => void>(() => {
+      throw new Error('InvalidModificationError');
+    });
+    stubRegisterProperty(registerProperty);
+
+    vi.resetModules();
+    await expect(import('./Spinner')).resolves.toBeDefined();
+    expect(registerProperty).toHaveBeenCalledTimes(2);
   });
 });

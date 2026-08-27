@@ -169,6 +169,7 @@ jobs:
           # otherwise its root-absolute asset URLs (/sandbox/_next/...) drop the
           # /<repo> segment and 404. Derived from the repo name so it survives renames.
           SANDBOX_BASE_PATH: /${{ github.event.repository.name }}/sandbox
+          SANDBOX_TEMPLATE_ASSETS_BASE_PATH: /${{ github.event.repository.name }}/sandbox/template-assets
           NODE_OPTIONS: '--max-old-space-size=4096'
 
       # The landing page (assembled in `deploy`) links these straight out of

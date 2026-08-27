@@ -6,7 +6,14 @@ import * as path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
 
-import {buildPlan, readStoryIndex, representativeStories, shotKey, uncoveredTargets} from './plan.mjs';
+import {
+  buildPlan,
+  readStoryIndex,
+  representativeStories,
+  shotKey,
+  storiesInPackages,
+  uncoveredTargets,
+} from './plan.mjs';
 
 const stories = [
   {id: 'core-button--primary', title: 'Core/Button', name: 'Primary', component: 'Button', tags: []},
@@ -24,6 +31,24 @@ const themeOverrides = {
   neutral: {button: ['base']},
   y2k: {button: ['base', 'variant:primary'], badge: ['base']},
 };
+
+describe('storiesInPackages', () => {
+  const mixed = [
+    ...stories,
+    {id: 'lab-drawer--default', title: 'Lab/Drawer', name: 'Default', component: 'Drawer', tags: []},
+    {id: 'charts-bar--default', title: 'Charts/Bar', name: 'Default', component: 'Bar', tags: []},
+  ];
+
+  it('keeps only the stable Storybook package groups', () => {
+    expect(storiesInPackages(mixed, ['Core']).map(story => story.id)).toEqual(
+      stories.map(story => story.id),
+    );
+  });
+
+  it('allows an explicit all-packages audit without changing the release default', () => {
+    expect(storiesInPackages(mixed, ['*'])).toEqual(mixed);
+  });
+});
 
 describe('representativeStories', () => {
   it('prefers a conventionally named story over source order', () => {
@@ -51,6 +76,33 @@ describe('buildPlan', () => {
     const y2k = plan.filter(shot => shot.theme === 'y2k').map(shot => shot.key);
     expect(y2k).toContain('core-button--default__y2k-light');
     expect(y2k).toContain('core-badge--solid__y2k-dark');
+  });
+
+  it('restricts the theme matrix to changed shipped themes', () => {
+    const plan = buildPlan({
+      stories,
+      targets,
+      themeOverrides,
+      defaultTheme: 'neutral',
+      tiers: ['theme-matrix'],
+      matrixThemes: ['y2k'],
+    });
+    expect(new Set(plan.map(shot => shot.theme))).toEqual(new Set(['y2k']));
+    expect(plan.map(shot => shot.key)).toContain('core-badge--solid__y2k-light');
+  });
+
+  it('keeps every shipped theme for touched Core components even when the matrix is scoped', () => {
+    const plan = buildPlan({
+      stories,
+      targets,
+      themeOverrides,
+      defaultTheme: 'neutral',
+      tiers: ['component', 'theme-matrix'],
+      components: ['Button'],
+      matrixThemes: ['y2k'],
+    });
+    expect(plan.some(shot => shot.theme === 'neutral' && shot.component === 'Button')).toBe(true);
+    expect(plan.some(shot => shot.theme === 'y2k' && shot.component === 'Button')).toBe(true);
   });
 
   it('records why a shot is in the plan, merging the reasons of a shot both tiers want', () => {

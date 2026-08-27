@@ -5,7 +5,7 @@
 /**
  * @file useLayer.tsx
  * @input Uses React hooks, Popover API, CSS anchor positioning, typography tokens
- * @output Exports useLayer hook for layer positioning and visibility
+ * @output Exports the public useLayer hook plus internal trigger helpers.
  * @position Core layer utility; used by useHoverCard, useTooltip, etc.
  *
  * SYNC: When modified, update:
@@ -18,6 +18,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -27,6 +28,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {createPortal} from 'react-dom';
 import {addAnchorName, removeAnchorName} from './anchorName';
+import {currentGesture, currentGestureHasClicked} from './gestureCounter';
 import {resolveLayerPortalTarget} from './layerHost';
 import {typeScaleVars, typographyVars} from '../theme/tokens.stylex';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
@@ -71,6 +73,18 @@ const styles = stylex.create({
     marginInlineEnd: offset,
   }),
 });
+
+/**
+ * Props for a control that sits on the trigger but must not dismiss the layer.
+ */
+interface KeepLayerOpenProps {
+  onPointerDown: React.PointerEventHandler<HTMLElement>;
+  /**
+   * Capture phase, so spreading these props never collides with the control's
+   * own `onClick`.
+   */
+  onClickCapture: React.MouseEventHandler<HTMLElement>;
+}
 
 /**
  * Position placement relative to anchor.
@@ -326,6 +340,13 @@ export interface FixedLayerReturn {
   render: (children: ReactNode, props: FixedRenderProps) => ReactNode;
 }
 
+interface InternalLayerFields {
+  wasJustDismissed: () => boolean;
+}
+
+type InternalContextLayerReturn = ContextLayerReturn & InternalLayerFields;
+type InternalFixedLayerReturn = FixedLayerReturn & InternalLayerFields;
+
 function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
 }
@@ -438,6 +459,51 @@ export function getPositionTryFallbacks(
 }
 
 /**
+ * Internal props for controls that sit beside an open layer. This stays out of
+ * the public useLayer/usePopover return types until the input family adopts it.
+ */
+export function useKeepLayerOpenProps(
+  id: string,
+  isOpen: boolean,
+): KeepLayerOpenProps {
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
+
+  return useMemo(
+    () => ({
+      onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
+        if (!isOpenRef.current) {
+          return;
+        }
+        // The browser reads the invoker relationship at both ends of the press.
+        const control = event.currentTarget;
+        const doc = control.ownerDocument;
+        control.setAttribute('popovertarget', id);
+        const onPressEnd = () => {
+          doc.removeEventListener('pointerup', onPressEnd);
+          doc.removeEventListener('pointercancel', onPressEnd);
+          // Light dismiss runs as the pointerup default action after listeners.
+          doc.defaultView?.setTimeout(() => {
+            control.removeAttribute('popovertarget');
+          }, 0);
+        };
+        doc.addEventListener('pointerup', onPressEnd);
+        doc.addEventListener('pointercancel', onPressEnd);
+      },
+      onClickCapture: (event: React.MouseEvent<HTMLElement>) => {
+        const control = event.currentTarget;
+        if (control.hasAttribute('popovertarget')) {
+          // Being an invoker would otherwise toggle the layer shut.
+          event.preventDefault();
+          control.removeAttribute('popovertarget');
+        }
+      },
+    }),
+    [id],
+  );
+}
+
+/**
  * Core layer hook that handles popover behavior and positioning.
  *
  * Supports two positioning modes with type-safe render props:
@@ -451,11 +517,9 @@ export function getPositionTryFallbacks(
  * {layer.render(<Content />, { placement: 'above', alignment: 'center' })}
  * ```
  */
-export function useLayer(options: ContextLayerOptions): ContextLayerReturn;
-export function useLayer(options: FixedLayerOptions): FixedLayerReturn;
-export function useLayer(
+function useLayerImplementation(
   options: ContextLayerOptions | FixedLayerOptions,
-): ContextLayerReturn | FixedLayerReturn {
+): InternalContextLayerReturn | InternalFixedLayerReturn {
   const {mode, onShow, onHide, lightDismiss = false} = options;
   const lazyMount = mode === 'context' ? (options.lazyMount ?? false) : false;
   const id = useId();
@@ -484,6 +548,17 @@ export function useLayer(
   // State drives re-renders; the ref lets the imperative calls avoid
   // stale-closure reads of the previous isOpen value.
   const isOpenRef = useRef(false);
+
+  // The gesture during which the browser last closed this layer on its own.
+  // Read through wasJustDismissed by triggers deciding whether a click is
+  // theirs to act on.
+  const dismissedByGestureRef = useRef<number | null>(null);
+  const forgetDismissalRef = useRef<(() => void) | null>(null);
+
+  const wasJustDismissed = useCallback(() => {
+    const gesture = currentGesture();
+    return dismissedByGestureRef.current === gesture;
+  }, []);
 
   const showPopoverElement = useCallback((popover: HTMLElement) => {
     // Finding infra-4: the Popover API is unsupported on Safari <17 and
@@ -548,6 +623,11 @@ export function useLayer(
   }, [mode, lazyMount]);
 
   const show = useCallback(() => {
+    // Every caller lands here, so this is where the dismissing press is
+    // absorbed: opening now would reopen the popup that same press closed.
+    if (wasJustDismissed()) {
+      return;
+    }
     // A context popover left over until React commits a previous hide must not
     // be reopened. The synchronous mount ref is the source of truth.
     const candidate = popoverRef.current;
@@ -569,12 +649,18 @@ export function useLayer(
     requestContextMount,
     showPopoverElement,
     isCurrentContextPopover,
+    wasJustDismissed,
   ]);
 
   const hide = useCallback(() => {
     pendingShowRef.current = false;
     if (isOpenRef.current) {
       const el = popoverRef.current;
+      // Clear the open state BEFORE hiding: hidePopover fires `toggle`, and
+      // the reconciler below reads this ref to tell the browser's own
+      // dismissals from ours.
+      openedPopoverRef.current = null;
+      isOpenRef.current = false;
       // See finding infra-4 note in `show`: mirror the same guard on hide so
       // unsupported browsers degrade gracefully instead of throwing.
       if (el) {
@@ -584,8 +670,6 @@ export function useLayer(
           el.style.display = 'none';
         }
       }
-      openedPopoverRef.current = null;
-      isOpenRef.current = false;
       setIsOpen(false);
       onHide?.();
     }
@@ -610,6 +694,51 @@ export function useLayer(
         }
       : undefined;
 
+  // Arm only when the dismissing gesture's click is still ahead of us. Some
+  // engines deliver click first; in that order there is nothing left to absorb.
+  const rememberDismissal = useCallback((doc: Document) => {
+    forgetDismissalRef.current?.();
+    if (currentGestureHasClicked()) {
+      return;
+    }
+    dismissedByGestureRef.current = currentGesture();
+    const view = doc.defaultView;
+    let forgetTimer: number | null = null;
+    const forget = () => {
+      dismissedByGestureRef.current = null;
+      doc.removeEventListener('click', scheduleForget, true);
+      if (forgetTimer !== null) {
+        view?.clearTimeout(forgetTimer);
+        forgetTimer = null;
+      }
+      if (forgetDismissalRef.current === forget) {
+        forgetDismissalRef.current = null;
+      }
+    };
+    const scheduleForget = () => {
+      doc.removeEventListener('click', scheduleForget, true);
+      // The next task keeps the dismissal armed through React's click handler.
+      if (view) {
+        forgetTimer = view.setTimeout(() => {
+          forgetTimer = null;
+          if (forgetDismissalRef.current === forget) {
+            forget();
+          }
+        }, 0);
+      } else {
+        forget();
+      }
+    };
+    doc.addEventListener('click', scheduleForget, true);
+    forgetDismissalRef.current = forget;
+  }, []);
+
+  useEffect(() => {
+    // Install capture-phase gesture tracking before the first interaction.
+    currentGesture();
+    return () => forgetDismissalRef.current?.();
+  }, []);
+
   // Reconcile browser-initiated closes (light-dismiss, popover="auto" stack
   // eviction). These are the only cases where the DOM mutates without going
   // through our show/hide — we sync React state back to match.
@@ -626,12 +755,15 @@ export function useLayer(
       if (toggleEvent.newState === 'closed' && isOpenRef.current) {
         openedPopoverRef.current = null;
         isOpenRef.current = false;
+        rememberDismissal(
+          (e.currentTarget as HTMLElement | null)?.ownerDocument ?? document,
+        );
         setIsOpen(false);
         onHide?.();
         clearContextMount();
       }
     },
-    [onHide, clearContextMount],
+    [onHide, clearContextMount, rememberDismissal],
   );
 
   // Ref callback for popover element — sets up the `toggle` listener.
@@ -872,6 +1004,7 @@ export function useLayer(
       show,
       hide,
       isOpen,
+      wasJustDismissed,
       id,
       render: renderContext,
     };
@@ -882,7 +1015,30 @@ export function useLayer(
     show,
     hide,
     isOpen,
+    wasJustDismissed,
     id,
     render: renderFixed,
   };
+}
+
+export function useLayer(options: ContextLayerOptions): ContextLayerReturn;
+export function useLayer(options: FixedLayerOptions): FixedLayerReturn;
+export function useLayer(
+  options: ContextLayerOptions | FixedLayerOptions,
+): ContextLayerReturn | FixedLayerReturn {
+  const {wasJustDismissed: _, ...layer} = useLayerImplementation(options);
+  return layer;
+}
+
+/** @internal Shared with usePopover; not exported from the package barrel. */
+export function useLayerInternal(
+  options: ContextLayerOptions,
+): InternalContextLayerReturn;
+export function useLayerInternal(
+  options: FixedLayerOptions,
+): InternalFixedLayerReturn;
+export function useLayerInternal(
+  options: ContextLayerOptions | FixedLayerOptions,
+): InternalContextLayerReturn | InternalFixedLayerReturn {
+  return useLayerImplementation(options);
 }

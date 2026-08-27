@@ -29,7 +29,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {usePopover} from '../Popover/usePopover';
+import {usePopoverInternal} from '../Popover/usePopover';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {useIndicator} from '../Indicator';
@@ -37,7 +37,6 @@ import type {IndicatorPosition} from '../Indicator';
 import type {IconName} from '../Icon';
 import {
   Field,
-  InputClearButton,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
@@ -45,7 +44,8 @@ import {
 } from '../Field';
 import {Divider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import type {LayerPlacement} from '../Layer/useLayer';
+import {useKeepLayerOpenProps, type LayerPlacement} from '../Layer/useLayer';
+import {InternalInputClearButton} from '../Field/InputClearButton';
 import {Spinner} from '../Spinner';
 import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -80,6 +80,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -217,13 +218,6 @@ const styles = stylex.create({
     width: 'auto',
     borderWidth: 0,
     backgroundColor: 'transparent',
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
     boxShadow: {
       default: 'none',
       ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
@@ -395,21 +389,22 @@ const styles = stylex.create({
 // `--spacing-5` is one line here because `triggerContainer` pins its
 // line-height to exactly that; the two must stay in step, which is why both
 // read the same token rather than one hardcoding 20px.
-const linePad = (token: string) =>
-  `calc((${token} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`;
+// Keep these calculations inline: a consumer's Babel preset can lower a
+// module-scope helper to a function expression before StyleX evaluates this
+// object, and StyleX cannot constant-evaluate that transformed helper.
 
 const sizeStyles = stylex.create({
   sm: {
     minHeight: sizeVars['--size-element-sm'],
-    paddingBlock: linePad(sizeVars['--size-element-sm']),
+    paddingBlock: `calc((${sizeVars['--size-element-sm']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   md: {
     minHeight: sizeVars['--size-element-md'],
-    paddingBlock: linePad(sizeVars['--size-element-md']),
+    paddingBlock: `calc((${sizeVars['--size-element-md']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   lg: {
     minHeight: sizeVars['--size-element-lg'],
-    paddingBlock: linePad(sizeVars['--size-element-lg']),
+    paddingBlock: `calc((${sizeVars['--size-element-lg']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
   },
 });
 
@@ -823,6 +818,7 @@ export function Selector<T extends SelectorOptionType>(
     className,
     style,
     hasClear: hasClearProp,
+    id,
     ...rest
   } = props as SelectorPropsClearable<T>;
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -841,7 +837,10 @@ export function Selector<T extends SelectorOptionType>(
 
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;
-  const triggerId = useId();
+  const generatedTriggerId = useId();
+  // A caller's `id` lands on the trigger either way, so the internal identity
+  // has to be that same value or the label and listbox point at nothing.
+  const triggerId = id ?? generatedTriggerId;
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
@@ -953,7 +952,7 @@ export function Selector<T extends SelectorOptionType>(
     triggerRef.current?.focus();
   }, [announce]);
 
-  const popover = usePopover({
+  const popover = usePopoverInternal({
     onHide: handleLayerHide,
     hasLightDismiss: true,
     hasCloseButton: false,
@@ -965,6 +964,7 @@ export function Selector<T extends SelectorOptionType>(
     // `usePopover` owns — not on the scrolling list inside it.
     surfaceTarget: 'selector-popup',
   });
+  const keepOpenProps = useKeepLayerOpenProps(popover.id, popover.isOpen);
 
   // Open dropdown on mount when isDefaultOpen is true
   useEffect(() => {
@@ -1118,6 +1118,7 @@ export function Selector<T extends SelectorOptionType>(
     onItemMouseEnter,
   } = useCombobox({
     selectableItems: filteredItems,
+    wasJustDismissed: popover.wasJustDismissed,
     // The optimistic value, not the raw prop: with a pending changeAction the
     // prop still holds the old selection, so the popup would open with the
     // highlight on it and Delete/Backspace could clear a value the action has
@@ -1578,6 +1579,7 @@ export function Selector<T extends SelectorOptionType>(
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
+            variant === 'ghost' && interactionOverlayStyles.backgroundImage,
             variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
@@ -1648,7 +1650,8 @@ export function Selector<T extends SelectorOptionType>(
         )}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value != null && !isDisabled && (
-          <InputClearButton
+          <InternalInputClearButton
+            {...keepOpenProps}
             label={t('@astryx.selector.clearLabel', {label})}
             onClick={handleClear}
             iconClassName={stableClassName('selector-clear-icon')}
@@ -1667,6 +1670,7 @@ export function Selector<T extends SelectorOptionType>(
               type="button"
               aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
               aria-describedby={statusTooltip.describedBy}
+              {...keepOpenProps}
               onClick={e => e.stopPropagation()}
               {...stylex.props(
                 focusOutlineStyles.focusVisible,

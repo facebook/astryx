@@ -21,13 +21,7 @@
  * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {
-  useCallback,
-  useImperativeHandle,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import {useCallback, useImperativeHandle, useRef, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -47,6 +41,7 @@ import type {ResizableConfig} from '../Resizable/useResizable';
 import {ResizeHandle} from '../Resizable/ResizeHandle';
 import {themeProps} from '../utils/themeProps';
 import {SizeProvider} from '../SizeContext/SizeContext';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -56,6 +51,85 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 
 /** Width below which dragging collapses the sidebar (when collapsible). */
 const COLLAPSE_THRESHOLD = 160;
+
+// =============================================================================
+// Collapse config
+// =============================================================================
+
+interface ResolvedCollapseConfig {
+  isCollapsible: boolean;
+  defaultIsCollapsed: boolean;
+  isCollapsed: boolean | undefined;
+  onCollapsedChange: ((isCollapsed: boolean) => void) | undefined;
+  /** Dev-warning text when both props address the same state, else null. */
+  conflict: string | null;
+}
+
+/**
+ * `collapsible` and `resizable` can each carry collapse state, so they are
+ * normalized here into one config with one owner — two independently
+ * initialized copies of the same boolean is what rendered an expanded nav at
+ * width 0 in #4790. `resizable` is the superset, so its keys win.
+ */
+function resolveCollapseConfig(
+  collapsible: boolean | SideNavCollapsibleConfig,
+  resizable: boolean | ResizableConfig,
+): ResolvedCollapseConfig {
+  const fromCollapsible = typeof collapsible === 'object' ? collapsible : {};
+  const fromResizable = typeof resizable === 'object' ? resizable : {};
+
+  const resizableCarriesCollapse =
+    fromResizable.defaultIsCollapsed !== undefined ||
+    fromResizable.isCollapsed !== undefined ||
+    fromResizable.onCollapseChange !== undefined;
+
+  return {
+    isCollapsible: !!collapsible || resizableCarriesCollapse,
+    defaultIsCollapsed:
+      (resizableCarriesCollapse
+        ? fromResizable.defaultIsCollapsed
+        : fromCollapsible.defaultIsCollapsed) ?? false,
+    isCollapsed: resizableCarriesCollapse
+      ? fromResizable.isCollapsed
+      : fromCollapsible.isCollapsed,
+    onCollapsedChange: resizableCarriesCollapse
+      ? fromResizable.onCollapseChange
+      : fromCollapsible.onCollapsedChange,
+    conflict: describeCollapseConflict(fromCollapsible, fromResizable),
+  };
+}
+
+/**
+ * Names the keys that address the same collapse state on both props, and
+ * which one won. Silent for the common non-overlapping combinations —
+ * `collapsible: true` alongside a resize config is not a conflict.
+ */
+function describeCollapseConflict(
+  collapsible: SideNavCollapsibleConfig,
+  resizable: ResizableConfig,
+): string | null {
+  const collapsibleKeys = [
+    collapsible.defaultIsCollapsed !== undefined && 'defaultIsCollapsed',
+    collapsible.isCollapsed !== undefined && 'isCollapsed',
+    collapsible.onCollapsedChange !== undefined && 'onCollapsedChange',
+  ].filter((key): key is string => key !== false);
+  const resizableKeys = [
+    resizable.defaultIsCollapsed !== undefined && 'defaultIsCollapsed',
+    resizable.isCollapsed !== undefined && 'isCollapsed',
+    resizable.onCollapseChange !== undefined && 'onCollapseChange',
+  ].filter((key): key is string => key !== false);
+
+  if (collapsibleKeys.length === 0 || resizableKeys.length === 0) {
+    return null;
+  }
+
+  return (
+    `${collapsibleKeys.map(key => `collapsible.${key}`).join(', ')} and ` +
+    `${resizableKeys.map(key => `resizable.${key}`).join(', ')} address the ` +
+    `same collapse state. resizable wins; the collapsible ` +
+    `${collapsibleKeys.length === 1 ? 'value is' : 'values are'} ignored.`
+  );
+}
 
 // =============================================================================
 // Styles
@@ -269,8 +343,13 @@ export interface SideNavProps extends BaseProps<HTMLElement> {
    *   - `defaultWidth` — initial width in pixels (default: 260)
    *   - `minWidth` — minimum width in pixels (default: 180)
    *   - `maxWidth` — maximum width in pixels (default: 480)
-   *   - `autoSaveId` — localStorage key for persisting width
+   *   - `autoSaveId` — localStorage key for persisting width and collapse state
    *   - `onWidthChange` — called when the width changes
+   *   - `defaultIsCollapsed` / `isCollapsed` / `onCollapseChange` — collapse
+   *     state, when `resizable` should own it rather than `collapsible`
+   *
+   * When both props carry collapse state, `resizable` wins and a dev warning
+   * names the conflicting keys.
    *
    * @default false
    */
@@ -334,40 +413,31 @@ export function SideNav({
   const t = useTranslator();
   // Parse collapsible prop
   const collapsibleConfig = typeof collapsible === 'object' ? collapsible : {};
-  const isCollapsible = !!collapsible;
   const hasCollapseButton = collapsibleConfig.hasButton ?? true;
-  const defaultIsCollapsed = collapsibleConfig.defaultIsCollapsed ?? false;
-  const controlledCollapsed = collapsibleConfig.isCollapsed;
-  const onCollapsedChange = collapsibleConfig.onCollapsedChange;
 
   // Resizable config
   const resizableConfig = typeof resizable === 'object' ? resizable : {};
   const isResizable = !!resizable;
 
-  // Collapse state (controlled + uncontrolled)
-  const isControlled = controlledCollapsed !== undefined;
-  const [uncontrolledCollapsed, setUncontrolledCollapsed] =
-    useState(defaultIsCollapsed);
-  const collapsed = isControlled ? controlledCollapsed : uncontrolledCollapsed;
+  const collapseConfig = resolveCollapseConfig(collapsible, resizable);
+  const {isCollapsible, onCollapsedChange} = collapseConfig;
+
+  useDevWarning(
+    'SideNav',
+    collapseConfig.conflict ?? '',
+    collapseConfig.conflict != null,
+  );
+
   const navRef = useRef<HTMLElement>(null);
   const mergedNavRef = useMergedRefs(ref, navRef);
   const collapseStateRef = useRef<SideNavCollapseState>({
-    isCollapsed: collapsed,
+    isCollapsed: false,
     toggle: () => {},
     isCollapsible,
   });
 
-  const setCollapsedState = useCallback(
-    (value: boolean) => {
-      if (!isControlled) {
-        setUncontrolledCollapsed(value);
-      }
-      onCollapsedChange?.(value);
-    },
-    [isControlled, onCollapsedChange],
-  );
-
-  // Resize hook — callbacks keep SideNav in sync without effects.
+  // useResizable is the sole collapse owner in every SideNav mode. Keeping that
+  // owner mounted when resize is toggled preserves the current collapse state.
   const resizableHook = useResizable({
     defaultSize: resizableConfig.defaultWidth ?? 260,
     minSizePx: resizableConfig.minWidth ?? 180,
@@ -375,9 +445,13 @@ export function SideNav({
     collapsible: isCollapsible,
     collapsedSize: COLLAPSE_THRESHOLD,
     autoSaveId: resizableConfig.autoSaveId,
+    defaultIsCollapsed: collapseConfig.defaultIsCollapsed,
+    isCollapsed: collapseConfig.isCollapsed,
     onSizeChange: resizableConfig.onWidthChange,
-    onCollapseChange: isCollapsible ? setCollapsedState : undefined,
+    onCollapseChange: onCollapsedChange,
   });
+
+  const collapsed = resizableHook.isCollapsed;
 
   const toggle = useCallback(() => {
     const next = !collapsed;
@@ -389,15 +463,12 @@ export function SideNav({
       isCollapsed: next,
     };
 
-    setCollapsedState(next);
-    if (isResizable) {
-      if (next) {
-        resizableHook.collapse();
-      } else {
-        resizableHook.expand();
-      }
+    if (next) {
+      resizableHook.collapse();
+    } else {
+      resizableHook.expand();
     }
-  }, [collapsed, setCollapsedState, isResizable, resizableHook]);
+  }, [collapsed, resizableHook]);
 
   const showResizeHandle = isResizable && !collapsed;
 

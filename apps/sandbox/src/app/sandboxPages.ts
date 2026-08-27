@@ -234,6 +234,12 @@ export const categories: SandboxCategory[] = [
           'Test any combination of Table plugins with live scroll FPS, dropped-frame, and re-render metrics',
       },
       {
+        name: 'Motion Lab',
+        href: '/pages/motion-lab/',
+        description:
+          'Every motion proposal as a working before-and-after, with the durations, curves and springs tunable live',
+      },
+      {
         name: 'Foundations',
         href: '/pages/doc-preview/',
         description:

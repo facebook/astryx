@@ -15,7 +15,7 @@
 import React, {useCallback, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {composeEventHandlers, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -96,6 +96,8 @@ export function NavHeadingMenu({
   className,
   style: styleProp,
   'data-testid': testId,
+  onKeyDown: onKeyDownProp,
+  ...rest
 }: NavHeadingMenuProps) {
   const closeCtx = useNavHeadingCloseContext();
   const closeMenu = closeCtx?.closeMenu;
@@ -164,15 +166,16 @@ export function NavHeadingMenu({
     <NavHeadingMenuContext value={ctx}>
       <div
         ref={useMergedRefs(ref, listRef)}
-        role="menu"
-        onKeyDown={listKeyDown}
         data-testid={testId}
         {...mergeProps(
           themeProps('nav-heading-menu', {size}),
           stylex.props(styles.root, sizeStyles[size], xstyle),
           className,
           inlineStyle,
-        )}>
+        )}
+        {...rest}
+        role="menu"
+        onKeyDown={composeEventHandlers(onKeyDownProp, listKeyDown)}>
         {children}
       </div>
     </NavHeadingMenuContext>

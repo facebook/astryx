@@ -48,6 +48,7 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 import type {ButtonVariantMap} from './index';
 
@@ -200,35 +201,14 @@ const variants = stylex.create({
   primary: {
     backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-on-accent'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   secondary: {
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   ghost: {
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   destructive: {
     backgroundColor: colorVars['--color-error'],
@@ -237,13 +217,6 @@ const variants = stylex.create({
     // red button reads as another control's focus. Only the color differs —
     // width, style and offset come from the shared outline.
     outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
 });
 
@@ -665,6 +638,7 @@ export function Button({
     styles.base,
     sizeStyles[size],
     isIconOnly && styles.iconOnly,
+    interactionOverlayStyles.backgroundImage,
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     renderAsLink && styles.link,
@@ -689,7 +663,13 @@ export function Button({
   );
 
   const sharedMergedProps = mergeProps(
-    themeProps('button', {variant, size}),
+    // Inside a group the group owns the surface's elevation, so the button
+    // reflects the tier it actually paints rather than the prop it was handed.
+    themeProps('button', {
+      variant,
+      size,
+      elevation: buttonGroup ? 'none' : elevation,
+    }),
     sharedStylexProps,
     className,
     style,

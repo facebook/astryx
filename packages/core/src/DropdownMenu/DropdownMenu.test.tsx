@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {DropdownMenu} from './DropdownMenu';
@@ -315,10 +315,7 @@ describe('DropdownMenu', () => {
 });
 
 describe('DropdownMenu light-dismiss race', () => {
-  it('does not re-open the menu when a click follows a hide within the guard window', () => {
-    // Reproduces the iOS Safari race: pointerdown fires light-dismiss before
-    // the subsequent click on the trigger; without the guard, the click would
-    // immediately re-open the menu in the same tap.
+  function openMenu() {
     render(
       <DropdownMenu
         button={{label: 'Actions'}}
@@ -326,13 +323,50 @@ describe('DropdownMenu light-dismiss race', () => {
         data-testid="astryx-dropdown-menu"
       />,
     );
-
     const trigger = screen.getByTestId('astryx-dropdown-menu');
-    fireEvent.click(trigger); // open
-    fireEvent.click(trigger); // close (stamps guard)
-    fireEvent.click(trigger); // would re-open without guard
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
-    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledTimes(1);
+    return trigger;
+  }
+
+  /**
+   * The browser dismisses the menu on pointerup and queues the `toggle` event;
+   * on the engines that lose the race it reaches React before the trigger's
+   * own click, which then reads a closed menu.
+   */
+  function lightDismiss() {
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+  }
+
+  it('does not re-open when the trigger click follows its own light dismiss', () => {
+    const trigger = openMenu();
+
+    fireEvent.pointerDown(trigger);
+    lightDismiss();
+    fireEvent.click(trigger);
+
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-opens on a press of its own after a light dismiss', () => {
+    const trigger = openMenu();
+
+    fireEvent.pointerDown(trigger);
+    lightDismiss();
+    fireEvent.click(trigger);
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
+
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(2);
   });
 });
 

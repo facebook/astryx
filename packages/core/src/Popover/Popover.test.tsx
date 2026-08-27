@@ -14,6 +14,7 @@ import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import React, {useRef} from 'react';
 import {Popover} from './Popover';
+import type {UsePopoverReturn} from './usePopover';
 import {Dialog} from '../Dialog';
 import {SegmentedControl, SegmentedControlItem} from '../SegmentedControl';
 
@@ -53,6 +54,19 @@ beforeAll(() => {
 afterAll(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (HTMLElement.prototype as any).matches = originalMatches;
+});
+
+describe('usePopover public return type', () => {
+  it('keeps dismissal internals out of the public contract', () => {
+    const hasKeepOpenProps: 'keepOpenProps' extends keyof UsePopoverReturn
+      ? true
+      : false = false;
+    const hasDismissalGuard: 'wasJustDismissed' extends keyof UsePopoverReturn
+      ? true
+      : false = false;
+    expect(hasKeepOpenProps).toBe(false);
+    expect(hasDismissalGuard).toBe(false);
+  });
 });
 
 describe('Popover', () => {
@@ -485,5 +499,29 @@ describe('Popover', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
       expect(trigger).toHaveFocus();
     });
+  });
+
+  it('puts the theme target and styling escape hatches on the popup surface', () => {
+    render(
+      <Popover
+        isOpen
+        content={<span data-testid="content">Popover content</span>}
+        label="Test popover"
+        data-testid="popover"
+        className="consumer-popover"
+        style={{padding: 0}}>
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    const target = document.querySelector('.astryx-popover');
+    expect(target).not.toBeNull();
+    // The surface paints background, radius and elevation; a target on the
+    // content box inside it would style a box that paints nothing.
+    expect(target).toHaveClass('astryx-popover-surface');
+    expect(target).toHaveClass('consumer-popover');
+    expect(target).toHaveStyle({padding: '0'});
+    expect(target).toContainElement(screen.getByTestId('content'));
+    expect(screen.getByTestId('popover')).not.toHaveClass('consumer-popover');
   });
 });

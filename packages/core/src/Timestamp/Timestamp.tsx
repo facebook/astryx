@@ -419,6 +419,7 @@ export function Timestamp({
   style,
   ref,
   'data-testid': testId,
+  ...rest
 }: TimestampProps) {
   const t = useTranslator();
   const locale = useLocale();
@@ -530,15 +531,16 @@ export function Timestamp({
       <time
         ref={mergedTimeRef}
         dateTime={isoString}
+        data-testid={testId}
+        {...stylex.props(styles.time)}
+        {...rest}
         // `ariaLabelText` is '' only for an invalid date, which bails out
         // before rendering — but keep the guard local: an empty aria-label
         // must be omitted entirely (not rendered as aria-label="") so AT
         // falls back to reading the visible <time> content.
-        aria-label={
-          isRelativeFormat(effectiveFormat) && ariaLabelText !== ''
-            ? ariaLabelText
-            : undefined
-        }
+        {...(isRelativeFormat(effectiveFormat) && ariaLabelText !== ''
+          ? {'aria-label': ariaLabelText}
+          : {})}
         // The hover card is anchored here with focusTrigger="always", which
         // attaches focus listeners but does not itself make the anchor
         // focusable. A bare <time> is not focusable, so without a tab stop
@@ -547,9 +549,7 @@ export function Timestamp({
         // gratuitous tab stops otherwise. The card carries its own
         // dashed-underline hover indication as the affordance, so the anchor
         // needs no separate focus outline.
-        tabIndex={showTooltip ? 0 : undefined}
-        data-testid={testId}
-        {...stylex.props(styles.time)}>
+        {...(showTooltip ? {tabIndex: 0} : {})}>
         {displayText}
       </time>
     </Text>

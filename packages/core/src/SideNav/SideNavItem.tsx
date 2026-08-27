@@ -52,6 +52,7 @@ import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {
   useSideNavCollapse,
   SideNavCollapseContext,
@@ -151,14 +152,6 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     borderRadius: radiusVars['--radius-element'],
-    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
-    },
-    ':active': {
-      backgroundColor: colorVars['--color-overlay-pressed'],
-    },
   },
   // Primary action element inside the split-action row (link or button).
   // Flex:1 so it fills remaining space, giving a wide click target.
@@ -512,6 +505,7 @@ export function SideNavItem({
       }),
       focusOutlineProps.focusVisible(
         navItemStyles.item,
+        interactionOverlayStyles.backgroundColor,
         navItemStyles[size],
         styles.itemCollapsed,
         size === 'sm' && styles.itemCollapsedSm,
@@ -617,6 +611,7 @@ export function SideNavItem({
 
   const itemStyleArgs = [
     navItemStyles.item,
+    interactionOverlayStyles.backgroundColor,
     navItemStyles[size],
     isSelected && navItemStyles.selected,
     isDisabled && navItemStyles.disabled,
@@ -662,7 +657,10 @@ export function SideNavItem({
           }
           aria-expanded={!isItemCollapsed}
           aria-controls={`${id}-children`}
-          {...focusOutlineProps.focusVisible(styles.expandToggle)}>
+          {...focusOutlineProps.focusVisible(
+            styles.expandToggle,
+            interactionOverlayStyles.backgroundColor,
+          )}>
           <Icon
             icon="chevronDown"
             size="lg"
