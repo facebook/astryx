@@ -42,6 +42,11 @@ const meta: Meta<typeof Typeahead> = {
     hasEntriesOnFocus: {control: 'boolean'},
     hasClear: {control: 'boolean'},
     maxMenuItems: {control: 'number'},
+    minQueryLength: {
+      control: 'number',
+      description:
+        'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
+    },
     size: {
       control: 'radio',
       options: ['sm', 'md', 'lg'],
@@ -176,6 +181,18 @@ export const LimitedResults: Story = {
   name: 'Max 3 Results',
 };
 
+export const MinQueryLength: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    label: 'Fruit (type 3 characters)',
+    placeholder: 'Search fruits...',
+    description: 'The search runs once three characters are typed.',
+    minQueryLength: 3,
+  },
+  name: 'Minimum Query Length',
+};
+
 export const SizeVariants: Story = {
   render: () => {
     const [sm, setSm] = useState<SearchableItem | null>(null);
@@ -227,7 +244,8 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<SearchableItem | null>(null);
     const [b, setB] = useState<SearchableItem | null>(null);
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 300}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 300}}>
         <Typeahead
           label="Attached (default)"
           searchSource={fruitSource}

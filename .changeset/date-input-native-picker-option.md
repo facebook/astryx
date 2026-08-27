@@ -19,7 +19,7 @@ express: `weekStartsOn`, `numberOfMonths`, or `dateConstraints`.
 `format` and `placeholder` still apply in native mode — DateInput paints the
 closed field's text itself, over the control, so a date reads the same on a
 phone as on a desktop. `min` and `max` are forwarded, but a native picker may
-not *show* them: on iOS they are constraint-validation flags rather than
+not _show_ them: on iOS they are constraint-validation flags rather than
 clamps, so an out-of-range date can be selected, and it is refused on commit
 and announced rather than greyed out in the picker. Mouse-driven devices are
 unaffected.

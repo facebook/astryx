@@ -154,6 +154,10 @@ export const TEMPLATE_COMPONENTS: Record<
   table: lazy(
     () => import('../../../../packages/cli/assets/templates/pages/table/page'),
   ),
+  'table-filter': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-filter/page'),
+  ),
   'table-grouped': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-grouped/page'),

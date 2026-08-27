@@ -663,7 +663,13 @@ export function Button({
   );
 
   const sharedMergedProps = mergeProps(
-    themeProps('button', {variant, size}),
+    // Inside a group the group owns the surface's elevation, so the button
+    // reflects the tier it actually paints rather than the prop it was handed.
+    themeProps('button', {
+      variant,
+      size,
+      elevation: buttonGroup ? 'none' : elevation,
+    }),
     sharedStylexProps,
     className,
     style,

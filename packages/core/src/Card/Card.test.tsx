@@ -4,6 +4,7 @@ import {createRef} from 'react';
 import {describe, it, expect} from 'vitest';
 import {render} from '@testing-library/react';
 import {Card} from './Card';
+import type {CardVariant} from './Card';
 
 describe('Card', () => {
   it('renders children', () => {
@@ -66,5 +67,73 @@ describe('Card', () => {
     };
     const classes = (['none', 'low', 'med', 'high'] as const).map(classFor);
     expect(new Set(classes).size).toBe(4);
+  });
+
+  // Deriving the prop from CardVariantMap must not change which values it
+  // accepts. A key added to or dropped from the map fails to type-check here:
+  // a missing one against Record<CardVariant, true>, an extra one as an excess
+  // property.
+  const builtInVariants: Record<CardVariant, true> = {
+    default: true,
+    transparent: true,
+    muted: true,
+    blue: true,
+    cyan: true,
+    gray: true,
+    green: true,
+    orange: true,
+    pink: true,
+    purple: true,
+    red: true,
+    teal: true,
+    yellow: true,
+  };
+
+  it('accepts exactly the thirteen built-in variants, each reflected', () => {
+    const variants = Object.keys(builtInVariants) as CardVariant[];
+    expect(variants).toHaveLength(13);
+    for (const variant of variants) {
+      const {container} = render(<Card variant={variant}>C</Card>);
+      expect(container.firstElementChild).toHaveAttribute(
+        'data-variant',
+        variant,
+      );
+    }
+  });
+
+  describe('a variant a theme added', () => {
+    // The cast stands in for the module augmentation `astryx theme build`
+    // emits; that the augmentation itself widens the prop is covered by
+    // packages/cli/clients/cli/commands/build-theme.variants.test.mjs.
+    const themeAdded = 'brand' as CardVariant;
+
+    const classesFor = (variant: CardVariant) => {
+      const {container} = render(<Card variant={variant}>C</Card>);
+      return new Set(container.firstElementChild!.className.split(' '));
+    };
+
+    it('renders the selector a theme rule needs', () => {
+      const {container} = render(<Card variant={themeAdded}>C</Card>);
+      const root = container.firstElementChild!;
+      expect(root).toHaveAttribute('data-variant', 'brand');
+      expect(root.className).toContain('astryx-card');
+      expect(root.className).toContain('brand');
+    });
+
+    it('falls through to base styles instead of another variant', () => {
+      const muted = classesFor('muted');
+      const blue = classesFor('blue');
+      const brand = classesFor(themeAdded);
+
+      const variantOwned = [
+        ...[...muted].filter(c => !blue.has(c)),
+        ...[...blue].filter(c => !muted.has(c)),
+      ];
+      const shared = [...muted].filter(c => blue.has(c));
+
+      expect(variantOwned.length).toBeGreaterThan(0);
+      expect(variantOwned.filter(c => brand.has(c))).toEqual([]);
+      expect(shared.filter(c => !brand.has(c))).toEqual([]);
+    });
   });
 });

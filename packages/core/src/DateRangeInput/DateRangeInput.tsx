@@ -374,8 +374,10 @@ export interface DateRangeInputProps extends Omit<
    * Minimum number of days the selected range must span, counting both
    * endpoints — `minRangeSpan={2}` forbids a single-day range. Once a start
    * date is picked, days closer than this to it are disabled — except the
-   * start itself, which stays selectable as the active anchor. Defaults to 1
-   * (a same-day start and end is allowed).
+   * start itself, which stays selectable. Clicking the start again commits a
+   * one-day range when the minimum allows it; otherwise it cancels the
+   * in-progress selection so the start can be moved. Defaults to 1 (a
+   * same-day start and end is allowed).
    */
   minRangeSpan?: number;
 

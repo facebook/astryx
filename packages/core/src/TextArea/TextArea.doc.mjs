@@ -187,6 +187,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-text-area', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
+      {className: 'astryx-text-area-control'},
+      {className: 'astryx-text-area-counter'},
       // Still emitted beside the names above, so themes written against
       // them keep working. Drop in the next major.
       {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled', 'readonly'], deprecatedFor: 'text-area'},
@@ -385,6 +387,8 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-text-area', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
+      {className: 'astryx-text-area-control'},
+      {className: 'astryx-text-area-counter'},
       // Still emitted beside the names above, so themes written against
       // them keep working. Drop in the next major.
       {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled', 'readonly'], deprecatedFor: 'text-area'},

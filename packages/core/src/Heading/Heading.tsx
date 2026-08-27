@@ -281,7 +281,6 @@ export function Heading({
           className,
           {...style, ...inlineStyle},
         )}
-        title={tooltipEnabled ? truncation.fullText : undefined}
         {...ariaProps}
         {...props}>
         {children}

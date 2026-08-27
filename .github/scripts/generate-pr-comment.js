@@ -11,6 +11,9 @@
 const fs = require('node:fs');
 const { buildA11ySection } = require('./lib/a11y-format');
 const { buildVisualSection } = require('./lib/visual-format');
+// Report-file strings render as literal inline text, report numbers as
+// numbers — the comment's structure comes only from this file's literals.
+const { inline, num } = require('./lib/report-text');
 
 const args = process.argv.slice(2);
 const getArg = (name) => {
@@ -48,14 +51,17 @@ function getStorybookLink(storybookBaseUrl, storyTitle) {
   // storyTitle may be a single string or an array when multiple story files match
   const title = Array.isArray(storyTitle) ? storyTitle[0] : storyTitle;
   if (!title) return null;
-  // Storybook converts "Core/XDSButton" to "core-xdsbutton" as the story ID prefix
-  const storyPath = title.toLowerCase().replace(/\//g, '-');
+  // Storybook converts "Core/XDSButton" to "core-xdsbutton" as the story ID
+  // prefix. Story ids only ever contain [a-z0-9_-]; the title came from a
+  // report file, so drop anything outside that alphabet before it lands in
+  // the href.
+  const storyPath = title.toLowerCase().replace(/\//g, '-').replace(/[^a-z0-9_-]/g, '');
   return `${storybookBaseUrl}?path=/docs/${storyPath}--docs`;
 }
 
 // Build an external link that opens in a new tab
 function extLink(text, url) {
-  return `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  return `<a href="${String(url).replace(/"/g, '%22')}" target="_blank" rel="noopener noreferrer">${text}</a>`;
 }
 
 // Build component stats section
@@ -66,16 +72,16 @@ if (analysis.newComponents && analysis.newComponents.length > 0) {
     const stats = analysis.componentStats[comp] || {};
     const sbLink = getStorybookLink(storybookUrl, stats.storyTitle);
     const sbBadge = sbLink ? ` · ${extLink('View in Storybook', sbLink)}` : '';
-    const pkgBadge = stats.package ? ` <sub>(${stats.package})</sub>` : '';
-    componentSection += `<details>\n<summary><strong>${comp}</strong>${pkgBadge}${sbBadge}</summary>\n\n`;
+    const pkgBadge = stats.package ? ` <sub>(${inline(stats.package)})</sub>` : '';
+    componentSection += `<details>\n<summary><strong>${inline(comp)}</strong>${pkgBadge}${sbBadge}</summary>\n\n`;
     componentSection += `| Metric | Value |\n|--------|-------|\n`;
-    componentSection += `| Bundle Size (ESM) | ${stats.esmSize || 'N/A'} |\n`;
-    componentSection += `| Bundle Size (CJS) | ${stats.cjsSize || 'N/A'} |\n`;
-    componentSection += `| Lines of Code | ${stats.linesOfCode || 'N/A'} |\n`;
-    componentSection += `| Source Files | ${stats.fileCount || 'N/A'} |\n`;
-    componentSection += `| Complexity | ${stats.complexityRating || 'N/A'} (${stats.complexity || 0}) |\n`;
-    componentSection += `| Exports | ${stats.exports?.join(', ') || 'N/A'} |\n`;
-    componentSection += `| Props Count | ${stats.propsCount || 'N/A'} |\n`;
+    componentSection += `| Bundle Size (ESM) | ${inline(stats.esmSize) || 'N/A'} |\n`;
+    componentSection += `| Bundle Size (CJS) | ${inline(stats.cjsSize) || 'N/A'} |\n`;
+    componentSection += `| Lines of Code | ${inline(stats.linesOfCode) || 'N/A'} |\n`;
+    componentSection += `| Source Files | ${inline(stats.fileCount) || 'N/A'} |\n`;
+    componentSection += `| Complexity | ${inline(stats.complexityRating) || 'N/A'} (${num(stats.complexity)}) |\n`;
+    componentSection += `| Exports | ${stats.exports?.map(inline).join(', ') || 'N/A'} |\n`;
+    componentSection += `| Props Count | ${inline(stats.propsCount) || 'N/A'} |\n`;
     componentSection += `| Has Tests | ${stats.hasTests ? 'Yes' : 'No'} |\n`;
     componentSection += `| Has Stories | ${stats.hasStories ? 'Yes' : 'No'} |\n`;
     componentSection += `\n</details>\n\n`;
@@ -94,22 +100,22 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
     const newExports = analysis.newExports || [];
     const compExports = stats.exports || [];
     const newInComp = compExports.filter(e => newExports.includes(e));
-    const newBadge = newInComp.length > 0 ? ` · 🆕 ${newInComp.join(', ')}` : '';
-    const pkgBadge = stats.package ? ` <sub>(${stats.package})</sub>` : '';
+    const newBadge = newInComp.length > 0 ? ` · 🆕 ${newInComp.map(inline).join(', ')}` : '';
+    const pkgBadge = stats.package ? ` <sub>(${inline(stats.package)})</sub>` : '';
 
-    componentSection += `<details>\n<summary><strong>${comp}</strong>${pkgBadge}${sbBadge}${newBadge}</summary>\n\n`;
+    componentSection += `<details>\n<summary><strong>${inline(comp)}</strong>${pkgBadge}${sbBadge}${newBadge}</summary>\n\n`;
     componentSection += `| Metric | Before | After | Delta |\n|--------|--------|-------|-------|\n`;
 
-    const esmDelta = stats.esmBytes && baseStats.esmBytes
-      ? (stats.esmBytes - baseStats.esmBytes)
+    const esmDelta = Number.isFinite(Number(stats.esmBytes)) && Number.isFinite(Number(baseStats.esmBytes))
+      ? (Number(stats.esmBytes) - Number(baseStats.esmBytes))
       : null;
     const esmDeltaStr = esmDelta !== null
       ? (esmDelta > 0 ? `+${esmDelta}B` : `${esmDelta}B`)
       : 'N/A';
 
-    componentSection += `| Bundle Size (ESM) | ${baseStats.esmSize || 'N/A'} | ${stats.esmSize || 'N/A'} | ${esmDeltaStr} |\n`;
-    componentSection += `| Lines of Code | ${baseStats.linesOfCode || 'N/A'} | ${stats.linesOfCode || 'N/A'} | - |\n`;
-    componentSection += `| Complexity | ${baseStats.complexityRating || 'N/A'} | ${stats.complexityRating || 'N/A'} (${stats.complexity || 0}) | - |\n`;
+    componentSection += `| Bundle Size (ESM) | ${inline(baseStats.esmSize) || 'N/A'} | ${inline(stats.esmSize) || 'N/A'} | ${esmDeltaStr} |\n`;
+    componentSection += `| Lines of Code | ${inline(baseStats.linesOfCode) || 'N/A'} | ${inline(stats.linesOfCode) || 'N/A'} | - |\n`;
+    componentSection += `| Complexity | ${inline(baseStats.complexityRating) || 'N/A'} | ${inline(stats.complexityRating) || 'N/A'} (${num(stats.complexity)}) | - |\n`;
     componentSection += `\n</details>\n\n`;
   }
 }
@@ -127,7 +133,11 @@ if (visualFile) {
     visualVerdict = null;
   }
 }
-const visualSection = buildVisualSection(visualVerdict, getArg('visual-report-url'));
+const visualSection = buildVisualSection(
+  visualVerdict,
+  getArg('visual-report-url'),
+  getArg('visual-image-url'),
+);
 
 // Build bundle size section — one row per package the PR actually touched.
 let bundleSection = '### Bundle Size Summary\n\n';
@@ -144,7 +154,7 @@ if (bundlePackages.length > 0) {
   bundleSection += `| Package | Size (ESM) | Size (CJS) | Gzipped |\n`;
   bundleSection += `|---------|------------|------------|----------|\n`;
   for (const b of bundlePackages) {
-    bundleSection += `| ${b.package} | ${b.esmSize || 'N/A'} | ${b.cjsSize || 'N/A'} | ${b.gzipSize || 'N/A'} |\n`;
+    bundleSection += `| ${inline(b.package)} | ${inline(b.esmSize) || 'N/A'} | ${inline(b.cjsSize) || 'N/A'} | ${inline(b.gzipSize) || 'N/A'} |\n`;
   }
   bundleSection += `\n`;
 } else {
@@ -152,7 +162,7 @@ if (bundlePackages.length > 0) {
 }
 
 if (analysis.bundleDelta) {
-  const delta = analysis.bundleDelta;
+  const delta = num(analysis.bundleDelta);
   const direction = delta > 0 ? 'increased' : delta < 0 ? 'decreased' : 'unchanged';
   bundleSection += `**Bundle size ${direction}:** ${delta > 0 ? '+' : ''}${delta} bytes\n\n`;
 }

@@ -301,6 +301,7 @@ export function Token({
   style,
   'data-testid': testId,
   ref,
+  ...rest
 }: TokenProps) {
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
@@ -338,8 +339,8 @@ export function Token({
 
   const sharedProps = {
     'data-testid': testId,
-    'aria-label': isLabelHidden ? label : undefined,
-    'aria-description': description,
+    ...(isLabelHidden ? {'aria-label': label} : {}),
+    ...(description != null ? {'aria-description': description} : {}),
   };
 
   if (role === 'link') {
@@ -348,8 +349,6 @@ export function Token({
         <LinkComponent
           ref={ref as React.Ref<HTMLAnchorElement>}
           href={href as string}
-          aria-disabled={isDisabled || undefined}
-          {...sharedProps}
           {...mergeProps(
             themeProps('token', {color, size}),
             focusOutlineProps.focusVisible(
@@ -363,7 +362,10 @@ export function Token({
             ),
             className,
             style,
-          )}>
+          )}
+          {...rest}
+          {...(isDisabled ? {'aria-disabled': true} : {})}
+          {...sharedProps}>
           {content}
         </LinkComponent>
       );
@@ -395,7 +397,6 @@ export function Token({
             {label}
           </span>
         }
-        {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
           focusOutlineProps.focusWithin(
@@ -410,6 +411,8 @@ export function Token({
           className,
           style,
         )}
+        {...rest}
+        {...sharedProps}
       />
     );
   }
@@ -427,7 +430,6 @@ export function Token({
       <span
         ref={ref}
         onClick={isDisabled ? undefined : handleContainerClick}
-        {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
           focusOutlineProps.focusWithin(
@@ -441,7 +443,9 @@ export function Token({
           ),
           className,
           style,
-        )}>
+        )}
+        {...rest}
+        {...sharedProps}>
         {icon}
         <button
           type="button"
@@ -465,7 +469,6 @@ export function Token({
   return (
     <span
       ref={ref}
-      {...sharedProps}
       {...mergeProps(
         themeProps('token', {color, size}),
         stylex.props(
@@ -477,7 +480,9 @@ export function Token({
         ),
         className,
         style,
-      )}>
+      )}
+      {...rest}
+      {...sharedProps}>
       {content}
     </span>
   );

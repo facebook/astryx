@@ -85,6 +85,9 @@ jobs:
       contents: read
     outputs:
       has_components: ${{ steps.check.outputs.has_components }}
+      # Stable visual scope is separate from component scope: Core and the
+      # non-private shipped themes participate; canaryOnly packages do not.
+      has_stable_visual: ${{ steps.check.outputs.has_stable_visual }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -103,11 +106,21 @@ jobs:
         run: |
           if ! git merge-base HEAD origin/${{ github.base_ref }} >/dev/null 2>&1; then
             echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} (clone too shallow) — assuming components changed so pr-a11y still runs"
-            echo "has_components=true" >> $GITHUB_OUTPUT
+            echo "has_components=true" >> "$GITHUB_OUTPUT"
+            # Fail closed for the stable lane too: without a merge base we do
+            # not know whether a stable package changed.
+            echo "has_stable_visual=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ packages/lab/src/ | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1)
-          echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          CHANGED=$(printf '%s\n' "$FILES" | grep -E '^packages/(core|lab)/src/' | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1 || true)
+          echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+          # One classifier owns the release-channel rule. It reads each
+          # package's `astryx.canaryOnly` metadata rather than hard-coding
+          # today's Lab/charts/richtext/vega list.
+          printf '%s\n' "$FILES" \
+            | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT"
 
   # Run tests (parallel with build)
   test:
@@ -338,7 +351,7 @@ jobs:
       - name: Build core package
         run: pnpm build
 
-      - name: Compute sandbox preview path
+      - name: Compute sandbox preview paths
         id: urls
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
@@ -346,8 +359,11 @@ jobs:
           SHORT_HASH="${COMMIT_HASH:0:7}"
           REPO_NAME="${{ github.event.repository.name }}"
 
-          echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
-          echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox" >> $GITHUB_OUTPUT
+          {
+            echo "short_hash=${SHORT_HASH}"
+            echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox"
+            echo "template_assets_base_path=/${REPO_NAME}/sandbox/template-assets"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Cache Next.js build
         uses: actions/cache@v6
@@ -378,7 +394,11 @@ jobs:
           # Built without the /<repo> prefix, the sandbox's root-absolute asset URLs
           # drop that segment and 404 — breaking all styles/JS on the preview.
           SANDBOX_BASE_PATH: ${{ steps.urls.outputs.sandbox_base_path }}
+          SANDBOX_TEMPLATE_ASSETS_BASE_PATH: ${{ steps.urls.outputs.template_assets_base_path }}
           NODE_OPTIONS: '--max-old-space-size=8192'
+
+      - name: Remove shared assets from preview artifact
+        run: rm -rf apps/sandbox/out/template-assets
 
       - name: Upload Sandbox artifact
         uses: actions/upload-artifact@v7
@@ -525,22 +545,10 @@ jobs:
       - name: Run theme layer cascade guard
         run: node .github/scripts/theme-layer-cascade.js
 
-  # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
-  # analysis.json scoping, so a PR only pays for the components it touched.
-  # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
-  # covers untouched components runs in rtl-weekly.yml.
-  #
-  # Two layers: (A) auto-discovery — D1 icon-mirror + D5 positional-mirror, no
-  # curated selectors; (B) curated D2/D3/D4 from targets.json.
-  #
-  # SOFT / NON-BLOCKING (continue-on-error): findings surface a scorecard in the
-  # job summary but don't block the merge, while the suite is observed for
-  # flake. To promote: drop continue-on-error and add `pr-rtl` to required
-  # checks. See apps/storybook/rtl-audit/README.md.
-  # Visual regression, scoped to the components a PR touched. Sibling to
-  # pr-a11y and pr-rtl: same build-storybook artifact, same analysis.json
-  # scoping, so a PR pays only for what it changed — a median PR is ~16 shots
-  # (~10s) against the 642 the daily release gate takes.
+  # Stable-package visual regression. Core components get every story in
+  # every shipped theme that styles them; a changed shipped theme gets its
+  # relevant matrix. Packages marked `astryx.canaryOnly` (Lab, charts,
+  # richtext, vega) do not compare pixels and do not own a baseline.
   #
   # Deeper than the daily gate where it looks: the release gate shoots ONE
   # representative story per component, this shoots EVERY story of the touched
@@ -556,8 +564,9 @@ jobs:
   # verdict surfaces in the job summary and the PR comment, and the release
   # gate is the blocking one. To promote: drop continue-on-error.
   pr-visual:
+    name: Stable visual regression
     needs: [build-storybook, check-components]
-    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
+    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_stable_visual == 'true'
     runs-on: 2-core-ubuntu-arm
     continue-on-error: true
     permissions:
@@ -582,7 +591,12 @@ jobs:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
+      # Non-fatal: if this artifact is ever missing, renamed, or produced under
+      # a different key, the gate builds the themes itself. A crash here would
+      # be before the gate ever runs, which is how an artifact-wiring change
+      # reddened every open component PR twice in one day.
       - name: Download built themes and core
+        continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           name: dists-${{ needs.build-storybook.outputs.short_hash }}
@@ -611,23 +625,43 @@ jobs:
 
       - name: Run the visual gate for the touched components
         id: visual
+        env:
+          ASTRYX_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ASTRYX_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -eu
-          COMPONENTS=$(jq -r '(.newComponents + .modifiedComponents) | join(",")' analysis.json)
-          if [ -z "$COMPONENTS" ]; then
-            echo "No component changes resolved from analysis.json — nothing to shoot."
-            exit 0
+          # Component names are not globally unique, so filter by the package
+          # recorded in componentStats — never infer stability from a name.
+          COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents)[] | select($root.componentStats[.].package == "@astryxdesign/core")] | unique | join(",")' analysis.json)
+          THEMES=$(jq -r '(.changedStableThemes // []) | join(",")' analysis.json)
+
+          if [ -n "$COMPONENTS" ] && [ -n "$THEMES" ]; then
+            TIERS="component,theme-matrix"
+            SCOPE_ARGS=(--components "$COMPONENTS" --themes "$THEMES")
+          elif [ -n "$COMPONENTS" ]; then
+            TIERS="component"
+            SCOPE_ARGS=(--components "$COMPONENTS" --no-scout)
+          elif [ -n "$THEMES" ]; then
+            TIERS="theme-matrix"
+            SCOPE_ARGS=(--themes "$THEMES")
+          else
+            # Shared Core theming/tokens/hooks are stable but broad. Let the
+            # gate plan the full stable surface and decline visibly at the shot
+            # budget; the daily stable gate owns the exhaustive comparison.
+            TIERS="surface,theme-matrix,probe"
+            SCOPE_ARGS=()
           fi
-          echo "Components: $COMPONENTS"
+
+          echo "Stable Core components: ${COMPONENTS:-none}"
+          echo "Stable themes: ${THEMES:-none}"
           set +e
           node .github/scripts/visual-gate/gate.mjs check \
             --storybook-dir apps/storybook/dist \
             --baseline .visual-baseline \
             --out .visual-run \
-            --tiers component \
-            --components "$COMPONENTS" \
+            --tiers "$TIERS" \
+            "${SCOPE_ARGS[@]}" \
             --max-shots 240 \
-            --no-scout \
             --summary-output visual-summary.md
           code=$?
           [ -f visual-summary.md ] && cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
@@ -643,10 +677,24 @@ jobs:
           name: visual-pr-report
           path: |
             .visual-run/verdict.json
+            .visual-run/manifest.json
+            .visual-run/shots/
             .visual-run/report/
           retention-days: 7
           if-no-files-found: ignore
 
+  # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
+  # analysis.json scoping, so a PR only pays for the components it touched.
+  # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
+  # covers untouched components runs in rtl-weekly.yml.
+  #
+  # Two layers: (A) auto-discovery — D1 icon-mirror + D5 positional-mirror, no
+  # curated selectors; (B) curated D2/D3/D4 from targets.json.
+  #
+  # SOFT / NON-BLOCKING (continue-on-error): findings surface a scorecard in the
+  # job summary but don't block the merge, while the suite is observed for
+  # flake. To promote: drop continue-on-error and add `pr-rtl` to required
+  # checks. See apps/storybook/rtl-audit/README.md.
   pr-rtl:
     needs: [build-storybook, check-components]
     if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'

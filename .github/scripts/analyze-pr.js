@@ -532,6 +532,20 @@ function analyze() {
   const componentStats = {};
   const changedPackages = new Set();
 
+  // Stable theme packages are a visual surface of their own. They do not own
+  // component source dirs, so the component loop below cannot discover them;
+  // without this, changing a published theme silently skips pr-visual.
+  const changedStableThemes = [...new Set(
+    changedFiles.flatMap((file) => {
+      const match = file.match(/^packages\/themes\/([^/]+)\/src\//);
+      if (!match) return [];
+      const manifest = path.join(process.cwd(), 'packages', 'themes', match[1], 'package.json');
+      if (!fs.existsSync(manifest)) return [];
+      const pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+      return pkg.private === true || pkg.astryx?.canaryOnly === true ? [] : [match[1]];
+    }),
+  )].sort();
+
   for (const pkg of PACKAGES) {
     const allComponents = getComponentNames(pkg);
     const prefix = pkgSrc(pkg) + '/';
@@ -591,6 +605,7 @@ function analyze() {
     newExports,
     componentStats,
     changedPackages: [...changedPackages],
+    changedStableThemes,
     // Records whether the file list is exact (three-dot) or approximate
     // (two-dot fallback). Consumers that gate on the component list (pr-a11y)
     // or render it in the report should caveat when this is 'two-dot'.
