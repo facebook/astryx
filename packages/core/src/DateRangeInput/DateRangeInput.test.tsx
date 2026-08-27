@@ -730,6 +730,28 @@ describe('DateRangeInput range-span forwarding', () => {
   const dayButton = (iso: string): HTMLButtonElement | null =>
     document.querySelector<HTMLButtonElement>(`button[data-date="${iso}"]`);
 
+  it('allows selecting a one-day range when minRangeSpan is 1', () => {
+    const handleChange = vi.fn();
+    render(
+      <DateRangeInput
+        label="Reporting period"
+        value={null}
+        onChange={handleChange}
+        minRangeSpan={1}
+        numberOfMonths={1}
+      />,
+    );
+
+    fireEvent.click(getButton('Open calendar'));
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+
+    expect(handleChange).toHaveBeenCalledWith({
+      start: '2026-01-10',
+      end: '2026-01-10',
+    });
+  });
+
   it('forwards maxRangeSpan so the window caps after a start is picked', () => {
     render(
       <DateRangeInput

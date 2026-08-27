@@ -1255,6 +1255,10 @@
     "defaultMessage": "Available",
     "description": "Default heading above the left-hand panel of a lab TransferList, which holds the options not yet chosen. Consumers usually override this with a domain noun (e.g. \"Hidden columns\")."
   },
+  "@astryx.transferList.ungroupedLabel": {
+    "defaultMessage": "Other",
+    "description": "Heading for the bucket of available options that have no `group` set, shown only when some options are grouped and some are not so the ungrouped ones still have a heading."
+  },
   "@astryx.transferList.searchPlaceholder": {
     "defaultMessage": "Search…",
     "description": "Placeholder in the single search field that filters both panels of a lab TransferList. Same English as `selector.searchPlaceholder` but a separate key so it can be phrased for two lists."

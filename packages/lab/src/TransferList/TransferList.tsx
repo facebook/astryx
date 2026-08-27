@@ -26,6 +26,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type SVGProps,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {flushSync} from 'react-dom';
@@ -44,6 +45,7 @@ import {useTranslator} from '@astryxdesign/core/i18n';
 import {
   borderVars,
   colorVars,
+  sizeVars,
   spacingVars,
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
@@ -56,57 +58,36 @@ import {
 import {reorderStyles} from '../reorderStyles';
 import {transferListVars} from './tokens.stylex';
 
-function PlusIcon() {
+// Lucide glyphs the shared icon registry does not carry (there is no `add` or
+// `grip` semantic name). Typed as icon components and rendered through `Icon`
+// so sizing, colour and a11y come from the icon pipeline rather than a raw
+// inline `<svg>`. Removal reuses the registry `close` glyph instead.
+function PlusIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="lucide lucide-plus"
-      width={16}
-      height={16}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
-      aria-hidden>
+      {...props}>
       <path d="M5 12h14" />
       <path d="M12 5v14" />
     </svg>
   );
 }
 
-function RemoveIcon() {
+function GripVerticalIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="lucide lucide-x"
-      width={16}
-      height={16}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
-      aria-hidden>
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
-  );
-}
-
-function GripVerticalIcon() {
-  return (
-    <svg
-      className="lucide lucide-grip-vertical"
-      width={16}
-      height={16}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden>
+      {...props}>
       <circle cx="9" cy="5" r="1" />
       <circle cx="9" cy="12" r="1" />
       <circle cx="9" cy="19" r="1" />
@@ -276,7 +257,13 @@ const styles = stylex.create({
     borderBlockEndColor: colorVars['--color-border'],
   },
   headerAction: {
+    // A text-link treatment, but the hit target still has to clear the WCAG
+    // 2.5.8 24px floor. The link keeps `height: auto` so its baseline aligns
+    // with the panel heading; `minBlockSize` gives the button a >=24px target
+    // (the sm element height) without changing where the text sits, and the
+    // width already exceeds 24px.
     height: 'auto',
+    minBlockSize: sizeVars['--size-element-sm'],
     paddingBlock: 0,
     paddingInline: 0,
     borderRadius: 0,
@@ -1036,7 +1023,7 @@ export function TransferList<T extends string = string>({
       return (
         <IconButton
           label={t('@astryx.transferList.addOption', {label: option.label})}
-          icon={<PlusIcon />}
+          icon={<Icon icon={PlusIcon} size="sm" />}
           size="sm"
           variant="ghost"
           isDisabled={isTransferDisabled}
@@ -1049,7 +1036,7 @@ export function TransferList<T extends string = string>({
     return (
       <IconButton
         label={t('@astryx.transferList.removeOption', {label: option.label})}
-        icon={<RemoveIcon />}
+        icon={<Icon icon="close" size="sm" />}
         size="sm"
         variant="ghost"
         isDisabled={isTransferDisabled}
@@ -1096,7 +1083,7 @@ export function TransferList<T extends string = string>({
         label={t('@astryx.transferList.reorderOption', {label: option.label})}
         aria-describedby={reorderInstructionsId}
         aria-pressed={active}
-        icon={<GripVerticalIcon />}
+        icon={<Icon icon={GripVerticalIcon} size="sm" />}
         size="sm"
         variant="ghost"
         isDisabled={isReorderDisabled}
@@ -1346,7 +1333,7 @@ export function TransferList<T extends string = string>({
                         role="presentation"
                         {...stylex.props(styles.groupHeading)}>
                         <Text type="body" weight="bold" color="primary">
-                          {group || 'Other'}
+                          {group || t('@astryx.transferList.ungroupedLabel')}
                         </Text>
                       </li>
                     )}

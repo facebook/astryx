@@ -92,6 +92,7 @@ export const Async: Story = {
 export const DesktopFinePointer: Story = {
   args: {
     isOpen: true,
+    isInline: true,
     title: 'Delete item?',
     description:
       'This action cannot be undone. The item and all its data will be permanently removed.',
@@ -108,6 +109,7 @@ export const DesktopFinePointer: Story = {
 export const NarrowFinePointer: Story = {
   args: {
     isOpen: true,
+    isInline: true,
     title: 'Permanently delete this workspace?',
     description:
       'Everyone will lose access to its dashboards, saved queries, and sharing links. This cannot be undone.',

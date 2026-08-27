@@ -626,6 +626,19 @@ describe('ButtonGroup', () => {
         'high',
       );
     });
+
+    it('reports flat on a member, since the group owns the surface', () => {
+      render(
+        <ButtonGroup label="Actions" elevation="high">
+          <Button label="One" elevation="high" />
+        </ButtonGroup>,
+      );
+
+      expect(screen.getByRole('button', {name: 'One'})).toHaveAttribute(
+        'data-elevation',
+        'none',
+      );
+    });
   });
 
   // ===========================================================================

@@ -778,6 +778,160 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
   });
 });
 
+describe('BaseTypeahead minQueryLength', () => {
+  it('does not search or open the menu below the threshold', async () => {
+    const search = vi.fn((query: string) =>
+      fruits.filter(f => f.label.toLowerCase().includes(query.toLowerCase())),
+    );
+    render(
+      <BaseTypeahead
+        searchSource={{search, bootstrap: () => []}}
+        value={null}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(search).not.toHaveBeenCalled();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    // Positive control: the third character crosses the threshold, so the
+    // same harness does see the search and the open menu.
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(search).toHaveBeenCalledExactlyOnceWith('App');
+  });
+
+  it('closes the menu again when the query falls back below the threshold', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('does not fall back to bootstrap entries on ArrowDown below the threshold', async () => {
+    const bootstrap = vi.fn(() => fruits.slice(0, 3));
+    render(
+      <BaseTypeahead
+        searchSource={{search: () => [], bootstrap}}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    bootstrap.mockClear();
+
+    // Typing below the threshold closes the bootstrap menu...
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    // ...and ArrowDown must not re-open it with entries that ignore the
+    // two characters already typed.
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(bootstrap).not.toHaveBeenCalled();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('searches on the first character when minQueryLength is not set', async () => {
+    const search = vi.fn(() => fruits.slice(0, 1));
+    render(
+      <BaseTypeahead
+        searchSource={{search, bootstrap: () => []}}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'A'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(search).toHaveBeenCalledExactlyOnceWith('A');
+  });
+
+  it('stops reporting "Loading" when the query falls below the threshold mid-search', async () => {
+    // Falling below the threshold abandons the in-flight search by bumping the
+    // search generation, which also makes that search decline to clear the
+    // loading flag on its way out. Backspacing from three characters to two on
+    // a remote source is the everyday way to hit it, and the field would
+    // otherwise report "Loading" to a screen reader until the third character
+    // went back in.
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const search = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    render(
+      <BaseTypeahead
+        searchSource={{search, bootstrap: () => []}}
+        value={null}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'App'}});
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+
+    fireEvent.change(input, {target: {value: 'Ap'}});
+    await act(async () => {
+      settle(fruits.slice(0, 1));
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
 describe('BaseTypeahead hasSearched reset', () => {
   it('does not show "No results found" after selecting an item and re-entering', async () => {
     const onChange = vi.fn();

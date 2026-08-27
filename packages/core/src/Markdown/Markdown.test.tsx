@@ -124,6 +124,43 @@ describe('Markdown', () => {
     expect(second.className).toContain('astryx-markdown-paragraph');
   });
 
+  describe('base props', () => {
+    // BaseProps documents that data-*, aria-* and role are kept; the root
+    // dropped everything but data-testid.
+    it('forwards data and aria attributes to the block root', () => {
+      const {container} = render(
+        <Markdown data-source="turn-7" aria-label="Answer">
+          Hello
+        </Markdown>,
+      );
+      const root = container.firstElementChild!;
+      expect(root.getAttribute('data-source')).toBe('turn-7');
+      expect(root.getAttribute('aria-label')).toBe('Answer');
+    });
+
+    it('keeps its own role when a consumer passes one', () => {
+      // The rest spread comes first precisely so the component's own
+      // semantics survive a consumer prop.
+      const {container} = render(
+        <Markdown role="presentation">Hello</Markdown>,
+      );
+      expect(container.firstElementChild!.getAttribute('role')).toBe(
+        'document',
+      );
+    });
+
+    it('forwards them on the inline root too', () => {
+      const {container} = render(
+        <Markdown display="inline" data-source="turn-7">
+          Hello
+        </Markdown>,
+      );
+      expect(container.firstElementChild!.getAttribute('data-source')).toBe(
+        'turn-7',
+      );
+    });
+  });
+
   describe('block spacing theme targets', () => {
     // Every block type renders a stable astryx-markdown-<block> class so a
     // theme can tune the gap around it (marginBlockStart/marginBlockEnd) via

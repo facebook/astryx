@@ -9,9 +9,11 @@
 # write), so it can comment on fork PRs too — one code path for every PR, no
 # drift between a fork path and a same-repo path.
 #
-# Safety: this never checks out or runs PR-controlled code. It only downloads
-# the analysis + a11y artifacts (JSON) produced by CI and posts a comment. Do
-# not add checkout of the PR head or execution of PR code here.
+# Safety: resolves the PR from the GitHub API, then cross-checks every artifact's
+# claimed PR/head/run identity. Visual evidence is untrusted: default-branch
+# code schema-validates it, rejects unsafe paths/symlinks, decodes and
+# re-encodes PNGs, and generates the HTML wrapper itself. PR-produced HTML/JS
+# is never published or executed. Do not add checkout/execution of the PR head.
 
 name: PR Comment
 
@@ -22,6 +24,12 @@ on:
 
 permissions: {}
 
+# A newer run for the same branch supersedes an older comment/publication. The
+# trusted identity step also fails a stale run after the PR head moves.
+concurrency:
+  group: pr-comment-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
 jobs:
   comment:
     # Only for CI runs triggered by a pull request.
@@ -30,16 +38,62 @@ jobs:
     permissions:
       pull-requests: write
       actions: read
+      contents: write # immutable validated visual evidence on gh-pages
     steps:
       - name: Checkout base repo (scripts only)
         uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      # Never trust the PR number inside a PR-produced artifact. Resolve the PR
+      # from the workflow_run through the GitHub API, then require its current
+      # head to be the run's head. A fork cannot redirect this privileged job
+      # at another PR by editing pr-meta.json.
+      - name: Resolve trusted PR identity
+        id: identity
+        uses: actions/github-script@v9
         with:
-          node-version: 24
+          script: |
+            const run = context.payload.workflow_run;
+            const {owner, repo} = context.repo;
+            let numbers = (run.pull_requests || []).map((pr) => pr.number);
+            if (numbers.length === 0) {
+              const associated = await github.paginate(
+                github.rest.repos.listPullRequestsAssociatedWithCommit,
+                {owner, repo, commit_sha: run.head_sha, per_page: 100},
+              );
+              numbers = associated.map((pr) => pr.number);
+            }
+            numbers = [...new Set(numbers)];
+            if (numbers.length !== 1) {
+              core.setFailed(`Expected exactly one PR for run ${run.id}; found ${numbers.join(',') || 'none'}`);
+              return;
+            }
+            const {data: pr} = await github.rest.pulls.get({
+              owner, repo, pull_number: numbers[0],
+            });
+            if (pr.head.sha !== run.head_sha) {
+              core.setFailed(`Run head ${run.head_sha} is stale; PR head is ${pr.head.sha}`);
+              return;
+            }
+            if (pr.head.repo.full_name !== run.head_repository.full_name) {
+              core.setFailed(`Run repository ${run.head_repository.full_name} does not match PR head ${pr.head.repo.full_name}`);
+              return;
+            }
+            if (pr.base.repo.full_name !== `${owner}/${repo}`) {
+              core.setFailed(`PR #${pr.number} targets another repository`);
+              return;
+            }
+            core.setOutput('valid', 'true');
+            core.setOutput('pr_number', String(pr.number));
+            core.setOutput('head_sha', pr.head.sha);
+            core.setOutput('head_repo', pr.head.repo.full_name);
+            core.setOutput('run_id', String(run.id));
+            core.setOutput('run_attempt', String(run.run_attempt));
 
       - name: Download analysis artifact from the CI run
+        if: steps.identity.outputs.valid == 'true'
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
@@ -49,6 +103,7 @@ jobs:
         continue-on-error: true
 
       - name: Download a11y artifact from the CI run
+        if: steps.identity.outputs.valid == 'true'
         uses: actions/download-artifact@v8
         with:
           name: a11y-report
@@ -58,6 +113,7 @@ jobs:
         continue-on-error: true
 
       - name: Download visual verdict from the CI run
+        if: steps.identity.outputs.valid == 'true'
         uses: actions/download-artifact@v8
         with:
           name: visual-pr-report
@@ -66,8 +122,95 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
+      - name: Cross-check artifact identity
+        if: steps.identity.outputs.valid == 'true' && hashFiles('pr-analysis/pr-meta.json') != ''
+        env:
+          EXPECTED_PR: ${{ steps.identity.outputs.pr_number }}
+          EXPECTED_HEAD: ${{ steps.identity.outputs.head_sha }}
+          EXPECTED_RUN: ${{ steps.identity.outputs.run_id }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const meta = JSON.parse(fs.readFileSync('pr-analysis/pr-meta.json', 'utf8'));
+          const fail = (message) => { console.error(`::error::${message}`); process.exit(1); };
+          if (String(meta.prNumber) !== process.env.EXPECTED_PR) fail('artifact PR number does not match trusted PR');
+          const shortHash = String(meta.shortHash ?? '');
+          if (!/^[0-9a-f]{7,40}$/.test(shortHash)) fail('artifact head is not a valid hash');
+          if (!process.env.EXPECTED_HEAD.startsWith(shortHash)) fail('artifact head does not match trusted PR head');
+          if (String(meta.runId) !== process.env.EXPECTED_RUN) fail('artifact run id does not match workflow_run');
+          NODE
+
+      # The artifact is untrusted. Default-branch code validates its schema,
+      # keys, identity and PNG bytes, decodes/re-encodes every image, and
+      # generates the HTML wrapper. PR-produced HTML/JS is never published.
+      - name: Validate visual evidence and generate trusted report
+        id: visual
+        if: steps.identity.outputs.valid == 'true' && hashFiles('visual/verdict.json') != ''
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          RUN_ID: ${{ steps.identity.outputs.run_id }}
+          RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+        run: |
+          node .github/scripts/visual-gate/publish-pr-report.mjs \
+            --input visual \
+            --output trusted-visual \
+            --pr "$PR_NUMBER" \
+            --head-sha "$HEAD_SHA" \
+            --run-id "$RUN_ID" \
+            --run-attempt "$RUN_ATTEMPT"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "path=pr/${PR_NUMBER}/visual/${HEAD_SHA}/${RUN_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish immutable visual evidence
+        id: publish
+        if: steps.visual.outputs.ready == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVIDENCE_PATH: ${{ steps.visual.outputs.path }}
+        run: |
+          set -eu
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          WORK_DIR="$PWD"
+          for attempt in 1 2 3 4 5; do
+            rm -rf /tmp/gh-pages
+            git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
+            DEST="/tmp/gh-pages/${EVIDENCE_PATH}"
+            if [ -e "$DEST" ]; then
+              if diff -qr "$WORK_DIR/trusted-visual" "$DEST" >/dev/null; then
+                echo "Immutable evidence already published"
+                echo "published=true" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              echo "::error::Immutable evidence path already exists with different bytes"
+              exit 1
+            fi
+            mkdir -p "$DEST"
+            cp -r "$WORK_DIR/trusted-visual/." "$DEST/"
+            cd /tmp/gh-pages
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add "$EVIDENCE_PATH"
+            git commit -m "Visual evidence: ${EVIDENCE_PATH}"
+            if git push origin gh-pages; then
+              echo "published=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            cd "$WORK_DIR"
+            sleep $((attempt * 2))
+          done
+          echo "::error::Could not publish visual evidence after 5 attempts"
+          exit 1
+
       - name: Generate and post PR comment
+        if: steps.identity.outputs.valid == 'true'
         uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          RUN_ID: ${{ steps.identity.outputs.run_id }}
+          VISUAL_PUBLISHED: ${{ steps.publish.outputs.published }}
+          VISUAL_PATH: ${{ steps.visual.outputs.path }}
         with:
           script: |
             const fs = require('node:fs');
@@ -81,10 +224,11 @@ jobs:
               return;
             }
 
-            const meta = JSON.parse(fs.readFileSync('pr-analysis/pr-meta.json', 'utf8'));
-            const prNumber = parseInt(meta.prNumber, 10);
-            if (!prNumber) {
-              core.warning('No PR number in metadata — cannot comment.');
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const headSha = process.env.HEAD_SHA;
+            const runId = process.env.RUN_ID;
+            if (!prNumber || !headSha || !runId) {
+              core.setFailed('Trusted PR identity outputs are missing.');
               return;
             }
 
@@ -104,11 +248,21 @@ jobs:
               '--analysis', 'pr-analysis/analysis.json',
               '--a11y', a11yPath,
               ...(fs.existsSync('visual/verdict.json')
-                ? ['--visual', 'visual/verdict.json']
+                ? [
+                    '--visual', 'visual/verdict.json',
+                    ...(process.env.VISUAL_PUBLISHED === 'true'
+                      ? [
+                          '--visual-report-url',
+                          `https://facebook.github.io/astryx/${process.env.VISUAL_PATH}/`,
+                          '--visual-image-url',
+                          `https://raw.githubusercontent.com/facebook/astryx/gh-pages/${process.env.VISUAL_PATH}/`,
+                        ]
+                      : []),
+                  ]
                 : []),
-              '--storybook-url', meta.storybookUrl || '',
-              '--sandbox-url', meta.sandboxUrl || '',
-              '--run-url', meta.runUrl || '',
+              '--storybook-url', `https://facebook.github.io/astryx/pr/${prNumber}/`,
+              '--sandbox-url', `https://facebook.github.io/astryx/pr/${prNumber}/sandbox/`,
+              '--run-url', `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`,
               '--pr-number', String(prNumber),
             ];
 
