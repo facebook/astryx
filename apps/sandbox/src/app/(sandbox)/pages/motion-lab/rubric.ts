@@ -19,6 +19,7 @@
  * regenerated audit moves the rubric's citations with it.
  */
 
+import {LOOP_COUNTS} from './motionCost';
 import {
   AUDIT_COUNTS,
   HARDCODED_SITES,
@@ -269,6 +270,24 @@ export const RUBRIC_CRITERIA: ReadonlyArray<Criterion> = [
     fail: 'transition: transform on the root — every transform a library writes gets re-eased, so drags lag and springs never settle.',
     evidence: `Transform transitions across the package, including Button. ${MULTI_PROPERTY_TRANSFORMS} of them declare transform inside a longer property list, where a grep for it never looks. The generated audit undercounted this twice before the scanner learned to read wrapped values and nested StyleX rules; the brief\u2019s "20+ components" was right all along.`,
   },
+  {
+    n: 13,
+    id: 'idle-cost',
+    title: 'Idle cost',
+    severity: 'blocker',
+    severityNote:
+      'Blocker for anything that loops. Not applicable to one-shot transitions, which criterion 6 already governs.',
+    automatable: 'partly',
+    check:
+      'Lint can read the animated property off an infinite keyframe set and check for a reduced-motion arm. Whether the containment is right, and whether the loop should exist at all, needs a trace.',
+    rule: 'A loop animates transform and opacity only, paints inside its own box (contain: paint plus a deliberate layer gated on prefers-reduced-motion: no-preference), and has an arm that stills it. Motion that cannot be a transform is stepped with steps() at the lowest legible cadence, never per frame.',
+    pass: 'A spinner that rotates on transform inside a contained box, and stops \u2014 rather than slows \u2014 under reduced motion.',
+    fail: 'A shimmer on background-position, a pulse on box-shadow, or a bar on inset. Each repaints or re-lays-out every frame, forever, on a page where nothing is happening.',
+    evidence: `${LOOP_COUNTS.total} loops measured across core, lab and this lab. ${LOOP_COUNTS.paintOrLayout} animate a paint-only or layout property; ${LOOP_COUNTS.publishedUncontained} of the ${LOOP_COUNTS.core + LOOP_COUNTS.lab} the packages publish are uncontained, and one has no reduced-motion arm at all.`,
+    guidance: 'aligned',
+    guidanceNote:
+      'The published page already warns that motion the user sees constantly is where motion hurts. This criterion is that warning applied to the one case where the cost does not stop when the user does.',
+  },
 ];
 
 export const AUTOMATABLE_LABEL: Readonly<Record<Automatable, string>> = {
@@ -327,5 +346,5 @@ export const MISSING_PRINCIPLE = {
   measuredAgainst:
     'Pagination and Calendar month-change are the surfaces this would be measured against. Both are audit gaps today with no criterion to fail.',
   recommendation:
-    'Fold it into criterion 4 as a fourth pairing rule, or add it as a thirteenth criterion. Either way the rubric should be a superset of the published guidance, not a divergent list.',
+    'Fold it into criterion 4 as a fourth pairing rule, or add it as a fourteenth criterion \u2014 thirteen is now idle cost. Either way the rubric should be a superset of the published guidance, not a divergent list.',
 } as const;
