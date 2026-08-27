@@ -700,7 +700,7 @@ describe('Carousel', () => {
       expect(document.activeElement).toBe(document.body);
     });
 
-    it('still hands off when the disable is what blurred the button', async () => {
+    it('hands off on a press, with the blur handlers in place', async () => {
       const user = userEvent.setup();
       render(
         <Carousel aria-label="Gallery">
@@ -711,8 +711,10 @@ describe('Carousel', () => {
       );
       makeScrollable(getScroller(), 400);
 
-      // The blur the commit causes must not read as the person leaving, or the
-      // hand-off never fires at all.
+      // The Effect clears the tracker itself before focusing, so the commit's
+      // own blur finds nothing left to clear and the guard is not what makes
+      // this pass. It is here so that deleting the blur handlers outright --
+      // rather than loosening the guard -- is caught.
       await user.click(screen.getByLabelText('Scroll right'));
 
       expect(document.activeElement).toBe(screen.getByLabelText('Scroll left'));

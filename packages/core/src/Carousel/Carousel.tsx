@@ -504,6 +504,11 @@ export function Carousel({
   // maintainer, 2026-08-27, on the conditions encoded below: it acts only on
   // the transition that newly disables the focused button, it moves focus and
   // nothing else, and it cannot fire twice for one transition.
+  //
+  // Which button the person is on is tracked by the buttons' own focus and blur
+  // handlers, and the blur has to ignore the one the commit itself causes: a
+  // tracker that outlived the person let a later edge -- a swipe, a resize, no
+  // press at all -- pull their focus back onto a control they never chose.
   useEffect(() => {
     const previous = prevCanScrollRef.current;
     prevCanScrollRef.current = {start: canScrollStart, end: canScrollEnd};
@@ -657,13 +662,7 @@ export function Carousel({
                   focusedNavRef.current = 'start';
                 }}
                 onBlur={event => {
-                  // Forget the person once they leave. React sets `disabled`
-                  // before the browser blurs the button, so the blur the commit
-                  // caused is distinguishable from the one they caused, and
-                  // only theirs clears the tracker. Without this the tracker
-                  // outlives them and a later edge -- reached by a swipe, a
-                  // resize, anything -- pulls focus back onto a control they
-                  // did not choose.
+                  // A disabled button was blurred by the commit, not the person.
                   if (!event.currentTarget.disabled) {
                     focusedNavRef.current = null;
                   }
@@ -698,13 +697,7 @@ export function Carousel({
                   focusedNavRef.current = 'end';
                 }}
                 onBlur={event => {
-                  // Forget the person once they leave. React sets `disabled`
-                  // before the browser blurs the button, so the blur the commit
-                  // caused is distinguishable from the one they caused, and
-                  // only theirs clears the tracker. Without this the tracker
-                  // outlives them and a later edge -- reached by a swipe, a
-                  // resize, anything -- pulls focus back onto a control they
-                  // did not choose.
+                  // A disabled button was blurred by the commit, not the person.
                   if (!event.currentTarget.disabled) {
                     focusedNavRef.current = null;
                   }
