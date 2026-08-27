@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
@@ -2247,5 +2247,368 @@ describe('SideNavHeading hover/click guard', () => {
     await user.keyboard('{Escape}');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).toHaveFocus();
+  });
+});
+
+// =============================================================================
+// Collapse ownership — collapsible + resizable (#4790, #5073)
+// =============================================================================
+
+const AUTO_SAVE_ID = 'sidenav-collapse-owner';
+const STORAGE_KEY = `astryx-resizable:${AUTO_SAVE_ID}`;
+
+function expectCollapsed(isCollapsed: boolean) {
+  const label = isCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  expect(screen.getByRole('button', {name: label})).toBeInTheDocument();
+}
+
+describe('SideNav collapse ownership', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  // Every row is a configuration that works on origin/main today, with the
+  // collapse state main resolves for it. Normalizing the two props into one
+  // owner must not move any of these — the one case whose outcome does change
+  // is the divergence itself, pinned separately below.
+  const preservedCases: {
+    name: string;
+    persisted?: string;
+    element: React.ReactElement;
+    isCollapsed: boolean;
+  }[] = [
+    {
+      name: 'collapsible alone',
+      element: <SideNav collapsible>Content</SideNav>,
+      isCollapsed: false,
+    },
+    {
+      name: 'collapsible with defaultIsCollapsed',
+      element: (
+        <SideNav collapsible={{defaultIsCollapsed: true}}>Content</SideNav>
+      ),
+      isCollapsed: true,
+    },
+    {
+      name: 'controlled collapsible (collapsed)',
+      element: (
+        <SideNav collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: true,
+    },
+    {
+      name: 'controlled collapsible (expanded)',
+      element: (
+        <SideNav
+          collapsible={{isCollapsed: false, onCollapsedChange: () => {}}}>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: false,
+    },
+    {
+      name: 'collapsible + resizable',
+      element: (
+        <SideNav collapsible resizable>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: false,
+    },
+    {
+      name: 'defaultIsCollapsed + resizable',
+      element: (
+        <SideNav collapsible={{defaultIsCollapsed: true}} resizable>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: true,
+    },
+    {
+      name: 'controlled collapsible + resizable',
+      element: (
+        <SideNav
+          collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}
+          resizable>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: true,
+    },
+    {
+      name: 'defaultIsCollapsed + a persisted legacy width',
+      persisted: '300',
+      element: (
+        <SideNav
+          collapsible={{defaultIsCollapsed: true}}
+          resizable={{autoSaveId: AUTO_SAVE_ID}}>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: true,
+    },
+    {
+      name: 'collapsible + a persisted legacy width',
+      persisted: '300',
+      element: (
+        <SideNav collapsible resizable={{autoSaveId: AUTO_SAVE_ID}}>
+          Content
+        </SideNav>
+      ),
+      isCollapsed: false,
+    },
+  ];
+
+  it.each(preservedCases)(
+    'resolves $name the way main does',
+    ({persisted, element, isCollapsed}) => {
+      if (persisted != null) {
+        localStorage.setItem(STORAGE_KEY, persisted);
+      }
+      render(element);
+      expectCollapsed(isCollapsed);
+    },
+  );
+
+  it('keeps resizable alone free of collapse', () => {
+    render(<SideNav resizable>Content</SideNav>);
+    expect(
+      screen.queryByRole('button', {name: /sidebar/i}),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation').style.width).toBe('260px');
+  });
+
+  it('restores the collapsed rail from a legacy persisted 0 (#4790)', () => {
+    // main renders the expanded layout here while the resize hook restores
+    // collapsed, so the nav paints at width 0 with no way back.
+    localStorage.setItem(STORAGE_KEY, '0');
+    render(
+      <SideNav collapsible resizable={{autoSaveId: AUTO_SAVE_ID}}>
+        Content
+      </SideNav>,
+    );
+
+    expectCollapsed(true);
+    expect(screen.getByRole('navigation').style.width).not.toBe('0px');
+  });
+
+  it('restores the collapsed rail and the pre-collapse width across a reload', async () => {
+    const user = userEvent.setup();
+    const nav = (
+      <SideNav
+        collapsible
+        resizable={{autoSaveId: AUTO_SAVE_ID, defaultWidth: 260}}>
+        Content
+      </SideNav>
+    );
+
+    const first = render(nav);
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expectCollapsed(true);
+    first.unmount();
+
+    render(nav);
+    expectCollapsed(true);
+
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(screen.getByRole('navigation').style.width).toBe('260px');
+  });
+
+  it('expands to the persisted pre-collapse width, not the default', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({size: 320, isCollapsed: true}),
+    );
+    render(
+      <SideNav
+        collapsible
+        resizable={{autoSaveId: AUTO_SAVE_ID, defaultWidth: 260}}>
+        Content
+      </SideNav>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(screen.getByRole('navigation').style.width).toBe('320px');
+  });
+
+  it('reports one collapse change per toggle', async () => {
+    const user = userEvent.setup();
+    const onCollapsedChange = vi.fn();
+    render(
+      <SideNav collapsible={{onCollapsedChange}} resizable>
+        Content
+      </SideNav>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expect(onCollapsedChange).toHaveBeenCalledExactlyOnceWith(true);
+  });
+
+  it('lets a controlled collapsible drive a resizable nav from outside', async () => {
+    const user = userEvent.setup();
+
+    function Harness() {
+      const [isCollapsed, setIsCollapsed] = useState(false);
+      const collapsible = {isCollapsed, onCollapsedChange: setIsCollapsed};
+      return (
+        <>
+          <SideNavCollapseButton collapsible={collapsible} label="Outside" />
+          <SideNav
+            collapsible={{...collapsible, hasButton: false}}
+            resizable={{autoSaveId: AUTO_SAVE_ID}}>
+            Content
+          </SideNav>
+        </>
+      );
+    }
+
+    render(<Harness />);
+    expect(screen.getByRole('navigation').style.width).toBe('260px');
+
+    await user.click(screen.getByRole('button', {name: 'Outside'}));
+    expect(screen.getByRole('navigation').style.width).toBe('');
+    expect(
+      screen.queryByTestId('astryx-sidenav-resize-handle'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('lets resizable own collapse on its own', async () => {
+    const user = userEvent.setup();
+    const onCollapseChange = vi.fn();
+    render(
+      <SideNav resizable={{defaultIsCollapsed: true, onCollapseChange}}>
+        Content
+      </SideNav>,
+    );
+
+    expectCollapsed(true);
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(onCollapseChange).toHaveBeenCalledExactlyOnceWith(false);
+  });
+
+  it('keeps collapse state when resize is toggled off and on', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(
+      <SideNav collapsible resizable>
+        Content
+      </SideNav>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expectCollapsed(true);
+
+    rerender(<SideNav collapsible>Content</SideNav>);
+    expectCollapsed(true);
+
+    rerender(
+      <SideNav collapsible resizable>
+        Content
+      </SideNav>,
+    );
+    expectCollapsed(true);
+  });
+
+  it('gives resizable the winning value when both set defaultIsCollapsed', () => {
+    render(
+      <SideNav
+        collapsible={{defaultIsCollapsed: false}}
+        resizable={{defaultIsCollapsed: true}}>
+        Content
+      </SideNav>,
+    );
+    expectCollapsed(true);
+  });
+});
+
+describe('SideNav collapse conflict warning', () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    localStorage.clear();
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  it('warns when both props carry defaultIsCollapsed', () => {
+    render(
+      <SideNav
+        collapsible={{defaultIsCollapsed: false}}
+        resizable={{defaultIsCollapsed: true}}>
+        Content
+      </SideNav>,
+    );
+
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('collapsible.defaultIsCollapsed'),
+    );
+    expect(warn.mock.calls[0][0]).toContain('resizable.defaultIsCollapsed');
+    expect(warn.mock.calls[0][0]).toContain('resizable wins');
+  });
+
+  it('warns when a controlled collapsible does not drive collapse', () => {
+    render(
+      <SideNav
+        collapsible={{isCollapsed: false, onCollapsedChange: () => {}}}
+        resizable={{isCollapsed: true, onCollapseChange: () => {}}}>
+        Content
+      </SideNav>,
+    );
+
+    const message = String(warn.mock.calls[0][0]);
+    expect(message).toContain('collapsible.isCollapsed');
+    expect(message).toContain('collapsible.onCollapsedChange');
+    expect(message).toContain('resizable.isCollapsed');
+    expect(message).toContain('resizable wins');
+    // The winner is the state that actually renders.
+    expectCollapsed(true);
+  });
+
+  it('does not split state and callback ownership across props', async () => {
+    const user = userEvent.setup();
+    const collapsibleChange = vi.fn();
+    const resizableChange = vi.fn();
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: collapsibleChange,
+        }}
+        resizable={{onCollapseChange: resizableChange}}>
+        Content
+      </SideNav>,
+    );
+
+    expectCollapsed(false);
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expect(resizableChange).toHaveBeenCalledExactlyOnceWith(true);
+    expect(collapsibleChange).not.toHaveBeenCalled();
+  });
+
+  it('stays silent for collapsible alongside a resize config', () => {
+    render(
+      <SideNav
+        collapsible
+        resizable={{autoSaveId: AUTO_SAVE_ID, defaultWidth: 300}}>
+        Content
+      </SideNav>,
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('stays silent for a controlled collapsible with a plain resize config', () => {
+    render(
+      <SideNav
+        collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}
+        resizable={{defaultWidth: 300}}>
+        Content
+      </SideNav>,
+    );
+    expect(warn).not.toHaveBeenCalled();
   });
 });

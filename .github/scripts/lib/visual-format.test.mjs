@@ -21,20 +21,46 @@ describe('buildVisualSection', () => {
     expect(buildVisualSection(verdict())).toContain('No visual change across 16 compared shot(s)');
   });
 
-  it('calls an unbaselined shot exactly that, not an addition', () => {
+  it('shows added-only evidence instead of claiming there was no visual change', () => {
     const section = buildVisualSection(
-      verdict({counts: {total: 20, unchanged: 14, changed: 0, added: 6, removed: 0, failed: 0}}),
+      verdict({
+        status: 'changed',
+        counts: {total: 20, unchanged: 14, changed: 0, added: 1, removed: 0, failed: 0},
+        added: ['new-shot'],
+        removed: [],
+      }),
+      'https://example.com/report/',
+      'https://example.com/images/',
     );
-    expect(section).toContain('No visual change across 14 compared shot(s)');
-    expect(section).toContain('6 shot(s) have no baseline yet');
+    expect(section).toContain('1 added · 0 removed');
+    expect(section).toContain('View the report');
+    expect(section).toContain('https://example.com/images/after/new-shot.png');
+    expect(section).not.toContain('No visual change');
+  });
+
+  it('shows the before image for a removed-only bundle', () => {
+    const section = buildVisualSection(
+      verdict({
+        status: 'changed',
+        counts: {total: 0, unchanged: 0, changed: 0, added: 0, removed: 1, failed: 0},
+        added: [],
+        removed: ['old-shot'],
+      }),
+      'https://example.com/report/',
+      'https://example.com/images/',
+    );
+    expect(section).toContain('0 added · 1 removed');
+    expect(section).toContain('https://example.com/images/before/old-shot.png');
   });
 
   it('states the reason for a skip, so a broad PR does not look like a pass', () => {
     const section = buildVisualSection(
       verdict({status: 'skipped', reason: '900 shots exceeds the 240-shot budget'}),
+      'https://example.com/report/',
     );
     expect(section).toContain('Skipped');
     expect(section).toContain('900 shots exceeds the 240-shot budget');
+    expect(section).toContain('View the report');
   });
 
   it('renders verdict strings as one-line literal text', () => {
@@ -110,6 +136,7 @@ describe('buildVisualSection', () => {
       verdict({
         status: 'changed',
         counts: {total: 2, unchanged: 1, changed: 1, added: 0, removed: 0, failed: 0},
+        context: {runId: '123456', runAttempt: '2'},
         changes: [
           {
             key: 'core-button--primary__y2k-light',
@@ -130,6 +157,7 @@ describe('buildVisualSection', () => {
     expect(section).toContain('raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/after/core-button--primary__y2k-light.png');
     expect(section).toContain('raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/diff/core-button--primary__y2k-light.png');
     expect(section).toContain('<th>Before</th><th>After</th><th>Diff</th>');
+    expect(section).toContain('/accept-visual 123456/2 <reason>');
   });
 
   it('embeds at most three deltas so the PR comment stays readable', () => {

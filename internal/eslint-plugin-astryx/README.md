@@ -294,6 +294,34 @@ Recommends adding `letterSpacing` when `fontSize` is defined (common design patt
 
 **Strict mode only.** Helps catch missing letter-spacing in compact text elements.
 
+### `@astryx/require-baseprops-passthrough`
+
+Ensures a component actually forwards the styling props it accepts via `BaseProps`:
+`xstyle`, `className`, and `style`. A component's props may promise consumers these
+escape hatches, but the implementation can silently drop them:
+
+- **Unused** — a styling prop is destructured but never referenced, so the override is dropped.
+- **Not forwarded** — a styling prop the type promises is never destructured and never reaches
+  the root element.
+
+Forwarding paths differ by what each prop _is_:
+
+- `className` and `style` are real DOM attributes, so they survive a `{...rest}` spread onto
+  the root element (native or composed) — that counts as forwarding them.
+- `xstyle` is a StyleX style object, **not** a DOM attribute. It cannot ride a `{...rest}`
+  spread onto a native element (it renders inert); the only valid un-destructured path is a
+  rest spread onto a composed Astryx component, which re-accepts `xstyle` via its own `BaseProps`.
+
+Fix by threading each prop into the root `mergeProps(...)` / `stylex.props(...)` call, or
+forwarding to a composed component.
+
+Scoped to public components (those with a `.displayName`). Opt out by omitting the prop from
+the type, e.g. `Omit<BaseProps, 'className' | 'style'>` (as `VisuallyHidden` does),
+or mark an intentionally-unused binding with a leading underscore (`className: _className`).
+
+Currently `warn` in both tiers because known violations remain on main. Promote it
+deliberately only once the repository is clean.
+
 ## Usage
 
 ### Local Development (Human Mode)

@@ -119,6 +119,15 @@ export interface BannerProps extends BaseProps<HTMLDivElement> {
    */
   onDismiss?: () => void;
   /**
+   * Accessible name and visible tooltip for the dismiss button, replacing the default.
+   * Pass an already-translated string.
+   *
+   * The default is "Dismiss {title}" when `title` is a string, so stacked
+   * banners are told apart by a screen reader; a non-string `title` falls back
+   * to "Dismiss" and should set this.
+   */
+  dismissLabel?: string;
+  /**
    * Action button rendered in the header area (end-aligned).
    * Typically an Button with a secondary or ghost variant.
    *
@@ -440,6 +449,7 @@ export function Banner({
   icon,
   isDismissable = false,
   onDismiss,
+  dismissLabel,
   endContent,
   container = 'card',
   elevation = 'none',
@@ -490,6 +500,15 @@ export function Banner({
   const role = statusRole[status] ?? FALLBACK_ROLE;
   const iconColor = statusIconColor[status];
   const hasChildren = isRenderable(children);
+  // Keep the default tooltip concise while the accessible name identifies
+  // the banner; an explicit translated override names both surfaces.
+  const dismiss = t('@astryx.banner.dismiss');
+  const dismissTooltip = dismissLabel ?? dismiss;
+  const dismissName =
+    dismissLabel ??
+    (typeof title === 'string'
+      ? t('@astryx.banner.dismissTitled', {dismiss, title})
+      : dismiss);
 
   if (isDismissed) {
     return null;
@@ -657,8 +676,8 @@ export function Banner({
               <Button
                 variant="ghost"
                 size="sm"
-                label={t('@astryx.banner.dismiss')}
-                tooltip={t('@astryx.banner.dismiss')}
+                label={dismissName}
+                tooltip={dismissTooltip}
                 icon={<Icon icon="close" size="sm" color="inherit" />}
                 onClick={handleDismiss}
                 isIconOnly
