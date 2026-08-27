@@ -16,6 +16,7 @@
 import {useRef, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../../../theme/tokens.stylex';
+import {focusOutlineProps} from '../../../utils/focusOutline.stylex';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator, type TranslatorFn} from '../../../i18n';
@@ -124,17 +125,15 @@ const sortStyles = stylex.create({
     border: 'none',
     padding: 0,
     margin: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     width: '100%',
     height: '100%',
     textAlign: 'inherit',
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '2px',
     borderRadius: radiusVars['--radius-inner'],
   },
   iconWrapperUnsorted: {
@@ -307,7 +306,7 @@ function SortHeaderButton<T extends Record<string, unknown>>({
   return (
     <button
       type="button"
-      {...stylex.props(sortStyles.button)}
+      {...focusOutlineProps.focusVisible(sortStyles.button)}
       aria-label={ariaLabel}
       onClick={handleClick}>
       <span>{children}</span>

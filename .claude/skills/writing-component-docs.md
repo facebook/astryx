@@ -4,13 +4,15 @@
 
 Every component directory has a `{Name}.doc.mjs` file with structured documentation. The Astryx CLI reads these files to generate agent-friendly docs, skill files, and reference material.
 
+These docs are for people **building with** Astryx, not for people building Astryx. Before adding process material — a rubric, a readiness gate, an audit checklist, lab→core criteria — read [`packages/cli/assets/docs/README.md`](../../packages/cli/assets/docs/README.md), which carries the test and the wiki page each kind goes to.
+
 ## Exports
 
-| Export      | Type             | Purpose                          | Required?                       |
-| ----------- | ---------------- | -------------------------------- | ------------------------------- |
-| `docs`      | `ComponentDoc`   | English docs (source of truth)   | Yes                             |
-| `docsZh`    | `TranslationDoc` | Chinese Simplified prose overlay | Optional, falls back to English |
-| `docsDense` | `TranslationDoc` | Compressed prose overlay         | Optional, falls back to English |
+| Export      | Type                      | Purpose                          | Required?                       |
+| ----------- | ------------------------- | -------------------------------- | ------------------------------- |
+| `docs`      | `ComponentDoc`            | English docs (source of truth)   | Yes                             |
+| `docsZh`    | `ComponentTranslationDoc` | Chinese Simplified prose overlay | Optional, falls back to English |
+| `docsDense` | `ComponentTranslationDoc` | Compressed prose overlay         | Optional, falls back to English |
 
 **English first.** When adding a new component, write the `docs` export. That's it. Both `--lang zh` and `--lang dense` fall back to English if their exports don't exist. Translations are generated from English by AI and can be added later.
 
@@ -33,10 +35,10 @@ This means:
 
 ## Writing `docs` (English)
 
-See `docs-types.ts` for the full type definition.
+See `@astryxdesign/cli/authoring` for the full type definitions.
 
 ```js
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'Button',
   description:
@@ -70,7 +72,7 @@ export const docs = {
 
 ## Writing Translations (docsZh / docsDense)
 
-Translations use the `TranslationDoc` type. Only prose fields, no structure.
+Translations use the `ComponentTranslationDoc` type. Only prose fields, no structure.
 
 ```js
 // -------------------------------------------------------
@@ -79,7 +81,7 @@ Translations use the `TranslationDoc` type. Only prose fields, no structure.
 // See .context/decisions/dense-compression-protocol.md
 // -------------------------------------------------------
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'multi-variant btn w/ loading state',
   features: [
@@ -120,9 +122,9 @@ astryx --detail compact --lang dense component Button  # Compact + compressed
 
 ## Reference Docs (non-component)
 
-Reference docs (tokens, principles, theme) use a different type: `ReferenceDoc` from `docs-types.ts`.
+Reference docs (tokens, principles, theme) use a different type: `ReferenceDoc` from `@astryxdesign/cli/authoring`.
 
-They live in `packages/cli/docs/` as `.doc.mjs` files with translations in `*.doc.dense.mjs` and `*.doc.zh.mjs`.
+They live in `packages/cli/assets/docs/` as `.doc.mjs` files with translations in `*.doc.dense.mjs` and `*.doc.zh.mjs`.
 
 Content is structured as sections with ordered content blocks:
 
@@ -131,7 +133,7 @@ Content is structured as sections with ordered content blocks:
 - `table` — data tables (not translated)
 - `list` — rules, anti-patterns, tips (translatable)
 
-To add a new reference doc: create `packages/cli/docs/mytopic.doc.mjs` exporting a `docs` constant. It auto-discovers.
+To add a new reference doc: create `packages/cli/assets/docs/mytopic.doc.mjs` exporting a `docs` constant. It auto-discovers.
 
 ```bash
 astryx docs                          # list topics

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Markdown',
@@ -97,6 +97,11 @@ export const docs = {
         "Opt-in autolinking of bare URLs and emails. 'gfm' applies GitHub-Flavored Markdown autolink-literal rules: bare https?://..., www...., <scheme:url>, <email>, and user@host all become links. Trailing sentence punctuation and unbalanced trailing close-parens are excluded; matches inside code spans, code blocks, existing links, and image alt text are skipped. Default behavior (option unset) is unchanged.",
     },
     {
+      name: 'components',
+      type: 'MarkdownComponents',
+      description: 'Custom React component overrides for rendered Markdown elements (code, inlineCode, link, heading, paragraph, image, blockquote, hr, citation).',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -128,6 +133,38 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-markdown', visualProps: ['density']},
+      {
+        className: 'astryx-markdown-heading',
+        visualProps: ['density', 'level'],
+      },
+      {
+        className: 'astryx-markdown-paragraph',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-list',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-codeblock',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-blockquote',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-table',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-hr',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-image',
+        visualProps: ['density'],
+      },
     ],
   },
   usage: {
@@ -137,6 +174,7 @@ export const docs = {
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
+      { guidance: true, description: 'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },
@@ -292,6 +330,54 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-markdown', visualProps: ['density']},
+      {
+        className: 'astryx-markdown-heading',
+        visualProps: ['density', 'level'],
+        description:
+          '每个渲染的标题块（h1–h6）。覆盖 marginBlockStart/marginBlockEnd 可调整标题周围的间距；反映 data-density 和 data-level，因此主题可按密度和标题层级设置间距。仅适用于默认标题渲染——自定义的 components.heading 拥有自己的样式。',
+      },
+      {
+        className: 'astryx-markdown-paragraph',
+        visualProps: ['density'],
+        description:
+          '每个渲染的段落块。覆盖 marginBlockStart/marginBlockEnd 可调整段落之间的间距。反映 data-density，因此主题可以为不同密度设置不同的间距。',
+      },
+      {
+        className: 'astryx-markdown-list',
+        visualProps: ['density'],
+        description:
+          '每个渲染的列表块（有序、无序和任务列表）。覆盖 marginBlockStart/marginBlockEnd 可调整列表周围的间距；反映 data-density。',
+      },
+      {
+        className: 'astryx-markdown-codeblock',
+        visualProps: ['density'],
+        description:
+          '每个渲染的代码块外层容器。覆盖 marginBlockStart/marginBlockEnd 可调整代码块周围的间距；反映 data-density。仅适用于默认渲染——自定义的 components.code 拥有自己的样式。',
+      },
+      {
+        className: 'astryx-markdown-blockquote',
+        visualProps: ['density'],
+        description:
+          '每个渲染的引用块（与 astryx-blockquote 目标共用同一元素）。覆盖 marginBlockStart/marginBlockEnd 可调整引用块周围的间距；反映 data-density。仅适用于默认渲染——自定义的 components.blockquote 拥有自己的样式。',
+      },
+      {
+        className: 'astryx-markdown-table',
+        visualProps: ['density'],
+        description:
+          '每个渲染的表格外层容器。覆盖 marginBlockStart/marginBlockEnd 可调整表格周围的间距；反映 data-density。',
+      },
+      {
+        className: 'astryx-markdown-hr',
+        visualProps: ['density'],
+        description:
+          '每个渲染的水平分隔线。覆盖 marginBlockStart/marginBlockEnd 可调整分隔线周围的间距；反映 data-density。仅适用于默认渲染——自定义的 components.hr 拥有自己的样式。',
+      },
+      {
+        className: 'astryx-markdown-image',
+        visualProps: ['density'],
+        description:
+          '每个渲染的块级图片外层容器（以及损坏图片的占位符）。覆盖 marginBlockStart/marginBlockEnd 可调整图片周围的间距；反映 data-density。仅适用于默认渲染——自定义的 components.image 拥有自己的样式。',
+      },
     ],
   },
   usage: {
@@ -301,6 +387,7 @@ export const docsZh = {
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
+      { guidance: true, description: 'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },
@@ -316,6 +403,7 @@ export const docsDense = {
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns (issue refs, diff refs, mentions) instead of preprocessing the markdown string.' },
+      { guidance: true, description: 'Headings render id attributes matching useOutlineFromMarkdown ids; pair with Outline for hash navigation.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },

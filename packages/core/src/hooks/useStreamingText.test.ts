@@ -2,7 +2,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
-import {useStreamingText} from './useStreamingText';
+import {snapToGraphemeBoundary, useStreamingText} from './useStreamingText';
 
 describe('useStreamingText', () => {
   let rafCallbacks: ((time: number) => void)[];
@@ -188,5 +188,50 @@ describe('useStreamingText', () => {
     // With enough frames and time elapsed, should have revealed everything
     // (or close to it — the hook drains charsPerTick per tickMs)
     expect(result.current.length).toBeGreaterThan(targetText.length * 0.5);
+  });
+
+  it('never reveals a tick boundary landing mid-surrogate-pair or mid-ZWJ-emoji-sequence (#4779)', () => {
+    // natural speed advances 10 UTF-16 code units per tick. 9 ASCII chars
+    // (indices 0-8) followed by a 4-person ZWJ family emoji (indices 9-19,
+    // one grapheme cluster, 11 code units) means the first tick's raw
+    // boundary (index 10) lands one code unit into the family emoji's first
+    // surrogate pair -- exactly the failure case from the issue.
+    const family = '\u{1F468}‍\u{1F469}‍\u{1F467}‍\u{1F466}';
+    const targetText = 'a'.repeat(9) + family + 'end';
+    const {result} = renderHook(() => useStreamingText(targetText, true));
+
+    expect(rafCallbacks.length).toBeGreaterThan(0);
+    const cb = rafCallbacks.pop()!;
+    act(() => cb(performance.now() + 20));
+
+    // Without the fix this would be 'a'.repeat(9) + a lone high surrogate
+    // (renders as U+FFFD). With the fix, the whole not-yet-complete family
+    // cluster is held back rather than rendering a broken glyph.
+    expect(result.current).toBe('a'.repeat(9));
+  });
+});
+
+describe('snapToGraphemeBoundary', () => {
+  it('does not split a surrogate pair', () => {
+    const text = 'a\u{1F389}b'; // 🎉 is a surrogate pair: indices 1 (high) and 2 (low)
+    expect(snapToGraphemeBoundary(text, 2)).toBe(1);
+    expect(snapToGraphemeBoundary(text, 1)).toBe(1);
+  });
+
+  it('does not split a ZWJ emoji sequence', () => {
+    const family = '\u{1F468}‍\u{1F469}‍\u{1F467}‍\u{1F466}';
+    const text = 'x' + family + 'y';
+    const familyStart = 1;
+    const familyEnd = 1 + family.length;
+    for (let offset = familyStart + 1; offset < familyEnd; offset++) {
+      expect(snapToGraphemeBoundary(text, offset)).toBe(familyStart);
+    }
+  });
+
+  it('leaves boundary offsets (start, end, plain-ASCII midpoints) unchanged', () => {
+    const text = 'hello';
+    expect(snapToGraphemeBoundary(text, 0)).toBe(0);
+    expect(snapToGraphemeBoundary(text, 5)).toBe(5);
+    expect(snapToGraphemeBoundary(text, 3)).toBe(3);
   });
 });

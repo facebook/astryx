@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {
   BellIcon,
   EnvelopeIcon,
@@ -493,4 +494,73 @@ export const DisabledWithMessage: Story = {
     isDisabled: true,
     disabledMessage: 'Terms are managed by your administrator',
   },
+};
+
+// A theme can replace the checkbox visual outright: the indicator receives the
+// state, the CheckboxInput keeps the input, label, focus, and disabled
+// behavior. Hover and focus reach the indicator through the row's ancestor
+// marker, so a replacement never needs interaction props.
+const brandIndicatorTheme = defineTheme({
+  name: 'checkbox-indicator-demo',
+  indicators: {
+    checkbox: ({state, size, isDisabled}) => (
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: size === 'sm' ? 20 : 24,
+          height: size === 'sm' ? 20 : 24,
+          border: '1px solid currentColor',
+          borderRadius: 6,
+          color: '#7c3aed',
+          opacity: isDisabled ? 0.5 : 1,
+        }}>
+        {state === 'checked' ? '★' : state === 'indeterminate' ? '–' : ''}
+      </span>
+    ),
+  },
+});
+
+export const ThemedIndicator: Story = {
+  render: () => (
+    <Theme theme={brandIndicatorTheme} mode="light">
+      <div style={{display: 'grid', gap: 12}}>
+        <CheckboxInput label="Custom checked glyph" value={true} />
+        <CheckboxInput
+          label="Custom indeterminate glyph"
+          value="indeterminate"
+        />
+        <CheckboxInput label="Unchecked" value={false} />
+        <CheckboxInput label="Disabled" value={true} isDisabled />
+      </div>
+    </Theme>
+  ),
+};
+
+// Restyling without replacing: the indicator renders the `checkbox` theme
+// target, so ordinary component overrides reach it.
+const roundCheckboxTheme = defineTheme({
+  name: 'checkbox-round-demo',
+  components: {
+    checkbox: {
+      base: {borderRadius: 'var(--radius-full)'},
+      checked: {
+        backgroundColor: 'var(--color-positive)',
+        borderColor: 'var(--color-positive)',
+      },
+    },
+  },
+});
+
+export const ThemedCheckboxTarget: Story = {
+  render: () => (
+    <Theme theme={roundCheckboxTheme} mode="light">
+      <div style={{display: 'grid', gap: 12}}>
+        <CheckboxInput label="Round, positive when checked" value={true} />
+        <CheckboxInput label="Unchecked" value={false} />
+      </div>
+    </Theme>
+  ),
 };

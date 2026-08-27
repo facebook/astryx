@@ -1,20 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useRef, type ReactNode, lazy, Suspense} from 'react';
+import {useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Link} from '../Link';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Tooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useSideNavCollapse} from './SideNavCollapseContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {themeProps} from '../utils/themeProps';
 import {styles} from './SideNavHeading.stylex';
 import type {SideNavHeadingProps} from './SideNavHeading';
-
-const LazyTooltip = lazy(async () =>
-  import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
-);
 
 export function SideNavHeadingStatic({
   as,
@@ -35,17 +34,15 @@ export function SideNavHeadingStatic({
 }: Omit<SideNavHeadingProps, 'menu'>) {
   const LinkComponent = useLinkComponent(as);
   const {isCollapsed} = useSideNavCollapse();
-  const rootRef = useRef<HTMLDivElement>(null);
   const collapsedItemRef = useRef<HTMLElement>(null);
-  const setRef = mergeRefs<HTMLDivElement>(rootRef, ref);
+  const collapsedSetRef = useMergedRefs<HTMLElement>(collapsedItemRef, ref);
 
   if (isCollapsed && !icon) {
     return null;
   }
-
   if (isCollapsed && icon) {
     const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
-    const collapsedSetRef = mergeRefs<HTMLElement>(collapsedItemRef, ref);
+
     let collapsedElement: ReactNode;
 
     if (headingHref) {
@@ -57,7 +54,12 @@ export function SideNavHeadingStatic({
           data-testid={testId}
           {...mergeProps(
             themeProps('side-nav-heading'),
-            stylex.props(navItemStyles.item, styles.rootCollapsed, xstyle),
+            focusOutlineProps.focusVisible(
+              navItemStyles.item,
+              interactionOverlayStyles.backgroundColor,
+              styles.rootCollapsed,
+              xstyle,
+            ),
             className,
             style,
           )}>
@@ -84,13 +86,7 @@ export function SideNavHeadingStatic({
     return (
       <>
         {collapsedElement}
-        <Suspense fallback={null}>
-          <LazyTooltip
-            content={heading}
-            placement="end"
-            anchorRef={collapsedItemRef}
-          />
-        </Suspense>
+        <Tooltip content={heading} placement="end" anchorRef={collapsedItemRef} />
       </>
     );
   }
@@ -106,13 +102,7 @@ export function SideNavHeadingStatic({
         <span {...stylex.props(styles.superheading)}>{superheading}</span>
       )}
       <span {...stylex.props(styles.headingRow)}>
-        <span
-          {...stylex.props(
-            styles.heading,
-            hasCompactHeading && styles.headingCompact,
-          )}>
-          {heading}
-        </span>
+        <span {...stylex.props(styles.heading)}>{heading}</span>
       </span>
       {subheading && (
         <span {...stylex.props(styles.subheading)}>{subheading}</span>
@@ -132,7 +122,7 @@ export function SideNavHeadingStatic({
         data-testid={testId}
         {...mergeProps(
           themeProps('side-nav-heading'),
-          stylex.props(styles.root, styles.menuTrigger, xstyle),
+          focusOutlineProps.focusVisible(styles.root, styles.menuTrigger, xstyle),
           className,
           style,
         )}
@@ -147,7 +137,7 @@ export function SideNavHeadingStatic({
   if (hasAnyHref && !isWholeHeadingLink) {
     return (
       <div
-        ref={setRef}
+        ref={ref}
         data-testid={testId}
         {...mergeProps(
           themeProps('side-nav-heading'),
@@ -161,7 +151,7 @@ export function SideNavHeadingStatic({
             <LinkComponent
               href={headingHref}
               aria-label={heading}
-              {...stylex.props(styles.icon)}>
+              {...focusOutlineProps.focusVisible(styles.icon)}>
               {icon}
             </LinkComponent>
           ) : (
@@ -205,7 +195,7 @@ export function SideNavHeadingStatic({
 
   return (
     <div
-      ref={setRef}
+      ref={ref}
       data-testid={testId}
       {...mergeProps(
         themeProps('side-nav-heading'),

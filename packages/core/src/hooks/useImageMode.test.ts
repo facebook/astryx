@@ -105,7 +105,7 @@ describe('useImageMode', () => {
     stubCorsBlockedFetch();
     const {result} = renderHook(() =>
       useImageMode(
-        'https://lookaside.facebook.com/assets/astryx/moody-scene-vertical-2.png',
+        'https://cdn.example.com/photos/moody-scene-vertical-2.png',
         {fallback: null},
       ),
     );

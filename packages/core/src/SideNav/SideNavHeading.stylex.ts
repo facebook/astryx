@@ -17,7 +17,7 @@ export const styles = stylex.create({
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
-      ':has(.astryx-navicon)': 0,
+      ':has(.astryx-nav-icon)': 0,
     },
     paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,
@@ -31,7 +31,10 @@ export const styles = stylex.create({
     paddingInline: 0,
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -40,14 +43,19 @@ export const styles = stylex.create({
     fontSize: 'inherit',
     fontWeight: fontWeightVars['--font-weight-normal'],
     textAlign: 'start',
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
+  // Menu trigger: like interactive but no hover background.
+  // Only cursor:pointer signals interactivity; the popover provides context.
   menuTrigger: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -60,7 +68,7 @@ export const styles = stylex.create({
   interactiveCollapsed: {
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': 'transparent',
       },
     },
@@ -96,6 +104,7 @@ export const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
+  // When super/sub headings are present, keep same size but allow compact layout
   headingCompact: {
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
@@ -128,6 +137,11 @@ export const styles = stylex.create({
     minWidth: spacingVars['--spacing-7'],
     minHeight: spacingVars['--spacing-7'],
     color: colorVars['--color-icon-secondary'],
+    // 28px is the hit/alignment box, not the glyph. Icon sizes its own span
+    // with a matching font-size (the registry chevron is a 1em SVG), so pin
+    // font-size back to inherit to keep the glyph at the 14px it renders at
+    // today. The 28px min box still wins over Icon's width/height.
+    fontSize: 'inherit',
   },
   headerEndContent: {
     flexShrink: 0,
@@ -139,6 +153,8 @@ export const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     overflow: 'hidden',
   },
+  // Static heading replica inside the popover — matches inline heading layout.
+  // Clickable to close the popover.
   popoverHeading: {
     display: 'flex',
     alignItems: 'center',
@@ -153,15 +169,19 @@ export const styles = stylex.create({
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
-      ':has(.astryx-navicon)': 0,
+      ':has(.astryx-nav-icon)': 0,
     },
     paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-2'],
     marginInline: spacingVars['--spacing-1'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
+  // Chevron inside the popover heading — same as chevron but rotated up
   popoverChevron: {
     flexShrink: 0,
     display: 'flex',
@@ -170,12 +190,22 @@ export const styles = stylex.create({
     minWidth: spacingVars['--spacing-7'],
     minHeight: spacingVars['--spacing-7'],
     color: colorVars['--color-icon-secondary'],
+    // See `chevron` — keep the glyph on the inherited font-size.
+    fontSize: 'inherit',
     transform: 'rotate(180deg)',
+  },
+  // Glyph inside a chevron *trigger* (the button already carries the 28px box
+  // and the color, so the Icon only has to avoid resizing itself).
+  chevronGlyph: {
+    fontSize: 'inherit',
   },
   popover: {
     minWidth: 'anchor-size(width)',
     marginBlockStart: spacingVars['--spacing-1'],
   },
+  // Overlap variant: popover covers the trigger so heading appears "in place".
+  // Add 4px padding inside, then widen and shift to compensate so the
+  // heading text inside the popover still aligns with the inline heading.
   popoverOverlap: {
     minWidth: 'calc(anchor-size(width) + 16px)',
     marginBlockStart: 'calc(-1 * anchor-size(height) - 8px)',

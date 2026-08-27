@@ -31,10 +31,10 @@ const meta: Meta<typeof Banner> = {
       description:
         'Whether the banner can be dismissed (manages its own hidden state)',
     },
-    defaultIsExpanded: {
+    collapsible: {
       control: 'boolean',
       description:
-        'Whether the content area starts expanded (only relevant when children are provided)',
+        'Whether the content area sits behind an expand/collapse toggle. On by default, starting collapsed. false keeps children always visible with no toggle; pass {defaultIsOpen: true} to start open, or {isOpen, onOpenChange} for controlled.',
     },
   },
 };
@@ -136,10 +136,9 @@ export const CollapsibleContent: Story = {
     children: (
       <div
         style={{
-          fontSize: '13px',
           padding: '40px',
           textAlign: 'center',
-          color: '#999',
+          color: 'var(--color-text-secondary)',
         }}>
         Flex Slot
       </div>
@@ -153,16 +152,15 @@ export const CollapsibleContentExpanded: Story = {
     status: 'info',
     title: 'Emphasized Text',
     description: 'Description text',
-    defaultIsExpanded: true,
+    collapsible: {defaultIsOpen: true},
     endContent: <Button label="Button" variant="secondary" size="sm" />,
     isDismissable: true,
     children: (
       <div
         style={{
-          fontSize: '13px',
           padding: '40px',
           textAlign: 'center',
-          color: '#999',
+          color: 'var(--color-text-secondary)',
         }}>
         Flex Slot
       </div>
@@ -170,13 +168,13 @@ export const CollapsibleContentExpanded: Story = {
   },
 };
 
-export const WithContentArea: Story = {
-  name: 'With Content Area (Card Background)',
+export const AlwaysVisibleContent: Story = {
+  name: 'Content Always Visible (collapsible={false})',
   args: {
     status: 'error',
     title: 'Multiple errors found',
     description: 'The following issues need to be resolved:',
-    defaultIsExpanded: true,
+    collapsible: false,
     children: (
       <ul style={{margin: 0, paddingInlineStart: '20px', fontSize: '13px'}}>
         <li>Email address is invalid</li>
@@ -195,7 +193,7 @@ export const ContentAreaWithAction: Story = {
     description: 'Review the changes before they take effect.',
     endContent: <Button label="Review" variant="secondary" size="sm" />,
     isDismissable: true,
-    defaultIsExpanded: true,
+    collapsible: {defaultIsOpen: true},
     children: (
       <div style={{fontSize: '13px'}}>
         <p style={{margin: '0 0 8px'}}>Changed settings:</p>
@@ -247,8 +245,19 @@ export const AllFeatures: Story = {
       />
       <Banner
         status="error"
+        title="With content, always visible"
+        description="collapsible={false} drops the toggle."
+        isDismissable
+        collapsible={false}>
+        <div style={{fontSize: '13px'}}>
+          The content sits on a card-colored background, visually distinct from
+          the status header above.
+        </div>
+      </Banner>
+      <Banner
+        status="error"
         title="With collapsible content"
-        description="Click the chevron to expand."
+        description="Click the chevron to expand. This is the default."
         isDismissable>
         <div style={{fontSize: '13px'}}>
           This content sits on a card-colored background, visually distinct from
@@ -259,10 +268,12 @@ export const AllFeatures: Story = {
         status="success"
         title="Expanded by default"
         description="This content area starts open."
-        defaultIsExpanded
+        collapsible={{
+          defaultIsOpen: true,
+        }}
         isDismissable>
         <div style={{fontSize: '13px'}}>
-          Content is visible immediately because defaultIsExpanded is true.
+          Content is visible immediately because of defaultIsOpen.
         </div>
       </Banner>
       <Banner
@@ -272,5 +283,70 @@ export const AllFeatures: Story = {
         container="section"
       />
     </div>
+  ),
+};
+
+export const LongText: Story = {
+  name: 'Overflow (long text and a long word)',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+      <Banner
+        status="error"
+        title="Your subscription payment could not be processed because the card on file has expired"
+        description="Update the payment method in billing settings to restore access to every workspace on this account before the grace period ends."
+        isDismissable
+      />
+      <Banner
+        status="warning"
+        title="Pneumonoultramicroscopicsilicovolcanoconiosisdiagnosisunavailable"
+        description="Verkehrsinfrastrukturfinanzierungsgesellschaftsvorstandsvorsitzender"
+        isDismissable
+      />
+    </div>
+  ),
+};
+
+export const NarrowContainer: Story = {
+  name: 'Narrow container (240px)',
+  render: () => (
+    <div style={{width: '240px'}}>
+      <Banner
+        status="info"
+        title="Storage almost full"
+        description="Free up space or upgrade your plan to keep syncing."
+        isDismissable
+      />
+    </div>
+  ),
+};
+
+export const EmptySlots: Story = {
+  name: 'Empty slots (falsy children and description)',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+      <Banner status="info" title="No expand affordance" description="">
+        {false}
+      </Banner>
+      <Banner status="success" title="Title only" />
+    </div>
+  ),
+};
+
+export const MultipleActionsNarrow: Story = {
+  name: 'Multiple actions (narrow viewport)',
+  render: () => (
+    <Banner
+      status="warning"
+      title="A compute node is required"
+      description="Attach one of the announcing compute nodes to continue this session."
+      endContent={
+        <>
+          <Button label="Attach od-1234" variant="secondary" size="sm" />
+          <Button label="Attach od-9999" variant="secondary" size="sm" />
+          <Button label="Provision new" variant="secondary" size="sm" />
+        </>
+      }
+      isDismissable
+    />
   ),
 };

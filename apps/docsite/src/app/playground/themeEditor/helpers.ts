@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {COMPONENT_VAR_TO_OVERRIDE, COMPONENT_VAR_NAMES} from './constants';
-import {expandColorScale} from '@astryxdesign/core/theme';
+import {expandColorScale, expandRadiusScale} from '@astryxdesign/core/theme';
 
 export function parseLightDark(
   value: string,
@@ -76,6 +76,55 @@ export function buildSpacingScale(base: number): Record<string, string> {
       `${Math.round(base * step)}px`;
   }
   return patch;
+}
+
+export interface ConcentricityWarning {
+  /** Short Banner title. */
+  title: string;
+  /** The conflict in concrete px, plus what to change to resolve it. */
+  description: string;
+}
+
+/**
+ * Copy for the warning banner shown under the radius and spacing controls when
+ * the two bases diverge, or `null` while concentricity holds.
+ *
+ * Nested rounded rects look concentric when `inner-radius = outer-radius − gap`.
+ * The radius scale steps by `base` per rung (inner ×1, element ×2, container ×3)
+ * and the editor nests one spacing step (`--spacing-1` = the spacing base)
+ * between rungs, so the relation collapses to `radiusBase === spacingBase`.
+ *
+ * Educate over enforce: the numbers come from the scales the editor actually
+ * generates, so the message stays correct if those scales change. `control`
+ * picks which knob the suggestion points at — the banner renders under both
+ * sliders and each one offers to move itself. #958
+ */
+export function getConcentricityWarning(
+  control: 'radius' | 'spacing',
+  radiusBase: number,
+  spacingBase: number,
+): ConcentricityWarning | null {
+  if (!Number.isFinite(radiusBase) || !Number.isFinite(spacingBase)) {
+    return null;
+  }
+  if (radiusBase === spacingBase) {
+    return null;
+  }
+  const radii = expandRadiusScale({base: radiusBase, multiplier: 1});
+  const container = parseInt(radii['--radius-container'], 10);
+  const element = parseInt(radii['--radius-element'], 10);
+  const gap = parseInt(buildSpacingScale(spacingBase)['--spacing-1'], 10);
+  const suggestion =
+    control === 'radius'
+      ? `Set radius to ${spacingBase}px`
+      : `Set spacing to ${radiusBase}px`;
+  return {
+    title: 'Concentricity broken',
+    description:
+      `Container radius (${container}px) − spacing-1 (${gap}px) = ${container - gap}px, ` +
+      `but element radius is ${element}px, so nested corners won't look ` +
+      `concentric. ${suggestion} to match.`,
+  };
 }
 
 type ComponentStyleMap = Record<string, Record<string, Record<string, string>>>;
@@ -240,8 +289,13 @@ export function generateThemeCode(
   return lines.join('\n');
 }
 
-export function getExpandedColorScale(accentHex: string): Record<string, string> {
-  const derived = expandColorScale({accent: accentHex}) as Record<string, string>;
+export function getExpandedColorScale(
+  accentHex: string,
+): Record<string, string> {
+  const derived = expandColorScale({accent: accentHex}) as Record<
+    string,
+    string
+  >;
   // Do not override the user's custom picker selection for `--color-accent` itself
   delete derived['--color-accent'];
   let hex = accentHex.replace('#', '');

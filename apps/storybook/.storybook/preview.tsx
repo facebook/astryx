@@ -2,18 +2,37 @@
 
 import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
-import {Theme, LayerProvider} from '@astryxdesign/core';
+import {
+  Theme,
+  LayerProvider,
+  InternationalizationProvider,
+} from '@astryxdesign/core';
+import {butterTheme} from '@astryxdesign/theme-butter';
+import {chocolateTheme} from '@astryxdesign/theme-chocolate';
+import {gothicTheme} from '@astryxdesign/theme-gothic';
+import {matchaTheme} from '@astryxdesign/theme-matcha';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
+import {probeTheme} from '@astryxdesign/theme-probe';
 import {stoneTheme} from '@astryxdesign/theme-stone';
 import {y2kTheme} from '@astryxdesign/theme-y2k';
 // Import the base reset stylesheet
 import '@astryxdesign/core/reset.css';
 
 /**
- * Map of available themes
+ * Every shipped theme, so the toolbar can reach them and the visual gate can
+ * photograph a component under each theme that overrides it. A theme missing
+ * here is a theme nothing renders and nothing verifies.
  */
 const themes = {
+  butter: butterTheme,
+  chocolate: chocolateTheme,
+  gothic: gothicTheme,
+  matcha: matchaTheme,
   neutral: neutralTheme,
+  // A generated test fixture, not a design: it styles every declared theming
+  // target so the visual gate can prove each one still paints. See
+  // packages/themes/probe/README.md.
+  probe: probeTheme,
   stone: stoneTheme,
   y2k: y2kTheme,
 };
@@ -31,6 +50,7 @@ const withTheme: Decorator = (Story, context) => {
   // Get theme selection from toolbar
   const themeKey = (context.globals?.astryxTheme || 'neutral') as string;
   const mode = context.globals?.colorMode === 'dark' ? 'dark' : 'light';
+  const direction = context.globals?.direction === 'rtl' ? 'rtl' : 'ltr';
 
   // Sync color-scheme to the document root so light-dark() works
   // everywhere, including on <html>/<body> backgrounds and any
@@ -42,13 +62,16 @@ const withTheme: Decorator = (Story, context) => {
   // No theme — render with just base defineVars defaults
   if (themeKey === 'none') {
     return (
-      <div
-        style={{
-          colorScheme: mode,
-          padding: 16,
-        }}>
-        <Story />
-      </div>
+      <InternationalizationProvider locale="en" dir={direction}>
+        <div
+          dir={direction}
+          style={{
+            colorScheme: mode,
+            padding: 16,
+          }}>
+          <Story />
+        </div>
+      </InternationalizationProvider>
     );
   }
 
@@ -57,13 +80,16 @@ const withTheme: Decorator = (Story, context) => {
   return (
     <Theme theme={theme} mode={mode}>
       <LayerProvider>
-        <div
-          style={{
-            backgroundColor: 'var(--color-background-surface)',
-            padding: 16,
-          }}>
-          <Story />
-        </div>
+        <InternationalizationProvider locale="en" dir={direction}>
+          <div
+            dir={direction}
+            style={{
+              backgroundColor: 'var(--color-background-surface)',
+              padding: 16,
+            }}>
+            <Story />
+          </div>
+        </InternationalizationProvider>
       </LayerProvider>
     </Theme>
   );
@@ -92,6 +118,11 @@ const preview: Preview = {
           {value: 'none', title: 'None (base tokens)', icon: 'close'},
           {value: 'neutral', title: 'Neutral', icon: 'circle'},
           {value: 'stone', title: 'Stone', icon: 'circlehollow'},
+          {value: 'butter', title: 'Butter', icon: 'sun'},
+          {value: 'chocolate', title: 'Chocolate', icon: 'circle'},
+          {value: 'gothic', title: 'Gothic', icon: 'moon'},
+          {value: 'matcha', title: 'Matcha', icon: 'circlehollow'},
+          {value: 'probe', title: 'Probe (test fixture)', icon: 'beaker'},
           {value: 'y2k', title: 'Y2K', icon: 'lightning'},
         ],
         dynamicTitle: true,
@@ -109,10 +140,23 @@ const preview: Preview = {
         dynamicTitle: true,
       },
     },
+    direction: {
+      description: 'Text direction',
+      toolbar: {
+        title: 'Direction',
+        icon: 'transfer',
+        items: [
+          {value: 'ltr', title: 'LTR'},
+          {value: 'rtl', title: 'RTL'},
+        ],
+        dynamicTitle: true,
+      },
+    },
   },
   initialGlobals: {
     astryxTheme: 'neutral',
     colorMode: 'light',
+    direction: 'ltr',
   },
   decorators: [withTheme],
 };

@@ -21,7 +21,7 @@ import {SITE_NAME} from './siteConfig';
 
 /** Branded launch banner that matches the root layout + blog fallback card. */
 const DEFAULT_OG_IMAGE =
-  'https://lookaside.facebook.com/assets/astryx/Astryx-Banner.png';
+  '/images/Astryx-Banner.png';
 
 export interface PageMetadataInput {
   /** Plain page title; rendered as "<title> · Astryx" via the root template. */

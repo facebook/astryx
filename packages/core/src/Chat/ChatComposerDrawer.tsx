@@ -14,7 +14,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/ChatComposerDrawer/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposerDrawer/ (block examples)
  */
 
 import {useId, useState, type ReactNode} from 'react';
@@ -104,8 +104,8 @@ const styles = stylex.create({
     // opaque or translucent.
     backgroundColor: colorVars['--color-background-surface'],
     backgroundImage: `linear-gradient(${colorVars['--color-background-muted']}, ${colorVars['--color-background-muted']})`,
-    borderTopLeftRadius: radiusVars['--radius-chat'],
-    borderTopRightRadius: radiusVars['--radius-chat'],
+    borderStartStartRadius: radiusVars['--radius-chat'],
+    borderStartEndRadius: radiusVars['--radius-chat'],
   },
 
   // Toggle row — both the bar handle and badge+label live in the
@@ -117,7 +117,10 @@ const styles = stylex.create({
     height: spacingVars['--spacing-5'],
     paddingInline: spacingVars['--spacing-4'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
   },
   toggleCollapsed: {},
@@ -157,8 +160,8 @@ const styles = stylex.create({
     gridColumn: 1,
     justifySelf: 'center',
     alignSelf: 'start',
-    width: '20px',
-    height: '2px',
+    width: spacingVars['--spacing-5'],
+    height: spacingVars['--spacing-0-5'],
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: {
       default: colorVars['--color-icon-secondary'],
