@@ -77,6 +77,14 @@ function trigger() {
   return screen.getByRole('button', {name: 'Trigger'});
 }
 
+/** The popover element the trigger's aria-describedby points at. */
+function tooltipElement(): HTMLElement {
+  const id = trigger().getAttribute('aria-describedby');
+  const element = id == null ? null : document.getElementById(id);
+  expect(element).not.toBeNull();
+  return element as HTMLElement;
+}
+
 /** Advance timers inside act so the layer's state updates flush. */
 function tick(ms: number) {
   act(() => {
@@ -141,26 +149,23 @@ describe('useTooltip — show delay', () => {
 });
 
 describe('useTooltip — touch suppression', () => {
-  it('never shows on hover when the device reports no hover capability', () => {
-    // The repo's vitest setup polyfills matchMedia as always-false, so hover
-    // works in every other test here; this points it at a touch device.
+  it('never shows on the hover a finger synthesizes, but still on a mouse', () => {
+    // Touch is decided per interaction from the pointer type — a finger's
+    // arrival fires `pointerenter` ahead of the `mouseenter` a tap synthesizes
+    // — not once per device from a `(hover: none)` media query, so a hybrid
+    // device keeps hover under a mouse.
     const onShow = vi.fn();
-    const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
-      query =>
-        ({
-          matches: query === '(hover: none)',
-          media: query,
-          addEventListener: () => {},
-          removeEventListener: () => {},
-        }) as unknown as MediaQueryList,
-    );
-
     render(<Harness onShow={onShow} />);
+
+    fireEvent.pointerEnter(trigger(), {pointerType: 'touch'});
     fireEvent.mouseEnter(trigger());
     tick(1000);
-
     expect(onShow).not.toHaveBeenCalled();
-    matchMedia.mockRestore();
+
+    fireEvent.pointerEnter(trigger(), {pointerType: 'mouse'});
+    fireEvent.mouseEnter(trigger());
+    tick(200);
+    expect(onShow).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -243,10 +248,12 @@ describe('useTooltip — Escape dismissal', () => {
     render(<Harness delay={0} onHide={onHide} />);
     fireEvent.mouseEnter(trigger());
     tick(0);
+    expect(tooltipElement().matches(':popover-open')).toBe(true);
 
     fireEvent.keyDown(document, {key: 'Escape'});
 
     expect(onHide).toHaveBeenCalledTimes(1);
+    expect(tooltipElement().matches(':popover-open')).toBe(false);
   });
 
   it('ignores an Escape that carries the IME keyCode 229', () => {
@@ -271,13 +278,16 @@ describe('useTooltip — Escape dismissal', () => {
     expect(onHide).not.toHaveBeenCalled();
   });
 
-  it('leaves a controlled tooltip open on Escape', () => {
+  it('reports Escape on a controlled tooltip through onHide without hiding it', () => {
     const onHide = vi.fn();
     render(<Harness isOpen onHide={onHide} />);
+    expect(tooltipElement().matches(':popover-open')).toBe(true);
 
     fireEvent.keyDown(document, {key: 'Escape'});
 
-    expect(onHide).not.toHaveBeenCalled();
+    // `isOpen` is the consumer's value: the hook asks, the consumer decides.
+    expect(onHide).toHaveBeenCalledTimes(1);
+    expect(tooltipElement().matches(':popover-open')).toBe(true);
   });
 });
 

@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {render, screen, act} from '@testing-library/react';
+import {render, screen, within, act} from '@testing-library/react';
 import {RadialChart} from './RadialChart';
 import {RadialAxis} from './RadialAxis';
 
@@ -51,43 +51,44 @@ function reportWidth(width: number) {
 }
 
 function renderSpider(children: React.ReactNode) {
-  const result = render(
+  const {container} = render(
     <RadialChart data={spiderData} axes={['speed', 'handling', 'comfort']}>
       {children}
     </RadialChart>,
   );
   reportWidth(600);
-  return result;
+  // Scope label queries to the svg: RadialChart also renders a visually
+  // hidden data table whose column headers repeat the axis keys (#4382), so
+  // an unscoped getByText('speed') would match two nodes.
+  const svg = within(screen.getByRole('img'));
+  return {container, svg};
 }
 
 describe('RadialAxis', () => {
   it('renders one label per axis, named after the axis key', () => {
-    const {container} = renderSpider(<RadialAxis />);
+    const {container, svg} = renderSpider(<RadialAxis />);
 
     expect(container.querySelectorAll('text')).toHaveLength(3);
-    expect(screen.getByText('speed')).toBeInTheDocument();
-    expect(screen.getByText('handling')).toBeInTheDocument();
-    expect(screen.getByText('comfort')).toBeInTheDocument();
+    expect(svg.getByText('speed')).toBeInTheDocument();
+    expect(svg.getByText('handling')).toBeInTheDocument();
+    expect(svg.getByText('comfort')).toBeInTheDocument();
   });
 
   it('anchors labels by their side of the chart: top=middle, right=start, left=end', () => {
-    renderSpider(<RadialAxis />);
+    const {svg} = renderSpider(<RadialAxis />);
 
     // Axes start at the top (-90 degrees) and step clockwise by 120 degrees:
     // speed at -90 (top), handling at 30 (right), comfort at 150 (left).
-    expect(screen.getByText('speed')).toHaveAttribute('text-anchor', 'middle');
-    expect(screen.getByText('handling')).toHaveAttribute(
-      'text-anchor',
-      'start',
-    );
-    expect(screen.getByText('comfort')).toHaveAttribute('text-anchor', 'end');
+    expect(svg.getByText('speed')).toHaveAttribute('text-anchor', 'middle');
+    expect(svg.getByText('handling')).toHaveAttribute('text-anchor', 'start');
+    expect(svg.getByText('comfort')).toHaveAttribute('text-anchor', 'end');
   });
 
   it('positions labels labelOffset px beyond the outer radius', () => {
-    renderSpider(<RadialAxis labelOffset={16} />);
+    const {svg} = renderSpider(<RadialAxis labelOffset={16} />);
 
     // Top axis: y = cy - (radius + 16) = 200 - 176 = 24, x = cx = 300.
-    const top = screen.getByText('speed');
+    const top = svg.getByText('speed');
     expect(parseFloat(top.getAttribute('x') ?? '')).toBeCloseTo(300, 6);
     expect(parseFloat(top.getAttribute('y') ?? '')).toBeCloseTo(24, 6);
   });

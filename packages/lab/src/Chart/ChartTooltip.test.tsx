@@ -95,7 +95,13 @@ describe('ChartTooltip', () => {
     reportWidth(465);
 
     // The default renderer would print "month: Jan" lines for the datum.
-    expect(screen.queryByText(/Jan/)).toBeNull();
-    expect(screen.queryByText(/revenue/)).toBeNull();
+    // Chart also renders a visually hidden data table (#4382) whose row and
+    // column headers legitimately read "Jan" and "revenue", so only text
+    // outside that table counts as tooltip content.
+    const outsideTable = (el: HTMLElement) => el.closest('table') == null;
+    expect(screen.queryAllByText(/Jan/).filter(outsideTable)).toHaveLength(0);
+    expect(screen.queryAllByText(/revenue/).filter(outsideTable)).toHaveLength(
+      0,
+    );
   });
 });

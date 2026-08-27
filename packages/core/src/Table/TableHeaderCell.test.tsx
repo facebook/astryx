@@ -44,7 +44,7 @@ const columns: TableColumn<User>[] = [
  * of on hashed class names.
  *
  * Conditional rules keep their pseudo-class prefix, e.g.
- * `:last-child border-right-width: 0px`.
+ * `:last-child border-inline-end-width: 0`.
  */
 function cssDeclarationsOf(el: Element): string[] {
   const classes = new Set(
@@ -176,7 +176,9 @@ describe('TableHeaderCell', () => {
     expect(declarations).toContain('border-bottom-style: solid');
     expect(declarations).toContain('border-bottom-color: var(--color-border)');
     // …but the column divider is not.
-    expect(declarations.filter(d => d.includes('border-right'))).toEqual([]);
+    expect(declarations.filter(d => d.includes('border-inline-end'))).toEqual(
+      [],
+    );
   });
 
   it('draws no column divider when the table divides rows only', () => {
@@ -184,22 +186,29 @@ describe('TableHeaderCell', () => {
       <Table data={users} columns={columns} dividers="rows" />,
     );
     expect(
-      headerCellDeclarations(container).filter(d => d.includes('border-right')),
+      headerCellDeclarations(container).filter(d =>
+        d.includes('border-inline-end'),
+      ),
     ).toEqual([]);
   });
 
   // StyleX packs the default and the `:last-child` override into one atomic
   // class, so this reads the rules the header cells carry rather than
-  // comparing two cells — both carry byte-identical classes.
+  // comparing two cells — both carry byte-identical classes. The divider sits
+  // on the logical inline-end edge so it mirrors under RTL.
   it('draws a column divider that the last header cell zeroes out', () => {
     const {container} = render(
       <Table data={users} columns={columns} dividers="columns" />,
     );
     const declarations = headerCellDeclarations(container);
-    expect(declarations).toContain('border-right-width: var(--border-width)');
-    expect(declarations).toContain('border-right-style: solid');
-    expect(declarations).toContain('border-right-color: var(--color-border)');
-    expect(declarations).toContain(':last-child border-right-width: 0px');
+    expect(declarations).toContain(
+      'border-inline-end-width: var(--border-width)',
+    );
+    expect(declarations).toContain('border-inline-end-style: solid');
+    expect(declarations).toContain(
+      'border-inline-end-color: var(--color-border)',
+    );
+    expect(declarations).toContain(':last-child border-inline-end-width: 0');
   });
 
   it('draws a column divider when the table divides on a grid', () => {
@@ -207,7 +216,7 @@ describe('TableHeaderCell', () => {
       <Table data={users} columns={columns} dividers="grid" />,
     );
     expect(headerCellDeclarations(container)).toContain(
-      'border-right-width: var(--border-width)',
+      'border-inline-end-width: var(--border-width)',
     );
   });
 
