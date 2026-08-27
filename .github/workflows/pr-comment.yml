@@ -253,7 +253,10 @@ jobs:
         continue-on-error: true
 
       - name: Download Storybook for trusted visual capture
-        if: steps.identity.outputs.valid == 'true' && steps.scope.outputs.stable == 'true'
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad != 'true'
         uses: actions/download-artifact@v8
         with:
           pattern: storybook-*
@@ -288,7 +291,10 @@ jobs:
             "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
 
       - name: Capture the trusted stable visual scope
-        if: steps.identity.outputs.valid == 'true' && steps.scope.outputs.stable == 'true'
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad != 'true'
         env:
           ASTRYX_VISUAL_SHA: ${{ steps.identity.outputs.head_sha }}
           ASTRYX_VISUAL_RUN_ID: ${{ steps.identity.outputs.run_id }}
@@ -307,13 +313,37 @@ jobs:
             --out trusted-capture \
             --plan-file trusted-plan.json
 
+      - name: Derive trusted broad visual deferral
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad == 'true'
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          BASE_SHA: ${{ steps.identity.outputs.base_sha }}
+          RUN_ID: ${{ steps.identity.outputs.run_id }}
+          RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+        run: |
+          node .github/scripts/visual-gate/visual-acceptance.mjs trusted-defer \
+            --scope trusted-scope.json \
+            --baseline /tmp/gh-pages/visual-gate/baseline \
+            --output trusted-visual \
+            --pr "$PR_NUMBER" \
+            --head "$HEAD_SHA" \
+            --base "$BASE_SHA" \
+            --run-id "$RUN_ID" \
+            --run-attempt "$RUN_ATTEMPT"
+
       # The Storybook bundle is untrusted. Default-branch code chooses the plan,
       # captures it in an off-origin-blocked browser, derives the comparison,
       # validates/re-encodes PNGs, and generates the report. PR-authored verdicts
       # and job conclusions are never authority for the required status.
       - name: Derive trusted visual evidence and report
-        id: visual
-        if: steps.identity.outputs.valid == 'true' && steps.scope.outputs.stable == 'true'
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad != 'true'
         env:
           PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
           HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
@@ -329,6 +359,21 @@ jobs:
             --head-sha "$HEAD_SHA" \
             --run-id "$RUN_ID" \
             --run-attempt "$RUN_ATTEMPT"
+
+      - name: Resolve trusted visual evidence path
+        id: visual
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true'
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          RUN_ID: ${{ steps.identity.outputs.run_id }}
+          RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+        run: |
+          test -f trusted-visual/evidence.json
+          test -f trusted-visual/verdict.json
+          test -f trusted-visual/index.html
           echo "ready=true" >> "$GITHUB_OUTPUT"
           echo "path=pr/${PR_NUMBER}/visual/${HEAD_SHA}/${RUN_ID}/${RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
 

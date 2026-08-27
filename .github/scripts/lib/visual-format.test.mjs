@@ -61,6 +61,7 @@ describe('buildVisualSection', () => {
     expect(section).toContain('Skipped');
     expect(section).toContain('900 shots exceeds the 240-shot budget');
     expect(section).toContain('View the report');
+    expect(section).not.toContain('/accept-visual');
   });
 
   it('renders verdict strings as one-line literal text', () => {

@@ -19,6 +19,7 @@ import {
 } from './authorization.mjs';
 import {canonicalizePng} from './lib/canonical-png.mjs';
 import {readStoryIndex, shotKey, storiesInPackages} from './lib/plan.mjs';
+import {renderReport} from './lib/report.mjs';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -28,6 +29,7 @@ const flag = name => {
 };
 const SHA = /^[0-9a-f]{40}$/;
 const KEY = /^[A-Za-z0-9._-]{1,240}$/;
+const NAME = /^[A-Za-z0-9._-]{1,120}$/;
 const REPO = 'facebook/astryx';
 
 function fail(message) {
@@ -92,9 +94,7 @@ function evidenceAt(pages, pr, head, run, attempt) {
   if (!fs.existsSync(dir))
     fail(`no published evidence for run ${run}/${attempt}`);
   const evidence = readJSON(path.join(dir, 'evidence.json'));
-  validateEvidence(evidence, {pr, head, run});
-  if (evidence.run.attempt !== attempt)
-    fail('evidence attempt identity mismatch');
+  validateEvidence(evidence, {pr, head, run, attempt});
   return {dir, evidence};
 }
 
@@ -170,7 +170,9 @@ function validateEvidence(evidence, expected) {
     !SHA.test(evidence.baseSha ?? '') ||
     evidence.run?.id !== expected.run ||
     !Number.isSafeInteger(evidence.run?.attempt) ||
-    evidence.run.attempt <= 0
+    evidence.run.attempt <= 0 ||
+    (expected.attempt !== undefined &&
+      evidence.run.attempt !== expected.attempt)
   ) {
     fail('evidence identity mismatch');
   }
@@ -183,8 +185,31 @@ function validateEvidence(evidence, expected) {
     fail('evidence delta list is invalid');
   }
   if (evidence.verdict.status === 'skipped') {
+    const counts = evidence.verdict.counts;
     if (evidence.capture !== null || evidence.deltas.length !== 0) {
       fail('skipped evidence must not claim a capture or deltas');
+    }
+    if (
+      typeof evidence.verdict.reason !== 'string' ||
+      !evidence.verdict.reason.trim() ||
+      !Number.isSafeInteger(counts?.total) ||
+      counts.total <= 0 ||
+      ['unchanged', 'changed', 'added', 'removed', 'failed'].some(
+        name => counts[name] !== 0,
+      )
+    ) {
+      fail('skipped evidence must carry a trusted reason and count');
+    }
+    if (
+      evidence.verdict.context?.sha !== evidence.testedSha ||
+      evidence.verdict.context?.headSha !== evidence.headSha ||
+      evidence.verdict.context?.baseSha !== evidence.baseSha ||
+      String(evidence.verdict.context?.runId ?? '') !==
+        String(evidence.run.id) ||
+      String(evidence.verdict.context?.runAttempt ?? '') !==
+        String(evidence.run.attempt)
+    ) {
+      fail('skipped evidence run identity mismatch');
     }
   } else {
     validateCapture(evidence.capture);
@@ -548,33 +573,133 @@ function validateAcceptance(value, expected = {}) {
   }
 }
 
-function trustedPlan() {
+function readTrustedScope() {
   const scope = readJSON(path.resolve(flag('scope')));
-  const baseline = readJSON(
-    path.join(path.resolve(flag('baseline')), 'manifest.json'),
-  );
-  const storybookDir = path.resolve(flag('storybook-dir'));
-  const output = path.resolve(flag('output'));
   if (
     scope?.hasStableVisual !== true ||
     typeof scope.broadStableVisual !== 'boolean' ||
     !Array.isArray(scope.stableComponents) ||
-    !Array.isArray(scope.stableThemes)
+    !Array.isArray(scope.stableThemes) ||
+    !scope.stableComponents.every(name => NAME.test(name)) ||
+    !scope.stableThemes.every(name => NAME.test(name))
   ) {
     fail('trusted visual scope is invalid');
   }
+  return scope;
+}
 
-  const baselineEntries = Object.entries(baseline.shots ?? {});
+function readTrustedBaseline() {
+  const baseline = readJSON(
+    path.join(path.resolve(flag('baseline')), 'manifest.json'),
+  );
+  if (
+    !baseline?.shots ||
+    typeof baseline.shots !== 'object' ||
+    Array.isArray(baseline.shots)
+  ) {
+    fail('trusted visual baseline is invalid');
+  }
+  const entries = Object.entries(baseline.shots);
+  if (entries.length === 0 || entries.length > 5000) {
+    fail(`trusted visual baseline has invalid size ${entries.length}`);
+  }
+  return {baseline, entries};
+}
+
+function trustedDefer() {
+  const scope = readTrustedScope();
+  if (!scope.broadStableVisual) fail('trusted visual scope is not broad');
+
+  const {entries} = readTrustedBaseline();
+  const output = path.resolve(flag('output'));
+  const pr = Number(flag('pr'));
+  const head = flag('head') ?? '';
+  const base = flag('base') ?? '';
+  const runId = Number(flag('run-id'));
+  const runAttempt = Number(flag('run-attempt'));
+  validateIdentity(pr, head);
+  if (!SHA.test(base)) fail('invalid base SHA');
+  if (
+    !Number.isSafeInteger(runId) ||
+    runId <= 0 ||
+    !Number.isSafeInteger(runAttempt) ||
+    runAttempt <= 0
+  ) {
+    fail('invalid evidence run/attempt');
+  }
+
+  const total = entries.length;
+  const reason =
+    'Broad stable scope is deferred to the daily release gate. ' +
+    `It covers ${total} trusted baseline shot${total === 1 ? '' : 's'} ` +
+    'instead of recapturing them for this PR.';
+  const verdict = {
+    version: 1,
+    status: 'skipped',
+    generatedAt: new Date().toISOString(),
+    reason,
+    context: {
+      sha: head,
+      headSha: head,
+      baseSha: base,
+      runId: String(runId),
+      runAttempt: String(runAttempt),
+      trustedScope: scope,
+    },
+    counts: {
+      total,
+      unchanged: 0,
+      changed: 0,
+      added: 0,
+      removed: 0,
+      failed: 0,
+    },
+    components: scope.stableComponents,
+    changes: [],
+    added: [],
+    removed: [],
+    failures: [],
+  };
+  const evidence = {
+    version: 1,
+    repo: REPO,
+    pr,
+    headSha: head,
+    testedSha: head,
+    baseSha: base,
+    run: {id: runId, attempt: runAttempt},
+    capture: null,
+    deltas: [],
+    verdict,
+  };
+  validateEvidence(evidence, {
+    pr,
+    head,
+    run: runId,
+    attempt: runAttempt,
+  });
+
+  fs.rmSync(output, {recursive: true, force: true});
+  writeJSON(path.join(output, 'evidence.json'), evidence);
+  writeJSON(path.join(output, 'verdict.json'), verdict);
+  fs.writeFileSync(path.join(output, 'index.html'), renderReport(verdict));
+  process.stdout.write(
+    `Deferred ${total} trusted baseline shot${total === 1 ? '' : 's'} for PR #${pr}, run ${runId}/${runAttempt}.\n`,
+  );
+}
+
+function trustedPlan() {
+  const scope = readTrustedScope();
+  if (scope.broadStableVisual)
+    fail('broad stable scope must be deferred instead of captured');
+  const {entries: baselineEntries} = readTrustedBaseline();
+  const storybookDir = path.resolve(flag('storybook-dir'));
+  const output = path.resolve(flag('output'));
+
   const baselineThemes = [
     ...new Set(baselineEntries.map(([, shot]) => shot.theme)),
   ].filter(Boolean);
-  const shots = scope.broadStableVisual
-    ? baselineEntries.map(([key, shot]) => ({
-        ...shot,
-        key,
-        reasons: ['trusted:broad'],
-      }))
-    : [];
+  const shots = [];
 
   if (scope.stableComponents.length > 0 || scope.stableThemes.length > 0) {
     const indexed = storiesInPackages(readStoryIndex(storybookDir, []), [
@@ -809,6 +934,9 @@ switch (command) {
   case 'state':
     state();
     break;
+  case 'trusted-defer':
+    trustedDefer();
+    break;
   case 'trusted-plan':
     trustedPlan();
     break;
@@ -820,6 +948,6 @@ switch (command) {
     break;
   default:
     fail(
-      'usage: visual-acceptance.mjs <accept|state|trusted-plan|plan|promote>',
+      'usage: visual-acceptance.mjs <accept|state|trusted-defer|trusted-plan|plan|promote>',
     );
 }

@@ -133,6 +133,46 @@ describe('visual acceptance workflow concurrency', () => {
     expect(capture).not.toContain('GITHUB_RUN_ATTEMPT:');
   });
 
+  it('defers broad trusted scopes before downloading or capturing Storybook', () => {
+    const value = workflow('pr-comment.yml');
+    const download = value.slice(
+      value.indexOf(
+        '      - name: Download Storybook for trusted visual capture',
+      ),
+      value.indexOf('      - name: Cross-check artifact identity'),
+    );
+    const capture = value.slice(
+      value.indexOf('      - name: Capture the trusted stable visual scope'),
+      value.indexOf('      - name: Derive trusted broad visual deferral'),
+    );
+    const defer = value.slice(
+      value.indexOf('      - name: Derive trusted broad visual deferral'),
+      value.indexOf('      # The Storybook bundle is untrusted.'),
+    );
+    const derive = value.slice(
+      value.indexOf('      - name: Derive trusted visual evidence and report'),
+      value.indexOf('      - name: Resolve trusted visual evidence path'),
+    );
+
+    const resolve = value.slice(
+      value.indexOf('      - name: Resolve trusted visual evidence path'),
+      value.indexOf('      - name: Publish immutable visual evidence'),
+    );
+
+    expect(download).toContain("steps.scope.outputs.broad != 'true'");
+    expect(capture).toContain("steps.scope.outputs.broad != 'true'");
+    expect(defer).toContain("steps.scope.outputs.broad == 'true'");
+    expect(defer).toContain('visual-acceptance.mjs trusted-defer');
+    expect(defer).toContain('--run-attempt "$RUN_ATTEMPT"');
+    expect(defer).not.toContain('playwright');
+    expect(defer).not.toContain('gate.mjs capture');
+    expect(derive).toContain("steps.scope.outputs.broad != 'true'");
+    expect(resolve).toContain('test -f trusted-visual/evidence.json');
+    expect(resolve).toContain(
+      'path=pr/${PR_NUMBER}/visual/${HEAD_SHA}/${RUN_ID}/${RUN_ATTEMPT}',
+    );
+  });
+
   it('uses the documented collaborator permission response shape', () => {
     const value = workflow('visual-acceptance.yml');
     const authorize = value.slice(
