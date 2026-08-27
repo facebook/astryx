@@ -2,6 +2,7 @@
 
 'use strict';
 
+/* global module */
 module.exports = function rewriteTemplateAssetPaths({types: t}, options) {
   const basePath = options.basePath || '';
 
