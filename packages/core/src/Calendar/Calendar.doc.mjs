@@ -221,7 +221,7 @@ export const docsDense = {
     max: 'maximum selectable date',
     dateConstraints: 'custom constraint fns',
     maxRangeSpan: 'range mode: max days a range may span, both ends counted (7 = 7-day window)',
-    minRangeSpan: 'range mode: min days a range must span, both ends counted (default 1)',
+    minRangeSpan: 'range mode: min days a range must span, both ends counted; repeated start click commits one day when allowed, otherwise cancels (default 1)',
     focusDate: 'controlled visible month (default: selected date, else today clamped into min/max)',
     onFocusDateChange: 'navigation callback',
     handleRef: 'imperative navigation handle',

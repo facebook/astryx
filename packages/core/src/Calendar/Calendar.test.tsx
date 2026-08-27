@@ -367,12 +367,18 @@ describe('Calendar', () => {
     expect(getDayButton(9)).toBeDisabled(); // 2-day span — too short
   });
 
-  it('commits a same-day range with the default minimum span', async () => {
+  it('commits a same-day range when the minimum permits it, including with a maximum', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
     render(
-      <Calendar mode="range" focusDate="2026-01-01" onChange={handleChange} />,
+      <Calendar
+        mode="range"
+        focusDate="2026-01-01"
+        onChange={handleChange}
+        minRangeSpan={1}
+        maxRangeSpan={7}
+      />,
     );
 
     await user.click(getDayButton(10));
