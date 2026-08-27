@@ -38,7 +38,23 @@ export const docs = {
     {
       name: 'autoSaveId',
       type: 'string',
-      description: 'Key for localStorage persistence of size across sessions.',
+      description: 'Key for localStorage persistence of size and collapse state across sessions.',
+    },
+    {
+      name: 'defaultIsCollapsed',
+      type: 'boolean',
+      description: 'Initial collapse state (uncontrolled). A persisted entry wins over it.',
+      default: 'false',
+    },
+    {
+      name: 'isCollapsed',
+      type: 'boolean',
+      description: 'Controlled collapse state. collapse(), expand() and a drag past the threshold then report through onCollapseChange instead of changing state internally.',
+    },
+    {
+      name: 'onCollapseChange',
+      type: '(isCollapsed: boolean) => void',
+      description: 'Called once per collapse state change, via drag or programmatically.',
     },
   ],
   returns: [
@@ -96,7 +112,10 @@ export const docsDense = {
     maxSizePx: 'max size in px.',
     collapsible: 'whether dragging below collapsed threshold collapses region to zero.',
     snaps: 'px values to snap to during drag.',
-    autoSaveId: 'key for localStorage persistence of size across sessions.',
+    autoSaveId: 'key for localStorage persistence of size + collapse state across sessions.',
+    defaultIsCollapsed: 'initial collapse state (uncontrolled); persisted entry wins.',
+    isCollapsed: 'controlled collapse state; collapse()/expand()/drag report instead of mutating.',
+    onCollapseChange: 'called once per collapse state change.',
   },
   returnDescriptions: {
     size: 'current size in px.',

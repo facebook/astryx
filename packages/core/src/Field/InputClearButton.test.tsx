@@ -15,7 +15,7 @@ import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {InputClearButton} from './InputClearButton';
+import {InputClearButton, type InputClearButtonProps} from './InputClearButton';
 import {Icon} from '../Icon';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
@@ -66,6 +66,20 @@ const getGlyph = (): HTMLElement => {
   }
   return icon as HTMLElement;
 };
+
+describe('InputClearButton public props', () => {
+  it('keep popup invoker handlers internal', () => {
+    const hasPointerDown: 'onPointerDown' extends keyof InputClearButtonProps
+      ? true
+      : false = false;
+    const hasClickCapture: 'onClickCapture' extends keyof InputClearButtonProps
+      ? true
+      : false = false;
+
+    expect(hasPointerDown).toBe(false);
+    expect(hasClickCapture).toBe(false);
+  });
+});
 
 describe('InputClearButton', () => {
   it('renders a real button with the given accessible label', () => {

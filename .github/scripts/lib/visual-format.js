@@ -29,23 +29,43 @@ function buildVisualSection(verdict, reportUrl, imageUrl) {
   const link = safeReportUrl
     ? ` <a href="${safeReportUrl}" target="_blank" rel="noopener noreferrer">View the report</a>`
     : '';
+  const acceptanceCommand =
+    verdict.context?.runId && verdict.context?.runAttempt
+      ? `\n\nTo accept these exact frames: \`/accept-visual ${num(verdict.context.runId)}/${num(verdict.context.runAttempt)} <reason>\``
+      : '';
+  const reportBase = safeReportUrl
+    ? `${safeReportUrl.replace(/\/+$/, '')}/`
+    : null;
+  // Inline images use raw branch URLs so a delayed Pages deployment cannot
+  // break evidence that is already present on gh-pages.
+  const imageBase = safeUrl(imageUrl)
+    ? `${safeUrl(imageUrl).replace(/\/+$/, '')}/`
+    : reportBase;
 
   if (verdict.status === 'skipped') {
-    return `### Visual Regression\n\n**Status:** Skipped — ${inline(verdict.reason)}\n\n`;
+    return `### Visual Regression\n\n**Status:** Skipped — ${inline(verdict.reason)}${link}\n\n`;
   }
   if (verdict.status === 'failed') {
     return `### Visual Regression\n\n**Status:** ${num(verdict.counts?.failed)} shot(s) could not be captured.${link}\n\n`;
   }
+  const added = verdict.added ?? [];
+  const removed = verdict.removed ?? [];
   if (!verdict.changes || verdict.changes.length === 0) {
-    const compared = num(verdict.counts?.total) - num(verdict.counts?.added);
-    // A PR-scoped run shoots every story of the touched component in every
-    // theme that styles it, which is deeper than the daily gate's baseline
-    // reaches — so some shots legitimately have nothing to compare against.
-    // Saying "added" there reads as a problem; saying it plainly does not.
-    const unbaselined = num(verdict.counts?.added)
-      ? ` ${num(verdict.counts?.added)} shot(s) have no baseline yet and were not compared.`
-      : '';
-    return `### Visual Regression\n\n**Status:** No visual change across ${compared} compared shot(s).${unbaselined}\n\n`;
+    if (added.length > 0 || removed.length > 0) {
+      const frames = imageBase
+        ? [...added.map(key => ({key, kind: 'after'})), ...removed.map(key => ({key, kind: 'before'}))]
+            .slice(0, 3)
+            .map(({key, kind}) => {
+              const safeKey = encodeURIComponent(String(key));
+              const label = kind === 'after' ? 'Added — After' : 'Removed — Before';
+              return `<p><b>${label}</b><br><img src="${imageBase}${kind}/${safeKey}.png" width="300" alt="${label} visual regression frame"></p>`;
+            })
+            .join('\n')
+        : '';
+      return `### Visual Regression\n\n**${added.length} added · ${removed.length} removed.**${link}${acceptanceCommand}\n\n${frames}\n\n`;
+    }
+    const compared = num(verdict.counts?.total);
+    return `### Visual Regression\n\n**Status:** No visual change across ${compared} compared shot(s).\n\n`;
   }
 
   const rows = verdict.changes
@@ -61,16 +81,6 @@ function buildVisualSection(verdict, reportUrl, imageUrl) {
   // names before they can answer whether the after is correct. The static
   // report is published beside the PR preview, and its first three deltas
   // render directly in the comment; the full report carries the rest + wipe UI.
-  const reportBase = safeReportUrl
-    ? `${safeReportUrl.replace(/\/+$/, '')}/`
-    : null;
-  // GitHub comments fetch raw branch images directly. The repository's Pages
-  // deployment can be delayed or errored independently of the gh-pages push;
-  // coupling inline evidence to that deployment produced six broken images in
-  // the first live demo even though every PNG existed in the branch.
-  const imageBase = safeUrl(imageUrl)
-    ? `${safeUrl(imageUrl).replace(/\/+$/, '')}/`
-    : reportBase;
   const evidence = imageBase
     ? verdict.changes
         .slice(0, 3)
@@ -101,7 +111,7 @@ function buildVisualSection(verdict, reportUrl, imageUrl) {
 
   return `### Visual Regression
 
-**${verdict.changes.length} of ${num(verdict.counts?.total)} shot(s) changed.**${link}
+**${verdict.changes.length} of ${num(verdict.counts?.total)} shot(s) changed.**${link}${acceptanceCommand}
 
 A change here is a question, not a failure: check whether the *after* is the
 picture you intended. If it is, say so in the PR — the release gate's baseline

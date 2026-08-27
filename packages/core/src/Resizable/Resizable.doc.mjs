@@ -104,7 +104,7 @@ export const docs = {
         {
           name: 'autoSaveId',
           type: 'string',
-          description: 'Key for persisting sizes to localStorage.',
+          description: 'Key for persisting sizes and collapse state to localStorage.',
         },
       ],
     },
@@ -212,7 +212,7 @@ export const docsDense = {
         collapsedSize: 'px threshold triggering collapse during drag',
         snaps: 'px values to snap to during resize',
         shrinkOrder: 'cascade priority: lower number shrinks first',
-        autoSaveId: 'key for persisting sizes to localStorage',
+        autoSaveId: 'key for persisting sizes + collapse state to localStorage',
       },
     },
     {
