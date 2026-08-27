@@ -261,4 +261,54 @@ describe('useTreeFocus activation + typeahead', () => {
     fireEvent.keyDown(tree, {key: 'c'});
     expect(screen.getByTestId('c')).toHaveFocus();
   });
+
+  it('typeahead cycles through same-letter matches on repeated presses', () => {
+    const nodes: Node[] = [
+      {id: 'apple', label: 'Apple', level: 1},
+      {id: 'apricot', label: 'Apricot', level: 1},
+      {id: 'avocado', label: 'Avocado', level: 1},
+    ];
+    render(<Tree collapsed={nodes} />);
+    const tree = screen.getByRole('tree');
+    screen.getByTestId('apple').focus();
+
+    fireEvent.keyDown(tree, {key: 'a'});
+    expect(screen.getByTestId('apricot')).toHaveFocus();
+
+    // A repeat must cycle, not extend the query to "aa" (as useTypeahead does).
+    fireEvent.keyDown(tree, {key: 'a'});
+    expect(screen.getByTestId('avocado')).toHaveFocus();
+  });
+
+  it('typeahead searches from the top when no treeitem has focus', () => {
+    const nodes: Node[] = [
+      {id: 'apple', label: 'Apple', level: 1},
+      {id: 'banana', label: 'Banana', level: 1},
+      {id: 'avocado', label: 'Avocado', level: 1},
+    ];
+    render(<Tree collapsed={nodes} />);
+    const tree = screen.getByRole('tree');
+
+    // No .focus() call: with no current item, the first match must win.
+    fireEvent.keyDown(tree, {key: 'a'});
+    expect(screen.getByTestId('apple')).toHaveFocus();
+  });
+
+  it('typeahead keeps focus on an item that still matches the refined buffer', () => {
+    const nodes: Node[] = [
+      {id: 'apple', label: 'Apple', level: 1},
+      {id: 'banana', label: 'Banana', level: 1},
+      {id: 'apricot', label: 'Apricot', level: 1},
+    ];
+    render(<Tree collapsed={nodes} />);
+    const tree = screen.getByRole('tree');
+    screen.getByTestId('apple').focus();
+
+    fireEvent.keyDown(tree, {key: 'a'});
+    expect(screen.getByTestId('apricot')).toHaveFocus();
+
+    // "ap" refines the search; Apricot still matches, so focus holds.
+    fireEvent.keyDown(tree, {key: 'p'});
+    expect(screen.getByTestId('apricot')).toHaveFocus();
+  });
 });

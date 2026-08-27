@@ -117,3 +117,16 @@ export function buildDefineThemeExample(theming: ThemingDoc): string {
 export function publicVars(theming: ThemingDoc): ComponentVar[] {
   return (theming.vars ?? []).filter(v => !v.private && !v.derived);
 }
+
+/**
+ * Whether a component has any themeable surface worth documenting — at least
+ * one theme target or one publicly-settable CSS variable. Mirrors the render
+ * gate in Theming.tsx so the "Theming" tab is only shown when the panel would
+ * have content.
+ */
+export function hasThemingContent(theming: ThemingDoc | null): boolean {
+  if (!theming) {
+    return false;
+  }
+  return theming.targets.length > 0 || publicVars(theming).length > 0;
+}

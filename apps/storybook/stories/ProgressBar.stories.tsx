@@ -315,17 +315,20 @@ export const MarksAcrossVariants: Story = {
 
 export const ThemedMarks: Story = {
   // Marks are themeable directly via the `progressbar-mark` target: a theme sets
-  // `backgroundColor`, `width`, and `height` on it with `defineTheme` — no
-  // dedicated CSS vars needed. A taller height overhangs the bar symmetrically
-  // above and below. Here we set the properties via a scoped style block so the
-  // effect is visible without a full theme.
+  // `backgroundColor`, `width`, and `height` on it with `defineTheme`. A taller
+  // height overhangs the bar symmetrically above and below. The style block below
+  // stands in for a full theme, in the shape `astryx theme build` emits — the
+  // layer, and the size arriving as the derived vars rather than as `width` /
+  // `height` — so the demo exercises the real theming path.
   render: () => (
     <div style={{width: '320px'}}>
       <style>{`
-        .themed-marks-demo .astryx-progressbar-mark {
-          background-color: red;
-          width: 3px;
-          height: 14px;
+        @layer astryx-theme {
+          .themed-marks-demo .astryx-progress-bar-mark {
+            background-color: red;
+            --_progressbar-mark-width: 3px;
+            --_progressbar-mark-height: 14px;
+          }
         }
       `}</style>
       <div className="themed-marks-demo">

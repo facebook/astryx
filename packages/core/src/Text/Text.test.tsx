@@ -6,7 +6,7 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {Text} from './Text';
 import type {TextType} from './Text';
 import type {TextColor} from '../theme/types';
@@ -21,6 +21,28 @@ describe('Text', () => {
     it('renders children correctly', () => {
       render(<Text type="body">Hello World</Text>);
       expect(screen.getByText('Hello World')).toBeInTheDocument();
+    });
+
+    it('keeps a forwarded ref attached across rerenders', () => {
+      const ref = vi.fn();
+      const {rerender} = render(
+        <Text ref={ref} type="body">
+          Before
+        </Text>,
+      );
+
+      const element = screen.getByText('Before');
+      expect(ref).toHaveBeenLastCalledWith(element);
+      ref.mockClear();
+
+      rerender(
+        <Text ref={ref} type="body">
+          After
+        </Text>,
+      );
+
+      expect(ref).not.toHaveBeenCalled();
+      expect(screen.getByText('After')).toBe(element);
     });
 
     it('renders as span by default', () => {
@@ -273,5 +295,49 @@ describe('Text custom colors', () => {
   it('still applies built-in colors directly', () => {
     render(<Text color="accent">Accent</Text>);
     expect(screen.getByText('Accent').className).toContain('accent');
+  });
+});
+
+// A truncated Text rendered its own Tooltip AND set `title` with the same
+// string, so the browser drew a second, unstyled tooltip on top of ours.
+describe('truncated text shows one tooltip, not two', () => {
+  function withOverflow() {
+    const proto = window.HTMLElement.prototype;
+    const original = {
+      scrollWidth: Object.getOwnPropertyDescriptor(proto, 'scrollWidth'),
+      offsetWidth: Object.getOwnPropertyDescriptor(proto, 'offsetWidth'),
+    };
+    Object.defineProperty(proto, 'scrollWidth', {
+      configurable: true,
+      get: () => 400,
+    });
+    Object.defineProperty(proto, 'offsetWidth', {
+      configurable: true,
+      get: () => 100,
+    });
+    return () => {
+      if (original.scrollWidth) {
+        Object.defineProperty(proto, 'scrollWidth', original.scrollWidth);
+      }
+      if (original.offsetWidth) {
+        Object.defineProperty(proto, 'offsetWidth', original.offsetWidth);
+      }
+    };
+  }
+
+  it('leaves the native title to the tooltip it already renders', () => {
+    const restore = withOverflow();
+    try {
+      render(
+        <Text type="body" maxLines={1}>
+          A label far wider than the space it has been given
+        </Text>,
+      );
+      expect(
+        screen.getByText('A label far wider than the space it has been given'),
+      ).not.toHaveAttribute('title');
+    } finally {
+      restore();
+    }
   });
 });

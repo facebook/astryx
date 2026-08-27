@@ -15,6 +15,13 @@ import {CodeBlock} from './CodeBlock';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {dracula} from '../theme/syntax';
 import {InternationalizationProvider} from '../i18n';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
+
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -327,5 +334,102 @@ describe('CodeBlock', () => {
     );
     expect(container.querySelector('[data-astryx-syntax-theme]')).toBeNull();
     expect(container.firstElementChild?.tagName).toBe('PRE');
+  });
+
+  describe('header theming targets', () => {
+    it('puts astryx-codeblock-header on the header row when a header shows', () => {
+      const {container} = render(
+        <CodeBlock
+          code="const x = 1;"
+          language="javascript"
+          title="example.js"
+        />,
+      );
+      expect(
+        container.querySelector('.astryx-codeblock-header'),
+      ).not.toBeNull();
+    });
+
+    it('puts astryx-codeblock-title on the header title element', () => {
+      const {container} = render(
+        <CodeBlock
+          code="const x = 1;"
+          language="javascript"
+          title="example.js"
+        />,
+      );
+      const titleEl = container.querySelector('.astryx-codeblock-title');
+      expect(titleEl).not.toBeNull();
+      // The language label + title text live in this element.
+      expect(titleEl).toHaveTextContent('example.js');
+    });
+
+    it('renders no header targets when there is no header', () => {
+      // plaintext hides the language label and no title is given, so the
+      // header row is not rendered at all.
+      const {container} = render(
+        <CodeBlock code="const x = 1;" language="plaintext" />,
+      );
+      expect(container.querySelector('.astryx-codeblock-header')).toBeNull();
+      expect(container.querySelector('.astryx-codeblock-title')).toBeNull();
+    });
+
+    it('exposes the header and title as themeable defineTheme targets', () => {
+      // jsdom can't resolve the @layer cascade, so this asserts the targets are
+      // reachable by a theme via the sanctioned defineTheme channel — replacing
+      // the structural `> div:first-child > div > span` header/title selectors a
+      // consumer would otherwise need to restyle the header padding and title.
+      const theme = defineTheme({
+        name: 'codeblock-header-target-test',
+        components: {
+          'codeblock-header': {
+            base: {paddingBlock: 'var(--spacing-1)'},
+          },
+          'codeblock-title': {
+            base: {fontSize: 'var(--text-body-size)'},
+          },
+        },
+      });
+      const css = generateThemeTestCSS(theme);
+      expect(css).toContain('.astryx-codeblock-header');
+      expect(css).toContain('.astryx-codeblock-title');
+    });
+  });
+});
+
+describe('CodeBlock theme target names', () => {
+  it('renders the deprecated classes beside the current ones', () => {
+    const {container} = render(
+      <CodeBlock
+        code="const x = 1;"
+        language="javascript"
+        title="example.js"
+      />,
+    );
+    expect(container.querySelector('.astryx-code-block')).toHaveClass(
+      'astryx-codeblock',
+    );
+    expect(container.querySelector('.astryx-code-block-header')).toHaveClass(
+      'astryx-codeblock-header',
+    );
+    expect(container.querySelector('.astryx-code-block-title')).toHaveClass(
+      'astryx-codeblock-title',
+    );
+    expect(screen.getByRole('button', {name: 'Copy code'})).toHaveClass(
+      'astryx-code-block-copy-button',
+    );
+  });
+
+  it('reaches the header and title through the current defineTheme keys', () => {
+    const theme = defineTheme({
+      name: 'code-block-header-target-test',
+      components: {
+        'code-block-header': {base: {paddingBlock: 'var(--spacing-1)'}},
+        'code-block-title': {base: {fontSize: 'var(--text-body-size)'}},
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-code-block-header');
+    expect(css).toContain('.astryx-code-block-title');
   });
 });

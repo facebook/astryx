@@ -27,10 +27,21 @@ export const docs = {
         states: ['disabled'],
       },
       {className: 'astryx-selector-option'},
+      {
+        className: 'astryx-selector-option-row',
+        visualProps: ['size'],
+        states: ['selected', 'disabled'],
+      },
+      {className: 'astryx-selector-search'},
+      {className: 'astryx-selector-section-heading'},
       {className: 'astryx-selector-empty-state'},
-      {className: 'astryx-selector-clear-icon'},
+      {
+        className: 'astryx-selector-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
       {className: 'astryx-selector-indicator-icon', states: ['state']},
       {className: 'astryx-selector-check'},
+      {className: 'astryx-selector-popup'},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
@@ -45,7 +56,7 @@ export const docs = {
       name: 'options',
       type: 'SelectorOption[]',
       description:
-        'Array of items: strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
+        'Array of items: strings, objects with value/label/description/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
       required: true,
     },
     {
@@ -77,6 +88,20 @@ export const docs = {
       type: 'string',
       description: 'Placeholder text for the search input.',
       default: "'Search...'",
+    },
+    {
+      name: 'emptyText',
+      type: 'ReactNode',
+      description:
+        'Content shown in the dropdown panel when there are no options to show, and announced in a polite live region when the panel opens (a string override is announced verbatim; a richer node falls back to the default text). Not shown while isLoading.',
+      default: "'No options'",
+    },
+    {
+      name: 'emptySearchText',
+      type: 'ReactNode',
+      description:
+        'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time (a string override is announced verbatim; a richer node falls back to the default text).',
+      default: "'No results found'",
     },
     {
       name: 'placeholder',
@@ -157,10 +182,34 @@ export const docs = {
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
     },
     {
+      name: 'renderValue',
+      type: '(option: SelectorOptionData) => ReactNode',
+      description:
+        'Custom render function for the selected option inside the closed trigger. The trigger is sized by padding, so it is the size token for a one-line value (28/32/36) and exactly one text line taller for a two-line one (48/52/56), always on the 4px rhythm, always aligned with the buttons and inputs beside it. Inside an InputGroup the group owns the row height: a SelectorOption folds onto one line and ellipsizes, and any taller node is cut off at the row.',
+    },
+    {
+      name: 'indicatorPosition',
+      type: "'start' | 'end'",
+      description:
+        'Which edge of the option row carries the selected mark. start reserves a mark column ahead of every label so they stay aligned, the way a native menu does; end is the house convention shared with Typeahead and CommandPalette.',
+      default: "'end'",
+    },
+    {
       name: 'width',
       type: 'SizeValue',
       description:
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'startIcon',
+      type: 'IconType | ReactNode',
+      description: 'Icon displayed at the start of the selector trigger.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: 'Shows a loading spinner in the trigger.',
+      default: 'false',
     },
     {
       name: 'xstyle',

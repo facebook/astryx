@@ -94,6 +94,8 @@ export type TemplateCategory =
   | 'Dashboard - Tabbed'
   | 'Dashboard - Filterable'
   | 'Dashboard - Portfolio'
+  | 'Dashboard - Project Status'
+  | 'Dashboard - Funnel & Cohort'
   // Table
   | 'Table - Basic'
   | 'Table - Grouped'

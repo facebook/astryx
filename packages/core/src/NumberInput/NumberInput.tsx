@@ -9,6 +9,8 @@
  * @position Core implementation; consumed by index.ts, tested by NumberInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/NumberInput/numberParser.ts (locale-aware parsing)
+ * - /packages/core/src/NumberInput/numberInputCommit.ts (draft commit policy)
  * - /packages/core/src/NumberInput/NumberInput.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/NumberInput/NumberInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/NumberInput/index.ts (exports if types change)
@@ -30,13 +32,14 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   sizeVars,
-  radiusVars,
+  spacingVars,
   typographyVars,
   typeScaleVars,
   borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -48,31 +51,51 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+
+// Public padding tokens for the `number-input` theme target. A theme writes an
+// ordinary `padding` (in ANY spelling — the shorthand, `paddingBlock`, or a
+// single `paddingBlockStart`) and the pipeline's `container` expansion parses
+// it and emits these normalized per-side tokens; the wrapper and the stepper
+// column both read them, so the column tracks whatever the theme sets instead
+// of assuming the default. Routing through the shared expansion rather than a
+// hand-rolled property→var mapping is what makes every spelling work: a
+// mapping only fires for the exact property name it names.
+//
+// Read order per level: `var(--astryx-…, <next level>)`, terminating at the
+// shared field defaults (NOT the container default --spacing-4, which is a
+// layout metric and would resize every themed field). Built as chained const
+// strings — no function calls — so StyleX can statically analyze them; same
+// shape as the card/section/dialog chains in Layout/container.stylex.ts.
+const FIELD_PAD_BLOCK = spacingVars['--spacing-1'];
+const FIELD_PAD_INLINE = spacingVars['--spacing-2'];
+const padBlockAll = `var(--astryx-number-input-padding, ${FIELD_PAD_BLOCK})`;
+const padInlineAll = `var(--astryx-number-input-padding, ${FIELD_PAD_INLINE})`;
+const padInline = `var(--astryx-number-input-padding-inline, ${padInlineAll})`;
+const padInlineStart = `var(--astryx-number-input-padding-inline-start, ${padInline})`;
+const padInlineEnd = `var(--astryx-number-input-padding-inline-end, ${padInline})`;
+const padBlockStart = `var(--astryx-number-input-padding-block-start, ${padBlockAll})`;
+const padBlockEnd = `var(--astryx-number-input-padding-block-end, ${padBlockAll})`;
 
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
+    // Applied per side rather than through the shared field base's
+    // `paddingBlock`/`paddingInline` shorthands, because the stepper column
+    // has to cancel the block padding edge by edge — an asymmetric
+    // `paddingBlock: 4px 12px` needs two different negative margins.
+    paddingBlockStart: padBlockStart,
+    paddingBlockEnd: padBlockEnd,
+    paddingInlineStart: padInlineStart,
+    paddingInlineEnd: padInlineEnd,
   },
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
+  wrapperWithNumberSteppers: {
+    paddingInlineEnd: 0,
   },
   input: {
     display: 'block',
@@ -81,18 +104,6 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     padding: 0,
-    // Hide the browser's native number spinners; the component provides its own
-    // affordances (keyboard entry, optional clear button) and the spinners
-    // clash with the input's visual treatment and sizing.
-    MozAppearance: 'textfield',
-    '::-webkit-inner-spin-button': {
-      WebkitAppearance: 'none',
-      margin: 0,
-    },
-    '::-webkit-outer-spin-button': {
-      WebkitAppearance: 'none',
-      margin: 0,
-    },
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
@@ -107,7 +118,7 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
@@ -118,6 +129,57 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-secondary'],
     flexShrink: 0,
+  },
+  numberSteppers: {
+    alignSelf: 'stretch',
+    display: 'flex',
+    flexDirection: 'column',
+    flexShrink: 0,
+    width: spacingVars['--spacing-4'],
+    // Cancel the wrapper's block padding edge by edge so the column spans the
+    // field's full height. Reading the same tokens the wrapper applies is what
+    // keeps it flush under a themed padding — including an asymmetric one,
+    // where a single `marginBlock` would be wrong at one end.
+    marginBlockStart: `calc(-1 * ${padBlockStart})`,
+    marginBlockEnd: `calc(-1 * ${padBlockEnd})`,
+    borderInlineStartWidth: borderVars['--border-width'],
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: colorVars['--color-border-emphasized'],
+    overflow: 'hidden',
+    borderStartEndRadius: 'var(--_field-radius)',
+    borderEndEndRadius: 'var(--_field-radius)',
+  },
+  numberStepperButton: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    minHeight: 0,
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    color: colorVars['--color-icon-secondary'],
+    backgroundColor: colorVars['--color-background-surface'],
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+    outline: 'none',
+  },
+  numberStepperButtonDisabled: {
+    color: colorVars['--color-icon-disabled'],
+    cursor: 'default',
+    backgroundImage: 'none',
+  },
+  decrementButton: {
+    borderBlockStartWidth: borderVars['--border-width'],
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: colorVars['--color-border-emphasized'],
+  },
+  incrementIcon: {
+    transform: 'rotate(180deg)',
   },
 });
 
@@ -143,11 +205,13 @@ export type {
   InputStatus as NumberInputStatus,
   InputStatusType as NumberInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {isImeKeyEvent, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useTranslator, useLocale} from '../i18n';
+import {formatEditableNumber} from './numberParser';
+import {parseNumberInput, resolveNumberInputCommit} from './numberInputCommit';
 
 interface NumberInputPropsBase extends Omit<
   BaseProps,
@@ -183,6 +247,17 @@ interface NumberInputPropsBase extends Omit<
    * @default false
    */
   isDisabled?: boolean;
+  /**
+   * Whether the input is read-only.
+   * The value is shown at full opacity and still submits with the form, but
+   * cannot be edited. Unlike `isDisabled`, a read-only input is not dimmed and
+   * stays in the tab order — use it for a value the user should see and send
+   * but not change. Stepping is off in every form while read-only: arrow keys,
+   * the wheel, and the number steppers. `isDisabled` takes precedence when both
+   * are set.
+   * @default false
+   */
+  isReadOnly?: boolean;
   /**
    * Explains why the input is disabled. When set together with `isDisabled`,
    * the input shows a tooltip with this text on hover and keyboard focus, and
@@ -271,10 +346,12 @@ interface NumberInputPropsBase extends Omit<
   autoComplete?: string;
   /**
    * The minimum value allowed.
+   * A smaller entry commits at this value on blur or Enter.
    */
   min?: number | null;
   /**
    * The maximum value allowed.
+   * A larger entry commits at this value on blur or Enter.
    */
   max?: number | null;
   /**
@@ -282,6 +359,21 @@ interface NumberInputPropsBase extends Omit<
    * @default 1
    */
   step?: number | null;
+  /**
+   * Formats the committed value while the input is not being edited.
+   * The raw numeric value is shown on focus so it remains editable.
+   */
+  formatValue?: (value: number) => string;
+  /**
+   * Whether scrolling the wheel over a focused input steps the value.
+   * @default true
+   */
+  isWheelEnabled?: boolean;
+  /**
+   * Whether to show increment and decrement buttons at the end of the input.
+   * @default false
+   */
+  hasNumberSteppers?: boolean;
   /**
    * Units text to display at the end of the input (e.g., "%" or "GB").
    */
@@ -333,49 +425,94 @@ type NumberInputPropsClearable = NumberInputPropsBase & {
 export type NumberInputProps =
   NumberInputPropsNonClearable | NumberInputPropsClearable;
 
-/**
- * Parse and validate a string input as a number.
- * Returns null if the input is not a valid number or fails validation.
- */
-function parseNumberInput(
-  input: string,
-  options: {
-    min?: number | null;
-    max?: number | null;
-    isIntegerOnly?: boolean;
-  },
-): number | null {
-  const trimmed = input.trim();
-  if (trimmed === '' || trimmed === '-') {
-    return null;
+type StepDirection = -1 | 1;
+
+function getDecimalPlaces(value: number): number {
+  const [coefficient, exponentText] = String(value).toLowerCase().split('e');
+  const fractionLength = coefficient.split('.')[1]?.length ?? 0;
+  const exponent = exponentText == null ? 0 : Number(exponentText);
+  return Math.max(0, fractionLength - exponent);
+}
+
+function getEffectiveStep(
+  step: number | null | undefined,
+  isIntegerOnly: boolean,
+): number {
+  if (
+    step == null ||
+    !Number.isFinite(step) ||
+    step <= 0 ||
+    (isIntegerOnly && !Number.isInteger(step))
+  ) {
+    return 1;
+  }
+  return step;
+}
+
+function getSteppedValue({
+  currentValue,
+  direction,
+  min,
+  max,
+  step,
+  isIntegerOnly,
+}: {
+  currentValue: number | null;
+  direction: StepDirection;
+  min?: number | null;
+  max?: number | null;
+  step?: number | null;
+  isIntegerOnly: boolean;
+}): number | null {
+  const effectiveStep = getEffectiveStep(step, isIntegerOnly);
+  const stepBase =
+    min != null && (!isIntegerOnly || Number.isInteger(min)) ? min : 0;
+
+  let nextValue: number;
+  if (currentValue == null) {
+    nextValue = direction === 1 ? (min ?? 0) : (max ?? 0);
+    if (isIntegerOnly) {
+      nextValue =
+        direction === 1 ? Math.ceil(nextValue) : Math.floor(nextValue);
+    }
+  } else {
+    const stepPosition = (currentValue - stepBase) / effectiveStep;
+    const tolerance = Number.EPSILON * Math.max(1, Math.abs(stepPosition)) * 4;
+    const nextStepPosition =
+      direction === 1
+        ? Math.floor(stepPosition + tolerance) + 1
+        : Math.ceil(stepPosition - tolerance) - 1;
+    nextValue = stepBase + nextStepPosition * effectiveStep;
   }
 
-  const num = Number(trimmed);
-  if (!Number.isFinite(num)) {
-    return null;
+  const precision = Math.min(
+    12,
+    Math.max(getDecimalPlaces(effectiveStep), getDecimalPlaces(stepBase)),
+  );
+  nextValue = Number(nextValue.toFixed(precision));
+
+  // Clamp after rounding so a bound with finer precision than the step cannot
+  // be rounded back out of its own range.
+  if (min != null) {
+    nextValue = Math.max(min, nextValue);
+  }
+  if (max != null) {
+    nextValue = Math.min(max, nextValue);
   }
 
-  // Check integer constraint
-  if (options.isIntegerOnly && !Number.isInteger(num)) {
-    return null;
+  if (!Number.isFinite(nextValue)) {
+    return currentValue;
   }
-
-  // Check min constraint
-  if (options.min != null && num < options.min) {
-    return null;
+  if (isIntegerOnly && !Number.isInteger(nextValue)) {
+    return currentValue;
   }
-
-  // Check max constraint
-  if (options.max != null && num > options.max) {
-    return null;
-  }
-
-  return num;
+  return Object.is(nextValue, -0) ? 0 : nextValue;
 }
 
 /**
  * A number input component for collecting numeric user input.
- * Only calls onChange when the entered value passes validation.
+ * Commits text edits on blur or Enter and only calls onChange when the whole
+ * draft passes validation.
  *
  * @example
  * ```
@@ -390,6 +527,7 @@ export function NumberInput({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  isReadOnly = false,
   disabledMessage,
   startIcon,
   labelIcon,
@@ -406,6 +544,9 @@ export function NumberInput({
   min,
   max,
   step,
+  formatValue,
+  isWheelEnabled = true,
+  hasNumberSteppers = false,
   units,
   isIntegerOnly = false,
   onFocus,
@@ -421,6 +562,8 @@ export function NumberInput({
   ...rest
 }: NumberInputProps) {
   const t = useTranslator();
+  const locale = useLocale();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const inputLabelID = useId();
@@ -433,6 +576,7 @@ export function NumberInput({
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input container (which already exists) and
@@ -473,8 +617,20 @@ export function NumberInput({
     inputGroup,
   );
 
-  // Display value: pending input if typing, otherwise the raw value
-  // Note: With type="number", we can't use formatted display values
+  const parseInput = useCallback(
+    (text: string) => parseNumberInput(text, {min, max, isIntegerOnly, locale}),
+    [isIntegerOnly, locale, max, min],
+  );
+
+  const formattedValue = useMemo(() => {
+    if (value == null) {
+      return '';
+    }
+    return formatValue?.(value) ?? String(value);
+  }, [formatValue, value]);
+
+  // Preserve pending text while editing. Otherwise show the formatted value
+  // at rest and the raw numeric value while focused so it remains editable.
   const displayValue = useMemo(() => {
     if (pendingInput !== null) {
       return pendingInput;
@@ -482,124 +638,195 @@ export function NumberInput({
     if (value == null) {
       return '';
     }
-    return String(value);
-  }, [pendingInput, value]);
+    return isFocused ? formatEditableNumber(value, locale) : formattedValue;
+  }, [formattedValue, isFocused, locale, pendingInput, value]);
 
   // Check if current pending input is valid (for styling purposes)
   const isInputValid = useMemo(() => {
     if (pendingInput === null || !pendingInput.trim()) {
       return true;
     }
-    return parseNumberInput(pendingInput, {min, max, isIntegerOnly}) !== null;
-  }, [pendingInput, min, max, isIntegerOnly]);
+    return parseInput(pendingInput) !== null;
+  }, [pendingInput, parseInput]);
 
-  // Handle input text change - update immediately if valid
+  // Keep the whole text edit as a draft until an explicit commit boundary.
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       // Value can't change while showing a disabled message (the field is
       // read-only and non-native-disabled), but guard the handler too so the
-      // pending value and onChange never fire.
-      if (isDisabled) {
+      // pending value never changes.
+      if (isDisabled || isReadOnly) {
         return;
       }
-      const newValue = e.target.value;
-      setPendingInput(newValue);
-
-      // If the input is valid, update immediately
-      const parsed = parseNumberInput(newValue, {min, max, isIntegerOnly});
-      if (parsed !== null && parsed !== value) {
-        onChange(parsed);
-      }
+      setPendingInput(e.target.value);
     },
-    [value, onChange, min, max, isIntegerOnly, isDisabled],
+    [isDisabled, isReadOnly],
   );
 
   // Handle focus
   const handleFocus = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
+      setIsFocused(true);
       onFocus?.(e);
     },
     [onFocus],
   );
 
-  // Handle blur - validate and clear pending input
-  const handleBlur = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
-      if (pendingInput !== null) {
-        if (hasClear && pendingInput.trim() === '') {
-          // Keyboard clearing honors the clearable contract: an emptied
-          // input commits null instead of silently reverting on blur.
-          if (value != null) {
-            onChange(null);
-          }
-        } else {
-          const parsed = parseNumberInput(pendingInput, {
-            min,
-            max,
-            isIntegerOnly,
-          });
-          if (parsed !== null && parsed !== value) {
-            onChange(parsed);
-          }
-        }
+  const commitPendingInput = useCallback(
+    (trigger: 'blur' | 'Enter') => {
+      if (pendingInput === null) {
+        return;
       }
 
-      // Clear pending input - display will revert to formatted value
-      setPendingInput(null);
+      const decision = resolveNumberInputCommit(pendingInput, {
+        min,
+        max,
+        isIntegerOnly,
+        locale,
+        hasClear: !!hasClear,
+      });
+      if (
+        trigger === 'blur' ||
+        (decision.type === 'commit' && decision.didClamp)
+      ) {
+        setPendingInput(null);
+      }
+
+      if (decision.type === 'clear') {
+        if (hasClear && value != null) {
+          onChange(null);
+        }
+      } else if (decision.type === 'commit' && decision.value !== value) {
+        onChange(decision.value);
+      }
+    },
+    [hasClear, isIntegerOnly, locale, max, min, onChange, pendingInput, value],
+  );
+
+  // Blur ends the edit and displays the resulting committed value.
+  const handleBlur = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
+      commitPendingInput('blur');
+      setIsFocused(false);
       onBlur?.(e);
     },
-    [pendingInput, value, onChange, min, max, isIntegerOnly, onBlur, hasClear],
+    [commitPendingInput, onBlur],
+  );
+
+  const valueForStepping = useMemo(() => {
+    if (pendingInput === null) {
+      return value ?? null;
+    }
+    if (pendingInput.trim() === '') {
+      return null;
+    }
+    return parseInput(pendingInput) ?? value ?? null;
+  }, [parseInput, pendingInput, value]);
+
+  const getNextValue = useCallback(
+    (direction: StepDirection) =>
+      getSteppedValue({
+        currentValue: valueForStepping,
+        direction,
+        min,
+        max,
+        step,
+        isIntegerOnly,
+      }),
+    [isIntegerOnly, max, min, step, valueForStepping],
+  );
+
+  const stepValue = useCallback(
+    (direction: StepDirection) => {
+      // A read-only field is not steppable by any route: keyboard, wheel, or
+      // the stepper buttons all land here.
+      if (isDisabled || isReadOnly) {
+        return;
+      }
+      const nextValue = getNextValue(direction);
+      if (nextValue == null) {
+        return;
+      }
+      setPendingInput(null);
+      if (nextValue !== value) {
+        onChange(nextValue);
+      }
+    },
+    [getNextValue, isDisabled, isReadOnly, onChange, value],
   );
 
   // Handle keyboard events
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        // Validate and commit on Enter
-        if (pendingInput !== null) {
-          if (hasClear && pendingInput.trim() === '') {
-            // Same clearable contract as blur: Enter on an emptied input
-            // commits null instead of reverting.
-            if (value != null) {
-              onChange(null);
-            }
-          } else {
-            const parsed = parseNumberInput(pendingInput, {
-              min,
-              max,
-              isIntegerOnly,
-            });
-            if (parsed !== null && parsed !== value) {
-              onChange(parsed);
-            }
-          }
+      // The field is type="text" for formatted display, so an IME can compose
+      // into it: Enter commits the candidate and the arrows walk the candidate
+      // window. The composing keydown fires before compositionend, so without
+      // this guard those keystrokes would commit or step the value instead.
+      // See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
+      const hasModifier = e.altKey || e.ctrlKey || e.metaKey || e.shiftKey;
+      if (!hasModifier && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        onKeyDown?.(e);
+        if (e.defaultPrevented) {
+          return;
         }
+        e.preventDefault();
+        stepValue(e.key === 'ArrowUp' ? 1 : -1);
+        return;
+      }
+      if (e.key === 'Enter') {
+        commitPendingInput('Enter');
         onEnter?.();
       }
       onKeyDown?.(e);
     },
-    [
-      pendingInput,
-      value,
-      onChange,
-      min,
-      max,
-      isIntegerOnly,
-      onEnter,
-      onKeyDown,
-      hasClear,
-    ],
+    [commitPendingInput, onEnter, onKeyDown, stepValue],
   );
 
-  // While focused, a wheel gesture steps the value — keep that gesture from
-  // also bubbling up and scrolling an ancestor container (page, Dialog,
-  // ScrollArea). When the input isn't focused the wheel isn't stepping the
-  // value, so normal scrolling is left alone.
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLInputElement>) => {
-    if (document.activeElement === e.currentTarget) {
-      e.stopPropagation();
-    }
-  }, []);
+  // React's delegated wheel listener can be passive, so use a native,
+  // explicitly non-passive listener to prevent page scrolling only when this
+  // focused input is intentionally consuming the gesture to step its value.
+  const wheelListenerRef = useCallback(
+    (input: HTMLInputElement | null) => {
+      if (input == null || !isWheelEnabled) {
+        return;
+      }
+
+      const handleWheel = (event: WheelEvent) => {
+        // Bail before preventDefault so a read-only input never swallows the
+        // page scroll it cannot act on.
+        if (
+          document.activeElement !== input ||
+          isDisabled ||
+          isReadOnly ||
+          event.deltaY === 0 ||
+          event.altKey ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.shiftKey
+        ) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        stepValue(event.deltaY < 0 ? 1 : -1);
+      };
+
+      input.addEventListener('wheel', handleWheel, {passive: false});
+      return () => input.removeEventListener('wheel', handleWheel);
+    },
+    [isDisabled, isReadOnly, isWheelEnabled, stepValue],
+  );
+
+  const mergedInputRef = useMemo(
+    () => mergeRefs(ref, inputRef, wheelListenerRef),
+    [ref, wheelListenerRef],
+  );
+
+  const canIncrement = getNextValue(1) !== valueForStepping;
+  const canDecrement = getNextValue(-1) !== valueForStepping;
 
   // Handle clear button click
   const handleClear = useCallback(() => {
@@ -634,10 +861,12 @@ export function NumberInput({
           size,
           status: status?.type ?? null,
           disabled: isDisabled ? 'disabled' : null,
+          readonly: isReadOnly ? 'readonly' : null,
         }),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
+          hasNumberSteppers && styles.wrapperWithNumberSteppers,
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
@@ -653,31 +882,37 @@ export function NumberInput({
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <input
         {...rest}
-        ref={mergeRefs(ref, inputRef)}
+        ref={mergedInputRef}
         id={id}
-        name={isDisabled ? undefined : htmlName}
-        type="number"
+        name={isDisabled || formatValue ? undefined : htmlName}
+        type="text"
+        inputMode={isIntegerOnly ? 'numeric' : 'decimal'}
+        role="spinbutton"
         autoComplete={autoComplete}
         value={displayValue}
         onChange={handleInputChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        onWheel={handleWheel}
         placeholder={placeholder}
         // With a disabledMessage the input keeps focusability via aria-disabled
         // so the reason is focus-discoverable; readOnly + the handler guards
         // keep the value from changing.
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        readOnly={showsDisabledMessage || undefined}
+        readOnly={isReadOnly || showsDisabledMessage || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
-        min={min ?? undefined}
-        max={max ?? undefined}
-        step={step ?? undefined}
+        aria-valuemin={min ?? undefined}
+        aria-valuemax={max ?? undefined}
+        // The ARIA value and hidden form input expose the committed value;
+        // pendingInput is still an uncommitted edit and may be invalid.
+        aria-valuenow={value ?? undefined}
+        aria-valuetext={
+          value == null || !formatValue ? undefined : formattedValue
+        }
         aria-describedby={ariaDescribedBy}
-        aria-required={isRequired === true ? 'true' : undefined}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }
@@ -688,6 +923,13 @@ export function NumberInput({
           !isInputValid && styles.inputInvalid,
         )}
       />
+      {formatValue && htmlName && !isDisabled && (
+        <input
+          type="hidden"
+          name={htmlName}
+          value={value == null ? '' : String(value)}
+        />
+      )}
       {units && (
         <span id={unitsID} {...stylex.props(styles.units)}>
           {units}
@@ -701,16 +943,59 @@ export function NumberInput({
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
         {!isInputValid ? 'Invalid number' : ''}
       </VisuallyHidden>
-      {hasClear && value != null && !isDisabled && (
-        <button
-          type="button"
+      {hasClear && value != null && !isDisabled && !isReadOnly && (
+        <InputClearButton
+          label={t('@astryx.numberInput.clearLabel', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.numberInput.clearLabel', {label})}
-          {...stylex.props(styles.clearButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
+        />
       )}
       {statusIcon}
+      {hasNumberSteppers && (
+        <div {...stylex.props(styles.numberSteppers)}>
+          <button
+            type="button"
+            tabIndex={-1}
+            disabled={isDisabled || isReadOnly || !canIncrement}
+            aria-label={t('@astryx.numberInput.incrementLabel', {label})}
+            onPointerDown={event => event.preventDefault()}
+            onClick={() => {
+              inputRef.current?.focus();
+              stepValue(1);
+            }}
+            {...stylex.props(
+              styles.numberStepperButton,
+              interactionOverlayStyles.backgroundImage,
+              (isDisabled || isReadOnly || !canIncrement) &&
+                styles.numberStepperButtonDisabled,
+            )}>
+            <Icon
+              icon="numberInput:stepperDown"
+              size="xsm"
+              color="inherit"
+              xstyle={styles.incrementIcon}
+            />
+          </button>
+          <button
+            type="button"
+            tabIndex={-1}
+            disabled={isDisabled || isReadOnly || !canDecrement}
+            aria-label={t('@astryx.numberInput.decrementLabel', {label})}
+            onPointerDown={event => event.preventDefault()}
+            onClick={() => {
+              inputRef.current?.focus();
+              stepValue(-1);
+            }}
+            {...stylex.props(
+              styles.numberStepperButton,
+              interactionOverlayStyles.backgroundImage,
+              styles.decrementButton,
+              (isDisabled || isReadOnly || !canDecrement) &&
+                styles.numberStepperButtonDisabled,
+            )}>
+            <Icon icon="numberInput:stepperDown" size="xsm" color="inherit" />
+          </button>
+        </div>
+      )}
     </div>
   );
 

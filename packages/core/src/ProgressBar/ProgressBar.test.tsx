@@ -766,9 +766,49 @@ describe('ProgressBar', () => {
       expect(trackHasOverflowHidden).toBe(true);
     });
 
+    it('sizes the mark through the derived vars, so a theme override cannot lose the cascade', () => {
+      // width/height are declared as `var(--_progressbar-mark-*)` and nothing
+      // else declares those vars, so the value a theme sets on the
+      // `progressbar-mark` target lands even in a consumer whose StyleX is
+      // unlayered and would otherwise outrank `@layer astryx-theme`.
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'M'}]}
+        />,
+      );
+      const mark = container.querySelector<HTMLElement>(MARK)!;
+      let css = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            css += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      css += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      const markRules = Array.from(mark.classList)
+        .filter(cls => /^x[a-z0-9]+$/.test(cls))
+        .flatMap(
+          cls =>
+            css.match(new RegExp(`\\.${cls}\\b[^{]*\\{[^}]*\\}`, 'g')) ?? [],
+        );
+      expect(markRules.join('\n')).toMatch(
+        /width:\s*var\(--_progressbar-mark-width,\s*2px\)/,
+      );
+      expect(markRules.join('\n')).toMatch(
+        /height:\s*var\(--_progressbar-mark-height,\s*8px\)/,
+      );
+    });
+
     it('renders the mark on the stable progressbar-mark target, centered for symmetric overhang', () => {
       // The mark's width/height/color are directly overridable via the
-      // `progressbar-mark` theme target (no dedicated CSS vars). It is centered
+      // `progressbar-mark` theme target. It is centered
       // on the track (translate -50%,-50%) so a themed taller tick overhangs the
       // bar symmetrically above and below without being clipped.
       const {container} = render(
@@ -797,5 +837,29 @@ describe('ProgressBar', () => {
       expect(css).toMatch(/translate\(-50%,\s*-50%\)/);
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
+  });
+});
+
+describe('ProgressBar theme target names', () => {
+  it('renders the deprecated classes beside the current ones', () => {
+    const {container} = render(
+      <ProgressBar
+        value={50}
+        label="Progress"
+        marks={[{value: 80, label: 'M'}]}
+      />,
+    );
+    expect(container.querySelector('.astryx-progress-bar')).toHaveClass(
+      'astryx-progressbar',
+    );
+    expect(container.querySelector('.astryx-progress-bar-track')).toHaveClass(
+      'astryx-progressbar-track',
+    );
+    expect(container.querySelector('.astryx-progress-bar-fill')).toHaveClass(
+      'astryx-progressbar-fill',
+    );
+    expect(container.querySelector('.astryx-progress-bar-mark')).toHaveClass(
+      'astryx-progressbar-mark',
+    );
   });
 });

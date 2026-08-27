@@ -20,12 +20,12 @@ import {Popover} from '@astryxdesign/core/Popover';
 import {Card} from '@astryxdesign/core/Card';
 import {CodeExampleBlock} from '../../../components/CodeExampleBlock';
 import {components as componentRegistry} from '../../../generated/componentRegistry';
-import {blocks} from '../../../generated/blockRegistry';
+import {showcaseRegistry} from '../../../generated/showcaseRegistry';
 import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
 import {layout} from '../../../layout.stylex';
 
 const FIGMA_LIBRARY_URL =
-  'https://www.figma.com/design/q2r7MbL4JJKE0VBfxto919/Astryx-Library';
+  'https://www.figma.com/community/file/1659998707120781098/astryx-library-community';
 
 /**
  * Category display order for the overview page.
@@ -46,10 +46,13 @@ const CATEGORIES = [
   'Utility',
 ] as const;
 
-/** Map of showcase blocks by component name for thumbnails */
-const showcaseMap = new Map(
-  blocks.filter(b => b.isShowcase).map(b => [b.exampleFor, b]),
-);
+/**
+ * Which components have a showcase to put in their tile.
+ *
+ * `showcaseRegistry` is a map of lazy loaders, so reading its keys costs
+ * nothing — none of the showcase chunks are pulled in by this.
+ */
+const SHOWCASE_NAMES = new Set(Object.keys(showcaseRegistry));
 
 const styles = stylex.create({
   heroTitle: {
@@ -73,8 +76,8 @@ interface CategoryItem {
   description: string;
   href: string;
   category: string;
-  /** Showcase block for thumbnail, if available */
-  showcase: (typeof blocks)[number] | undefined;
+  /** Whether a showcase block exists to render in this component's tile */
+  hasShowcase: boolean;
 }
 
 export default function ComponentsGalleryPage() {
@@ -111,7 +114,7 @@ export default function ComponentsGalleryPage() {
         description: comp.description,
         href: `/components/${comp.name}`,
         category: comp.category,
-        showcase: showcaseMap.get(comp.name),
+        hasShowcase: SHOWCASE_NAMES.has(comp.name),
       });
     }
 
@@ -219,11 +222,8 @@ export default function ComponentsGalleryPage() {
                         href={item.href}
                         padding={0}
                         variant="transparent">
-                        {item.showcase ? (
-                          <ShowcaseThumbnail
-                            dirName={item.showcase.dirName}
-                            category={item.showcase.category}
-                          />
+                        {item.hasShowcase ? (
+                          <ShowcaseThumbnail name={item.name} />
                         ) : (
                           <div {...stylex.props(styles.cardImage)} />
                         )}

@@ -20,9 +20,10 @@ import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
 import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useTranslator} from '../i18n';
+import {useLocale} from '../i18n/useLocale';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {formatInstant} from './formatInstant';
@@ -32,6 +33,7 @@ import type {
   TimestampTooltipLine,
 } from './tooltipEntries';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // Load the overlay lazily so a card-less Timestamp — the default — never
 // bundles HoverCard or the copy affordance's Icon/IconButton. Mirrors the code
 // split the read-only Tooltip path used before it.
@@ -417,9 +419,12 @@ export function Timestamp({
   style,
   ref,
   'data-testid': testId,
+  ...rest
 }: TimestampProps) {
   const t = useTranslator();
+  const locale = useLocale();
   const timeRef = useRef<HTMLTimeElement>(null);
+  const mergedTimeRef = useMergedRefs(ref, timeRef);
   const [now, setNow] = useState(() => new Date());
 
   const date = parseValue(value);
@@ -448,11 +453,19 @@ export function Timestamp({
       : effectiveFormat === 'relative_short'
         ? getRelativeTimeShortString(date, now)
         : isAbsoluteFormat(effectiveFormat)
-          ? formatInstant(date, effectiveFormat, {isTimezoneShown})
+          ? formatInstant(date, effectiveFormat, locale, {isTimezoneShown})
           : '';
 
-  // Full absolute text for tooltip and aria-label
-  const fullAbsoluteText = isValidDate ? formatInstant(date, 'full') : '';
+  // Full absolute text for the tooltip (visible — keeps the compact timezone
+  // abbreviation) and for the AT-facing aria-label, which spells the timezone
+  // out in full: abbreviations like "PST" or "GMT+2" are unexpanded
+  // abbreviations to a screen-reader user (WCAG 3.1.4).
+  const fullAbsoluteText = isValidDate
+    ? formatInstant(date, 'full', locale)
+    : '';
+  const ariaLabelText = isValidDate
+    ? formatInstant(date, 'full', locale, {timeZoneNameStyle: 'long'})
+    : '';
 
   // Live updates
   useEffect(() => {
@@ -500,7 +513,7 @@ export function Timestamp({
   const lines: ReadonlyArray<TimestampTooltipLine> =
     entries === undefined
       ? [{value: fullAbsoluteText, isCopyable: true}]
-      : formatTooltipLines(date, entries);
+      : formatTooltipLines(date, entries, locale);
 
   const timestampProps = mergeProps(
     themeProps('timestamp', {format: effectiveFormat}),
@@ -516,11 +529,18 @@ export function Timestamp({
       xstyle={xstyle}
       {...timestampProps}>
       <time
-        ref={mergeRefs(ref, timeRef)}
+        ref={mergedTimeRef}
         dateTime={isoString}
-        aria-label={
-          isRelativeFormat(effectiveFormat) ? fullAbsoluteText : undefined
-        }
+        data-testid={testId}
+        {...stylex.props(styles.time)}
+        {...rest}
+        // `ariaLabelText` is '' only for an invalid date, which bails out
+        // before rendering — but keep the guard local: an empty aria-label
+        // must be omitted entirely (not rendered as aria-label="") so AT
+        // falls back to reading the visible <time> content.
+        {...(isRelativeFormat(effectiveFormat) && ariaLabelText !== ''
+          ? {'aria-label': ariaLabelText}
+          : {})}
         // The hover card is anchored here with focusTrigger="always", which
         // attaches focus listeners but does not itself make the anchor
         // focusable. A bare <time> is not focusable, so without a tab stop
@@ -529,9 +549,7 @@ export function Timestamp({
         // gratuitous tab stops otherwise. The card carries its own
         // dashed-underline hover indication as the affordance, so the anchor
         // needs no separate focus outline.
-        tabIndex={showTooltip ? 0 : undefined}
-        data-testid={testId}
-        {...stylex.props(styles.time)}>
+        {...(showTooltip ? {tabIndex: 0} : {})}>
         {displayText}
       </time>
     </Text>

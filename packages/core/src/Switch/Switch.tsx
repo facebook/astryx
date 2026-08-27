@@ -33,6 +33,7 @@ import {
   easeVars,
   typographyVars,
   typeScaleVars,
+  focusVars,
 } from '../theme/tokens.stylex';
 import {FieldLabel} from '../Field/FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
@@ -40,13 +41,15 @@ import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const wrapperSizeStyles = stylex.create({
   sm: {
     width: 32,
@@ -134,6 +137,12 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
   },
+  // A hidden label is sr-only, so its wrapper is a zero-width flex item — the
+  // row gap would still be painted beside the track, making the field box
+  // wider than the control it contains. Matches CheckboxInput.
+  containerLabelHidden: {
+    gap: 0,
+  },
   containerSpread: {
     justifyContent: 'space-between',
     width: '100%',
@@ -153,11 +162,34 @@ const styles = stylex.create({
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
+    minInlineSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
+    minBlockSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
+    insetBlockStart: {
+      default: null,
+      '@media (pointer: coarse)': '50%',
+    },
+    insetInlineStart: {
+      default: null,
+      '@media (pointer: coarse)': '50%',
+    },
+    transform: {
+      default: null,
+      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+    },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputBusy: {
     pointerEvents: 'none',
@@ -189,15 +221,22 @@ const styles = stylex.create({
       '@media (forced-colors: active)': 'CanvasText',
     },
   },
+  // The one ring in the system not drawn by focusOutlineStyles. The focusable
+  // input is a sibling of the track, so the condition has to reach the shared
+  // scope marker — and a marker cannot be shared across components without
+  // leaking focus state from an outer one, so it cannot live in the utility.
+  // StyleX also cannot inline a constant imported from another module, so the
+  // values are read from the tokens the utility reads.
   trackFocus: {
     outline: {
       default: 'none',
       [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
+        `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]: '2px',
+      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
+        focusVars['--focus-outline-offset'],
     },
   },
   // State-dependent colors with ancestor hover behavior
@@ -469,6 +508,10 @@ export function Switch({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  // Announce the effective required state (form default included) while the
+  // native `required` stays bound to the explicit `isRequired` so a layout
+  // default never switches on browser validation.
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -509,7 +552,7 @@ export function Switch({
   const switchElement = (
     <div {...stylex.props(styles.switchWrapper, wrapperSizeStyles[size])}>
       <input
-        ref={mergeRefs(ref, disabledMessageTooltip.positionRef)}
+        ref={useMergedRefs(ref, disabledMessageTooltip.positionRef)}
         id={id}
         type="checkbox"
         role="switch"
@@ -523,7 +566,9 @@ export function Switch({
         // isDisabled guard in onChange below.
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
+        form={showsDisabledMessage ? '' : undefined}
         required={isRequired}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         onChange={e => {
           if (isDisabled || isBusy) {
             return;
@@ -588,6 +633,9 @@ export function Switch({
   const labelElement = (
     <div {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
       <FieldLabel
+        // See CheckboxInput: the control names its own label target rather
+        // than the label guessing at its placement.
+        {...themeProps('switch-label')}
         label={label}
         inputID={id}
         isLabelHidden={isLabelHidden}
@@ -626,6 +674,7 @@ export function Switch({
         }}
         {...stylex.props(
           styles.container,
+          isLabelHidden && styles.containerLabelHidden,
           labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
         )}>

@@ -192,6 +192,36 @@ describe('useFocusTrap tabbable model (infra-8)', () => {
     fireEvent.keyDown(document, {key: 'Tab'});
     expect(screen.getByTestId('first')).toHaveFocus();
   });
+
+  it('keeps a programmatic focus target when the trap has no tabbable controls', () => {
+    render(
+      <Trap>
+        <div tabIndex={-1} data-testid="programmatic-target">
+          Read-only dialog content
+        </div>
+      </Trap>,
+    );
+    const target = screen.getByTestId('programmatic-target');
+    target.focus();
+
+    expect(fireEvent.keyDown(target, {key: 'Tab'})).toBe(false);
+    expect(target).toHaveFocus();
+    expect(screen.getByTestId('outside')).not.toHaveFocus();
+  });
+
+  it('leaves Tab alone when focus is outside a trap with no tabbable controls', () => {
+    render(
+      <Trap>
+        <div role="option" tabIndex={-1} data-testid="option">
+          Option
+        </div>
+      </Trap>,
+    );
+    const outside = screen.getByTestId('outside');
+    outside.focus();
+
+    expect(fireEvent.keyDown(outside, {key: 'Tab'})).toBe(true);
+  });
 });
 
 describe('FOCUSABLE_SELECTOR href matching', () => {

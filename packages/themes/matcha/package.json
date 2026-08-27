@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/theme-matcha",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "private": false,
   "description": "Earthy greens with a calm, organic feel. Naturalistic and grounded, great for wellness or content-first apps.",
   "author": "Meta Open Source",
@@ -45,17 +45,18 @@
     "src"
   ],
   "scripts": {
-    "build": "astryx theme build src/matchaTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
+    "build": "rimraf dist && astryx theme build src/matchaTheme.ts -o dist/theme.css --icons-specifier ./icons.mjs && tsup && tsc --project tsconfig.build.json && node ../../../scripts/check-fully-specified.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.3.0",
+    "@astryxdesign/core": "0.5.0",
     "react": ">=19"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "0.3.0"
+    "@astryxdesign/cli": "0.5.0",
+    "rimraf": "^6.0.1"
   },
   "module": "./dist/source.mjs"
 }

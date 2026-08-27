@@ -10,11 +10,12 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
+import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {Divider} from '../Divider';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
@@ -314,10 +315,7 @@ describe('DropdownMenu', () => {
 });
 
 describe('DropdownMenu light-dismiss race', () => {
-  it('does not re-open the menu when a click follows a hide within the guard window', () => {
-    // Reproduces the iOS Safari race: pointerdown fires light-dismiss before
-    // the subsequent click on the trigger; without the guard, the click would
-    // immediately re-open the menu in the same tap.
+  function openMenu() {
     render(
       <DropdownMenu
         button={{label: 'Actions'}}
@@ -325,13 +323,50 @@ describe('DropdownMenu light-dismiss race', () => {
         data-testid="astryx-dropdown-menu"
       />,
     );
-
     const trigger = screen.getByTestId('astryx-dropdown-menu');
-    fireEvent.click(trigger); // open
-    fireEvent.click(trigger); // close (stamps guard)
-    fireEvent.click(trigger); // would re-open without guard
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
-    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledTimes(1);
+    return trigger;
+  }
+
+  /**
+   * The browser dismisses the menu on pointerup and queues the `toggle` event;
+   * on the engines that lose the race it reaches React before the trigger's
+   * own click, which then reads a closed menu.
+   */
+  function lightDismiss() {
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+  }
+
+  it('does not re-open when the trigger click follows its own light dismiss', () => {
+    const trigger = openMenu();
+
+    fireEvent.pointerDown(trigger);
+    lightDismiss();
+    fireEvent.click(trigger);
+
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-opens on a press of its own after a light dismiss', () => {
+    const trigger = openMenu();
+
+    fireEvent.pointerDown(trigger);
+    lightDismiss();
+    fireEvent.click(trigger);
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
+
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -409,6 +444,169 @@ describe('DropdownMenu items', () => {
       screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
     );
     expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the menu after an item is activated', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', onClick: () => {}}]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    await user.click(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('keeps the menu open when the item opts out of closing', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {label: 'Copy ID', onClick: handleClick, hasCloseOnSelect: false},
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const item = screen.getByRole('menuitem', {name: 'Copy ID', hidden: true});
+    await user.click(item);
+    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+
+    // Second activation still works, and focus never left the item.
+    await user.click(item);
+    expect(handleClick).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the menu open on keyboard activation too', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {label: 'Copy ID', onClick: handleClick, hasCloseOnSelect: false},
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    fireEvent.keyDown(menu, {key: 'Enter'});
+
+    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('menuitem', {name: 'Copy ID', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('closes the menu on activation even when the item carries no handler', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Edit'}]} />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    await user.click(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('keeps a row mounted when its label changes, so focus survives (data mode keys by position)', async () => {
+    const user = userEvent.setup();
+
+    function CopyMenu() {
+      const [copied, setCopied] = useState(false);
+      return (
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={[
+            {
+              label: copied ? 'Copied' : 'Copy ID',
+              hasCloseOnSelect: false,
+              onClick: () => setCopied(true),
+            },
+            {label: 'Rename'},
+          ]}
+        />
+      );
+    }
+
+    render(<CopyMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const item = screen.getByRole('menuitem', {name: 'Copy ID', hidden: true});
+    item.focus();
+    await user.click(item);
+
+    const renamed = screen.getByRole('menuitem', {
+      name: 'Copied',
+      hidden: true,
+    });
+    expect(renamed).toBe(item);
+    expect(renamed).toHaveFocus();
+  });
+
+  it('follows the item, not the slot, when ids are supplied and the list changes', async () => {
+    const user = userEvent.setup();
+
+    // A menu whose rows are filtered by a control outside it: the focused row
+    // survives at a new index. Position keys cannot express this — the DOM node
+    // at index 0 would be reused for whatever item lands there.
+    function FilterableMenu({hideFirst}: {hideFirst: boolean}) {
+      const items = [
+        {id: 'edit', label: 'Edit'},
+        {id: 'duplicate', label: 'Duplicate'},
+        {id: 'archive', label: 'Archive'},
+      ].filter(item => !hideFirst || item.id !== 'edit');
+      return <DropdownMenu button={{label: 'Actions'}} items={items} />;
+    }
+
+    const {rerender} = render(<FilterableMenu hideFirst={false} />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const duplicate = screen.getByRole('menuitem', {
+      name: 'Duplicate',
+      hidden: true,
+    });
+    duplicate.focus();
+
+    rerender(<FilterableMenu hideFirst={true} />);
+
+    // Same node, still focused, even though it moved from index 1 to index 0.
+    expect(
+      screen.getByRole('menuitem', {name: 'Duplicate', hidden: true}),
+    ).toBe(duplicate);
+    expect(duplicate).toHaveFocus();
+    expect(
+      screen.queryByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not put id on the rendered row', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{id: 'edit', label: 'Edit'}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    // `id` is identity for React, not a DOM attribute the caller is setting.
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveAttribute('id', 'edit');
   });
 
   it('does not call onClick when disabled', async () => {
@@ -1244,5 +1442,89 @@ describe('DropdownMenu open focus follows input modality (#4477)', () => {
 
     fireEvent.keyDown(menu, {key: 'Tab'});
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+});
+
+describe('DropdownMenu data/compound parity', () => {
+  it('renders an identical divider from either mode', () => {
+    const {unmount} = render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit'}, {type: 'divider'}, {label: 'Delete'}]}
+      />,
+    );
+    const fromData = screen.getByRole('separator', {hidden: true}).outerHTML;
+    unmount();
+
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" />
+        <DropdownMenuDivider />
+        <DropdownMenuItem label="Delete" />
+      </DropdownMenu>,
+    );
+    const fromCompound = screen.getByRole('separator', {hidden: true});
+
+    expect(fromCompound.outerHTML).toBe(fromData);
+    expect(fromCompound).toHaveClass('astryx-dropdown-menu-divider');
+  });
+
+  it('skips a compound divider in the arrow-key order', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" />
+        <DropdownMenuDivider />
+        <DropdownMenuItem label="Delete" />
+      </DropdownMenu>,
+    );
+
+    await user.tab();
+    await user.keyboard('{ArrowDown}');
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus(),
+    );
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveFocus();
+    expect(screen.getByRole('separator', {hidden: true})).not.toHaveFocus();
+  });
+
+  it('carries endContent and description through the items data API', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {
+            label: 'Search',
+            description: 'Find anything',
+            endContent: <span data-testid="shortcut">⌘K</span>,
+          },
+        ]}
+      />,
+    );
+
+    const item = screen.getByRole('menuitem', {hidden: true});
+    expect(item).toHaveTextContent('Find anything');
+    expect(item).toContainElement(screen.getByTestId('shortcut'));
+  });
+
+  it('takes a ReactNode label through the items data API', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: <em data-testid="rich">Rename</em>}]}
+      />,
+    );
+
+    const item = screen.getByRole('menuitem', {hidden: true});
+    expect(item).toContainElement(screen.getByTestId('rich'));
+    // Still typeahead- and screen-reader-addressable: both read text content.
+    expect(item).toHaveAccessibleName('Rename');
   });
 });

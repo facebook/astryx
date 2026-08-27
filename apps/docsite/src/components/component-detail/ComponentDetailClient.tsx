@@ -15,6 +15,7 @@ import {CodeExampleBlock} from '../CodeExampleBlock';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {ShowcasePreview} from './ShowcasePreview';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
+import {Anatomy} from './Anatomy';
 import {BestPractices} from './BestPractices';
 import {Theming} from './Theming';
 import {HookSignature} from './HookSignature';
@@ -25,6 +26,8 @@ import {
   useInteractiveState,
 } from './InteractivePreview';
 import {hasInteractivePlayground} from './interactiveState';
+import {hasThemingContent} from './themingHelpers';
+import {CURRENT_TARGET} from '../../lib/docsVersions';
 import {PlaygroundPropsTable} from './PlaygroundPropsTable';
 import {PropsTable} from './PropsTable';
 import type {ComponentEntry} from '../../generated/componentRegistry';
@@ -105,6 +108,12 @@ function OverviewContent({
             hasCopyButton
           />
 
+          {/* Anatomy before best practices, matching the CLI's section order
+              in clients/cli/lib/component-format.mjs. */}
+          {comp.usage.anatomy && comp.usage.anatomy.length > 0 && (
+            <Anatomy elements={comp.usage.anatomy} />
+          )}
+
           {comp.usage.bestPractices && comp.usage.bestPractices.length > 0 && (
             <BestPractices practices={comp.usage.bestPractices} />
           )}
@@ -112,15 +121,15 @@ function OverviewContent({
       )}
 
       {isHook && comp.params && comp.returns && (
-        <HookSignature params={comp.params} returns={comp.returns} />
+        <HookSignature
+          params={comp.params}
+          returns={comp.returns}
+          typeDefs={comp.typeDefs}
+        />
       )}
 
       {!isHook && !hasInteractivePlayground(comp) && comp.props.length > 0 && (
         <PropsTable props={comp.props} heading="Props" />
-      )}
-
-      {!isHook && comp.theming && (
-        <Theming theming={comp.theming} props={comp.props} />
       )}
 
       {(exampleRegistry[comp.name] || []).length > 0 && (
@@ -156,8 +165,21 @@ function ComponentDetailInner({
 
   const hasShowcase = comp.name in showcaseRegistry;
   const hasPlayground = hasInteractivePlayground(comp);
+  // Theming lives in its own tab, shown only on the canary line (where the
+  // experimental theming API is documented) and only when the component has
+  // themeable targets or CSS variables — never an empty tab.
+  const hasThemingTab =
+    CURRENT_TARGET === 'canary' && hasThemingContent(comp.theming);
+  const hasTabs = hasPlayground || hasThemingTab;
 
-  const tab = searchParams.get('tab') ?? 'overview';
+  const requestedTab = searchParams.get('tab') ?? 'overview';
+  // Clamp to a tab that actually exists for this component so a stale or
+  // hand-edited `?tab=` never lands on a blank panel.
+  const tab =
+    (requestedTab === 'properties' && hasPlayground) ||
+    (requestedTab === 'theming' && hasThemingTab)
+      ? requestedTab
+      : 'overview';
   const setTab = (value: string) => {
     trackNavigate({
       page: 'components',
@@ -196,11 +218,12 @@ function ComponentDetailInner({
           </Text>
         </VStack>
 
-        {hasPlayground ? (
+        {hasTabs ? (
           <>
             <TabList value={tab} onChange={setTab} hasDivider>
               <Tab value="overview" label="Overview" />
-              <Tab value="properties" label="Properties" />
+              {hasPlayground && <Tab value="properties" label="Properties" />}
+              {hasThemingTab && <Tab value="theming" label="Theming" />}
             </TabList>
 
             {tab === 'overview' && (
@@ -213,7 +236,7 @@ function ComponentDetailInner({
               />
             )}
 
-            {tab === 'properties' && (
+            {tab === 'properties' && hasPlayground && (
               <VStack gap={4}>
                 <div {...stylex.props(styles.previewStage)}>
                   <InteractivePreviewStage
@@ -246,6 +269,10 @@ function ComponentDetailInner({
                   </Section>
                 )}
               </VStack>
+            )}
+
+            {tab === 'theming' && comp.theming && (
+              <Theming theming={comp.theming} props={comp.props} />
             )}
           </>
         ) : (

@@ -6,16 +6,16 @@
  * `Project` is the one entry point a command uses to read everything it needs
  * about a consumer's project: the validated config surface, the configured
  * integrations, and the resolved discovery sets (components, templates,
- * codemods) — plus issue routing (issuesUrl) and the accumulated integration
- * issues. It replaces the old `loadConfig(cwd)` plain-object loader and the
- * per-command fan-out into the various discovery helpers.
+ * codemods, docs) — plus issue routing (issuesUrl) and the accumulated
+ * integration issues. It replaces the old `loadConfig(cwd)` plain-object loader
+ * and the per-command fan-out into the various discovery helpers.
  *
  * Design:
  *   - `Project.load(cwd, {cache})` is the async factory (constructors can't be
  *     async). It does what loadConfig did — find the config sibling-of
  *     package.json, import + validate it, load the configured integrations —
  *     and nothing more. Discovery is LAZY.
- *   - Discovery methods (components/templates/codemods) are MEMOIZED per
+ *   - Discovery methods (components/templates/codemods/docs) are MEMOIZED per
  *     instance (via the pluggable cache) and orchestrate the EXISTING discovery
  *     functions — Project never reimplements discovery.
  *   - SKIP + WARN policy: as a discovery method runs, per-integration work is
@@ -45,6 +45,10 @@ import {
   discoverAll as discoverTemplates,
   discoverIntegrationTemplatesForOne,
 } from '../discovery/template-adapter.mjs';
+import {
+  DocsCatalog,
+  discoverIntegrationDocs,
+} from '../discovery/docs-discovery.mjs';
 import {getTransformsBetween} from '../../assets/codemods/registry.mjs';
 import {
   discoverIntegrationCodemods,
@@ -451,6 +455,63 @@ export class Project {
       }
 
       return templates.sort((a, b) => a.name.localeCompare(b.name));
+    });
+  }
+
+  /**
+   * The CLI's own doc topics plus the ones the configured integrations
+   * contribute, resolved into one catalog: additions, replacements (with the
+   * replaced name left as an alias), and extensions merged in configuration
+   * order. Same skip+warn policy as its siblings — a broken integration
+   * contributes no topics and its issues are collected. Memoized per instance.
+   *
+   * Two problems can only be seen with every integration in hand, so they are
+   * raised here rather than in the per-integration validators: a topic that
+   * collides with one another package already provides, and a `replaces` /
+   * `extends` that names a topic nothing provides.
+   *
+   * @returns {Promise<DocsCatalog>}
+   */
+  async docs() {
+    return this.#memo('docs', async () => {
+      const catalog = DocsCatalog.fromBuiltins();
+
+      for (const integration of this.#loadedIntegrations) {
+        await this.#collectIssues(integration);
+        const pkg = this.#pkgLabel(integration);
+        const hadError = this.#issues.some(
+          i => i.package === pkg && i.severity === 'error',
+        );
+        if (hadError) continue;
+        if (!integration?.docs) continue;
+        try {
+          const {records, errors} = await discoverIntegrationDocs(integration);
+          for (const e of errors) {
+            this.#pushIssue(pkg, {
+              code: 'invalid_doc',
+              severity: 'error',
+              message: e.message,
+            });
+          }
+          // Any unusable doc withdraws the whole package's topics, matching
+          // how a bad template withdraws its package's templates: a partial
+          // docs contribution is the state where a `replaces` silently does
+          // nothing and a reader gets the topic it was meant to replace.
+          if (errors.length > 0) continue;
+          for (const record of records) {
+            const issue = catalog.add(record);
+            if (issue) this.#pushIssue(pkg, issue);
+          }
+        } catch (err) {
+          this.#pushIssue(pkg, {
+            code: 'invalid_doc',
+            severity: 'error',
+            message: errorMessage(err),
+          });
+        }
+      }
+
+      return catalog;
     });
   }
 

@@ -6,7 +6,7 @@ export const doc = {
   name: 'AvatarGroup',
   displayName: 'Avatar Group',
   description:
-    'Overlapping avatar rows with max limit and server-side overflow count. Shows team members in a compact facepile layout.',
+    'Overlapping avatar rows with a sliced visible set and a server-side overflow count. Shows team members in a compact facepile layout.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

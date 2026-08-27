@@ -1,7 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file sandboxPages.ts
+ * @file Central registry of sandbox categories and persistent navigation.
+ * @input Authored sandbox metadata and the generated template registry.
+ * @output Typed category, home, and audit navigation entries.
  * @position Central registry of all sandbox pages, grouped by category.
  *
  * The "Templates" category is auto-populated from packages/cli/assets/templates/
@@ -45,15 +47,10 @@ export interface SandboxCategory {
 }
 
 /**
- * Sidebar entries that sit ABOVE the `Projects` section, alongside Home —
- * destinations in their own right rather than pages inside a category.
- *
- * These used to be written out in `SandboxNav`; they are data so the next one
- * is an entry here rather than another branch in the nav component. `icon` is
- * a key into that file's icon map for the same reason the categories use one:
- * this module stays JSX-free.
+ * Persistent sidebar destinations that are not generated category pages.
+ * `icon` is a key into SandboxNav's icon map so this module stays JSX-free.
  */
-export interface SandboxTopLevelPage {
+export interface SandboxNavPage {
   /** Label shown in the sidebar */
   label: string;
   /** Route path (with trailing slash) */
@@ -67,11 +64,16 @@ export interface SandboxTopLevelPage {
   matchesChildren?: boolean;
 }
 
-export const topLevelPages: SandboxTopLevelPage[] = [
-  {label: 'Home', href: '/', icon: 'home'},
-  {label: 'Official Templates', href: '/templates/', icon: 'templates'},
+export const homePage: SandboxNavPage = {
+  label: 'Home',
+  href: '/',
+  icon: 'home',
+};
+
+export const auditPages: SandboxNavPage[] = [
+  {label: 'Template Audits', href: '/templates/', icon: 'templates'},
   {
-    label: 'Component Scores',
+    label: 'Component Audits',
     href: '/pages/component-scores/',
     icon: 'scores',
     matchesChildren: true,
@@ -85,6 +87,18 @@ export const categories: SandboxCategory[] = [
     description:
       'Component demos, composition patterns, and interactive examples.',
     pages: [
+      {
+        name: 'Mobile Prototypes',
+        href: '/pages/mobile-prototypes/',
+        description:
+          'Interactive mobile interaction prototypes (bottom sheets, action sheets, drawers) for the component migration table',
+      },
+      {
+        name: 'TextArea Counter',
+        href: '/pages/textarea-counter/',
+        description:
+          'Explore where the character counter sits on the TextArea — below, inline with the label, or overlaid inside the field',
+      },
       {
         name: 'Card Examples',
         href: '/pages/example-cards/',
@@ -131,6 +145,12 @@ export const categories: SandboxCategory[] = [
         name: 'Component Overview',
         href: '/pages/example/',
         description: 'General component composition examples',
+      },
+      {
+        name: 'Tap Targets (AA)',
+        href: '/pages/tap-targets/',
+        description:
+          'WCAG 2.5.8 AA touch-target sizes visualized on real components',
       },
     ],
   },
@@ -214,6 +234,12 @@ export const categories: SandboxCategory[] = [
           'Test any combination of Table plugins with live scroll FPS, dropped-frame, and re-render metrics',
       },
       {
+        name: 'Motion Lab',
+        href: '/pages/motion-lab/',
+        description:
+          'Every motion proposal as a working before-and-after, with the durations, curves and springs tunable live',
+      },
+      {
         name: 'Foundations',
         href: '/pages/doc-preview/',
         description:
@@ -230,6 +256,11 @@ export const categories: SandboxCategory[] = [
         href: '/pages/dictation-lab/',
         description:
           'Test voice dictation, tune sound effects, and explore animation',
+      },
+      {
+        name: 'Mobile Type',
+        href: '/pages/mobile-type/',
+        description: 'How the type scale adapts on touch devices',
       },
     ],
   },

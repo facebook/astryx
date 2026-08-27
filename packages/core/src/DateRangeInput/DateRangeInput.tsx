@@ -16,12 +16,20 @@
  * - /packages/cli/assets/templates/blocks/components/DateRangeInput/ (showcase blocks)
  */
 
-import {useId, useCallback, useMemo, useOptimistic, useTransition} from 'react';
+import {
+  use,
+  useId,
+  useCallback,
+  useMemo,
+  useOptimistic,
+  useTransition,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   plainDateFromISO,
   plainDateToday,
   plainDateFormat,
+  plainDateDiffDays,
   DATE_FORMAT_SHORT,
   DATE_FORMAT_SHORT_WITH_YEAR,
 } from '../utils/plainDate';
@@ -36,6 +44,7 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -59,8 +68,12 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {stableClassName} from '../naming';
+import {useTranslator, InternationalizationContext} from '../i18n';
+import type {Locale} from '../i18n/types';
 
 export type {DateRange} from '../Calendar';
 
@@ -93,7 +106,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     outline: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -103,7 +119,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   triggerDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   iconButton: {
     display: 'flex',
@@ -114,16 +130,14 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    outlineOffset: 1,
+    borderRadius: radiusVars['--radius-element'],
   },
   iconButtonDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   popoverLayout: {
     display: 'flex',
@@ -148,7 +162,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -156,16 +170,20 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
-    textAlign: 'start',
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
+    textAlign: 'start',
   },
   presetButtonActive: {
     backgroundColor: colorVars['--color-accent-muted'],
     color: colorVars['--color-accent'],
+  },
+  presetButtonDisabled: {
+    color: colorVars['--color-text-disabled'],
+    cursor: 'default',
+    backgroundColor: 'transparent',
   },
 });
 
@@ -184,7 +202,7 @@ const sizeStyles = stylex.create({
   },
 });
 
-function formatRangeDisplay(range: DateRange | null): string {
+function formatRangeDisplay(range: DateRange | null, locale?: Locale): string {
   if (!range) {
     return '';
   }
@@ -194,7 +212,7 @@ function formatRangeDisplay(range: DateRange | null): string {
   const sameYear = start.year === end.year && start.year === currentYear;
 
   const fmt = sameYear ? DATE_FORMAT_SHORT : DATE_FORMAT_SHORT_WITH_YEAR;
-  return `${plainDateFormat(start, fmt)} – ${plainDateFormat(end, fmt)}`;
+  return `${plainDateFormat(start, fmt, locale)} – ${plainDateFormat(end, fmt, locale)}`;
 }
 
 function isRangeEqual(a: DateRange | null, b: DateRange | null): boolean {
@@ -205,6 +223,34 @@ function isRangeEqual(a: DateRange | null, b: DateRange | null): boolean {
     return false;
   }
   return a.start === b.start && a.end === b.end;
+}
+
+// A preset that would land outside the span bounds is disabled rather than
+// allowed to override them: the cap is authoritative, so an out-of-window
+// preset stays visible (discoverable) but non-committable, mirroring how the
+// calendar disables out-of-window days. Spans count both endpoints.
+function isRangeWithinSpan(
+  range: DateRange,
+  maxRangeSpan: number | undefined,
+  minRangeSpan: number | undefined,
+): boolean {
+  if (maxRangeSpan == null && minRangeSpan == null) {
+    return true;
+  }
+  const span =
+    Math.abs(
+      plainDateDiffDays(
+        plainDateFromISO(range.start),
+        plainDateFromISO(range.end),
+      ),
+    ) + 1;
+  if (maxRangeSpan != null && span > maxRangeSpan) {
+    return false;
+  }
+  if (minRangeSpan != null && span < minRangeSpan) {
+    return false;
+  }
+  return true;
 }
 
 export interface DateRangeInputProps extends Omit<
@@ -310,6 +356,32 @@ export interface DateRangeInputProps extends Omit<
   dateConstraints?: ReadonlyArray<(date: Date) => boolean>;
 
   /**
+   * Maximum number of days the selected range may span, counting both
+   * endpoints — `maxRangeSpan={7}` allows a 7-day window (start + 6 days).
+   * Once a start date is picked, days beyond this distance from it are
+   * disabled, so the user can't stretch the range past the cap. Use for
+   * rolling windows like "at most a week from the chosen day"; for fixed
+   * calendar bounds use `min`/`max`.
+   *
+   * This constrains selection only — it never rewrites a `value` that is
+   * already wider than the cap. Surface such a value with `status` if you
+   * need to flag it. A `preset` whose range violates the cap is disabled
+   * (shown but not committable) rather than allowed to override it.
+   */
+  maxRangeSpan?: number;
+
+  /**
+   * Minimum number of days the selected range must span, counting both
+   * endpoints — `minRangeSpan={2}` forbids a single-day range. Once a start
+   * date is picked, days closer than this to it are disabled — except the
+   * start itself, which stays selectable. Clicking the start again commits a
+   * one-day range when the minimum allows it; otherwise it cancels the
+   * in-progress selection so the start can be moved. Defaults to 1 (a
+   * same-day start and end is allowed).
+   */
+  minRangeSpan?: number;
+
+  /**
    * Preset date ranges shown as quick-select options beside the calendar.
    */
   presets?: ReadonlyArray<DateRangePreset>;
@@ -402,6 +474,8 @@ export function DateRangeInput({
   min,
   max,
   dateConstraints,
+  maxRangeSpan,
+  minRangeSpan,
   presets,
   hasClear = true,
   placeholder: placeholderFromProps,
@@ -419,6 +493,8 @@ export function DateRangeInput({
   ...rest
 }: DateRangeInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
+  const {locale} = use(InternationalizationContext);
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateRangeInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -465,8 +541,8 @@ export function DateRangeInput({
       .join(' ') || undefined;
 
   const displayValue = useMemo(
-    () => formatRangeDisplay(optimisticValue),
-    [optimisticValue],
+    () => formatRangeDisplay(optimisticValue, locale),
+    [optimisticValue, locale],
   );
 
   const popover = usePopover({
@@ -590,6 +666,7 @@ export function DateRangeInput({
           }
           tabIndex={-1}
           {...stylex.props(
+            focusOutlineStyles.focusVisible,
             styles.iconButton,
             isEffectivelyDisabled && styles.iconButtonDisabled,
           )}>
@@ -614,7 +691,7 @@ export function DateRangeInput({
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
           aria-label={triggerAriaLabel}
           aria-describedby={ariaDescribedBy}
-          aria-required={isRequired === true ? 'true' : undefined}
+          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           aria-expanded={popover.isOpen}
@@ -628,18 +705,11 @@ export function DateRangeInput({
           {displayValue || placeholder}
         </button>
         {hasClear && value !== null && !isEffectivelyDisabled && (
-          <button
-            type="button"
+          <InputClearButton
+            label={t('@astryx.dateInput.clear', {label})}
             onClick={handleClear}
-            aria-label={t('@astryx.dateInput.clear', {label})}
-            {...stylex.props(styles.iconButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              {...themeProps('date-range-input-clear-icon')}
-            />
-          </button>
+            iconClassName={stableClassName('date-range-input-clear-icon')}
+          />
         )}
         {isBusy && <Spinner size="sm" />}
         {statusIcon}
@@ -654,6 +724,11 @@ export function DateRangeInput({
               {presets.map(preset => {
                 const presetRange = preset.getRange();
                 const isActive = isRangeEqual(value, presetRange);
+                const isPresetDisabled = !isRangeWithinSpan(
+                  presetRange,
+                  maxRangeSpan,
+                  minRangeSpan,
+                );
                 return (
                   <button
                     key={preset.label}
@@ -664,10 +739,13 @@ export function DateRangeInput({
                     // marked with aria-current (not aria-selected, a listbox
                     // concept that contradicted the Tab interaction) (forms-5).
                     aria-current={isActive ? 'true' : undefined}
+                    disabled={isPresetDisabled}
                     onClick={() => handlePresetClick(preset)}
                     {...stylex.props(
+                      focusOutlineStyles.focusVisible,
                       styles.presetButton,
                       isActive && styles.presetButtonActive,
+                      isPresetDisabled && styles.presetButtonDisabled,
                     )}>
                     {preset.label}
                   </button>
@@ -682,6 +760,8 @@ export function DateRangeInput({
             min={min}
             max={max}
             dateConstraints={dateConstraints}
+            maxRangeSpan={maxRangeSpan}
+            minRangeSpan={minRangeSpan}
             numberOfMonths={numberOfMonths}
             weekStartsOn={weekStartsOn}
           />

@@ -133,9 +133,10 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-popover'},
+      {className: 'astryx-popover-surface'},
     ],
     vars: [
-      {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
+      {name: '--_popover-radius', description: 'Border radius of the popover surface', default: 'var(--radius-container)', private: true},
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_popover-radius']},
@@ -277,9 +278,10 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-popover'},
+      {className: 'astryx-popover-surface'},
     ],
     vars: [
-      {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
+      {name: '--_popover-radius', description: 'Border radius of the popover surface', default: 'var(--radius-container)', private: true},
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_popover-radius']},

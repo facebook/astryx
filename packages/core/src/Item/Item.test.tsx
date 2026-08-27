@@ -508,4 +508,54 @@ describe('Item', () => {
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText(/commented/)).toBeInTheDocument();
   });
+  it('puts the label and description in one row when layout is inline', () => {
+    const stacked = render(
+      <Item label="Private" description="Only members can access" />,
+    );
+    const stackedRow = screen.getByText('Private').parentElement;
+    stacked.unmount();
+
+    render(
+      <Item
+        label="Private"
+        description="Only members can access"
+        layout="inline"
+      />,
+    );
+    const inlineRow = screen.getByText('Private').parentElement;
+
+    // Same container, different styling: the shared content box switches from
+    // a column to a row, so its class list must differ from the stacked one.
+    expect(inlineRow?.className).not.toBe(stackedRow?.className);
+  });
+
+  it('ellipsizes a ReactNode description when layout is inline', () => {
+    // A stacked ReactNode description is left alone (it may wrap); an inline
+    // one is one line by definition, so it truncates like a string does.
+    const stacked = render(
+      <Item
+        label="Private"
+        description={<span>Only members can access</span>}
+      />,
+    );
+    const stackedDescription = screen.getByText('Only members can access')
+      .parentElement?.className;
+    stacked.unmount();
+
+    render(
+      <Item
+        label="Private"
+        description={<span>Only members can access</span>}
+        layout="inline"
+      />,
+    );
+    expect(
+      screen.getByText('Only members can access').parentElement?.className,
+    ).not.toBe(stackedDescription);
+  });
+
+  it('ignores inline layout when there is no description', () => {
+    render(<Item label="Private" layout="inline" />);
+    expect(screen.getByText('Private')).toBeInTheDocument();
+  });
 });

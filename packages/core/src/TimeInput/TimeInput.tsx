@@ -32,13 +32,12 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   sizeVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -56,9 +55,9 @@ import {
   formatDisplayTime24h,
   formatISOTime,
   adjustTime,
+  isImeKeyEvent,
   isTimeInRange,
   mergeProps,
-  mergeRefs,
   getInputARIA,
 } from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -67,12 +66,14 @@ import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   icon: {
     display: 'flex',
@@ -101,27 +102,10 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
-  },
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
 });
 
@@ -364,6 +348,7 @@ export function TimeInput({
   ref,
 }: TimeInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -548,6 +533,13 @@ export function TimeInput({
   // Handle keyboard navigation on input
   const handleInputKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // ArrowUp/ArrowDown step the time and preventDefault; an IME candidate
+      // window uses those same arrows to navigate candidates, so guard the
+      // composing keydown (fires before compositionend) to avoid stealing them
+      // mid-composition. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       // Arrow-key adjustment mutates the value; block it while showing a
       // disabled reason (the input keeps focusability via aria-disabled).
       if (isDisabled) {
@@ -576,10 +568,25 @@ export function TimeInput({
         // Check if within range
         if (isTimeInRange(newTime, min, max)) {
           fireChange(newTime);
+          // Stepping programmatically rewrites a plain textbox's value, and
+          // screen readers do not announce programmatic textbox changes — the
+          // new value must be spoken explicitly or stepping is silent
+          // (WCAG 4.1.2).
+          announce(formatDisplayTime(newTime, hasSeconds));
         }
       }
     },
-    [value, hasSeconds, increment, min, max, fireChange, isDisabled],
+    [
+      value,
+      hasSeconds,
+      increment,
+      min,
+      max,
+      fireChange,
+      isDisabled,
+      announce,
+      formatDisplayTime,
+    ],
   );
 
   // Handle clear button click
@@ -641,7 +648,7 @@ export function TimeInput({
         </VisuallyHidden>
       )}
       <input
-        ref={mergeRefs(ref, inputRef)}
+        ref={useMergedRefs(ref, inputRef)}
         id={id}
         type="text"
         value={displayValue}
@@ -659,7 +666,7 @@ export function TimeInput({
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         aria-describedby={ariaDescribedBy}
-        aria-required={isRequired === true ? 'true' : undefined}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }
@@ -677,17 +684,14 @@ export function TimeInput({
           user would get no feedback that their entry was rejected (WCAG 3.3.1).
         */}
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? 'Invalid time' : ''}
+        {!isInputValid ? t('@astryx.timeInput.invalidTime') : ''}
       </VisuallyHidden>
       {isBusy && <Spinner size="sm" />}
       {hasClear && value && !isDisabled && (
-        <button
-          type="button"
+        <InputClearButton
+          label={t('@astryx.timeInput.clearLabel', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.timeInput.clearLabel', {label})}
-          {...stylex.props(styles.clearButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
+        />
       )}
       {statusIcon}
     </div>

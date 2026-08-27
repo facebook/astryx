@@ -9,6 +9,8 @@ import {
   ChatSystemMessage,
 } from '@astryxdesign/core/Chat';
 import {Avatar} from '@astryxdesign/core/Avatar';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {Text} from '@astryxdesign/core/Text';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {Token} from '@astryxdesign/core/Token';
 import {HStack} from '@astryxdesign/core/Stack';
@@ -235,13 +237,56 @@ export function Button({ label, variant = 'primary' }) {
   ),
 };
 
+export const CustomContent: StoryObj = {
+  name: 'Custom Content',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column'}}>
+      <ChatMessageList style={{maxWidth: 520}}>
+        <ChatMessage sender="user">
+          <ChatMessageBubble>Can you pull up the Q3 report?</ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble name="Navi">
+            Sure, here is the artifact from last quarter.
+          </ChatMessageBubble>
+          {/* A ghost bubble insets custom content to the bubble's text
+              column; width="100%" spans the full message column instead
+              of the default bubble width cap (#2574). */}
+          <ChatMessageBubble
+            variant="ghost"
+            width="100%"
+            metadata={
+              <ChatMessageMetadata
+                timestamp={
+                  <Timestamp value="2026-03-15T14:32:00" format="time" />
+                }
+                footer={<span>Claude Opus 4.6</span>}
+              />
+            }>
+            <ClickableCard
+              label="Open Q3 performance report"
+              onClick={() => {}}>
+              <Text type="body" weight="semibold" display="block">
+                Q3 Performance Report
+              </Text>
+              <Text type="supporting" color="secondary" display="block">
+                12 pages · updated 2 days ago
+              </Text>
+            </ClickableCard>
+          </ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>
+    </div>
+  ),
+};
+
 export const ChatConversation: StoryObj = {
   name: 'Chat Conversation',
   render: () => {
     const nameStyle = {
       fontSize: 12,
       fontWeight: 600,
-      color: '#666',
+      color: 'var(--color-text-secondary)',
       lineHeight: '16px',
     };
     return (
@@ -545,4 +590,62 @@ export const MultiBubble: StoryObj = {
       </ChatMessageList>
     </div>
   ),
+};
+export const Alignment: StoryObj = {
+  name: 'Alignment',
+  render: () => {
+    const shortConversation = (align: 'top' | 'bottom') => (
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          border: '1px solid var(--color-border-primary)',
+          borderRadius: 8,
+          overflow: 'hidden',
+        }}>
+        <div
+          style={{
+            padding: '8px 12px',
+            borderBottom: '1px solid var(--color-border-primary)',
+            fontSize: 12,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}>
+          align=&quot;{align}&quot;
+        </div>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}>
+          <ChatMessageList align={align}>
+            <ChatMessage sender="user">
+              <ChatMessageBubble>Just one short message.</ChatMessageBubble>
+            </ChatMessage>
+            <ChatMessage
+              sender="assistant"
+              avatar={<Avatar name="Navi" size="sm" />}>
+              <ChatMessageBubble>
+                {align === 'top'
+                  ? 'Top alignment keeps messages at the top — good for logs and document-style lists.'
+                  : 'Bottom alignment keeps a short thread just above the composer — the familiar messaging layout.'}
+              </ChatMessageBubble>
+            </ChatMessage>
+          </ChatMessageList>
+        </div>
+      </div>
+    );
+
+    return (
+      <div style={{display: 'flex', gap: 16, height: 420}}>
+        {shortConversation('bottom')}
+        {shortConversation('top')}
+      </div>
+    );
+  },
 };

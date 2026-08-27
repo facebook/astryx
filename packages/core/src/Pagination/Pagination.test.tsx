@@ -572,7 +572,7 @@ describe('Pagination', () => {
       );
       const box = screen.getByRole('spinbutton', {name: 'Go to page'});
       expect(box).toBeInTheDocument();
-      expect(box).toHaveValue(3);
+      expect(box).toHaveValue('3');
       // Visible leading "Page" label and trailing "/ N" total (10 pages).
       expect(screen.getByText('Page')).toBeInTheDocument();
       expect(screen.getByText('/ 10')).toBeInTheDocument();
@@ -609,11 +609,11 @@ describe('Pagination', () => {
       // The box is a NumberInput (a spinbutton) whose min/max clamp entries to
       // the valid page range without hand-rolled parsing in Pagination.
       const box = screen.getByRole('spinbutton', {name: 'Go to page'});
-      expect(box).toHaveAttribute('min', '1');
-      expect(box).toHaveAttribute('max', '10');
+      expect(box).toHaveAttribute('aria-valuemin', '1');
+      expect(box).toHaveAttribute('aria-valuemax', '10');
     });
 
-    it('commits a typed page on Enter and rejects an over-range entry', async () => {
+    it('commits a typed page on Enter and clamps an over-range entry', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       render(
@@ -633,9 +633,10 @@ describe('Pagination', () => {
       onChange.mockClear();
       await user.clear(box);
       // The box is a NumberInput bounded to [1, totalPages]: an over-max entry
-      // is rejected and never navigates past the last page.
+      // lands on the last page rather than navigating past it.
       await user.type(box, '99{Enter}');
       expect(onChange).not.toHaveBeenCalledWith(99);
+      expect(onChange).toHaveBeenCalledWith(10);
     });
 
     it('commits on blur', async () => {
@@ -676,13 +677,13 @@ describe('Pagination', () => {
       await user.type(box, 'abc');
       await user.tab();
       expect(onChange).not.toHaveBeenCalled();
-      expect(box).toHaveValue(3);
+      expect(box).toHaveValue('3');
 
       // Emptying the box and blurring reverts to the committed page too.
       await user.clear(box);
       await user.tab();
       expect(onChange).not.toHaveBeenCalled();
-      expect(box).toHaveValue(3);
+      expect(box).toHaveValue('3');
     });
 
     it('announces the committed page to screen readers', async () => {
@@ -800,7 +801,7 @@ describe('Pagination', () => {
       );
       const box = screen.getByRole('spinbutton', {name: 'Go to page'});
       // The box holds the page number, and committing drives page navigation.
-      expect(box).toHaveValue(1);
+      expect(box).toHaveValue('1');
       await user.clear(box);
       await user.type(box, '4{Enter}');
       expect(onChange).toHaveBeenCalledWith(4);
@@ -971,7 +972,7 @@ describe('Pagination', () => {
         // The box still holds the 1-based page number.
         expect(
           screen.getByRole('spinbutton', {name: 'Go to page'}),
-        ).toHaveValue(3);
+        ).toHaveValue('3');
       });
 
       it('keeps the input page-navigating with a custom label', async () => {

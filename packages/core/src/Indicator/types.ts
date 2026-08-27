@@ -68,12 +68,43 @@ export type IndicatorState<F extends IndicatorFamily = IndicatorFamily> =
 export type IndicatorSize = 'sm' | 'md';
 
 /**
+ * Which edge of its row an indicator sits on.
+ *
+ * Logical, not physical: `start` is the left edge in LTR and the right edge in
+ * RTL. Owned by the host component, not by the indicator — an indicator draws a
+ * picture and has no say in where the row puts it — which is why this is a prop
+ * on the components that lay out rows rather than part of
+ * {@link IndicatorProps}.
+ */
+export type IndicatorPosition = 'start' | 'end';
+
+/**
  * Props every indicator accepts.
  *
  * Indicators are **decorative**: they render `aria-hidden` visuals and own no
  * role, focus, keyboard handling, or state. The component that renders one
  * (CheckboxInput, RadioListItem, a listbox option) keeps all of that. An
  * indicator's only job is to turn `state` into a picture.
+ *
+ * The a11y props are omitted from this interface rather than left to
+ * convention: un-hiding an indicator has it announced next to the control that
+ * owns the accessible name — the same thing said twice (#4918). A replacement
+ * that genuinely needs announcing is not an indicator; name the owning control.
+ *
+ * `tabIndex` is omitted for the same reason, one step on: the element is
+ * unconditionally `aria-hidden`, so a tab stop on it is a focusable node inside
+ * a hidden subtree. Measured with axe in real Chromium: 0 `aria-hidden-focus`
+ * violations becomes 1 the moment it is forwarded.
+ *
+ * The omission is only half enforceable, and it is worth knowing which half.
+ * TypeScript exempts JSX attribute names that are not valid JS identifiers from
+ * excess-property checking, so a LITERAL `role=` is a compile error while
+ * `aria-hidden` and `aria-label` are not — and a spread (`{...props}`, the
+ * ordinary host idiom) bypasses the check for every member, `role` included.
+ * Measured, not assumed. So the components also emit their own `aria-hidden`
+ * AFTER `{...rest}` and drop a forwarded `tabIndex`: that ordering, not the
+ * type, is what enforces the contract. Nothing else is stripped — a forwarded
+ * `aria-label` still reaches the DOM, inert inside an `aria-hidden` subtree.
  *
  * Interaction state is deliberately *not* a prop. Hover and focus reach an
  * indicator through the CSS ancestor marker ({@link indicatorScope}) applied
@@ -83,7 +114,10 @@ export type IndicatorSize = 'sm' | 'md';
  */
 export interface IndicatorProps<
   F extends IndicatorFamily = IndicatorFamily,
-> extends BaseProps<HTMLSpanElement> {
+> extends Omit<
+  BaseProps<HTMLSpanElement>,
+  'aria-hidden' | 'role' | 'aria-label' | 'aria-labelledby' | 'tabIndex'
+> {
   /** Ref forwarded to the indicator's root element. */
   ref?: Ref<HTMLSpanElement>;
   /** Which state to draw. The state space is fixed by the family. */

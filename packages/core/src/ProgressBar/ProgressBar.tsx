@@ -30,6 +30,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -261,30 +262,27 @@ const styles = stylex.create({
   },
   // A mark is a vertical tick centered on the track, a child of the
   // `role="progressbar"` element (unchanged DOM). The track no longer clips, so
-  // its height — 8px by default, directly overridable via the `progressbar-mark`
-  // theme target — may exceed the bar and overhang; the centering translate
-  // keeps any overhang symmetric. Positioned horizontally via `insetInlineStart`;
-  // the translate mirrors under RTL.
+  // its height — 8px by default — may exceed the bar and overhang; the centering
+  // translate keeps any overhang symmetric. Positioned horizontally via
+  // `insetInlineStart`; the translate mirrors under RTL.
+  //
+  // The dimensions read private vars rather than being plain declarations: a
+  // theme writes `width`/`height` on the `progressbar-mark` target as usual and
+  // the derived-var registry emits them as these vars instead of as competing
+  // properties. Nothing else declares them, so the theme value lands whatever
+  // the consumer's cascade looks like — a source-build app that compiles StyleX
+  // without `useCSSLayers` leaves the atomics unlayered, where they outrank
+  // every rule in `@layer astryx-theme` and made sizing the mark impossible
+  // without `!important`.
   //
   // The tick's color is not set here: it depends on what the mark sits on, so
   // it comes from `markOnFillStyles[variant]` (mark inside the filled area) or
-  // `markOnTrackStyles.track` (mark out on the bare track). Both remain
-  // directly overridable via the `progressbar-mark` theme target — a theme can
-  // set `backgroundColor`, `width`, and `height` (e.g. a taller "flag" tick
-  // that overhangs the bar) with `defineTheme`; no dedicated CSS vars needed.
+  // `markOnTrackStyles.track` (mark out on the bare track).
   mark: {
     position: 'absolute',
     top: '50%',
-    width: 2,
-    height: 8,
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
+    width: 'var(--_progressbar-mark-width, 2px)',
+    height: 'var(--_progressbar-mark-height, 8px)',
     transform: {
       default: 'translate(-50%, -50%)',
       ':is([dir="rtl"] *)': 'translate(50%, -50%)',
@@ -481,7 +479,13 @@ export function ProgressBar({
     <div
       ref={ref}
       {...mergeProps(
-        themeProps('progressbar', {variant}),
+        themeProps(
+          'progress-bar',
+          {variant},
+          // `progressbar` ran the compound name together; themes styling it
+          // keep working until the next major.
+          {legacyNames: ['progressbar']},
+        ),
         stylex.props(styles.container, xstyle),
         className,
         style,
@@ -526,13 +530,19 @@ export function ProgressBar({
         aria-labelledby={labelId}
         aria-valuetext={isIndeterminate ? undefined : valueText}
         {...mergeProps(
-          themeProps('progressbar-track'),
+          themeProps('progress-bar-track', undefined, {
+            legacyNames: ['progressbar-track'],
+          }),
           stylex.props(styles.track, isIndeterminate && styles.trackClipped),
         )}>
         {isIndeterminate ? (
           <div
             {...mergeProps(
-              themeProps('progressbar-fill', {variant: fillVariant}),
+              themeProps(
+                'progress-bar-fill',
+                {variant: fillVariant},
+                {legacyNames: ['progressbar-fill']},
+              ),
               stylex.props(
                 styles.indeterminateFill,
                 variantStyles[fillVariant],
@@ -542,7 +552,11 @@ export function ProgressBar({
         ) : (
           <div
             {...mergeProps(
-              themeProps('progressbar-fill', {variant: fillVariant}),
+              themeProps(
+                'progress-bar-fill',
+                {variant: fillVariant},
+                {legacyNames: ['progressbar-fill']},
+              ),
               stylex.props(styles.fill, variantStyles[fillVariant]),
             )}
             style={{width: `${percentage}%`}}
@@ -571,11 +585,16 @@ export function ProgressBar({
             <span
               tabIndex={0}
               {...mergeProps(
-                themeProps('progressbar-mark', {
-                  variant: fillVariant,
-                  placement: mark.isOnFill ? 'fill' : 'track',
-                }),
+                themeProps(
+                  'progress-bar-mark',
+                  {
+                    variant: fillVariant,
+                    placement: mark.isOnFill ? 'fill' : 'track',
+                  },
+                  {legacyNames: ['progressbar-mark']},
+                ),
                 stylex.props(
+                  focusOutlineStyles.focusVisible,
                   styles.mark,
                   mark.isOnFill
                     ? markOnFillStyles[fillVariant]

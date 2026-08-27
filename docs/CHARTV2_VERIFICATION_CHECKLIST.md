@@ -258,7 +258,7 @@ How we verify:
 
 ## 13. Formatting / i18n
 
-- `[ok]` `currency()` on axis.
+- `[ok]` `currency('$', locale)` on axis.
 - `[?]` `percent`, `compactNumber`, `shortDate`, `monthYear` on axes + tooltip.
 - `[?]` Locale-awareness (decimal/grouping separators, date locale).
 - `[?]` RTL layout (axes, legend, tooltip placement).

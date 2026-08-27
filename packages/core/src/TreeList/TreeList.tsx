@@ -188,7 +188,10 @@ export function TreeList({
   className,
   style,
   'data-testid': testId,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledby,
   ref,
+  ...restProps
 }: TreeListProps) {
   const headerId = useId();
 
@@ -332,11 +335,12 @@ export function TreeList({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        themeProps('tree-list', {density}),
+        themeProps('tree-list', {density, variant}),
         stylex.props(styles.root, xstyle),
         className,
         style,
-      )}>
+      )}
+      {...restProps}>
       {header != null && (
         <div id={headerId} {...stylex.props(styles.header)}>
           {header}
@@ -345,7 +349,8 @@ export function TreeList({
       <ul
         ref={treeRef}
         role="tree"
-        aria-labelledby={header != null ? headerId : undefined}
+        aria-label={header != null ? undefined : ariaLabel}
+        aria-labelledby={header != null ? headerId : ariaLabelledby}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         {...stylex.props(styles.list)}>

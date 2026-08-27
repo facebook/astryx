@@ -54,13 +54,16 @@ const menuItemStyles = stylex.create({
       ':focus': colorVars['--color-overlay-hover'],
     },
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     outline: 'none',
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   destructive: {
     // Only recolor the text/icon; the hover / focus background stays the shared
@@ -101,6 +104,14 @@ export interface DropdownMenuItemProps extends Pick<
   /** Additional content to render after the label/description. */
   endContent?: ReactNode;
   /**
+   * Whether activating the item closes the menu. Set `false` for an action
+   * that reports its result on the item itself (a copy row swapping to
+   * "Copied"), matching the checkbox and radio items, which already decide
+   * this for themselves.
+   * @default true
+   */
+  hasCloseOnSelect?: boolean;
+  /**
    * Visual variant. `'destructive'` renders the label, description, and icon in
    * the error color for dangerous actions (e.g. Delete). @default 'default'
    */
@@ -128,6 +139,7 @@ export function DropdownMenuItem({
   onClick,
   isDisabled = false,
   endContent,
+  hasCloseOnSelect = true,
   variant = 'default',
   xstyle,
   className,
@@ -137,12 +149,14 @@ export function DropdownMenuItem({
   const menuSize = ctx?.menuSize ?? 'md';
 
   const handleClick = useCallback(() => {
-    if (isDisabled || !onClick) {
+    if (isDisabled) {
       return;
     }
-    onClick();
-    ctx?.closeMenu();
-  }, [isDisabled, onClick, ctx]);
+    onClick?.();
+    if (hasCloseOnSelect) {
+      ctx?.closeMenu();
+    }
+  }, [isDisabled, onClick, hasCloseOnSelect, ctx]);
 
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),

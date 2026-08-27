@@ -14,7 +14,8 @@
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {
   colorVars,
   spacingVars,
@@ -25,8 +26,9 @@ import {
 import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
 import {themeProps} from '../utils/themeProps';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
-const HOVER_HOVER = '@media (hover: hover)';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 
 const styles = stylex.create({
   item: {
@@ -42,27 +44,20 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start' as const,
     outline: 'none',
     userSelect: 'none',
-  },
-  itemHover: {
-    ':hover': {
-      [HOVER_HOVER]: {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
-    },
-    ':active': {
-      backgroundColor: colorVars['--color-overlay-pressed'],
-    },
   },
   itemHighlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
   },
   itemDisabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   itemSelected: {
     backgroundColor: colorVars['--color-accent-muted'],
@@ -127,6 +122,8 @@ export function CommandPaletteItem({
   xstyle,
   className,
   style,
+  onClick: onClickProp,
+  onMouseEnter: onMouseEnterProp,
   ...props
 }: CommandPaletteItemProps) {
   const ctx = useCommandPaletteContext();
@@ -185,19 +182,20 @@ export function CommandPaletteItem({
 
   return (
     <div
-      ref={mergeRefs(ref, itemRef)}
+      ref={useMergedRefs(ref, itemRef)}
+      {...props}
       id={ctx && itemIndex >= 0 ? ctx.getItemId(itemIndex) : undefined}
       role="option"
       aria-selected={isSelected}
       aria-disabled={isDisabled || undefined}
       data-value={value}
-      onClick={handleClick}
-      onMouseEnter={handleMouseEnter}
+      onClick={composeEventHandlers(onClickProp, handleClick)}
+      onMouseEnter={composeEventHandlers(onMouseEnterProp, handleMouseEnter)}
       {...mergeProps(
         themeProps('command-palette-item'),
         stylex.props(
           styles.item,
-          !isDisabled && styles.itemHover,
+          !isDisabled && interactionOverlayStyles.backgroundColor,
           isHighlighted && styles.itemHighlighted,
           isSelected && styles.itemSelected,
           isDisabled && styles.itemDisabled,
@@ -205,8 +203,7 @@ export function CommandPaletteItem({
         ),
         className,
         style,
-      )}
-      {...props}>
+      )}>
       {children}
     </div>
   );

@@ -344,6 +344,28 @@ describe('ResizeHandle', () => {
     expect(hitArea.className).not.toContain('hitAreaOffsetX');
   });
 
+  // The grab zone is stretched along the handle by its 0/0 insets, so anything
+  // that moves it across the handle displaces the whole zone off the divider —
+  // a percentage does it by half the handle's length, so the taller the panel
+  // the larger the dead region, and nothing about it is visible on screen.
+  it.each([
+    ['horizontal' as const, 'translateX'],
+    ['vertical' as const, 'translateY'],
+  ])('offsets the %s grab zone along the pill axis only', (direction, axis) => {
+    render(<Harness handleProps={{direction, pillPlacement: 'start'}} />);
+    const hitArea = getSeparator().firstElementChild as HTMLElement;
+    const translates = (hitArea.getAttribute('style') ?? '')
+      .split(';')
+      .map(decl => decl.split(/:(.*)/s)[1]?.trim() ?? '')
+      .filter(value => value.startsWith('translate'));
+
+    // Both the LTR and RTL declarations of the horizontal offset.
+    expect(translates.length).toBeGreaterThan(0);
+    for (const translate of translates) {
+      expect(translate.startsWith(`${axis}(`)).toBe(true);
+    }
+  });
+
   // --- Prop composition (ordering choice: handler sits after {...props}) ---
 
   it('runs a consumer onKeyDown alongside keyboard resizing', () => {

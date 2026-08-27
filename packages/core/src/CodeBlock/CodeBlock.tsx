@@ -215,7 +215,10 @@ const styles = stylex.create({
     transform: 'rotate(90deg)',
   },
   headerCollapsible: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
     // Restore a keyboard-only focus ring with the standard token/offset so this
     // disclosure control matches the rest of the system (Collapsible, TabMenu);
@@ -807,15 +810,24 @@ export function CodeBlock({
         void handleCopy();
       }}
       xstyle={[styles.copyButton, !showHeader && styles.copyButtonAbsolute]}
-      {...themeProps('codeblock-copy-button')}
+      {...themeProps('code-block-copy-button', undefined, {
+        legacyNames: ['codeblock-copy-button'],
+      })}
     />
   ) : null;
 
   const headerEl = showHeader ? (
     <div
-      {...stylex.props(
-        styles.headerRow,
-        hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
+      {...mergeProps(
+        themeProps(
+          'code-block-header',
+          {size, language, container},
+          {legacyNames: ['codeblock-header']},
+        ),
+        stylex.props(
+          styles.headerRow,
+          hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
+        ),
       )}>
       <div
         role={canCollapse ? 'button' : undefined}
@@ -837,7 +849,15 @@ export function CodeBlock({
           styles.header,
           canCollapse && styles.headerCollapsible,
         )}>
-        <span {...stylex.props(styles.headerTitle)}>
+        <span
+          {...mergeProps(
+            themeProps(
+              'code-block-title',
+              {size, language},
+              {legacyNames: ['codeblock-title']},
+            ),
+            stylex.props(styles.headerTitle),
+          )}>
           {canCollapse && (
             <span {...stylex.props(styles.collapseChevron)}>
               <Icon
@@ -907,7 +927,13 @@ export function CodeBlock({
     <pre
       ref={ref}
       {...mergeProps(
-        themeProps('codeblock', {size, language, container}),
+        themeProps(
+          'code-block',
+          {size, language, container},
+          // `codeblock` ran the compound name together; themes styling it keep
+          // working until the next major.
+          {legacyNames: ['codeblock']},
+        ),
         stylex.props(
           styles.root,
           dynamicStyles.width(widthProp),

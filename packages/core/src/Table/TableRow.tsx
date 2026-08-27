@@ -6,7 +6,8 @@
  * @file TableRow.tsx
  * @input React, StyleX, TableContext, theme tokens
  * @output Exports TableRow component, TableRowProps
- * @position Sub-component; used inside Table children mode
+ * @position Sub-component; used inside a Table section (TableHeader /
+ *   TableBody / TableFooter) in children mode
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Table/Table.doc.mjs
@@ -61,13 +62,13 @@ const hoverRowStyles = stylex.create({
   row: {
     backgroundColor: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     '--table-row-overlay': {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -82,14 +83,14 @@ const stripedHoverRowStyles = stylex.create({
     backgroundColor: {
       default: null,
       ':nth-child(even)': colorVars['--color-background-muted'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     '--table-row-overlay': {
       default: null,
       ':nth-child(even)': colorVars['--color-background-muted'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -105,13 +106,23 @@ const stripedHoverRowStyles = stylex.create({
  * When used inside `<Table>`, inherits styling from the table context
  * (striped, hover, divider overrides). When used standalone, renders a plain `<tr>`.
  *
+ * Rows go inside a section — `<TableBody>`, `<TableHeader>`, or
+ * `<TableFooter>`. `<table>` cannot contain a `<tr>` directly: the HTML parser
+ * inserts an implied `<tbody>` when it parses server-rendered markup and React
+ * does not when it renders on the client, so the two trees mismatch on
+ * hydration. Children mode passes children straight through, so the section is
+ * the caller's to supply — the data-driven `data={...}` mode renders it for
+ * you.
+ *
  * @example
  * ```
  * <Table>
- *   <TableRow>
- *     <TableCell>Alice</TableCell>
- *     <TableCell>30</TableCell>
- *   </TableRow>
+ *   <TableBody>
+ *     <TableRow>
+ *       <TableCell>Alice</TableCell>
+ *       <TableCell>30</TableCell>
+ *     </TableRow>
+ *   </TableBody>
  * </Table>
  * ```
  */
@@ -120,6 +131,8 @@ export function TableRow({
   xstyle,
   ref,
   isHeaderRow = false,
+  className: incomingClassName,
+  style: incomingStyle,
   ...props
 }: TableRowProps) {
   const ctx = use(TableContext);
@@ -132,6 +145,8 @@ export function TableRow({
         {...mergeProps(
           themeProps('table-row'),
           stylex.props(tableRowMarker, xstyle),
+          incomingClassName,
+          incomingStyle,
         )}>
         {children}
       </tr>
@@ -169,6 +184,8 @@ export function TableRow({
       {...mergeProps(
         themeProps('table-row'),
         stylex.props(tableRowMarker, ...rowStyles),
+        incomingClassName,
+        incomingStyle,
       )}>
       {children}
     </tr>

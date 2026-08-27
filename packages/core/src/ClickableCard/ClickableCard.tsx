@@ -39,7 +39,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep, Elevation} from '../utils/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {Card} from '../Card/Card';
 import type {CardVariant} from '../Card/Card';
 import {useClickableContainer} from '../hooks/useClickableContainer';
@@ -48,6 +48,7 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
 // =============================================================================
@@ -55,7 +56,10 @@ import {focusOutlineProps} from '../utils/focusOutline.stylex';
 const styles = stylex.create({
   interactive: {
     position: 'relative',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textDecoration: 'none',
     color: 'inherit',
   },
@@ -78,7 +82,7 @@ const styles = stylex.create({
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover::after': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
@@ -110,13 +114,13 @@ const styles = stylex.create({
   // @media (hover: hover) so touch devices don't get a stuck hover state.
   borderedHoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         borderColor: colorVars['--color-border-emphasized'],
       },
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   srOnly: {
@@ -294,7 +298,7 @@ export function ClickableCard({
 
   return (
     <Card
-      ref={mergeRefs(ref, containerRef)}
+      ref={useMergedRefs(ref, containerRef)}
       width={width}
       height={height}
       maxWidth={maxWidth}

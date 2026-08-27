@@ -127,7 +127,12 @@ export const SizeVariants: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
         <div>
-          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
+          <div
+            style={{
+              marginBottom: '8px',
+              fontSize: '12px',
+              color: 'var(--color-text-secondary)',
+            }}>
             Small
           </div>
           <SegmentedControl
@@ -141,7 +146,12 @@ export const SizeVariants: Story = {
           </SegmentedControl>
         </div>
         <div>
-          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
+          <div
+            style={{
+              marginBottom: '8px',
+              fontSize: '12px',
+              color: 'var(--color-text-secondary)',
+            }}>
             Medium (default)
           </div>
           <SegmentedControl
@@ -155,7 +165,12 @@ export const SizeVariants: Story = {
           </SegmentedControl>
         </div>
         <div>
-          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
+          <div
+            style={{
+              marginBottom: '8px',
+              fontSize: '12px',
+              color: 'var(--color-text-secondary)',
+            }}>
             Large
           </div>
           <SegmentedControl

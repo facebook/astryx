@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import type {ComponentPropsWithoutRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {AvatarStatusDot} from '@astryxdesign/core/Avatar';
@@ -26,7 +27,29 @@ const styles = stylex.create({
     margin: `0 0 ${spacingVars['--spacing-2']} 0`,
     fontFamily: typographyVars['--font-family-body'],
   },
+  narrow: {
+    maxWidth: '320px',
+    width: '100%',
+    borderWidth: '1px',
+    borderStyle: 'dashed',
+    borderColor: 'currentColor',
+    padding: spacingVars['--spacing-2'],
+  },
+  wrapRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-4'],
+  },
 });
+
+function RouterLink({href, children, ...rest}: ComponentPropsWithoutRef<'a'>) {
+  return (
+    <a href={href} data-router-link="" {...rest}>
+      {children}
+    </a>
+  );
+}
 
 const meta: Meta<typeof Avatar> = {
   title: 'Core/Avatar',
@@ -239,6 +262,41 @@ export const WithStatus: Story = {
       </div>
     </div>
   ),
+};
+
+export const StatusLabelSources: Story = {
+  render: () => {
+    // A consumer's own wrapper. AvatarStatusDot reports its label to the
+    // avatar through context, so the status still reaches the accessible name.
+    function PresenceDot({presence}: {presence: string}) {
+      return <AvatarStatusDot variant="success" label={presence} />;
+    }
+
+    return (
+      <div {...stylex.props(styles.storyWrapper)}>
+        <h4 {...stylex.props(styles.heading)}>
+          Every route to a status in the accessible name
+        </h4>
+        <div {...stylex.props(styles.row)}>
+          <Avatar
+            name="Ada Lovelace"
+            size="xl"
+            status={<AvatarStatusDot variant="success" label="Online" />}
+          />
+          <Avatar
+            name="Grace Hopper"
+            size="xl"
+            status={<PresenceDot presence="Online" />}
+          />
+          <Avatar
+            name="Katherine Johnson"
+            size="xl"
+            status={<AvatarStatusDot variant="neutral" label="On leave" />}
+          />
+        </div>
+      </div>
+    );
+  },
 };
 
 export const StatusAcrossAllSizes: Story = {
@@ -722,6 +780,117 @@ export const ThemedFallbackBackground: Story = {
           <Avatar size="lg" />
         </div>
       </Theme>
+    </div>
+  ),
+};
+
+export const Interactive: Story = {
+  name: 'Interactive (link and button)',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        Link avatars (href) — Tab to reach, focus ring on the avatar
+      </h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar
+          src="https://i.pravatar.cc/150?img=30"
+          name="Ada Lovelace"
+          href="https://example.com/users/ada"
+          size="lg"
+        />
+        <Avatar
+          name="Grace Hopper"
+          href="https://example.com/users/grace"
+          target="_blank"
+          rel="noopener noreferrer"
+          size="lg"
+        />
+        <Avatar
+          name="Katherine Johnson"
+          href="https://example.com/users/katherine"
+          as={RouterLink}
+          size="lg"
+        />
+      </div>
+
+      <h4 {...stylex.props(styles.heading)}>Button avatars (onClick)</h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar
+          src="https://i.pravatar.cc/150?img=31"
+          name="Mary Jackson"
+          onClick={() => {}}
+          size="lg"
+        />
+        <Avatar
+          name="Dorothy Vaughan"
+          onClick={() => {}}
+          size="lg"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />
+      </div>
+
+      <h4 {...stylex.props(styles.heading)}>
+        Interactive at every size — the smallest tiers are the touch-target case
+      </h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar name="Ada Lovelace" href="https://example.com" size="xsm" />
+        <Avatar name="Ada Lovelace" href="https://example.com" size="sm" />
+        <Avatar name="Ada Lovelace" href="https://example.com" size="md" />
+        <Avatar name="Ada Lovelace" href="https://example.com" size="lg" />
+        <Avatar name="Ada Lovelace" onClick={() => {}} size={16} />
+      </div>
+    </div>
+  ),
+};
+
+export const LongAndNonLatinNames: Story = {
+  name: 'Long and Non-Latin Names',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        Initials are one grapheme from the first and last word, in any script
+      </h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar name="Bartholomew" size="lg" tooltip={false} />
+        <Avatar
+          name="Maria Fernanda de la Cruz y Villalobos"
+          size="lg"
+          tooltip={false}
+        />
+        <Avatar name="محمد علي" size="lg" tooltip={false} />
+        <Avatar name="李小龍" size="lg" tooltip={false} />
+        <Avatar name="Ἀριστοτέλης Σταγειρίτης" size="lg" tooltip={false} />
+        <Avatar name="🇬🇧 Ada" size="lg" tooltip={false} />
+      </div>
+
+      <h4 {...stylex.props(styles.heading)}>
+        A long name in the tooltip, and as the accessible name
+      </h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar
+          name="Maria Fernanda de la Cruz y Villalobos"
+          size="lg"
+          tooltip="Maria Fernanda de la Cruz y Villalobos, Principal Engineer, Platform Infrastructure"
+        />
+      </div>
+    </div>
+  ),
+};
+
+export const NarrowContainer: Story = {
+  render: () => (
+    <div {...stylex.props(styles.narrow)}>
+      <h4 {...stylex.props(styles.heading)}>320px container</h4>
+      <div {...stylex.props(styles.wrapRow)}>
+        <Avatar name="Ada Lovelace" size="lg" />
+        <Avatar name="Grace Hopper" size="lg" />
+        <Avatar
+          name="Katherine Johnson"
+          size="lg"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />
+        <Avatar name="Mary Jackson" size="xl" />
+      </div>
     </div>
   ),
 };

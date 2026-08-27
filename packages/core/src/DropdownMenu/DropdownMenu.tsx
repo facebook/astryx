@@ -37,7 +37,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {usePopover} from '../Popover/usePopover';
+import {usePopoverInternal} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
 import {Icon} from '../Icon';
 
@@ -87,14 +87,6 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
-  popoverBlockGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
-  popoverInlineGap: {
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
-  },
   popoverCustomWidth: (width: string | number) => ({
     minWidth: typeof width === 'number' ? `${width}px` : width,
   }),
@@ -114,13 +106,24 @@ const styles = stylex.create({
  */
 export interface DropdownMenuItemData extends Pick<
   DropdownMenuItemProps,
-  'icon' | 'onClick' | 'isDisabled' | 'variant'
+  | 'icon'
+  | 'onClick'
+  | 'isDisabled'
+  | 'variant'
+  | 'description'
+  | 'endContent'
+  | 'hasCloseOnSelect'
 > {
   /**
-   * Primary label text. Narrowed to `string` from the item's `ReactNode`:
-   * data mode derives each row's React key from the label.
+   * Stable identity for the row, used as its React key (as on
+   * `TreeListItemData`). Omit it and the row is keyed by position, which is
+   * correct for a fixed menu; set it when `items` can reorder, filter, or grow,
+   * so a row keeps its DOM node — and therefore keyboard focus — as the array
+   * changes around it.
    */
-  label: string;
+  id?: string;
+  /** Primary label content. */
+  label: ReactNode;
   /**
    * Nested submenu entries. When present, this row becomes a submenu (a
    * flyout revealing `items`) instead of a leaf action — no separate item
@@ -129,18 +132,24 @@ export interface DropdownMenuItemData extends Pick<
   items?: DropdownMenuOption[];
 }
 
-export interface DropdownMenuDivider {
+/**
+ * Data-mode shape for a divider row. The compound-mode peer is the
+ * `DropdownMenuDivider` component, which both modes render.
+ */
+export interface DropdownMenuDividerData {
   type: 'divider';
 }
 
 export interface DropdownMenuSection {
   type: 'section';
+  /** Stable identity for the group; see {@link DropdownMenuItemData.id}. */
+  id?: string;
   title?: string;
   items: DropdownMenuItemData[];
 }
 
 export type DropdownMenuOption =
-  DropdownMenuItemData | DropdownMenuDivider | DropdownMenuSection;
+  DropdownMenuItemData | DropdownMenuDividerData | DropdownMenuSection;
 
 // =============================================================================
 // Props
@@ -252,14 +261,8 @@ export function DropdownMenu({
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
 
-  // Track when the menu was last hidden so a near-simultaneous trigger
-  // click — e.g. on iOS Safari where pointerdown fires light-dismiss
-  // before the trigger's click event — can't immediately re-open it.
-  const lastHideTimeRef = useRef(0);
-
   // Close menu + return focus to trigger
   const handleLayerHide = useCallback(() => {
-    lastHideTimeRef.current = Date.now();
     onOpenChange?.(false);
     if (!isControlled) {
       setInternalIsOpen(false);
@@ -285,7 +288,7 @@ export function DropdownMenu({
     }
   }, [isControlled, onOpenChange]);
 
-  const popover = usePopover({
+  const popover = usePopoverInternal({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
     hasLightDismiss: true,
@@ -413,11 +416,8 @@ export function DropdownMenu({
 
   const handleButtonClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
-      // If the menu was just closed by light dismiss (e.g. iOS Safari fires
-      // pointerdown → hide before the trigger's click), the click would
-      // otherwise immediately re-open it. Short-circuit within the guard
-      // window.
-      if (Date.now() - lastHideTimeRef.current < 50) {
+      // The click that light-dismissed the menu is not a request to reopen it.
+      if (popover.wasJustDismissed()) {
         return;
       }
       onClick?.();
@@ -472,11 +472,6 @@ export function DropdownMenu({
   const popoverXstyle = menuWidth
     ? styles.popoverCustomWidth(menuWidth)
     : styles.popover;
-  const popoverGapStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.popoverBlockGap
-      : styles.popoverInlineGap;
-
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
     () => ({closeMenu, menuSize}),
@@ -542,7 +537,8 @@ export function DropdownMenu({
         {
           placement,
           alignment,
-          xstyle: [popoverXstyle, popoverGapStyle, layerAnimations[placement]],
+          offset: spacingVars['--spacing-1'],
+          xstyle: [popoverXstyle, layerAnimations[placement]],
         },
       )}
     </>

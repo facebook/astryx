@@ -9,7 +9,7 @@
  * SYNC: When DateRangeInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -592,7 +592,7 @@ describe('DateRangeInput icon theme targets', () => {
     return icon as HTMLElement;
   };
 
-  it('renders astryx-date-range-input-clear-icon on the clear glyph', () => {
+  it('renders astryx-input-clear-icon (plus the legacy alias) on the clear glyph', () => {
     render(
       <DateRangeInput
         label="Range"
@@ -601,10 +601,13 @@ describe('DateRangeInput icon theme targets', () => {
         hasClear
       />,
     );
-    // The stable target lands on the icon element itself (not the button), so a
-    // theme can restyle just this glyph (color, size, hover) via defineTheme —
-    // a button-level target could not reach the icon's own color/size.
+    // The canonical target lands on the icon element itself (not the button),
+    // so a theme can restyle just this glyph (color, size, hover) via
+    // defineTheme — a button-level target could not reach the icon's own
+    // color/size. The original per-component name rides along for a
+    // deprecation window.
     const icon = iconIn(getButton('Clear Range'));
+    expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-date-range-input-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
@@ -618,11 +621,12 @@ describe('DateRangeInput icon theme targets', () => {
     expect(icon).toHaveAttribute('data-state', 'collapsed');
   });
 
-  it('renders the default icons (secondary color, sm size) byte-identically', () => {
-    // Pixel-identical default guard: the glyphs must carry the exact same
-    // StyleX color/size classes as a standalone secondary/sm icon. The added
-    // target class is purely additive — it changes nothing until a theme
-    // targets it.
+  it('routes the clear glyph through the shared clear button (default look unchanged)', () => {
+    // Default-look guard for the clear affordance. It now composes the shared
+    // InputClearButton (a ghost Button with a secondary/sm glyph), so aside
+    // from its target classes the glyph matches a standalone `secondary`/`sm`
+    // close icon — the default clear look is defined once, in InputClearButton.
+    // (The calendar-toggle glyph is covered separately.)
     render(
       <DateRangeInput
         label="Range"
@@ -633,22 +637,24 @@ describe('DateRangeInput icon theme targets', () => {
     );
     const clearIcon = iconIn(getButton('Clear Range'));
 
-    const {container: refContainer} = render(
+    const {container: clearRefContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
     );
-    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+    const clearRefIcon = clearRefContainer.querySelector(
+      '.astryx-icon',
+    ) as HTMLElement;
 
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
         .filter(
           c =>
-            c !== 'astryx-date-range-input-clear-icon' &&
-            c !== 'astryx-date-range-input-toggle-icon',
+            c !== 'astryx-input-clear-icon' &&
+            c !== 'astryx-date-range-input-clear-icon',
         )
         .sort();
 
-    expect(styleClasses(clearIcon)).toEqual(styleClasses(refIcon));
+    expect(styleClasses(clearIcon)).toEqual(styleClasses(clearRefIcon));
   });
 
   it('exposes the icon targets so a theme reaches icon color, size, and hover', () => {
@@ -704,5 +710,107 @@ describe('DateRangeInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-date-range-input');
     expect(root).not.toHaveAttribute('data-disabled');
+  });
+});
+
+describe('DateRangeInput range-span forwarding', () => {
+  // Pin "today" so the popover opens on a known month and the day buttons we
+  // query are guaranteed to render.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-05T12:00:00Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // The calendar renders in the top layer; jsdom keeps day buttons in the DOM
+  // but role queries skip them, so reach them by their machine-readable
+  // data-date (ISO) attribute — the same approach Calendar's own tests use.
+  const dayButton = (iso: string): HTMLButtonElement | null =>
+    document.querySelector<HTMLButtonElement>(`button[data-date="${iso}"]`);
+
+  it('allows selecting a one-day range when minRangeSpan is 1', () => {
+    const handleChange = vi.fn();
+    render(
+      <DateRangeInput
+        label="Reporting period"
+        value={null}
+        onChange={handleChange}
+        minRangeSpan={1}
+        numberOfMonths={1}
+      />,
+    );
+
+    fireEvent.click(getButton('Open calendar'));
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+
+    expect(handleChange).toHaveBeenCalledWith({
+      start: '2026-01-10',
+      end: '2026-01-10',
+    });
+  });
+
+  it('forwards maxRangeSpan so the window caps after a start is picked', () => {
+    render(
+      <DateRangeInput
+        label="Reporting period"
+        value={null}
+        onChange={() => {}}
+        maxRangeSpan={7}
+      />,
+    );
+
+    fireEvent.click(getButton('Open calendar'));
+
+    // Before a start is picked, a far-off day is selectable.
+    expect(dayButton('2026-01-20')).not.toBeDisabled();
+
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+
+    // A 7-day window spans start ± 6 days: Jan 16 is the edge, Jan 17 is out.
+    expect(dayButton('2026-01-16')).not.toBeDisabled();
+    expect(dayButton('2026-01-17')).toBeDisabled();
+  });
+
+  it('disables a preset whose range violates the span cap', () => {
+    const presets = [
+      {
+        label: 'Last 3 days',
+        getRange: (): DateRange => ({
+          start: '2026-01-08',
+          end: '2026-01-10',
+        }),
+      },
+      {
+        label: 'Last 30 days',
+        getRange: (): DateRange => ({
+          start: '2025-12-12',
+          end: '2026-01-10',
+        }),
+      },
+    ];
+    const handleChange = vi.fn();
+    render(
+      <DateRangeInput
+        label="Reporting period"
+        value={null}
+        onChange={handleChange}
+        maxRangeSpan={7}
+        presets={presets}
+      />,
+    );
+
+    fireEvent.click(getButton('Open calendar'));
+
+    // The 3-day preset fits the 7-day cap; the 30-day preset can't be committed.
+    const withinCap = getButton('Last 3 days');
+    const overCap = getButton('Last 30 days');
+    expect(withinCap).not.toBeDisabled();
+    expect(overCap).toBeDisabled();
+
+    fireEvent.click(overCap);
+    expect(handleChange).not.toHaveBeenCalled();
   });
 });

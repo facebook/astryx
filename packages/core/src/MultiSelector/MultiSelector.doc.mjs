@@ -25,12 +25,23 @@ export const docs = {
         visualProps: ['variant', 'size', 'status'],
         states: ['disabled'],
       },
-      {className: 'astryx-multi-selector-clear-icon'},
+      {
+        className: 'astryx-multi-selector-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
       {className: 'astryx-multi-selector-empty-state'},
+      {className: 'astryx-multi-selector-search'},
+      {className: 'astryx-multi-selector-section-heading'},
       {
         className: 'astryx-multi-selector-indicator-icon',
         states: ['state'],
       },
+      {
+        className: 'astryx-multi-selector-option',
+        visualProps: ['size'],
+        states: ['select-all', 'selected', 'disabled'],
+      },
+      {className: 'astryx-multi-selector-popup'},
     ],
   },
   components: [
@@ -96,6 +107,12 @@ export const docs = {
           default: "'count'",
         },
         {
+          name: 'formatValue',
+          type: '(items: {value: string; label: string}[]) => string',
+          description:
+            'Formats the trigger text when triggerDisplay="count" or "labels". Receives the selected items (value plus resolved label); the count is items.length. Not used by triggerDisplay="badges".',
+        },
+        {
           name: 'maxBadges',
           type: 'number',
           description:
@@ -124,6 +141,20 @@ export const docs = {
           type: 'string',
           description: 'Placeholder text for the search input.',
           default: "'Search...'",
+        },
+        {
+          name: 'emptyText',
+          type: 'ReactNode',
+          description:
+            'Content shown in the dropdown panel when there are no options to show, and announced in a polite live region when the panel opens (a string override is announced verbatim; a richer node falls back to the default text). Not shown while isLoading.',
+          default: "'No options'",
+        },
+        {
+          name: 'emptySearchText',
+          type: 'ReactNode',
+          description:
+            'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time (a string override is announced verbatim; a richer node falls back to the default text).',
+          default: "'No results found'",
         },
         {
           name: 'isDisabled',
@@ -187,10 +218,34 @@ export const docs = {
             'Custom render function for each selectable option in the dropdown. Not called for dividers, sections, or the select-all row.',
         },
         {
+          name: 'indicatorPosition',
+          type: "'start' | 'end'",
+          description:
+            'Which edge of the option row carries the checkbox. end pushes it to the far edge of the row, including on the select-all row.',
+          default: "'start'",
+        },
+        {
           name: 'width',
           type: 'SizeValue',
           description:
             'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+        },
+        {
+          name: 'startIcon',
+          type: 'IconType | ReactNode',
+          description: 'Icon displayed at the start of the selector trigger.',
+        },
+        {
+          name: 'hasClear',
+          type: 'boolean',
+          description: 'Shows a clear button when values are selected.',
+          default: 'false',
+        },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: 'Whether the dropdown starts open on mount.',
+          default: 'false',
         },
         {
           name: 'xstyle',
@@ -269,12 +324,16 @@ export const docsZh = {
         placeholder: '未选择值时显示的占位文本。',
         size: '选择器的尺寸变体。',
         triggerDisplay: '在触发器中显示选中项的方式。',
+        formatValue:
+          '格式化 triggerDisplay="count" 或 "labels" 时的触发器文本。接收选中项（value 及解析后的 label），数量为 items.length。triggerDisplay="badges" 不使用此属性。',
         maxBadges:
           '显示"+N"之前的最大徽章数。仅适用于 triggerDisplay="badges"。',
         hasSelectAll: '是否显示全选复选框。',
         selectAllLabel: '全选复选框的标签。',
         hasSearch: '是否显示用于过滤选项的搜索输入。',
         searchPlaceholder: '搜索输入的占位文本。',
+        emptyText: '没有可显示的选项时，下拉面板中显示的内容。',
+        emptySearchText: '搜索查询未匹配到任何选项时，下拉面板中显示的内容。',
         isDisabled: '禁用选择器。',
         htmlName:
           '用于表单提交的 HTML name 属性。为每个已选值渲染一个隐藏输入，类似原生多选。',
@@ -405,11 +464,15 @@ export const docsDense = {
         variant:
           'visual trigger style: input bordered control or ghost toolbar control',
         triggerDisplay: 'how to show selected in trigger',
+        formatValue:
+          'formats count/labels trigger text; receives selected items',
         maxBadges: 'max badges before "+N"; badges mode only',
         hasSelectAll: 'show select-all checkbox',
         selectAllLabel: 'select-all label',
         hasSearch: 'show search input',
         searchPlaceholder: 'search placeholder',
+        emptyText: 'panel content when there are no options',
+        emptySearchText: 'panel content when the query matches nothing',
         isDisabled: 'disables selector',
         htmlName: 'HTML name attr; one hidden input per selected value.',
         disabledMessage:

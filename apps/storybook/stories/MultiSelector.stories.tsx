@@ -182,6 +182,50 @@ export const Searchable: Story = {
   decorators: [Story => <Story />],
 };
 
+// Empty states
+export const EmptyStates: Story = {
+  render: () => {
+    const [a, setA] = useState<string[]>([]);
+    const [b, setB] = useState<string[]>([]);
+    const [c, setC] = useState<string[]>([]);
+    const [d, setD] = useState<string[]>([]);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
+        <MultiSelector
+          label="No options (default)"
+          options={[]}
+          value={a}
+          onChange={setA}
+        />
+        <MultiSelector
+          label="No options (custom)"
+          options={[]}
+          value={b}
+          onChange={setB}
+          emptyText="No countries loaded yet"
+        />
+        <MultiSelector
+          label="Search for xyz (custom)"
+          options={['Canada', 'France', 'Japan']}
+          value={c}
+          onChange={setC}
+          hasSearch
+          emptySearchText="Nothing matches that country"
+        />
+        <MultiSelector
+          label="Loading (no message)"
+          options={[]}
+          value={d}
+          onChange={setD}
+          isLoading
+        />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
 // Trigger display modes
 export const TriggerModes: Story = {
   render: () => {
@@ -574,6 +618,29 @@ export const ThemedIcons: Story = {
           hasClear
         />
       </Theme>
+    );
+  },
+};
+
+/**
+ * `indicatorPosition="end"` moves the checkbox to the trailing edge of each
+ * row. The default is `start`, where the checkbox leads the label as it does in
+ * CheckboxList.
+ */
+export const EndIndicatorPosition: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['Name', 'Email']);
+    return (
+      // No hasSelectAll: its divider is an unallowed listbox child and fails
+      // the a11y audit as soon as a story opens the popup (#4994).
+      <MultiSelector
+        label="Columns"
+        options={['Name', 'Email', 'Role', 'Status']}
+        value={value}
+        onChange={setValue}
+        indicatorPosition="end"
+        isDefaultOpen
+      />
     );
   },
 };

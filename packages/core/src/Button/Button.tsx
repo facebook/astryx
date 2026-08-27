@@ -34,6 +34,7 @@ import {
   fontWeightVars,
   typeScaleVars,
   shadowVars,
+  focusVars,
 } from '../theme/tokens.stylex';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -41,11 +42,13 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 import type {ButtonVariantMap} from './index';
 
@@ -57,10 +60,10 @@ import type {ButtonVariantMap} from './index';
 const styles = stylex.create({
   base: {
     // Kept as a public themeable var (documented in Button.doc.mjs) even though
-    // its default now matches the shared outline: removing it would break any
-    // theme setting it, for no gain. It overrides the shared offset, so a theme
-    // can still tune the ring distance on buttons specifically.
-    '--button-focus-offset': '3px',
+    // it now defaults to the shared token: removing it would break any theme
+    // setting it, for no gain. It overrides the shared offset, so a theme can
+    // still tune the ring distance on buttons specifically.
+    '--button-focus-offset': focusVars['--focus-outline-offset'],
     outlineOffset: {
       default: '0',
       ':focus-visible': 'var(--button-focus-offset)',
@@ -81,7 +84,10 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',
     transitionDuration: {
@@ -97,7 +103,7 @@ const styles = stylex.create({
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     backgroundImage: 'none',
     transform: {
@@ -106,11 +112,11 @@ const styles = stylex.create({
     },
   },
   ariaDisabled: {
+    // The variants' hover treatment already steps aside for
+    // `[aria-disabled]`; `:active` still matches a press on an aria-disabled
+    // button, so that one is suppressed here.
     backgroundImage: {
       default: 'none',
-      ':hover': {
-        '@media (hover: hover)': 'none',
-      },
       ':active': 'none',
     },
   },
@@ -195,35 +201,14 @@ const variants = stylex.create({
   primary: {
     backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-on-accent'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   secondary: {
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   ghost: {
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   destructive: {
     backgroundColor: colorVars['--color-error'],
@@ -232,13 +217,6 @@ const variants = stylex.create({
     // red button reads as another control's focus. Only the color differs —
     // width, style and offset come from the shared outline.
     outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
 });
 
@@ -437,8 +415,10 @@ const loadingStyles = stylex.create({
  *
  * Layers always carry the native `popover` attribute (useLayer.tsx), and a
  * popover is never an in-flow member — it is `display: none` until shown, then
- * promoted to the top layer. So "last member" is: no following element sibling
- * that isn't a popover.
+ * promoted to the top layer. Context layers also retain an inert `<template>`
+ * marker so they can re-resolve their JSX position. Neither element is a group
+ * member, so "last member" is: no following element sibling besides those two
+ * pieces of layer infrastructure.
  *
  * Reading it the other way round — marking the *buttons* and testing for a
  * marked sibling — is the trap: it silently reclassifies anything it doesn't
@@ -454,7 +434,7 @@ const loadingStyles = stylex.create({
  * The leading edge still uses `:first-child` — a member's button always precedes
  * its own layer, so the first button is genuinely `:first-child`.
  */
-const IS_LAST_ITEM = ':not(:has(~ *:not([popover])))';
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template)))';
 
 const groupStyles = stylex.create({
   horizontal: {
@@ -658,6 +638,7 @@ export function Button({
     styles.base,
     sizeStyles[size],
     isIconOnly && styles.iconOnly,
+    interactionOverlayStyles.backgroundImage,
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     renderAsLink && styles.link,
@@ -682,7 +663,13 @@ export function Button({
   );
 
   const sharedMergedProps = mergeProps(
-    themeProps('button', {variant, size}),
+    // Inside a group the group owns the surface's elevation, so the button
+    // reflects the tier it actually paints rather than the prop it was handed.
+    themeProps('button', {
+      variant,
+      size,
+      elevation: buttonGroup ? 'none' : elevation,
+    }),
     sharedStylexProps,
     className,
     style,
@@ -751,9 +738,9 @@ export function Button({
       : null;
 
   // Merge the consumer ref with the tooltip hook's trigger ref so both point at
-  // the same element. mergeRefs tolerates undefined, so this is a no-op for the
-  // tooltip side when no tooltip is set.
-  const mergedButtonRef = mergeRefs(
+  // the same element. useMergedRefs tolerates undefined, so this is a no-op for
+  // the tooltip side when no tooltip is set.
+  const mergedButtonRef = useMergedRefs(
     ref,
     tooltip != null ? tooltipHook.ref : undefined,
   );

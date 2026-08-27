@@ -79,7 +79,6 @@ const styles = stylex.create({
  * @example
  * ```
  * import {RadioIndicator} from '@astryxdesign/core/Indicator';
- *
  * defineTheme({name: 'brand', indicators: {check: RadioIndicator}});
  * ```
  */
@@ -114,7 +113,9 @@ export function CheckIndicator({
       <span
         // Spread first, as on the glyph path below, so the indicator's own
         // contract (aria-hidden, and the styling it composes) outranks any
-        // same-named attribute a caller passed through.
+        // same-named attribute a caller passed through. The type omits the
+        // a11y props, but TypeScript cannot reject a hyphenated JSX attribute,
+        // so order is the part that actually holds.
         {...rest}
         ref={ref}
         aria-hidden="true"
@@ -149,6 +150,11 @@ export function CheckIndicator({
       // (IconFromRegistry renders one), so forwarding them is correct at
       // runtime; the cast only reconciles the two declarations.
       {...(rest as Omit<SVGProps<SVGSVGElement>, 'color' | 'ref'>)}
+      // After the spread, deliberately. Icon puts its own a11y defaults BEFORE
+      // `{...props}` as a documented escape hatch (Icon.tsx), which is right
+      // for an icon and wrong for an indicator — this one is decorative by
+      // contract, so it re-asserts it here rather than inheriting the hatch.
+      aria-hidden="true"
       icon="check"
       size={iconSizeForIndicator[size]}
       color={isDisabled ? 'disabled' : 'accent'}

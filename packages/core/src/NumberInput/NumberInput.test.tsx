@@ -10,11 +10,16 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {act, useState} from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
+import {InternationalizationProvider} from '../i18n';
+import {registerIcons, resetIcons} from '../Icon';
 import {InputGroup} from '../InputGroup';
 import {NumberInput} from './NumberInput';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 // FieldStatus announces status messages through the persistent useAnnounce
@@ -22,6 +27,7 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 // file never match a leftover region.
 afterEach(() => {
   __resetLiveRegionsForTest();
+  resetIcons();
 });
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
@@ -73,21 +79,21 @@ describe('NumberInput', () => {
     expect(screen.getByPlaceholderText('Enter number')).toBeInTheDocument();
   });
 
-  it('displays controlled value as number', () => {
+  it('displays the controlled value as editable text', () => {
     render(<NumberInput label="Quantity" value={456} onChange={() => {}} />);
-    expect(screen.getByRole('spinbutton')).toHaveValue(456);
+    expect(screen.getByRole('spinbutton')).toHaveValue('456');
   });
 
-  it('displays null for null value', () => {
+  it('displays an empty string for a null value', () => {
     render(<NumberInput label="Quantity" value={null} onChange={() => {}} />);
-    expect(screen.getByRole('spinbutton')).toHaveValue(null);
+    expect(screen.getByRole('spinbutton')).toHaveValue('');
   });
 
-  it('displays null for undefined value', () => {
+  it('displays an empty string for an undefined value', () => {
     render(
       <NumberInput label="Quantity" value={undefined} onChange={() => {}} />,
     );
-    expect(screen.getByRole('spinbutton')).toHaveValue(null);
+    expect(screen.getByRole('spinbutton')).toHaveValue('');
   });
 
   it('forwards ref correctly', () => {
@@ -198,36 +204,157 @@ describe('NumberInput', () => {
     expect(container.querySelector('svg')).not.toBeInTheDocument();
   });
 
-  describe('native number input attributes', () => {
-    it('sets min attribute', () => {
+  describe('text-backed spinbutton attributes', () => {
+    it('uses a text input with decimal input mode by default', () => {
+      render(<NumberInput label="Price" value={5} onChange={() => {}} />);
+      const input = screen.getByRole('spinbutton');
+      expect(input).toHaveAttribute('type', 'text');
+      expect(input).toHaveAttribute('inputmode', 'decimal');
+    });
+
+    it('uses numeric input mode for integer-only values', () => {
+      render(
+        <NumberInput
+          label="Count"
+          value={5}
+          onChange={() => {}}
+          isIntegerOnly
+        />,
+      );
+      expect(screen.getByRole('spinbutton')).toHaveAttribute(
+        'inputmode',
+        'numeric',
+      );
+    });
+
+    it('exposes the minimum through spinbutton ARIA', () => {
       render(
         <NumberInput label="Age" value={null} onChange={() => {}} min={0} />,
       );
-      expect(screen.getByRole('spinbutton')).toHaveAttribute('min', '0');
+      expect(screen.getByRole('spinbutton')).toHaveAttribute(
+        'aria-valuemin',
+        '0',
+      );
     });
 
-    it('sets max attribute', () => {
+    it('exposes the maximum through spinbutton ARIA', () => {
       render(
         <NumberInput label="Age" value={null} onChange={() => {}} max={120} />,
       );
-      expect(screen.getByRole('spinbutton')).toHaveAttribute('max', '120');
+      expect(screen.getByRole('spinbutton')).toHaveAttribute(
+        'aria-valuemax',
+        '120',
+      );
     });
 
-    it('sets step attribute', () => {
+    it('exposes the current value through spinbutton ARIA', () => {
+      render(<NumberInput label="Age" value={42} onChange={() => {}} />);
+      expect(screen.getByRole('spinbutton')).toHaveAttribute(
+        'aria-valuenow',
+        '42',
+      );
+    });
+  });
+
+  describe('formatted display values', () => {
+    it('shows the formatted value at rest and exposes it to assistive technology', () => {
       render(
         <NumberInput
-          label="Price"
-          value={null}
+          label="Revenue"
+          value={1234}
           onChange={() => {}}
-          step={0.01}
+          formatValue={number => `$${number.toLocaleString('en-US')}`}
         />,
       );
-      expect(screen.getByRole('spinbutton')).toHaveAttribute('step', '0.01');
+      const input = screen.getByRole('spinbutton');
+      expect(input).toHaveValue('$1,234');
+      expect(input).toHaveAttribute('aria-valuetext', '$1,234');
+      expect(input).toHaveAttribute('aria-valuenow', '1234');
+    });
+
+    it('keeps ARIA value text on the committed value while an edit is pending', () => {
+      function ControlledNumberInput() {
+        const [controlledValue, setControlledValue] = useState(1234);
+        return (
+          <NumberInput
+            label="Revenue"
+            value={controlledValue}
+            onChange={setControlledValue}
+            formatValue={number => `$${number.toLocaleString('en-US')}`}
+          />
+        );
+      }
+      render(<ControlledNumberInput />);
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '4200'}});
+
+      expect(input).toHaveAttribute('aria-valuenow', '1234');
+      expect(input).toHaveAttribute('aria-valuetext', '$1,234');
+
+      fireEvent.blur(input);
+      expect(input).toHaveAttribute('aria-valuenow', '4200');
+      expect(input).toHaveAttribute('aria-valuetext', '$4,200');
+    });
+
+    it('shows the raw numeric value while focused and restores formatting on blur', () => {
+      render(
+        <NumberInput
+          label="Revenue"
+          value={1234}
+          onChange={() => {}}
+          formatValue={number => `$${number.toLocaleString('en-US')}`}
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+
+      fireEvent.focus(input);
+      expect(input).toHaveValue('1234');
+
+      fireEvent.blur(input);
+      expect(input).toHaveValue('$1,234');
+    });
+
+    it('preserves invalid pending text while focused, then restores the formatted true value', () => {
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={3}
+          onChange={onChange}
+          isIntegerOnly
+          formatValue={number => `${number} items`}
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+
+      fireEvent.focus(input);
+      fireEvent.change(input, {target: {value: '3.5'}});
+      expect(input).toHaveValue('3.5');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+      expect(onChange).not.toHaveBeenCalledWith(3.5);
+
+      fireEvent.blur(input);
+      expect(input).toHaveValue('3 items');
+    });
+
+    it('does not call the formatter for an empty value', () => {
+      const formatValue = vi.fn((number: number) => String(number));
+      render(
+        <NumberInput
+          label="Quantity"
+          value={null}
+          onChange={() => {}}
+          formatValue={formatValue}
+        />,
+      );
+      expect(screen.getByRole('spinbutton')).toHaveValue('');
+      expect(formatValue).not.toHaveBeenCalled();
     });
   });
 
   describe('onChange validation', () => {
-    it('calls onChange with valid number when typing', async () => {
+    it('commits a valid number on blur', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
       render(
@@ -237,8 +364,10 @@ describe('NumberInput', () => {
       const input = screen.getByRole('spinbutton');
       await user.click(input);
       await user.type(input, '42');
+      expect(handleChange).not.toHaveBeenCalled();
 
-      expect(handleChange).toHaveBeenCalledWith(4);
+      await user.tab();
+      expect(handleChange).toHaveBeenCalledTimes(1);
       expect(handleChange).toHaveBeenCalledWith(42);
     });
 
@@ -258,9 +387,7 @@ describe('NumberInput', () => {
       await user.click(input);
       await user.type(input, '10');
 
-      // 1 is valid (<=5), but 10 is not
-      expect(handleChange).toHaveBeenCalledWith(1);
-      expect(handleChange).not.toHaveBeenCalledWith(10);
+      expect(handleChange).not.toHaveBeenCalled();
     });
 
     it('does not call onChange when value is below min', async () => {
@@ -299,9 +426,7 @@ describe('NumberInput', () => {
       await user.click(input);
       await user.type(input, '3.5');
 
-      // 3 is valid, but 3.5 is not
-      expect(handleChange).toHaveBeenCalledWith(3);
-      expect(handleChange).not.toHaveBeenCalledWith(3.5);
+      expect(handleChange).not.toHaveBeenCalled();
     });
 
     it('calls onChange for decimal when isIntegerOnly is false', async () => {
@@ -314,8 +439,139 @@ describe('NumberInput', () => {
       const input = screen.getByRole('spinbutton');
       await user.click(input);
       await user.type(input, '3.5');
+      expect(handleChange).not.toHaveBeenCalled();
 
+      await user.tab();
       expect(handleChange).toHaveBeenCalledWith(3.5);
+    });
+  });
+
+  describe('invalid draft commit policy', () => {
+    function ControlledNumberInput({
+      initialValue = 7,
+      locale = 'en-US',
+    }: {
+      initialValue?: number | null;
+      locale?: 'en-US' | 'de-DE';
+    }) {
+      const [controlledValue, setControlledValue] = useState<number | null>(
+        initialValue,
+      );
+      return (
+        <InternationalizationProvider locale={locale}>
+          <NumberInput
+            label="Quantity"
+            value={controlledValue}
+            onChange={setControlledValue}
+          />
+          <output data-testid="committed">{String(controlledValue)}</output>
+        </InternationalizationProvider>
+      );
+    }
+
+    async function exerciseInvalidDraft(
+      entry: 'typing' | 'input',
+      commit: 'blur' | 'Enter',
+    ) {
+      const user = userEvent.setup();
+      render(<ControlledNumberInput />);
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      if (entry === 'typing') {
+        await user.type(input, '1·234·567');
+      } else {
+        fireEvent.input(input, {target: {value: '1·234·567'}});
+      }
+
+      expect(input).toHaveValue('1·234·567');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByTestId('committed')).toHaveTextContent('7');
+
+      if (commit === 'blur') {
+        await user.tab();
+        expect(input).toHaveValue('7');
+        expect(input).not.toHaveAttribute('aria-invalid');
+      } else {
+        await user.keyboard('{Enter}');
+        expect(input).toHaveValue('1·234·567');
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+      }
+      expect(screen.getByTestId('committed')).toHaveTextContent('7');
+    }
+
+    it('rejects a sequentially typed invalid draft on blur', async () => {
+      await exerciseInvalidDraft('typing', 'blur');
+    });
+
+    it('rejects a one-shot invalid draft on blur', async () => {
+      await exerciseInvalidDraft('input', 'blur');
+    });
+
+    it('rejects a sequentially typed invalid draft on Enter', async () => {
+      await exerciseInvalidDraft('typing', 'Enter');
+    });
+
+    it('rejects a one-shot invalid draft on Enter', async () => {
+      await exerciseInvalidDraft('input', 'Enter');
+    });
+
+    it('commits a valid localized grouped number as one edit', async () => {
+      const user = userEvent.setup();
+      render(<ControlledNumberInput locale="de-DE" />);
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      await user.type(input, '1.234.567');
+
+      expect(screen.getByTestId('committed')).toHaveTextContent('7');
+      await user.tab();
+      expect(screen.getByTestId('committed')).toHaveTextContent('1234567');
+      expect(input).toHaveValue('1234567');
+    });
+
+    it('keeps a controlled update behind an invalid focused draft', () => {
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <NumberInput label="Quantity" value={7} onChange={onChange} />,
+      );
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '1·234·567'}});
+
+      rerender(<NumberInput label="Quantity" value={9} onChange={onChange} />);
+      expect(input).toHaveValue('1·234·567');
+      fireEvent.blur(input);
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('9');
+    });
+
+    it('waits for IME composition to finish before committing', () => {
+      const onChange = vi.fn();
+      render(<NumberInput label="Quantity" value={7} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '42'}});
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(onChange).not.toHaveBeenCalled();
+
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith(42);
+    });
+
+    it('steps from the committed value when the draft is invalid', () => {
+      const onChange = vi.fn();
+      render(<NumberInput label="Quantity" value={7} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '1·234·567'}});
+      fireEvent.keyDown(input, {key: 'ArrowUp'});
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith(8);
+      expect(input).toHaveValue('7');
     });
   });
 
@@ -439,6 +695,233 @@ describe('NumberInput', () => {
       await user.keyboard('{Enter}');
 
       expect(handleEnter).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('range clamping on commit', () => {
+    it('commits an over-max entry at max on blur', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Page"
+          value={null}
+          onChange={handleChange}
+          min={1}
+          max={2}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '100');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(2);
+    });
+
+    it('commits an over-max entry at max on Enter', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Rating"
+          value={null}
+          onChange={handleChange}
+          max={5}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10');
+      handleChange.mockClear();
+      await user.keyboard('{Enter}');
+
+      expect(handleChange).toHaveBeenCalledWith(5);
+    });
+
+    it('commits a below-min entry at min', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Age"
+          value={null}
+          onChange={handleChange}
+          min={0}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '-5');
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(0);
+    });
+
+    it('does not clamp while typing', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Rating"
+          value={null}
+          onChange={handleChange}
+          max={5}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10');
+
+      // The entry stays exactly as typed until it is committed.
+      expect(input).toHaveValue('10');
+      expect(handleChange).not.toHaveBeenCalledWith(5);
+    });
+
+    it('displays the clamped value after commit', async () => {
+      const user = userEvent.setup();
+      function ControlledNumberInput() {
+        const [value, setValue] = useState<number>(1);
+        return (
+          <NumberInput
+            label="Page"
+            value={value}
+            onChange={setValue}
+            min={1}
+            max={2}
+            isIntegerOnly
+          />
+        );
+      }
+      render(<ControlledNumberInput />);
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      await user.type(input, '100');
+      await user.tab();
+
+      expect(input).toHaveValue('2');
+    });
+
+    it('shows the clamped value in the field after Enter', async () => {
+      const user = userEvent.setup();
+      function ControlledNumberInput() {
+        const [value, setValue] = useState<number | null>(null);
+        return (
+          <NumberInput
+            label="Rating"
+            value={value}
+            onChange={setValue}
+            min={1}
+            max={5}
+          />
+        );
+      }
+      render(<ControlledNumberInput />);
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10{Enter}');
+
+      // Still focused: the field must not keep showing the rejected entry.
+      expect(input).toHaveValue('5');
+    });
+
+    it('reverts an entry that is not a usable number', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          max={10}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '12.5');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('');
+    });
+
+    it('rounds a fractional max inwards for an integer-only field', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          max={9.5}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '20');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(9);
+    });
+
+    it('rounds a fractional min inwards for an integer-only field', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          min={0.5}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '0');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(1);
+    });
+
+    it('does not clamp when no value can satisfy both bounds', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          min={5}
+          max={2}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('');
     });
   });
 
@@ -703,6 +1186,48 @@ describe('NumberInput', () => {
       expect(data.get('quantity')).toBe('42');
     });
 
+    it('submits the raw number instead of the formatted display value', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Revenue"
+            htmlName="revenue"
+            value={1234}
+            onChange={() => {}}
+            formatValue={number => `$${number.toLocaleString('en-US')}`}
+          />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('revenue')).toBe('1234');
+    });
+
+    it('submits the committed value in formatted mode until an edit commits', () => {
+      function ControlledForm() {
+        const [controlledValue, setControlledValue] = useState(7);
+        return (
+          <form>
+            <NumberInput
+              label="Quantity"
+              htmlName="quantity"
+              value={controlledValue}
+              onChange={setControlledValue}
+              formatValue={String}
+            />
+          </form>
+        );
+      }
+      const {container} = render(<ControlledForm />);
+      const form = container.querySelector('form')!;
+      const input = screen.getByRole('spinbutton');
+      fireEvent.focus(input);
+      fireEvent.input(input, {target: {value: '42'}});
+
+      expect(new FormData(form).get('quantity')).toBe('7');
+      fireEvent.blur(input);
+      expect(new FormData(form).get('quantity')).toBe('42');
+    });
+
     it('is excluded from form data when disabled', () => {
       const {container} = render(
         <form>
@@ -736,6 +1261,168 @@ describe('NumberInput', () => {
           />
         </form>,
       );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
+  describe('isReadOnly', () => {
+    it('marks the input read-only', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      expect(screen.getByRole('spinbutton')).toHaveAttribute('readonly');
+    });
+
+    it('still submits its value with the form', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Quantity"
+            htmlName="quantity"
+            value={42}
+            onChange={() => {}}
+            isReadOnly
+          />
+        </form>,
+      );
+      expect(
+        new FormData(container.querySelector('form')!).get('quantity'),
+      ).toBe('42');
+    });
+
+    it('does not call onChange when the user types', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={handleChange}
+          isReadOnly
+        />,
+      );
+      await user.type(screen.getByRole('spinbutton'), '7');
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('stays focusable and is not disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      expect(input).not.toBeDisabled();
+      await user.tab();
+      expect(input).toHaveFocus();
+    });
+
+    it('hides the clear button', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={() => {}}
+          hasClear
+          isReadOnly
+        />,
+      );
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('does not step on ArrowUp or ArrowDown', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={handleChange}
+          isReadOnly
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      input.focus();
+      await user.keyboard('{ArrowUp}{ArrowDown}');
+      expect(handleChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('42');
+    });
+
+    it('leaves wheel scrolling to the page instead of stepping', () => {
+      const onScrollableWheel = vi.fn();
+      const handleChange = vi.fn();
+      render(
+        <div onWheel={onScrollableWheel}>
+          <NumberInput
+            label="Quantity"
+            value={42}
+            onChange={handleChange}
+            isReadOnly
+          />
+        </div>,
+      );
+      const input = screen.getByRole('spinbutton');
+      input.focus();
+      const event = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        deltaY: -100,
+      });
+      fireEvent(input, event);
+
+      expect(handleChange).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+      expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables both number steppers', () => {
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={handleChange}
+          hasNumberSteppers
+          isReadOnly
+        />,
+      );
+      const increment = screen.getByRole('button', {
+        name: 'Increment Quantity',
+      });
+      expect(increment).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Decrement Quantity'}),
+      ).toBeDisabled();
+
+      fireEvent.click(increment);
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('lets isDisabled win when both are set', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Quantity"
+            htmlName="quantity"
+            value={42}
+            onChange={() => {}}
+            isReadOnly
+            isDisabled
+          />
+        </form>,
+      );
+      expect(screen.getByRole('spinbutton')).toBeDisabled();
       expect([
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
@@ -776,6 +1463,25 @@ describe('NumberInput', () => {
       expect(
         screen.queryByRole('button', {name: 'Clear Qty'}),
       ).not.toBeInTheDocument();
+    });
+
+    it('keeps Tab moving forward when an empty field has an invalid draft', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <NumberInput label="Qty" value={null} onChange={() => {}} hasClear />
+          <button type="button">Next field</button>
+        </>,
+      );
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, 'invalid');
+      expect(
+        screen.queryByRole('button', {name: 'Clear Qty'}),
+      ).not.toBeInTheDocument();
+
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'Next field'})).toHaveFocus();
     });
 
     it('does not show clear button when hasClear is false', () => {
@@ -1051,30 +1757,507 @@ describe('NumberInput statusVariant forwarding', () => {
       'detached',
     );
   });
+});
 
-  it('stops wheel propagation while focused so ancestor containers do not scroll', () => {
+describe('NumberInput stepping', () => {
+  const stepInteractions = [
+    [
+      'keyboard',
+      (input: HTMLElement, direction: 'up' | 'down') =>
+        fireEvent.keyDown(input, {
+          key: direction === 'up' ? 'ArrowUp' : 'ArrowDown',
+        }),
+    ],
+    [
+      'wheel',
+      (input: HTMLElement, direction: 'up' | 'down') => {
+        input.focus();
+        act(() => {
+          fireEvent.wheel(input, {deltaY: direction === 'up' ? -100 : 100});
+        });
+      },
+    ],
+    [
+      'number stepper',
+      (_input: HTMLElement, direction: 'up' | 'down') =>
+        fireEvent.click(
+          screen.getByRole('button', {
+            name: direction === 'up' ? 'Increment Amount' : 'Decrement Amount',
+          }),
+        ),
+    ],
+  ] as const;
+
+  it('increments with ArrowUp and decrements with ArrowDown', () => {
+    const onChange = vi.fn();
+    render(<NumberInput label="Amount" value={5} onChange={onChange} />);
+    const input = screen.getByRole('spinbutton');
+
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenLastCalledWith(6);
+
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(onChange).toHaveBeenLastCalledWith(4);
+  });
+
+  it('does not step or commit on a composing keydown (IME)', () => {
+    const onChange = vi.fn();
+    render(<NumberInput label="Amount" value={5} onChange={onChange} />);
+    const input = screen.getByRole('spinbutton');
+
+    // The field is type="text", so an IME composes into it. Enter commits the
+    // candidate and the arrows walk the candidate window; neither should reach
+    // the stepping or commit paths. Both signals a browser may report.
+    fireEvent.keyDown(input, {key: 'ArrowUp', isComposing: true});
+    fireEvent.keyDown(input, {key: 'ArrowDown', keyCode: 229});
+    fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing ArrowUp still steps.
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenLastCalledWith(6);
+  });
+
+  it('lets onKeyDown cancel keyboard stepping', () => {
+    const onChange = vi.fn();
+    const onKeyDown = vi.fn((event: React.KeyboardEvent<HTMLInputElement>) =>
+      event.preventDefault(),
+    );
+    render(
+      <NumberInput
+        label="Amount"
+        value={5}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowUp'});
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('uses decimal-safe step arithmetic', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput label="Amount" value={0.2} onChange={onChange} step={0.1} />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalledWith(0.3);
+  });
+
+  it('aligns an off-step value in the requested direction', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput
+        label="Amount"
+        value={0.25}
+        onChange={onChange}
+        step={0.1}
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenLastCalledWith(0.3);
+
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(onChange).toHaveBeenLastCalledWith(0.2);
+  });
+
+  it('starts an empty value at the relevant boundary', () => {
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <NumberInput label="Amount" value={null} onChange={onChange} min={2} />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenLastCalledWith(2);
+
+    rerender(
+      <NumberInput label="Amount" value={null} onChange={onChange} max={8} />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowDown'});
+    expect(onChange).toHaveBeenLastCalledWith(8);
+  });
+
+  it('keeps generated values integral when isIntegerOnly is set', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput
+        label="Amount"
+        value={null}
+        onChange={onChange}
+        min={2.5}
+        isIntegerOnly
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalledWith(3);
+  });
+
+  it('does not step past min or max', () => {
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <NumberInput
+        label="Amount"
+        value={10}
+        onChange={onChange}
+        min={0}
+        max={10}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowUp'});
+    expect(onChange).not.toHaveBeenCalled();
+
+    rerender(
+      <NumberInput
+        label="Amount"
+        value={0}
+        onChange={onChange}
+        min={0}
+        max={10}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowDown'});
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it.each(stepInteractions)(
+    'clamps at a fractional max after rounding via the %s',
+    (_name, interact) => {
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Amount"
+          value={99}
+          onChange={onChange}
+          max={99.99}
+          hasNumberSteppers
+        />,
+      );
+
+      interact(screen.getByRole('spinbutton'), 'up');
+
+      expect(onChange).toHaveBeenCalledWith(99.99);
+      expect(onChange).not.toHaveBeenCalledWith(100);
+    },
+  );
+
+  it.each(stepInteractions)(
+    'clamps at a fractional min after rounding via the %s',
+    (_name, interact) => {
+      const onChange = vi.fn();
+      const min = 4e-13;
+      render(
+        <NumberInput
+          label="Amount"
+          value={0.5}
+          onChange={onChange}
+          min={min}
+          hasNumberSteppers
+        />,
+      );
+
+      interact(screen.getByRole('spinbutton'), 'down');
+
+      expect(onChange).toHaveBeenCalledWith(min);
+      expect(onChange).not.toHaveBeenCalledWith(0);
+    },
+  );
+
+  it('reflects a reached fractional max in the spinbutton and stepper state', () => {
+    function ControlledNumberInput() {
+      const [value, setValue] = useState(99);
+      return (
+        <NumberInput
+          label="Amount"
+          value={value}
+          onChange={setValue}
+          max={99.99}
+          hasNumberSteppers
+        />
+      );
+    }
+    render(<ControlledNumberInput />);
+
+    const input = screen.getByRole('spinbutton');
+    const increment = screen.getByRole('button', {name: 'Increment Amount'});
+    expect(increment).toBeEnabled();
+
+    fireEvent.click(increment);
+
+    expect(input).toHaveValue('99.99');
+    expect(input).toHaveAttribute('aria-valuenow', '99.99');
+    expect(input).not.toHaveAttribute('aria-invalid');
+    expect(increment).toBeDisabled();
+  });
+
+  it('allows wheel stepping by default and consumes the focused gesture', () => {
     const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
     render(
       <div onWheel={onScrollableWheel}>
-        <NumberInput label="Amount" value={5} onChange={() => {}} />
+        <NumberInput label="Amount" value={5} onChange={onChange} />
       </div>,
     );
     const input = screen.getByRole('spinbutton');
     input.focus();
-    fireEvent.wheel(input, {deltaY: 100});
+    const event = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaY: -100,
+    });
+    fireEvent(input, event);
+
+    expect(onChange).toHaveBeenCalledWith(6);
+    expect(event.defaultPrevented).toBe(true);
     expect(onScrollableWheel).not.toHaveBeenCalled();
   });
 
-  it('does not stop wheel propagation when the input is not focused', () => {
+  it('leaves wheel scrolling alone when isWheelEnabled is false', () => {
     const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
     render(
       <div onWheel={onScrollableWheel}>
-        <NumberInput label="Amount" value={5} onChange={() => {}} />
+        <NumberInput
+          label="Amount"
+          value={5}
+          onChange={onChange}
+          isWheelEnabled={false}
+        />
       </div>,
     );
     const input = screen.getByRole('spinbutton');
-    fireEvent.wheel(input, {deltaY: 100});
+    input.focus();
+    const event = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaY: -100,
+    });
+    fireEvent(input, event);
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
     expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('updates the wheel listener when isWheelEnabled changes', () => {
+    const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput
+          label="Amount"
+          value={5}
+          onChange={onChange}
+          isWheelEnabled={false}
+        />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    input.focus();
+
+    rerender(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput
+          label="Amount"
+          value={5}
+          onChange={onChange}
+          isWheelEnabled
+        />
+      </div>,
+    );
+    fireEvent.wheel(input, {deltaY: -100});
+    expect(onChange).toHaveBeenCalledWith(6);
+    expect(onScrollableWheel).not.toHaveBeenCalled();
+
+    onChange.mockClear();
+    rerender(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput
+          label="Amount"
+          value={5}
+          onChange={onChange}
+          isWheelEnabled={false}
+        />
+      </div>,
+    );
+    fireEvent.wheel(input, {deltaY: -100});
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves wheel scrolling alone when the input is not focused', () => {
+    const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput label="Amount" value={5} onChange={onChange} />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    const event = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaY: 100,
+    });
+    fireEvent(input, event);
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+    expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves modified wheel gestures alone', () => {
+    const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput label="Amount" value={5} onChange={onChange} />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    input.focus();
+    fireEvent.wheel(input, {deltaY: -100, ctrlKey: true});
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves wheel scrolling alone when the input is aria-disabled', () => {
+    const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput
+          label="Amount"
+          value={5}
+          onChange={onChange}
+          isDisabled
+          disabledMessage="This value is locked"
+        />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    input.focus();
+    fireEvent.wheel(input, {deltaY: -100});
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+
+  describe('hasNumberSteppers', () => {
+    it('does not show stepper buttons by default', () => {
+      render(<NumberInput label="Quantity" value={5} onChange={() => {}} />);
+      expect(
+        screen.queryByRole('button', {name: 'Increment Quantity'}),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Decrement Quantity'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('shows localized increment and decrement buttons when enabled', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          hasNumberSteppers
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Increment Quantity'}),
+      ).toHaveAttribute('tabindex', '-1');
+      expect(
+        screen.getByRole('button', {name: 'Decrement Quantity'}),
+      ).toHaveAttribute('tabindex', '-1');
+    });
+
+    it('uses the NumberInput extension icon for both stepper buttons', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      registerIcons({
+        chevronDown: <svg data-testid="generic-chevron-down" />,
+        'numberInput:stepperDown': <svg data-testid="number-stepper-down" />,
+      });
+
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          hasNumberSteppers
+        />,
+      );
+
+      const stepperIcons = screen.getAllByTestId('number-stepper-down');
+      expect(stepperIcons).toHaveLength(2);
+      for (const icon of stepperIcons) {
+        expect(icon.parentElement).toHaveAttribute('data-size', 'xsm');
+      }
+      expect(
+        screen.queryByTestId('generic-chevron-down'),
+      ).not.toBeInTheDocument();
+      warnSpy.mockRestore();
+    });
+
+    it('steps the value and returns focus to the input', () => {
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={onChange}
+          hasNumberSteppers
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+
+      fireEvent.click(screen.getByRole('button', {name: 'Increment Quantity'}));
+      expect(onChange).toHaveBeenLastCalledWith(6);
+      expect(input).toHaveFocus();
+
+      fireEvent.click(screen.getByRole('button', {name: 'Decrement Quantity'}));
+      expect(onChange).toHaveBeenLastCalledWith(4);
+      expect(input).toHaveFocus();
+    });
+
+    it('disables only the stepper at the reached boundary', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={10}
+          onChange={() => {}}
+          min={0}
+          max={10}
+          hasNumberSteppers
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Increment Quantity'}),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Decrement Quantity'}),
+      ).not.toBeDisabled();
+    });
+
+    it('disables both steppers with the input', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          hasNumberSteppers
+          isDisabled
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Increment Quantity'}),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Decrement Quantity'}),
+      ).toBeDisabled();
+    });
   });
 });
 
@@ -1099,5 +2282,159 @@ describe('NumberInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-number-input');
     expect(root).not.toHaveAttribute('data-disabled');
+  });
+});
+
+describe('NumberInput readonly theme state', () => {
+  it('reflects readonly on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <NumberInput label="Qty" value={1} onChange={() => {}} isReadOnly />,
+    );
+    const root = container.querySelector('.astryx-number-input');
+    expect(root).toHaveAttribute('data-readonly', 'readonly');
+  });
+
+  it('omits data-readonly when editable', () => {
+    const {container} = render(
+      <NumberInput label="Qty" value={1} onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-number-input');
+    expect(root).not.toHaveAttribute('data-readonly');
+  });
+});
+
+describe('NumberInput stepper padding coupling', () => {
+  function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+    const {prose, component} = generateThemeCSS(theme);
+    return [prose, component].filter(Boolean).join('\n\n');
+  }
+
+  // The chains the wrapper and the stepper column both read. Spelled out here
+  // rather than imported so the test pins the actual token names a theme sets:
+  // if the chain is renamed or a level is dropped, this fails.
+  const BLOCK_START =
+    'var(--astryx-number-input-padding-block-start, var(--astryx-number-input-padding, var(--spacing-1)))';
+  const BLOCK_END =
+    'var(--astryx-number-input-padding-block-end, var(--astryx-number-input-padding, var(--spacing-1)))';
+
+  // jsdom re-serializes a var() chain without the spaces after its commas.
+  const noSpace = (value: string) => value.replace(/\s+/g, '');
+
+  it('reads its padding from the public number-input padding tokens', () => {
+    const {container} = render(
+      <NumberInput
+        label="Quantity"
+        value={5}
+        onChange={() => {}}
+        hasNumberSteppers
+      />,
+    );
+    const root = container.querySelector('.astryx-number-input') as HTMLElement;
+    // Read as physical properties: StyleX compiles the block-axis logical
+    // properties to `padding-top`/`padding-bottom` (identical in every
+    // horizontal writing mode). Per side, not through the shared field base's
+    // `paddingBlock` shorthand, so each edge can be cancelled on its own.
+    const wrapper = getComputedStyle(root);
+    expect(noSpace(wrapper.paddingTop)).toBe(noSpace(BLOCK_START));
+    expect(noSpace(wrapper.paddingBottom)).toBe(noSpace(BLOCK_END));
+
+    // The column cancels the wrapper's block padding by reading the same
+    // tokens — not a hardcoded default — so it stays flush when a theme
+    // changes the padding. The column is the stepper buttons' direct parent.
+    const steppers = container.querySelector(
+      'button[aria-label="Increment Quantity"]',
+    )?.parentElement as HTMLElement;
+    const column = getComputedStyle(steppers);
+    expect(noSpace(column.marginTop)).toBe(
+      noSpace(`calc(-1 * ${BLOCK_START})`),
+    );
+    expect(noSpace(column.marginBottom)).toBe(
+      noSpace(`calc(-1 * ${BLOCK_END})`),
+    );
+  });
+
+  // jsdom cannot resolve the @layer cascade, so the generated CSS is the
+  // proof. Each case is a spelling of the SAME declaration: the column has to
+  // track all of them, not just the one the component happened to name.
+  describe('a themed padding reaches the steppers in every spelling', () => {
+    it.each([
+      [
+        'the padding shorthand, two values',
+        {padding: '14px 20px'},
+        [
+          '--astryx-number-input-padding-block-start: 14px',
+          '--astryx-number-input-padding-block-end: 14px',
+          '--astryx-number-input-padding-inline: 20px',
+        ],
+      ],
+      [
+        'the padding shorthand, one value',
+        {padding: '10px'},
+        ['--astryx-number-input-padding: 10px'],
+      ],
+      [
+        'the block/inline longhands',
+        {paddingBlock: '10px', paddingInline: '20px'},
+        [
+          '--astryx-number-input-padding-block-start: 10px',
+          '--astryx-number-input-padding-block-end: 10px',
+          '--astryx-number-input-padding-inline: 20px',
+        ],
+      ],
+      [
+        'a single edge longhand',
+        {paddingBlockStart: '12px'},
+        ['--astryx-number-input-padding-block-start: 12px'],
+      ],
+      [
+        // A single var carrying "4px 12px" would make the column's
+        // calc(-1 * …) invalid and drop the margin outright; the expansion
+        // splits the two values into their own edges instead.
+        'an asymmetric block padding',
+        {paddingBlock: '4px 12px'},
+        [
+          '--astryx-number-input-padding-block-start: 4px',
+          '--astryx-number-input-padding-block-end: 12px',
+        ],
+      ],
+      [
+        // `paddingTop` is `paddingBlockStart` in every horizontal writing
+        // mode, so it normalizes onto the same tokens. The physical inline
+        // pair is deliberately not mapped — see generateThemeRules.
+        'the physical block longhands',
+        {paddingTop: '14px', paddingBottom: '6px'},
+        [
+          '--astryx-number-input-padding-block-start: 14px',
+          '--astryx-number-input-padding-block-end: 6px',
+        ],
+      ],
+    ])('%s', (_label, base, expected) => {
+      const theme = defineTheme({
+        name: 'number-input-padding-spelling-test',
+        components: {'number-input': {base}},
+      });
+      const css = generateThemeTestCSS(theme);
+      for (const declaration of expected) {
+        expect(css).toContain(declaration);
+      }
+      // The expansion consumes the padding: a raw declaration left on the
+      // wrapper is padding the column cannot see, which is the gap itself.
+      expect(css).not.toMatch(
+        /^\s*padding(-block|-inline|-top|-bottom)?(-start|-end)?:/m,
+      );
+    });
+  });
+
+  it('carries a themed border radius to the stepper column corners', () => {
+    // The column's outer corners read --_field-radius. Emitting only
+    // `border-radius` on the wrapper rounds the field and leaves the steppers
+    // at the default radius, which is visible wherever the two differ.
+    const theme = defineTheme({
+      name: 'number-input-radius-test',
+      components: {'number-input': {base: {borderRadius: '2px'}}},
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('--_field-radius: 2px');
+    expect(css).toContain('border-radius: 2px');
   });
 });

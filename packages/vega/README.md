@@ -156,6 +156,43 @@ To update data dynamically after render, use `onReady` to get the live View and 
 />
 ```
 
+### Untrusted specs
+
+A Vega/Vega-Lite spec is a program, not just data: Vega evaluates the
+expression strings inside it (signals, event streams, encodings, filters)
+and, by default, compiles them to JavaScript with the Function constructor.
+A spec's `data` entries can also name URLs — including signal-built dynamic
+ones — that the default loader will fetch with the page's credentials.
+
+`<VegaChart>` renders the spec you give it with Vega's defaults, so those
+defaults define the trust boundary: **only pass specs you author or
+review.** If specs come from users, stored documents, or model output, wire
+the safe evaluation mode through the existing pass-through options — Vega's
+own guidance for untrusted specs:
+
+```tsx
+import {expressionInterpreter} from 'vega-interpreter';
+import {loader} from 'vega';
+
+<VegaChart
+  spec={untrustedSpec}
+  // Retain the expression AST and evaluate it interpreted (no Function
+  // constructor). Slower, and a small subset of expressions is unsupported —
+  // see the vega-interpreter README.
+  parseOptions={{ast: true}}
+  viewOptions={{
+    expr: expressionInterpreter,
+    // Restrict (or disable) what a spec may load. `mode: 'file'` with no
+    // baseURL rejects everything; supply your own loader to allowlist hosts.
+    loader: loader({mode: 'file'}),
+  }}
+/>;
+```
+
+`vega-interpreter` is a separate package (`npm install vega-interpreter`);
+pair it with a `Content-Security-Policy` that omits `'unsafe-eval'` so the
+boundary is enforced by the platform, not only by configuration.
+
 ### `parseSchema(schema)` (exported utility)
 
 Parses and validates a Vega `$schema` URL. Returns:

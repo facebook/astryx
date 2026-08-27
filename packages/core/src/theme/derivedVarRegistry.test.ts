@@ -10,6 +10,21 @@
  * 2. Doc check: verifies each var is documented in the doc file's vars[]
  * 3. Registry check: verifies themeable vars have derived[] entries that
  *    match the registry
+ *
+ * Layers 1 and 3 each used to carry a hole that let real vars through:
+ *
+ * - The source scan skipped every `--_*` name outright, on the theory that a
+ *   private var is "internal, not themeable". It is internal, but it is still
+ *   documented — `theming.vars[]` takes `private: true` for exactly this
+ *   (`--_card-radius`, `--_dropdown-menu-padding`), and the derived-var
+ *   pipeline is what theme authors reach it through. Skipping the prefix meant
+ *   10 private vars across 12 (component, var) sites were declared in source
+ *   and documented nowhere.
+ * - Layer 3 narrowed its verdict to vars matching `/radius|padding/`, so any
+ *   var whose name did not happen to contain those two words was exempt from
+ *   ever needing a derived[] mapping. That is now an explicit allowlist
+ *   (VARS_WITHOUT_DERIVED_MAPPING) instead of a name heuristic: a new var must
+ *   be given a derived[] entry or be added to the list on purpose.
  */
 
 import {describe, it, expect} from 'vitest';
@@ -70,12 +85,21 @@ const STRUCTURAL_VARS = new Set([
   '--table-row-overlay',
   '--separator-display',
   '--astryx-section-padding',
+  // Private counterpart of the public token above: one ancestor Section's
+  // padding, propagated down the tree. Structural, never authored by a theme.
+  '--_section-padding-propagated',
 ]);
 
 /**
  * Extract component-specific CSS custom property names from a source file.
  * Matches patterns like '--_card-radius': or '--_chat-composer-padding':
- * Excludes structural/runtime vars and standard token vars (--color-*, --spacing-*, etc.).
+ * Excludes structural/runtime vars and standard token vars (--color-*,
+ * --spacing-*, etc.).
+ *
+ * Private (`--_*`) vars are INCLUDED. They are internal in the sense that a
+ * theme author does not set them directly, but they are still part of the
+ * documented theming surface (`theming.vars[]` with `private: true`) and are
+ * how derived[] entries connect a standard CSS property to a component.
  */
 function extractComponentVars(filePath: string): string[] {
   const content = readFileSync(filePath, 'utf-8');
@@ -99,10 +123,6 @@ function extractComponentVars(filePath: string): string[] {
     }
     // Skip vars that start with structural prefixes
     if (/^--(container-|layout-|edge-|component-)/.test(varName)) {
-      continue;
-    }
-    // Skip private vars (--_ prefix = internal, not themeable)
-    if (varName.startsWith('--_')) {
       continue;
     }
     vars.add(varName);
@@ -147,9 +167,6 @@ function discoverComponents(): ComponentInfo[] {
         allVars.add(v);
       }
     }
-    if (allVars.size === 0) {
-      continue;
-    }
 
     // Only check component directories (those with a doc file named after the
     // directory). Match against the on-disk listing rather than existsSync so
@@ -171,6 +188,16 @@ function discoverComponents(): ComponentInfo[] {
       /* skip */
     }
 
+    // A directory earns a check by declaring a var OR by documenting a
+    // derived[] entry. Bailing on the var count alone (as this did) hid every
+    // component that is themeable purely through an expansion strategy —
+    // `{property: 'padding', expand: 'container'}` names no var, so such a
+    // component declares nothing and its registry↔doc consistency check
+    // silently never ran.
+    if (allVars.size === 0 && docDerived.length === 0) {
+      continue;
+    }
+
     results.push({
       dir,
       sourceVars: [...allVars],
@@ -186,18 +213,22 @@ function discoverComponents(): ComponentInfo[] {
 // ---------------------------------------------------------------------------
 
 const DIR_TO_REGISTRY_KEY: Record<string, string> = {
+  Avatar: 'avatar',
   Banner: 'banner',
   Button: 'button',
   Card: 'card',
   Chat: 'chat',
+  ContextMenu: 'context-menu',
   Dialog: 'dialog',
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
-  HoverCard: 'hovercard',
+  HoverCard: 'hover-card',
+  NumberInput: 'number-input',
   Popover: 'popover',
+  ProgressBar: 'progress-bar-mark',
   Section: 'section',
   SegmentedControl: 'segmented-control',
-  TextArea: 'textarea',
+  TextArea: 'text-area',
 };
 
 /**
@@ -212,7 +243,73 @@ const CROSS_COMPONENT_VARS: Record<string, string[]> = {
   Carousel: ['--_button-radius'],
   Thumbnail: ['--_button-radius'],
   Chat: ['--_button-radius'],
+  // AvatarGroupOverflow sets the overlap for the Avatars it lays out; Avatar
+  // owns and documents it (and sets it itself when it is the group root).
+  AvatarGroup: ['--_avatar-group-overlap'],
+  // BreadcrumbItem tunes the DropdownMenu it opens.
+  Breadcrumbs: ['--_dropdown-menu-radius', '--_dropdown-menu-padding'],
+  // SelectableCard draws its selection ring through the Card shadow slot.
+  SelectableCard: ['--_card-ring'],
+  // Toolbar offsets the TabList indicator it hosts.
+  Toolbar: ['--_tab-indicator-bottom'],
+  // The destructive item variant recolors the Item it renders; Item owns,
+  // documents and reads both slots.
+  DropdownMenu: ['--_item-label-color', '--_item-description-color'],
 };
+
+/**
+ * Documented vars that intentionally have NO derived[] entry — a theme author
+ * cannot reach them by writing a standard CSS property, only by targeting the
+ * component's own theming surface.
+ *
+ * This replaces a `/radius|padding/` name test that exempted every var whose
+ * name did not contain those words. Each entry is a deliberate classification,
+ * so a NEW var has to be argued into the list rather than slipping past on its
+ * name. The list should shrink over time, not grow.
+ */
+const VARS_WITHOUT_DERIVED_MAPPING = new Set([
+  // No standard CSS property maps onto these — they are component behaviors.
+  '--button-focus-offset',
+  '--button-icon-only-aspect',
+  '--_avatar-group-overlap',
+  '--_codeblock-gutter-width',
+  '--_tab-indicator-bottom',
+  // Hit-area outset on a ::after overlay, and whether that overlay is
+  // generated at all — `inset` and `content` on a pseudo-element are not
+  // properties a theme author sets on the component.
+  '--_thumbnail-hit-inset',
+  '--_input-clear-hit-inset',
+  '--_input-clear-hit-content',
+  // Placement-driven motion is private Toast behavior. A theme author controls
+  // the surface transform as a whole, not this one offset within it.
+  '--_toast-slide-y',
+  // Indentation and row-spacing metrics: --tree-list-indent is the authorable
+  // step, --_tree-indent the per-row distance TreeListItem computes from it.
+  // --tree-list-row-gap is applied as half a padding-block on each row wrapper,
+  // not as gap on the list, so no standard property on the tree-list target
+  // maps onto it; a theme sets the var directly.
+  '--tree-list-indent',
+  '--_tree-indent',
+  '--tree-list-row-gap',
+  // Composed into a single box-shadow list on the card, so neither maps 1:1
+  // onto boxShadow — setting one through a derived entry would clobber the
+  // other.
+  '--_card-elevation',
+  '--_card-ring',
+  // The colour inside that composed ring, for a variant only a theme knows.
+  // It is one component of one shadow in the list, so no standard property
+  // maps onto it either — a theme sets it beside the fill it has to contrast.
+  '--selectable-card-ring-color',
+  // The spinner's ring is drawn as an SVG circle, so none of its four vars is
+  // a CSS property of the element carrying the theme target: `width` and
+  // `borderWidth` would name a box the ring is not, and a `color` mapping
+  // would take the label's text color with it. They are public vars a theme
+  // sets directly under a size- or shade-variant key.
+  '--spinner-diameter',
+  '--spinner-stroke-width',
+  '--spinner-color',
+  '--spinner-track-color',
+]);
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -261,19 +358,20 @@ describe('component CSS vars are documented and themeable', () => {
         return true;
       });
 
-      // Filter to only vars that look like they map to CSS properties
-      // (radius → borderRadius, padding → padding). Vars like
-      // --button-press-scale or --button-disabled-opacity are
-      // component-specific behaviors, not standard CSS property mappings.
-      const themeableVars = missingDerived.filter(v =>
-        /radius|padding/.test(v),
+      // Everything that is not explicitly classified as unmappable must have
+      // a derived[] entry. (This was a `/radius|padding/` name test, which
+      // exempted any var whose name lacked those words.)
+      const themeableVars = missingDerived.filter(
+        v => !VARS_WITHOUT_DERIVED_MAPPING.has(v),
       );
 
       expect(
         themeableVars,
         `${dir} has vars that should be themeable via derived[]: ${themeableVars.join(', ')}. ` +
           `Add derived[] entries in ${dir}.doc.mjs mapping standard CSS ` +
-          `properties (borderRadius, padding) to these internal vars.`,
+          `properties (borderRadius, padding) to these internal vars — or, if ` +
+          `no standard property maps onto them, add them to ` +
+          `VARS_WITHOUT_DERIVED_MAPPING with the reason.`,
       ).toEqual([]);
     });
   }
@@ -337,6 +435,21 @@ describe('getDerivedVars', () => {
     expect(getDerivedVars('unknown', 'borderRadius')).toEqual([]);
   });
 
+  it('resolves a deprecated key to the entries of the key that replaced it', () => {
+    // A theme written against the old spelling still selects the element (the
+    // component emits both classes), so its derived vars must still expand —
+    // otherwise the rule lands and the var half of it silently does nothing.
+    expect(getDerivedVars('hovercard', 'borderRadius')).toEqual(
+      getDerivedVars('hover-card', 'borderRadius'),
+    );
+    expect(getDerivedVars('textarea', 'paddingInline')).toEqual(
+      getDerivedVars('text-area', 'paddingInline'),
+    );
+    expect(getDerivedVars('progressbar-mark', 'width')).toEqual(
+      getDerivedVars('progress-bar-mark', 'width'),
+    );
+  });
+
   it('returns empty for unregistered property', () => {
     expect(getDerivedVars('card', 'color')).toEqual([]);
   });
@@ -347,4 +460,64 @@ describe('getDerivedVars', () => {
     expect(result[0].vars).toEqual(['--_textarea-inline-padding']);
     expect(result[0].replaces).toBe(true);
   });
+
+  it('marks progressbar-mark width and height as replacing the source property', () => {
+    for (const [property, varName] of [
+      ['width', '--_progressbar-mark-width'],
+      ['height', '--_progressbar-mark-height'],
+    ]) {
+      const result = getDerivedVars('progressbar-mark', property);
+      expect(result).toHaveLength(1);
+      expect(result[0].vars).toEqual([varName]);
+      expect(result[0].replaces).toBe(true);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Read check: a registered var nothing reads is a dead theming knob
+// ---------------------------------------------------------------------------
+
+/**
+ * Every source file under packages/core/src, concatenated once.
+ *
+ * `--_popover-radius` shipped documented and registered while `usePopover`
+ * hardcoded its radius, so `popover: {borderRadius}` set a var no element ever
+ * read. Sync between source, docs and registry cannot catch that: the three
+ * agreed with each other, and none of them required a reader.
+ */
+function readAllSource(dir: string): string {
+  let out = '';
+  for (const entry of readdirSync(dir, {withFileTypes: true})) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out += readAllSource(path);
+    } else if (
+      (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) &&
+      !entry.name.includes('.test.') &&
+      !entry.name.endsWith('.d.ts')
+    ) {
+      out += readFileSync(path, 'utf-8');
+    }
+  }
+  return out;
+}
+
+describe('registered derived vars are read by component styles', () => {
+  const source = readAllSource(SRC_DIR);
+
+  for (const [component, entries] of Object.entries(derivedVarRegistry)) {
+    for (const varName of entries.flatMap(e => e.vars ?? [])) {
+      it(`${component}: ${varName} is read via var()`, () => {
+        expect(
+          source.includes(`var(${varName})`) ||
+            source.includes(`var(${varName},`),
+          `${varName} is registered as the derived var for a CSS property on ` +
+            `\`${component}\`, but no component reads it. A theme setting that ` +
+            `property would write a var nothing consumes. Read it in the ` +
+            `element's StyleX styles, or drop the derived entry.`,
+        ).toBe(true);
+      });
+    }
+  }
 });

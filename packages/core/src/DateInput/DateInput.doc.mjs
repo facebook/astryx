@@ -146,7 +146,7 @@ export const docs = {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
       description:
-        'First day of week in the calendar popover. A number (0 = Sunday … 6 = Saturday) or a three-letter day name.',
+        'First day of week in the calendar popover. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
       default: '0',
     },
     {
@@ -155,6 +155,13 @@ export const docs = {
       description:
         "How the committed date value is displayed. Named values are reused from Timestamp's format vocabulary: 'date' shows 'Mar 21, 2026', 'date_long' shows 'March 21, 2026', 'date_weekday' shows 'Wed, Mar 21, 2026', 'system_date' shows '2026-03-21'. A function receives the ISO value and returns a custom string. Applies only to the committed value, never to text being typed.",
       default: "'date_long'",
+    },
+    {
+      name: 'nativePicker',
+      type: "'touch' | 'always' | 'never'",
+      description:
+        "Which surface draws the date picker. 'touch' (the default) hands a touch device to the browser/OS: the field becomes an input type=date and the platform draws the picker (the iOS wheel, the Android calendar dialog); 'always' does that wherever the browser supports input type=date; 'never' keeps Astryx's own pickers everywhere (the bottom-sheet picker on a finger, the calendar popover on a mouse). Use 'never' for a field that needs weekStartsOn, numberOfMonths or dateConstraints, none of which a native picker can express. format and placeholder still apply in native mode; min and max are forwarded, but a native picker may not show them (on iOS an out-of-range date can be selected and is refused on commit rather than greyed out).",
+      default: "'touch'",
     },
     {
       name: 'width',
@@ -173,7 +180,7 @@ export const docs = {
     targets: [
       {className: 'astryx-date-input', visualProps: ['size', 'status'], states: ['disabled']},
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-input-clear-icon'},
+      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
   usage: {
@@ -438,6 +445,13 @@ export const docsZh = {
       default: "'date_long'",
     },
     {
+      name: 'nativePicker',
+      type: "'touch' | 'always' | 'never'",
+      description:
+        "由哪个界面绘制日期选择器。'touch'（默认）在触摸设备上交给浏览器/操作系统：字段变为 input type=date，由平台绘制选择器（iOS 滚轮、Android 日历对话框）；'always' 在所有支持 input type=date 的浏览器上都这样做；'never' 始终使用 Astryx 自带的选择器（触摸设备用底部弹出选择器，鼠标设备用日历弹出层）。需要 weekStartsOn、numberOfMonths 或 dateConstraints 的字段应使用 'never'，原生选择器无法表达这些。原生模式下 format 和 placeholder 仍然生效；min 和 max 会传递给原生控件，但原生选择器可能不会显示这些限制（在 iOS 上仍可选中超出范围的日期，会在提交时被拒绝，而不是变灰）。",
+      default: "'touch'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -452,7 +466,7 @@ export const docsZh = {
         states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-input-clear-icon'},
+      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
 };
@@ -537,6 +551,8 @@ export const docsDense = {
     weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     format:
       "committed-value display: 'date_long' (default, March 21, 2026), 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Committed value only, not while typing.",
+    nativePicker:
+      "which surface draws the picker: 'touch' (default) = browser/OS on a coarse pointer, 'always', 'never' = Astryx's own everywhere. use 'never' for weekStartsOn/numberOfMonths/dateConstraints. format+placeholder still apply; min/max forwarded but not necessarily shown by the OS picker, refused on commit instead.",
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };
