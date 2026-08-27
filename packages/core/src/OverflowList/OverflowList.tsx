@@ -18,7 +18,14 @@
  * - /packages/cli/assets/templates/blocks/components/OverflowList/ (showcase blocks)
  */
 
-import {type ReactNode, type ReactElement, Children, useRef} from 'react';
+import {
+  type ReactNode,
+  type ReactElement,
+  Children,
+  useCallback,
+  useRef,
+  useState,
+} from 'react';
 import type {BaseProps} from '../BaseProps';
 import type {SpacingStep} from '../utils/types';
 import * as stylex from '@stylexjs/stylex';
@@ -306,6 +313,31 @@ export function OverflowList({
   // so the indicator renders at its maximum possible width.
   const measureIndicator = overflowRenderer?.(allItems);
 
+  // Re-run measurement when keyed children change without resizing the row.
+  // The measured key delays reporting until that measurement has committed.
+  // Lists without the callback skip all identity work.
+  const measurementKey = onOverflowChange
+    ? JSON.stringify({
+        children: childArray.map((child, index) => [index, child.key]),
+        gap,
+        minVisibleItems,
+        maxVisibleItems,
+        maxRows,
+        collapseFrom,
+        behavior,
+      })
+    : '';
+  const [measuredKey, setMeasuredKey] = useState(measurementKey);
+  const reportMeasureRef = useCallback(
+    (element: HTMLElement | null) => {
+      measureRef(element);
+      if (element) {
+        setMeasuredKey(measurementKey);
+      }
+    },
+    [measureRef, measurementKey],
+  );
+
   // Report after measurement, before paint, so a standing menu updates in the
   // same frame as the visible row. Keys distinguish membership and order while
   // suppressing callback-only or unrelated re-renders. The initial empty key
@@ -318,18 +350,22 @@ export function OverflowList({
   overflowItemsRef.current = overflowItems;
 
   useIsomorphicLayoutEffect(() => {
-    if (!onOverflowChange || reportedKeyRef.current === overflowKey) {
+    if (
+      !onOverflowChange ||
+      measuredKey !== measurementKey ||
+      reportedKeyRef.current === overflowKey
+    ) {
       return;
     }
     reportedKeyRef.current = overflowKey;
     onOverflowChange(overflowItemsRef.current);
-  }, [overflowKey, onOverflowChange]);
+  }, [measuredKey, measurementKey, overflowKey, onOverflowChange]);
 
   return (
     <>
       {/* Hidden measurement container */}
       <div
-        ref={measureRef}
+        ref={reportMeasureRef}
         aria-hidden="true"
         inert
         {...stylex.props(styles.measureContainer, gapStyles[gap])}>

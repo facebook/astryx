@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeAll, afterAll, vi} from 'vitest';
-import {render, screen, within, act} from '@testing-library/react';
+import {render, screen, within, act, waitFor} from '@testing-library/react';
 import {useState} from 'react';
 import {OverflowList} from './OverflowList';
 import type {OverflowItem} from './OverflowList';
@@ -315,6 +315,47 @@ describe('OverflowList', () => {
       expect(within(vis).getByText('A')).toBeInTheDocument();
       expect(within(vis).getByText('B')).toBeInTheDocument();
       expect(within(vis).queryByText('C')).not.toBeInTheDocument();
+    });
+
+    it('re-measures a same-count reorder without a callback', async () => {
+      const items = {
+        wide: (
+          <button type="button" data-w="200" key="wide">
+            Wide
+          </button>
+        ),
+        a: (
+          <button type="button" data-w="50" key="a">
+            A
+          </button>
+        ),
+        b: (
+          <button type="button" data-w="50" key="b">
+            B
+          </button>
+        ),
+      };
+      const {rerender} = render(
+        <OverflowList gap={0} data-w="150" data-testid="ov">
+          {items.wide}
+          {items.a}
+          {items.b}
+        </OverflowList>,
+      );
+      expect(visibleContainer()).toBeEmptyDOMElement();
+
+      rerender(
+        <OverflowList gap={0} data-w="150" data-testid="ov">
+          {items.a}
+          {items.b}
+          {items.wide}
+        </OverflowList>,
+      );
+
+      await waitFor(() => {
+        expect(visibleContainer()).toHaveTextContent('AB');
+      });
+      expect(visibleContainer()).not.toHaveTextContent('Wide');
     });
   });
 
@@ -747,6 +788,57 @@ describe('OverflowList', () => {
       );
       expect(onOverflowChange).toHaveBeenCalledTimes(3);
       expect(labelsOf(onOverflowChange)).toEqual(['D', 'B']);
+    });
+
+    it('reports one measured set when unequal-width items reorder', async () => {
+      const onOverflowChange = vi.fn();
+      const items = {
+        wide: (
+          <button type="button" data-w="200" key="wide">
+            Wide
+          </button>
+        ),
+        a: (
+          <button type="button" data-w="50" key="a">
+            A
+          </button>
+        ),
+        b: (
+          <button type="button" data-w="50" key="b">
+            B
+          </button>
+        ),
+      };
+      const {rerender} = render(
+        <OverflowList
+          gap={0}
+          data-w="150"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {items.wide}
+          {items.a}
+          {items.b}
+        </OverflowList>,
+      );
+      expect(indicesOf(onOverflowChange)).toEqual([0, 1, 2]);
+
+      rerender(
+        <OverflowList
+          gap={0}
+          data-w="150"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {items.a}
+          {items.b}
+          {items.wide}
+        </OverflowList>,
+      );
+
+      await waitFor(() => {
+        expect(visibleContainer()).toHaveTextContent('AB');
+      });
+      expect(onOverflowChange).toHaveBeenCalledTimes(2);
+      expect(indicesOf(onOverflowChange)).toEqual([2]);
     });
 
     it('re-measures same-count content changes with stable keys', () => {
