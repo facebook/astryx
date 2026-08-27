@@ -29,7 +29,7 @@ import {fileURLToPath} from 'node:url';
 
 import {capture, scout} from './lib/capture.mjs';
 import {analyzeTargeting, buildVerdict, compareCaptures} from './lib/compare.mjs';
-import {buildPlan, readStoryIndex} from './lib/plan.mjs';
+import {buildPlan, readStoryIndex, storiesInPackages} from './lib/plan.mjs';
 import {READ_TARGETS, emptyAccumulator, fold} from './lib/probe-reach.mjs';
 import {AXES, PROBE_TOKENS, READ_AXES} from './lib/probe-axes.mjs';
 import {renderReport} from './lib/report.mjs';
@@ -58,6 +58,8 @@ const sample = flag('sample') ? Number(flag('sample')) : null;
 const only = (flag('only') ?? '').split(',').filter(Boolean);
 /** For the `component` tier: the components a PR touched. */
 const components = (flag('components') ?? '').split(',').filter(Boolean);
+/** For the `theme-matrix` tier: only these shipped themes changed. */
+const matrixThemes = (flag('themes') ?? '').split(',').filter(Boolean);
 /**
  * Above this many shots the run declines instead of capturing.
  *
@@ -69,6 +71,36 @@ const components = (flag('components') ?? '').split(',').filter(Boolean);
  * report nobody can read.
  */
 const maxShots = flag('max-shots') ? Number(flag('max-shots')) : Infinity;
+/** Storybook package groups that own the stable visual baseline. */
+const storyPackages = (flag('story-packages') ?? config.stableStoryPackages.join(','))
+  .split(',')
+  .filter(Boolean);
+/** A trusted, exact shot list used only to recapture an accepted merged result. */
+const planFile = flag('plan-file');
+
+function readExactPlan(file) {
+  const shots = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
+  if (!Array.isArray(shots) || shots.length > 5000) {
+    throw new Error('Exact visual plan must contain at most 5000 trusted shots.');
+  }
+  const keys = new Set();
+  for (const shot of shots) {
+    if (
+      !/^[A-Za-z0-9._-]{1,240}$/.test(shot?.key ?? '') ||
+      typeof shot.storyId !== 'string' ||
+      !shot.storyId ||
+      typeof shot.theme !== 'string' ||
+      !shot.theme ||
+      !['light', 'dark'].includes(shot.mode) ||
+      !Array.isArray(shot.reasons)
+    ) {
+      throw new Error(`Exact visual plan contains an invalid shot: ${JSON.stringify(shot)}`);
+    }
+    if (keys.has(shot.key)) throw new Error(`Exact visual plan repeats ${shot.key}.`);
+    keys.add(shot.key);
+  }
+  return shots;
+}
 
 /**
  * Which stories the scout needs to look at: every story of a component some
@@ -90,11 +122,16 @@ function storiesToScout(stories, targets, themeOverrides) {
 
 /** @returns {Promise<import('./lib/plan.mjs').Shot[]>} */
 async function plan() {
+  if (planFile) return readExactPlan(planFile);
   const [targets, themeOverrides] = await Promise.all([
     loadThemingTargets(REPO_ROOT),
     loadThemeOverrides(REPO_ROOT, config.probeTheme),
   ]);
-  const stories = readStoryIndex(storybookDir, Object.keys(config.excludeStories));
+  const indexedStories = readStoryIndex(
+    storybookDir,
+    Object.keys(config.excludeStories),
+  );
+  const stories = storiesInPackages(indexedStories, storyPackages);
 
   let observations;
   if (!has('no-scout') && (tiers.includes('theme-matrix') || tiers.includes('probe'))) {
@@ -124,6 +161,7 @@ async function plan() {
     defaultTheme: config.defaultTheme,
     tiers,
     components,
+    matrixThemes,
     probeTheme: config.probeTheme,
   });
   // A sample is for trying the rig out, never for a gate run: it is taken
@@ -155,9 +193,16 @@ async function runCapture(shots) {
     },
   });
   manifest.context = {
+    // `sha` is the tested synthetic merge tree on pull_request runs. Keep the
+    // contributor's head and the base separately: acceptance binds to the head
+    // humans reviewed, while post-merge verification bridges to the final
+    // squash commit by comparing rendered hashes.
     sha: process.env.GITHUB_SHA ?? null,
+    headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
+    baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
     ref: process.env.GITHUB_REF ?? null,
     runId: process.env.GITHUB_RUN_ID ?? null,
+    runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
   };
   fs.writeFileSync(
     path.join(outDir, 'manifest.json'),
@@ -192,9 +237,23 @@ async function check() {
       status: 'skipped',
       generatedAt: new Date().toISOString(),
       reason: `${shots.length} shots exceeds the ${maxShots}-shot budget${components.length ? ` (${components.length} components touched)` : ''} — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
+      context: {
+        sha: process.env.GITHUB_SHA ?? null,
+        headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
+        baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
+        ref: process.env.GITHUB_REF ?? null,
+        runId: process.env.GITHUB_RUN_ID ?? null,
+        runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+        tiers,
+        scoped: components.length > 0,
+        components,
+      },
       counts: {total: shots.length, unchanged: 0, changed: 0, added: 0, removed: 0, failed: 0},
       components,
       changes: [],
+      added: [],
+      removed: [],
+      failures: [],
     };
     fs.mkdirSync(outDir, {recursive: true});
     fs.writeFileSync(path.join(outDir, 'verdict.json'), `${JSON.stringify(verdict, null, 2)}\n`);

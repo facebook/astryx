@@ -174,7 +174,7 @@ function unreadableTheme(repoRoot, name, built, error, rebuilt) {
 
 /**
  * @param {string} repoRoot
- * @returns {{excludeStories: Record<string, string>, viewport: {width: number, height: number}, settleMs: number, threshold: number, maxDiffPixels: number, defaultTheme: string, probeTheme: string, tiers: string[]}}
+ * @returns {{excludeStories: Record<string, string>, viewport: {width: number, height: number}, settleMs: number, threshold: number, maxDiffPixels: number, defaultTheme: string, probeTheme: string, stableStoryPackages: string[], tiers: string[]}}
  */
 export function loadConfig(repoRoot) {
   const defaults = {
@@ -185,6 +185,7 @@ export function loadConfig(repoRoot) {
     maxDiffPixels: 0,
     defaultTheme: 'neutral',
     probeTheme: 'probe',
+    stableStoryPackages: ['Core'],
     tiers: ['surface', 'theme-matrix', 'probe'],
   };
   const configPath = path.join(repoRoot, '.github/scripts/visual-gate/visual-gate.config.json');

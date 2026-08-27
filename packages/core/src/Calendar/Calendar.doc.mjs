@@ -78,7 +78,7 @@ export const docs = {
       name: 'minRangeSpan',
       type: 'number',
       description:
-        'Range mode: min days a range must span, both endpoints counted (2 forbids a single-day range). Default 1.',
+        'Range mode: min days a range must span, both endpoints counted (2 forbids a single-day range). Clicking the start again commits a one-day range when allowed, or cancels the in-progress selection when the minimum is longer. Default 1.',
     },
     {
       name: 'focusDate',
@@ -156,7 +156,7 @@ export const docsZh = {
     {name: 'max', type: 'ISODateString', description: '可选择的最晚日期。'},
     {name: 'dateConstraints', type: 'Array<(date: Date) => boolean>', description: '自定义约束函数。'},
     {name: 'maxRangeSpan', type: 'number', description: '范围模式：范围最多可跨越的天数，含首尾两端（7 = 7 天窗口）。选定起始日后限制窗口大小。'},
-    {name: 'minRangeSpan', type: 'number', description: '范围模式：范围最少需跨越的天数，含首尾两端（2 表示禁止单日范围）。默认为 1。'},
+    {name: 'minRangeSpan', type: 'number', description: '范围模式：范围最少需跨越的天数，含首尾两端（2 表示禁止单日范围）。再次点击开始日期时，若最小范围允许则提交单日范围；否则取消进行中的选择。默认为 1。'},
     {name: 'focusDate', type: 'ISODateString', description: '受控可见月份。未设置时，日历打开时显示已选日期所在月份；若无选中值，则显示今天，并将其限制在 min/max 范围内。'},
     {name: 'onFocusDateChange', type: '(focusDate: ISODateString) => void', description: '导航回调函数。'},
     {name: 'handleRef', type: 'React.Ref<CalendarHandle>', description: '日历导航的命令式句柄，包括 navigateTo()。'},
@@ -221,7 +221,7 @@ export const docsDense = {
     max: 'maximum selectable date',
     dateConstraints: 'custom constraint fns',
     maxRangeSpan: 'range mode: max days a range may span, both ends counted (7 = 7-day window)',
-    minRangeSpan: 'range mode: min days a range must span, both ends counted (default 1)',
+    minRangeSpan: 'range mode: min days a range must span, both ends counted; repeated start click commits one day when allowed, otherwise cancels (default 1)',
     focusDate: 'controlled visible month (default: selected date, else today clamped into min/max)',
     onFocusDateChange: 'navigation callback',
     handleRef: 'imperative navigation handle',

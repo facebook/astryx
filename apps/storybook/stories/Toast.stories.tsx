@@ -9,10 +9,12 @@ import type {
   ToastOptions,
   ToastType,
 } from '@astryxdesign/core/Toast';
+import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Card} from '@astryxdesign/core/Card';
 import {Stack} from '@astryxdesign/core/Stack';
+import {Heading} from '@astryxdesign/core/Text';
 import {Dialog} from '@astryxdesign/core/Dialog';
 import {Text} from '@astryxdesign/core/Text';
 import {
@@ -684,6 +686,161 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
     </Stack>
   );
 }
+
+// =============================================================================
+// Theming
+// =============================================================================
+
+/**
+ * `toast` is the card — the surface the toast paints. `base` restyles every
+ * toast; `type:error` restyles just the error one, because `type` is the
+ * toast's visual prop and the card renders it as a `.error` class.
+ *
+ * That one target covers more of the toast than it looks like it should:
+ *
+ * - **Inherited properties reach the content.** Font, size and letter-spacing
+ *   set on `toast` cascade into the body and `endContent`. There is no
+ *   `toast-body` target and none is needed.
+ * - **Text colour looks after itself.** A toast measures the surface it just
+ *   painted and picks the side that reads on it, so restyling the background
+ *   is enough — the body, the dismiss glyph and `endContent` follow. Below,
+ *   the cream card gets dark text and the deep red one light text, from
+ *   nothing but the two `backgroundColor` rules.
+ *
+ * `onDark` / `onLight` are for overriding that choice, not for making it. They
+ * apply only when the surface actually resolves to that side, so a toast whose
+ * ambient text already reads gets neither.
+ *
+ * Wrap the viewport, not just the buttons: theme CSS is `@scope`d and the
+ * toast renders inside the viewport.
+ */
+const brandToastTheme = defineTheme({
+  name: 'toast-brand-demo',
+  components: {
+    toast: {
+      base: {
+        backgroundColor: '#FFF4D6',
+        borderRadius: 'var(--radius-full)',
+        paddingInline: 'var(--spacing-6)',
+        boxShadow: 'var(--shadow-high)',
+        fontFamily: 'var(--font-family-code)',
+      },
+      'type:error': {
+        backgroundColor: '#5C0A18',
+      },
+    },
+  },
+});
+
+/**
+ * Default and themed, side by side, in both types. These are inline `Toast`
+ * elements rather than fired ones so both states stay on screen together;
+ * `ThemedToastLive` shows the same theme driving real `useToast()` calls.
+ */
+export const ThemedToast: StoryObj = {
+  render: function ThemedToastStory() {
+    return (
+      <Stack direction="horizontal" gap={4} wrap="wrap">
+        <ToastSpecimens label="Default" />
+        <BrandToastScope>
+          <ToastSpecimens label="brandToastTheme" />
+        </BrandToastScope>
+      </Stack>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Pill radius, wider inline padding, the cream surface and the ' +
+          'monospace body all come from `components.toast.base`; the deep red ' +
+          'is `type:error`. Neither rule sets a text colour.',
+      },
+    },
+  },
+};
+
+/**
+ * The copyable shape: wrap the viewport in the theme and fire toasts normally.
+ */
+export const ThemedToastLive: StoryObj = {
+  render: function ThemedToastLiveStory() {
+    return (
+      <BrandToastScope>
+        <ToastViewport>
+          <ThemedToastTriggers />
+        </ToastViewport>
+      </BrandToastScope>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Same theme, real toasts. The viewport is inside `Theme`, so the ' +
+          'scoped theme CSS reaches the toasts it renders.',
+      },
+    },
+  },
+};
+
+/**
+ * An app names its colour mode once, at its root `Theme`. A nested `Theme`
+ * defaults to `mode="system"`, which follows the OS rather than the mode the
+ * toolbar picked — and Toast reads that mode to choose its inverted-surface
+ * tokens, so an unthreaded nested theme renders dark text on a dark card.
+ */
+function BrandToastScope({children}: {children: ReactNode}) {
+  const {mode} = useTheme();
+  return (
+    <Theme theme={brandToastTheme} mode={mode}>
+      {children}
+    </Theme>
+  );
+}
+
+function ToastSpecimens({label}: {label: string}) {
+  return (
+    <Stack direction="vertical" gap={2}>
+      <Heading level={4}>{label}</Heading>
+      <Toast
+        type="info"
+        body="Your changes have been saved."
+        isAutoHide={false}
+        autoHideDuration={5000}
+        onDismiss={noop}
+      />
+      <Toast
+        type="error"
+        body="Could not reach the server."
+        isAutoHide={false}
+        autoHideDuration={5000}
+        onDismiss={noop}
+      />
+    </Stack>
+  );
+}
+
+function ThemedToastTriggers() {
+  const toast = useToast();
+  return (
+    <Stack direction="horizontal" gap={2}>
+      <Button
+        label="Themed info toast"
+        onClick={() => toast({body: 'Your changes have been saved.'})}
+      />
+      <Button
+        label="Themed error toast"
+        variant="destructive"
+        onClick={() =>
+          toast({body: 'Could not reach the server.', type: 'error'})
+        }
+      />
+    </Stack>
+  );
+}
+
+function noop() {}
 
 // =============================================================================
 // Custom content (renderContent)
