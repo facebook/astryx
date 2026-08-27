@@ -31,6 +31,8 @@ import {
   within,
 } from '@testing-library/react';
 import React, {useState} from 'react';
+import {hydrateRoot} from 'react-dom/client';
+import {renderToString} from 'react-dom/server';
 import {readFileSync} from 'node:fs';
 import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {Button} from '../Button';
@@ -720,6 +722,43 @@ describe('Toast native motion contract', () => {
 });
 
 describe('Toast live-region fallback semantics', () => {
+  it('server-renders and hydrates one dismiss control for custom content', async () => {
+    const tree = (
+      <Toast
+        type="error"
+        body="Upload failed"
+        isAutoHide={false}
+        autoHideDuration={5000}
+        onDismiss={() => {}}
+        renderContent={({body, DismissButton}) => (
+          <div>
+            {body}
+            <DismissButton />
+          </div>
+        )}
+      />
+    );
+    const serverHTML = renderToString(tree);
+    expect(serverHTML.match(/Dismiss notification/g)).toHaveLength(1);
+
+    const container = document.createElement('div');
+    container.innerHTML = serverHTML;
+    document.body.appendChild(container);
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    await act(async () => {
+      root = hydrateRoot(container, tree);
+    });
+    expect(
+      within(container).getAllByRole('button', {
+        name: 'Dismiss notification',
+      }),
+    ).toHaveLength(1);
+    await act(async () => {
+      root?.unmount();
+    });
+    container.remove();
+  });
+
   it('keeps standalone info Toast content in a polite status region', () => {
     render(
       <Toast

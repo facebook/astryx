@@ -127,8 +127,9 @@ export interface ToastProps {
   isExiting?: boolean;
   onDismiss: (reason: ToastDismissReason) => void;
   /**
-   * Replaces the content of the toast's card — see `ToastViewport`'s
-   * `renderContent`, which is where an app normally sets this.
+   * Replaces the content of this toast's card with your own layout. Direct
+   * `Toast` renders use the same contract as `ToastOptions.renderContent`;
+   * apps normally set it per toast in the options passed to `useToast()`.
    */
   renderContent?: ToastContentRenderFn;
 }

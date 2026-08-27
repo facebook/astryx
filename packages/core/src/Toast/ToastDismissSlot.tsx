@@ -26,7 +26,7 @@
  * - /packages/core/src/Toast/types.ts (ToastContentRenderProps.DismissButton)
  */
 
-import {createContext, use} from 'react';
+import {createContext, use, useSyncExternalStore} from 'react';
 import type {ReactNode} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {devWarn} from '../utils/devWarning';
@@ -43,6 +43,13 @@ ToastDismissSlotContext.displayName = 'ToastDismissSlotContext';
 
 export const ToastDismissSlotProvider = ToastDismissSlotContext.Provider;
 
+// `useSyncExternalStore` gives this leaf a hydration-safe server/client split
+// without setting state in an effect: false in server output and hydration's
+// first render, true in ordinary client rendering and immediately afterwards.
+const subscribeToClient = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 /**
  * The toast's close, placed by a `renderContent` layout.
  *
@@ -53,11 +60,21 @@ export const ToastDismissSlotProvider = ToastDismissSlotContext.Provider;
  */
 export function DismissButton(): ReactNode {
   const slot = use(ToastDismissSlotContext);
-  // The slot owns presence, not Toast's render cycle. Register on mount and
-  // unregister on unmount, so a nested layout can toggle DismissButton from
-  // its own state without rerendering Toast — the fallback follows that child
-  // immediately rather than remembering a stale claim from an earlier commit.
-  useIsomorphicLayoutEffect(() => slot?.register(), [slot]);
+  // Start absent on the server and on hydration's first render, where the
+  // provider's corner fallback is the one close in the markup. The external-
+  // store snapshots switch this leaf to the placed control on the client
+  // without a synchronous setState in an effect.
+  const isClient = useSyncExternalStore(
+    subscribeToClient,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
+  useIsomorphicLayoutEffect(() => {
+    if (slot == null) {
+      return;
+    }
+    return slot.register();
+  }, [slot]);
   if (slot == null) {
     devWarn(
       'Toast',
@@ -66,7 +83,7 @@ export function DismissButton(): ReactNode {
     );
     return null;
   }
-  return slot.button;
+  return isClient ? slot.button : null;
 }
 
 DismissButton.displayName = 'Toast.DismissButton';
