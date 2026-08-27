@@ -1,29 +1,44 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 const MAINTAINER_PERMISSIONS = new Set(['maintain', 'admin']);
-const REPO_OWNER_ROLE = 'Repo Owner';
+
+function isCapabilityObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
 
 export function visualAcceptanceIdentity(permissionLevel = {}) {
-  const permission = permissionLevel.permission ?? 'none';
-  const effectivePermission = permissionLevel.user?.permissions?.admin
-    ? 'admin'
-    : permissionLevel.user?.permissions?.maintain
-      ? 'maintain'
-      : permission;
+  const capabilities = permissionLevel.user?.permissions;
+  const effectivePermission = isCapabilityObject(capabilities)
+    ? capabilities.admin === true
+      ? 'admin'
+      : capabilities.maintain === true
+        ? 'maintain'
+        : 'none'
+    : 'none';
   return {
-    permission,
-    roleName: permissionLevel.role_name ?? null,
+    permission:
+      typeof permissionLevel.permission === 'string'
+        ? permissionLevel.permission
+        : 'none',
+    roleName:
+      typeof permissionLevel.role_name === 'string'
+        ? permissionLevel.role_name
+        : null,
     effectivePermission,
   };
 }
 
-export function isVisualAcceptanceMaintainer({
-  permission,
-  roleName,
-  effectivePermission = permission,
+export function isVisualAcceptanceEndpointMaintainer({
+  effectivePermission,
 } = {}) {
-  return (
-    MAINTAINER_PERMISSIONS.has(effectivePermission) ||
-    roleName === REPO_OWNER_ROLE
+  return MAINTAINER_PERMISSIONS.has(effectivePermission);
+}
+
+export function isVisualAcceptanceRecordMaintainer({
+  permission,
+  effectivePermission,
+} = {}) {
+  return MAINTAINER_PERMISSIONS.has(
+    effectivePermission === undefined ? permission : effectivePermission,
   );
 }

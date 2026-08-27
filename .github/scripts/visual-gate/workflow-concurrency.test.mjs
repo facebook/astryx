@@ -41,6 +41,10 @@ describe('visual acceptance workflow concurrency', () => {
       value.indexOf('  authorize:'),
       value.indexOf('  accept:'),
     );
+    const authorizeCheckout = authorize.slice(
+      authorize.indexOf('      - name: Checkout trusted default-branch code'),
+      authorize.indexOf('      - name: Authorize and resolve the decision'),
+    );
     const accept = value.slice(value.indexOf('  accept:'));
 
     expect(initialize).toContain(
@@ -57,8 +61,11 @@ describe('visual acceptance workflow concurrency', () => {
     expect(initialize).toContain("'No stable visual scope.'");
     expect(authorize).not.toContain(': write');
     expect(authorize).toContain('actions/checkout@v7');
+    expect(authorizeCheckout).not.toContain('ref:');
     expect(authorize).toContain('visualAcceptanceIdentity(response.data)');
-    expect(authorize).toContain('isVisualAcceptanceMaintainer(identity)');
+    expect(authorize).toContain(
+      'isVisualAcceptanceEndpointMaintainer(identity)',
+    );
     expect(authorize).toContain(
       "core.setOutput('effective_permission', identity.effectivePermission)",
     );

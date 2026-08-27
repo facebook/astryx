@@ -81,6 +81,7 @@ function acceptanceFlags(overrides = {}) {
     approver: 'maintainer',
     'approver-id': 99,
     permission: 'maintain',
+    'effective-permission': 'maintain',
     'comment-id': 1234,
     reason: 'The new radius matches the approved component design.',
     ...overrides,
@@ -245,7 +246,7 @@ describe('visual acceptance', () => {
     );
   });
 
-  it('accepts a repository owner and records the reported permission and role', () => {
+  it('accepts effective maintain capability and records owner provenance', () => {
     run(
       'accept',
       acceptanceFlags({
@@ -301,13 +302,46 @@ describe('visual acceptance', () => {
     },
   );
 
+  it('rejects a legacy write record without effective capability data', () => {
+    run(
+      'accept',
+      acceptanceFlags({
+        permission: 'write',
+        'effective-permission': 'maintain',
+      }),
+    );
+    const record = JSON.parse(fs.readFileSync(acceptanceFile(), 'utf8'));
+    delete record.decision.roleName;
+    delete record.decision.effectivePermission;
+    writeJSON(acceptanceFile(), record);
+    expect(fail('state', {pages, pr: 42, head: HEAD})).toMatch(
+      /acceptance record is invalid/,
+    );
+  });
+
   it('requires an explanatory reason and maintainer permission', () => {
     expect(fail('accept', acceptanceFlags({reason: 'intentional...'}))).toMatch(
       /reason must explain/,
     );
-    expect(fail('accept', acceptanceFlags({permission: 'write'}))).toMatch(
-      /maintain\/admin/,
-    );
+    expect(
+      fail(
+        'accept',
+        acceptanceFlags({
+          permission: 'write',
+          'effective-permission': 'write',
+          'role-name': 'Repo Owner',
+        }),
+      ),
+    ).toMatch(/effective maintain\/admin/);
+    expect(
+      fail(
+        'accept',
+        acceptanceFlags({
+          permission: 'write',
+          'effective-permission': 'write',
+        }),
+      ),
+    ).toMatch(/effective maintain\/admin/);
   });
 
   it('binds acceptance to the exact reviewed run attempt', () => {

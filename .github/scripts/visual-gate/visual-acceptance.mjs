@@ -14,7 +14,10 @@ import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
 
-import {isVisualAcceptanceMaintainer} from './authorization.mjs';
+import {
+  isVisualAcceptanceEndpointMaintainer,
+  isVisualAcceptanceRecordMaintainer,
+} from './authorization.mjs';
 import {readStoryIndex, shotKey, storiesInPackages} from './lib/plan.mjs';
 
 const args = process.argv.slice(2);
@@ -277,7 +280,7 @@ function accept() {
   const approver = flag('approver') ?? '';
   const approverId = Number(flag('approver-id'));
   const permission = flag('permission') ?? '';
-  const effectivePermission = flag('effective-permission') ?? permission;
+  const effectivePermission = flag('effective-permission') ?? 'none';
   const roleName = flag('role-name');
   const commentId = Number(flag('comment-id'));
   const reason = validateReason(flag('reason'));
@@ -285,14 +288,8 @@ function accept() {
   validateIdentity(pr, head);
   if (!approver || !Number.isSafeInteger(approverId) || approverId <= 0)
     fail('invalid approver');
-  if (
-    !isVisualAcceptanceMaintainer({
-      permission,
-      effectivePermission,
-      roleName,
-    })
-  ) {
-    fail('approver must have maintain/admin permission or the Repo Owner role');
+  if (!isVisualAcceptanceEndpointMaintainer({effectivePermission})) {
+    fail('approver must have effective maintain/admin permission');
   }
   if (!Number.isSafeInteger(commentId) || commentId <= 0)
     fail('invalid comment id');
@@ -479,10 +476,9 @@ function validateAcceptance(value, expected = {}) {
     !value.decision?.approver ||
     !Number.isSafeInteger(value.decision?.approverId) ||
     value.decision.approverId <= 0 ||
-    !isVisualAcceptanceMaintainer({
+    !isVisualAcceptanceRecordMaintainer({
       permission: value.decision?.permission,
       effectivePermission: value.decision?.effectivePermission,
-      roleName: value.decision?.roleName,
     }) ||
     !Number.isSafeInteger(value.decision?.commentId) ||
     value.decision.commentId <= 0 ||

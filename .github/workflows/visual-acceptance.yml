@@ -127,7 +127,7 @@ jobs:
           script: |
             const {pathToFileURL} = require('node:url');
             const {
-              isVisualAcceptanceMaintainer,
+              isVisualAcceptanceEndpointMaintainer,
               visualAcceptanceIdentity,
             } = await import(
               pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/visual-gate/authorization.mjs`).href,
@@ -186,7 +186,7 @@ jobs:
             } catch (error) {
               if (error.status !== 404) throw error;
             }
-            if (!isVisualAcceptanceMaintainer(identity)) {
+            if (!isVisualAcceptanceEndpointMaintainer(identity)) {
               refuse('only a repository maintainer may accept stable visual changes.');
               return;
             }
