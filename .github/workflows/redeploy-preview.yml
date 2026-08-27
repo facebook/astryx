@@ -124,9 +124,7 @@ jobs:
             mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}
             cp -r storybook-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
             mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
-            # Skip sandbox/template-assets/: 125MB per preview that no page
-            # loads anyway (templates request root-absolute /template-assets/*,
-            # outside the basePath) — 41 copies overflowed the Pages artifact.
+            # Every preview points at the one shared main-sandbox asset copy.
             find sandbox-dist -mindepth 1 -maxdepth 1 ! -name template-assets \
               -exec cp -r {} /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/ \;
 

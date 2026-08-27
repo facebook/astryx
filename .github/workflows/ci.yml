@@ -338,7 +338,7 @@ jobs:
       - name: Build core package
         run: pnpm build
 
-      - name: Compute sandbox preview path
+      - name: Compute sandbox preview paths
         id: urls
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
@@ -346,8 +346,11 @@ jobs:
           SHORT_HASH="${COMMIT_HASH:0:7}"
           REPO_NAME="${{ github.event.repository.name }}"
 
-          echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
-          echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox" >> $GITHUB_OUTPUT
+          {
+            echo "short_hash=${SHORT_HASH}"
+            echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox"
+            echo "template_assets_base_path=/${REPO_NAME}/sandbox/template-assets"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Cache Next.js build
         uses: actions/cache@v6
@@ -378,7 +381,11 @@ jobs:
           # Built without the /<repo> prefix, the sandbox's root-absolute asset URLs
           # drop that segment and 404 — breaking all styles/JS on the preview.
           SANDBOX_BASE_PATH: ${{ steps.urls.outputs.sandbox_base_path }}
+          SANDBOX_TEMPLATE_ASSETS_BASE_PATH: ${{ steps.urls.outputs.template_assets_base_path }}
           NODE_OPTIONS: '--max-old-space-size=8192'
+
+      - name: Remove shared assets from preview artifact
+        run: rm -rf apps/sandbox/out/template-assets
 
       - name: Upload Sandbox artifact
         uses: actions/upload-artifact@v7

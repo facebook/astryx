@@ -154,15 +154,13 @@ jobs:
           fi
 
           # ----- Drop template-assets from previews -----
-          # deploy-preview.yml no longer ships sandbox/template-assets/ into a
-          # preview: 125MB of demo media that no preview page ever requests
-          # (templates use the root-absolute /template-assets/*, outside the
-          # preview basePath). Sweep the copies earlier deploys left behind.
+          # Every preview uses the one shared /sandbox/template-assets copy.
+          # Sweep duplicate copies left by earlier deploys.
           if [ -d "pr" ]; then
             TA_PURGED=0
             for ta in pr/*/sandbox/template-assets; do
               [ -d "$ta" ] || continue
-              echo "  DELETE ${ta} (unused preview media)"
+              echo "  DELETE ${ta} (duplicate preview copy)"
               if [ "$DRY_RUN" != "true" ]; then
                 git rm -rf --quiet "$ta"
               fi
