@@ -2344,6 +2344,55 @@ describe('Selector', () => {
   });
 });
 
+describe('Selector caller-supplied id', () => {
+  it('names the listbox with the id the caller put on the trigger', () => {
+    render(<Selector label="Fruit" options={OPTIONS} id="fruit-picker" />);
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveAttribute('id', 'fruit-picker');
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
+  });
+
+  it('names the search-variant listbox with the caller id', () => {
+    render(
+      <Selector label="Fruit" options={OPTIONS} id="fruit-picker" hasSearch />,
+    );
+
+    const trigger = document.getElementById('fruit-picker');
+    expect(trigger?.tagName).toBe('BUTTON');
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
+  });
+
+  it('points the field label at the caller id', () => {
+    render(<Selector label="Fruit" options={OPTIONS} id="fruit-picker" />);
+
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+    expect(trigger).toHaveAttribute('id', 'fruit-picker');
+    expect(screen.getByLabelText('Fruit')).toBe(trigger);
+  });
+
+  it('generates the trigger id when the caller supplies none', () => {
+    render(<Selector label="Fruit" options={OPTIONS} />);
+
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+    expect(trigger.id).not.toBe('');
+    expect(screen.getByLabelText('Fruit')).toBe(trigger);
+
+    const labelledBy = screen
+      .getByRole('listbox', h)
+      .getAttribute('aria-labelledby');
+    expect(document.getElementById(labelledBy!)).toBe(trigger);
+  });
+});
+
 describe('Selector statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(

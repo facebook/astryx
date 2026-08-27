@@ -900,6 +900,9 @@ importers:
         specifier: '>=19'
         version: 19.2.7
     devDependencies:
+      '@astryxdesign/cli':
+        specifier: 0.5.0
+        version: link:../../cli
       rimraf:
         specifier: ^6.0.1
         version: 6.1.3

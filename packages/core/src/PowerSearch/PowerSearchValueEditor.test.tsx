@@ -182,6 +182,70 @@ describe('StringEditor (#1103)', () => {
   });
 });
 
+describe('numeric editor commit timing', () => {
+  it('saves the committed number when Enter finishes the edit', () => {
+    const onChange = vi.fn();
+    const onEnter = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'integer'}}
+        filterValue={{type: 'integer', value: 5}}
+        onChange={onChange}
+        onEnter={onEnter}
+        config={stubConfig}
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+    fireEvent.focus(input);
+    fireEvent.input(input, {target: {value: '42'}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(onChange).toHaveBeenLastCalledWith(
+      {type: 'integer', value: 42},
+      true,
+    );
+    expect(onEnter).not.toHaveBeenCalled();
+  });
+
+  it('does not save an invalid numeric draft on Enter', () => {
+    const onChange = vi.fn();
+    const onEnter = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'integer'}}
+        filterValue={{type: 'integer', value: 5}}
+        onChange={onChange}
+        onEnter={onEnter}
+        config={stubConfig}
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+    fireEvent.focus(input);
+    fireEvent.input(input, {target: {value: '1·234'}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onEnter).not.toHaveBeenCalled();
+    expect(input).toHaveValue('1·234');
+  });
+
+  it('keeps the existing Enter callback when there is no pending edit', () => {
+    const onEnter = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'float'}}
+        filterValue={{type: 'float', value: 1.5}}
+        onChange={() => {}}
+        onEnter={onEnter}
+        config={stubConfig}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'Enter'});
+    expect(onEnter).toHaveBeenCalledTimes(1);
+  });
+});
+
 // =============================================================================
 // #1106 — EntityListEditor drops photo, no renderItem
 // =============================================================================

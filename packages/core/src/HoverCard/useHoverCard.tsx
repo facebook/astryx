@@ -202,7 +202,10 @@ export interface HoverCardReturn {
 
   /**
    * Whether the hover card is currently open.
-   * Useful for driving `aria-expanded` on the trigger.
+   * Useful for driving `aria-expanded` on the trigger — but only when the
+   * trigger's role permits it (`button`, `link`, `combobox`, …). On a role-less
+   * trigger `aria-expanded` is invalid; use `aria-haspopup`/`aria-controls`
+   * alone there.
    */
   isOpen: boolean;
 

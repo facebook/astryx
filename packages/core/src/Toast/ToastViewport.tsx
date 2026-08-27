@@ -2,6 +2,18 @@
 
 'use client';
 
+/**
+ * @file ToastViewport.tsx
+ * @input Uses React state/effects, ToastContext, useAnnounce, viewport tokens,
+ *   and placement-derived motion variables
+ * @output Exports the ToastViewport provider, stack, live announcement dispatch,
+ *   focus handoff, safe-area-aware edge gutters, and motion context
+ * @position Core provider/imperative viewport for useToast()
+ *
+ * SYNC: When placement, stacking, focus, announcement, or safe-area behavior
+ *   changes, update ToastViewport.test.tsx, Toast.doc.mjs, and Toast.stories.tsx.
+ */
+
 import {
   isValidElement,
   useCallback,
@@ -22,13 +34,30 @@ import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
 import {useTranslator} from '../i18n';
 
+const SAFE_AREA_INLINE_START = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-left, 0px))`;
+const SAFE_AREA_INLINE_END = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-right, 0px))`;
+const SAFE_AREA_BLOCK_START = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-top, 0px))`;
+const SAFE_AREA_BLOCK_END = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-bottom, 0px))`;
+const TOAST_EDGE_DRIFT = spacingVars['--spacing-2'];
+const TOAST_EDGE_DRIFT_NEGATIVE = `calc(-1 * ${TOAST_EDGE_DRIFT})`;
+
 const styles = stylex.create({
   viewport: {
     position: 'fixed',
     zIndex: 500,
     display: 'flex',
+    boxSizing: 'border-box',
     flexDirection: 'column',
-    padding: spacingVars['--spacing-4'],
+    paddingBlockStart: SAFE_AREA_BLOCK_START,
+    paddingBlockEnd: SAFE_AREA_BLOCK_END,
+    paddingInlineStart: {
+      default: SAFE_AREA_INLINE_START,
+      ':is([dir="rtl"] *)': SAFE_AREA_INLINE_END,
+    },
+    paddingInlineEnd: {
+      default: SAFE_AREA_INLINE_END,
+      ':is([dir="rtl"] *)': SAFE_AREA_INLINE_START,
+    },
     pointerEvents: 'none',
     // Reset popover styles — the popover attribute puts us in the top
     // layer (above dialogs), but we don't want its default styles.
@@ -40,23 +69,28 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     overflow: 'visible',
   },
-  bottomEnd: {bottom: 0, insetInlineEnd: 0, alignItems: 'flex-end'},
-  bottomStart: {bottom: 0, insetInlineStart: 0, alignItems: 'flex-start'},
+  viewportInlineSpan: {
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
+  },
+  bottomEnd: {bottom: 0, alignItems: 'flex-end'},
+  bottomStart: {bottom: 0, alignItems: 'flex-start'},
   topEnd: {
     top: 0,
-    insetInlineEnd: 0,
     alignItems: 'flex-end',
     flexDirection: 'column-reverse',
   },
   topStart: {
     top: 0,
-    insetInlineStart: 0,
     alignItems: 'flex-start',
     flexDirection: 'column-reverse',
   },
   toastWrapper: {
     pointerEvents: 'auto',
     display: 'grid',
+    width: '100%',
+    maxWidth: 400,
+    minWidth: 0,
     gridTemplateRows: '1fr',
     transitionProperty: 'grid-template-rows, padding',
     transitionDuration: {
@@ -69,23 +103,33 @@ const styles = stylex.create({
       paddingBlockEnd: 0,
     },
   },
-  // The inter-toast gap is padding on each toast rather than `gap` on the
-  // viewport so it can animate alongside gridTemplateRows on entry and exit.
-  // That makes it the toast's own trailing space, so the toast at the visual
-  // bottom of the stack has to give it up — otherwise it stacks on top of the
-  // viewport's own padding. Which child that is flips with the flex direction
-  // the position sets.
+  toastWrapperFromBottom: {
+    '--_toast-slide-y': TOAST_EDGE_DRIFT,
+  },
+  toastWrapperFromTop: {
+    '--_toast-slide-y': TOAST_EDGE_DRIFT_NEGATIVE,
+  },
+  // The inter-toast gap is padding on each wrapper so it collapses with the
+  // grid track. The wrapper nearest the viewport edge drops that padding; the
+  // child flips because top stacks use column-reverse.
   toastWrapperGap: {
-    paddingBlockEnd: {default: spacingVars['--spacing-3'], ':last-child': 0},
+    paddingBlockEnd: {default: spacingVars['--spacing-2'], ':last-child': 0},
   },
   toastWrapperGapReversed: {
-    paddingBlockEnd: {default: spacingVars['--spacing-3'], ':first-child': 0},
+    paddingBlockEnd: {default: spacingVars['--spacing-2'], ':first-child': 0},
   },
   toastWrapperExiting: {
     gridTemplateRows: '0fr',
     paddingBlockEnd: 0,
   },
   toastWrapperInner: {
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+    minHeight: 0,
+    // Required for the 1fr -> 0fr exit collapse to hide the shrinking Toast.
+    // This preserves main's paint containment; browser-chrome behavior is not
+    // changed or claimed by this responsive-layout fix.
     overflow: 'hidden',
   },
 });
@@ -115,6 +159,7 @@ function getNodeText(node: ReactNode): string {
 
 export interface ToastViewportProps {
   position?: ToastPosition;
+  /** Maximum number of visible toasts. @default 5 */
   maxVisible?: number;
   inset?: {top?: number; bottom?: number; start?: number; end?: number};
   /**
@@ -352,6 +397,7 @@ export function ToastViewport({
   );
 
   const visibleToasts = toasts.slice(-maxVisible);
+
   const insetStyle: React.CSSProperties = {};
   if (inset?.top) {
     insetStyle.top = inset.top;
@@ -429,6 +475,9 @@ export function ToastViewport({
           ? styles.bottomStart
           : styles.bottomEnd;
   const isReversed = position === 'topEnd' || position === 'topStart';
+  const toastWrapperPositionStyle = isReversed
+    ? styles.toastWrapperFromTop
+    : styles.toastWrapperFromBottom;
   const gapStyle = isReversed
     ? styles.toastWrapperGapReversed
     : styles.toastWrapperGap;
@@ -438,15 +487,18 @@ export function ToastViewport({
       {children}
       <div
         ref={viewportRef}
-        role="region"
-        aria-label={t('@astryx.toast.viewport')}
-        tabIndex={-1}
+        role={hasToasts ? 'region' : undefined}
+        aria-label={hasToasts ? t('@astryx.toast.viewport') : undefined}
+        tabIndex={hasToasts ? -1 : undefined}
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.
         popover={isTopLayer ? 'manual' : undefined}
-        {...mergeProps(stylex.props(styles.viewport, posStyle), {
-          style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
-        })}>
+        {...mergeProps(
+          stylex.props(styles.viewport, styles.viewportInlineSpan, posStyle),
+          {
+            style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
+          },
+        )}>
         {visibleToasts.map(entry => {
           const o = entry.options;
           const type = o.type ?? 'info';
@@ -459,6 +511,7 @@ export function ToastViewport({
               data-toast-id={entry.id}
               {...stylex.props(
                 styles.toastWrapper,
+                toastWrapperPositionStyle,
                 gapStyle,
                 isExiting && styles.toastWrapperExiting,
               )}

@@ -6,8 +6,7 @@ export const doc = {
   name: 'Settings Dialog',
   displayName: 'Settings Dialog',
   description:
-    'Account settings in a modal dialog with sidebar navigation and multi-section content',
+    'Responsive account settings dialog with searchable navigation, grouped controls, live appearance previews, and configurable keyboard shortcuts',
   isReady: true,
-  isHiddenFromOverview: true,
   category: 'Settings - Dialog',
 };

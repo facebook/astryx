@@ -19,7 +19,7 @@ showToast({
 
 Astryx keeps the card — its surface, its `astryx-toast` theme target, the live-region role and the auto-hide timer with its pause on hover, focus and window blur — and hands the renderer the message, the `endContent`, and a **`DismissButton`** to place.
 
-`DismissButton` renders Astryx's own close: the ghost icon `Button` with the translated `@astryx.toast.dismiss` label and the `astryx-button` theme target. A layout positions the close rather than rebuilding it, so it cannot be mislabelled — and **a layout that never renders it does not produce a toast with no way out**. The close then appears in the card's default corner instead. Rendering it twice renders two closes and warns in development.
+`DismissButton` renders Astryx's own close: the ghost icon `Button` with the translated `@astryx.toast.dismiss` label and the `astryx-button` theme target. A layout positions the close rather than rebuilding it, so it cannot be mislabelled — and **a layout that never renders it does not produce a toast with no way out**. The close then appears in the card's default corner instead. Registration follows the button's own mount and unmount, so if a deeply nested layout removes it from its own state later, the corner fallback returns in that same commit. Rendering it twice renders two closes and warns in development.
 
 Absence is a default, not a hole: nothing suppresses anything, and a toast always has an exit.
 

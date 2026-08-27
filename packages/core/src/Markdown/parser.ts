@@ -369,7 +369,7 @@ function matchReferenceImage(
       const rawLabel = text.slice(altClose + 2, labelClose);
       const label = rawLabel === '' ? alt : rawLabel;
       const src = linkDefs.get(normalizeLinkLabel(label));
-      if (src != null) {
+      if (src != null && isSafeUrl(src)) {
         return {node: {type: 'image', src, alt}, end: labelClose + 1};
       }
       // No match — fall back to a shortcut `![alt]`.
@@ -379,7 +379,7 @@ function matchReferenceImage(
     return null;
   }
   const src = linkDefs.get(normalizeLinkLabel(alt));
-  if (src == null) {
+  if (src == null || !isSafeUrl(src)) {
     return null;
   }
   return {node: {type: 'image', src, alt}, end: altClose + 1};
@@ -1416,8 +1416,14 @@ function parseMarkdownImpl(
     }
 
     // --- Standalone image ---
+    // An unsafe src falls through to the paragraph path and renders as
+    // literal text, the same rule the inline image path applies.
     const imageMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
-    if (imageMatch && line.trim() === imageMatch[0]) {
+    if (
+      imageMatch &&
+      line.trim() === imageMatch[0] &&
+      isSafeUrl(imageMatch[2])
+    ) {
       pushBlock({type: 'image', alt: imageMatch[1], src: imageMatch[2]});
       index++;
       continue;

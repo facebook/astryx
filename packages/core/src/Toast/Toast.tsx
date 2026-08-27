@@ -2,6 +2,21 @@
 
 'use client';
 
+/**
+ * @file Toast.tsx
+ * @input Uses React timers, Toast options, Button/Icon, MediaTheme, tokens, and
+ *   placement-derived motion variables inherited from ToastViewport
+ * @output Exports the rendered Toast surface and its pause/dismiss behavior
+ * @position Core implementation; rendered by ToastViewport and documented by Toast.doc.mjs
+ *
+ * SYNC: When Toast layout, timer pause, media theme, or dismissal behavior changes,
+ *   update these files to stay in sync:
+ * - /packages/core/src/Toast/ToastViewport.test.tsx
+ * - /packages/core/src/Toast/Toast.doc.mjs
+ * - /apps/storybook/stories/Toast.stories.tsx
+ * - /packages/cli/assets/templates/blocks/components/Toast/ (showcase blocks)
+ */
+
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -28,9 +43,9 @@ import type {
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {devWarn} from '../utils/devWarning';
-import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {DismissButton, ToastDismissSlotProvider} from './ToastDismissSlot';
 
+const TOAST_EDGE_DRIFT = spacingVars['--spacing-2'];
 const styles = stylex.create({
   root: {
     // Containing block for the fallback close below.
@@ -38,8 +53,9 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-4'],
     borderRadius: radiusVars['--radius-container'],
+    boxSizing: 'border-box',
     width: 400,
-    maxWidth: 'min(100%, calc(100vw - 32px))',
+    maxWidth: '100%',
     boxShadow: shadowVars['--shadow-med'],
     opacity: 1,
     fontFamily: typographyVars['--font-family-body'],
@@ -54,15 +70,17 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     '@starting-style': {
       opacity: 0,
-      transform: 'translateY(8px)',
+      transform: `translateY(var(--_toast-slide-y, ${TOAST_EDGE_DRIFT}))`,
     },
   },
   variantDefault: {
     backgroundColor: colorVars['--color-background-inverted'],
   },
-  layout: {
+
+  inner: {
     display: 'flex',
     alignItems: 'flex-start',
+    flexWrap: 'nowrap',
     gap: spacingVars['--spacing-3'],
     width: '100%',
   },
@@ -72,17 +90,22 @@ const styles = stylex.create({
   content: {
     flex: 1,
     minWidth: 0,
+    overflowWrap: 'anywhere',
   },
   exiting: {
     opacity: 0,
-    transform: 'translateY(-8px)',
+    transform: `translateY(var(--_toast-slide-y, ${TOAST_EDGE_DRIFT}))`,
   },
   endContent: {
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    marginBlock: `calc(${spacingVars['--spacing-1']} * -1)`,
+    // Keep every trailing control centered on the first 20px body line, even
+    // when the body wraps or a consumer supplies a control taller than the
+    // built-in 28px dismiss button. The action label should still stay short;
+    // the wrappers above let it break rather than widen the Toast.
+    blockSize: `calc(${typeScaleDefaults['--text-body-size']} * ${typeScaleDefaults['--text-body-leading']})`,
     marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   // Where the close goes when a `renderContent` layout did not place it: the
@@ -108,6 +131,61 @@ export interface ToastProps {
    * `renderContent`, which is where an app normally sets this.
    */
   renderContent?: ToastContentRenderFn;
+}
+
+interface ToastCustomContentProps {
+  children: ReactNode;
+  dismissButton: ReactNode;
+}
+
+/**
+ * Owns the dismiss slot only for a custom layout. Keeping this state outside
+ * `Toast` matters twice: an ordinary toast pays no registration render at all,
+ * and a nested custom component can mount/unmount `DismissButton` from its own
+ * state without needing `Toast` itself to rerender.
+ */
+function ToastCustomContent({
+  children,
+  dismissButton,
+}: ToastCustomContentProps) {
+  const [dismissCount, setDismissCount] = useState(0);
+  const registerDismiss = useCallback(() => {
+    let isRegistered = true;
+    setDismissCount(count => count + 1);
+    return () => {
+      if (!isRegistered) {
+        return;
+      }
+      isRegistered = false;
+      setDismissCount(count => Math.max(0, count - 1));
+    };
+  }, []);
+  const slot = useMemo(
+    () => ({button: dismissButton, register: registerDismiss}),
+    [dismissButton, registerDismiss],
+  );
+
+  useEffect(() => {
+    if (dismissCount > 1) {
+      devWarn(
+        'Toast',
+        `renderContent rendered DismissButton ${dismissCount} times — this ` +
+          'toast has that many close buttons. Render it once.',
+      );
+    }
+  }, [dismissCount]);
+
+  return (
+    <ToastDismissSlotProvider value={slot}>
+      {children}
+      {/* Start with the safe default. A placed DismissButton registers in a
+          layout effect and removes this before paint; if a nested layout later
+          unmounts it, cleanup restores this in the same commit. */}
+      {dismissCount === 0 && (
+        <div {...stylex.props(styles.fallbackDismiss)}>{dismissButton}</div>
+      )}
+    </ToastDismissSlotProvider>
+  );
 }
 
 /**
@@ -237,41 +315,6 @@ export function Toast({
     [t, handleDismiss],
   );
 
-  // A layout may leave `DismissButton` out — the API conventions say a
-  // component renders what it is given, and an auto-hiding toast with no
-  // close is a legitimate design. But a toast with no close AND no auto-hide
-  // traps the user, so an unclaimed slot falls back to Astryx's own corner
-  // close rather than to nothing.
-  //
-  // `DismissButton` claims the slot in a layout effect, and a child's layout
-  // effects run before its parent's, so the count below is complete by the
-  // time this reads it. The initial value is `true` — assume the layout will
-  // place it, so the fallback is added by a pre-paint update in the case that
-  // forgot rather than removed by one in the common case. Nothing paints
-  // twice either way.
-  const claimCountRef = useRef(0);
-  const [isSlotClaimed, setIsSlotClaimed] = useState(true);
-  const claimDismissSlot = useCallback(() => {
-    claimCountRef.current += 1;
-  }, []);
-  useIsomorphicLayoutEffect(() => {
-    const count = claimCountRef.current;
-    claimCountRef.current = 0;
-    setIsSlotClaimed(count > 0);
-    if (count > 1) {
-      devWarn(
-        'Toast',
-        `renderContent rendered DismissButton ${count} times — this toast ` +
-          'has that many close buttons. Render it once.',
-      );
-    }
-  });
-
-  const dismissSlot = useMemo(
-    () => ({button: dismissButton, claim: claimDismissSlot}),
-    [dismissButton, claimDismissSlot],
-  );
-
   const isError = type === 'error';
   // The surface is *usually* dark in light mode and light in dark mode, but a
   // theme can define --color-background-inverted as anything — so the mode is
@@ -298,7 +341,7 @@ export function Toast({
       )}>
       <MediaTheme mode="auto" fallback={fallbackMediaMode}>
         {renderContent ? (
-          <ToastDismissSlotProvider value={dismissSlot}>
+          <ToastCustomContent dismissButton={dismissButton}>
             {renderContent({
               body,
               endContent,
@@ -308,16 +351,9 @@ export function Toast({
               autoHideDuration,
               dismiss: handleDismiss,
             })}
-            {/* The layout did not place the close, so it goes where it would
-                have been without a custom layout. A toast always has one. */}
-            {!isSlotClaimed && (
-              <div {...stylex.props(styles.fallbackDismiss)}>
-                {dismissButton}
-              </div>
-            )}
-          </ToastDismissSlotProvider>
+          </ToastCustomContent>
         ) : (
-          <div {...stylex.props(styles.layout)}>
+          <div {...stylex.props(styles.inner)}>
             <div {...stylex.props(styles.content)}>{body}</div>
 
             <div {...stylex.props(styles.endContent)}>

@@ -34,8 +34,8 @@ import {devWarn} from '../utils/devWarning';
 interface ToastDismissSlot {
   /** The toast's own dismiss control, already built. */
   button: ReactNode;
-  /** Called on every commit by each mounted `DismissButton`. */
-  claim: () => void;
+  /** Register one mounted DismissButton; cleanup unregisters it. */
+  register: () => () => void;
 }
 
 const ToastDismissSlotContext = createContext<ToastDismissSlot | null>(null);
@@ -53,13 +53,11 @@ export const ToastDismissSlotProvider = ToastDismissSlotContext.Provider;
  */
 export function DismissButton(): ReactNode {
   const slot = use(ToastDismissSlotContext);
-  // Claim before the parent's own layout effect reads the count — a child's
-  // layout effects always run first — and on every commit, not just mount, so
-  // a layout that stops rendering the control is noticed on the render that
-  // stops.
-  useIsomorphicLayoutEffect(() => {
-    slot?.claim();
-  });
+  // The slot owns presence, not Toast's render cycle. Register on mount and
+  // unregister on unmount, so a nested layout can toggle DismissButton from
+  // its own state without rerendering Toast — the fallback follows that child
+  // immediately rather than remembering a stale claim from an earlier commit.
+  useIsomorphicLayoutEffect(() => slot?.register(), [slot]);
   if (slot == null) {
     devWarn(
       'Toast',

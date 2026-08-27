@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
+import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import {
   VStack,
   HStack,
@@ -14,6 +15,7 @@ import {
 } from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
 import {Heading} from '@astryxdesign/core/Text';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {
   colorVars,
   spacingVars,
@@ -34,6 +36,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     fontSize: 14,
   },
+  // Lets the ThemeAddedVariant story's card colour reach its own text.
+  textInherit: {
+    color: 'inherit',
+  },
   storyWrapper: {
     display: 'flex',
     gap: spacingVars['--spacing-6'],
@@ -44,6 +50,9 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     fontSize: 14,
     color: colorVars['--color-text-secondary'],
+  },
+  narrowContainer: {
+    width: 320,
   },
 });
 
@@ -463,6 +472,148 @@ export const ColorVariants: Story = {
           </Card>
         </div>
       ))}
+    </div>
+  ),
+};
+
+/**
+ * `brand` is not one of Card's variants. The theme adds it: the module
+ * augmentation widens `CardVariantMap` so `variant="brand"` type-checks, and
+ * `card['variant:brand']` supplies the paint. Card itself has no style for the
+ * value, so it falls through to base styles and the theme rule is what shows —
+ * here an accent fill no built-in variant produces.
+ *
+ * The added variant is background-only, which is the shape the axis carries:
+ * Card subtracts a border's width from its padding for `default` alone, so a
+ * theme rule that paints a border sits a border-width proud of the cards
+ * beside it. That is true of a theme override on a built-in variant today and
+ * is not this axis to fix.
+ */
+declare module '@astryxdesign/core/Card' {
+  interface CardVariantMap {
+    brand: true;
+  }
+}
+
+const brandVariantTheme = defineTheme({
+  name: 'card-brand-variant-demo',
+  components: {
+    card: {
+      'variant:brand': {
+        backgroundColor: 'var(--color-accent)',
+        color: 'var(--color-on-accent)',
+        // The ring for a variant Card has never seen: the theme picks it,
+        // because no token the component could pick is guaranteed to contrast
+        // with this fill.
+        '--selectable-card-ring-color': 'var(--color-on-accent)',
+      },
+    },
+  },
+});
+
+export const ThemeAddedVariant: Story = {
+  render: () => (
+    <Theme theme={brandVariantTheme} mode="light">
+      <div {...stylex.props(styles.storyWrapper)}>
+        <div>
+          <h4 {...stylex.props(styles.heading)}>brand (added by the theme)</h4>
+          <Card width={200} variant="brand">
+            <p {...stylex.props(styles.text, styles.textInherit)}>brand</p>
+          </Card>
+        </div>
+        <div>
+          <h4 {...stylex.props(styles.heading)}>default (built in)</h4>
+          <Card width={200}>
+            <p {...stylex.props(styles.text)}>default</p>
+          </Card>
+        </div>
+        <div>
+          <h4 {...stylex.props(styles.heading)}>brand, selected</h4>
+          <SelectableCard
+            label="brand, selected"
+            isSelected
+            onChange={() => {}}
+            variant="brand"
+            width={200}>
+            <p {...stylex.props(styles.text, styles.textInherit)}>selected</p>
+          </SelectableCard>
+        </div>
+        <div>
+          <h4 {...stylex.props(styles.heading)}>brand, unselected</h4>
+          <SelectableCard
+            label="brand, unselected"
+            isSelected={false}
+            onChange={() => {}}
+            variant="brand"
+            width={200}>
+            <p {...stylex.props(styles.text, styles.textInherit)}>unselected</p>
+          </SelectableCard>
+        </div>
+      </div>
+    </Theme>
+  ),
+};
+
+/**
+ * A card with no children, and one with a minimum height. An empty card holds
+ * its padding and radius rather than collapsing, so a placeholder or a loading
+ * shell keeps the surrounding layout stable.
+ */
+export const Empty: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>No children</h4>
+        <Card width={250} />
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>No children, minHeight 120</h4>
+        <Card width={250} minHeight={120} />
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Long prose and a title long enough to wrap, in a fixed-width card. Text wraps
+ * and the card grows to fit. Most languages run longer than English, so this is
+ * the state translated copy lands in.
+ */
+export const LongContent: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <Card width={280}>
+        <VStack gap={2}>
+          <Heading level={3}>
+            A card title long enough to wrap onto several lines
+          </Heading>
+          <p {...stylex.props(styles.text)}>
+            Cards grow to fit their content, so a long description keeps
+            wrapping rather than being cut off. Sibling cards in a grid stay
+            aligned on their top edge and the tallest one sets the row height.
+          </p>
+        </VStack>
+      </Card>
+    </div>
+  ),
+};
+
+/**
+ * A card with no width prop inside a 320px container: the width comes from the
+ * parent, so the card reflows to the container instead of forcing horizontal
+ * scroll on a narrow screen.
+ */
+export const NarrowContainer: Story = {
+  render: () => (
+    <div {...stylex.props(styles.narrowContainer)}>
+      <Card>
+        <VStack gap={2}>
+          <Heading level={3}>Narrow container</Heading>
+          <p {...stylex.props(styles.text)}>
+            The card fills the container it is given.
+          </p>
+        </VStack>
+      </Card>
     </div>
   ),
 };
