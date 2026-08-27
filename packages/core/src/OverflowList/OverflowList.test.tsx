@@ -316,47 +316,6 @@ describe('OverflowList', () => {
       expect(within(vis).getByText('B')).toBeInTheDocument();
       expect(within(vis).queryByText('C')).not.toBeInTheDocument();
     });
-
-    it('re-measures a same-count reorder without a callback', async () => {
-      const items = {
-        wide: (
-          <button type="button" data-w="200" key="wide">
-            Wide
-          </button>
-        ),
-        a: (
-          <button type="button" data-w="50" key="a">
-            A
-          </button>
-        ),
-        b: (
-          <button type="button" data-w="50" key="b">
-            B
-          </button>
-        ),
-      };
-      const {rerender} = render(
-        <OverflowList gap={0} data-w="150" data-testid="ov">
-          {items.wide}
-          {items.a}
-          {items.b}
-        </OverflowList>,
-      );
-      expect(visibleContainer()).toBeEmptyDOMElement();
-
-      rerender(
-        <OverflowList gap={0} data-w="150" data-testid="ov">
-          {items.a}
-          {items.b}
-          {items.wide}
-        </OverflowList>,
-      );
-
-      await waitFor(() => {
-        expect(visibleContainer()).toHaveTextContent('AB');
-      });
-      expect(visibleContainer()).not.toHaveTextContent('Wide');
-    });
   });
 
   describe('measurement container', () => {
@@ -841,7 +800,7 @@ describe('OverflowList', () => {
       expect(indicesOf(onOverflowChange)).toEqual([2]);
     });
 
-    it('re-measures same-count content changes with stable keys', async () => {
+    it('re-measures same-count content changes with stable keys', () => {
       const onOverflowChange = vi.fn();
       const renderItems = (
         items: {key: string; label: string; width: number}[],
@@ -881,13 +840,12 @@ describe('OverflowList', () => {
           ])}
         </OverflowList>,
       );
+      triggerResize(measureContainer());
 
-      await waitFor(() => {
-        expect(onOverflowChange).toHaveBeenCalledTimes(1);
-        expect(indicesOf(onOverflowChange)).toEqual([2, 3]);
-        expect(visibleContainer()).toHaveTextContent('AB');
-        expect(visibleContainer()).not.toHaveTextContent('Wide');
-      });
+      expect(onOverflowChange).toHaveBeenCalledTimes(1);
+      expect(indicesOf(onOverflowChange)).toEqual([2, 3]);
+      expect(visibleContainer()).toHaveTextContent('AB');
+      expect(visibleContainer()).not.toHaveTextContent('Wide');
     });
 
     it('reports only the measured set when the number of children changes', () => {

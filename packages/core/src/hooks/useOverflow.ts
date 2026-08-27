@@ -138,7 +138,6 @@ export function useOverflow(
   const measureElRef = useRef<HTMLElement | null>(null);
   const observedElRef = useRef<HTMLElement | null>(null);
   const observedMeasureElRef = useRef<HTMLElement | null>(null);
-  const measureMutationObserverRef = useRef<MutationObserver | null>(null);
 
   const calculate = useCallback(() => {
     const container = containerElRef.current;
@@ -243,8 +242,6 @@ export function useOverflow(
         unobserveResize(observedMeasureElRef.current);
         observedMeasureElRef.current = null;
       }
-      measureMutationObserverRef.current?.disconnect();
-      measureMutationObserverRef.current = null;
 
       measureElRef.current = el;
       if (!el) {
@@ -255,18 +252,6 @@ export function useOverflow(
         calculate();
       });
       observedMeasureElRef.current = el;
-
-      if (typeof MutationObserver !== 'undefined' && el instanceof Node) {
-        const mutationObserver = new MutationObserver(() => {
-          calculate();
-        });
-        mutationObserver.observe(el, {
-          characterData: true,
-          childList: true,
-          subtree: true,
-        });
-        measureMutationObserverRef.current = mutationObserver;
-      }
     },
     [calculate],
   );
