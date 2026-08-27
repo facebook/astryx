@@ -160,8 +160,15 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    *
    * Receives the results they will be appended to, so a caller can decline to
    * offer an entry that duplicates one.
+   *
+   * Underscored and `@internal`: `BaseTypeaheadProps` is re-exported from the
+   * package entry point, so anything named on it ships as public API at the
+   * next cut. This is a wiring detail between Tokenizer and the base — the
+   * same reason `DefinedTheme.__inputTokens` carries its prefix.
+   *
+   * @internal
    */
-  queryEntries?: (query: string, results: T[]) => T[];
+  __queryEntries?: (query: string, results: T[]) => T[];
 
   /**
    * Debounce delay in ms before triggering search after typing.
@@ -381,7 +388,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   hasAutoFocus = false,
   onChangeQuery,
   onOpenChange,
-  queryEntries,
+  __queryEntries,
   inputId: externalInputId,
   ariaDescribedBy,
   ariaLabelledBy,
@@ -501,7 +508,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
         resultsGenRef.current = gen;
         const fetched = searchResults.slice(0, maxMenuItems);
-        const shown = [...fetched, ...(queryEntries?.(searchQuery, fetched) ?? [])];
+        const shown = [
+          ...fetched,
+          ...(__queryEntries?.(searchQuery, fetched) ?? []),
+        ];
         setResults(shown);
         setHighlightedIndex(shown.length > 0 ? 0 : -1);
         if (searchResults.length > 0 || searchQuery.length > 0) {
@@ -534,7 +544,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       showLayer,
       announce,
       emptySearchResultsText,
-      queryEntries,
+      __queryEntries,
       t,
     ],
   );
@@ -590,7 +600,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         // A query too short to search can still carry entries derived from
         // the text itself. `hasSearched` stays false either way, so the menu
         // never reports "no results" for a query nobody looked for.
-        const derived = queryEntries?.(newQuery, []) ?? [];
+        const derived = __queryEntries?.(newQuery, []) ?? [];
         setResults(derived);
         setHighlightedIndex(derived.length > 0 ? 0 : -1);
         setHasSearched(false);
@@ -627,7 +637,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       onChangeQuery,
       hasEntriesOnFocus,
       minQueryLength,
-      queryEntries,
+      __queryEntries,
       showLayer,
       performSearch,
       performBootstrap,

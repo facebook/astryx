@@ -729,6 +729,44 @@ describe('Tokenizer', () => {
       expect(screen.queryByText('Create "QA"')).not.toBeInTheDocument();
     });
 
+    it('offers Create on top of a full menu, not in place of a result', async () => {
+      // The Create entry is appended after the results are cut to
+      // `maxMenuItems`, so a full menu shows one more option rather than
+      // dropping its last result to make room. Deliberate: creating is a
+      // different capability from searching, and the cap exists to bound how
+      // many *results* a menu shows.
+      const many = Array.from({length: 20}, (_, i) => ({
+        id: `qa-${i}`,
+        label: `QA ${i}`,
+      }));
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={{search: () => many, bootstrap: () => []}}
+          value={[]}
+          onChange={() => {}}
+          hasCreate
+          maxMenuItems={3}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'QA'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      // Queried off the document rather than by role: the popover renders
+      // into a layer that jsdom keeps out of the accessibility tree, which is
+      // why the tests around this one reach for text too.
+      const options = document.querySelectorAll('[role="option"]');
+      expect(options).toHaveLength(4);
+      expect(options[3]).toHaveTextContent('Create "QA"');
+    });
+
     it('shows a "Create" option when typing with hasCreate', async () => {
       render(
         <Tokenizer

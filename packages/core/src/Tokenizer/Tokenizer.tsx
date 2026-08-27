@@ -560,7 +560,7 @@ export function Tokenizer<T extends SearchableItem>({
 
   /**
    * The "Create X" entry. It is derived from the typed text, not fetched for
-   * it, so it is offered through `queryEntries` rather than appended to the
+   * it, so it is offered through `__queryEntries` rather than appended to the
    * search results — which is what keeps it available when the query is too
    * short to search. `minQueryLength` is there to avoid a fetch too broad to
    * be worth making; creating `QA` costs no fetch, and a field that can
@@ -813,7 +813,7 @@ export function Tokenizer<T extends SearchableItem>({
         inputId={inputId}
         ariaDescribedBy={ariaDescribedBy}
         onChangeQuery={onChangeQuery}
-        queryEntries={createEntries}
+        __queryEntries={createEntries}
         debounceMs={debounceMs}
         onKeyDown={handleKeyDown}
         anchorRef={wrapperRef}
