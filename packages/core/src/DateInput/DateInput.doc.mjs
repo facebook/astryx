@@ -160,7 +160,7 @@ export const docs = {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "Which surface draws the date picker. 'touch' (the default) hands a touch device to the browser/OS \u2014 the field becomes an input type=date and the platform draws the picker (the iOS wheel, the Android calendar dialog); 'always' does that wherever the browser supports input type=date; 'never' keeps Astryx's own pickers everywhere (the bottom-sheet picker on a finger, the calendar popover on a mouse). Use 'never' for a field that needs weekStartsOn, numberOfMonths or dateConstraints, none of which a native picker can express. format and placeholder still apply in native mode; min and max are forwarded, but a native picker may not show them (on iOS an out-of-range date can be selected and is refused on commit rather than greyed out).",
+        "Which surface draws the date picker. 'touch' (the default) hands a touch device to the browser/OS: the field becomes an input type=date and the platform draws the picker (the iOS wheel, the Android calendar dialog); 'always' does that wherever the browser supports input type=date; 'never' keeps Astryx's own pickers everywhere (the bottom-sheet picker on a finger, the calendar popover on a mouse). Use 'never' for a field that needs weekStartsOn, numberOfMonths or dateConstraints, none of which a native picker can express. format and placeholder still apply in native mode; min and max are forwarded, but a native picker may not show them (on iOS an out-of-range date can be selected and is refused on commit rather than greyed out).",
       default: "'touch'",
     },
     {
@@ -552,7 +552,7 @@ export const docsDense = {
     format:
       "committed-value display: 'date_long' (default, March 21, 2026), 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Committed value only, not while typing.",
     nativePicker:
-      "which surface draws the picker: 'touch' (default) = browser/OS on a coarse pointer, 'always', 'never' = Astryx's own everywhere. use 'never' for weekStartsOn/numberOfMonths/dateConstraints. format+placeholder still apply; min/max forwarded but not necessarily shown by the OS picker \u2014 refused on commit instead.",
+      "which surface draws the picker: 'touch' (default) = browser/OS on a coarse pointer, 'always', 'never' = Astryx's own everywhere. use 'never' for weekStartsOn/numberOfMonths/dateConstraints. format+placeholder still apply; min/max forwarded but not necessarily shown by the OS picker, refused on commit instead.",
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };

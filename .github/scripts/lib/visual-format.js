@@ -5,6 +5,8 @@
  * Used by generate-pr-comment.js and test-pr-enrichment.js.
  */
 
+const {inline, num, safeUrl} = require('./report-text');
+
 /**
  * Build the visual-regression section of the PR comment.
  *
@@ -20,24 +22,27 @@
 function buildVisualSection(verdict, reportUrl) {
   if (!verdict) return '';
 
-  const link = reportUrl
-    ? ` <a href="${reportUrl}" target="_blank" rel="noopener noreferrer">View the report</a>`
+  // Verdict fields are report data: render them as literal inline text (and
+  // counts as numbers), never as markup — see report-text.js.
+  const safeReportUrl = reportUrl ? safeUrl(reportUrl) : null;
+  const link = safeReportUrl
+    ? ` <a href="${safeReportUrl}" target="_blank" rel="noopener noreferrer">View the report</a>`
     : '';
 
   if (verdict.status === 'skipped') {
-    return `### Visual Regression\n\n**Status:** Skipped — ${verdict.reason}\n\n`;
+    return `### Visual Regression\n\n**Status:** Skipped — ${inline(verdict.reason)}\n\n`;
   }
   if (verdict.status === 'failed') {
-    return `### Visual Regression\n\n**Status:** ${verdict.counts.failed} shot(s) could not be captured.${link}\n\n`;
+    return `### Visual Regression\n\n**Status:** ${num(verdict.counts?.failed)} shot(s) could not be captured.${link}\n\n`;
   }
   if (!verdict.changes || verdict.changes.length === 0) {
-    const compared = verdict.counts.total - (verdict.counts.added ?? 0);
+    const compared = num(verdict.counts?.total) - num(verdict.counts?.added);
     // A PR-scoped run shoots every story of the touched component in every
     // theme that styles it, which is deeper than the daily gate's baseline
     // reaches — so some shots legitimately have nothing to compare against.
     // Saying "added" there reads as a problem; saying it plainly does not.
-    const unbaselined = verdict.counts?.added
-      ? ` ${verdict.counts.added} shot(s) have no baseline yet and were not compared.`
+    const unbaselined = num(verdict.counts?.added)
+      ? ` ${num(verdict.counts?.added)} shot(s) have no baseline yet and were not compared.`
       : '';
     return `### Visual Regression\n\n**Status:** No visual change across ${compared} compared shot(s).${unbaselined}\n\n`;
   }
@@ -46,7 +51,7 @@ function buildVisualSection(verdict, reportUrl) {
     .slice(0, 20)
     .map(
       change =>
-        `| ${change.component || change.title} | ${change.name} | ${change.theme} | ${change.mode} | ${change.diffPixels.toLocaleString()} |`,
+        `| ${inline(change.component || change.title)} | ${inline(change.name)} | ${inline(change.theme)} | ${inline(change.mode)} | ${num(change.diffPixels).toLocaleString()} |`,
     )
     .join('\n');
   const more =
@@ -56,7 +61,7 @@ function buildVisualSection(verdict, reportUrl) {
 
   return `### Visual Regression
 
-**${verdict.changes.length} of ${verdict.counts.total} shot(s) changed.**${link}
+**${verdict.changes.length} of ${num(verdict.counts?.total)} shot(s) changed.**${link}
 
 A change here is a question, not a failure: check whether the *after* is the
 picture you intended. If it is, say so in the PR — the release gate's baseline

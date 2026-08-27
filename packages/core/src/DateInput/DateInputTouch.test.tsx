@@ -1580,12 +1580,22 @@ describe('DateInput — month/year wheels', () => {
     expect(title()).toHaveTextContent('May 2027');
   });
 
-  it('offers Reset only on the calendar, beside Save', () => {
+  it('offers Reset only on the calendar, in the header corner', () => {
     renderAndOpen();
-    expect(screen.getByRole('button', {name: 'Reset'})).toBeInTheDocument();
+    const reset = screen.getByRole('button', {name: 'Reset'});
+    // The trailing-most thing in the header, past the arrows — not the
+    // footer, which is Save's alone.
+    const header = reset.closest('[data-action="reset"]')!.parentElement!;
+    expect(header.querySelector('[data-title="month-year"]')).not.toBeNull();
+    expect(header.lastElementChild).toHaveAttribute('data-action', 'reset');
+
     openWheels();
     // The wheels choose a month; there is no date there to clear.
     expect(screen.queryByRole('button', {name: 'Reset'})).toBeNull();
+    // Hidden, not unmounted, so the header cannot change height mid-swap.
+    expect(
+      document.querySelector('dialog[open] [data-action="reset"]'),
+    ).toHaveAttribute('inert');
   });
 
   it('Save closes the whole picker; Done only leaves the wheels', () => {
@@ -2451,18 +2461,27 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(footer).not.toContain('paddingInline');
   });
 
-  it('floors the touch target without discarding the size prop', () => {
-    const source = read('TouchDateField.tsx');
-    // Each size keeps its own height AND cannot render below a thumb's reach.
-    const sizeMap = source.slice(
-      source.indexOf('const sizeStyles = stylex.create('),
-      source.indexOf('const styles = stylex.create('),
+  it('sizes the closed field the same on both surfaces', () => {
+    // `DateInput` picks a surface from the pointer and `nativePicker`, so a
+    // field that sizes itself differently on one of them changes height for
+    // a reason the call site never asked about.
+    //
+    // Compared with formatting normalized away: the two files write the same
+    // declarations differently, one entry per line against one per size.
+    const sizeMap = (file: string) => {
+      const source = read(file);
+      const start = source.indexOf('const sizeStyles = stylex.create(');
+      expect(start).toBeGreaterThan(-1);
+      return source
+        .slice(start, source.indexOf('});', start))
+        .replace(/\/\/.*$/gm, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\s+/g, '')
+        .replace(/,(?=[}\]])/g, '');
+    };
+    expect(sizeMap('TouchDateField.tsx')).toEqual(
+      sizeMap('NativeDateField.tsx'),
     );
-    expect(
-      sizeMap.match(
-        /minBlockSize: \{default: null, '@media \(pointer: coarse\)': TOUCH_TARGET\}/g,
-      ),
-    ).toHaveLength(3);
   });
 
   it('floors the month arrows too — Button tops out at 36px', () => {
@@ -2584,16 +2603,14 @@ describe('DateInput — scroll CSS (definition-level)', () => {
   });
 
   /**
-   * Both footer actions span the sheet. A full-width primary is the shape a
+   * The footer action spans the sheet. A full-width primary is the shape a
    * phone form ends with, and it puts the target under the thumb wherever
    * the hand is.
    */
-  it('spans the footer with its actions', () => {
+  it('spans the footer with its action', () => {
     const source = read('TouchDateField.tsx');
-    // Reset + Save share the calendar's cell; Done is the wheels'. Each
-    // fills the space it is given, so the row divides evenly rather than by
-    // label length.
-    expect(source.match(/width="100%"/g)).toHaveLength(3);
+    // One per surface: Save on the calendar, Done on the wheels.
+    expect(source.match(/width="100%"/g)).toHaveLength(2);
   });
 
   /**
@@ -2642,7 +2659,7 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(
       styles.match(/transitionTimingFunction: easeVars\['--ease-standard'\]/g),
     ).toHaveLength(1);
-    expect(styles.match(/transitionTimingFunction: 'linear'/g)).toHaveLength(3);
+    expect(styles.match(/transitionTimingFunction: 'linear'/g)).toHaveLength(4);
   });
 
   /**
@@ -2660,9 +2677,9 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     const styles = source.slice(
       source.indexOf('const styles = stylex.create('),
     );
-    // The arrows, the weekday row, the layer beneath, the layer above, and
-    // the chevron.
-    expect(styles.match(/transitionDuration: SWAP_DURATION/g)).toHaveLength(5);
+    // The arrows, Reset, the weekday row, the layer beneath, the layer
+    // above, and the chevron.
+    expect(styles.match(/transitionDuration: SWAP_DURATION/g)).toHaveLength(6);
     // And no leftover hand-rolled timing beside them.
     expect(styles).not.toContain('PANEL_FADE_MS');
     expect(source).toContain(

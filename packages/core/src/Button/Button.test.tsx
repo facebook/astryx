@@ -476,6 +476,21 @@ describe('Button', () => {
   });
 
   describe('elevation', () => {
+    it('reflects each elevation level as a theme attribute', () => {
+      const attrFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <Button label="Save" elevation={elevation} />,
+        );
+        return container
+          .querySelector('button')!
+          .getAttribute('data-elevation');
+      };
+      expect(attrFor('none')).toBe('none');
+      expect(attrFor('low')).toBe('low');
+      expect(attrFor('med')).toBe('med');
+      expect(attrFor('high')).toBe('high');
+    });
+
     it('renders a distinct class for each elevation level', () => {
       const classFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
         const {container} = render(
@@ -493,13 +508,13 @@ describe('Button', () => {
     });
 
     it('defaults to flat (elevation none)', () => {
-      const {container: def} = render(<Button label="Save" />);
+      const {container} = render(<Button label="Save" />);
+      const button = container.querySelector('button')!;
+      expect(button).toHaveAttribute('data-elevation', 'none');
       const {container: none} = render(
         <Button label="Save" elevation="none" />,
       );
-      expect(def.querySelector('button')!.className).toBe(
-        none.querySelector('button')!.className,
-      );
+      expect(button.className).toBe(none.querySelector('button')!.className);
     });
   });
 

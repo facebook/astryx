@@ -35,7 +35,7 @@ export const docs = {
       name: 'onChange',
       type: '(value: number) => void',
       description:
-        'Callback fired when input value changes (only on valid input).',
+        'Callback fired when a valid text edit commits on blur or Enter, or when a step or clear control changes the value.',
       required: true,
     },
     {
@@ -128,12 +128,14 @@ export const docs = {
     {
       name: 'min',
       type: 'number | null',
-      description: 'Minimum value allowed.',
+      description:
+        'Minimum value allowed. A smaller entry commits at this value on blur or Enter.',
     },
     {
       name: 'max',
       type: 'number | null',
-      description: 'Maximum value allowed.',
+      description:
+        'Maximum value allowed. A larger entry commits at this value on blur or Enter.',
     },
     {
       name: 'step',
@@ -328,7 +330,8 @@ export const docsZh = {
     {
       name: 'onChange',
       type: '(value: number) => void',
-      description: '输入值变化时触发的回调（仅在输入有效时触发）。',
+      description:
+        '有效文本编辑在失焦或按 Enter 时提交；步进或清除控件更改值时也会触发回调。',
       required: true,
     },
     {
@@ -410,12 +413,12 @@ export const docsZh = {
     {
       name: 'min',
       type: 'number | null',
-      description: '允许的最小值。',
+      description: '允许的最小值。更小的输入会在失焦或按 Enter 时提交为该值。',
     },
     {
       name: 'max',
       type: 'number | null',
-      description: '允许的最大值。',
+      description: '允许的最大值。更大的输入会在失焦或按 Enter 时提交为该值。',
     },
     {
       name: 'step',
@@ -655,7 +658,8 @@ export const docsDense = {
   propDescriptions: {
     label: 'Label text (always rendered for accessibility).',
     value: 'Current input value.',
-    onChange: 'Callback on valid input change.',
+    onChange:
+      'Callback when a valid text edit commits on blur/Enter, or a step/clear control changes the value.',
     size: 'Size variant.',
     isLabelHidden: 'Visually hide label (still accessible to screen readers).',
     description: 'Text between label + input.',

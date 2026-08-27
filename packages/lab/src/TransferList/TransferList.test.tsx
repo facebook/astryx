@@ -187,8 +187,14 @@ describe('TransferList', () => {
       );
       const addButton = screen.getByRole('button', {name: 'Add Owner'});
       const removeButton = screen.getByRole('button', {name: 'Remove Name'});
-      expect(addButton.querySelector('svg')).toHaveClass('lucide-plus');
-      expect(removeButton.querySelector('svg')).toHaveClass('lucide-x');
+      // Glyphs render through the shared Icon primitive rather than a raw
+      // inline <svg>: the add glyph is an icon component (astryx-icon on the
+      // svg) and remove reuses the registry `close` glyph (astryx-icon on its
+      // wrapping span). Assert the icon primitive is present and a glyph drew.
+      expect(addButton.querySelector('.astryx-icon')).toBeInTheDocument();
+      expect(addButton.querySelector('svg')).toBeInTheDocument();
+      expect(removeButton.querySelector('.astryx-icon')).toBeInTheDocument();
+      expect(removeButton.querySelector('svg')).toBeInTheDocument();
 
       const selectedList = screen.getByRole('list', {
         name: 'Selected columns',
@@ -199,9 +205,7 @@ describe('TransferList', () => {
         'button',
       );
       expect(rowButtons[0]).toHaveAccessibleName('Reorder Name');
-      expect(rowButtons[0].querySelector('svg')).toHaveClass(
-        'lucide-grip-vertical',
-      );
+      expect(rowButtons[0].querySelector('.astryx-icon')).toBeInTheDocument();
       expect(rowButtons[1]).toHaveAccessibleName('Remove Name');
     });
 

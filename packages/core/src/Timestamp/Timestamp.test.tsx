@@ -673,6 +673,24 @@ describe('Timestamp', () => {
       expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
     });
 
+    it('does not put aria-expanded on the role-less hover-card trigger', async () => {
+      render(
+        <Timestamp
+          value={Date.now() / 1000 - 3600}
+          format="relative"
+          data-testid="ts"
+        />,
+      );
+      const trigger = screen.getByTestId('ts').parentElement;
+      // The trigger is Text's <span>, which has no role, so aria-expanded is
+      // invalid on it (axe aria-allowed-attr, critical). aria-haspopup is
+      // global and still advertises the dialog.
+      await waitFor(() => {
+        expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+      });
+      expect(trigger).not.toHaveAttribute('aria-expanded');
+    });
+
     it('shows the hover card when the timestamp receives keyboard focus', async () => {
       const user = userEvent.setup();
       render(
@@ -1302,6 +1320,46 @@ describe('Timestamp', () => {
       expect(screen.getByTestId('ts').getAttribute('aria-label')).toBe(
         line.value.replace(tzPart('short'), tzPart('long')),
       );
+    });
+  });
+});
+
+describe('Timestamp pass-through props', () => {
+  it('forwards pass-through props to the time element', () => {
+    render(
+      <Timestamp
+        value="2024-01-15T10:30:00Z"
+        format="date_time"
+        aria-label="Published"
+        id="published-at"
+        data-source="cms"
+        data-testid="stamp"
+      />,
+    );
+    const time = screen.getByTestId('stamp');
+    expect(time.tagName).toBe('TIME');
+    expect(time).toHaveAttribute('aria-label', 'Published');
+    expect(time).toHaveAttribute('id', 'published-at');
+    expect(time).toHaveAttribute('data-source', 'cms');
+  });
+
+  it('keeps its own spelled-out label on a relative timestamp', () => {
+    render(
+      <Timestamp
+        value={Date.now()}
+        format="relative"
+        aria-label="Caller label"
+        data-source="cms"
+        data-testid="stamp"
+      />,
+    );
+    const stamp = screen.getByTestId('stamp');
+    expect({
+      ariaLabel: stamp.getAttribute('aria-label'),
+      dataSource: stamp.getAttribute('data-source'),
+    }).toEqual({
+      ariaLabel: expect.not.stringMatching(/^Caller label$/),
+      dataSource: 'cms',
     });
   });
 });

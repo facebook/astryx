@@ -53,7 +53,7 @@ import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {Grid} from '../Grid/Grid';
 import {Icon} from '../Icon';
-import {mergeProps} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
@@ -336,6 +336,7 @@ export function TopNavMegaMenu({
   delay = 150,
   hideDelay = 250,
   onOpenChange,
+  ...rest
 }: TopNavMegaMenuProps) {
   const renderMode = useTopNavRenderMode();
 
@@ -350,7 +351,14 @@ export function TopNavMegaMenu({
   // Drawer mode — inline collapsible
   // =========================================================================
   if (renderMode === 'drawer') {
-    return <DrawerMegaMenu label={label} items={items} featured={featured} />;
+    return (
+      <DrawerMegaMenu
+        label={label}
+        items={items}
+        featured={featured}
+        {...rest}
+      />
+    );
   }
 
   // =========================================================================
@@ -365,6 +373,7 @@ export function TopNavMegaMenu({
       delay={delay}
       hideDelay={hideDelay}
       onOpenChange={onOpenChange}
+      {...rest}
     />
   );
 }
@@ -387,6 +396,13 @@ function DefaultMegaMenu({
   delay = 150,
   hideDelay = 250,
   onOpenChange,
+  xstyle,
+  className,
+  style,
+  onClick: onClickProp,
+  onMouseEnter: onMouseEnterProp,
+  onMouseLeave: onMouseLeaveProp,
+  ...rest
 }: TopNavMegaMenuProps) {
   const slot = useTopNavSlot();
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -454,14 +470,27 @@ function DefaultMegaMenu({
       <button
         ref={useMergedRefs(triggerButtonRef, setTriggerEl, ref)}
         type="button"
+        {...rest}
         {...popover.triggerProps}
         {...hoverTriggerProps}
+        onClick={composeEventHandlers(onClickProp, hoverTriggerProps.onClick)}
+        onMouseEnter={composeEventHandlers(
+          onMouseEnterProp,
+          hoverTriggerProps.onMouseEnter,
+        )}
+        onMouseLeave={composeEventHandlers(
+          onMouseLeaveProp,
+          hoverTriggerProps.onMouseLeave,
+        )}
         {...mergeProps(
           themeProps('top-nav-mega-menu'),
           focusOutlineProps.focusVisible(
             styles.trigger,
             popover.isOpen && styles.triggerOpen,
+            xstyle,
           ),
+          className,
+          style,
         )}>
         {label}
         <Icon
@@ -513,7 +542,13 @@ function DrawerMegaMenu({
   label,
   items,
   featured,
-}: Pick<TopNavMegaMenuProps, 'label' | 'items' | 'featured'>) {
+  xstyle,
+  className,
+  style,
+  onClick: onClickProp,
+  ...rest
+}: Pick<TopNavMegaMenuProps, 'label' | 'items' | 'featured'> &
+  BaseProps<HTMLButtonElement>) {
   const [isExpanded, setIsExpanded] = useState(false);
   const menuId = `mega-menu-${label.toLowerCase().replace(/\s+/g, '-')}`;
 
@@ -522,7 +557,10 @@ function DrawerMegaMenu({
       {/* Header toggle — same pattern as TopNavMenu drawer */}
       <button
         type="button"
-        onClick={() => setIsExpanded(v => !v)}
+        {...rest}
+        onClick={composeEventHandlers(onClickProp, () =>
+          setIsExpanded(v => !v),
+        )}
         aria-expanded={isExpanded}
         aria-controls={`${menuId}-items`}
         {...mergeProps(
@@ -530,7 +568,10 @@ function DrawerMegaMenu({
           focusOutlineProps.focusVisible(
             navItemStyles.item,
             styles.drawerHeader,
+            xstyle,
           ),
+          className,
+          style,
         )}>
         {label}
         <Icon
