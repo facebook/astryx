@@ -103,6 +103,12 @@ export default defineConfig(
       "!packages/cli/foundation/**/*.mjs",
       "!packages/cli/clients/cli/bin/**/*.mjs",
       "**/*.test-violations.tsx",
+      // The adoption experiment's fixture app and its sample agent outputs are
+      // *inputs to a measurement*, not repo source: they deliberately contain
+      // the patterns being measured (hand-rolled overlays, raw values, missing
+      // focus paths). Linting them would either fail or launder the fixture.
+      "internal/vibe-tests/adoption-test/fixture-app/**",
+      "internal/vibe-tests/adoption-test/fixtures/**",
       "apps/example-nextjs/*.js",
       // Generated declaration files (e.g. the CLI's `./api` type surface emitted
       // from JSDoc by `sync:api-types` at prepack). Like `**/*.d.ts`, these are

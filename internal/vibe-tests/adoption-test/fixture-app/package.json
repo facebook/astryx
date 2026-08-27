@@ -1,0 +1,19 @@
+{
+  "name": "ops-console",
+  "private": true,
+  "version": "0.4.2",
+  "description": "Internal-style ops console — the existing app an adoption run lands in",
+  "dependencies": {
+    "react": "^19",
+    "react-dom": "^19",
+    "tailwindcss": "^4",
+    "class-variance-authority": "^0.7",
+    "clsx": "^2",
+    "tailwind-merge": "^2",
+    "lucide-react": "^0.400",
+    "@radix-ui/react-slot": "^1.1",
+    "@radix-ui/react-popover": "^1.1",
+    "@radix-ui/react-tooltip": "^1.1",
+    "@radix-ui/react-hover-card": "^1.1"
+  }
+}

@@ -1,0 +1,39 @@
+@import 'tailwindcss';
+
+/* App surface vocabulary. Everything visual references these. */
+:root {
+  --background: #0b0b0d;
+  --foreground: #e6e6e9;
+  --card: #141417;
+  --card-foreground: #e6e6e9;
+  --muted: #1c1c21;
+  --muted-foreground: #9a9aa4;
+  --border: #26262c;
+  --accent: #2b2b33;
+  --accent-foreground: #f2f2f5;
+  --ring: #5b7cfa;
+  --radius: 6px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --radius-md: var(--radius);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}

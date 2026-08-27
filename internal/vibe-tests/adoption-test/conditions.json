@@ -1,0 +1,108 @@
+{
+  "name": "adoption",
+  "description": "Does an agent introduce Astryx into an app that already has its own Tailwind components — and does the result fit? The design system is installed in EVERY condition; the only variable is the guidance surface the agent can find.",
+  "base": {
+    "fixture": "fixture-app",
+    "notes": "Existing Tailwind console: real shadcn components under components/ui, house conventions in README.md + AGENTS.md, a canonical status mapping, a hand-rolled hovercard precedent, a hand-rolled picker with no keyboard path. @astryxdesign/core + theme + CLI are present in node_modules in every condition."
+  },
+  "conditions": [
+    {
+      "id": "a0-installed",
+      "label": "Installed, unannounced (control)",
+      "role": "control",
+      "patches": [],
+      "hypothesis": "Near-zero adoption. The agent reads the app's own AGENTS.md, sees Tailwind named as the house system, matches the code around it, and never looks in node_modules."
+    },
+    {
+      "id": "a1-init",
+      "label": "astryx init block in AGENTS.md",
+      "role": "candidate",
+      "patches": ["patch:astryx-init"],
+      "hypothesis": "Lifts T1 (a finished component exists) substantially; little movement on T2 (compose from primitives), where the agent must decide the system can be extended rather than looked up."
+    },
+    {
+      "id": "a2-ladder",
+      "label": "init + component selection ladder",
+      "role": "candidate",
+      "patches": ["patch:astryx-init", "patch:ladder"],
+      "hypothesis": "Moves T2 and T3: an explicit order plus 'look before ruling out' is the documented answer to hand-rolling. This is issue #3212's candidate guidance."
+    },
+    {
+      "id": "a3-aligned",
+      "label": "ladder + app guidance no longer contradicts",
+      "role": "candidate",
+      "patches": ["patch:astryx-init", "patch:ladder", "patch:aligned-styling"],
+      "hypothesis": "The app's own 'Tailwind is the house styling system' line outweighs anything appended below it. Removing the contradiction should matter more than any wording we add."
+    },
+    {
+      "id": "a4-directed",
+      "label": "Told to use the design system (ceiling)",
+      "role": "ceiling",
+      "patches": [
+        "patch:astryx-init",
+        "patch:ladder",
+        "patch:aligned-styling",
+        "patch:directed"
+      ],
+      "hypothesis": "Adoption is high by construction. What this measures is the COST of adopting — escape hatches, parity, blast radius — with the decision removed. A tier the ceiling can't clear is a product gap, not a guidance gap."
+    }
+  ],
+  "factors": {
+    "precedent": {
+      "description": "Crossed with T3 prompts only. Does a hand-rolled component already in the tree beat the guidance in the docs?",
+      "levels": [
+        {
+          "id": "keep",
+          "description": "components/entity/build-hovercard.tsx stays, wired into the run table"
+        },
+        {
+          "id": "strip",
+          "description": "the same file and its usage are removed; nothing else changes"
+        }
+      ]
+    }
+  },
+  "dimensions": [
+    {
+      "id": "adoptionDecision",
+      "tieBreaker": true,
+      "source": "deterministic",
+      "description": "app component / design-system component / design-system primitives / hand-rolled, from the diff's import graph"
+    },
+    {
+      "id": "verification",
+      "source": "deterministic",
+      "description": "did a documentation lookup happen before the first write (CLI invocation log timestamps)"
+    },
+    {
+      "id": "integration",
+      "source": "deterministic",
+      "description": "typechecks, renders real data through the app's own data layer, no duplicated provider or reset"
+    },
+    {
+      "id": "parity",
+      "source": "deterministic+judge",
+      "description": "height, radius, border and surface treatment vs the sibling component it sits next to"
+    },
+    {
+      "id": "escapeHatch",
+      "source": "deterministic",
+      "description": "overrides needed to reach parity: arbitrary values, negative margins, !important, raw hex, z-index literals"
+    },
+    {
+      "id": "semanticFidelity",
+      "source": "deterministic",
+      "description": "domain status mappings preserved against lib/status.ts, the app's own ground truth"
+    },
+    {
+      "id": "a11yDelta",
+      "source": "deterministic",
+      "description": "keyboard path, roles/labels, focus visibility vs the code the change replaced"
+    },
+    {
+      "id": "blastRadius",
+      "source": "deterministic",
+      "description": "files touched outside the feature; shared primitives or global CSS modified"
+    }
+  ]
+}
