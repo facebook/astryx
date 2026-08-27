@@ -4,7 +4,7 @@
 
 /**
  * @file Drawer.tsx
- * @input Uses React, StyleX, theme tokens, Icon/IconButton, useScrollLock, BaseProps, mergeProps/mergeRefs, themeProps
+ * @input Uses React, StyleX, theme tokens, Icon/IconButton, useScrollLock/useDrawerDialogPresence, BaseProps, mergeProps/mergeRefs, themeProps
  * @output Exports Drawer component and DrawerProps
  * @position Lab implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
@@ -51,7 +51,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {
@@ -72,6 +71,7 @@ import {
   themeProps,
 } from '@astryxdesign/core/utils';
 import {overlayPaddingReset} from '@astryxdesign/core/Layout';
+import {useDrawerDialogPresence} from './useDrawerDialogPresence';
 
 // =============================================================================
 // LIFO stacking registry (internal)
@@ -111,54 +111,6 @@ function unregisterDrawer(id: string): void {
 
 function isTopDrawer(id: string): boolean {
   return openDrawerStack[openDrawerStack.length - 1]?.id === id;
-}
-
-// =============================================================================
-// Exit timing
-// =============================================================================
-
-/** Slack past the computed transition before the backstop gives up waiting. */
-const EXIT_BACKSTOP_BUFFER_MS = 50;
-
-/**
- * Hold used when the transition duration cannot be read — an unresolved
- * `var()` outside a real browser. Picking a fixed number would otherwise make
- * an assumption about the consumer's theme.
- */
-const EXIT_FALLBACK_MS = 250;
-
-/**
- * The panel's own transition duration, in ms, read off the element rather
- * than assumed: `--duration-medium` is a theme token and themes rewrite it
- * (the shipped y2k theme uses 250ms, the default 410ms). Returns null when the
- * value is unreadable.
- */
-function readTransitionMs(element: HTMLElement): number | null {
-  const computed = window.getComputedStyle(element);
-  const durations = parseTimes(computed.transitionDuration);
-  const delays = parseTimes(computed.transitionDelay);
-  if (durations.length === 0 || durations.includes(null)) {
-    return null;
-  }
-  return durations.reduce<number>(
-    (longest, duration, index) =>
-      Math.max(longest, (duration ?? 0) + (delays[index % delays.length] ?? 0)),
-    0,
-  );
-}
-
-function parseTimes(value: string): Array<number | null> {
-  return value.split(',').map(part => {
-    const trimmed = part.trim();
-    const time = Number.parseFloat(trimmed);
-    if (!Number.isFinite(time)) {
-      return null;
-    }
-    if (trimmed.endsWith('ms')) {
-      return time;
-    }
-    return trimmed.endsWith('s') ? time * 1000 : null;
-  });
 }
 
 // =============================================================================
@@ -464,9 +416,6 @@ export function Drawer({
   ...props
 }: DrawerProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  // Element focused when the drawer opened — restored on close.
-  const triggerElementRef = useRef<HTMLElement | null>(null);
   // Registry identity + latest onOpenChange (stable across re-renders so the
   // registration effect doesn't churn on every onOpenChange identity change).
   const drawerId = useId();
@@ -486,110 +435,12 @@ export function Drawer({
     setIsRendered(true);
   }
 
-  // Open/close the native dialog. close() waits for the slide-out to finish,
-  // and the panel stops rendering in the same commit so it is never painted
-  // outside the top layer. Focus restore happens after close() because a
-  // modal dialog makes the rest of the document inert (focus() on the
-  // trigger would silently fail while the dialog is still open).
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
-
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
-    }
-
-    if (isOpen) {
-      if (!dialog.open) {
-        triggerElementRef.current =
-          document.activeElement as HTMLElement | null;
-        if (hasScrim) {
-          dialog.showModal();
-        } else {
-          dialog.show();
-        }
-        // React's autoFocus calls .focus() during commit, before the dialog
-        // is shown, so it silently fails — honor data-autofocus instead
-        // (same contract as Dialog).
-        const autofocusTarget =
-          dialog.querySelector<HTMLElement>('[data-autofocus]');
-        if (autofocusTarget) {
-          autofocusTarget.focus();
-        }
-      }
-      return;
-    }
-
-    if (!dialog.open) {
-      return;
-    }
-
-    let hasFinished = false;
-    const finish = () => {
-      if (hasFinished) {
-        return;
-      }
-      hasFinished = true;
-      dialog.removeEventListener('transitionend', handleTransitionEnd);
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-        closeTimeoutRef.current = null;
-      }
-      dialog.close();
-      // flushSync, not a plain setState: React's default scheduling can land
-      // the commit after the next paint, and that one frame is exactly the
-      // bug — the panel painted outside the top layer. Both happen in this
-      // task, so the browser never gets to paint between them.
-      flushSync(() => {
-        setIsRendered(false);
-      });
-      // Return focus to the element that opened the drawer.
-      triggerElementRef.current?.focus();
-      triggerElementRef.current = null;
-    };
-    // The transition is authoritative; the timer is only a backstop for when
-    // no transition runs at all (already at the closed transform, or a theme
-    // with a zero duration).
-    function handleTransitionEnd(event: TransitionEvent) {
-      if (event.target === dialog && event.propertyName === 'transform') {
-        finish();
-      }
-    }
-    dialog.addEventListener('transitionend', handleTransitionEnd);
-    closeTimeoutRef.current = setTimeout(
-      finish,
-      (readTransitionMs(dialog) ?? EXIT_FALLBACK_MS) + EXIT_BACKSTOP_BUFFER_MS,
-    );
-
-    return () => {
-      dialog.removeEventListener('transitionend', handleTransitionEnd);
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-        closeTimeoutRef.current = null;
-      }
-    };
-  }, [isOpen, hasScrim]);
-
-  // Close the native dialog on unmount if it's still open. When the drawer
-  // is mounted inside an <Activity> that flips to mode="hidden", React runs
-  // effect cleanups (with a stale isOpen) instead of re-running the effect
-  // with isOpen=false — leaving the <dialog> `open` would skip showModal()
-  // on the next open and the drawer could never be re-opened (see
-  // MobileNavReopen.test.tsx for the original repro). This must be a
-  // separate unmount-only effect: putting it in the open/close effect above
-  // would close the dialog on every isOpen flip and cut off the delayed
-  // slide-out close.
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    return () => {
-      if (dialog?.open) {
-        dialog.close();
-      }
-    };
-  }, []);
+  useDrawerDialogPresence({
+    dialogRef,
+    isOpen,
+    isModal: hasScrim,
+    setIsRendered,
+  });
 
   // LIFO registry membership: register on open, unregister on close or
   // unmount. The returned z-index stacks non-modal siblings in open order.
