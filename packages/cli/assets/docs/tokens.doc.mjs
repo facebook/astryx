@@ -200,8 +200,8 @@ export const docs = {
             ],
             [
               "--color-border-emphasized",
-              "#CCD3DB",
-              "#494D53"
+              "#898D93",
+              "#6E7276"
             ],
             [
               "--color-skeleton",
