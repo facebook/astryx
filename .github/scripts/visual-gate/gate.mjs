@@ -47,6 +47,11 @@ const flag = name => {
   return index === -1 ? null : argv[index + 1];
 };
 const has = name => argv.includes(`--${name}`);
+const captureRunIdentity = () => ({
+  runId: process.env.ASTRYX_VISUAL_RUN_ID ?? process.env.GITHUB_RUN_ID ?? null,
+  runAttempt:
+    process.env.ASTRYX_VISUAL_RUN_ATTEMPT ?? process.env.GITHUB_RUN_ATTEMPT ?? null,
+});
 
 const config = loadConfig(REPO_ROOT);
 const storybookDir = path.resolve(flag('storybook-dir') ?? 'apps/storybook/dist');
@@ -201,8 +206,7 @@ async function runCapture(shots) {
     headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
     baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
     ref: process.env.GITHUB_REF ?? null,
-    runId: process.env.GITHUB_RUN_ID ?? null,
-    runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+    ...captureRunIdentity(),
   };
   fs.writeFileSync(
     path.join(outDir, 'manifest.json'),
@@ -242,8 +246,7 @@ async function check() {
         headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
         baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
         ref: process.env.GITHUB_REF ?? null,
-        runId: process.env.GITHUB_RUN_ID ?? null,
-        runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+        ...captureRunIdentity(),
         tiers,
         scoped: components.length > 0,
         components,

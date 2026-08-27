@@ -270,8 +270,8 @@ jobs:
         if: steps.identity.outputs.valid == 'true' && steps.scope.outputs.stable == 'true'
         env:
           GITHUB_SHA: ${{ steps.identity.outputs.head_sha }}
-          GITHUB_RUN_ID: ${{ steps.identity.outputs.run_id }}
-          GITHUB_RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+          ASTRYX_VISUAL_RUN_ID: ${{ steps.identity.outputs.run_id }}
+          ASTRYX_VISUAL_RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
           ASTRYX_PR_HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
           ASTRYX_PR_BASE_SHA: ${{ steps.identity.outputs.base_sha }}
         run: |

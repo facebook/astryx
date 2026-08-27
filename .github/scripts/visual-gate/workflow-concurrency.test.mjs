@@ -58,6 +58,18 @@ describe('visual acceptance workflow concurrency', () => {
     expect(accept).toContain('cancel-in-progress: false');
   });
 
+  it('grants PR mutation permission wherever labels and comments are projected', () => {
+    const value = workflow('visual-acceptance.yml');
+    const initialize = value.slice(
+      value.indexOf('  initialize:'),
+      value.indexOf('  authorize:'),
+    );
+    const accept = value.slice(value.indexOf('  accept:'));
+
+    expect(initialize).toContain('pull-requests: write');
+    expect(accept).toContain('pull-requests: write');
+  });
+
   it('uses the same head identity for post-merge promotion', () => {
     const value = workflow('visual-acceptance-promote.yml');
 
@@ -65,5 +77,22 @@ describe('visual acceptance workflow concurrency', () => {
       'group: visual-acceptance-head-${{ github.event.pull_request.head.repo.id }}-${{ github.event.pull_request.head.ref }}',
     );
     expect(value).not.toContain('visual-acceptance-pr-');
+  });
+
+  it('passes triggering CI identity through dedicated capture variables', () => {
+    const value = workflow('pr-comment.yml');
+    const capture = value.slice(
+      value.indexOf('      - name: Capture the trusted stable visual scope'),
+      value.indexOf('      # The Storybook bundle is untrusted.'),
+    );
+
+    expect(capture).toContain(
+      'ASTRYX_VISUAL_RUN_ID: ${{ steps.identity.outputs.run_id }}',
+    );
+    expect(capture).toContain(
+      'ASTRYX_VISUAL_RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}',
+    );
+    expect(capture).not.toContain('GITHUB_RUN_ID:');
+    expect(capture).not.toContain('GITHUB_RUN_ATTEMPT:');
   });
 });
