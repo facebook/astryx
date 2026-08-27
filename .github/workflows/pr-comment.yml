@@ -51,11 +51,16 @@ jobs:
             const {owner, repo} = context.repo;
             let numbers = (run.pull_requests || []).map((pr) => pr.number);
             if (numbers.length === 0) {
-              const associated = await github.paginate(
-                github.rest.repos.listPullRequestsAssociatedWithCommit,
-                {owner, repo, commit_sha: run.head_sha, per_page: 100},
-              );
-              numbers = associated.filter((pr) => pr.state === 'open').map((pr) => pr.number);
+              // commits/{sha}/pulls only indexes base-repo branches, so a fork
+              // head returns [] (and run.pull_requests is empty on forks too).
+              // Resolve by the run's own head repo + branch instead; the
+              // exact-SHA check below keeps it pinned to this run.
+              const {data: byHead} = await github.rest.pulls.list({
+                owner, repo, state: 'open',
+                head: `${run.head_repository.owner.login}:${run.head_branch}`,
+                per_page: 100,
+              });
+              numbers = byHead.map((pr) => pr.number);
             }
             numbers = [...new Set(numbers)];
             if (numbers.length !== 1) {
@@ -138,11 +143,16 @@ jobs:
             const {owner, repo} = context.repo;
             let numbers = (run.pull_requests || []).map((pr) => pr.number);
             if (numbers.length === 0) {
-              const associated = await github.paginate(
-                github.rest.repos.listPullRequestsAssociatedWithCommit,
-                {owner, repo, commit_sha: run.head_sha, per_page: 100},
-              );
-              numbers = associated.map((pr) => pr.number);
+              // Fork heads are invisible to commits/{sha}/pulls and to
+              // run.pull_requests — resolve by head repo + branch (see the
+              // resolve job above); the SHA and repo checks below still pin
+              // the result to this exact run.
+              const {data: byHead} = await github.rest.pulls.list({
+                owner, repo, state: 'open',
+                head: `${run.head_repository.owner.login}:${run.head_branch}`,
+                per_page: 100,
+              });
+              numbers = byHead.map((pr) => pr.number);
             }
             numbers = [...new Set(numbers)];
             if (numbers.length !== 1) {
@@ -374,7 +384,7 @@ jobs:
         with:
           script: |
             const fs = require('node:fs');
-            const { execSync } = require('node:child_process');
+            const { execFileSync } = require('node:child_process');
 
             // The analysis artifact is only produced for non-docsite-only PRs.
             // If it's absent, there's nothing to report — exit quietly.
@@ -426,8 +436,8 @@ jobs:
               '--pr-number', String(prNumber),
             ];
 
-            const body = execSync(`node ${args.map((a) => JSON.stringify(a)).join(' ')}`,
-              { encoding: 'utf8' });
+            // Argument vector, no shell — report inputs are data, not command text.
+            const body = execFileSync('node', args, { encoding: 'utf8' });
             fs.writeFileSync('pr-comment.md', body);
 
             const { owner, repo } = context.repo;
