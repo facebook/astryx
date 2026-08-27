@@ -500,10 +500,8 @@ export function Banner({
   const role = statusRole[status] ?? FALLBACK_ROLE;
   const iconColor = statusIconColor[status];
   const hasChildren = isRenderable(children);
-  // The accessible name says which banner this closes, so stacked banners are
-  // not three identical "Dismiss" buttons. The tooltip stays the bare verb —
-  // it is redundant beside a title the user can already see — and remains a
-  // prefix of the name, so WCAG 2.5.3 still holds.
+  // Keep the default tooltip concise while the accessible name identifies
+  // the banner; an explicit translated override names both surfaces.
   const dismissTooltip = dismissLabel ?? t('@astryx.banner.dismiss');
   const dismissName =
     dismissLabel ??

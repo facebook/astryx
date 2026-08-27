@@ -237,7 +237,9 @@ describe('Banner', () => {
     );
     // No toggle exists, so nothing should carry disclosure state, and the
     // region needs no id for a button to point at.
-    const dismiss = screen.getByRole('button', {name: 'Dismiss'});
+    const dismiss = screen.getByRole('button', {
+      name: 'Dismiss Plain content',
+    });
     expect(dismiss).not.toHaveAttribute('aria-expanded');
     expect(dismiss).not.toHaveAttribute('aria-controls');
     expect(
@@ -656,41 +658,44 @@ describe('Banner', () => {
   });
 
   describe('dismiss control naming', () => {
-    it('names each dismiss button after its own banner when stacked', () => {
+    it('names stacked string-title banners distinctly', () => {
       render(
         <>
-          <Banner status="error" title="Attach od-1234 failed" isDismissable />
-          <Banner status="error" title="Detach od-9999 failed" isDismissable />
+          <Banner status="error" title="Upload invoice failed" isDismissable />
+          <Banner status="error" title="Delete report failed" isDismissable />
         </>,
       );
-      const names = screen
-        .getAllByRole('button')
-        .map(b => b.getAttribute('aria-label'));
-      expect(names).toEqual([
-        'Dismiss Attach od-1234 failed',
-        'Dismiss Detach od-9999 failed',
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
+        'Dismiss Upload invoice failed',
+        'Dismiss Delete report failed',
       ]);
+      for (const button of buttons) {
+        expect(button).toHaveAccessibleDescription('Dismiss');
+      }
     });
 
-    it('uses dismissLabel verbatim when provided', () => {
-      render(
-        <Banner
-          status="info"
-          title="Heads up"
-          isDismissable
-          dismissLabel="Close the maintenance notice"
-        />,
-      );
-      expect(
-        screen.getByRole('button', {name: 'Close the maintenance notice'}),
-      ).toBeInTheDocument();
-    });
-
-    it('falls back to the bare verb for a non-string title', () => {
+    it('keeps the bare name and tooltip for a rich title', () => {
       render(
         <Banner status="info" title={<span>Rich title</span>} isDismissable />,
       );
-      expect(screen.getByRole('button', {name: 'Dismiss'})).toBeInTheDocument();
+      const button = screen.getByRole('button', {name: 'Dismiss'});
+      expect(button).toHaveAccessibleDescription('Dismiss');
+    });
+
+    it('uses a translated dismissLabel for a rich title and its tooltip', () => {
+      render(
+        <Banner
+          status="info"
+          title={<span>Wartungshinweis</span>}
+          isDismissable
+          dismissLabel="Wartungshinweis schließen"
+        />,
+      );
+      const button = screen.getByRole('button', {
+        name: 'Wartungshinweis schließen',
+      });
+      expect(button).toHaveAccessibleDescription('Wartungshinweis schließen');
     });
   });
 });

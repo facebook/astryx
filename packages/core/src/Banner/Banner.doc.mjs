@@ -171,6 +171,7 @@ export const docsZh = {
     {name: 'icon', type: 'ReactNode', description: '覆盖默认的状态图标。'},
     {name: 'isDismissable', type: 'boolean', description: '横幅是否可被用户关闭。', default: 'false'},
     {name: 'onDismiss', type: '() => void', description: '点击关闭按钮时调用；无论是否提供此回调，横幅都会自动隐藏。'},
+    {name: 'dismissLabel', type: 'string', description: '关闭按钮的无障碍名称（请传入已翻译的字符串）。字符串标题默认生成“关闭 <标题>”；富文本标题请设置此属性。'},
     {name: 'endContent', type: 'ReactNode', description: '渲染在头部区域末端对齐的操作内容，通常是按钮或链接。头部过窄时会整体换行到文本下方，自成一行。'},
     {name: 'container', type: "'card' | 'section'", description: '视觉变体：card 带圆角；section 无圆角全宽，适用于页面级场景。', default: "'card'"},
     {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: '静止阴影深度。用于悬浮于内容之上的浮动横幅；none 为默认内联横幅。', default: "'none'"},
