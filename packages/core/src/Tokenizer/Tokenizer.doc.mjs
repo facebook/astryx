@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Tokenizer',
@@ -31,7 +31,7 @@ export const docs = {
       name: 'onChange',
       type: '(items: T[], change: TokenizerChange<T>) => void',
       description:
-        "Called when selection changes. The change argument includes the affected item and type ('add' | 'create' | 'remove' | 'reorder').",
+        "Called when selection changes. The change argument includes the affected item and type ('add' | 'create' | 'remove' | 'reorder'). Additions and removals (including Backspace on an empty input) are announced to screen readers via a polite live region.",
       required: true,
     },
     {
@@ -89,6 +89,13 @@ export const docs = {
         'Validation status object with type and message for error/warning/success states.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
+    },
+    {
       name: 'isLabelHidden',
       type: 'boolean',
       description: 'Visually hides the label while keeping it accessible.',
@@ -125,8 +132,19 @@ export const docs = {
     {
       name: 'maxMenuItems',
       type: 'number',
-      description: 'Maximum number of dropdown items to display.',
+      description: 'Maximum number of search results to display. The hasCreate entry is offered on top of them, so a menu can show one more than this.',
       default: '10',
+    },
+    {
+      name: 'menuWidth',
+      type: 'number',
+      description: 'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
+    },
+    {
+      name: 'minQueryLength',
+      type: 'number',
+      description: 'Minimum query length before the search source is queried. Below it no search runs, and the menu stays closed — unless hasCreate is set, in which case the "Create ..." entry is still offered, being derived from the typed text rather than fetched for it.',
+      default: '1',
     },
     {
       name: 'emptySearchResultsText',
@@ -166,6 +184,13 @@ export const docs = {
       description: 'Callback fired when the search query text changes.',
     },
     {
+      name: 'startIcon',
+      type: 'ReactNode | IconType',
+      description:
+        'Icon to display at the start of the input, before any tokens. Accepts a semantic icon name, an SVG icon component, or a ReactNode directly.',
+      slotElements: [{__element: 'Icon', props: {icon: 'search', size: 'sm'}}],
+    },
+    {
       name: 'endContent',
       type: 'ReactNode',
       description:
@@ -178,7 +203,30 @@ export const docs = {
     {
       name: 'handleRef',
       type: 'React.Ref<TokenizerHandle>',
-      description: 'Imperative handle for focus() and blur() control.',
+      description:
+        'Imperative handle exposing focusInput(), focusFirstToken(), focusLastToken(), clearInput(), and selectAll().',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'tokenOverflowBehavior',
+      type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
+      description: 'Controls how tokens overflow when the container is too narrow.',
+      default: "'none'",
+    },
+    {
+      name: 'onFocus',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Fires when focus enters the tokenizer input.',
+    },
+    {
+      name: 'onBlur',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Fires when focus leaves the tokenizer input.',
     },
     {
       name: 'xstyle',
@@ -189,7 +237,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size', 'status']},
+      {className: 'astryx-tokenizer', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -216,7 +264,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Tokenizer',
   displayName: 'Tokenizer',
@@ -301,6 +349,13 @@ export const docsZh = {
         '\u9a8c\u8bc1\u72b6\u6001\u5bf9\u8c61\uff0c\u5305\u542b\u7c7b\u578b\u548c\u6d88\u606f\uff0c\u7528\u4e8e\u9519\u8bef/\u8b66\u544a/\u6210\u529f\u72b6\u6001\u3002',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+      default: "'attached'",
+    },
+    {
       name: 'isLabelHidden',
       type: 'boolean',
       description: '\u89c6\u89c9\u9690\u85cf\u6807\u7b7e\uff0c\u540c\u65f6\u4fdd\u6301\u5176\u53ef\u8bbf\u95ee\u6027\u3002',
@@ -337,8 +392,19 @@ export const docsZh = {
     {
       name: 'maxMenuItems',
       type: 'number',
-      description: '\u4e0b\u62c9\u5217\u8868\u663e\u793a\u7684\u6700\u5927\u9879\u76ee\u6570\u3002',
+      description: '下拉列表显示的最大搜索结果数。“创建 ...”条目会在此之外额外提供，因此菜单可能比该数量多显示一项。',
       default: '10',
+    },
+    {
+      name: 'menuWidth',
+      type: 'number',
+      description: '下拉菜单的固定像素宽度。菜单不会小于其锚点宽度。',
+    },
+    {
+      name: 'minQueryLength',
+      type: 'number',
+      description: '查询搜索源前的最小查询长度。低于该长度不会发起搜索，菜单保持关闭；但设置 hasCreate 时仍会提供“创建 ...”条目——该条目由输入的文本推导而来，并非通过搜索获取。',
+      default: '1',
     },
     {
       name: 'emptySearchResultsText',
@@ -371,6 +437,12 @@ export const docsZh = {
       description: '\u641c\u7d22\u67e5\u8be2\u6587\u672c\u53d8\u66f4\u65f6\u89e6\u53d1\u7684\u56de\u8c03\u3002',
     },
     {
+      name: 'startIcon',
+      type: 'ReactNode | IconType',
+      description:
+        '\u5728\u8f93\u5165\u6846\u5f00\u5934\uff08token \u4e4b\u524d\uff09\u663e\u793a\u7684\u56fe\u6807\u3002\u63a5\u53d7\u8bed\u4e49\u56fe\u6807\u540d\u79f0\u3001SVG \u56fe\u6807\u7ec4\u4ef6\u6216\u76f4\u63a5\u4f20\u5165 ReactNode\u3002',
+    },
+    {
       name: 'endContent',
       type: 'ReactNode',
       description:
@@ -390,7 +462,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size', 'status']},
+      {className: 'astryx-tokenizer', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -417,7 +489,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Multi-select typeahead w/ token chips for selected items. Composes BaseTypeahead for search+Token for chips.',
   usage: {
@@ -448,18 +520,22 @@ export const docsDense = {
     isDisabled: 'Disables input+all token interactions.',
     htmlName: 'HTML name attr; one hidden input per selected item id.',
     status: 'Validation status w/ type+message for error/warning/success.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     isLabelHidden: 'Visually hides label; keeps a11y.',
     description: 'Helper text below label.',
     isRequired: 'Marks field required.',
     isOptional: 'Shows optional indicator on label.',
     labelTooltip: 'Tooltip on label.',
     hasEntriesOnFocus: 'Show bootstrap results on focus before typing.',
-    maxMenuItems: 'Max dropdown items to display.',
+    maxMenuItems: 'Max search results shown; the hasCreate entry sits on top of them.',
+    menuWidth: 'Fixed dropdown width in pixels.',
+    minQueryLength: 'Min query length before searching. Menu stays closed below it, except the hasCreate entry.',
     emptySearchResultsText: 'Text when search returns no results.',
     hasAutoFocus: 'Auto-focus input on mount.',
     size: 'Input+token size.',
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',
     onChangeQuery: 'Fired on search query text change.',
+    startIcon: 'Icon at input start, before tokens. Icon name, SVG component, or ReactNode.',
     endContent: 'Content at input row end. For buttons, counts, controls.',
     handleRef: 'Imperative handle for focus() and blur() control.',
     xstyle: 'StyleX layout styles (margins, positioning). Must be stylex.create() value.',

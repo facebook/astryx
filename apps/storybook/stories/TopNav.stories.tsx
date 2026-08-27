@@ -87,10 +87,8 @@ export const WithLogo: Story = {
     heading: (
       <TopNavHeading
         heading="Dashboard"
-        logo={
-          <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-        }
-        href="#"
+        logo={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
+        headingHref="#"
       />
     ),
     startContent: (
@@ -117,9 +115,7 @@ export const TitleOnly: Story = {
     heading: (
       <TopNavHeading
         heading="Simple App"
-        logo={
-          <NavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />
-        }
+        logo={<NavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
       />
     ),
     endContent: <Button label="Sign in" variant="primary" />,
@@ -154,10 +150,8 @@ export const CenteredNavigation: Story = {
       heading={
         <TopNavHeading
           heading="My App"
-          logo={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
-          href="#"
+          logo={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
+          headingHref="#"
         />
       }
       centerContent={
@@ -195,11 +189,9 @@ export const CenteredWithStartContent: Story = {
         <TopNavHeading
           heading="Dashboard"
           logo={
-            <NavIcon
-              icon={<ChartBarIcon style={{width: 16, height: 16}} />}
-            />
+            <NavIcon icon={<ChartBarIcon style={{width: 16, height: 16}} />} />
           }
-          href="#"
+          headingHref="#"
         />
       }
       startContent={
@@ -234,10 +226,8 @@ export const CenterContentWithoutEnd: Story = {
     heading: (
       <TopNavHeading
         heading="My App"
-        logo={
-          <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-        }
-        href="#"
+        logo={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
+        headingHref="#"
       />
     ),
     centerContent: (
@@ -257,11 +247,9 @@ export const FullExample: Story = {
         <TopNavHeading
           heading="Enterprise Dashboard"
           logo={
-            <NavIcon
-              icon={<ChartBarIcon style={{width: 16, height: 16}} />}
-            />
+            <NavIcon icon={<ChartBarIcon style={{width: 16, height: 16}} />} />
           }
-          href="#"
+          headingHref="#"
         />
       }
       startContent={

@@ -34,7 +34,11 @@ import {
 import * as stylex from '@stylexjs/stylex';
 
 import type {BaseProps} from '@astryxdesign/core';
-import {mergeProps, themeProps} from '@astryxdesign/core/utils';
+import {
+  focusOutlineStyles,
+  mergeProps,
+  themeProps,
+} from '@astryxdesign/core/utils';
 import {
   borderVars,
   colorVars,
@@ -186,16 +190,23 @@ const styles = stylex.create({
     borderInlineWidth: 0,
     fontFamily: typographyVars['--font-family-code'],
     fontSize: textSizeVars['--font-size-sm'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     backgroundColor: {
       default: 'transparent',
-      ':hover': {[HOVER]: colorVars['--color-overlay-hover']},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        [HOVER]: colorVars['--color-overlay-hover'],
+      },
     },
   },
   rowButtonTerminal: {
     backgroundColor: {
       default: 'transparent',
-      ':hover': {[HOVER]: TERM.surfaceRaised},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        [HOVER]: TERM.surfaceRaised,
+      },
     },
   },
   // Level tints: faint full-row wash for error/warn (color-mix keeps the
@@ -280,25 +291,27 @@ const styles = stylex.create({
     borderColor: colorVars['--color-border-emphasized'],
     backgroundColor: {
       default: colorVars['--color-background-surface'],
-      ':hover': {[HOVER]: colorVars['--color-background-muted']},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        [HOVER]: colorVars['--color-background-muted'],
+      },
     },
     color: colorVars['--color-text-primary'],
     fontFamily: typographyVars['--font-family-code'],
     fontSize: textSizeVars['--font-size-sm'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    cursor: 'pointer',
-    boxShadow: shadowVars['--shadow-med'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    outlineOffset: 2,
+    boxShadow: shadowVars['--shadow-med'],
   },
   jumpToLatestTerminal: {
     borderColor: TERM.border,
     backgroundColor: {
       default: TERM.surfaceRaised,
-      ':hover': {[HOVER]: '#1d1d21'},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        [HOVER]: '#1d1d21',
+      },
     },
     color: TERM.textBright,
   },
@@ -328,6 +341,10 @@ const LEVEL_STYLE_TERMINAL: Record<LogStreamLevel, stylex.StyleXStyles> = {
  * prefers-reduced-motion). Follow pinning uses a scroll listener — no
  * polling; rows use `content-visibility: auto` for offscreen skip but are
  * NOT virtualized (window large streams in the caller).
+ *
+ * Live announcements are tied to follow pinning: the `role="log"` region is
+ * `aria-live="polite"` only while following the tail and `aria-live="off"`
+ * while unfollowed, so appends never flood assistive tech.
  *
  * @example
  * ```
@@ -538,6 +555,12 @@ export function LogStream({
         ref={scrollerRef}
         role="log"
         aria-label={label}
+        // role="log" is implicitly aria-live="polite" — on a busy stream that
+        // floods assistive tech with every appended row (WCAG 2.2.2 / 4.1.3).
+        // Follow-pinning doubles as the mute switch: while the user is away
+        // from the tail (unfollowed), the region is aria-live="off"; resuming
+        // follow ("Jump to latest") restores polite announcements.
+        aria-live={following ? 'polite' : 'off'}
         onScroll={handleScroll}
         {...stylex.props(styles.scroller(maxHeight ?? null))}>
         {entries.map(entry => (
@@ -551,6 +574,7 @@ export function LogStream({
           type="button"
           onClick={handleJumpToLatest}
           {...stylex.props(
+            focusOutlineStyles.focusVisible,
             styles.jumpToLatest,
             isTerminal && styles.jumpToLatestTerminal,
           )}>

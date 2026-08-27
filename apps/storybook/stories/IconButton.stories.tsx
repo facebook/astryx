@@ -31,6 +31,11 @@ const meta: Meta<typeof IconButton> = {
       options: ['sm', 'md', 'lg'],
       description: 'Size variant',
     },
+    elevation: {
+      control: 'inline-radio',
+      options: ['none', 'low', 'med', 'high'],
+      description: 'Resting shadow depth (raise for a FAB)',
+    },
     isLoading: {
       control: 'boolean',
       description: 'Loading state',

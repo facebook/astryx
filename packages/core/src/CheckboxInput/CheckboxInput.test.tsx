@@ -9,10 +9,19 @@
  * SYNC: When CheckboxInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {CheckboxInput} from './CheckboxInput';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {FOCUS_OUTLINE_PARTS} from '../utils/focusOutline.stylex';
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -136,6 +145,39 @@ describe('CheckboxInput', () => {
     const checkbox = screen.getByRole('checkbox');
     const description = screen.getByText('Receive weekly updates');
     expect(checkbox).toHaveAttribute('aria-describedby', description.id);
+  });
+
+  it('toggles when clicking on the description', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <CheckboxInput
+        label="Subscribe"
+        description="Receive weekly updates"
+        value={false}
+        onChange={handleChange}
+      />,
+    );
+    await user.click(screen.getByText('Receive weekly updates'));
+    expect(handleChange).toHaveBeenCalledWith(true, expect.any(Object));
+  });
+
+  it('does not fold the description into the checkbox accessible name', () => {
+    // The description stays a sibling of the <label>, so it must NOT become
+    // part of the checkbox's accessible name (which is computed from the
+    // associated label). It belongs in the accessible DESCRIPTION only
+    // (via aria-describedby) — otherwise screen readers announce it twice.
+    render(
+      <CheckboxInput
+        label="Email notifications"
+        description="We'll send weekly digests"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toHaveAccessibleName('Email notifications');
+    expect(checkbox).toHaveAccessibleDescription("We'll send weekly digests");
   });
 
   it('is disabled when isDisabled prop is true', () => {
@@ -333,6 +375,32 @@ describe('CheckboxInput', () => {
     );
   });
 
+  // Regression: the status is conditionally mounted, so it must be announced
+  // through the persistent useAnnounce live region — a live region born
+  // together with its content is not reliably announced.
+  it('announces a status message that appears after mount', async () => {
+    const {rerender} = render(
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
+    );
+    expect(
+      document.querySelector('[data-astryx-live-region="assertive"]'),
+    ).toBeNull();
+
+    rerender(
+      <CheckboxInput
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required field'}}
+      />,
+    );
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="assertive"]'),
+      ).toHaveTextContent('Required field');
+    });
+  });
+
   describe('disabledMessage', () => {
     const h = {hidden: true} as const;
 
@@ -477,6 +545,38 @@ describe('CheckboxInput', () => {
       expect(data.get('terms')).toBe('on');
     });
 
+    it('does not block form submission when required and disabled with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={false}
+            onChange={() => {}}
+            isRequired
+            isDisabled
+            disabledMessage="Terms are managed by your administrator"
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(true);
+    });
+
+    it('still blocks submission when required and unchecked but enabled', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={false}
+            onChange={() => {}}
+            isRequired
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(false);
+    });
+
     it('is excluded from form data when disabled, even with a disabledMessage', () => {
       const {container} = render(
         <form>
@@ -510,5 +610,127 @@ describe('CheckboxInput', () => {
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
     });
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so this asserts that the
+// compiled output includes the forced-colors rule; visual behavior needs
+// manual verification under Windows High Contrast.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles a forced-colors fill so the indeterminate mark survives Windows High Contrast', () => {
+    render(
+      <CheckboxInput label="All" value="indeterminate" onChange={() => {}} />,
+    );
+    // The painted indeterminate bar would be stripped to Canvas (invisible);
+    // CanvasText keeps it perceivable.
+    expect(getForcedColorsRules()).toContain('background-color: canvastext;');
+  });
+
+  it('compiles a forced-colors color so the checkmark survives Windows High Contrast', () => {
+    render(<CheckboxInput label="Accept" value={true} onChange={() => {}} />);
+    // The check strokes with currentColor; forced colors leaves it the same
+    // white as the flattened box, so it needs its own CanvasText color to stay
+    // perceivable on the Canvas box.
+    expect(getForcedColorsRules()).toContain('color: canvastext;');
+  });
+});
+
+// The control's native input is `opacity: 0`, so the visible focus indicator
+// has to land on the indicator beside it — which is themeable, third-party
+// code. If drawing the ring were the indicator's job, a replacement that
+// simply doesn't would ship a control with no visible focus (WCAG 2.4.7), and
+// that is the default: our own sample replacement destructures
+// {state, size, isDisabled} and drops the rest.
+//
+// So the owner paints it, on the indicator's own element, at focus time. The
+// shape is right because `outline` follows that element's border-radius, and
+// no cooperation is required.
+describe('focus ring ownership (WCAG 2.4.7)', () => {
+  /** What a theme author plausibly writes: state in, picture out. */
+  const BareIndicator = ({state}: {state: string}) => (
+    <span aria-hidden="true" data-testid="bare-indicator">
+      {state === 'checked' ? 'x' : ''}
+    </span>
+  );
+
+  const bareTheme = defineTheme({
+    name: 'bare-indicator-theme',
+    indicators: {checkbox: BareIndicator},
+  });
+
+  /**
+   * The element the ring is painted on: the indicator slot's only child — the
+   * indicator's own root, whatever a theme renders there.
+   */
+  const indicatorOf = (container: HTMLElement) => {
+    const input = container.querySelector('input[type="checkbox"]');
+    const slot = input?.nextElementSibling;
+    return slot?.firstElementChild as HTMLElement;
+  };
+
+  const focusInput = (container: HTMLElement) => {
+    const input = container.querySelector(
+      'input[type="checkbox"]',
+    ) as HTMLInputElement;
+    // A keydown first, so jsdom's :focus-visible heuristic sees keyboard
+    // modality — the ring is deliberately keyboard-only, and a bare
+    // fireEvent.focus() reads as a pointer focus. Same approach as the
+    // TreeList focus test.
+    fireEvent.keyDown(document.body, {key: 'Tab'});
+    input.focus();
+    fireEvent.focus(input);
+    return input;
+  };
+
+  it('paints the ring on the built-in indicator', () => {
+    const {container} = render(
+      <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
+    );
+    focusInput(container);
+    expect(indicatorOf(container).style.outlineStyle).toBe(
+      FOCUS_OUTLINE_PARTS.outlineStyle,
+    );
+  });
+
+  it('paints it on a replacement that forwards nothing', () => {
+    const {container} = render(
+      <Theme theme={bareTheme}>
+        <CheckboxInput label="Accept" value={false} onChange={() => {}} />
+      </Theme>,
+    );
+
+    // The replacement really took effect, and really is bare.
+    const replaced = screen.getByTestId('bare-indicator');
+    expect(replaced.className).toBe('');
+    // ...and it still gets a ring, because the owner drew it.
+    focusInput(container);
+    expect(replaced.style.outlineStyle).toBe(FOCUS_OUTLINE_PARTS.outlineStyle);
+  });
+
+  it('clears the ring on blur', () => {
+    const {container} = render(
+      <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
+    );
+    const input = focusInput(container);
+    expect(indicatorOf(container).style.outlineStyle).toBe(
+      FOCUS_OUTLINE_PARTS.outlineStyle,
+    );
+    fireEvent.blur(input);
+    expect(indicatorOf(container).style.outlineStyle).toBe('');
+  });
+});
+
+describe('label theme target', () => {
+  it('names its own label so a theme can style it apart from a field label', () => {
+    // The control knows this label shares a row with it; the label does not.
+    // Both classes land on the one element, so a theme reaches every label
+    // through `astryx-field-label` and only this kind through
+    // `astryx-checkbox-label`.
+    render(
+      <CheckboxInput label="Notify me" value={false} onChange={() => {}} />,
+    );
+    const label = screen.getByText('Notify me').closest('label');
+    expect(label).toHaveClass('astryx-field-label');
+    expect(label).toHaveClass('astryx-checkbox-label');
   });
 });

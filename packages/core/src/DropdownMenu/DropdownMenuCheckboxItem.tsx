@@ -4,38 +4,36 @@
 
 /**
  * @file DropdownMenuCheckboxItem.tsx
- * @input React, stylex, Item + Icon + DropdownMenu context + tokens from core
+ * @input React, stylex, Item + CheckboxInput + DropdownMenu context + tokens from core
  * @output DropdownMenuCheckboxItem — a standalone checkable menu item.
  * @position Sub-component; used inside DropdownMenu.
  *
  * A menu item that toggles an independent boolean (role="menuitemcheckbox").
- * Unlike CheckboxInput, there is no nested native <input>: the row itself owns
- * the role and aria-checked, per the WAI-ARIA menuitemcheckbox pattern.
- * Keyboard navigation (arrows/typeahead) and Enter/Space activation come from
- * the parent DropdownMenu's useListFocus + activation path, which matches
- * menuitemcheckbox alongside plain menuitem rows.
+ * Unlike CheckboxInput, there is no nested native <input> that participates in
+ * accessibility: the row itself owns the role and aria-checked, per the
+ * WAI-ARIA menuitemcheckbox pattern. Keyboard navigation (arrows/typeahead) and
+ * Enter/Space activation come from the parent DropdownMenu's useListFocus +
+ * activation path, which matches menuitemcheckbox alongside plain menuitem rows.
  *
- * The square checkbox visual is decorative (aria-hidden) — the row owns the
- * checked state. Its size is derived from the menu's item size (a `sm` menu
- * gets the compact control; `md`/`lg` get the standard one) and it swaps to the
- * inline-end of the row on coarse-pointer (touch) devices via CSS `order`, so
- * it lands where selection toggles are conventionally placed on mobile. The
- * checkmark uses the `check` icon from the active theme's icon registry.
+ * The checkbox visual is the shared checkbox indicator, decorative
+ * (aria-hidden) — the row owns the role, checked state, and accessible name, so
+ * there is no nested native <input> to shim out of the accessibility tree. It
+ * picks up the same `checkbox` theming (and any theme replacement) as
+ * CheckboxInput. The control size is derived from the menu's item size (a `sm`
+ * menu gets the compact control; `md`/`lg` get the standard one) and the marker
+ * box swaps to the inline-end of the row on coarse-pointer (touch) devices via
+ * CSS `order`, so it lands where selection toggles are conventionally placed on
+ * mobile.
  */
 
-import {useCallback, type ReactNode} from 'react';
+import {useCallback, type PointerEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {renderIconSlot, type IconType} from '../Icon';
+import {useIndicator} from '../Indicator';
 import {Item} from '../Item';
 import {useDropdownMenuContext} from './DropdownMenuContext';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  durationVars,
-  easeVars,
-  borderVars,
-} from '../theme/tokens.stylex';
+import {focusMenuItemOnHover} from './menuItemHover';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 
@@ -47,33 +45,27 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
-      ':hover': colorVars['--color-overlay-hover'],
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   // Rendered in Item's `marker` slot as a raw flex child, so `order` moves it
   // relative to the label within the row. On touch it moves to the inline-end.
-  box: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    boxSizing: 'border-box',
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderRadius: radiusVars['--radius-inner'],
-    color: colorVars['--color-on-accent'],
-    transitionProperty: 'background-color, border-color',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
+  // `aria-hidden` + `inert` + pointer-events:none keep the composed CheckboxInput
+  // decorative: it adds no accessible name, and clicks fall through to the row,
+  // which owns the role and activation.
+  // Placement of the marker within the row. The indicator draws its own box
+  // (size, fill, border) — these are only the rules the MENU owns: where the
+  // marker sits in the row, and that it never takes the pointer.
+  marker: {
+    pointerEvents: 'none',
     order: {
       default: 0,
       '@media (pointer: coarse)': 1,
@@ -83,21 +75,10 @@ const styles = stylex.create({
       '@media (pointer: coarse)': 'auto',
     },
   },
-  unchecked: {
-    borderColor: colorVars['--color-border-emphasized'],
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-  checked: {
-    borderColor: colorVars['--color-accent'],
-    backgroundColor: colorVars['--color-accent'],
-  },
 });
 
-const boxSizeStyles = stylex.create({
-  sm: {width: 18, height: 18},
-  md: {width: 22, height: 22},
-});
-
+// Matches the control sizes CheckboxInput uses, so a checkbox reads the same in
+// a menu row as it does in a form.
 export interface DropdownMenuCheckboxItemProps extends Omit<
   BaseProps,
   'onChange' | 'role' | 'aria-checked' | 'tabIndex'
@@ -152,8 +133,7 @@ export interface DropdownMenuCheckboxItemProps extends Omit<
  *
  * @example
  * ```
- *  * import {DropdownMenuCheckboxItem} from '@astryxdesign/core/DropdownMenu';
- *
+ * import {DropdownMenuCheckboxItem} from '@astryxdesign/core/DropdownMenu';
  * <DropdownMenu button={{label: 'View'}}>
  *   <DropdownMenuCheckboxItem
  *     label="Show archived"
@@ -180,6 +160,7 @@ export function DropdownMenuCheckboxItem({
   const ctx = useDropdownMenuContext();
   const menuSize = ctx?.menuSize ?? 'md';
   const controlSize = menuSize === 'sm' ? 'sm' : 'md';
+  const CheckboxControl = useIndicator('checkbox');
 
   const handleClick = useCallback(() => {
     if (isDisabled) {
@@ -191,29 +172,30 @@ export function DropdownMenuCheckboxItem({
     }
   }, [isDisabled, onChange, value, hasCloseOnSelect, ctx]);
 
+  const handlePointerMove = useCallback(
+    (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
+    [isDisabled],
+  );
+
   return (
     <Item
       {...rest}
       role="menuitemcheckbox"
       aria-checked={value}
       tabIndex={isDisabled ? undefined : -1}
+      onPointerMove={handlePointerMove}
       marker={
-        <span
-          aria-hidden="true"
-          {...mergeProps(
-            themeProps('dropdown-menu-checkbox', {
-              size: controlSize,
-              checked: value ? 'checked' : null,
-              disabled: isDisabled ? 'disabled' : null,
-            }),
-            stylex.props(
-              styles.box,
-              boxSizeStyles[controlSize],
-              value ? styles.checked : styles.unchecked,
-            ),
-          )}>
-          {value && <Icon icon="check" size="sm" color="inherit" />}
-        </span>
+        // No wrapper, and no menu-specific theme target: the shared
+        // `astryx-checkbox` target is already on this element (main reached
+        // the menu checkbox through it too), so the menu adds only its own
+        // placement rules. A wrapper here would have duplicated the
+        // indicator's control size and moved nothing themeable.
+        <CheckboxControl
+          state={value ? 'checked' : 'unchecked'}
+          size={controlSize}
+          isDisabled={isDisabled}
+          xstyle={styles.marker}
+        />
       }
       startContent={
         icon

@@ -11,14 +11,16 @@
  *
  * ContentEditable-based rich input for the chat composer.
  * Supports trigger menus (@ mentions, / commands) via SearchSource,
- * inline token rendering, serialization, Enter/Shift+Enter, message
- * history, paste/drop file handling, and mobile-safe touch typography.
+ * inline token rendering, serialization, Enter-to-submit with
+ * IME-composition guarding and an onKeyDown seam for platform-specific
+ * key handling, message history, paste/drop file handling, and
+ * mobile-safe touch typography.
  *
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatComposerInput/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposerInput/ (block examples)
  */
 
 import {
@@ -41,7 +43,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, isImeKeyEvent} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
 import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
 import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
@@ -188,6 +190,21 @@ export interface ChatComposerInputProps extends Omit<
   onFiles?: (files: File[]) => void;
   /** Submit handler (Enter without Shift) */
   onSubmit?: (value: string) => void;
+  /**
+   * Key-down handler invoked before the built-in Enter/history behavior
+   * (but after an open trigger menu consumes the event).
+   *
+   * This is the seam for platform- or app-specific key handling:
+   * - Call `event.preventDefault()` to suppress the default submit (e.g.
+   *   let Enter insert a newline on a touch keyboard).
+   * - Add behavior by acting on the event yourself (e.g. submit on
+   *   Cmd/Ctrl+Enter) without calling `preventDefault()`, so the default
+   *   handling still runs for other keys.
+   *
+   * IME composition is always respected regardless of this handler: Enter
+   * never submits while a composition is in progress.
+   */
+  onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
 }
 
 // =============================================================================
@@ -221,8 +238,8 @@ const styles = stylex.create({
   placeholder: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     pointerEvents: 'none',
     color: colorVars['--color-text-secondary'],
     fontSize: {
@@ -237,6 +254,10 @@ const styles = stylex.create({
   disabled: {
     opacity: 0.5,
     pointerEvents: 'none' as const,
+  },
+  tokenSpan: {
+    display: 'inline-flex',
+    verticalAlign: 'middle',
   },
 });
 
@@ -299,6 +320,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     pasteAsToken: pasteAsTokenProp,
     onFiles,
     onSubmit = composerCtx?.onSubmit,
+    onKeyDown: onKeyDownProp,
     xstyle,
     className,
     style,
@@ -365,6 +387,20 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   };
   selfRef.current = handle;
   useImperativeHandle(handleRef, () => handle);
+
+  // Register a focus control with the composer shell so body-click-to-focus
+  // works without the shell sniffing the input's DOM shape. Cleared on
+  // unmount so the shell falls back cleanly if the input goes away.
+  const inputControlRef = composerCtx?.inputControlRef;
+  useEffect(() => {
+    if (!inputControlRef) {
+      return;
+    }
+    inputControlRef.current = {focus: () => editableRef.current?.focus()};
+    return () => {
+      inputControlRef.current = null;
+    };
+  }, [inputControlRef]);
 
   useEffect(() => {
     if (controlledValue === undefined || !editableRef.current) {
@@ -477,6 +513,13 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         return;
       }
 
+      // Consumer passthrough — runs before built-in Enter/history handling.
+      // A consumer can preventDefault() to fully own the keystroke.
+      onKeyDownProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+
       // Handle Backspace near tokens — prevent browser from creating
       // stray <br> elements or moving the cursor unexpectedly.
       if (e.key === 'Backspace') {
@@ -519,6 +562,12 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       }
 
       if (e.key === 'Enter' && !e.shiftKey) {
+        // Never submit mid-composition — an IME uses Enter to commit a
+        // candidate. See utils/ime.ts for the full rationale.
+        if (isImeKeyEvent(e.nativeEvent)) {
+          return;
+        }
+
         e.preventDefault();
         if (!editableRef.current) {
           return;
@@ -583,7 +632,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         }
       }
     },
-    [hasHistory, onSubmit, onChange, emitChange, triggerMenu],
+    [hasHistory, onSubmit, onChange, emitChange, triggerMenu, onKeyDownProp],
   );
 
   const handlePaste = useCallback(
@@ -704,7 +753,7 @@ export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
       data-astryx-token=""
       data-astryx-token-value={token.value}
       contentEditable={false}
-      style={{display: 'inline-flex', verticalAlign: 'baseline'}}>
+      {...stylex.props(styles.tokenSpan)}>
       {isCustomToken(token) ? (
         token.render()
       ) : (

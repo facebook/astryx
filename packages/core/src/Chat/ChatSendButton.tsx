@@ -20,10 +20,11 @@
 import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {useChatComposerContext} from './ChatContext';
 
 import type {BaseProps} from '../BaseProps';
+import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -88,26 +89,36 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
     stopIcon,
     size = 'md',
     xstyle,
+    className,
+    style,
     ref,
+    ...rest
   } = props;
 
   const handleSend = onSend ?? (() => context?.onSubmit(''));
+  const defaultStopIcon = useIcon('stop');
+  const defaultSendIcon = useIcon('arrowUp');
 
   return (
     <Button
       ref={ref}
-      label={isStopShown ? t('@astryx.chatSendButton.stop') : t('@astryx.chatSendButton.send')}
+      label={
+        isStopShown
+          ? t('@astryx.chatSendButton.stop')
+          : t('@astryx.chatSendButton.send')
+      }
       variant={isStopShown ? 'secondary' : 'primary'}
       size={size}
       icon={
         isStopShown
-          ? (stopIcon ?? getIcon('stop'))
-          : (sendIcon ?? getIcon('arrowUp'))
+          ? (stopIcon ?? defaultStopIcon)
+          : (sendIcon ?? defaultSendIcon)
       }
       isIconOnly
       isDisabled={!isStopShown && isDisabled}
       onClick={isStopShown ? onStop : handleSend}
-      {...themeProps('chat-send-button')}
+      {...rest}
+      {...mergeProps(themeProps('chat-send-button'), {className}, style)}
       xstyle={[styles.root, xstyle]}
     />
   );

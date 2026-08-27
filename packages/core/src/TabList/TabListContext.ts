@@ -5,7 +5,7 @@
 /**
  * @file TabListContext.ts
  * @input React createContext, use
- * @output Exports TabListContext, useTabListContext
+ * @output Exports TabListContext, useTabListContext, TabListPattern
  * @position Context provider; consumed by Tab.tsx, TabMenu.tsx
  *
  * SYNC: When modified, update /packages/core/src/TabList/TabList.doc.mjs
@@ -27,19 +27,24 @@ export type TabListSize = 'sm' | 'md' | 'lg';
 export type TabListLayout = 'hug' | 'fill';
 
 /**
- * Orientation of the tab strip. Controls which arrow keys move focus
- * between tabs and the reported `aria-orientation`.
+ * ARIA pattern the strip resolved to.
+ * - `'nav'`: a `<nav>` of links or buttons, current item marked with
+ *   `aria-current`.
+ * - `'tabs'`: the WAI-ARIA tabs pattern — `role="tablist"` / `role="tab"`,
+ *   `aria-selected`, and `aria-controls` for the panel each tab owns.
  */
-export type TabListOrientation = 'horizontal' | 'vertical';
+export type TabListPattern = 'nav' | 'tabs';
 
 /**
- * Context for communicating value/onChange/size/layout from TabList to children.
+ * Context for communicating value/onChange/size/layout and the resolved ARIA
+ * pattern from TabList to children.
  */
 export interface TabListContextValue {
   value: string;
   onChange: (value: string) => void;
   size: TabListSize;
   layout: TabListLayout;
+  pattern: TabListPattern;
 }
 
 export const TabListContext = createContext<TabListContextValue | null>(null);

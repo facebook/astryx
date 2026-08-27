@@ -14,6 +14,7 @@ import userEvent from '@testing-library/user-event';
 import {ContextMenu} from './ContextMenu';
 import {
   ContextMenuItem,
+  ContextMenuDivider,
   ContextMenuCheckboxItem,
   ContextMenuRadioGroup,
   ContextMenuRadioItem,
@@ -133,6 +134,21 @@ describe('ContextMenu', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
     // Focus is not inside the menu, so the Escape path must be document-level.
     fireEvent.keyDown(document, {key: 'Escape'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('closes the menu when Tab is pressed inside it (APG menu pattern)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    fireEvent.keyDown(menu, {key: 'Tab'});
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
   });
 
@@ -333,6 +349,27 @@ describe('ContextMenu items', () => {
   });
 });
 
+describe('ContextMenu destructive variant', () => {
+  it('forwards a destructive item variant to the shared menu item', () => {
+    render(
+      <ContextMenu
+        items={[
+          {label: 'Delete', variant: 'destructive', onClick: () => {}},
+          {label: 'Rename', onClick: () => {}},
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveAttribute('data-variant', 'destructive');
+    expect(
+      screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+    ).not.toHaveAttribute('data-variant');
+  });
+});
+
 describe('ContextMenu sections', () => {
   it('renders section with title', () => {
     render(
@@ -431,6 +468,25 @@ describe('ContextMenu compound mode', () => {
     );
 
     expect(screen.getByTestId('shortcut')).toHaveTextContent('⌘X');
+  });
+
+  it('renders the menu divider surface through the ContextMenu alias', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <ContextMenuItem label="Cut" onClick={() => {}} />
+            <ContextMenuDivider />
+            <ContextMenuItem label="Delete" onClick={() => {}} />
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    expect(screen.getByRole('separator', {hidden: true})).toHaveClass(
+      'astryx-dropdown-menu-divider',
+    );
   });
 
   it('calls onClick when compound item is clicked', async () => {
@@ -552,7 +608,7 @@ describe('ContextMenu selectable items', () => {
             <ContextMenuRadioGroup
               value="name"
               onChange={() => {}}
-              aria-label="Sort by">
+              label="Sort by">
               <ContextMenuRadioItem value="name" label="Sort by name" />
               <ContextMenuRadioItem value="date" label="Sort by date" />
             </ContextMenuRadioGroup>
@@ -587,7 +643,7 @@ describe('ContextMenu selectable items', () => {
             <ContextMenuRadioGroup
               value="name"
               onChange={onSort}
-              aria-label="Sort by">
+              label="Sort by">
               <ContextMenuRadioItem value="name" label="Sort by name" />
               <ContextMenuRadioItem value="date" label="Sort by date" />
             </ContextMenuRadioGroup>
@@ -609,5 +665,240 @@ describe('ContextMenu selectable items', () => {
       screen.getByRole('menuitemcheckbox', {name: 'Show hidden', hidden: true}),
     );
     expect(onToggle).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('ContextMenu keyboard access for menuitemradio/menuitemcheckbox (#3829)', () => {
+  it('arrow navigation reaches consumer-rendered menuitemradio and menuitemcheckbox items', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <DropdownMenuItem label="Cut" onClick={() => {}} />
+            <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+              Newest
+            </div>
+            <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+              Archived
+            </div>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {hidden: true});
+    screen.getByRole('menuitem', {name: 'Cut', hidden: true}).focus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    ).toHaveFocus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Archived', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('activates a focused menuitemradio with Enter and a menuitemcheckbox with Space', () => {
+    const onSelect = vi.fn();
+    const onToggle = vi.fn();
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <DropdownMenuItem label="Cut" onClick={() => {}} />
+            <div
+              role="menuitemradio"
+              tabIndex={-1}
+              aria-checked="false"
+              onClick={onSelect}>
+              Newest
+            </div>
+            <div
+              role="menuitemcheckbox"
+              tabIndex={-1}
+              aria-checked="false"
+              onClick={onToggle}>
+              Archived
+            </div>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {hidden: true});
+
+    screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}).focus();
+    fireEvent.keyDown(menu, {key: 'Enter'});
+    expect(onSelect).toHaveBeenCalledTimes(1);
+
+    screen
+      .getByRole('menuitemcheckbox', {name: 'Archived', hidden: true})
+      .focus();
+    fireEvent.keyDown(menu, {key: ' '});
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('typeahead matches a menuitemradio label', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <DropdownMenuItem label="Cut" onClick={() => {}} />
+            <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+              Newest
+            </div>
+            <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+              Archived
+            </div>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'n'});
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('typeahead matches a menuitemcheckbox label', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <DropdownMenuItem label="Cut" onClick={() => {}} />
+            <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+              Newest
+            </div>
+            <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+              Archived
+            </div>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'a'});
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Archived', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('typeahead skips an aria-disabled item and matches the next enabled label', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <DropdownMenuItem label="Cut" onClick={() => {}} />
+            <div role="menuitemradio" tabIndex={-1} aria-disabled="true">
+              Newest
+            </div>
+            <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+              Nightly
+            </div>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    // Anchor the search on 'Cut' so typeahead scans forward and meets the
+    // disabled 'Newest' (also an 'n' match) before the enabled 'Nightly'.
+    // This pins the `:not([aria-disabled="true"])` in MENU_ITEM_SELECTOR: the
+    // menus never pass useTypeahead's `isDisabled` option, so that clause is
+    // the only thing keeping disabled rows out of the typeahead list. An
+    // arrow-key test cannot cover it — useListFocus re-filters disabled items
+    // independently, so arrow navigation is guarded twice over.
+    // The disabled row keeps tabIndex={-1} on purpose: it stays focusable, so
+    // the selector clause is the sole reason focus skips it.
+    screen.getByRole('menuitem', {name: 'Cut', hidden: true}).focus();
+    fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'n'});
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Nightly', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('skips aria-disabled menuitemradio and menuitemcheckbox items during arrow navigation', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <DropdownMenuItem label="Cut" onClick={() => {}} />
+            <div role="menuitemradio" tabIndex={-1} aria-disabled="true">
+              Newest
+            </div>
+            <div role="menuitemcheckbox" tabIndex={-1} aria-disabled="true">
+              Archived
+            </div>
+            <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+              Oldest
+            </div>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {hidden: true});
+    screen.getByRole('menuitem', {name: 'Cut', hidden: true}).focus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('renders a submenu from a nested items array and keyboard-reaches an item after it', () => {
+    // Same inline-flyout scoping the DropdownMenu fix covers: the submenu's
+    // items must not pollute the ContextMenu's roving order, and an item after
+    // the submenu row must stay keyboard-reachable.
+    const onDelete = vi.fn();
+    render(
+      <ContextMenu
+        items={[
+          {label: 'Cut', onClick: () => {}},
+          {
+            label: 'Move to',
+            items: [
+              {label: 'Folder A', onClick: () => {}},
+              {label: 'Folder B', onClick: () => {}},
+            ],
+          },
+          {type: 'divider'},
+          {label: 'Delete', onClick: onDelete},
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    // Two role="menu" exist (the context menu + the inline submenu flyout);
+    // the context menu is the first in DOM order.
+    const menu = screen.getAllByRole('menu', {hidden: true})[0];
+    // The submenu trigger renders as a menuitem with aria-haspopup.
+    const submenuTrigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    expect(submenuTrigger).toHaveAttribute('aria-haspopup', 'menu');
+    // Cut → Move to → Delete, one step per press (submenu items not swept in).
+    screen.getByRole('menuitem', {name: 'Cut', hidden: true}).focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(submenuTrigger).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveFocus();
   });
 });

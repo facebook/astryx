@@ -2,7 +2,7 @@
 
 /**
  * @file Bundles each theme's source (`src/<slug>Theme.ts` + `icons.tsx`) and a
- * `manifest.json` into `packages/cli/templates/themes/` so `astryx theme add`
+ * `manifest.json` into `packages/cli/assets/templates/themes/` so `astryx theme add`
  * can scaffold a theme without the package installed — like page templates.
  * Run from the repo root; commit the output so the published CLI carries it.
  */
@@ -18,6 +18,7 @@ const CLI_THEMES_OUT = path.join(
   REPO_ROOT,
   'packages',
   'cli',
+  'assets',
   'templates',
   'themes',
 );
@@ -54,7 +55,12 @@ function listThemeSlugs() {
         'src',
         `${toIdentifier(slug)}Theme.ts`,
       );
-      return fs.existsSync(pkg) && fs.existsSync(themeFile);
+      if (!fs.existsSync(pkg) || !fs.existsSync(themeFile)) return false;
+      // A PRIVATE theme package is not a theme a user can pick — it is a test
+      // fixture that happens to live here (packages/themes/probe). These
+      // assets ship inside the CLI tarball, so without this the fixture
+      // becomes a selectable theme in `astryx theme add`.
+      return readJSON(pkg).private !== true;
     })
     .sort();
 }

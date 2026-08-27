@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'useTableTreeData',
@@ -19,7 +19,7 @@ export const docs = {
     {
       name: 'onToggleItem',
       type: '(item: T) => void',
-      description: 'Toggle a row’s expansion.',
+      description: 'Toggle a row\'s expansion.',
       required: true,
     },
     {
@@ -28,6 +28,29 @@ export const docs = {
       description:
         'Whether any row in the dataset is expandable. When false the plugin is a no-op: no expanders, no indent, no tree ARIA.',
       required: true,
+    },
+    {
+      name: 'hasExpandAllControl',
+      type: 'boolean',
+      description:
+        'Show an expand-all/collapse-all toggle in the tree column header. Requires isAllExpanded plus onExpandAll/onCollapseAll (all supplied by useTableTreeState).',
+      default: 'false',
+    },
+    {
+      name: 'isAllExpanded',
+      type: "boolean | 'indeterminate'",
+      description:
+        'Aggregate expansion state across every expandable row, driving the header expand-all toggle. true when all are expanded, false when none are, indeterminate when some are.',
+    },
+    {
+      name: 'onExpandAll',
+      type: '() => void',
+      description: 'Expand every expandable row. Wired to the header control.',
+    },
+    {
+      name: 'onCollapseAll',
+      type: '() => void',
+      description: 'Collapse every row. Wired to the header control.',
     },
     {
       name: 'indent',
@@ -41,6 +64,13 @@ export const docs = {
       type: 'string',
       description:
         'Column that carries the indent + expander. Defaults to the first column.',
+    },
+    {
+      name: 'hasRowClickExpansion',
+      type: 'boolean',
+      description:
+        'When true, clicking anywhere on an expandable row toggles its expansion, in addition to the chevron. A pointer-only convenience: keyboard and assistive-tech users toggle via the chevron button. Clicks on interactive cell content (buttons, links, form controls) or a text selection do not toggle. Leaf rows stay inert, and it is a no-op on flat data.',
+      default: 'false',
     },
   ],
   examples: [
@@ -71,5 +101,13 @@ export const docsDense = {
     indent:
       "indent step per level: 'sm' | 'md' | 'lg' (spacing-3/4/6). Defaults to 'md'.",
     treeColumnKey: 'column carrying indent + expander. Defaults to first column.',
+    hasExpandAllControl:
+      'show expand-all/collapse-all toggle in tree column header. Needs isAllExpanded + onExpandAll/onCollapseAll (from useTableTreeState). Defaults to false.',
+    isAllExpanded:
+      "aggregate state driving the header toggle: true (all) | false (none) | 'indeterminate' (some).",
+    onExpandAll: 'expand every expandable row (header control)',
+    onCollapseAll: 'collapse every row (header control)',
+    hasRowClickExpansion:
+      'true => clicking an expandable row body toggles it (in addition to the chevron). Leaves stay inert; no-op on flat data. Defaults to false.',
   },
 };

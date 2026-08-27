@@ -6,7 +6,7 @@ import {
   parseMarkdownIncremental,
   createIncrementalState,
 } from './parser';
-import type {BlockNode} from './parser';
+import type {BlockNode, ParseOptions} from './parser';
 
 function generateAIResponse(paragraphs: number): string {
   const sections: string[] = [];
@@ -69,6 +69,44 @@ function simulateStreamingIncremental(
   return parseMarkdownIncremental(fullText, state);
 }
 
+/**
+ * How many blocks each chunk of a streamed document had to build.
+ *
+ * A block the parser kept in its settled cache is handed back as the very same
+ * object, so a returned block that is not one of the previous chunk's is one
+ * this chunk built. That makes the cache countable without reaching into the
+ * parser's internals.
+ */
+function blocksBuiltPerChunk(
+  fullText: string,
+  chunkSize: number,
+  options?: ParseOptions,
+): number[] {
+  const state = createIncrementalState();
+  let previous: ReadonlySet<BlockNode> = new Set();
+  const built: number[] = [];
+  const step = (text: string) => {
+    const blocks =
+      options == null
+        ? parseMarkdownIncremental(text, state)
+        : parseMarkdownIncremental(text, state, options);
+    built.push(blocks.reduce((n, b) => (previous.has(b) ? n : n + 1), 0));
+    previous = new Set(blocks);
+  };
+  for (let i = chunkSize; i <= fullText.length; i += chunkSize) {
+    step(fullText.slice(0, i));
+  }
+  step(fullText);
+  return built;
+}
+
+const percentile = (values: number[], p: number): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+};
+
+const sum = (values: number[]): number => values.reduce((a, b) => a + b, 0);
+
 // A single wall-clock measurement is flaky when the whole suite runs in
 // parallel forks: scheduler contention can inflate a millisecond-scale
 // sample well past a tight budget (observed 30.9ms against the 20ms Small
@@ -116,15 +154,19 @@ describe('parseMarkdown performance', () => {
 
   // Full re-parse benchmarks
   for (const size of sizes) {
-    it(`full re-parse ${size.name} (${size.paragraphs} paragraphs) under ${size.maxMs}ms`, () => {
-      const text = generateAIResponse(size.paragraphs);
-      const {elapsed, result} = measureBest(3, () => parseMarkdown(text));
-      console.log(
-        `  ${size.name} full parse: ${elapsed.toFixed(2)}ms → ${result.length} blocks`,
-      );
-      expect(elapsed).toBeLessThan(size.maxMs);
-      expect(result.length).toBeGreaterThan(0);
-    });
+    it(
+      `full re-parse ${size.name} (${size.paragraphs} paragraphs) under ${size.maxMs}ms`,
+      () => {
+        const text = generateAIResponse(size.paragraphs);
+        const {elapsed, result} = measureBest(3, () => parseMarkdown(text));
+        console.log(
+          `  ${size.name} full parse: ${elapsed.toFixed(2)}ms → ${result.length} blocks`,
+        );
+        expect(elapsed).toBeLessThan(size.maxMs);
+        expect(result.length).toBeGreaterThan(0);
+      },
+      size.maxMs + 5000,
+    );
   }
 
   // Streaming with full re-parse
@@ -132,19 +174,23 @@ describe('parseMarkdown performance', () => {
     {name: 'Medium', paragraphs: 50, maxMs: 5000},
     {name: 'XL', paragraphs: 500, maxMs: 30000},
   ]) {
-    it(`streaming full re-parse ${size.name} under ${size.maxMs}ms`, () => {
-      const text = generateAIResponse(size.paragraphs);
-      const chunkSize = 50;
-      const iterations = Math.ceil(text.length / chunkSize);
-      const start = performance.now();
-      const result = simulateStreamingFullReparse(text, chunkSize);
-      const elapsed = performance.now() - start;
-      console.log(
-        `  ${size.name} streaming full re-parse: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
-      );
-      expect(elapsed).toBeLessThan(size.maxMs);
-      expect(result.length).toBeGreaterThan(0);
-    });
+    it(
+      `streaming full re-parse ${size.name} under ${size.maxMs}ms`,
+      () => {
+        const text = generateAIResponse(size.paragraphs);
+        const chunkSize = 50;
+        const iterations = Math.ceil(text.length / chunkSize);
+        const start = performance.now();
+        const result = simulateStreamingFullReparse(text, chunkSize);
+        const elapsed = performance.now() - start;
+        console.log(
+          `  ${size.name} streaming full re-parse: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
+        );
+        expect(elapsed).toBeLessThan(size.maxMs);
+        expect(result.length).toBeGreaterThan(0);
+      },
+      size.maxMs + 5000,
+    );
   }
 
   // Streaming with incremental parse
@@ -152,19 +198,23 @@ describe('parseMarkdown performance', () => {
     {name: 'Medium', paragraphs: 50, maxMs: 5000},
     {name: 'XL', paragraphs: 500, maxMs: 30000},
   ]) {
-    it(`streaming incremental ${size.name} under ${size.maxMs}ms`, () => {
-      const text = generateAIResponse(size.paragraphs);
-      const chunkSize = 50;
-      const iterations = Math.ceil(text.length / chunkSize);
-      const start = performance.now();
-      const result = simulateStreamingIncremental(text, chunkSize);
-      const elapsed = performance.now() - start;
-      console.log(
-        `  ${size.name} streaming incremental: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
-      );
-      expect(elapsed).toBeLessThan(size.maxMs);
-      expect(result.length).toBeGreaterThan(0);
-    });
+    it(
+      `streaming incremental ${size.name} under ${size.maxMs}ms`,
+      () => {
+        const text = generateAIResponse(size.paragraphs);
+        const chunkSize = 50;
+        const iterations = Math.ceil(text.length / chunkSize);
+        const start = performance.now();
+        const result = simulateStreamingIncremental(text, chunkSize);
+        const elapsed = performance.now() - start;
+        console.log(
+          `  ${size.name} streaming incremental: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
+        );
+        expect(elapsed).toBeLessThan(size.maxMs);
+        expect(result.length).toBeGreaterThan(0);
+      },
+      size.maxMs + 5000,
+    );
   }
 
   // --- Incremental vs Full speedup benchmark ---
@@ -190,5 +240,62 @@ describe('parseMarkdown performance', () => {
 
     // Incremental should be at least as fast (allowing small margin for noise)
     expect(incrElapsed).toBeLessThanOrEqual(fullElapsed * 1.1);
+  });
+});
+
+// What the incremental parser exists for is a cache, so these assert the cache:
+// integers that come out the same on a loaded CI box as on an idle laptop,
+// unlike the wall-clock budgets above.
+describe('parseMarkdownIncremental cache', () => {
+  it('builds a bounded number of blocks per chunk however long the document is', () => {
+    const chunkSize = 50;
+    const medians = [50, 200, 500].map(paragraphs =>
+      percentile(
+        blocksBuiltPerChunk(generateAIResponse(paragraphs), chunkSize),
+        0.5,
+      ),
+    );
+    console.log(
+      `  median blocks built per chunk (50/200/500 paragraphs): ${medians.join('/')}`,
+    );
+    // A chunk re-parses its unsettled tail, not the document — so the typical
+    // chunk's cost is a constant, and a 10x longer document does not move it.
+    expect(medians).toEqual([1, 1, 1]);
+  });
+
+  it('bounds the worst chunk, not just the typical one, at every document length', () => {
+    const chunkSize = 50;
+    const worst = [50, 200, 500].map(paragraphs =>
+      Math.max(
+        ...blocksBuiltPerChunk(generateAIResponse(paragraphs), chunkSize),
+      ),
+    );
+    console.log(
+      `  worst chunk's blocks built (50/200/500 paragraphs): ${worst.join('/')}`,
+    );
+    // A cache that dumps on a minority of chunks is flat at the median and at
+    // p95 while the total work is still quadratic: the blank-line path of
+    // #5378 hit ~1.4% of chunks on this fixture, and no percentile bound saw
+    // it. The worst chunk does, and each collapse costs more as the document
+    // grows — so this asserts the worst one, and that a 10x document does not
+    // move it. Deterministic: same fixture, same chunking, integers with no
+    // timing input.
+    expect(worst).toEqual([3, 3, 3]);
+  });
+
+  it('keeps the cache when source ranges are asked for', () => {
+    const text = generateAIResponse(200);
+    const chunkSize = 50;
+    const without = sum(blocksBuiltPerChunk(text, chunkSize));
+    const withRanges = sum(
+      blocksBuiltPerChunk(text, chunkSize, {sourceRanges: true}),
+    );
+    console.log(
+      `  blocks built streaming ${text.length} chars: ${without} without ranges, ${withRanges} with`,
+    );
+    // Stamping offsets must not cost a cache entry. An implementation that
+    // tracked positions by invalidating the settled cache each chunk would
+    // still pass any time budget generous enough not to flake; it fails here.
+    expect(withRanges).toBe(without);
   });
 });

@@ -91,7 +91,12 @@ export const Default: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p
+          style={{
+            marginBottom: 8,
+            fontSize: 14,
+            color: 'var(--color-text-secondary)',
+          }}>
           Selected: {selectedKeys.size} of {users.length}
         </p>
         <Table
@@ -121,7 +126,12 @@ export const WithPreselection: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p
+          style={{
+            marginBottom: 8,
+            fontSize: 14,
+            color: 'var(--color-text-secondary)',
+          }}>
           Selected: {[...selectedKeys].join(', ') || 'none'}
         </p>
         <Table
@@ -150,7 +160,12 @@ export const NonSelectableRows: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p
+          style={{
+            marginBottom: 8,
+            fontSize: 14,
+            color: 'var(--color-text-secondary)',
+          }}>
           Admin rows have no checkbox. Selected: {selectedKeys.size}
         </p>
         <Table
@@ -179,7 +194,12 @@ export const DisabledRows: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p
+          style={{
+            marginBottom: 8,
+            fontSize: 14,
+            color: 'var(--color-text-secondary)',
+          }}>
           Locked rows (Diana) have a disabled checkbox. Select-all skips them.
           Selected: {selectedKeys.size}
         </p>

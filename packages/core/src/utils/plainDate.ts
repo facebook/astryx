@@ -8,6 +8,7 @@
  */
 
 import type {ISODateString, PlainDate} from './dateTypes';
+import type {Locale} from '../i18n/types';
 
 export type {PlainDate} from './dateTypes';
 
@@ -72,9 +73,14 @@ export function plainDateDayOfWeek(pd: PlainDate): number {
 }
 
 export function plainDateAddMonths(pd: PlainDate, n: number): PlainDate {
-  const d = plainDateToDate(pd);
-  d.setMonth(d.getMonth() + n);
-  return plainDateFromDate(d);
+  // Pure month arithmetic with day clamping (Temporal.PlainDate.add
+  // semantics): Jan 31 + 1 month is Feb 28/29, not Mar 2/3. Date#setMonth
+  // would overflow the excess days into the following month instead.
+  const totalMonths = pd.year * 12 + (pd.month - 1) + n;
+  const year = Math.floor(totalMonths / 12);
+  const month = (((totalMonths % 12) + 12) % 12) + 1;
+  const day = Math.min(pd.day, getDaysInMonth(year, month));
+  return {year, month, day};
 }
 
 export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
@@ -83,7 +89,28 @@ export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
   return plainDateFromDate(d);
 }
 
-function getTimeZoneParts(
+/**
+ * Whole calendar days from `a` to `b`, ignoring time of day. Positive when
+ * `b` is after `a`, negative when before. Uses UTC midnight so DST shifts
+ * never add or drop a day.
+ */
+export function plainDateDiffDays(a: PlainDate, b: PlainDate): number {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const aUTC = Date.UTC(a.year, a.month - 1, a.day);
+  const bUTC = Date.UTC(b.year, b.month - 1, b.day);
+  return Math.round((bUTC - aUTC) / msPerDay);
+}
+
+/**
+ * The wall-clock fields an instant reads as in a given zone.
+ *
+ * A fixed `'en-US'` locale with `hourCycle: 'h23'` keeps the parts numeric and
+ * stable whatever locale the viewer has, so callers can assemble machine
+ * shapes (`YYYY-MM-DD`, `HH:mm:ss`) from them. Exported for Timestamp, whose
+ * `system_*` formats are built from these fields rather than through `Intl`
+ * formatting.
+ */
+export function getTimeZoneParts(
   instant: number,
   timezoneID: string,
 ): {
@@ -103,6 +130,7 @@ function getTimeZoneParts(
     minute: '2-digit',
     second: '2-digit',
     hourCycle: 'h23',
+    calendar: 'gregory',
   }).formatToParts(new Date(instant));
 
   const lookup = Object.fromEntries(
@@ -229,6 +257,15 @@ export const DATE_FORMAT_WITH_WEEKDAY: Intl.DateTimeFormatOptions = {
   day: 'numeric',
 };
 
+// e.g. "Wed, May 21, 2026" (locale-dependent) — short weekday + short month.
+// Backs the shared `date_weekday` format used by both Timestamp and DateInput.
+export const DATE_FORMAT_SHORT_WITH_WEEKDAY: Intl.DateTimeFormatOptions = {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+};
+
 // e.g. "May 21, 2026" (locale-dependent)
 export const DATE_FORMAT_LONG: Intl.DateTimeFormatOptions = {
   year: 'numeric',
@@ -239,6 +276,22 @@ export const DATE_FORMAT_LONG: Intl.DateTimeFormatOptions = {
 // e.g. "January 2026" (locale-dependent)
 export const DATE_FORMAT_MONTH_YEAR: Intl.DateTimeFormatOptions = {
   year: 'numeric',
+  month: 'long',
+};
+
+// e.g. "Sun" (locale-dependent) — the weekday on its own, abbreviated.
+//
+// This is CLDR's `abbreviated` width, which `Intl` reaches natively. Note
+// that Calendar's 2-letter header ("Su") is CLDR's *short* width, a
+// different thing that `Intl` cannot express at all — which is why that one
+// needs the generated lookup table beside it and this one does not.
+export const DATE_FORMAT_WEEKDAY_ONLY: Intl.DateTimeFormatOptions = {
+  weekday: 'short',
+};
+
+// e.g. "January" (locale-dependent) — the month on its own, for a control
+// that shows a list of months and carries the year separately.
+export const DATE_FORMAT_MONTH_ONLY: Intl.DateTimeFormatOptions = {
   month: 'long',
 };
 
@@ -255,11 +308,77 @@ export const DATE_FORMAT_SHORT_WITH_YEAR: Intl.DateTimeFormatOptions = {
   year: 'numeric',
 };
 
+/**
+ * Format a `PlainDate` for display.
+ *
+ * The locale defaults to the same `'en'` fallback as `useLocale()`, avoiding
+ * runtime-dependent output when no provider locale is available. Astryx date
+ * APIs currently model Gregorian dates, so this helper defaults to Gregorian
+ * when `options.calendar` is omitted. The explicit option remains supported for
+ * compatibility with the public `Intl.DateTimeFormatOptions` signature; it is a
+ * display-only escape hatch and does not change PlainDate arithmetic, parsing,
+ * serialization, or any Astryx component's calendar semantics.
+ */
 export function plainDateFormat(
   pd: PlainDate,
   options: Intl.DateTimeFormatOptions,
+  locale: Locale = 'en',
 ): string {
-  return new Intl.DateTimeFormat(undefined, options).format(
-    plainDateToDate(pd),
-  );
+  return new Intl.DateTimeFormat(locale, {
+    ...options,
+    calendar: options.calendar ?? 'gregory',
+  }).format(plainDateToDate(pd));
+}
+
+// =============================================================================
+// Shared date-only format vocabulary
+// =============================================================================
+
+/**
+ * The date-only members of Timestamp's `format` vocabulary that a
+ * calendar-date field (no time-of-day) can render. Both Timestamp and
+ * DateInput share these string literals and the mapping below so that the same
+ * literal renders the same date shape in either component.
+ *
+ * - `date`: locale short-month date, e.g. "Mar 21, 2026"
+ * - `date_long`: locale long-month date, e.g. "March 21, 2026"
+ * - `date_weekday`: short weekday + short-month date, e.g. "Wed, Mar 21, 2026"
+ * - `system_date`: ISO 8601 calendar date, e.g. "2026-03-21"
+ */
+export type SharedDateFormat =
+  'date' | 'date_long' | 'date_weekday' | 'system_date';
+
+/**
+ * Intl option bags for the locale-aware shared date members. `system_date` is
+ * intentionally absent — it is emitted as a fixed ISO `YYYY-MM-DD` string, not
+ * via `Intl` — and is handled directly by {@link formatSharedDate}.
+ *
+ * This is the single source of truth consumed by both Timestamp's
+ * `formatTimestamp` switch and DateInput's display path, so the two never
+ * drift for the members they share.
+ */
+export const SHARED_DATE_FORMAT_OPTIONS: Record<
+  Exclude<SharedDateFormat, 'system_date'>,
+  Intl.DateTimeFormatOptions
+> = {
+  date: DATE_FORMAT_SHORT_WITH_YEAR,
+  date_long: DATE_FORMAT_LONG,
+  date_weekday: DATE_FORMAT_SHORT_WITH_WEEKDAY,
+};
+
+/**
+ * Renders a {@link PlainDate} using one of the {@link SharedDateFormat}
+ * members. The shared entry point DateInput uses for the named-format path;
+ * Timestamp maps the same members onto {@link SHARED_DATE_FORMAT_OPTIONS} in
+ * its own `formatTimestamp` switch (its input is a `Date`, not a `PlainDate`).
+ */
+export function formatSharedDate(
+  pd: PlainDate,
+  format: SharedDateFormat,
+  locale: Locale = 'en',
+): string {
+  if (format === 'system_date') {
+    return plainDateToISO(pd);
+  }
+  return plainDateFormat(pd, SHARED_DATE_FORMAT_OPTIONS[format], locale);
 }

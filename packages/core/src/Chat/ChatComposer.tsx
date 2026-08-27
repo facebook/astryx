@@ -20,7 +20,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/Chat.doc.mjs
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatComposer/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposer/ (block examples)
  */
 
 import React, {
@@ -40,6 +40,7 @@ import {
   shadowVars,
   durationVars,
   easeVars,
+  borderVars,
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
@@ -47,6 +48,7 @@ import {mergeProps} from '../utils';
 import {Icon} from '../Icon';
 import {ChatComposerInput} from './ChatComposerInput';
 import {ChatComposerContext} from './ChatContext';
+import type {ChatComposerInputControl} from './ChatContext';
 import {ChatSendButton} from './ChatSendButton';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -83,6 +85,14 @@ export interface ChatComposerProps extends Omit<
   isDisabled?: boolean;
   /** Density variant */
   density?: ChatComposerDensity;
+  /**
+   * Resting elevation of the composer body. `low` (the default) keeps today's
+   * raised look — low at rest, bumping to med on hover / focus. `none` flattens
+   * it and draws a border with the same rest / hover / focus treatment as a
+   * text input (emphasized border → accent on focus, with matching inset rings).
+   * @default 'low'
+   */
+  elevation?: 'none' | 'low';
 
   // --- Slot props ---
 
@@ -142,15 +152,11 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     borderRadius: 'var(--_chat-composer-radius)',
     backgroundColor: colorVars['--color-background-popover'],
-    cursor: 'text',
-    boxShadow: {
-      default: shadowVars['--shadow-low'],
-      ':hover': {'@media (hover: hover)': shadowVars['--shadow-med']},
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    transition: `box-shadow ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
-    ':focus-within': {
-      boxShadow: shadowVars['--shadow-med'],
-    },
+    transition: `box-shadow ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}, border-color ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
   },
   header: {
     display: 'flex',
@@ -227,16 +233,16 @@ const styles = stylex.create({
     paddingBlockEnd:
       'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
     marginBlockEnd: 'calc(-1 * var(--_chat-composer-radius))',
-    borderTopLeftRadius: 'var(--_chat-composer-radius)',
-    borderTopRightRadius: 'var(--_chat-composer-radius)',
+    borderStartStartRadius: 'var(--_chat-composer-radius)',
+    borderStartEndRadius: 'var(--_chat-composer-radius)',
   },
   statusBottom: {
     paddingBlockStart:
       'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
     paddingBlockEnd: 'var(--_chat-composer-padding)',
     marginBlockStart: 'calc(-1 * var(--_chat-composer-radius))',
-    borderBottomLeftRadius: 'var(--_chat-composer-radius)',
-    borderBottomRightRadius: 'var(--_chat-composer-radius)',
+    borderEndStartRadius: 'var(--_chat-composer-radius)',
+    borderEndEndRadius: 'var(--_chat-composer-radius)',
   },
   statusError: {
     backgroundColor: colorVars['--color-error-muted'],
@@ -247,8 +253,56 @@ const styles = stylex.create({
     color: colorVars['--color-text-yellow'],
   },
   compact: {
-    padding: spacingVars['--spacing-2'],
+    // Override the padding var (not the `padding` property) so both the base
+    // body padding and the border-inset calc in elevationStyles.none pick up
+    // the compact value. Scoped to the body element, so the status bar (which
+    // reads the var from root) keeps its own padding.
+    '--_chat-composer-padding': spacingVars['--spacing-2'],
     gap: spacingVars['--spacing-1'],
+  },
+});
+
+// Resting elevation for the composer body, narrowed to two steps.
+// - `low` (default) preserves today's look: low at rest, bumping to med on
+//   hover / focus-within (a CSS-only interaction state the component owns).
+// - `none` is flat; depth comes from a border + inset rings instead. The
+//   border is drawn *inside* the padding — its width is subtracted from every
+//   side (like Card) so total inset (border + padding) equals the elevated
+//   case and content geometry is unchanged. Border color, hover, and focus
+//   states mirror TextInput (shared `inputWrapperStyles.base` treatment):
+//   emphasized border at rest → accent on focus-within, with the same inset
+//   shadow rings on hover and focus.
+const elevationStyles = stylex.create({
+  low: {
+    boxShadow: {
+      default: shadowVars['--shadow-low'],
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': shadowVars['--shadow-med'],
+      },
+    },
+    ':focus-within': {
+      boxShadow: shadowVars['--shadow-med'],
+    },
+  },
+  none: {
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
+    // Draw the border *inside* the padding — subtract its width from the body
+    // padding (like Card's withBorder) so total inset (border + padding) equals
+    // the elevated case and content geometry is unchanged.
+    padding: `calc(var(--_chat-composer-padding) - ${borderVars['--border-width']})`,
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': `inset 0px 0px 0px 2px color-mix(in srgb, ${colorVars['--color-border-emphasized']} 30%, transparent)`,
+        },
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
   },
 });
 
@@ -280,6 +334,7 @@ export function ChatComposer(props: ChatComposerProps) {
     placeholder: placeholderFromProps,
     isDisabled = false,
     density = 'balanced',
+    elevation = 'low',
     drawer,
     headerActions,
     headerContext,
@@ -325,6 +380,11 @@ export function ChatComposer(props: ChatComposerProps) {
 
   const bodyRef = useRef<HTMLDivElement>(null);
 
+  // Input slot registers its focus (and future) control here so the shell can
+  // drive it without knowing its DOM shape. Stable ref — safe in the memoized
+  // context value.
+  const inputControlRef = useRef<ChatComposerInputControl | null>(null);
+
   const handleBodyClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
     // Focus the input when clicking empty space in the body.
     // Skip if the click target is a button, link, or interactive element.
@@ -334,6 +394,14 @@ export function ChatComposer(props: ChatComposerProps) {
         'button, a, [role="button"], [contenteditable="true"], [data-astryx-token]',
       )
     ) {
+      return;
+    }
+    // Prefer the input's registered control (works for any input shape,
+    // including editors whose focusable node isn't a bare
+    // contenteditable/textarea). Fall back to a DOM query so uninstrumented
+    // custom inputs still get click-to-focus.
+    if (inputControlRef.current) {
+      inputControlRef.current.focus();
       return;
     }
     const editable = bodyRef.current?.querySelector<HTMLElement>(
@@ -370,6 +438,7 @@ export function ChatComposer(props: ChatComposerProps) {
       isStopShown,
       canSend,
       onStop,
+      inputControlRef,
     }),
     [
       currentValue,
@@ -402,6 +471,7 @@ export function ChatComposer(props: ChatComposerProps) {
           onClick={handleBodyClick}
           {...stylex.props(
             styles.body,
+            elevationStyles[elevation],
             density === 'compact' && styles.compact,
             xstyle,
           )}>

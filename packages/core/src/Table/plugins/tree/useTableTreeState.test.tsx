@@ -634,3 +634,107 @@ describe('useTableTreeState — semantics edges', () => {
     expect(ids(result.current.visibleData)).toEqual(['src', 'readme']);
   });
 });
+
+// =============================================================================
+// isAllExpanded (drives the header expand-all control)
+// =============================================================================
+
+describe('useTableTreeState: isAllExpanded', () => {
+  it('reports false when nothing is expanded', () => {
+    const {result} = renderHook(() =>
+      useTableTreeState({data: fileTree, idKey: 'id'}),
+    );
+
+    expect(result.current.isAllExpanded).toBe(false);
+  });
+
+  it('reports true only when every expandable row is expanded', () => {
+    const {result} = renderHook(() =>
+      useTableTreeState({data: fileTree, idKey: 'id'}),
+    );
+
+    act(() => {
+      result.current.expandAll();
+    });
+
+    expect(result.current.isAllExpanded).toBe(true);
+  });
+
+  it("reports 'indeterminate' when some but not all expandable rows are expanded", () => {
+    const {result} = renderHook(() =>
+      useTableTreeState({
+        data: fileTree,
+        idKey: 'id',
+        defaultExpandedIds: ['src'],
+      }),
+    );
+
+    // 'src' and 'components' are both expandable; only 'src' is expanded.
+    expect(result.current.isAllExpanded).toBe('indeterminate');
+  });
+
+  it('returns to false after collapseAll', () => {
+    const {result} = renderHook(() =>
+      useTableTreeState({
+        data: fileTree,
+        idKey: 'id',
+        defaultExpandedIds: ['src', 'components'],
+      }),
+    );
+
+    act(() => {
+      result.current.collapseAll();
+    });
+
+    expect(result.current.isAllExpanded).toBe(false);
+  });
+
+  it('reports false for flat data (no expandable rows)', () => {
+    const flat: FileRow[] = [
+      {id: 'a', name: 'A', size: 1},
+      {id: 'b', name: 'B', size: 2},
+    ];
+    const {result} = renderHook(() =>
+      useTableTreeState({data: flat, idKey: 'id'}),
+    );
+
+    expect(result.current.isAllExpanded).toBe(false);
+  });
+
+  it('ignores expanded ids that match no expandable row when aggregating', () => {
+    // 'readme' is a leaf (not expandable) and 'ghost' matches nothing; neither
+    // should count toward the expandable total, so an all-expandable set that
+    // omits them still reads as fully expanded.
+    const {result} = renderHook(() =>
+      useTableTreeState({
+        data: fileTree,
+        idKey: 'id',
+        defaultExpandedIds: ['src', 'components', 'readme', 'ghost'],
+      }),
+    );
+
+    expect(result.current.isAllExpanded).toBe(true);
+  });
+
+  it('exposes the aggregate state and expand/collapse handlers through treeConfig', () => {
+    const {result} = renderHook(() =>
+      useTableTreeState({data: fileTree, idKey: 'id'}),
+    );
+
+    // The headless plugin reads everything it needs to render the header
+    // expand-all control from treeConfig, not from the state hook directly.
+    expect(result.current.treeConfig.isAllExpanded).toBe(false);
+
+    act(() => {
+      result.current.treeConfig.onExpandAll?.();
+    });
+    expect(result.current.isAllExpanded).toBe(true);
+    expect(result.current.treeConfig.isAllExpanded).toBe(true);
+
+    act(() => {
+      result.current.treeConfig.onCollapseAll?.();
+    });
+    expect(result.current.isAllExpanded).toBe(false);
+    expect(result.current.treeConfig.isAllExpanded).toBe(false);
+  });
+});
