@@ -974,7 +974,7 @@ export function NumberInput({
                 styles.numberStepperButtonDisabled,
             )}>
             <Icon
-              icon="chevronDown"
+              icon="numberInput:stepperDown"
               size="xsm"
               color="inherit"
               xstyle={styles.incrementIcon}
@@ -996,7 +996,7 @@ export function NumberInput({
               (isDisabled || isReadOnly || !canDecrement) &&
                 styles.numberStepperButtonDisabled,
             )}>
-            <Icon icon="chevronDown" size="xsm" color="inherit" />
+            <Icon icon="numberInput:stepperDown" size="xsm" color="inherit" />
           </button>
         </div>
       )}

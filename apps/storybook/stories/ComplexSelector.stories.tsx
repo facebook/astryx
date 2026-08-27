@@ -764,6 +764,7 @@ export const ControlledToolbarTrigger: Story = {
   name: 'Controlled toolbar trigger',
   render: () => {
     const [density, setDensity] = useState<ViewDensity>('Comfortable');
+    const [isOpen, setIsOpen] = useState(false);
     const selectorRef = useRef<ComplexSelectorHandle>(null);
 
     return (
@@ -779,6 +780,7 @@ export const ControlledToolbarTrigger: Story = {
           isLabelHidden
           value={density}
           onChange={setDensity}
+          onOpenChange={setIsOpen}
           triggerLabel={`Density: ${density}`}
           variant="ghost"
           startIcon="viewColumns"
@@ -790,7 +792,8 @@ export const ControlledToolbarTrigger: Story = {
               <Text type="supporting" color="secondary">
                 The selector owns visibility. An external control drives it
                 imperatively via handleRef; choosing a density commits the value
-                and closes the surface.
+                and closes the surface. onOpenChange reports every open and
+                close, including the ones the selector performs itself.
               </Text>
               <HStack gap={2}>
                 {(['Comfortable', 'Compact'] as const).map(option => (
@@ -811,6 +814,9 @@ export const ControlledToolbarTrigger: Story = {
             </VStack>
           )}
         </ComplexSelector>
+        <Text type="supporting" color="secondary" data-testid="open-state">
+          {isOpen ? 'open' : 'closed'}
+        </Text>
       </div>
     );
   },

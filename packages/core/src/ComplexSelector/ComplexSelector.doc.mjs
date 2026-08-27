@@ -144,6 +144,12 @@ export const docs = {
             'Imperative handle for programmatic control. Exposes open(), close(), toggle(), and isOpen().',
         },
         {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description:
+            'Called whenever the surface opens or closes, however it happened — trigger, keyboard, light dismiss, Escape, close(), or the imperative handle.',
+        },
+        {
           name: 'contentXstyle',
           type: 'StyleXStyles',
           description: 'StyleX styles for the popup content container.',
@@ -274,6 +280,7 @@ export const docsDense = {
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
     handleRef: 'Imperative open/close/toggle handle.',
+    onOpenChange: 'Notified on every open and close, whatever caused it.',
     accessibility:
       'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },
