@@ -105,6 +105,50 @@ describe('buildVisualSection', () => {
     expect(section).toContain('and 5 more');
   });
 
+  it('embeds before, after, and diff images for changed shots', () => {
+    const section = buildVisualSection(
+      verdict({
+        status: 'changed',
+        counts: {total: 2, unchanged: 1, changed: 1, added: 0, removed: 0, failed: 0},
+        changes: [
+          {
+            key: 'core-button--primary__y2k-light',
+            component: 'Button',
+            name: 'Primary',
+            theme: 'y2k',
+            mode: 'light',
+            diffPixels: 12,
+          },
+        ],
+      }),
+      'https://facebook.github.io/astryx/pr/123/visual/head/run/',
+      'https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/',
+    );
+    expect(section).toContain(
+      'https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/before/core-button--primary__y2k-light.png',
+    );
+    expect(section).toContain('raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/after/core-button--primary__y2k-light.png');
+    expect(section).toContain('raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/diff/core-button--primary__y2k-light.png');
+    expect(section).toContain('<th>Before</th><th>After</th><th>Diff</th>');
+  });
+
+  it('embeds at most three deltas so the PR comment stays readable', () => {
+    const changes = Array.from({length: 5}, (_, index) => ({
+      key: `shot-${index}`,
+      component: 'C',
+      name: 'S',
+      theme: 't',
+      mode: 'light',
+      diffPixels: 1,
+    }));
+    const section = buildVisualSection(
+      verdict({status: 'changed', counts: {total: 5, changed: 5}, changes}),
+      'https://example.com/visual/',
+    );
+    expect((section.match(/<details open>/g) ?? []).length).toBe(3);
+    expect(section).not.toContain('/before/shot-3.png');
+  });
+
   it('reports a capture failure distinctly from a change', () => {
     const section = buildVisualSection(
       verdict({status: 'failed', counts: {total: 4, failed: 2, changed: 0}}),

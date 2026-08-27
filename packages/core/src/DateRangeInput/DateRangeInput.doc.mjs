@@ -108,7 +108,7 @@ export const docs = {
       name: 'minRangeSpan',
       type: 'number',
       description:
-        'Minimum days a selected range must span, counting both endpoints (`2` forbids a single-day range). Once a start is picked, days closer than this are disabled. Defaults to 1 (same-day start and end allowed).',
+        'Minimum days a selected range must span, counting both endpoints (`2` forbids a single-day range). Once a start is picked, days closer than this are disabled. Clicking the start again commits a one-day range when allowed, or cancels the in-progress selection when the minimum is longer. Defaults to 1 (same-day start and end allowed).',
     },
     {
       name: 'presets',
@@ -328,7 +328,7 @@ export const docsDense = {
     maxRangeSpan:
       'max days a range may span, both endpoints counted (7 = a 7-day window); caps the window from the picked start. Selection-only; does not rewrite an over-wide value',
     minRangeSpan:
-      'min days a range must span, both endpoints counted (2 forbids a single-day range); default 1',
+      'min days a range must span, both endpoints counted (2 forbids a single-day range); repeated start click commits one day when allowed, otherwise cancels; default 1',
     presets: 'preset ranges as quick-select options',
     hasClear: 'clear button when range is set (default true)',
     placeholder: 'placeholder when empty',

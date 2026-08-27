@@ -29,7 +29,7 @@ import {fileURLToPath} from 'node:url';
 
 import {capture, scout} from './lib/capture.mjs';
 import {analyzeTargeting, buildVerdict, compareCaptures} from './lib/compare.mjs';
-import {buildPlan, readStoryIndex} from './lib/plan.mjs';
+import {buildPlan, readStoryIndex, storiesInPackages} from './lib/plan.mjs';
 import {READ_TARGETS, emptyAccumulator, fold} from './lib/probe-reach.mjs';
 import {AXES, PROBE_TOKENS, READ_AXES} from './lib/probe-axes.mjs';
 import {renderReport} from './lib/report.mjs';
@@ -58,6 +58,8 @@ const sample = flag('sample') ? Number(flag('sample')) : null;
 const only = (flag('only') ?? '').split(',').filter(Boolean);
 /** For the `component` tier: the components a PR touched. */
 const components = (flag('components') ?? '').split(',').filter(Boolean);
+/** For the `theme-matrix` tier: only these shipped themes changed. */
+const matrixThemes = (flag('themes') ?? '').split(',').filter(Boolean);
 /**
  * Above this many shots the run declines instead of capturing.
  *
@@ -69,6 +71,10 @@ const components = (flag('components') ?? '').split(',').filter(Boolean);
  * report nobody can read.
  */
 const maxShots = flag('max-shots') ? Number(flag('max-shots')) : Infinity;
+/** Storybook package groups that own the stable visual baseline. */
+const storyPackages = (flag('story-packages') ?? config.stableStoryPackages.join(','))
+  .split(',')
+  .filter(Boolean);
 
 /**
  * Which stories the scout needs to look at: every story of a component some
@@ -94,7 +100,11 @@ async function plan() {
     loadThemingTargets(REPO_ROOT),
     loadThemeOverrides(REPO_ROOT, config.probeTheme),
   ]);
-  const stories = readStoryIndex(storybookDir, Object.keys(config.excludeStories));
+  const indexedStories = readStoryIndex(
+    storybookDir,
+    Object.keys(config.excludeStories),
+  );
+  const stories = storiesInPackages(indexedStories, storyPackages);
 
   let observations;
   if (!has('no-scout') && (tiers.includes('theme-matrix') || tiers.includes('probe'))) {
@@ -124,6 +134,7 @@ async function plan() {
     defaultTheme: config.defaultTheme,
     tiers,
     components,
+    matrixThemes,
     probeTheme: config.probeTheme,
   });
   // A sample is for trying the rig out, never for a gate run: it is taken
@@ -155,9 +166,16 @@ async function runCapture(shots) {
     },
   });
   manifest.context = {
+    // `sha` is the tested synthetic merge tree on pull_request runs. Keep the
+    // contributor's head and the base separately: acceptance binds to the head
+    // humans reviewed, while post-merge verification bridges to the final
+    // squash commit by comparing rendered hashes.
     sha: process.env.GITHUB_SHA ?? null,
+    headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
+    baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
     ref: process.env.GITHUB_REF ?? null,
     runId: process.env.GITHUB_RUN_ID ?? null,
+    runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
   };
   fs.writeFileSync(
     path.join(outDir, 'manifest.json'),

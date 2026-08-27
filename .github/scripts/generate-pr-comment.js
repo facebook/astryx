@@ -133,7 +133,11 @@ if (visualFile) {
     visualVerdict = null;
   }
 }
-const visualSection = buildVisualSection(visualVerdict, getArg('visual-report-url'));
+const visualSection = buildVisualSection(
+  visualVerdict,
+  getArg('visual-report-url'),
+  getArg('visual-image-url'),
+);
 
 // Build bundle size section — one row per package the PR actually touched.
 let bundleSection = '### Bundle Size Summary\n\n';

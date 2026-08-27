@@ -158,6 +158,17 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   maxMenuItems?: number;
   /** Fixed dropdown width in pixels. Never shrinks below the input width. */
   menuWidth?: number;
+  /**
+   * Minimum query length before the search source is queried. Below it no
+   * search runs and the menu stays closed — useful for remote sources where
+   * one or two characters match too much to be worth fetching.
+   *
+   * With `hasCreate`, the "Create" entry rides on the search results, so it
+   * also waits for the threshold.
+   *
+   * @default 1
+   */
+  minQueryLength?: number;
   /** Text shown when no results found. @default 'No results found' */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
@@ -396,6 +407,7 @@ export function Tokenizer<T extends SearchableItem>({
   hasEntriesOnFocus,
   maxMenuItems,
   menuWidth,
+  minQueryLength,
   emptySearchResultsText,
   isDisabled = false,
   htmlName,
@@ -536,36 +548,47 @@ export function Tokenizer<T extends SearchableItem>({
     () => ({
       search: async (query: string) => {
         const results = await searchSource.search(query);
-        const filtered = results.filter(item => !selectedIds.has(item.id));
-
-        // Append a "Create: X" synthetic item when hasCreate is true,
-        // the user has typed something, and it doesn't exactly match an
-        // existing result.
-        if (hasCreate && query.trim()) {
-          const trimmed = query.trim();
-          const alreadyExists =
-            selectedIds.has(trimmed) ||
-            filtered.some(
-              item => item.label.toLowerCase() === trimmed.toLowerCase(),
-            );
-          if (!alreadyExists) {
-            const creatableItem = {
-              id: `${CREATABLE_ID_PREFIX}${trimmed}`,
-              label: `Create "${trimmed}"`,
-              auxiliaryData: {__createdValue: trimmed},
-            } as unknown as T;
-            filtered.push(creatableItem);
-          }
-        }
-
-        return filtered;
+        return results.filter(item => !selectedIds.has(item.id));
       },
       bootstrap: async () => {
         const results = await searchSource.bootstrap();
         return results.filter(item => !selectedIds.has(item.id));
       },
     }),
-    [searchSource, selectedIds, hasCreate],
+    [searchSource, selectedIds],
+  );
+
+  /**
+   * The "Create X" entry. It is derived from the typed text, not fetched for
+   * it, so it is offered through `__queryEntries` rather than appended to the
+   * search results — which is what keeps it available when the query is too
+   * short to search. `minQueryLength` is there to avoid a fetch too broad to
+   * be worth making; creating `QA` costs no fetch, and a field that can
+   * create it should not stop being able to.
+   */
+  const createEntries = useCallback(
+    (query: string, results: T[]): T[] => {
+      const trimmed = query.trim();
+      if (!hasCreate || trimmed === '') {
+        return [];
+      }
+      const alreadyExists =
+        selectedIds.has(trimmed) ||
+        results.some(
+          item => item.label.toLowerCase() === trimmed.toLowerCase(),
+        );
+      if (alreadyExists) {
+        return [];
+      }
+      return [
+        {
+          id: `${CREATABLE_ID_PREFIX}${trimmed}`,
+          label: `Create "${trimmed}"`,
+          auxiliaryData: {__createdValue: trimmed},
+        } as unknown as T,
+      ];
+    },
+    [hasCreate, selectedIds],
   );
 
   const emptySource: SearchSource<T> = useMemo(
@@ -782,6 +805,7 @@ export function Tokenizer<T extends SearchableItem>({
         hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
         maxMenuItems={maxMenuItems}
         menuWidth={menuWidth}
+        minQueryLength={minQueryLength}
         emptySearchResultsText={emptySearchResultsText}
         isDisabled={isDisabled}
         isFocusableDisabled={showsDisabledMessage}
@@ -789,6 +813,7 @@ export function Tokenizer<T extends SearchableItem>({
         inputId={inputId}
         ariaDescribedBy={ariaDescribedBy}
         onChangeQuery={onChangeQuery}
+        __queryEntries={createEntries}
         debounceMs={debounceMs}
         onKeyDown={handleKeyDown}
         anchorRef={wrapperRef}
