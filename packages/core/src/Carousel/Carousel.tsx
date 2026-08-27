@@ -150,18 +150,6 @@ export interface CarouselProps extends BaseProps<HTMLDivElement> {
 // Styles
 // =============================================================================
 
-// The overflow hook calls a sub-pixel remainder "no more scroll". The focus
-// hand-off reads the settled position against the same threshold, or it
-// disagrees with the state that actually disables the button.
-// SYNC: /packages/core/src/hooks/useScrollOverflow.ts
-const SCROLL_EDGE_TOLERANCE = 1;
-
-// How long to wait for a scroll to settle when `scrollend` never arrives:
-// either the browser does not support it, or the press moved nothing so no
-// scroll events were emitted at all. Matches Outline's navigation settle.
-// SYNC: /packages/core/src/Outline/useScrollSpy.ts
-const SCROLL_SETTLE_TIMEOUT_MS = 1200;
-
 const styles = stylex.create({
   root: {
     position: 'relative',
@@ -349,9 +337,11 @@ export function Carousel({
   const scrollElRef = useRef<HTMLElement | null>(null);
   const startButtonRef = useRef<HTMLButtonElement>(null);
   const endButtonRef = useRef<HTMLButtonElement>(null);
-  // Cancels a pending focus hand-off: the settle listener and its fallback
-  // timer, which outlive the press that armed them.
-  const teardownRef = useRef<(() => void) | null>(null);
+  // Which nav button last held focus, and what the overflow state was on the
+  // previous render. Together they are how the Effect below recognises the one
+  // transition it is allowed to act on.
+  const focusedNavRef = useRef<'start' | 'end' | null>(null);
+  const prevCanScrollRef = useRef<{start: boolean; end: boolean} | null>(null);
   const {scrollRef, overflowStart, overflowEnd, hasOverflow} =
     useScrollOverflow();
 
@@ -372,8 +362,6 @@ export function Carousel({
       layer.hide();
     }
   }, [hasButtons, layer]);
-
-  useEffect(() => () => teardownRef.current?.(), []);
 
   const composedRef = useCallback(
     (el: HTMLDivElement | null) => {
@@ -453,76 +441,6 @@ export function Carousel({
     [hasLoop, hasOverflow, overflowStart, overflowEnd],
   );
 
-  // Is the container resting against the edge it was pushed toward? Read from
-  // the element rather than predicted from the press: reduced motion lands the
-  // scroll instantly and mandatory scroll-snap lands it somewhere the press did
-  // not ask for, and a prediction was wrong about each in turn. scrollLeft is
-  // negative under RTL, so this is the logical distance from the start.
-  const isRestingAtEdge = useCallback((el: HTMLElement, direction: -1 | 1) => {
-    const position = Math.abs(el.scrollLeft);
-    return direction === 1
-      ? position >= el.scrollWidth - el.clientWidth - SCROLL_EDGE_TOLERANCE
-      : position <= SCROLL_EDGE_TOLERANCE;
-  }, []);
-
-  // Keep the keyboard user where they are. Without this, pressing the trailing
-  // button on the last slide disables it under them and focus falls to <body>,
-  // so the next Tab restarts from the top of the document. Focus goes to the
-  // scroll container rather than the opposite button: at the moment of the
-  // press that button is still disabled (its enabling state lands with the next
-  // render), and focus() on a disabled control is a no-op. The container is a
-  // permanent tab stop inside the labelled region and pans with the arrow keys,
-  // so the user keeps both their place and a way to scroll.
-  const scrollFromButton = useCallback(
-    (direction: -1 | 1) => {
-      const el = scrollElRef.current;
-      const pressed =
-        direction === 1 ? endButtonRef.current : startButtonRef.current;
-      // Only rescue focus this press is about to lose. A programmatic click
-      // from elsewhere must not pull focus into the carousel, and looping keeps
-      // both buttons enabled at both edges so no press can disable one.
-      const shouldRescue =
-        el != null &&
-        pressed != null &&
-        pressed.ownerDocument.activeElement === pressed &&
-        !(hasLoop && hasOverflow);
-      if (!shouldRescue) {
-        scrollBy(direction);
-        return;
-      }
-
-      // Arm settle detection BEFORE scrolling: under reduced motion the scroll
-      // lands instantly, so a listener attached afterwards never hears it.
-      const settle = () => {
-        teardownRef.current?.();
-        if (!isRestingAtEdge(el, direction)) {
-          return;
-        }
-        // React disables the button from the same measurement, which may
-        // already have dropped focus to the body. Rescue either state and leave
-        // anywhere else alone: the user has moved on.
-        const active = pressed.ownerDocument.activeElement;
-        if (active !== pressed && active !== pressed.ownerDocument.body) {
-          return;
-        }
-        // preventScroll matters: a plain focus() scrolls the container into
-        // view, which cancels the smooth scroll this press just started.
-        el.focus({preventScroll: true});
-      };
-      const timer = window.setTimeout(settle, SCROLL_SETTLE_TIMEOUT_MS);
-      el.addEventListener('scrollend', settle, {once: true});
-      teardownRef.current?.();
-      teardownRef.current = () => {
-        window.clearTimeout(timer);
-        el.removeEventListener('scrollend', settle);
-        teardownRef.current = null;
-      };
-
-      scrollBy(direction);
-    },
-    [scrollBy, isRestingAtEdge, hasLoop, hasOverflow],
-  );
-
   const scrollToIndex = useCallback((index: number) => {
     const el = scrollElRef.current;
     const items = el?.children;
@@ -569,6 +487,71 @@ export function Carousel({
   // something to scroll; without loop they follow the per-edge overflow state.
   const canScrollStart = hasLoop && hasOverflow ? true : overflowStart;
   const canScrollEnd = hasLoop && hasOverflow ? true : overflowEnd;
+
+  // Keep the keyboard user where they are when a nav button disables under
+  // them. The browser drops focus off a control it disables, so reaching an
+  // edge used to land the user on <body> and cost them their place in the page.
+  //
+  // This is an Effect on purpose, and the exception is narrow. The thing that
+  // disables the button IS this state transition, so it is the only correct
+  // trigger: three attempts to predict it from the press -- the position after
+  // the scroll, the position before it plus the step, and the settled position
+  // reported by `scrollend` -- were each wrong somewhere, under reduced motion,
+  // under mandatory scroll-snap, and on a browser that never fires the event.
+  // Running after the commit also makes the opposite button a valid receiver,
+  // which it is not during the press: at that moment it is still disabled and
+  // focus() on a disabled control does nothing. Ruled acceptable by the
+  // maintainer, 2026-08-27, on the conditions encoded below: it acts only on
+  // the transition that newly disables the focused button, it moves focus and
+  // nothing else, and it cannot fire twice for one transition.
+  useEffect(() => {
+    const previous = prevCanScrollRef.current;
+    prevCanScrollRef.current = {start: canScrollStart, end: canScrollEnd};
+    const side = focusedNavRef.current;
+    if (previous == null || side == null) {
+      return;
+    }
+
+    // Only the edge that just ran out, and only while it held focus. An edge
+    // that was already disabled, or one the user was not on, is not ours.
+    const wasEnabled = side === 'start' ? previous.start : previous.end;
+    const isEnabled = side === 'start' ? canScrollStart : canScrollEnd;
+    if (!wasEnabled || isEnabled) {
+      return;
+    }
+
+    const pressed =
+      side === 'start' ? startButtonRef.current : endButtonRef.current;
+    if (pressed == null) {
+      return;
+    }
+    // The browser has already blurred it, so focus reads as the body. Anything
+    // else means the user moved on themselves and this is not ours to redirect.
+    const active = pressed.ownerDocument.activeElement;
+    if (active !== pressed && active !== pressed.ownerDocument.body) {
+      return;
+    }
+
+    const opposite =
+      side === 'start' ? endButtonRef.current : startButtonRef.current;
+    // The opposite button is the receiver. It is disabled only when the
+    // carousel stopped overflowing entirely, which happens when its content
+    // shrinks; the scroll container is then the nearest tab stop still inside
+    // the labelled region.
+    const receiver =
+      opposite != null && !opposite.disabled ? opposite : scrollElRef.current;
+    if (receiver == null) {
+      return;
+    }
+
+    // One move per transition: clearing the tracker first means a re-render or
+    // a StrictMode double-invoke re-runs this and returns at the `side == null`
+    // guard above. Focusing the receiver sets it again, to the other side.
+    focusedNavRef.current = null;
+    // preventScroll: a plain focus() scrolls its element into view, which on
+    // the scroll container cancels the scroll the press just started.
+    receiver.focus({preventScroll: true});
+  }, [canScrollStart, canScrollEnd]);
 
   const fadeStyle = hasEdgeFade
     ? (hasLoop && hasOverflow) || (overflowStart && overflowEnd)
@@ -666,11 +649,14 @@ export function Carousel({
                 // Disabled when there's nothing to scroll toward. Keeps the
                 // button mounted (stable layout) but removes it from the tab
                 // order and a11y tree while it's visually hidden, so keyboard
-                // users don't land on an invisible control. scrollFromButton
-                // moves focus to the scroll container when a press is what
-                // disables this one.
+                // users don't land on an invisible control. The Effect above
+                // hands focus to the other button when the state behind this
+                // one flips it disabled.
                 isDisabled={!canScrollStart}
-                onClick={() => scrollFromButton(-1)}
+                onFocus={() => {
+                  focusedNavRef.current = 'start';
+                }}
+                onClick={() => scrollBy(-1)}
                 xstyle={styles.buttonRadiusOverride}
               />
             </div>
@@ -696,7 +682,10 @@ export function Carousel({
                 // See "Scroll left" — disabled while visually hidden so the
                 // button stays mounted but out of the tab order / a11y tree.
                 isDisabled={!canScrollEnd}
-                onClick={() => scrollFromButton(1)}
+                onFocus={() => {
+                  focusedNavRef.current = 'end';
+                }}
+                onClick={() => scrollBy(1)}
                 xstyle={styles.buttonRadiusOverride}
               />
             </div>

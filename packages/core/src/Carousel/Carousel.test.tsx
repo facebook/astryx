@@ -498,14 +498,12 @@ describe('Carousel', () => {
       return region.firstElementChild as HTMLElement;
     }
 
-    // jsdom doesn't lay out elements, so fake an overflowing scroll container
-    // whose scrollLeft actually moves when scrollBy is called. The component
-    // predicts the edge from these numbers, which is what the hand-off uses.
-    // jsdom has no layout and no scrollend, so fake an overflowing container
-    // whose scrollBy moves scrollLeft and then settles, the way a browser does.
-    // `land` decides where the container comes to rest: the default clamps to
-    // the requested delta, and the snap arm overrides it to model mandatory
-    // scroll-snap carrying the container past what the press asked for.
+    // jsdom has no layout, so fake an overflowing container whose scrollBy
+    // moves scrollLeft and fires scroll, which is what drives the overflow
+    // state the buttons and the focus hand-off both read. `land` decides where
+    // the container comes to rest: the default clamps to the requested delta,
+    // and the snap arm overrides it to model mandatory scroll-snap carrying the
+    // container past what the press asked for.
     function makeScrollable(
       el: HTMLElement,
       scrollWidth: number,
@@ -533,12 +531,11 @@ describe('Carousel', () => {
         );
         el.scrollLeft = land ? land(requested, maxScroll) : requested;
         fireEvent.scroll(el);
-        el.dispatchEvent(new Event('scrollend'));
       }) as HTMLElement['scrollBy'];
       fireEvent.scroll(el);
     }
 
-    it('keeps focus inside the carousel when a press disables the pressed button', async () => {
+    it('hands focus to the opposite button when the edge disables the one in use', async () => {
       const user = userEvent.setup();
       render(
         <Carousel aria-label="Gallery">
@@ -547,21 +544,19 @@ describe('Carousel', () => {
           <div>Item 3</div>
         </Carousel>,
       );
-      // clientWidth 200 and a 200px step, so one press lands exactly on the
+      // clientWidth 200 against a 200px step, so one press lands exactly on the
       // trailing edge and the trailing button disables.
       makeScrollable(getScroller(), 400);
 
       const next = screen.getByLabelText('Scroll right');
       await user.click(next);
 
-      // The press ran the content to the end, so `next` is now disabled. It
-      // must not be left holding focus, and focus must not fall to <body>.
       expect(next).toBeDisabled();
-      expect(document.activeElement).toBe(getScroller());
+      expect(document.activeElement).toBe(screen.getByLabelText('Scroll left'));
       expect(document.activeElement).not.toBe(document.body);
     });
 
-    it('does not move focus on a press that leaves the direction available', async () => {
+    it('hands off in the leading direction too', async () => {
       const user = userEvent.setup();
       render(
         <Carousel aria-label="Gallery">
@@ -570,16 +565,63 @@ describe('Carousel', () => {
           <div>Item 3</div>
         </Carousel>,
       );
-      // 600 gives 400 of travel against a 200 step, so the press lands mid-run
-      // with the trailing edge still two steps away. Tight on purpose: a loose
-      // fixture hides a prediction that counts the step twice.
-      makeScrollable(getScroller(), 600);
+      const scroller = getScroller();
+      makeScrollable(scroller, 400);
+      // Park at the far end so the leading button is the one that runs out.
+      scroller.scrollLeft = 200;
+      fireEvent.scroll(scroller);
+
+      const previous = screen.getByLabelText('Scroll left');
+      await user.click(previous);
+
+      expect(previous).toBeDisabled();
+      expect(document.activeElement).toBe(
+        screen.getByLabelText('Scroll right'),
+      );
+    });
+
+    it('hands off under RTL, where the scroll axis is inverted', async () => {
+      const user = userEvent.setup();
+      render(
+        <Carousel aria-label="Gallery">
+          <div>Item 1</div>
+          <div>Item 2</div>
+          <div>Item 3</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      // The component resolves direction with getComputedStyle, and jsdom does
+      // not inherit `dir` down to it, so set it on the element itself. RTL then
+      // scrolls negative, which the mock below mirrors.
+      scroller.style.direction = 'rtl';
+      const maxScroll = 200;
+      Object.defineProperty(scroller, 'scrollWidth', {
+        value: 400,
+        configurable: true,
+      });
+      Object.defineProperty(scroller, 'clientWidth', {
+        value: 200,
+        configurable: true,
+      });
+      Object.defineProperty(scroller, 'scrollLeft', {
+        value: 0,
+        writable: true,
+        configurable: true,
+      });
+      scroller.scrollBy = ((options: ScrollToOptions) => {
+        scroller.scrollLeft = Math.max(
+          -maxScroll,
+          Math.min(0, scroller.scrollLeft + (options.left ?? 0)),
+        );
+        fireEvent.scroll(scroller);
+      }) as HTMLElement['scrollBy'];
+      fireEvent.scroll(scroller);
 
       const next = screen.getByLabelText('Scroll right');
       await user.click(next);
 
-      expect(next).toBeEnabled();
-      expect(document.activeElement).toBe(next);
+      expect(next).toBeDisabled();
+      expect(document.activeElement).toBe(screen.getByLabelText('Scroll left'));
     });
 
     it('hands off when scroll-snap carries the container past what the press asked for', async () => {
@@ -593,15 +635,59 @@ describe('Carousel', () => {
       );
       // 700 gives 500 of travel against a 200 step, so the press alone lands
       // mid-run. Mandatory snapping then carries it to the end, which is the
-      // case a press cannot predict.
+      // landing position no press can predict.
       makeScrollable(getScroller(), 700, (_requested, maxScroll) => maxScroll);
 
       const next = screen.getByLabelText('Scroll right');
       await user.click(next);
 
       expect(next).toBeDisabled();
-      expect(document.activeElement).toBe(getScroller());
+      expect(document.activeElement).toBe(screen.getByLabelText('Scroll left'));
+    });
+
+    it('falls back to the scroll container when the carousel stops overflowing', async () => {
+      const user = userEvent.setup();
+      render(
+        <Carousel aria-label="Gallery">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      // The content shrinks to fit during the press, so BOTH buttons disable
+      // and there is no opposite control left to receive focus.
+      makeScrollable(scroller, 400, () => {
+        Object.defineProperty(scroller, 'scrollWidth', {
+          value: 200,
+          configurable: true,
+        });
+        return 0;
+      });
+
+      await user.click(screen.getByLabelText('Scroll right'));
+
+      expect(screen.getByLabelText('Scroll right')).toBeDisabled();
+      expect(screen.getByLabelText('Scroll left')).toBeDisabled();
+      expect(document.activeElement).toBe(scroller);
       expect(document.activeElement).not.toBe(document.body);
+    });
+
+    it('does not move focus on a press that leaves the direction available', async () => {
+      const user = userEvent.setup();
+      render(
+        <Carousel aria-label="Gallery">
+          <div>Item 1</div>
+          <div>Item 2</div>
+          <div>Item 3</div>
+        </Carousel>,
+      );
+      makeScrollable(getScroller(), 600);
+
+      const next = screen.getByLabelText('Scroll right');
+      await user.click(next);
+
+      expect(next).toBeEnabled();
+      expect(document.activeElement).toBe(next);
     });
 
     it('does not move focus when hasLoop keeps both buttons enabled', async () => {
@@ -617,12 +703,11 @@ describe('Carousel', () => {
       const next = screen.getByLabelText('Scroll right');
       await user.click(next);
 
-      // Looping never disables a button, so there is nothing to rescue from.
       expect(next).toBeEnabled();
       expect(document.activeElement).toBe(next);
     });
 
-    it('takes focus without scrolling the container into view', async () => {
+    it('takes focus without scrolling the receiver into view', async () => {
       const user = userEvent.setup();
       render(
         <Carousel aria-label="Gallery">
@@ -630,14 +715,14 @@ describe('Carousel', () => {
           <div>Item 2</div>
         </Carousel>,
       );
-      const scroller = getScroller();
-      makeScrollable(scroller, 400);
-      const focus = vi.spyOn(scroller, 'focus');
+      makeScrollable(getScroller(), 400);
+      const previous = screen.getByLabelText('Scroll left');
+      const focus = vi.spyOn(previous, 'focus');
 
       await user.click(screen.getByLabelText('Scroll right'));
 
-      // A plain focus() scrolls the element into view, which cancels the smooth
-      // scroll the same press just started.
+      // A plain focus() scrolls its element into view, which on the scroll
+      // container cancels the scroll the same press started.
       expect(focus).toHaveBeenCalledWith({preventScroll: true});
     });
 
@@ -655,6 +740,37 @@ describe('Carousel', () => {
       outside.focus();
 
       handle.current?.scrollNext();
+
+      expect(document.activeElement).toBe(outside);
+      outside.remove();
+    });
+
+    it('does not move focus a second time for one transition', async () => {
+      const user = userEvent.setup();
+      const {rerender} = render(
+        <Carousel aria-label="Gallery">
+          <div>Item 1</div>
+          <div>Item 2</div>
+          <div>Item 3</div>
+        </Carousel>,
+      );
+      makeScrollable(getScroller(), 400);
+      await user.click(screen.getByLabelText('Scroll right'));
+
+      const previous = screen.getByLabelText('Scroll left');
+      expect(document.activeElement).toBe(previous);
+      // Park focus outside and re-render: the transition is spent, so nothing
+      // may pull focus back in.
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      outside.focus();
+      rerender(
+        <Carousel aria-label="Gallery">
+          <div>Item 1</div>
+          <div>Item 2</div>
+          <div>Item 3</div>
+        </Carousel>,
+      );
 
       expect(document.activeElement).toBe(outside);
       outside.remove();
