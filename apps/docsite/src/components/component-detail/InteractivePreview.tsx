@@ -4,6 +4,7 @@
 
 import {
   createElement,
+  Suspense,
   useMemo,
   useState,
   useCallback,
@@ -404,55 +405,62 @@ export function InteractivePreviewStage({
               width: '100%',
               padding: 'var(--spacing-4)',
             }}>
-            <PreviewErrorBoundary
-              resetKeys={[Component, runtimeState, WrapperComponent]}>
-              {playground?.appShellMobile === true ? (
-                <AppShellMobilePreviewProvider>
+            <Suspense
+              fallback={
+                <Text type="supporting" color="secondary">
+                  Loading preview…
+                </Text>
+              }>
+              <PreviewErrorBoundary
+                resetKeys={[Component, runtimeState, WrapperComponent]}>
+                {playground?.appShellMobile === true ? (
+                  <AppShellMobilePreviewProvider>
+                    <VStack
+                      gap={2}
+                      style={{alignItems: 'center', textAlign: 'center'}}>
+                      {renderPreview(createElement(Component, runtimeState))}
+                      <Text type="supporting" color="secondary">
+                        Simulated mobile AppShell — in an app this renders only
+                        below the mobile breakpoint.
+                      </Text>
+                    </VStack>
+                  </AppShellMobilePreviewProvider>
+                ) : (
+                  renderPreview(createElement(Component, runtimeState))
+                )}
+                {isOverlayPreviewClosed(playground, state) && (
                   <VStack
                     gap={2}
-                    style={{alignItems: 'center', textAlign: 'center'}}>
-                    {renderPreview(createElement(Component, runtimeState))}
+                    style={{
+                      alignItems: 'center',
+                      paddingBlock: 24,
+                      paddingInline: 16,
+                      textAlign: 'center',
+                    }}>
                     <Text type="supporting" color="secondary">
-                      Simulated mobile AppShell — in an app this renders only
-                      below the mobile breakpoint.
+                      Opens as a full-screen overlay — nothing renders while it
+                      is closed.
                     </Text>
+                    {onPropChange != null &&
+                      overlayControl != null &&
+                      (overlayControl.stateProp !== 'isOpen' ||
+                        canControlOpenState) && (
+                        <Button
+                          label="Open preview"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() =>
+                            onPropChange(
+                              overlayControl.stateProp,
+                              overlayControl.openValue,
+                            )
+                          }
+                        />
+                      )}
                   </VStack>
-                </AppShellMobilePreviewProvider>
-              ) : (
-                renderPreview(createElement(Component, runtimeState))
-              )}
-              {isOverlayPreviewClosed(playground, state) && (
-                <VStack
-                  gap={2}
-                  style={{
-                    alignItems: 'center',
-                    paddingBlock: 24,
-                    paddingInline: 16,
-                    textAlign: 'center',
-                  }}>
-                  <Text type="supporting" color="secondary">
-                    Opens as a full-screen overlay — nothing renders while it is
-                    closed.
-                  </Text>
-                  {onPropChange != null &&
-                    overlayControl != null &&
-                    (overlayControl.stateProp !== 'isOpen' ||
-                      canControlOpenState) && (
-                      <Button
-                        label="Open preview"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() =>
-                          onPropChange(
-                            overlayControl.stateProp,
-                            overlayControl.openValue,
-                          )
-                        }
-                      />
-                    )}
-                </VStack>
-              )}
-            </PreviewErrorBoundary>
+                )}
+              </PreviewErrorBoundary>
+            </Suspense>
           </Center>
         )}
       </Card>

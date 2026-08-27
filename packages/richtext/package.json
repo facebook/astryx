@@ -1,5 +1,6 @@
 {
   "name": "@astryxdesign/richtext",
+  "displayName": "Rich Text",
   "version": "0.1.9",
   "private": true,
   "description": "Astryx rich text — a Lexical-based rich text editor and viewer. Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
@@ -31,6 +32,8 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "files": [
+    "astryx.integration.mjs",
+    "blocks",
     "dist",
     "src",
     "README.md",

@@ -135,6 +135,12 @@ jobs:
       - name: Typecheck charts docs
         run: pnpm -F @astryxdesign/charts typecheck:docs
 
+      - name: Typecheck rich text docs
+        run: pnpm -F @astryxdesign/richtext typecheck:docs
+
+      - name: Typecheck Vega docs
+        run: pnpm -F @astryxdesign/vega typecheck:docs
+
       - name: Typecheck template docs
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
 

@@ -29,6 +29,8 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "files": [
+    "astryx.integration.mjs",
+    "blocks",
     "dist",
     "src",
     "README.md",

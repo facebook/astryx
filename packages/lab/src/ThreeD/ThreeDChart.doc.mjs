@@ -3,9 +3,9 @@
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
-  name: '3DScatterGL',
-  displayName: '3D Scatter GL',
-  group: 'ThreeD',
+  name: 'ThreeDChart',
+  displayName: '3D Chart',
+  group: '3D',
   category: 'Data Visualization',
 
   usage: {
