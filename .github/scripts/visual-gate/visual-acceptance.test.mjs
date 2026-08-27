@@ -280,6 +280,14 @@ describe('visual acceptance', () => {
     });
   });
 
+  it('returns success for a clean trusted capture without acceptance', () => {
+    writeEvidence({run: 124, status: 'pass'});
+    expect(JSON.parse(run('state', {pages, pr: 42, head: HEAD}))).toMatchObject({
+      state: 'success',
+      reason: 'clean',
+    });
+  });
+
   it('derives a trusted component plan from baseline themes and the Storybook index', () => {
     const storybook = path.join(root, 'storybook');
     fs.mkdirSync(storybook);

@@ -25,8 +25,7 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: read
-      pull-requests: write
-      issues: write
+      pull-requests: read
       statuses: write
     steps:
       - name: Checkout trusted default-branch code
@@ -86,13 +85,6 @@ jobs:
                 ? 'Stable visual capture is still running.'
                 : 'No stable visual scope.',
             });
-            try {
-              await github.rest.issues.removeLabel({
-                owner, repo, issue_number: pr.number, name: 'visual-approved',
-              });
-            } catch (error) {
-              if (error.status !== 404) throw error;
-            }
 
   authorize:
     if: >-
@@ -208,7 +200,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      issues: write
       statuses: write
     steps:
       - name: Report a refused decision
