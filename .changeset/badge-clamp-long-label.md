@@ -35,7 +35,7 @@ truncated header cell. That costs no measurement and no hook, so
 `Badge` still renders the same on the server and stays usable in a server
 component. A rich `label` is left alone rather than flattened to a guess.
 
-Two gaps remain, both needing runtime measurement, and both tracked separately:
+Two gaps remain, both needing runtime measurement, and both tracked in #5585:
 the `title` is set whether or not the label actually fits, and a native `title`
 is a pointer affordance — it answers hover, not keyboard focus, and not touch
 at all. The refinement is a tooltip shown only when the text is really cut,

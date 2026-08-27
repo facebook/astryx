@@ -97,7 +97,7 @@ export const NonSemanticColors: Story = {
 // with an ellipsis rather than escaping the container. The full text rides in
 // the badge's `title`, so hovering a truncated one shows it — a pointer-only
 // affordance for now; the focus- and touch-reachable tooltip needs runtime
-// measurement and is tracked separately.
+// measurement and is tracked in #5585.
 export const LongLabels: Story = {
   name: 'Long labels in tight space',
   render: () => (

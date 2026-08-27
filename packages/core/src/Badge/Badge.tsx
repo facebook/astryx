@@ -195,7 +195,7 @@ export function Badge({
   // It is set whether or not the label actually fits, because knowing that
   // requires measuring. The refinement — a tooltip only when the text is
   // really cut, reachable by hover and by focus — needs that measurement and
-  // a client component, so it is tracked separately.
+  // a client component, so it is tracked in #5585.
   const labelTitle =
     typeof label === 'number'
       ? String(label)
