@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Layout',
@@ -95,15 +95,27 @@ export const docs = {
     },
     {
       name: 'contentWidth',
-      type: 'number | string',
+      type: 'SizeValue',
       description:
-        'Maximum width of the content within each slot (header, content, footer, panels), centered when narrower than the available space. Dividers remain full-bleed. Numbers are pixels, strings are used as-is. Common widths: 640 for forms, 960 for content pages.',
+        'Maximum width of the content within each slot (header, content, footer, panels), centered when narrower than the available space. Dividers stay full-bleed. Numbers are treated as pixels, strings are used as-is (e.g. `60ch`). Common page widths: 640 for forms, settings, and text-focused pages; 960 for content pages and wider layouts.',
     },
     {
       name: 'shellWidth',
       type: 'number | string',
       description:
         'Maximum width of the entire shell (header, panels, content, footer, and their dividers), centered when narrower than the available space. Dividers end at the shell edge and the surrounding background shows on both sides on wide viewports. Use contentWidth instead to keep headers and dividers full-bleed. Numbers are pixels, strings are used as-is.',
+    },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        "Padding at the layout's outer edges using the spacing scale.",
+    },
+    {
+      name: 'defaultHasDividers',
+      type: 'boolean',
+      description:
+        "Default divider visibility for LayoutHeader and LayoutFooter children. Headers and footers that don't pass `hasDivider` use this value; when unset, nested layouts inherit from their parent context.",
     },
   ],
   components: [
@@ -126,7 +138,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -140,7 +152,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Composable utilities + components for structured layouts w/ container/content separation pattern.',

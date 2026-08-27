@@ -67,7 +67,12 @@ export const Streaming: StoryObj = {
           Working through the combinatorial constraints...
         </ChatReasoning>
         {!streaming && (
-          <p style={{marginTop: 8, fontSize: 13, color: '#888'}}>
+          <p
+            style={{
+              marginTop: 8,
+              fontSize: 13,
+              color: 'var(--color-text-secondary)',
+            }}>
             (Shimmer stopped after 5s)
           </p>
         )}
@@ -94,9 +99,7 @@ export const InMessage: StoryObj = {
           How many valid planting arrangements are possible over 3 years?
         </ChatMessageBubble>
       </ChatMessage>
-      <ChatMessage
-        sender="assistant"
-        avatar={<Avatar name="AI" size="small" />}>
+      <ChatMessage sender="assistant" avatar={<Avatar name="AI" size="md" />}>
         <ChatReasoning duration="12s">
           Let me work through the constraints systematically...
         </ChatReasoning>

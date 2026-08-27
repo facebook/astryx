@@ -5,26 +5,34 @@
 /**
  * @file useTheme.ts
  * @input ThemeContext provided by Theme
- * @output Exports useTheme hook for programmatic access to resolved theme tokens
+ * @output Exports useTheme and useThemeName hooks for programmatic theme access
  * @position Theme hook; used by data viz, canvas, and non-CSS consumers
  *
  * Provides synchronous access to theme token values resolved for the
  * current color mode — no DOM reads on the provider path, no double render.
- * Without a reachable ThemeContext it consults `<html data-theme>` (kept in
- * sync by Theme) via a single shared, refcounted MutationObserver before
- * assuming OS preference; provider-path consumers subscribe to a no-op
- * store instead (the same args-switch technique useMediaQuery uses), so
- * mounting under a Theme never creates an observer. Token resolution is
- * shared with the server-safe helpers in ./tokens.ts.
+ * Without a reachable ThemeContext it consults `<html data-theme>` and
+ * `<html data-astryx-theme>` (kept in sync by Theme) via shared, refcounted
+ * MutationObservers before assuming OS preference/default tokens. Provider-path
+ * consumers subscribe to no-op stores instead, so mounting under a Theme never
+ * creates an observer. Token resolution is shared with the server-safe helpers
+ * in ./tokens.ts.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/index.ts
  */
 
-import {createContext, use, useMemo, useSyncExternalStore} from 'react';
+import {
+  createContext,
+  use,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from 'react';
 import type {ThemeMode} from './types';
 import type {DefinedTheme} from './defineTheme';
 import {resolveThemeTokens} from './tokens';
+import {getRegisteredTheme} from './themeRegistry';
+import {dataAttr} from '../naming';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 
 // =============================================================================
@@ -92,7 +100,7 @@ export interface UseThemeReturn {
 // Hook
 // =============================================================================
 
-function getRootThemeAttrSnapshot(): 'light' | 'dark' | null {
+function getRootModeAttrSnapshot(): 'light' | 'dark' | null {
   if (typeof document === 'undefined') {
     return null;
   }
@@ -100,45 +108,88 @@ function getRootThemeAttrSnapshot(): 'light' | 'dark' | null {
   return attr === 'light' || attr === 'dark' ? attr : null;
 }
 
-function getRootThemeAttrServerSnapshot(): 'light' | 'dark' | null {
+function getRootModeAttrServerSnapshot(): 'light' | 'dark' | null {
   return null;
 }
 
-function getNullThemeMode(): null {
+function getRootNameAttrSnapshot(): string | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+  return document.documentElement.getAttribute(dataAttr('theme'));
+}
+
+function getRootNameAttrServerSnapshot(): string | null {
+  return null;
+}
+
+function getNullThemeSnapshot(): null {
   return null;
 }
 
 // Every no-context consumer wants the same <html data-theme> attribute, so
 // one MutationObserver — refcounted via this listener set — serves all of
 // them instead of one per consumer.
-const rootThemeAttrListeners = new Set<() => void>();
-let rootThemeAttrObserver: MutationObserver | null = null;
+const rootModeAttrListeners = new Set<() => void>();
+let rootModeAttrObserver: MutationObserver | null = null;
 
-function notifyRootThemeAttrListeners(): void {
-  for (const listener of rootThemeAttrListeners) {
+const rootNameAttrListeners = new Set<() => void>();
+let rootNameAttrObserver: MutationObserver | null = null;
+
+function notifyRootModeAttrListeners(): void {
+  for (const listener of rootModeAttrListeners) {
     listener();
   }
 }
 
-function subscribeRootThemeAttr(onStoreChange: () => void): () => void {
-  rootThemeAttrListeners.add(onStoreChange);
+function subscribeRootModeAttr(onStoreChange: () => void): () => void {
+  rootModeAttrListeners.add(onStoreChange);
 
   if (
-    rootThemeAttrListeners.size === 1 &&
+    rootModeAttrListeners.size === 1 &&
     typeof MutationObserver !== 'undefined'
   ) {
-    rootThemeAttrObserver = new MutationObserver(notifyRootThemeAttrListeners);
-    rootThemeAttrObserver.observe(document.documentElement, {
+    rootModeAttrObserver = new MutationObserver(notifyRootModeAttrListeners);
+    rootModeAttrObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme'],
     });
   }
 
   return () => {
-    rootThemeAttrListeners.delete(onStoreChange);
-    if (rootThemeAttrListeners.size === 0 && rootThemeAttrObserver) {
-      rootThemeAttrObserver.disconnect();
-      rootThemeAttrObserver = null;
+    rootModeAttrListeners.delete(onStoreChange);
+    if (rootModeAttrListeners.size === 0 && rootModeAttrObserver) {
+      rootModeAttrObserver.disconnect();
+      rootModeAttrObserver = null;
+    }
+  };
+}
+
+function notifyRootNameAttrListeners(): void {
+  for (const listener of rootNameAttrListeners) {
+    listener();
+  }
+}
+
+function subscribeRootNameAttr(onStoreChange: () => void): () => void {
+  rootNameAttrListeners.add(onStoreChange);
+
+  if (
+    rootNameAttrListeners.size === 1 &&
+    typeof MutationObserver !== 'undefined'
+  ) {
+    rootNameAttrObserver = new MutationObserver(notifyRootNameAttrListeners);
+    rootNameAttrObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: [dataAttr('theme')],
+    });
+  }
+
+  return () => {
+    rootNameAttrListeners.delete(onStoreChange);
+    if (rootNameAttrListeners.size === 0 && rootNameAttrObserver) {
+      rootNameAttrObserver.disconnect();
+      rootNameAttrObserver = null;
     }
   };
 }
@@ -154,12 +205,36 @@ function subscribeNoop(): () => void {
  * a no-op store when a ThemeContext exists — instead of skipping the hook
  * call, so provider-path consumers never touch the DOM or the observer.
  */
-function useRootThemeModeAttr(hasCtx: boolean): 'light' | 'dark' | null {
+function useRootModeAttr(hasCtx: boolean): 'light' | 'dark' | null {
   return useSyncExternalStore(
-    hasCtx ? subscribeNoop : subscribeRootThemeAttr,
-    hasCtx ? getNullThemeMode : getRootThemeAttrSnapshot,
-    getRootThemeAttrServerSnapshot,
+    hasCtx ? subscribeNoop : subscribeRootModeAttr,
+    hasCtx ? getNullThemeSnapshot : getRootModeAttrSnapshot,
+    getRootModeAttrServerSnapshot,
   );
+}
+
+function useRootThemeNameAttr(hasCtx: boolean): string | null {
+  return useSyncExternalStore(
+    hasCtx ? subscribeNoop : subscribeRootNameAttr,
+    hasCtx ? getNullThemeSnapshot : getRootNameAttrSnapshot,
+    getRootNameAttrServerSnapshot,
+  );
+}
+
+/**
+ * Return the nearest active Astryx theme name.
+ *
+ * Uses ThemeContext when present and otherwise follows the root Theme's
+ * <html data-astryx-theme> attribute. This is intentionally lighter than
+ * useTheme() for consumers that only need theme identity, such as semantic
+ * icon resolution.
+ */
+export function useThemeName(): string | null {
+  const ctx = use(ThemeContext);
+  const hasCtx = ctx != null;
+  const rootThemeName = useRootThemeNameAttr(hasCtx);
+
+  return ctx?.theme.name ?? rootThemeName;
 }
 
 /**
@@ -193,13 +268,15 @@ export function useTheme(): UseThemeReturn {
   // Falls back to the root Theme's mode via <html data-theme> when there's
   // no ThemeContext ancestor (e.g. useToast's detached fallback viewport).
   // Resolves to null when `ctx` is present, so it has no effect there.
-  const rootAttrMode = useRootThemeModeAttr(ctx != null);
+  const hasCtx = ctx != null;
+  const rootAttrMode = useRootModeAttr(hasCtx);
+  const rootThemeName = useRootThemeNameAttr(hasCtx);
 
   // Resolve 'system' to 'light' | 'dark' using the OS preference
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
 
   const mode = ctx?.mode ?? rootAttrMode ?? 'system';
-  const theme = ctx?.theme ?? null;
+  const theme = ctx?.theme ?? getRegisteredTheme(rootThemeName);
 
   const effectiveMode: 'light' | 'dark' =
     mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode;
@@ -210,14 +287,14 @@ export function useTheme(): UseThemeReturn {
     [theme, effectiveMode],
   );
 
-  const token = (name: string): string => {
-    return tokens[name] ?? '';
-  };
+  const token = useCallback(
+    (name: string): string => tokens[name] ?? '',
+    [tokens],
+  );
+  const name = theme?.name ?? 'default';
 
-  return {
-    name: theme?.name ?? 'default',
-    mode: effectiveMode,
-    token,
-    tokens,
-  };
+  return useMemo(
+    () => ({name, mode: effectiveMode, token, tokens}),
+    [name, effectiveMode, token, tokens],
+  );
 }

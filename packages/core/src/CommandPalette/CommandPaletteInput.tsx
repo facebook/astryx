@@ -9,14 +9,14 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /apps/storybook/stories/CommandPalette.stories.tsx
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -29,6 +29,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   wrapper: {
     display: 'flex',
@@ -110,6 +111,13 @@ export interface CommandPaletteInputProps extends Omit<
   placeholder?: string;
 
   /**
+   * Accessible label for the combobox input, announced by screen readers.
+   * Falls back to the placeholder text (`'Search…'` by default), since a
+   * placeholder alone is not a reliable accessible name.
+   */
+  label?: string;
+
+  /**
    * Whether to auto-focus the input when mounted.
    * @default true
    */
@@ -149,12 +157,15 @@ export function CommandPaletteInput({
   value: controlledValue,
   onValueChange,
   placeholder: placeholderFromProps,
+  label,
   hasAutoFocus = true,
   endContent,
   onChange,
   onKeyDown,
   ref,
   xstyle,
+  className,
+  style,
   ...props
 }: CommandPaletteInputProps) {
   const t = useTranslator();
@@ -199,12 +210,14 @@ export function CommandPaletteInput({
       {...mergeProps(
         themeProps('command-palette-input'),
         stylex.props(styles.wrapper, xstyle),
+        className,
+        style,
       )}>
       <span {...stylex.props(styles.icon)}>
         <Icon icon="search" size="sm" color="inherit" />
       </span>
       <input
-        ref={mergeRefs(ref, inputRef)}
+        ref={useMergedRefs(ref, inputRef)}
         type="text"
         role="combobox"
         aria-expanded={ctx?.isOpen ?? true}
@@ -215,6 +228,9 @@ export function CommandPaletteInput({
             ? ctx.getItemId(ctx.highlightedIndex)
             : undefined
         }
+        // A placeholder alone is not a reliable accessible name; give the
+        // combobox an explicit one (consumer aria-label via rest props wins).
+        aria-label={label ?? placeholder}
         placeholder={placeholder}
         value={value}
         data-autofocus={effectiveAutoFocus || undefined}

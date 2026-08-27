@@ -13,8 +13,11 @@ const meta: Meta<typeof Timestamp> = {
       control: 'select',
       options: [
         'relative',
+        'relative_short',
         'auto',
         'date',
+        'date_long',
+        'date_weekday',
         'date_time',
         'time',
         'system_date',
@@ -77,7 +80,7 @@ const meta: Meta<typeof Timestamp> = {
     },
     hasTooltip: {
       control: 'boolean',
-      description: 'Show tooltip on hover',
+      description: 'Show copyable hover card on hover',
     },
     isTimezoneShown: {
       control: 'boolean',
@@ -115,10 +118,50 @@ export const RelativeFormat: Story = {
   ),
 };
 
+export const RelativeShortFormat: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        alignItems: 'flex-start',
+      }}>
+      <Timestamp value={Date.now() / 1000 - 5} format="relative_short" />
+      <Timestamp value={Date.now() / 1000 - 120} format="relative_short" />
+      <Timestamp value={Date.now() / 1000 - 3600} format="relative_short" />
+      <Timestamp value={Date.now() / 1000 - 86400} format="relative_short" />
+      <Timestamp value={Date.now() / 1000 - 259200} format="relative_short" />
+      <Timestamp
+        value={Date.now() / 1000 - 90 * 86400}
+        format="relative_short"
+      />
+      <Timestamp
+        value={Date.now() / 1000 - 730 * 86400}
+        format="relative_short"
+      />
+    </div>
+  ),
+};
+
 export const DateFormat: Story = {
   args: {
     value: '2026-02-19T17:00:00Z',
     format: 'date',
+  },
+};
+
+export const DateLongFormat: Story = {
+  args: {
+    value: '2026-02-19T17:00:00Z',
+    format: 'date_long',
+  },
+};
+
+export const DateWeekdayFormat: Story = {
+  args: {
+    value: '2026-02-19T17:00:00Z',
+    format: 'date_weekday',
   },
 };
 
@@ -142,6 +185,187 @@ export const TimeFormat: Story = {
     value: '2026-02-19T17:00:00Z',
     format: 'time',
   },
+};
+
+export const TooltipTimezones: Story = {
+  name: 'Hover card — configuration examples',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <div>
+        <Text type="supporting" color="secondary">
+          Local + UTC, default format — hover or tab to the timestamp, then copy
+          any row
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          Three labelled zones — the widest case the card holds
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="date"
+            tooltipEntries={[
+              {
+                timezoneID: 'America/New_York',
+                format: 'date_time',
+                label: 'New York',
+              },
+              {
+                timezoneID: 'Europe/London',
+                format: 'date_time',
+                label: 'London',
+              },
+              {timezoneID: 'Asia/Tokyo', format: 'date_time', label: 'Tokyo'},
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          One zone, two formats — friendly line plus a machine-precise line
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="date_time"
+            tooltipEntries={[
+              {format: 'full'},
+              {format: 'system_date_time', label: 'ISO'},
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          UTC only — an audit log that never shows local time
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="date_time"
+            tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          />
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const CopyableHoverCard: Story = {
+  name: 'Copyable hover card',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <div>
+        <Text type="supporting" color="secondary">
+          Local, UTC, another zone, and Unix seconds — hover or tab, then copy
+          any row
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+              {
+                timezoneID: 'Asia/Tokyo',
+                format: 'date_time',
+                label: 'Tokyo',
+              },
+              {
+                timezoneID: 'UTC',
+                format: 'system_date_time',
+                label: 'ISO (UTC)',
+              },
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          A single UTC entry — one copyable row, on an absolute format that has
+          no hover card of its own
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="date_time"
+            tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          />
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const PerEntryCopyable: Story = {
+  name: 'Per-entry copyable',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <div>
+        <Text type="supporting" color="secondary">
+          Mixed: human-readable rows are read-only; only the machine value opts
+          into a copy button
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+              {
+                timezoneID: 'UTC',
+                format: 'system_date_time',
+                label: 'ISO (UTC)',
+                isCopyable: true,
+              },
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          Fully read-only card — no row opts in, so there is no copy button and
+          no trailing action column
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          Single read-only row with no label — the value sits flush at the
+          leading edge
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[{}]}
+          />
+        </div>
+      </div>
+    </div>
+  ),
 };
 
 export const SystemFormats: Story = {
@@ -197,6 +421,18 @@ export const AllFormats: Story = {
             date:{' '}
           </Text>
           <Timestamp value={date} format="date" />
+        </div>
+        <div>
+          <Text type="label" color="secondary">
+            date_long:{' '}
+          </Text>
+          <Timestamp value={date} format="date_long" />
+        </div>
+        <div>
+          <Text type="label" color="secondary">
+            date_weekday:{' '}
+          </Text>
+          <Timestamp value={date} format="date_weekday" />
         </div>
         <div>
           <Text type="label" color="secondary">

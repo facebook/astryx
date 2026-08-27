@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import * as stylex from '@stylexjs/stylex';
 import {BaseTable} from './BaseTable';
 import {Table} from './Table';
 import {TableRow} from './TableRow';
@@ -93,6 +94,12 @@ describe('columnUtils', () => {
 
     it('handles single character', () => {
       expect(capitalize('a')).toBe('A');
+    });
+
+    it('uppercases an astral-plane letter without splitting it (#4759)', () => {
+      // Deseret 𐐨 (U+10428) uppercases to 𐐀 (U+10400); charAt(0) would grab
+      // half the surrogate pair and leave the string unchanged.
+      expect(capitalize('\u{10428}pple')).toBe('\u{10400}pple');
     });
   });
 
@@ -362,9 +369,11 @@ describe('BaseTable', () => {
   it('renders children mode instead of data', () => {
     render(
       <BaseTable>
-        <tr>
-          <td>Manual cell</td>
-        </tr>
+        <tbody>
+          <tr>
+            <td>Manual cell</td>
+          </tr>
+        </tbody>
       </BaseTable>,
     );
     expect(screen.getByText('Manual cell')).toBeInTheDocument();
@@ -373,9 +382,11 @@ describe('BaseTable', () => {
   it('does not render thead in children mode without columns', () => {
     const {container} = render(
       <BaseTable>
-        <tr>
-          <td>Content</td>
-        </tr>
+        <tbody>
+          <tr>
+            <td>Content</td>
+          </tr>
+        </tbody>
       </BaseTable>,
     );
     expect(container.querySelector('thead')).toBeNull();
@@ -400,18 +411,130 @@ describe('BaseTable', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLTableElement));
   });
 
-  it('passes tableProps to the table element', () => {
-    render(
-      <BaseTable
-        data={users}
-        columns={columns}
-        tableProps={{'aria-label': 'Users table'}}
-      />,
-    );
-    expect(screen.getByRole('table')).toHaveAttribute(
-      'aria-label',
-      'Users table',
-    );
+  describe('root element styling props (#3679)', () => {
+    it('applies className to the table element', () => {
+      render(<Table data={users} columns={columns} className="custom-table" />);
+      expect(screen.getByRole('table').className).toContain('custom-table');
+    });
+
+    it('applies style to the table element', () => {
+      render(<Table data={users} columns={columns} style={{opacity: 0.9}} />);
+      expect(screen.getByRole('table').style.opacity).toBe('0.9');
+    });
+
+    it('accepts xstyle without error', () => {
+      render(<Table data={users} columns={columns} xstyle={undefined} />);
+      expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+
+    it('spreads id and aria attributes onto the table element', () => {
+      render(
+        <Table
+          data={users}
+          columns={columns}
+          id="users-table"
+          aria-label="Users"
+          data-analytics="tables"
+        />,
+      );
+      const table = screen.getByRole('table', {name: 'Users'});
+      expect(table.id).toBe('users-table');
+      expect(table).toHaveAttribute('data-analytics', 'tables');
+    });
+
+    it('keeps the computed column min-width over a consumer style.minWidth', () => {
+      const {tableMinWidth} = resolveColumnWidths(columns);
+      render(
+        <Table data={users} columns={columns} style={{minWidth: '10px'}} />,
+      );
+      expect(screen.getByRole('table').style.minWidth).toBe(
+        `${tableMinWidth}px`,
+      );
+    });
+
+    it('lets a consumer style.minWidth survive when columns compute none', () => {
+      const plain: TableColumn<User>[] = [{key: 'name'}, {key: 'age'}];
+      render(<Table data={users} columns={plain} style={{minWidth: '10px'}} />);
+      expect(screen.getByRole('table').style.minWidth).toBe('10px');
+    });
+
+    it('keeps the astryx theme classes alongside a consumer className', () => {
+      render(<Table data={users} columns={columns} className="custom-table" />);
+      const table = screen.getByRole('table');
+      expect(table.className).toContain('astryx-base-table');
+      expect(table.className).toContain('astryx-table');
+      expect(table.className).toContain('custom-table');
+    });
+
+    it('passes event handlers through to the table element', async () => {
+      const onClick = vi.fn();
+      render(<Table data={users} columns={columns} onClick={onClick} />);
+      screen
+        .getByRole('table')
+        .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      expect(onClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('applies dynamic xstyle values to the table element', () => {
+      const dynamic = stylex.create({
+        opacity: (value: number) => ({opacity: value}),
+      });
+      render(
+        <Table data={users} columns={columns} xstyle={dynamic.opacity(0.42)} />,
+      );
+      expect(screen.getByRole('table').getAttribute('style')).toContain('0.42');
+    });
+
+    it('honors className in children mode', () => {
+      render(
+        <Table className="custom-table">
+          <tbody>
+            <TableRow>
+              <TableCell>Cell</TableCell>
+            </TableRow>
+          </tbody>
+        </Table>,
+      );
+      expect(screen.getByRole('table').className).toContain('custom-table');
+    });
+
+    it('honors className on an unwrapped BaseTable (no scrollWrapper)', () => {
+      render(
+        <BaseTable data={users} columns={columns} className="custom-table" />,
+      );
+      expect(screen.getByRole('table').className).toContain('custom-table');
+    });
+  });
+
+  describe('TableRow styling props', () => {
+    it('applies className and style to the row inside a Table', () => {
+      render(
+        <Table>
+          <tbody>
+            <TableRow className="custom-row" style={{opacity: 0.9}}>
+              <TableCell>Cell</TableCell>
+            </TableRow>
+          </tbody>
+        </Table>,
+      );
+      const row = screen.getByRole('row');
+      expect(row.className).toContain('custom-row');
+      expect(row.className).toContain('astryx-table-row');
+      expect(row.style.opacity).toBe('0.9');
+    });
+
+    it('applies className to a standalone row (no table context)', () => {
+      render(
+        <table>
+          <tbody>
+            <TableRow className="custom-row">
+              <td>Cell</td>
+            </TableRow>
+          </tbody>
+        </table>,
+      );
+      expect(screen.getByRole('row').className).toContain('custom-row');
+    });
   });
 
   describe('plugin pipeline', () => {
@@ -481,6 +604,41 @@ describe('BaseTable', () => {
       // 3 rows * 3 columns = 9 calls
       expect(calls).toHaveLength(9);
       expect(calls[0]).toEqual({col: 'name', name: 'Alice'});
+    });
+
+    it('isContentSuppressed renders an empty cell and never calls the column renderer', () => {
+      const rendered: string[] = [];
+      const withRenderer: TableColumn<User>[] = [
+        {
+          key: 'name',
+          header: 'Name',
+          renderCell: item => {
+            rendered.push(item.name);
+            return <b>{item.name}</b>;
+          },
+        },
+      ];
+      const plugin: TablePlugin<User> = {
+        transformBodyCell: (props, _column, item) =>
+          item.name === 'Bob' ? {...props, isContentSuppressed: true} : props,
+      };
+      render(
+        <BaseTable data={users} columns={withRenderer} plugins={[plugin]} />,
+      );
+      expect(rendered).toEqual(['Alice', 'Charlie']);
+      const cells = screen.getAllByRole('cell');
+      expect(cells[1]).toBeEmptyDOMElement();
+      expect(cells[0]).toHaveTextContent('Alice');
+    });
+
+    it('isContentSuppressed also suppresses the default renderer', () => {
+      const plugin: TablePlugin<User> = {
+        transformBodyCell: props => ({...props, isContentSuppressed: true}),
+      };
+      render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
+      for (const cell of screen.getAllByRole('cell')) {
+        expect(cell).toBeEmptyDOMElement();
+      }
     });
 
     it('composes multiple plugins sequentially', () => {
@@ -755,6 +913,33 @@ describe('Table', () => {
       render(<Table data={users} columns={columns} density="spacious" />);
       expect(screen.getAllByRole('row')).toHaveLength(4);
     });
+
+    it('reflects density as data-density on cells and header cells (theme hook)', () => {
+      // The density lives in internal StyleX classes, so cells expose it as a
+      // data-density attribute on the stable astryx-table-cell /
+      // astryx-table-header-cell targets. This lets a theme override padding
+      // per density (e.g. hold the inline inset while varying the block) via
+      // `defineTheme` — the padding split is otherwise unreachable.
+      const {rerender} = render(
+        <Table data={users} columns={columns} density="spacious" />,
+      );
+      const cell = screen.getAllByRole('cell')[0];
+      const header = screen.getAllByRole('columnheader')[0];
+      expect(cell.className).toContain('astryx-table-cell');
+      expect(cell).toHaveAttribute('data-density', 'spacious');
+      expect(header.className).toContain('astryx-table-header-cell');
+      expect(header).toHaveAttribute('data-density', 'spacious');
+
+      rerender(<Table data={users} columns={columns} density="compact" />);
+      expect(screen.getAllByRole('cell')[0]).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
+      expect(screen.getAllByRole('columnheader')[0]).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
+    });
   });
 
   describe('dividers', () => {
@@ -826,7 +1011,7 @@ describe('Table', () => {
     const userPlugin: TablePlugin<User> = {
       transformTable: props => {
         // XDS plugin should have already added styles
-        expect(props.styles.length).toBeGreaterThan(1);
+        expect(props.xstyle.length).toBeGreaterThan(1);
         return {
           ...props,
           htmlProps: {...props.htmlProps, 'data-testid': 'after-xds'},
@@ -842,20 +1027,99 @@ describe('Table', () => {
   it('renders children mode with TableRow and TableCell', () => {
     render(
       <Table density="balanced" dividers="rows">
-        <TableRow>
-          <TableCell>Streamed A</TableCell>
-          <TableCell>Streamed B</TableCell>
-        </TableRow>
-        <TableRow>
-          <TableCell>Streamed C</TableCell>
-          <TableCell>Streamed D</TableCell>
-        </TableRow>
+        <TableBody>
+          <TableRow>
+            <TableCell>Streamed A</TableCell>
+            <TableCell>Streamed B</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Streamed C</TableCell>
+            <TableCell>Streamed D</TableCell>
+          </TableRow>
+        </TableBody>
       </Table>,
     );
     expect(screen.getByText('Streamed A')).toBeInTheDocument();
     expect(screen.getByText('Streamed D')).toBeInTheDocument();
     expect(screen.getAllByRole('row')).toHaveLength(2);
     expect(screen.getAllByRole('cell')).toHaveLength(4);
+  });
+
+  // Children mode hands the children straight to <table> — it does not wrap
+  // them the way the data-driven path does. That is deliberate (it is what
+  // makes the section components composable), but it was never written down,
+  // and a caller who skipped the section shipped `<table><tr>` (#5277).
+  it("children mode renders no tbody of its own — the section is the caller's", () => {
+    const {container} = render(
+      <Table density="balanced">
+        {/* The unwrapped shape is the subject of this test, not a mistake. */}
+        {/* eslint-disable-next-line @astryx/require-table-section */}
+        <TableRow>
+          <TableCell>Unwrapped</TableCell>
+        </TableRow>
+      </Table>,
+    );
+    const table = container.querySelector('table');
+    expect(table?.querySelector('tbody')).toBeNull();
+    expect(Array.from(table?.children ?? []).map(el => el.tagName)).toContain(
+      'TR',
+    );
+  });
+
+  // Columns do not bring a thead with them in children mode — BaseTable's
+  // `children ? children : <>...</>` short-circuits the whole data-driven
+  // branch, header included. The header is TableHeader's job here.
+  it('children mode renders no thead even when columns are supplied', () => {
+    const {container} = render(
+      <Table columns={columns}>
+        <TableBody>
+          <TableRow>
+            <TableCell>Only body</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    expect(container.querySelector('thead')).toBeNull();
+    expect(container.querySelector('tbody > tr')).not.toBeNull();
+  });
+
+  it('children mode renders the thead TableHeader supplies', () => {
+    const {container} = render(
+      <Table columns={columns}>
+        <TableHeader>
+          <TableRow isHeaderRow>
+            <TableCell>H</TableCell>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell>B</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    const table = container.querySelector('table');
+    expect(Array.from(table?.children ?? []).map(el => el.tagName)).toEqual([
+      'THEAD',
+      'TBODY',
+    ]);
+  });
+
+  it('children mode puts the rows in the tbody TableBody renders', () => {
+    const {container} = render(
+      <Table density="balanced">
+        <TableBody>
+          <TableRow>
+            <TableCell>Wrapped</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    const table = container.querySelector('table');
+    expect(
+      Array.from(table?.children ?? []).map(el => el.tagName),
+    ).not.toContain('TR');
+    expect(table?.querySelector('tbody > tr')).not.toBeNull();
   });
 
   it('passes through idKey string to base table', () => {
@@ -1318,5 +1582,90 @@ describe('emptyState', () => {
       expect(tfoot).toHaveAttribute('data-testid', 'tfoot');
       expect(tfoot).toHaveAttribute('id', 'foot-1');
     });
+  });
+});
+
+describe('ARIA row indexing (#3939)', () => {
+  const bodyRows = (container: HTMLElement): HTMLTableRowElement[] =>
+    Array.from(container.querySelectorAll('tbody tr'));
+
+  it('emits no aria-rowindex/aria-rowcount by default', () => {
+    const {container} = render(<Table data={users} columns={columns} />);
+    expect(screen.getByRole('table')).not.toHaveAttribute('aria-rowcount');
+    for (const row of bodyRows(container)) {
+      expect(row).not.toHaveAttribute('aria-rowindex');
+    }
+  });
+
+  it('numbers rows from 1 when rowCount is provided', () => {
+    const {container} = render(
+      <Table data={users} columns={columns} rowCount={users.length} />,
+    );
+    expect(screen.getByRole('table')).toHaveAttribute(
+      'aria-rowcount',
+      String(users.length),
+    );
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['1', '2', '3']);
+  });
+
+  it('offsets aria-rowindex by rowIndexStart for a paginated view', () => {
+    // Page 3 of a 10-per-page dataset: first visible row is dataset row 21.
+    const {container} = render(
+      <Table
+        data={users}
+        columns={columns}
+        rowIndexStart={21}
+        rowCount={100}
+      />,
+    );
+    expect(screen.getByRole('table')).toHaveAttribute('aria-rowcount', '100');
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['21', '22', '23']);
+  });
+
+  it('sets aria-rowcount to -1 (unknown) when only rowIndexStart is given', () => {
+    // Windowed/cursor pagination: offset known, total unknown.
+    const {container} = render(
+      <Table data={users} columns={columns} rowIndexStart={5} />,
+    );
+    expect(screen.getByRole('table')).toHaveAttribute('aria-rowcount', '-1');
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['5', '6', '7']);
+  });
+
+  it('does not assign an ARIA row index to the header row', () => {
+    render(<Table data={users} columns={columns} rowCount={users.length} />);
+    const header = screen.getAllByRole('row')[0];
+    expect(header).not.toHaveAttribute('aria-rowindex');
+  });
+
+  it('lets a plugin override the seeded aria-rowindex', () => {
+    const plugin: TablePlugin<User> = {
+      transformBodyRow(props, _item, index) {
+        return {
+          ...props,
+          htmlProps: {...props.htmlProps, 'aria-rowindex': 100 + index},
+        };
+      },
+    };
+    const {container} = render(
+      <Table
+        data={users}
+        columns={columns}
+        rowCount={users.length}
+        plugins={{custom: plugin}}
+      />,
+    );
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['100', '101', '102']);
   });
 });

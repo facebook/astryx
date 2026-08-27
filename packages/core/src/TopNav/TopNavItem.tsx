@@ -13,7 +13,7 @@
  * - /packages/core/src/TopNav/TopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
@@ -35,6 +35,8 @@ import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {mergeProps} from '../utils';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 /**
  * NavItem styles with hover/selected states
@@ -52,32 +54,20 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color, color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   selected: {
     color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     backgroundColor: {
       default: colorVars['--color-neutral'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-neutral'],
       },
       ':active': colorVars['--color-neutral'],
@@ -87,16 +77,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
   },
   // Drawer mode — focus outline (base item + selected come from navItemStyles)
-  drawerFocus: {
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
 });
 
 export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
@@ -131,6 +111,8 @@ export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
   isSelected?: boolean;
   /**
    * Whether the nav item is disabled.
+   * A disabled item renders as a plain anchor without an href (and without
+   * target), so it cannot navigate and is removed from the tab order.
    * @default false
    */
   isDisabled?: boolean;
@@ -158,6 +140,15 @@ export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
 }
 
 /**
+ * Click handler for disabled items. The disabled anchor renders without an
+ * href, so there is no navigation to block in practice; preventDefault is a
+ * defensive guard against synthetic/programmatic clicks.
+ */
+function preventDefaultClick(event: React.MouseEvent<HTMLAnchorElement>): void {
+  event.preventDefault();
+}
+
+/**
  * A navigation item for use within TopNav startContent.
  *
  * Renders as an anchor element with hover/selected states.
@@ -178,6 +169,9 @@ export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
  */
 export function TopNavItem({
   as,
+  href,
+  target,
+  onClick,
   label,
   isSelected = false,
   isDisabled = false,
@@ -195,22 +189,34 @@ export function TopNavItem({
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
 
+  // A disabled item renders as a plain <a> with no href: an href-less anchor
+  // is not focusable and exposes no link affordance, so programmatic focus +
+  // Enter, AT activation commands, and middle-click cannot navigate or fire
+  // the consumer onClick. The router LinkComponent is deliberately skipped —
+  // a disabled item performs no navigation, and custom router links may
+  // require a live href. target is omitted with the href. (Mirrors the
+  // disabled paths of Link and SideNavItem.)
+  const Root = isDisabled ? 'a' : LinkComponent;
+
   // =========================================================================
   // Drawer mode — render as a SideNavItem-style vertical list element
   // =========================================================================
   if (renderMode === 'drawer') {
-    const handleDrawerClick = (e: React.MouseEvent) => {
+    const handleDrawerClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
       if (isDisabled) {
+        preventDefaultClick(e);
         return;
       }
       // Forward the original onClick if present
-      (props as {onClick?: (e: React.MouseEvent) => void}).onClick?.(e);
+      onClick?.(e);
       closeMobileNav();
     };
 
     return (
-      <LinkComponent
+      <Root
         ref={ref}
+        href={isDisabled ? undefined : href}
+        target={isDisabled ? undefined : target}
         aria-label={isIconOnly ? label : undefined}
         aria-current={isSelected ? 'page' : undefined}
         aria-disabled={isDisabled || undefined}
@@ -220,10 +226,10 @@ export function TopNavItem({
             mode: 'drawer',
             selected: isSelected ? 'selected' : null,
           }),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             navItemStyles.item,
+            interactionOverlayStyles.backgroundColor,
             navItemStyles[size],
-            styles.drawerFocus,
             isSelected && navItemStyles.selected,
             isDisabled && navItemStyles.disabled,
             xstyle,
@@ -235,7 +241,7 @@ export function TopNavItem({
         onClick={handleDrawerClick}>
         {icon}
         {!isIconOnly && (children ?? label)}
-      </LinkComponent>
+      </Root>
     );
   }
 
@@ -244,8 +250,11 @@ export function TopNavItem({
   // =========================================================================
 
   return (
-    <LinkComponent
+    <Root
       ref={ref}
+      href={isDisabled ? undefined : href}
+      target={isDisabled ? undefined : target}
+      onClick={isDisabled ? preventDefaultClick : onClick}
       aria-label={isIconOnly ? label : undefined}
       aria-current={isSelected ? 'page' : undefined}
       aria-disabled={isDisabled || undefined}
@@ -254,8 +263,9 @@ export function TopNavItem({
         themeProps('top-nav-item', {
           selected: isSelected ? 'selected' : null,
         }),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.base,
+          interactionOverlayStyles.backgroundColor,
           isSelected && styles.selected,
           isDisabled && navItemStyles.disabled,
           isIconOnly && styles.iconOnly,
@@ -267,7 +277,7 @@ export function TopNavItem({
       {...props}>
       {icon}
       {!isIconOnly && (children ?? label)}
-    </LinkComponent>
+    </Root>
   );
 }
 

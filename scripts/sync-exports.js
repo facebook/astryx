@@ -58,10 +58,14 @@ const STATIC_EXPORTS = {
     types: './src/astryx.css.d.ts',
     default: './dist/astryx.css',
   },
-  './astryx.umd.js': './dist/astryx.umd.js',
   './tailwind-theme.css': {
     types: './src/tailwind-theme.css.d.ts',
     default: './src/tailwind-theme.css',
+  },
+  './BaseProps': {
+    source: './src/BaseProps.ts',
+    types: './dist/BaseProps.d.ts',
+    default: './dist/BaseProps.js',
   },
   './naming': {
     source: './src/naming.ts',

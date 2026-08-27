@@ -79,6 +79,7 @@ function toContextMenuOptions(
         ),
         isDisabled: action.disabled,
         onClick: action.onSelect,
+        variant: action.variant,
       });
     }
   });

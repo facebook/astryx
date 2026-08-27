@@ -2,14 +2,18 @@
 
 The CLI is the primary interface for working with the design system, for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
 
+Run it one-off with the scoped package (works whether or not it's installed):
+
 ```bash
-npx astryx --help
-npx astryx search button
-npx astryx component Button
-npx astryx docs tokens
-npx astryx docs migration
-npx astryx template --list
+npx @astryxdesign/cli --help
+npx @astryxdesign/cli search button
+npx @astryxdesign/cli component Button
+npx @astryxdesign/cli docs tokens
+npx @astryxdesign/cli docs migration
+npx @astryxdesign/cli template --list
 ```
+
+Once it's a project dependency (`npm install -D @astryxdesign/cli`), drop the scope and use the shorter `astryx` — e.g. `npx astryx component Button` or `pnpm exec astryx component Button`. Bare `astryx` resolves to an unrelated npm package until the CLI is installed, so prefer the scoped form above for first-run/one-off use.
 
 ## Finding things: `astryx search`
 
@@ -20,26 +24,28 @@ fuzzy matching for typos) and tagged with their domain plus the follow-up
 command to run:
 
 ```bash
-$ npx astryx search button
+$ astryx search button
 
 Results for "button" (20):
 
   [component]  Button
                Button triggers an action when clicked. Use it for form submissions…
-               → npx astryx component Button
+               → astryx component Button
 
   [component]  IconButton
                A button that shows only an icon with no visible text…
-               → npx astryx component IconButton
+               → astryx component IconButton
 
   [hook]       useClickableContainer
                Makes a container element clickable while preserving nested…
-               → npx astryx hook useClickableContainer
+               → astryx hook useClickableContainer
 
   [template]   Banner — Collapsible
                Combine an action button, dismiss control, and expandable detail area…
-               → npx astryx template BannerCollapsibleContent
+               → astryx template BannerCollapsibleContent
 ```
+
+(The CLI prints the follow-up commands with your actual runner — `npx astryx …` when installed, or `npx @astryxdesign/cli …` when run one-off.)
 
 Options:
 
@@ -50,19 +56,28 @@ Options:
 
 ## Commands
 
-| Command       | Description                                                                                          |
-| ------------- | ---------------------------------------------------------------------------------------------------- |
-| `init`        | Initialize the design system in your project: installs packages, sets up theming, adds AI agent docs |
-| `component`   | List components or print detailed docs, props, usage examples, and source                            |
-| `search`      | Find components, hooks, docs, and templates in one ranked, cross-domain result set                   |
-| `docs`        | Print reference documentation (tokens, theme, color, typography, spacing, etc.)                      |
-| `template`    | Inject page or block templates into your project                                                     |
-| `hook`        | List hooks and print hook documentation                                                              |
-| `swizzle`     | Copy component source into your project for deep customization                                       |
-| `upgrade`     | Run codemods to migrate between versions                                                             |
-| `theme build` | Compile a defineTheme file to production CSS and JS                                                  |
-| `discover`    | Discover external packages and components                                                            |
-| `doctor`      | Diagnose your Astryx setup and report problems with fixes (CI-friendly via exit code)                |
+<!-- BEGIN GENERATED: commands -->
+
+| Command                | Description                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| `blog`                 | Read the Astryx blog from the published feed                                  |
+| `build`                | Build a page: composition kit for an idea, or the workflow playbook (no args) |
+| `component`            | List components or print component docs                                       |
+| `discover`             | Discover external packages and components                                     |
+| `docs`                 | Print reference docs                                                          |
+| `doctor`               | Diagnose your XDS setup and report problems with fixes                        |
+| `hook`                 | List hooks or print hook docs                                                 |
+| `init`                 | Initialize the design system in your project                                  |
+| `layout`               | Generate XDS layouts from compressed expressions (XLE/XLO)                    |
+| `search`               | Search components, hooks, docs, and templates in one ranked list              |
+| `swizzle`              | Copy component source for customization                                       |
+| `template`             | Inject a page or block template                                               |
+| `theme`                | Theme tools: build, export, and manage themes                                 |
+| `upgrade`              | Run codemods to migrate between versions                                      |
+| `validate-integration` | Validate an Astryx integration package (manifest + contributions)             |
+
+<!-- END GENERATED: commands -->
+<!-- Generated by scripts/generate-cli-readme.mjs from `astryx manifest`. Run `pnpm -F @astryxdesign/cli readme`. -->
 
 ### Global options
 
@@ -121,45 +136,56 @@ if (isError(result)) {
 
 ### Error codes
 
-| Code                     | Meaning                                                                                |
-| ------------------------ | -------------------------------------------------------------------------------------- |
-| `ERR_UNKNOWN`            | Generic fallback for any error without a more specific code.                           |
-| `ERR_UNKNOWN_COMMAND`    | A top-level command name was not recognized (e.g. `astryx bogus`).                     |
-| `ERR_UNKNOWN_SUBCOMMAND` | A subcommand under a group was not recognized (e.g. `astryx theme bogus`).             |
-| `ERR_INVALID_OPTION`     | An unknown flag was passed, or `--json` was used on a command that doesn't support it. |
-| `ERR_INVALID_ARGUMENT`   | An option/argument value was rejected, or required flags were missing.                 |
-| `ERR_MISSING_ARGUMENT`   | A required positional argument was omitted (e.g. `astryx theme build` with no file).   |
-| `ERR_INVALID_LANG`       | `--lang` was given a value outside its choices (`en`, `zh`, `dense`).                  |
-| `ERR_INVALID_DETAIL`     | `--detail` was given a value outside its choices (`full`, `compact`, `brief`).         |
-| `ERR_NODE_VERSION`       | The running Node.js version is below the supported minimum.                            |
-| `ERR_CORE_NOT_FOUND`     | `@astryxdesign/core` could not be located (not installed / not in a monorepo).         |
-| `ERR_UNKNOWN_COMPONENT`  | No component matched the requested name.                                               |
-| `ERR_UNKNOWN_HOOK`       | No hook matched the requested name.                                                    |
-| `ERR_UNKNOWN_TOPIC`      | No docs topic matched the requested name.                                              |
-| `ERR_UNKNOWN_SECTION`    | A docs topic exists but the requested section within it does not.                      |
-| `ERR_UNKNOWN_CATEGORY`   | A `--category` filter value did not match any known category.                          |
-| `ERR_UNKNOWN_TEMPLATE`   | No template matched the requested name.                                                |
-| `ERR_UNKNOWN_PACKAGE`    | No package matched the requested name (discover).                                      |
-| `ERR_UNKNOWN_AGENT`      | An unrecognized `--agent` value was passed (agent docs / init).                        |
-| `ERR_UNKNOWN_FEATURE`    | An unrecognized `--features` value was passed to `init`.                               |
-| `ERR_UNKNOWN_CODEMOD`    | A `--codemod` value did not match any registered codemod (upgrade).                    |
-| `ERR_NOT_FOUND`          | A discover/lookup query matched nothing in any package.                                |
-| `ERR_NO_DOC`             | A component exists but has no typed `.doc.mjs` file.                                   |
-| `ERR_NO_SHOWCASE`        | No showcase exists for the requested component.                                        |
-| `ERR_NO_SOURCE`          | No source file could be located for the component/template.                            |
-| `ERR_INVALID_DOC`        | A component's docs failed validation (malformed `.doc.mjs`).                           |
-| `ERR_FILE_NOT_FOUND`     | A required input file did not exist.                                                   |
-| `ERR_FILE_EXISTS`        | Refused to overwrite an existing file in non-interactive mode.                         |
-| `ERR_PATH_TRAVERSAL`     | A path escaped its allowed root, or a name contained traversal markers.                |
-| `ERR_WRITE_FAILED`       | Writing output files failed (and was rolled back).                                     |
-| `ERR_THEME_INVALID`      | A theme definition was missing a required property (e.g. `name`).                      |
-| `ERR_THEME_LOAD`         | A theme file could not be loaded / parsed into a `defineTheme` result.                 |
-| `ERR_TEMPLATE_CONFIG`    | `template.get` is not configured in `astryx.config.mjs` (fetch-by-id).                 |
-| `ERR_TEMPLATE_GET`       | A configured `template.get` threw or returned an invalid value.                        |
-| `ERR_VERSION_DETECT`     | The current `@astryxdesign/core` version could not be detected.                        |
-| `ERR_INVALID_VERSION`    | A `--from`/`--to` value was not a valid semver string.                                 |
-| `ERR_DEP_MISSING`        | A required external dependency (e.g. jscodeshift) is missing.                          |
-| `ERR_GH_CLI`             | GitHub CLI (`gh`) is not installed or not authenticated.                               |
+<!-- BEGIN GENERATED: error-codes -->
+
+| Code                      | Meaning                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| `ERR_UNKNOWN`             | Fallback for any error without a more specific code.                                  |
+| `ERR_UNKNOWN_COMMAND`     | A top-level command name was not recognized (e.g. `astryx bogus`).                    |
+| `ERR_UNKNOWN_SUBCOMMAND`  | A subcommand under a command group was not recognized (e.g. `astryx theme bogus`).    |
+| `ERR_INVALID_OPTION`      | An unknown flag/option was passed (Commander `unknownOption`).                        |
+| `ERR_INVALID_ARGUMENT`    | An option/argument had a value Commander's parser rejected.                           |
+| `ERR_MISSING_ARGUMENT`    | A required positional argument was omitted (Commander `missingArgument`).             |
+| `ERR_INVALID_LANG`        | `--lang` was given a value outside its choices (en, zh, dense).                       |
+| `ERR_INVALID_DETAIL`      | `--detail` was given a value outside its choices (full, compact, brief).              |
+| `ERR_NODE_VERSION`        | The running Node.js version is below the supported minimum.                           |
+| `ERR_CORE_NOT_FOUND`      | `@astryxdesign/core` could not be located (not installed / not in a monorepo).        |
+| `ERR_UNKNOWN_COMPONENT`   | No component matched the requested name.                                              |
+| `ERR_UNKNOWN_HOOK`        | No hook matched the requested name.                                                   |
+| `ERR_UNKNOWN_TOPIC`       | No docs topic matched the requested name.                                             |
+| `ERR_UNKNOWN_SECTION`     | A docs topic exists but the requested section within it does not.                     |
+| `ERR_UNKNOWN_CATEGORY`    | A `--category` filter value did not match any known category.                         |
+| `ERR_UNKNOWN_TEMPLATE`    | No template matched the requested name.                                               |
+| `ERR_AMBIGUOUS_TEMPLATE`  | A template id matched more than one template (narrow with --type/--package).          |
+| `ERR_AMBIGUOUS_COMPONENT` | A component name is owned by more than one package (narrow with --package).           |
+| `ERR_UNKNOWN_THEME`       | No theme matched the requested slug (theme add).                                      |
+| `ERR_UNKNOWN_PACKAGE`     | No package matched the requested name (discover).                                     |
+| `ERR_UNKNOWN_AGENT`       | An unrecognized `--agent` value was passed to agent-docs/init.                        |
+| `ERR_UNKNOWN_FEATURE`     | An unrecognized `--features` value was passed to init.                                |
+| `ERR_UNKNOWN_CODEMOD`     | A `--codemod` value did not match any registered codemod (upgrade).                   |
+| `ERR_CODEMOD_FAILED`      | One or more codemods failed during an upgrade run.                                    |
+| `ERR_NOT_FOUND`           | A generic discover/lookup query matched nothing in any package.                       |
+| `ERR_NO_DOC`              | A component exists but has no typed `.doc.mjs` file.                                  |
+| `ERR_NO_SHOWCASE`         | No showcase exists for the requested component.                                       |
+| `ERR_NO_SOURCE`           | No source file could be located for the requested component/template.                 |
+| `ERR_INVALID_DOC`         | A component's docs failed validation (malformed `.doc.mjs`).                          |
+| `ERR_FILE_NOT_FOUND`      | A required input file did not exist.                                                  |
+| `ERR_FILE_EXISTS`         | Refused to overwrite an existing file in non-interactive mode.                        |
+| `ERR_PATH_TRAVERSAL`      | A path escaped its allowed root, or a name contained traversal markers.               |
+| `ERR_WRITE_FAILED`        | Writing output files failed (and was rolled back).                                    |
+| `ERR_THEME_INVALID`       | A theme definition was missing a required property (e.g. `name`).                     |
+| `ERR_THEME_LOAD`          | A theme file could not be loaded / parsed into a defineTheme result.                  |
+| `ERR_VERSION_DETECT`      | The current `@astryxdesign/core` version could not be detected.                       |
+| `ERR_INVALID_VERSION`     | A `--from`/`--to` value was not a valid semver string.                                |
+| `ERR_DEP_MISSING`         | A required external dependency (e.g. jscodeshift) is missing.                         |
+| `ERR_GH_CLI`              | GitHub CLI (`gh`) is not installed or not authenticated.                              |
+| `ERR_UNKNOWN_POST`        | No blog post matched the requested slug in the feed.                                  |
+| `ERR_FETCH_FAILED`        | A network fetch (RSS feed or post text) failed.                                       |
+| `ERR_LAYOUT_PARSE`        | A layout expression failed to parse (syntax error, with line/col).                    |
+| `ERR_LAYOUT_INVALID`      | A layout expression parsed but failed validation (unknown component/prop/enum/block). |
+
+<!-- END GENERATED: error-codes -->
+<!-- Generated by scripts/generate-cli-readme.mjs from the error-codes EnumDoc (== ERROR_CODES). Run `pnpm -F @astryxdesign/cli readme`. -->
 
 ## Capability manifest (agent discovery)
 
@@ -301,64 +327,111 @@ The CLI command handlers are thin wrappers around these functions: they parse ar
 If you're spawning the CLI as a subprocess rather than importing the API directly:
 
 ```typescript
-import {parseResponse, isError, assertResponse} from '@astryxdesign/cli/json';
-import type {ComponentDetailResponse, CLIResult} from '@astryxdesign/cli/json';
+import {parseResponse, isError} from '@astryxdesign/cli/json';
+import type {
+  ComponentDetailResponse,
+  ComponentListResponse,
+  DocsListResponse,
+  // ...import the response types for the commands you consume
+} from '@astryxdesign/cli/json';
+
+// parseResponse returns the structural { type, data, meta? } envelope; `data`
+// is `unknown` until you narrow it. Reconstruct the union you care about from
+// the per-command response types, then narrow on `type`:
+type MyResponse =
+  ComponentDetailResponse | ComponentListResponse | DocsListResponse;
 
 const result = parseResponse(stdout);
 if (isError(result)) {
   console.error(result.error);
 } else {
-  switch (result.type) {
+  const r = result as MyResponse;
+  switch (r.type) {
     case 'component.detail':
-      result.data.name; // TypeScript: ComponentDoc
+      r.data.name; // narrowed to ComponentDoc
       break;
   }
 }
-
-// Or assert directly (throws on error/mismatch):
-const detail = assertResponse(stdout, 'component.detail');
-detail.data.name; // already narrowed
 ```
+
+Prefer narrowing at the call site? Wrap `assertResponse` (which throws on
+error/mismatch) with your reconstructed union:
+
+```typescript
+import {assertResponse} from '@astryxdesign/cli/json';
+import type {ComponentDetailResponse} from '@astryxdesign/cli/json';
+
+type MyResponse = ComponentDetailResponse; /* | ...others */
+
+function assertTyped<T extends MyResponse['type']>(raw: unknown, type: T) {
+  return assertResponse(raw, type) as Extract<MyResponse, {type: T}>;
+}
+
+const detail = assertTyped(stdout, 'component.detail');
+detail.data.name; // narrowed
+```
+
+> **Migration (removed in the structural-`jsonOut` release):** the central
+> `CLIAnyResponse`, `CLIResponseType`, and `CLIResponseDataMap` exports were
+> removed. `parseResponse` / `assertResponse` no longer auto-narrow `.data`.
+> Rebuild the union from the individual `*Response` types as shown above — they
+> are all still exported from `@astryxdesign/cli/json`.
 
 ### Type discriminators
 
-Every response has a `type` string that uniquely identifies it:
+Every response has a `type` discriminant. The full set is below (generated from the manifest). Each command's `type`s are also listed in `astryx manifest --json`, and the matching `*Response` TypeScript types (e.g. `ComponentDetailResponse`) are exported from `@astryxdesign/cli/json`. Errors use `CLIError`, and unsupported commands use `CLIUnsupportedError`.
 
-| Command                                           | Type                        | Response                          |
-| ------------------------------------------------- | --------------------------- | --------------------------------- |
-| `astryx --json component [--list]`                | `component.list`            | `ComponentListResponse`           |
-| `astryx --json component --list --detail compact` | `component.brief`           | `ComponentBriefResponse`          |
-| `astryx --json component --list --detail full`    | `component.full`            | `ComponentFullResponse`           |
-| `astryx --json component <name>`                  | `component.detail`          | `ComponentDetailResponse`         |
-| `astryx --json component <name> --props`          | `component.detail.props`    | `ComponentDetailPropsResponse`    |
-| `astryx --json component <name> --source`         | `component.detail.source`   | `ComponentDetailSourceResponse`   |
-| `astryx --json component <name> --showcase`       | `component.detail.showcase` | `ComponentDetailShowcaseResponse` |
-| `astryx --json component <name> --blocks`         | `component.detail.blocks`   | `ComponentDetailBlocksResponse`   |
-| `astryx --json discover`                          | `discover.list`             | `DiscoverListResponse`            |
-| `astryx --json discover @scope/name`              | `discover.detail`           | `DiscoverDetailResponse`          |
-| `astryx --json discover @scope/name/Comp`         | `discover.detail.doc`       | `DiscoverDetailDocResponse`       |
-| `astryx --json discover <search>`                 | `discover.search`           | `DiscoverSearchResponse`          |
-| `astryx --json docs`                              | `docs.list`                 | `DocsListResponse`                |
-| `astryx --json docs <topic>`                      | `docs.detail`               | `DocsDetailResponse`              |
-| `astryx --json docs <topic> <section>`            | `docs.detail.section`       | `DocsDetailSectionResponse`       |
-| `astryx --json template [--list]`                 | `template.list`             | `TemplateListResponse`            |
-| `astryx --json template <name>`                   | `template.show`             | `TemplateShowResponse`            |
-| `astryx --json template <name> --skeleton`        | `template.skeleton`         | `TemplateSkeletonResponse`        |
-| `astryx --json template <name> [path]`            | `template.copy`             | `TemplateCopyResponse`            |
-| `astryx --json hook [--list]`                     | `hook.list`                 | `HookListResponse`                |
-| `astryx --json hook --list --detail compact`      | `hook.brief`                | `HookBriefResponse`               |
-| `astryx --json hook --list --detail full`         | `hook.full`                 | `HookFullResponse`                |
-| `astryx --json hook <name>`                       | `hook.detail`               | `HookDetailResponse`              |
-| `astryx --json hook <name> --params`              | `hook.detail.params`        | `HookDetailParamsResponse`        |
-| `astryx --json search <query>`                    | `search`                    | `SearchResponse`                  |
-| `astryx --json swizzle [--list]`                  | `swizzle.list`              | `SwizzleListResponse`             |
-| `astryx --json swizzle <component>`               | `swizzle.copy`              | `SwizzleCopyResponse`             |
-| `astryx --json theme build <file>`                | `theme.build`               | `ThemeBuildResponse`              |
-| `astryx --json upgrade --list`                    | `upgrade.list`              | `UpgradeListResponse`             |
-| `astryx --json upgrade [--apply]`                 | `upgrade.run`               | `UpgradeRunResponse`              |
-| `astryx --json doctor`                            | `doctor`                    | `DoctorResponse`                  |
-| any error                                         | —                           | `CLIError`                        |
-| unsupported command                               | —                           | `CLIUnsupportedError`             |
+<!-- BEGIN GENERATED: response-types -->
+
+| Type                        | What `data` carries                                                                                                                                                                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `component.list`            | The component catalog grouped by category: `detail` (the level: names \| compact \| full) and `components`, the grouped map of names+package, brief entries, or a full ComponentDoc per entry.                                                     |
+| `component.detail`          | One component's authored ComponentDoc plus ownership metadata (owner package, import specifier, and whether source is available).                                                                                                                  |
+| `component.detail.props`    | Just one component's props table (ComponentPropDoc[]).                                                                                                                                                                                             |
+| `component.detail.source`   | One component's source file, as {component, source}.                                                                                                                                                                                               |
+| `component.detail.showcase` | One component's showcase example, as {component, aspectRatio, source}.                                                                                                                                                                             |
+| `component.detail.blocks`   | One component's example blocks, as {component, showcase, examples, related} of BlockEntry.                                                                                                                                                         |
+| `docs.list`                 | All reference-doc topics as DocsListEntry[] ({topic, description}), in discovery order.                                                                                                                                                            |
+| `docs.detail`               | One topic's full ReferenceDoc, with token-ref blocks inlined.                                                                                                                                                                                      |
+| `docs.detail.section`       | A single ReferenceSection of a topic: the first whose title contains the section query.                                                                                                                                                            |
+| `blog.list`                 | The feed URL plus every post parsed from the RSS feed, each with slug, title, description, date, type, authors, link, and plaintext URL.                                                                                                           |
+| `blog.detail`               | One post's metadata plus the feed URL and the post's full plaintext body.                                                                                                                                                                          |
+| `discover.list`             | The configured external packages (name, category, components, version, description); when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".                                                                 |
+| `discover.detail`           | A single external package entry, for an @scope/name query.                                                                                                                                                                                         |
+| `discover.detail.doc`       | The validated ComponentDoc for one external component: an @scope/name/Component query, or a free-text term resolving to exactly one component.                                                                                                     |
+| `discover.search`           | The echoed query plus the matching {package, component} pairs, when a free-text term matches several components.                                                                                                                                   |
+| `search`                    | The echoed query plus a ranked SearchResultEntry[] (domain, name, score, reason, description, follow-up command, and import path where relevant).                                                                                                  |
+| `build.help`                | A marker (`playbook: true`) that the renderer expands into the how-to-build-a-page workflow; emitted when no query is given.                                                                                                                       |
+| `build.kit`                 | The grouped composition kit: echoed query, hasResults/directMatch flags, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.                           |
+| `swizzle.list`              | The names of swizzlable components discoverable from cwd's @astryxdesign/core.                                                                                                                                                                     |
+| `swizzle.copy`              | An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.                                                                     |
+| `template.list`             | Every discovered template (page + block); each entry carries id, name, description, kind, owning package, optional category and componentsUsed, and readiness flags.                                                                               |
+| `template.show`             | The resolved template's raw source plus its description, kind, and the component names it composes.                                                                                                                                                |
+| `template.skeleton`         | A layout skeleton (structural tags with spatial annotations) plus the template's description and the components it composes.                                                                                                                       |
+| `template.copy`             | A scaffold receipt: template id, output directory, written file name, and file count.                                                                                                                                                              |
+| `template.cdn`              | A write receipt for the no-build-step CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not. `exists` when a file was already there, which is a success. |
+| `hook.list`                 | The hook catalog grouped by category: `detail` (the level: names \| compact \| full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry.                                                                  |
+| `hook.detail`               | One hook's full authored HookDoc.                                                                                                                                                                                                                  |
+| `hook.detail.params`        | Just one hook's parameters table (HookParamDoc[]).                                                                                                                                                                                                 |
+| `theme.build`               | A theme build receipt: name, token- and component-override counts, output size, the written outputs {css, js, dts, and variantsDts when applicable}, and any validation warnings.                                                                  |
+| `theme.build.check`         | The --check receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: missing \| outdated}), and the full list of checked paths. Writes nothing.                                                                               |
+| `theme.build.batch`         | Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme's theme.build (or theme.build.check) envelope, or null when it produced no CSS.                                  |
+| `theme.list`                | Every bundled theme as a ThemeListEntry[]: each with slug, displayName, description, and a maintained flag.                                                                                                                                        |
+| `theme.add`                 | A scaffold receipt: resolved slug, displayName, maintained flag, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.                                                                                         |
+| `theme.template`            | A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.                                                       |
+| `theme.targets`             | The whole themeable surface: the echoed filter, the component count, and one entry per theming target — {key, className, component, props, states}, where props and states are its legal override keys.                                            |
+| `upgrade.list`              | Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.                                                                                                                         |
+| `upgrade.status`            | A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.                                                                                                                   |
+| `upgrade.run`               | The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.                                                                        |
+| `manifest`                  | The self-describing CLI capability manifest: name, version, apiVersion, global options, the command tree (args, options, json flag, response types, examples), the jsonSupported allowlist, and the flat responseTypes index.                      |
+| `doctor`                    | The health-check report: `checks` (each with id, label, status: pass \| warn \| fail \| info, a message, and a fix when not passing) plus a `summary` of counts per status.                                                                        |
+| `integration.validate`      | The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning \| error, message}.                                                           |
+| `layout.expand`             | The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, and written (the output path, or null when nothing was written).               |
+| `layout.check`              | The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline).                           |
+| `layout.grammar`            | The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry.                                                                                |
+
+<!-- END GENERATED: response-types -->
+<!-- Generated by scripts/generate-cli-readme.mjs from the response-types EnumDoc. Run `pnpm -F @astryxdesign/cli readme`. -->
 
 ## Doctor
 
@@ -415,7 +488,7 @@ failures (warnings are fine) and `1` when any check fails. That makes it
 usable directly as a CI step:
 
 ```yaml
-- run: npx astryx doctor
+- run: npx @astryxdesign/cli doctor
 ```
 
 Use `--json` for a structured envelope (`{ apiVersion, type: "doctor",
@@ -423,13 +496,120 @@ data: { checks, summary } }`) that AI agents and scripts can parse.
 
 ## Configuration
 
-The CLI reads from an optional `astryx.config.mjs` in your project root:
+The CLI reads an optional `astryx.config.{ts,mjs,js}` from your project root
+(a sibling of `package.json`). Every field is optional; with no config file the
+CLI runs on defaults.
 
-```javascript
+```typescript
 export default {
-  templates: {
-    get: async id => fetchTemplateFromAPI(id),
-  },
+  integrations: ['@acme/astryx-widgets'],
   issuesUrl: 'https://github.com/your-org/your-repo/issues',
 };
+```
+
+There is no factory: write a plain object. For editor autocomplete and
+type-checking, annotate it with the `AstryxConfig` type exported from
+`@astryxdesign/cli/authoring`.
+
+| Field                         | Type                           | Purpose                                                                                         |
+| ----------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `integrations`                | `string[]`                     | Integration package names to load (see [Integrations](#integrations)).                          |
+| `issuesUrl`                   | `string`                       | Where "report an issue" links point for your project. Defaults to the core issue tracker.       |
+| `hooks.postCodemod`           | `PostCodemodHook[]`            | Commands to run after `astryx upgrade` applies codemods (e.g. reinstall, rebuild, reformat).    |
+| `experimental.xle.components` | `Record<string, XleComponent>` | Register app-local components so layout (XLE) expressions can reference them by name. Unstable. |
+
+The config is validated against a strict schema when the CLI loads it, so an
+unknown field is a hard error rather than a silent no-op. `astryx doctor`
+reports whether the config loads cleanly.
+
+## Core codemod authoring
+
+Core codemods live under `packages/cli/assets/codemods/transforms/`. Released
+codemods are grouped by the target package version (`v0.3.0`, `v0.3.1`, ...),
+which is the version that first contains the breaking change.
+
+Do not guess that version in ordinary feature PRs. Add new codemods to
+`packages/cli/assets/codemods/transforms/next/` instead:
+
+- put transform modules and tests in `transforms/next/`;
+- maintain `transforms/next/index.mjs` with the run order for the staged
+  transforms;
+- leave `transforms/next/README.md` in place; it documents the staging area and
+  is never promoted.
+
+During the Version Packages PR, `pnpm version-packages` runs
+`scripts/promote-codemod-next.mjs` after `changeset version`. The script copies
+all staged entries except the README into `transforms/v<new-core-version>/`,
+registers that version in `packages/cli/assets/codemods/registry.mjs`, and clears
+the promoted files from `next`.
+
+This mirrors Changesets: feature PRs stage migration work without knowing the
+future release number; the release PR assigns the exact version.
+
+## Integrations
+
+An **integration** is any npm package that contributes its own components,
+templates, and upgrade codemods to Astryx. The CLI surfaces them next to core's,
+through the same commands, so a consumer can `astryx component`,
+`astryx template`, and `astryx upgrade` across core and every integration
+uniformly. Use it to ship a first-party add-on, publish a third-party component
+library, or share an internal design-system package across apps.
+
+The system runs on two files, each with a small typed API:
+
+| File                             | Written by | Role                                      |
+| -------------------------------- | ---------- | ----------------------------------------- |
+| `astryx.config.{ts,mjs,js}`      | Consumer   | Lists which integration packages to load. |
+| `astryx.integration.{ts,mjs,js}` | Author     | Declares what a package contributes.      |
+
+The consumer side is the `integrations` field of [`astryx.config`](#configuration).
+The author side is the integration manifest below.
+
+### The integration manifest
+
+A package becomes an integration by exporting a manifest from
+`astryx.integration.{ts,mjs,js}` at its root (a sibling of `package.json`). The
+manifest points at where each kind of contribution lives; identity (name,
+version) comes from `package.json`, not the manifest.
+
+```typescript
+export default {
+  components: './components',
+  templates: './templates',
+  codemods: './codemods',
+  issuesUrl: 'https://github.com/acme/widgets/issues',
+};
+```
+
+| Field        | Type     | Purpose                                                                           |
+| ------------ | -------- | --------------------------------------------------------------------------------- |
+| `components` | `string` | Directory holding the package's components and their `.doc.*` files.              |
+| `templates`  | `string` | Directory holding the package's page/block templates.                             |
+| `codemods`   | `string` | Directory holding upgrade codemods run by `astryx upgrade`.                       |
+| `docs`       | `string` | Directory of reference docs; each `{topic}.doc.*` becomes a topic the CLI serves. |
+| `issuesUrl`  | `string` | Where "report an issue" links for this package's contributions point.             |
+
+Every field is optional; declare only the roots the package ships. There is no
+factory: write a plain object, and annotate it with the `AstryxIntegration` type
+from `@astryxdesign/cli/authoring` for editor autocomplete and type-checking.
+
+### How it works
+
+Every command loads the consumer's `astryx.config`, resolves each listed
+integration's manifest from `node_modules`, and discovers its contributions.
+Everything is validated against one strict schema at the load boundary, so the
+CLI presents core and integration contributions through a single, uniform
+surface.
+
+Discovery is resilient: a broken or misconfigured integration is skipped with a
+one-line warning on stderr instead of crashing the CLI, and it never corrupts a
+`--json` envelope. To inspect problems, run
+`astryx validate-integration <package>` for a detailed report on one package, or
+`astryx doctor` for an overall health check.
+
+For the full authoring walkthrough (component doc format, template packaging
+and `exports` requirements, and codemod authoring), see the guide:
+
+```bash
+astryx docs cli-integrations
 ```

@@ -11,7 +11,7 @@
  * - /packages/core/src/NavIcon/NavIcon.test.tsx
  * - /packages/core/src/NavIcon/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
- * - /packages/cli/templates/blocks/components/NavIcon/NavIconShowcase.tsx
+ * - /packages/cli/assets/templates/blocks/components/NavIcon/NavIconShowcase.tsx
  */
 
 import type {ReactNode} from 'react';
@@ -79,7 +79,11 @@ export function NavIcon({
     <span
       ref={ref}
       {...mergeProps(
-        themeProps('navicon'),
+        themeProps('nav-icon', undefined, {
+          // `navicon` ran the compound name together; themes styling it keep
+          // working until the next major.
+          legacyNames: ['navicon'],
+        }),
         stylex.props(styles.base, xstyle),
         className,
         style,

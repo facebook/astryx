@@ -9,13 +9,15 @@
  * @position Collapsible drawer panel for ChatComposer.
  *   Supports expanded (full content) and collapsed (count + label) states
  *   with fade animation and grid-template-rows height transition.
+ *   The collapse toggle exposes aria-expanded + aria-controls linking it to
+ *   the content region (disclosure pattern).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/ChatComposerDrawer/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposerDrawer/ (block examples)
  */
 
-import {useState, type ReactNode} from 'react';
+import {useId, useState, type ReactNode} from 'react';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -102,8 +104,8 @@ const styles = stylex.create({
     // opaque or translucent.
     backgroundColor: colorVars['--color-background-surface'],
     backgroundImage: `linear-gradient(${colorVars['--color-background-muted']}, ${colorVars['--color-background-muted']})`,
-    borderTopLeftRadius: radiusVars['--radius-chat'],
-    borderTopRightRadius: radiusVars['--radius-chat'],
+    borderStartStartRadius: radiusVars['--radius-chat'],
+    borderStartEndRadius: radiusVars['--radius-chat'],
   },
 
   // Toggle row — both the bar handle and badge+label live in the
@@ -115,7 +117,10 @@ const styles = stylex.create({
     height: spacingVars['--spacing-5'],
     paddingInline: spacingVars['--spacing-4'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
   },
   toggleCollapsed: {},
@@ -155,8 +160,8 @@ const styles = stylex.create({
     gridColumn: 1,
     justifySelf: 'center',
     alignSelf: 'start',
-    width: '20px',
-    height: '2px',
+    width: spacingVars['--spacing-5'],
+    height: spacingVars['--spacing-0-5'],
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: {
       default: colorVars['--color-icon-secondary'],
@@ -240,6 +245,12 @@ export function ChatComposerDrawer({
 
   const canCollapse = count != null;
 
+  // Links the toggle to the region it shows/hides so assistive tech can move
+  // from the button to its controlled content (disclosure pattern). The
+  // content stays mounted while collapsed (hidden via the grid-row collapse),
+  // so the reference always resolves.
+  const contentId = useId();
+
   const toggle = () => {
     const next = !isCollapsed;
     if (!isControlled) {
@@ -271,6 +282,7 @@ export function ChatComposerDrawer({
           role="button"
           tabIndex={0}
           aria-expanded={!isCollapsed}
+          aria-controls={contentId}
           aria-label={
             isCollapsed
               ? t('@astryx.chatComposerDrawer.expand', {label})
@@ -301,6 +313,7 @@ export function ChatComposerDrawer({
       )}
 
       <div
+        id={contentId}
         {...stylex.props(
           styles.contentGrid,
           canCollapse && isCollapsed && styles.contentGridCollapsed,

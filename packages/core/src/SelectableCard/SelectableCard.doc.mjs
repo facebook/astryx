@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'SelectableCard',
   displayName: 'Selectable Card',
@@ -12,6 +12,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for plan pickers, filter chips, or option grids.'},
       {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
+      {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
       {guidance: false, description: 'Use for navigation; use ClickableCard for that.'},
     ],
     anatomy: [
@@ -25,8 +26,9 @@ export const docs = {
     {name: 'onChange', type: '(isSelected: boolean) => void', description: 'Called when toggled.', required: true},
     {name: 'isDisabled', type: 'boolean', description: 'Disables the card.', default: 'false'},
     {name: 'children', type: 'ReactNode', description: 'Card content.'},
-    {name: 'padding', type: "SpacingStep", description: 'Inner padding.', default: '4'},
+    {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: 'Inner padding.', default: '4'},
     {name: 'variant', type: "'default' | 'transparent' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'", description: 'Background color variant.', default: "'default'"},
+    {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: 'Resting shadow depth. The selection ring composes on top, so a selected card keeps its shadow.', default: "'none'"},
     {name: 'width', type: 'SizeValue', description: 'Card width.'},
     {name: 'height', type: 'SizeValue', description: 'Card height.'},
     {name: 'maxWidth', type: 'SizeValue', description: 'Maximum card width.'},
@@ -35,6 +37,9 @@ export const docs = {
   theming: {
     container: true,
     targets: [{className: 'astryx-selectable-card', visualProps: ['selected', 'variant']}],
+    vars: [
+      {name: '--selectable-card-ring-color', description: 'Colour of the selection ring drawn for a variant a theme added. The built-in variants each ring in their own border token and ignore this; a theme that adds a variant sets it in the same rule as that variant\'s `backgroundColor`, because no token the component could pick is guaranteed to contrast with a fill it cannot know.', default: 'var(--color-accent)'},
+    ],
   },
   playground: {
     defaults: {
@@ -53,7 +58,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Card toggling between selected/unselected states w/ accent border. For navigation use ClickableCard instead.',
   usage: {
@@ -61,6 +66,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for plan pickers, filter chips, option grids.'},
       {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
+      {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
       {guidance: false, description: 'Use for navigation; use ClickableCard instead.'},
     ],
   },
@@ -71,6 +77,7 @@ export const docsDense = {
     isDisabled: 'disables card',
     padding: 'inner padding',
     variant: 'background color variant',
+    elevation: 'resting shadow depth: none|low|med|high; selection ring composes on top',
     width: 'card width',
     height: 'card height',
     maxWidth: 'max card width',

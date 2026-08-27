@@ -35,13 +35,22 @@ function withAstryx(nextConfig = {}) {
     ...nextConfig,
     transpilePackages: merged,
     webpack: (config, context) => {
-      // Resolve to source exports
-      config.resolve.conditionNames = [
-        'source',
-        'import',
-        'require',
-        'default',
-      ];
+      // Astryx packages are consumed from their `source` export (raw TS) so
+      // the sandbox/docsite build straight from src without a prebuild step.
+      // Apply the `source` condition via a scoped, ALLOWLIST rule that only
+      // matches @astryxdesign packages — the global conditions stay as Next's
+      // defaults (webpack's `'...'` sentinel + react-server), which React JSX
+      // resolution depends on. Third-party deps (e.g. `lexical`, which also
+      // ships a `source` export) therefore resolve to their built output, not
+      // raw TS. This is robust to new third-party `source`-shipping deps.
+      config.module = config.module || {};
+      config.module.rules = config.module.rules || [];
+      config.module.rules.unshift({
+        test: /[\\/]node_modules[\\/]@astryxdesign[\\/]/,
+        resolve: {
+          conditionNames: ['source', '...'],
+        },
+      });
 
       // Preserve the symlinked node_modules path so Next.js's
       // transpilePackages matcher recognizes @astryxdesign/* packages under

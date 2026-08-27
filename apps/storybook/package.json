@@ -5,13 +5,20 @@
   "scripts": {
     "dev": "storybook dev -p 6006",
     "build": "storybook build -o dist",
+    "rtl-audit": "node rtl-audit/rtl-audit.mjs --storybook-dir dist --output rtl-audit-report.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@astryxdesign/charts": "*",
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
+    "@astryxdesign/richtext": "*",
+    "@astryxdesign/theme-butter": "*",
+    "@astryxdesign/theme-chocolate": "*",
+    "@astryxdesign/theme-gothic": "*",
+    "@astryxdesign/theme-matcha": "*",
     "@astryxdesign/theme-neutral": "*",
+    "@astryxdesign/theme-probe": "*",
     "@astryxdesign/theme-stone": "*",
     "@astryxdesign/theme-y2k": "*",
     "@astryxdesign/vega": "*",
@@ -23,6 +30,8 @@
     "vega-lite": "^6.4.3"
   },
   "devDependencies": {
+    "@lexical/headless": "^0.46.0",
+    "@lexical/markdown": "^0.46.0",
     "@storybook/addon-docs": "^10.4.6",
     "@storybook/addon-links": "^10.4.6",
     "@storybook/react": "^10.4.6",

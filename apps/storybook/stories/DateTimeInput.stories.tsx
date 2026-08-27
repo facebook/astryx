@@ -4,6 +4,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {DateTimeInput} from '@astryxdesign/core/DateTimeInput';
 import type {ISODateTimeString} from '@astryxdesign/core/DateTimeInput';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof DateTimeInput> = {
   title: 'Core/DateTimeInput',
@@ -182,6 +183,50 @@ export const WithTimeIncrement: Story = {
     label: 'Time slot',
     timeIncrement: 15,
     description: 'Use arrow keys to change by 15 minutes',
+  },
+};
+
+/**
+ * `timeOptionInterval` turns the time field into a combobox over a list of
+ * preset times at that cadence. Click the time field or press Alt+ArrowDown to
+ * open it; ArrowUp/ArrowDown move through the list, Enter picks, Escape closes.
+ *
+ * The list is a shortcut, not a restriction — a time between two options can
+ * still be typed, and with the list closed the arrow keys keep stepping by
+ * `timeIncrement` exactly as they do without this prop.
+ */
+export const WithTimeOptions: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T09:00' as ISODateTimeString,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Meeting time',
+    timeOptionInterval: 30,
+    description: 'Pick from half-hour slots, or type any time',
+  },
+};
+
+/**
+ * An hourly list — the 12 AM to 11 PM shape most scheduling flows want.
+ * `min` and `max` trim the list on the boundary date, so only bookable hours
+ * are offered.
+ */
+export const WithHourlyTimeOptions: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T13:00' as ISODateTimeString,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Office hours',
+    timeOptionInterval: 60,
+    min: '2026-03-15T09:00' as ISODateTimeString,
+    max: '2026-03-15T17:00' as ISODateTimeString,
+    description: 'Hourly slots, trimmed to 9 AM - 5 PM',
   },
 };
 
@@ -412,6 +457,48 @@ export const AllVariations: Story = {
           }}
         />
       </div>
+    );
+  },
+};
+
+/**
+ * Theme the two segments precisely via `defineTheme`.
+ *
+ * Before the segment targets existed, the date and time wrappers were
+ * anonymous nodes with hashed atomic classes only, so a theme that restyles
+ * input geometry through the `text-input` / `date-input` / `time-input`
+ * targets could not reach them — DateTimeInput rendered visibly shorter than
+ * every other input under such a theme.
+ *
+ * `components['date-time-input-date-segment']` and its time twin scope
+ * overrides to one segment each, and both reflect `size` and `status` the same
+ * way the root does. Defaults are unchanged; this story only demonstrates the
+ * override channel.
+ */
+const segmentTheme = defineTheme({
+  name: 'date-time-input-segments-demo',
+  components: {
+    'date-time-input-date-segment': {
+      base: {borderColor: 'var(--color-accent)'},
+    },
+    'date-time-input-time-segment': {
+      base: {backgroundColor: 'var(--color-background-muted)'},
+    },
+  },
+});
+
+export const ThemedSegments: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>();
+    return (
+      <Theme theme={segmentTheme} mode="light">
+        <DateTimeInput
+          label="Themed segments"
+          description="Date segment gets an accent border; time segment a muted fill."
+          value={value}
+          onChange={setValue}
+        />
+      </Theme>
     );
   },
 };

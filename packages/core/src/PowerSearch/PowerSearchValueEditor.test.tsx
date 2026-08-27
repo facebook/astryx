@@ -10,7 +10,11 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
-import type {FilterValueEntityList, PowerSearchEntity} from './types';
+import type {
+  FilterValueEntityList,
+  OperatorValue,
+  PowerSearchEntity,
+} from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 
@@ -175,6 +179,70 @@ describe('StringEditor (#1103)', () => {
     // Should still render a combobox (typeahead with suggestions)
     const combobox = screen.queryByRole('combobox');
     expect(combobox).toBeInTheDocument();
+  });
+});
+
+describe('numeric editor commit timing', () => {
+  it('saves the committed number when Enter finishes the edit', () => {
+    const onChange = vi.fn();
+    const onEnter = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'integer'}}
+        filterValue={{type: 'integer', value: 5}}
+        onChange={onChange}
+        onEnter={onEnter}
+        config={stubConfig}
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+    fireEvent.focus(input);
+    fireEvent.input(input, {target: {value: '42'}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(onChange).toHaveBeenLastCalledWith(
+      {type: 'integer', value: 42},
+      true,
+    );
+    expect(onEnter).not.toHaveBeenCalled();
+  });
+
+  it('does not save an invalid numeric draft on Enter', () => {
+    const onChange = vi.fn();
+    const onEnter = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'integer'}}
+        filterValue={{type: 'integer', value: 5}}
+        onChange={onChange}
+        onEnter={onEnter}
+        config={stubConfig}
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+    fireEvent.focus(input);
+    fireEvent.input(input, {target: {value: '1·234'}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onEnter).not.toHaveBeenCalled();
+    expect(input).toHaveValue('1·234');
+  });
+
+  it('keeps the existing Enter callback when there is no pending edit', () => {
+    const onEnter = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'float'}}
+        filterValue={{type: 'float', value: 1.5}}
+        onChange={() => {}}
+        onEnter={onEnter}
+        config={stubConfig}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'Enter'});
+    expect(onEnter).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -402,5 +470,47 @@ describe('StringListEditor (#1107)', () => {
 
     // Should render the tokenizer with a combobox
     expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+});
+
+describe('maxMenuItems', () => {
+  const source = createSearchSource(
+    Array.from({length: 6}, (_, index) => ({
+      id: `option-${index}`,
+      label: `Option ${index}`,
+    })),
+  );
+
+  async function expectCapped(operatorValue: OperatorValue) {
+    render(
+      <PowerSearchValueEditor
+        operatorValue={operatorValue}
+        filterValue={undefined}
+        onChange={vi.fn()}
+        config={stubConfig}
+        maxMenuItems={2}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: {value: 'Option'},
+      });
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    expect(screen.getAllByRole('option', {hidden: true})).toHaveLength(2);
+  }
+
+  it('caps string suggestions', async () => {
+    await expectCapped({type: 'string', searchSource: source});
+  });
+
+  it('caps string-list suggestions', async () => {
+    await expectCapped({type: 'string_list', searchSource: source});
+  });
+
+  it('caps entity-list suggestions', async () => {
+    await expectCapped({type: 'entity_list', searchSource: source});
   });
 });

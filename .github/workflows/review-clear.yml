@@ -31,7 +31,7 @@ permissions: {}
 jobs:
   clear:
     if: github.event.workflow_run.event == 'pull_request_review'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       pull-requests: write
       statuses: write
@@ -43,6 +43,9 @@ jobs:
         env:
           ENG_OWNERS: ${{ vars.ENGOWNERS }}
         with:
+          # See review-signal.yml — a transient 503 on the status POST must not
+          # be the last word on whether the gate clears.
+          retries: 3
           script: |
             const { owner, repo } = context.repo;
             const run = context.payload.workflow_run;
@@ -140,15 +143,11 @@ jobs:
                 core.warning(`Could not remove ${CODE} (may already be gone): ${e.message}`);
               }
             }
-            try {
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: headSha, context: 'review-required',
-                state: 'success', description: 'Cleared by code-owner approval.',
-              });
-              core.info(`review-required status → success on #${prNumber}.`);
-            } catch (e) {
-              core.warning(`Could not set review-required status: ${e.message}`);
-            }
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: headSha, context: 'review-required',
+              state: 'success', description: 'Cleared by code-owner approval.',
+            });
+            core.info(`review-required status → success on #${prNumber}.`);
             // Neutralize stale check-run(s) of the same name so the rollup isn't
             // dragged to failure by a pre-status action_required leftover.
             try {

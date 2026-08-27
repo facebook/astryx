@@ -1225,7 +1225,11 @@ export const ContentWidthResponsive: Story = {
                 </LayoutHeader>
               }
               start={
-                <LayoutPanel width={160} hasDivider role="navigation">
+                <LayoutPanel
+                  width={160}
+                  hasDivider
+                  role="navigation"
+                  label="Wide navigation">
                   <NavItem active>Dashboard</NavItem>
                   <NavItem>Settings</NavItem>
                 </LayoutPanel>
@@ -1258,7 +1262,11 @@ export const ContentWidthResponsive: Story = {
                 </LayoutHeader>
               }
               start={
-                <LayoutPanel width={160} hasDivider role="navigation">
+                <LayoutPanel
+                  width={160}
+                  hasDivider
+                  role="navigation"
+                  label="Medium navigation">
                   <NavItem active>Dashboard</NavItem>
                   <NavItem>Settings</NavItem>
                 </LayoutPanel>
@@ -1291,7 +1299,11 @@ export const ContentWidthResponsive: Story = {
                 </LayoutHeader>
               }
               start={
-                <LayoutPanel width={160} hasDivider role="navigation">
+                <LayoutPanel
+                  width={160}
+                  hasDivider
+                  role="navigation"
+                  label="Narrow navigation">
                   <NavItem active>Dashboard</NavItem>
                   <NavItem>Settings</NavItem>
                 </LayoutPanel>

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'CodeBlock',
   displayName: 'Code Block',
@@ -96,6 +96,12 @@ export const docs = {
       description: 'Per-instance syntax theme override. Shorthand for wrapping the block in <SyntaxTheme theme={...}>. Accepts a preset from @astryxdesign/core/theme/syntax or a theme created with defineSyntaxTheme(). Defaults to the nearest SyntaxTheme ancestor or the theme-level syntax colors.',
     },
     {
+      name: 'highlightMode',
+      type: "'auto' | 'ranges' | 'spans'",
+      description: 'Syntax highlighting rendering mode.',
+      default: "'auto'",
+    },
+    {
       name: 'isCollapsible',
       type: 'boolean',
       description: 'Allow collapsing the code body into just the header bar. Starts expanded; the header becomes clickable to toggle. Only shows the toggle when the code exceeds collapsibleThreshold lines.',
@@ -141,7 +147,19 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-code', visualProps: ['color']},
-      {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-code-block', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-code-block-header', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-code-block-title', visualProps: ['size', 'language']},
+      {className: 'astryx-code-block-copy-button'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container'], deprecatedFor: 'code-block'},
+      {className: 'astryx-codeblock-header', visualProps: ['size', 'language', 'container'], deprecatedFor: 'code-block-header'},
+      {className: 'astryx-codeblock-title', visualProps: ['size', 'language'], deprecatedFor: 'code-block-title'},
+      {className: 'astryx-codeblock-copy-button', deprecatedFor: 'code-block-copy-button'},
+    ],
+    vars: [
+      {name: '--_codeblock-gutter-width', description: 'Width of the line-number gutter, computed from the digit count of the last line so the code column starts at a stable offset.', default: '2ch', private: true},
     ],
   },
   usage: {
@@ -163,7 +181,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: 'CodeBlock displays syntax-highlighted code snippets with optional line numbers, copy button, and collapsible sections. Use CodeBlock for fenced multi-line code and Code for inline code within prose.',
@@ -176,7 +194,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'syntax-highlighted code block via CSS Custom Highlight API (0-DOM overhead); span-based fallback; Code for inline code in prose',
   usage: {
