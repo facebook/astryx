@@ -50,7 +50,15 @@ export function classifyVisualScope(files, repoRoot = ROOT, manifests = {}) {
   );
 
   const stableThemes = new Set();
+  const stableComponents = new Set();
   const canaryPackages = new Set();
+  let broadStableVisual = false;
+
+  for (const file of stableCoreFiles) {
+    const match = file.match(/^packages\/core\/src\/([^/]+)\//);
+    if (match && /^[A-Z]/.test(match[1])) stableComponents.add(match[1]);
+    else broadStableVisual = true;
+  }
 
   for (const file of paths) {
     const pkgMatch = file.match(/^packages\/([^/]+)\//);
@@ -70,19 +78,27 @@ export function classifyVisualScope(files, repoRoot = ROOT, manifests = {}) {
       themeMatch[1],
       'package.json',
     );
-    const pkg = readPackage(repoRoot, relativeManifest, manifests);
-    if (!pkg) continue;
-    if (pkg.private === true || pkg.astryx?.canaryOnly === true) {
-      if (pkg.astryx?.canaryOnly === true) {
-        canaryPackages.add(pkg.name ?? themeMatch[1]);
-      }
+    const baseManifest = path.join(repoRoot, relativeManifest);
+    const basePkg = fs.existsSync(baseManifest) ? readJSON(baseManifest) : null;
+    const headPkg = Object.hasOwn(manifests, relativeManifest)
+      ? manifests[relativeManifest]
+      : basePkg;
+    const isStable = pkg => pkg && pkg.private !== true && pkg.astryx?.canaryOnly !== true;
+    // Base metadata is the fail-closed floor: a PR may promote a theme into the
+    // stable lane, but cannot escape review by demoting an existing stable one.
+    if (isStable(basePkg) || isStable(headPkg)) {
+      stableThemes.add(themeMatch[1]);
       continue;
     }
-    stableThemes.add(themeMatch[1]);
+    if (headPkg?.astryx?.canaryOnly === true) {
+      canaryPackages.add(headPkg.name ?? themeMatch[1]);
+    }
   }
 
   return {
     hasStableVisual: stableCoreFiles.length > 0 || stableThemes.size > 0,
+    broadStableVisual,
+    stableComponents: [...stableComponents].sort(),
     stableCoreFiles,
     stableThemes: [...stableThemes].sort(),
     canaryPackages: [...canaryPackages].sort(),

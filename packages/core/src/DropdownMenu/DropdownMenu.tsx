@@ -37,7 +37,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {usePopover} from '../Popover/usePopover';
+import {usePopoverInternal} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
 import {Icon} from '../Icon';
 
@@ -261,14 +261,8 @@ export function DropdownMenu({
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
 
-  // Track when the menu was last hidden so a near-simultaneous trigger
-  // click — e.g. on iOS Safari where pointerdown fires light-dismiss
-  // before the trigger's click event — can't immediately re-open it.
-  const lastHideTimeRef = useRef(0);
-
   // Close menu + return focus to trigger
   const handleLayerHide = useCallback(() => {
-    lastHideTimeRef.current = Date.now();
     onOpenChange?.(false);
     if (!isControlled) {
       setInternalIsOpen(false);
@@ -294,7 +288,7 @@ export function DropdownMenu({
     }
   }, [isControlled, onOpenChange]);
 
-  const popover = usePopover({
+  const popover = usePopoverInternal({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
     hasLightDismiss: true,
@@ -422,11 +416,8 @@ export function DropdownMenu({
 
   const handleButtonClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
-      // If the menu was just closed by light dismiss (e.g. iOS Safari fires
-      // pointerdown → hide before the trigger's click), the click would
-      // otherwise immediately re-open it. Short-circuit within the guard
-      // window.
-      if (Date.now() - lastHideTimeRef.current < 50) {
+      // The click that light-dismissed the menu is not a request to reopen it.
+      if (popover.wasJustDismissed()) {
         return;
       }
       onClick?.();
