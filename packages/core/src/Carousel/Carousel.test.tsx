@@ -571,6 +571,43 @@ describe('Carousel', () => {
       expect(document.activeElement).toBe(next);
     });
 
+    it('does not move focus when hasLoop keeps both buttons enabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <Carousel hasLoop aria-label="Looping">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      makeScrollable(getScroller(), 400);
+
+      const next = screen.getByLabelText('Scroll right');
+      await user.click(next);
+
+      // Looping never disables a button, so there is nothing to rescue from.
+      expect(next).toBeEnabled();
+      expect(document.activeElement).toBe(next);
+    });
+
+    it('takes focus without scrolling the container into view', async () => {
+      const user = userEvent.setup();
+      render(
+        <Carousel aria-label="Gallery">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      makeScrollable(scroller, 400);
+      const focus = vi.spyOn(scroller, 'focus');
+
+      await user.click(screen.getByLabelText('Scroll right'));
+
+      // A plain focus() scrolls the element into view, which cancels the smooth
+      // scroll the same press just started.
+      expect(focus).toHaveBeenCalledWith({preventScroll: true});
+    });
+
     it('leaves focus alone when the imperative handle drives the scroll', () => {
       const handle = createRef<CarouselHandle>();
       render(

@@ -425,8 +425,18 @@ export function Carousel({
         const atStart = direction === -1 && !overflowStart;
         if (atEnd || atStart) {
           el.scrollBy({left: rtlSign * -direction * el.scrollWidth, behavior});
-          return false;
+        } else {
+          const firstChild = el.firstElementChild as HTMLElement | null;
+          const itemWidth = firstChild ? firstChild.offsetWidth : 0;
+          const amount = el.clientWidth - itemWidth * 0.5;
+          el.scrollBy({
+            left: rtlSign * direction * Math.max(amount, itemWidth),
+            behavior,
+          });
         }
+        // Looping keeps both buttons enabled at both edges, so no press can
+        // disable the control the user is on and there is nothing to rescue.
+        return false;
       }
 
       const firstChild = el.firstElementChild as HTMLElement | null;
@@ -476,7 +486,10 @@ export function Carousel({
       if (pressed.ownerDocument.activeElement !== pressed) {
         return;
       }
-      scrollElRef.current?.focus();
+      // preventScroll matters: focus() otherwise scrolls the container into
+      // view, which cancels the smooth scroll this very press just started and
+      // leaves the carousel where it was.
+      scrollElRef.current?.focus({preventScroll: true});
     },
     [scrollBy],
   );
