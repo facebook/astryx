@@ -14,7 +14,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/i18n/InternationalizationProvider.tsx
- * - /packages/core/src/i18n/t.client.ts
+ * - /packages/core/src/i18n/translator.ts
  * - /packages/core/src/i18n/useDirection.ts
  * - /packages/core/src/i18n/useLocale.ts
  * - /packages/core/src/i18n/useCollator.ts
@@ -23,6 +23,7 @@
  */
 
 import {createContext} from 'react';
+import type {Translator} from './translator';
 import type {Locale, MessagesByLocale, Overrides} from './types';
 
 export interface InternationalizationContextValue {
@@ -30,6 +31,15 @@ export interface InternationalizationContextValue {
   direction: 'ltr' | 'rtl';
   messages: MessagesByLocale;
   overrides?: Overrides;
+  /**
+   * Optional consumer i18n runtime. When present it formats every message
+   * astryx resolved; lookup and locale fallback stay in resolve().
+   *
+   * A nested provider REPLACES this value rather than merging with it, the
+   * same as `messages` and `overrides` — a nested provider with no
+   * `translator` returns that subtree to the bundled runtime.
+   */
+  translator?: Translator;
 }
 
 /**

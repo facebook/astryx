@@ -4,9 +4,9 @@
 
 /**
  * @file InternationalizationProvider.tsx
- * @input React, InternationalizationContext, i18n types
+ * @input React, InternationalizationContext, i18n types, Translator
  * @output Exports InternationalizationProvider component and props type
- * @position Provider component for astryx i18n locale + messages
+ * @position Provider component for astryx i18n locale + messages + translator
  *
  * Wraps a subtree with a locale and (optional) additional message catalogs +
  * overrides. Astryx components inside the subtree resolve their strings via
@@ -15,13 +15,16 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/i18n/InternationalizationContext.ts
+ * - /packages/core/src/i18n/translator.ts
  * - /packages/core/src/i18n/index.ts
  * - /packages/core/src/i18n/InternationalizationProvider.doc.mjs
+ * - /packages/cli/assets/docs/internationalization.doc.mjs
  */
 
 import {useMemo, type ReactNode} from 'react';
 import {InternationalizationContext} from './InternationalizationContext';
 import {getLocaleDirection} from './getLocaleDirection';
+import type {Translator} from './translator';
 import type {Locale, MessagesByLocale, Overrides} from './types';
 
 export interface InternationalizationProviderProps {
@@ -57,6 +60,42 @@ export interface InternationalizationProviderProps {
    */
   overrides?: Overrides;
   /**
+   * Reuse an existing i18n runtime (react-intl, i18next, LinguiJS, …) to
+   * format astryx's strings instead of the bundled `intl-messageformat`.
+   *
+   * Astryx keeps its own lookup: overrides, then `messages`, then the parent
+   * locale, then the shipped `en` catalog. The translator is handed the
+   * already-resolved ICU message — never an `@astryx.*` key — so you do not
+   * need to load astryx's catalog into your runtime's store.
+   *
+   * Every astryx string goes through it, value-less ones included, so keep
+   * your adapter's miss path cheap. It must return a string; anything else
+   * warns once in development and falls back to astryx's resolved message.
+   *
+   * A `translator` holds a function, so it can only be passed from a client
+   * component — keep the wrapper in a `'use client'` module. A nested
+   * `InternationalizationProvider` replaces it rather than inheriting it,
+   * exactly as it does `messages` and `overrides`.
+   *
+   * Memoize it: a fresh object each render re-renders every astryx string
+   * in the subtree.
+   *
+   * @example
+   * ```
+   * 'use client';
+   * const intl = useIntl();
+   * const translator = useMemo(
+   *   () => ({
+   *     format: (message, values) =>
+   *       intl.formatMessage({id: message, defaultMessage: message}, values),
+   *   }),
+   *   [intl],
+   * );
+   * <InternationalizationProvider locale={intl.locale} translator={translator}>
+   * ```
+   */
+  translator?: Translator;
+  /**
    * Optional explicit text direction override. When omitted, direction is derived
    * from `locale` via `Intl.Locale.getTextInfo()`. Provide this to force a
    * direction (e.g. RTL layout testing under an English catalog) or to skip the
@@ -73,20 +112,27 @@ export interface InternationalizationProviderProps {
 }
 
 /**
- * Provides locale + additional messages + overrides to all astryx
- * components in the subtree.
+ * Provides locale + additional messages + overrides + an optional translator
+ * to all astryx components in the subtree.
  */
 export function InternationalizationProvider({
   locale,
   messages,
   overrides,
+  translator,
   dir,
   children,
 }: InternationalizationProviderProps) {
   const direction = dir ?? getLocaleDirection(locale);
   const value = useMemo(
-    () => ({locale, direction, messages: messages ?? {}, overrides}),
-    [locale, direction, messages, overrides],
+    () => ({
+      locale,
+      direction,
+      messages: messages ?? {},
+      overrides,
+      translator,
+    }),
+    [locale, direction, messages, overrides, translator],
   );
   return (
     <InternationalizationContext value={value}>

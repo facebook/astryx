@@ -72,6 +72,13 @@ export const docs = {
         'Sparse per-locale key overrides applied on top of shipped defaults. Overrides are locale-keyed so a runtime locale swap picks up the correct set.',
     },
     {
+      name: 'translator',
+      type: 'Translator',
+      required: false,
+      description:
+        'Optional adapter that reuses an existing i18n runtime (react-intl, i18next, LinguiJS) to format astryx strings instead of the bundled intl-messageformat. Shape is `{format(message: string, values?: Record<string, unknown>, locale?: string): string}`. Astryx keeps its own lookup — overrides, then messages, then the parent locale, then the shipped "en" catalog — and passes the already-resolved ICU message, never an `@astryx.*` key. Every astryx string goes through it, including value-less ones (`values` is `undefined` for those), so keep the miss path cheap. It must return a string; anything else warns once in development and falls back to astryx\'s resolved message. Holds a function, so it can only be passed from a client component. A nested provider replaces it rather than inheriting it. Memoize it — a fresh object each render re-renders every astryx string in the subtree.',
+    },
+    {
       name: 'dir',
       type: "'ltr' | 'rtl'",
       required: false,
@@ -137,6 +144,46 @@ export function AppI18n({children}: {children: ReactNode}) {
   );
 }`,
     },
+    {
+      label: 'Format astryx strings with an existing i18n runtime',
+      code: `'use client';
+
+import {useMemo, type ReactNode} from 'react';
+import {
+  InternationalizationProvider,
+  type Translator,
+} from '@astryxdesign/core/i18n';
+import {useIntl} from 'react-intl';
+
+// \`translator\` holds a function, so this wrapper has to be a client
+// component — a server component cannot pass one across the boundary.
+export function AppI18n({children}: {children: ReactNode}) {
+  const intl = useIntl();
+  // \`message\` is the ICU string astryx already resolved, not a key, so it
+  // goes in as react-intl's \`defaultMessage\`. Astryx keys are absent from
+  // your catalog, so set an <IntlProvider onError> that ignores
+  // ReactIntlErrorCode.MISSING_TRANSLATION — every astryx string comes
+  // through here, so that path runs a lot.
+  const translator: Translator = useMemo(
+    () => ({
+      // react-intl types \`values\` more narrowly than astryx's
+      // Record<string, unknown>, and returns ReactNode[] for rich text.
+      format: (message, values) =>
+        intl.formatMessage(
+          {id: message, defaultMessage: message},
+          values as Record<string, string | number | Date>,
+        ),
+    }),
+    [intl],
+  );
+
+  return (
+    <InternationalizationProvider locale={intl.locale} translator={translator}>
+      {children}
+    </InternationalizationProvider>
+  );
+}`,
+    },
   ],
 };
 
@@ -182,5 +229,7 @@ export const docsDense = {
       'map of BCP 47 tag to translation catalog; "en" is always available',
     overrides:
       'sparse per-locale key overrides applied on top of shipped defaults',
+    translator:
+      'optional `{format(message, values?, locale?)}` adapter that formats astryx strings with an existing i18n runtime; astryx still does the lookup and passes a resolved ICU message. Receives every astryx string (`values` undefined for value-less ones), must return a string, client components only, not inherited by nested providers, memoize it',
   },
 };
