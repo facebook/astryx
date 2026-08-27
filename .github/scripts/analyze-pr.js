@@ -5,7 +5,7 @@
 /**
  * @description Analyzes PR changes to detect new/modified components and gather stats
  * @input --base <branch> --head <ref> --output <file>
- * @output JSON file with component analysis
+ * @output JSON file with component analysis; exits non-zero if the base...head diff fails (e.g. shallow clone without a merge base)
  */
 
 const fs = require('node:fs');
@@ -22,65 +22,189 @@ const baseBranch = getArg('base') || 'main';
 const headRef = getArg('head') || 'HEAD';
 const outputFile = getArg('output') || 'analysis.json';
 
-const CORE_SRC = 'packages/core/src';
-const CORE_DIST = 'packages/core/dist';
 const STORYBOOK_STORIES = 'apps/storybook/stories';
 
-// Get list of component directories (excluding utils, hooks, theme)
-function getComponentDirs() {
-  const srcPath = path.join(process.cwd(), CORE_SRC);
-  const entries = fs.readdirSync(srcPath, { withFileTypes: true });
-  const excluded = ['hooks', 'theme', 'utils'];
+// The publishable component packages the report covers. Each PR is attributed
+// to the package(s) it actually touches — the report is no longer hardcoded to
+// `core` (which silently mislabelled every lab/charts PR).
+//
+// layout:
+//   'nested' — components live in per-component dirs: src/<Name>/... (core, lab)
+//   'flat'   — components live as single files:       src/<Name>.tsx (charts,
+//              richtext). The score-ledger's canonical predicate narrows a flat
+//              package to its documented component(s) downstream, so listing
+//              the internal helpers here is harmless — they get filtered out.
+const PACKAGES = [
+  { name: '@astryxdesign/core', dir: 'packages/core', layout: 'nested' },
+  { name: '@astryxdesign/lab', dir: 'packages/lab', layout: 'nested' },
+  { name: '@astryxdesign/charts', dir: 'packages/charts', layout: 'flat' },
+  { name: '@astryxdesign/richtext', dir: 'packages/richtext', layout: 'flat' },
+];
 
-  return entries
-    .filter(e => e.isDirectory() && !excluded.includes(e.name))
-    .map(e => e.name);
-}
+const pkgSrc = (pkg) => `${pkg.dir}/src`;
+const pkgDist = (pkg) => `${pkg.dir}/dist`;
 
-// Get changed files between base and head
-function getChangedFiles() {
+// Directories under a package's src that are not components.
+const EXCLUDED_DIRS = ['hooks', 'theme', 'utils', 'i18n', '__tests__'];
+
+// Get list of component names for a package, honoring its src layout.
+function getComponentNames(pkg) {
+  const srcPath = path.join(process.cwd(), pkgSrc(pkg));
   try {
-    const output = execSync(
-      `git diff --name-only ${baseBranch}...${headRef}`,
-      { encoding: 'utf8' }
-    );
-    return output.trim().split('\n').filter(Boolean);
-  } catch (e) {
-    console.error('Error getting changed files:', e.message);
+    const entries = fs.readdirSync(srcPath, { withFileTypes: true });
+    if (pkg.layout === 'flat') {
+      // Flat: each PascalCase *.tsx (not a test/story/context) is a component.
+      return entries
+        .filter(
+          (e) =>
+            e.isFile() &&
+            /^[A-Z]\w+\.tsx$/.test(e.name) &&
+            !e.name.includes('.test.') &&
+            !e.name.includes('.stories.') &&
+            !e.name.endsWith('Context.tsx'),
+        )
+        .map((e) => e.name.replace(/\.tsx$/, ''));
+    }
+    // Nested: each non-excluded directory is a component.
+    return entries
+      .filter((e) => e.isDirectory() && !EXCLUDED_DIRS.includes(e.name))
+      .map((e) => e.name);
+  } catch {
     return [];
   }
 }
 
-// Check if component exists in base branch
-function componentExistsInBase(componentName) {
+// The source path of a component (dir for nested, file for flat).
+function componentSrcPath(pkg, componentName) {
+  return pkg.layout === 'flat'
+    ? path.join(process.cwd(), pkgSrc(pkg), `${componentName}.tsx`)
+    : path.join(process.cwd(), pkgSrc(pkg), componentName);
+}
+
+// The index file used to read exports (dir/index.ts for nested, the file itself for flat).
+function componentIndexRef(pkg, componentName) {
+  return pkg.layout === 'flat'
+    ? `${pkgSrc(pkg)}/${componentName}.tsx`
+    : `${pkgSrc(pkg)}/${componentName}/index.ts`;
+}
+
+// Get changed files between base and head.
+//
+// Prefers a three-dot diff (base...head), which only reports files changed on
+// the PR branch and excludes commits already merged to base. But a three-dot
+// diff needs a merge base, which a shallow clone (fetch-depth: 50) may not
+// have once the PR has been open long enough for base to advance past that
+// window — the diff then fails with "no merge base" and the whole job dies.
+//
+// On that failure we first try to deepen the shallow clone and retry the
+// three-dot diff — the real fix for "base advanced past the fetch window" is
+// to fetch more history, not to degrade. Only if that still cannot find a
+// merge base do we fall back to a two-dot diff (base..head), which needs no
+// merge base and never hard-fails the CI.
+//
+// The two-dot fallback is inherently lossy: it compares two trees, so a file
+// whose change also exists on base (a cherry-picked/duplicated fix, or the
+// same codegen output landing from another PR) vanishes from the diff
+// entirely. That means two-dot can UNDER-report a PR's own changes, not just
+// over-report base churn. Because downstream gates (pr-a11y) derive their
+// component list from this file list, under-reporting silently skips the
+// audit for a component the PR did change. The caller records the diff mode
+// in the analysis output so consumers know when the file list is approximate.
+// Returns { files, diffMode: 'three-dot' | 'two-dot' }.
+function getChangedFiles() {
+  const threeDot = `${baseBranch}...${headRef}`;
+  const tryThreeDot = () => {
+    const output = execSync(`git diff --name-only ${threeDot}`, { encoding: 'utf8' });
+    return output.trim().split('\n').filter(Boolean);
+  };
   try {
-    execSync(
-      `git show ${baseBranch}:${CORE_SRC}/${componentName}/index.ts`,
-      { encoding: 'utf8', stdio: 'pipe' }
+    return { files: tryThreeDot(), diffMode: 'three-dot' };
+  } catch (e) {
+    console.warn(
+      `::warning::three-dot diff ${threeDot} failed - attempting to deepen the clone and retry`
     );
+    console.warn(diffErrorDetail(e));
+  }
+
+  // The three-dot diff failed, almost certainly because the shallow clone is
+  // too shallow to contain the merge base. Deepen before giving up on the
+  // accurate path; a deepened clone makes three-dot correct again. The base
+  // arg arrives as "origin/main" (see ci.yml) but the fetch refspec needs the
+  // bare branch name and must update the origin/<base> ref explicitly —
+  // `--deepen` alone only updates FETCH_HEAD, which the three-dot ref
+  // (origin/main...HEAD) needs to actually exist.
+  try {
+    const baseName = baseBranch.replace(/^origin\//, '');
+    execSync(
+      `git fetch --deepen=200 origin ${baseName}:refs/remotes/origin/${baseName}`,
+      { encoding: 'utf8', stdio: 'pipe' },
+    );
+    return { files: tryThreeDot(), diffMode: 'three-dot' };
+  } catch (e) {
+    console.warn(
+      `::warning::deepen failed (${diffErrorDetail(e)}) - falling back to two-dot diff`
+    );
+  }
+
+  // Last resort: a two-dot diff needs no merge base. Its file list is
+  // approximate (may over-report base churn and, worse, under-report the PR's
+  // own changes when they also exist on base), so the caller marks the output
+  // with diffMode: 'two-dot' for any consumer to caveat.
+  const twoDot = `${baseBranch}..${headRef}`;
+  try {
+    const output = execSync(`git diff --name-only ${twoDot}`, { encoding: 'utf8' });
+    return { files: output.trim().split('\n').filter(Boolean), diffMode: 'two-dot' };
+  } catch (e) {
+    // A failed diff (e.g. base ref missing on a too-shallow clone) is not the
+    // same as "no changes" — fail loudly instead of publishing an empty
+    // analysis report that looks legitimate.
+    console.error(`::error::git diff ${twoDot} failed: ${e.message}`);
+    console.error('The clone is likely too shallow to contain the base ref (see fetch-depth in ci.yml).');
+    process.exit(1);
+  }
+}
+
+// Human-readable reason for a failed diff/deepen, preferring the fatal stderr
+// line (e.g. "fatal: origin/main...HEAD: no merge base") over execSync's
+// boilerplate "Command failed: ..." first line.
+function diffErrorDetail(e) {
+  return (e.stderr && e.stderr.toString().trim()) || e.message.split('\n')[0];
+}
+
+// Check if a component exists in the base branch.
+function componentExistsInBase(pkg, componentName) {
+  try {
+    execSync(`git show ${baseBranch}:${componentIndexRef(pkg, componentName)}`, {
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
     return true;
   } catch {
     return false;
   }
 }
 
+function parseExportsFromSource(content) {
+  const exportMatches = content.match(/export\s+{\s*([^}]+)\s*}/g) || [];
+  const exports = [];
+  for (const match of exportMatches) {
+    const inner = match.replace(/export\s*{\s*/, '').replace(/\s*}/, '');
+    exports.push(...inner.split(',').map((e) => e.trim().split(' ')[0]));
+  }
+  if (content.includes('export default')) {
+    exports.push('default');
+  }
+  return exports.filter(Boolean);
+}
+
 // Get exports from the base branch for a component (to detect new exports in modified dirs)
-function getBaseExports(componentName) {
+function getBaseExports(pkg, componentName) {
   try {
     const content = execSync(
-      `git show ${baseBranch}:${CORE_SRC}/${componentName}/index.ts`,
+      `git show ${baseBranch}:${componentIndexRef(pkg, componentName)}`,
       { encoding: 'utf8', stdio: 'pipe' }
     );
-    const exportMatches = content.match(/export\s+{\s*([^}]+)\s*}/g) || [];
-    const exports = [];
-    for (const match of exportMatches) {
-      const inner = match.replace(/export\s*{\s*/, '').replace(/\s*}/, '');
-      exports.push(...inner.split(',').map(e => e.trim().split(' ')[0]));
-    }
-    if (content.includes('export default')) {
-      exports.push('default');
-    }
-    return exports.filter(Boolean);
+    return parseExportsFromSource(content);
   } catch {
     return [];
   }
@@ -107,11 +231,15 @@ function getFileSizeBytes(filePath) {
   }
 }
 
-// Get gzipped size
+// Get gzipped size of a file. Returns null (→ "N/A") when the file is absent,
+// instead of the old behavior of gzipping a nonexistent path and reporting a
+// bogus "0B".
 function getGzipSize(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
   try {
     const output = execSync(`gzip -c "${filePath}" | wc -c`, { encoding: 'utf8' });
     const bytes = parseInt(output.trim(), 10);
+    if (!Number.isFinite(bytes) || bytes <= 0) return null;
     if (bytes < 1024) return `${bytes}B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
@@ -120,67 +248,75 @@ function getGzipSize(filePath) {
   }
 }
 
-// Get exports from a component
-function getExports(componentName) {
-  const indexPath = path.join(process.cwd(), CORE_SRC, componentName, 'index.ts');
+// Resolve a package/component's dist entry files. The build emits CJS-style
+// `.js` today (no `.mjs`); we probe for both so the report stays correct if an
+// ESM artifact is added later, and never measures a file that isn't there.
+function resolveEntries(distDir) {
+  const esm = path.join(distDir, 'index.mjs');
+  const cjs = path.join(distDir, 'index.js');
+  return {
+    esmPath: fs.existsSync(esm) ? esm : null,
+    cjsPath: fs.existsSync(cjs) ? cjs : null,
+  };
+}
+
+// Get exports from a component (from the working tree / head).
+function getExports(pkg, componentName) {
+  const indexPath =
+    pkg.layout === 'flat'
+      ? componentSrcPath(pkg, componentName)
+      : path.join(componentSrcPath(pkg, componentName), 'index.ts');
   try {
     const content = fs.readFileSync(indexPath, 'utf8');
-    const exportMatches = content.match(/export\s+{\s*([^}]+)\s*}/g) || [];
-    const exports = [];
+    return parseExportsFromSource(content);
+  } catch {
+    return [];
+  }
+}
 
-    for (const match of exportMatches) {
-      const inner = match.replace(/export\s*{\s*/, '').replace(/\s*}/, '');
-      exports.push(...inner.split(',').map(e => e.trim().split(' ')[0]));
-    }
-
-    // Also check for default exports
-    if (content.includes('export default')) {
-      exports.push('default');
-    }
-
-    return exports.filter(Boolean);
+// Resolve the main component source file(s) to inspect for props/complexity.
+function componentSourceFiles(pkg, componentName) {
+  if (pkg.layout === 'flat') {
+    const file = componentSrcPath(pkg, componentName);
+    return fs.existsSync(file) ? [{ dir: path.dirname(file), name: path.basename(file) }] : [];
+  }
+  const dir = componentSrcPath(pkg, componentName);
+  try {
+    return fs.readdirSync(dir).map((name) => ({ dir, name }));
   } catch {
     return [];
   }
 }
 
 // Count props for main component
-function getPropsCount(componentName) {
-  const componentDir = path.join(process.cwd(), CORE_SRC, componentName);
+function getPropsCount(pkg, componentName) {
+  const files = componentSourceFiles(pkg, componentName);
+  if (files.length === 0) return null;
+  // Prefer the file named after the component (bare or XDS-prefixed).
+  const names = files.map((f) => f.name);
+  const mainName =
+    [`XDS${componentName}.tsx`, `${componentName}.tsx`].find((f) => names.includes(f)) ||
+    names.find(
+      (f) =>
+        (/^XDS[A-Z]\w+\.tsx$/.test(f) || /^[A-Z]\w+\.tsx$/.test(f)) &&
+        !f.includes('.test.') &&
+        !f.includes('Context.'),
+    );
+  if (!mainName) return null;
   try {
-    const files = fs.readdirSync(componentDir);
-    // The main component file is `XDS{Name}.tsx` today, or the bare `{Name}.tsx`
-    // after the XDS-prefix migration (P2380608025, P4). Prefer the file named
-    // after the component directory (prefixed or bare); otherwise fall back to
-    // any prefixed/PascalCase component file in the directory.
-    const mainFile =
-      [`XDS${componentName}.tsx`, `${componentName}.tsx`].find(f =>
-        files.includes(f),
-      ) ||
-      files.find(
-        f =>
-          (/^XDS[A-Z]\w+\.tsx$/.test(f) || /^[A-Z]\w+\.tsx$/.test(f)) &&
-          !f.includes('.test.') &&
-          !f.includes('Context.'),
-      );
-
-    if (!mainFile) return null;
-
-    const content = fs.readFileSync(path.join(componentDir, mainFile), 'utf8');
-
-    // Look for Props type/interface
+    const content = fs.readFileSync(path.join(files[0].dir, mainName), 'utf8');
     const propsMatch = content.match(/(?:type|interface)\s+\w*Props\w*\s*=?\s*{([^}]+)}/);
     if (propsMatch) {
-      const propsContent = propsMatch[1];
-      const props = propsContent.split('\n').filter(line =>
-        line.trim() &&
-        !line.trim().startsWith('//') &&
-        !line.trim().startsWith('*') &&
-        line.includes(':')
-      );
-      return props.length;
+      return propsMatch[1]
+        .split('\n')
+        .filter(
+          (line) =>
+            line.trim() &&
+            !line.trim().startsWith('//') &&
+            !line.trim().startsWith('*') &&
+            line.includes(':'),
+        ).length;
     }
-
     return null;
   } catch {
     return null;
@@ -188,35 +324,30 @@ function getPropsCount(componentName) {
 }
 
 // Check if component has tests
-function hasTests(componentName) {
-  const testPath = path.join(process.cwd(), CORE_SRC, componentName);
-  try {
-    const files = fs.readdirSync(testPath);
-    return files.some(f => f.endsWith('.test.ts') || f.endsWith('.test.tsx'));
-  } catch {
-    return false;
-  }
+function hasTests(pkg, componentName) {
+  return componentSourceFiles(pkg, componentName).some(
+    (f) => f.name.endsWith('.test.ts') || f.name.endsWith('.test.tsx'),
+  );
 }
 
 // Check if component has stories (checks both directory name and exported component names)
-function hasStories(componentName) {
+function hasStories(pkg, componentName) {
   const storiesDir = path.join(process.cwd(), STORYBOOK_STORIES);
   try {
     const files = fs.readdirSync(storiesDir);
-    // Check directory name match
-    if (files.some(f =>
-      f.toLowerCase().includes(componentName.toLowerCase()) &&
-      f.endsWith('.stories.tsx')
-    )) return true;
-
-    // Also check exported component names (e.g., Layer dir exports XDSPopover)
-    const exports = getExports(componentName);
-    const xdsComponents = exports.filter(e => e.startsWith('XDS'));
-    return xdsComponents.some(comp => {
+    if (
+      files.some(
+        (f) =>
+          f.toLowerCase().includes(componentName.toLowerCase()) && f.endsWith('.stories.tsx'),
+      )
+    )
+      return true;
+    const exports = getExports(pkg, componentName);
+    const xdsComponents = exports.filter((e) => e.startsWith('XDS'));
+    return xdsComponents.some((comp) => {
       const name = comp.replace(/^XDS/, '');
-      return files.some(f =>
-        f.toLowerCase().includes(name.toLowerCase()) &&
-        f.endsWith('.stories.tsx')
+      return files.some(
+        (f) => f.toLowerCase().includes(name.toLowerCase()) && f.endsWith('.stories.tsx'),
       );
     });
   } catch {
@@ -224,42 +355,35 @@ function hasStories(componentName) {
   }
 }
 
-// Get the Storybook story titles for a component (e.g., "Core/XDSButton")
-// Returns array since a directory like Layer may have multiple story files
-function getStoryTitle(componentName) {
+// Get the Storybook story title for a component (e.g., "Core/Button").
+function getStoryTitle(pkg, componentName) {
   const storiesDir = path.join(process.cwd(), STORYBOOK_STORIES);
   try {
     const files = fs.readdirSync(storiesDir);
-
-    // Find story files matching directory name or exported component names
-    const exports = getExports(componentName);
-    const searchNames = [componentName, ...exports.filter(e => e.startsWith('XDS')).map(e => e.replace(/^XDS/, ''))];
-
-    const storyFiles = files.filter(f =>
-      f.endsWith('.stories.tsx') &&
-      searchNames.some(name => f.toLowerCase().includes(name.toLowerCase()))
+    const exports = getExports(pkg, componentName);
+    const searchNames = [
+      componentName,
+      ...exports.filter((e) => e.startsWith('XDS')).map((e) => e.replace(/^XDS/, '')),
+    ];
+    const storyFiles = files.filter(
+      (f) =>
+        f.endsWith('.stories.tsx') &&
+        searchNames.some((name) => f.toLowerCase().includes(name.toLowerCase())),
     );
-
     if (storyFiles.length === 0) return null;
-
-    // Prefer exact filename match (e.g. "Table.stories.tsx" for "Table")
-    // over substring matches (e.g. "PowerSearchWithTable.stories.tsx")
-    const exactMatch = storyFiles.find(f =>
-      searchNames.some(name => f.toLowerCase() === `${name.toLowerCase()}.stories.tsx`)
+    const exactMatch = storyFiles.find((f) =>
+      searchNames.some((name) => f.toLowerCase() === `${name.toLowerCase()}.stories.tsx`),
     );
     const orderedFiles = exactMatch
-      ? [exactMatch, ...storyFiles.filter(f => f !== exactMatch)]
+      ? [exactMatch, ...storyFiles.filter((f) => f !== exactMatch)]
       : storyFiles;
-
-    const titles = orderedFiles.map(storyFile => {
-      const content = fs.readFileSync(path.join(storiesDir, storyFile), 'utf8');
-      const titleMatch = content.match(/title:\s*['"]([^'"]+)['"]/);
-      return titleMatch ? titleMatch[1] : null;
-    }).filter(Boolean);
-
-    // Always return a single string (first match) or null — never an array.
-    // Multiple story files may match (e.g. Popover.stories.tsx + PopoverFilter.stories.tsx),
-    // but downstream code expects a string for Storybook link generation.
+    const titles = orderedFiles
+      .map((storyFile) => {
+        const content = fs.readFileSync(path.join(storiesDir, storyFile), 'utf8');
+        const titleMatch = content.match(/title:\s*['"]([^'"]+)['"]/);
+        return titleMatch ? titleMatch[1] : null;
+      })
+      .filter(Boolean);
     return titles.length > 0 ? titles[0] : null;
   } catch {
     return null;
@@ -273,25 +397,19 @@ function countLOC(filePath) {
     const lines = content.split('\n');
     let loc = 0;
     let inBlockComment = false;
-
     for (const line of lines) {
       const trimmed = line.trim();
-
-      // Track block comments
       if (trimmed.startsWith('/*')) inBlockComment = true;
       if (trimmed.endsWith('*/')) {
         inBlockComment = false;
         continue;
       }
-
       if (inBlockComment) continue;
       if (!trimmed) continue;
       if (trimmed.startsWith('//')) continue;
       if (trimmed.startsWith('*')) continue;
-
       loc++;
     }
-
     return loc;
   } catch {
     return 0;
@@ -299,71 +417,51 @@ function countLOC(filePath) {
 }
 
 // Get total LOC for a component
-function getComponentLOC(componentName) {
-  const componentDir = path.join(process.cwd(), CORE_SRC, componentName);
-  try {
-    const files = fs.readdirSync(componentDir);
-    let totalLOC = 0;
-    let fileCount = 0;
-
-    for (const file of files) {
-      if (file.endsWith('.ts') || file.endsWith('.tsx')) {
-        // Skip test files
-        if (file.includes('.test.')) continue;
-        totalLOC += countLOC(path.join(componentDir, file));
-        fileCount++;
-      }
-    }
-
-    return { totalLOC, fileCount };
-  } catch {
-    return { totalLOC: 0, fileCount: 0 };
+function getComponentLOC(pkg, componentName) {
+  const files = componentSourceFiles(pkg, componentName);
+  let totalLOC = 0;
+  let fileCount = 0;
+  for (const f of files) {
+    if (!(f.name.endsWith('.ts') || f.name.endsWith('.tsx'))) continue;
+    if (f.name.includes('.test.')) continue;
+    totalLOC += countLOC(path.join(f.dir, f.name));
+    fileCount++;
   }
+  return { totalLOC, fileCount };
 }
 
 // Calculate cyclomatic complexity (simplified - counts decision points)
-function getComplexity(componentName) {
-  const componentDir = path.join(process.cwd(), CORE_SRC, componentName);
+function getComplexity(pkg, componentName) {
+  const files = componentSourceFiles(pkg, componentName);
+  let complexity = 1; // Base complexity
   try {
-    const files = fs.readdirSync(componentDir);
-    let complexity = 1; // Base complexity
-
-    for (const file of files) {
-      if (!file.endsWith('.tsx')) continue;
-      if (file.includes('.test.')) continue;
-
-      const content = fs.readFileSync(path.join(componentDir, file), 'utf8');
-
-      // Count decision points (simplified cyclomatic complexity)
+    for (const f of files) {
+      if (!f.name.endsWith('.tsx')) continue;
+      if (f.name.includes('.test.')) continue;
+      const content = fs.readFileSync(path.join(f.dir, f.name), 'utf8');
       const patterns = [
         /\bif\s*\(/g,
         /\belse\s+if\s*\(/g,
         /\bswitch\s*\(/g,
         /\bcase\s+/g,
-        /\?\s*[^:]/g,  // Ternary operators
-        /\|\|/g,       // Logical OR (short-circuit)
-        /&&/g,         // Logical AND (short-circuit)
-        /\.map\s*\(/g, // Array iterations
+        /\?\s*[^:]/g,
+        /\|\|/g,
+        /&&/g,
+        /\.map\s*\(/g,
         /\.filter\s*\(/g,
         /\.reduce\s*\(/g,
         /\.forEach\s*\(/g,
       ];
-
       for (const pattern of patterns) {
         const matches = content.match(pattern);
-        if (matches) {
-          complexity += matches.length;
-        }
+        if (matches) complexity += matches.length;
       }
     }
-
-    // Categorize complexity
     let rating;
     if (complexity <= 5) rating = 'Low';
     else if (complexity <= 15) rating = 'Medium';
     else if (complexity <= 30) rating = 'High';
     else rating = 'Very High';
-
     return { score: complexity, rating };
   } catch {
     return { score: 0, rating: 'Unknown' };
@@ -371,21 +469,29 @@ function getComplexity(componentName) {
 }
 
 // Get component stats
-function getComponentStats(componentName) {
-  const distPath = path.join(process.cwd(), CORE_DIST, componentName);
-  const loc = getComponentLOC(componentName);
-  const complexity = getComplexity(componentName);
+function getComponentStats(pkg, componentName) {
+  // Per-component dist sizing only applies to nested packages that emit a
+  // per-component subdir. Flat packages (charts) have no per-component dist, so
+  // those sizes are legitimately null (package total still reported below).
+  const distDir =
+    pkg.layout === 'flat'
+      ? null
+      : path.join(process.cwd(), pkgDist(pkg), componentName);
+  const entries = distDir ? resolveEntries(distDir) : { esmPath: null, cjsPath: null };
+  const loc = getComponentLOC(pkg, componentName);
+  const complexity = getComplexity(pkg, componentName);
 
   return {
-    esmSize: getFileSize(path.join(distPath, 'index.mjs')),
-    esmBytes: getFileSizeBytes(path.join(distPath, 'index.mjs')),
-    cjsSize: getFileSize(path.join(distPath, 'index.js')),
-    cjsBytes: getFileSizeBytes(path.join(distPath, 'index.js')),
-    exports: getExports(componentName),
-    propsCount: getPropsCount(componentName),
-    hasTests: hasTests(componentName),
-    hasStories: hasStories(componentName),
-    storyTitle: getStoryTitle(componentName),
+    package: pkg.name,
+    esmSize: getFileSize(entries.esmPath),
+    esmBytes: getFileSizeBytes(entries.esmPath),
+    cjsSize: getFileSize(entries.cjsPath),
+    cjsBytes: getFileSizeBytes(entries.cjsPath),
+    exports: getExports(pkg, componentName),
+    propsCount: getPropsCount(pkg, componentName),
+    hasTests: hasTests(pkg, componentName),
+    hasStories: hasStories(pkg, componentName),
+    storyTitle: getStoryTitle(pkg, componentName),
     linesOfCode: loc.totalLOC,
     fileCount: loc.fileCount,
     complexity: complexity.score,
@@ -393,93 +499,126 @@ function getComponentStats(componentName) {
   };
 }
 
-// Get total bundle stats
-function getTotalBundleStats() {
-  const distPath = path.join(process.cwd(), CORE_DIST);
-  const esmPath = path.join(distPath, 'index.mjs');
-  const cjsPath = path.join(distPath, 'index.js');
-
+// Get total bundle stats for a package's published entry.
+function getPackageBundleStats(pkg) {
+  const distDir = path.join(process.cwd(), pkgDist(pkg));
+  const { esmPath, cjsPath } = resolveEntries(distDir);
+  // Gzip the primary published entry — prefer ESM if it exists, else the CJS
+  // `.js` the build actually emits today. Never gzip a missing path.
+  const primary = esmPath || cjsPath;
   return {
+    package: pkg.name,
     esmSize: getFileSize(esmPath),
     esmBytes: getFileSizeBytes(esmPath),
     cjsSize: getFileSize(cjsPath),
     cjsBytes: getFileSizeBytes(cjsPath),
-    gzipSize: getGzipSize(esmPath),
+    gzipSize: getGzipSize(primary),
   };
 }
 
 // Main analysis
 function analyze() {
   console.log(`Analyzing changes from ${baseBranch} to ${headRef}...`);
+  const { files: changedFiles, diffMode } = getChangedFiles();
+  console.log(`Found ${changedFiles.length} changed files (diff mode: ${diffMode})`);
+  if (diffMode === 'two-dot') {
+    console.warn(
+      '::warning::using approximate two-dot diff - the file list may include base-only churn and may miss the PR\'s own changes when they also exist on base'
+    );
+  }
 
-  const allComponents = getComponentDirs();
-  const changedFiles = getChangedFiles();
-
-  console.log(`Found ${allComponents.length} components`);
-  console.log(`Found ${changedFiles.length} changed files`);
-
-  // Detect which components are new or modified
   const newComponents = [];
   const modifiedComponents = [];
+  const componentStats = {};
+  const changedPackages = new Set();
 
-  for (const file of changedFiles) {
-    if (!file.startsWith(CORE_SRC + '/')) continue;
+  // Stable theme packages are a visual surface of their own. They do not own
+  // component source dirs, so the component loop below cannot discover them;
+  // without this, changing a published theme silently skips pr-visual.
+  const changedStableThemes = [...new Set(
+    changedFiles.flatMap((file) => {
+      const match = file.match(/^packages\/themes\/([^/]+)\/src\//);
+      if (!match) return [];
+      const manifest = path.join(process.cwd(), 'packages', 'themes', match[1], 'package.json');
+      if (!fs.existsSync(manifest)) return [];
+      const pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+      return pkg.private === true || pkg.astryx?.canaryOnly === true ? [] : [match[1]];
+    }),
+  )].sort();
 
-    const relativePath = file.replace(CORE_SRC + '/', '');
-    const componentName = relativePath.split('/')[0];
+  for (const pkg of PACKAGES) {
+    const allComponents = getComponentNames(pkg);
+    const prefix = pkgSrc(pkg) + '/';
 
-    if (!allComponents.includes(componentName)) continue;
-    if (newComponents.includes(componentName) || modifiedComponents.includes(componentName)) continue;
+    for (const file of changedFiles) {
+      if (!file.startsWith(prefix)) continue;
+      changedPackages.add(pkg.name);
 
-    if (componentExistsInBase(componentName)) {
-      modifiedComponents.push(componentName);
-    } else {
-      newComponents.push(componentName);
+      const relativePath = file.replace(prefix, '');
+      const componentName =
+        pkg.layout === 'flat'
+          ? relativePath.replace(/\.tsx?$/, '').split('/')[0]
+          : relativePath.split('/')[0];
+
+      if (!allComponents.includes(componentName)) continue;
+      const key = componentName;
+      if (componentStats[key]) continue;
+
+      const stats = getComponentStats(pkg, componentName);
+      componentStats[key] = stats;
+      if (componentExistsInBase(pkg, componentName)) {
+        modifiedComponents.push(key);
+      } else {
+        newComponents.push(key);
+      }
     }
   }
 
+  console.log(`Changed packages: ${[...changedPackages].join(', ') || 'none'}`);
   console.log(`New components: ${newComponents.join(', ') || 'none'}`);
   console.log(`Modified components: ${modifiedComponents.join(', ') || 'none'}`);
 
-  // Gather stats for affected components
-  const componentStats = {};
-  for (const comp of [...newComponents, ...modifiedComponents]) {
-    componentStats[comp] = getComponentStats(comp);
-  }
-
-  // For modified directories, detect new exports (components that exist in HEAD
-  // but not in the base branch). A directory like Layer/ may be "modified" but
-  // contain brand-new exports like XDSPopover alongside existing ones.
+  // Detect new exports in modified components (a dir may be "modified" yet add
+  // brand-new exports alongside existing ones).
   const newExports = [];
-  for (const comp of modifiedComponents) {
-    const headExports = componentStats[comp]?.exports || [];
-    const baseExports = getBaseExports(comp);
-    const added = headExports.filter(e => e.startsWith('XDS') && !baseExports.includes(e));
-    newExports.push(...added);
+  for (const key of modifiedComponents) {
+    const pkg = PACKAGES.find((p) => p.name === componentStats[key].package);
+    const headExports = componentStats[key]?.exports || [];
+    const baseExports = getBaseExports(pkg, key);
+    newExports.push(...headExports.filter((e) => e.startsWith('XDS') && !baseExports.includes(e)));
   }
+  for (const key of newComponents) {
+    newExports.push(...(componentStats[key]?.exports || []).filter((e) => e.startsWith('XDS')));
+  }
+  if (newExports.length > 0) console.log(`New exports: ${newExports.join(', ')}`);
 
-  // Also include all XDS exports from truly new directories
-  for (const comp of newComponents) {
-    const exports = componentStats[comp]?.exports || [];
-    newExports.push(...exports.filter(e => e.startsWith('XDS')));
-  }
-
-  if (newExports.length > 0) {
-    console.log(`New exports: ${newExports.join(', ')}`);
-  }
+  // Bundle sizes: report every package the PR actually touched. If none of the
+  // component packages changed (e.g. a docs- or tooling-only PR that still runs
+  // analysis), report no bundle rows rather than a stale, misattributed core row.
+  const bundlePackages = PACKAGES.filter((p) => changedPackages.has(p.name)).map((p) =>
+    getPackageBundleStats(p),
+  );
 
   const result = {
     newComponents,
     modifiedComponents,
     newExports,
     componentStats,
-    totalBundle: getTotalBundleStats(),
+    changedPackages: [...changedPackages],
+    changedStableThemes,
+    // Records whether the file list is exact (three-dot) or approximate
+    // (two-dot fallback). Consumers that gate on the component list (pr-a11y)
+    // or render it in the report should caveat when this is 'two-dot'.
+    diffMode,
+    bundlePackages,
+    // Back-compat: keep totalBundle pointed at core when core changed, so any
+    // older consumer of this field still resolves.
+    totalBundle: bundlePackages.find((b) => b.package === '@astryxdesign/core') || null,
     analyzedAt: new Date().toISOString(),
   };
 
   fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
   console.log(`Analysis written to ${outputFile}`);
-
   return result;
 }
 

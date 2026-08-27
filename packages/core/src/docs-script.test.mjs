@@ -3,12 +3,13 @@
 /**
  * @file Subprocess smoke tests for the zero-dependency docs script.
  *
- * `docs.mjs` resolves the package directory from `import.meta.url`. Using
- * `new URL(...).pathname` there breaks on Windows (drive-letter paths come
- * back as `/D:/...`), which made `--list` print nothing and component
- * lookups crash with ENOENT. These tests spawn the script as a real
- * subprocess from a neutral cwd, so resolution can only come from the
- * module URL, and assert it finds the component catalog on every platform.
+ * `docs.mjs` no longer prints component docs itself — it intentionally
+ * redirects to the Astryx CLI (`npx @astryxdesign/cli init`) so agents and
+ * humans converge on the CLI + `init` rather than a stale bundled snapshot.
+ * These tests spawn the script as a real subprocess from a neutral cwd and
+ * assert that, regardless of the arguments passed, it prints the redirect
+ * banner and exits 0 instead of rendering a component catalog or per-component
+ * docs.
  */
 
 import {describe, it, expect} from 'vitest';
@@ -29,22 +30,26 @@ function runDocs(args) {
   });
 }
 
-describe('docs.mjs component discovery', () => {
-  it('--list discovers the component catalog', () => {
+describe('docs.mjs redirects to the Astryx CLI', () => {
+  it('redirects to the CLI instead of printing a component catalog for --list', () => {
     const r = runDocs(['--list']);
     expect(r.error).toBeUndefined();
     expect(r.signal).toBeNull();
     expect(r.status).toBe(0);
-    expect(r.stdout).toMatch(/\bButton\b/);
-    expect(r.stdout).toMatch(/\bDialog\b/);
+    // Prints the redirect banner, not a component list.
+    expect(r.stdout).toMatch(/docs are served by the Astryx CLI/);
+    expect(r.stdout).toMatch(/npx @astryxdesign\/cli init/);
+    expect(r.stdout).toMatch(/npx @astryxdesign\/cli component --list/);
   });
 
-  it('renders docs for a single component', () => {
+  it('redirects to the CLI instead of rendering docs for a single component', () => {
     const r = runDocs(['Button']);
     expect(r.error).toBeUndefined();
     expect(r.signal).toBeNull();
     expect(r.status).toBe(0);
-    expect(r.stdout).toMatch(/^# Button$/m);
-    expect(r.stdout).toMatch(/## Props/);
+    // A pure redirect: it must not render the component's docs.
+    expect(r.stdout).not.toMatch(/^# Button$/m);
+    expect(r.stdout).not.toMatch(/## Props/);
+    expect(r.stdout).toMatch(/npx @astryxdesign\/cli component <Name>/);
   });
 });

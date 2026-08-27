@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Table',
@@ -24,15 +24,17 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-base-table'},
       {className: 'astryx-table'},
       {className: 'astryx-table-scroll-wrapper'},
       {className: 'astryx-table-header'},
       {className: 'astryx-table-body'},
       {className: 'astryx-table-footer'},
       {className: 'astryx-table-row'},
-      {className: 'astryx-table-cell'},
-      {className: 'astryx-table-header-cell'},
+      {className: 'astryx-table-cell', visualProps: ['density']},
+      {className: 'astryx-table-header-cell', visualProps: ['density']},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-base-table', deprecatedFor: 'table'},
     ],
   },
   description: 'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support. T must extend Record<string, unknown>.',
@@ -45,7 +47,7 @@ export const docs = {
     {
       name: 'columns',
       type: 'TableColumn<T>[]',
-      description: 'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys. The `width` field is typed as `ColumnWidth` (not a number) — use `proportional(n)` or `pixel(n)` helpers imported from `@astryxdesign/core/Table`. Example: `width: pixel(120)` for 120px fixed, `width: proportional(1)` for flex distribution.',
+      description: 'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys. The `width` field is typed as `ColumnWidth` (not a number); use `proportional(n)` or `pixel(n)` helpers imported from `@astryxdesign/core/Table`. Example: `width: pixel(120)` for 120px fixed, `width: proportional(1)` for flex distribution.',
     },
     {
       name: 'idKey',
@@ -94,9 +96,20 @@ export const docs = {
       description: 'Named plugins that extend table behavior via the transform pipeline. Converted to an ordered array internally.',
     },
     {
+      name: 'rowIndexStart',
+      type: 'number',
+      description: 'ARIA row index (1-based) for the first rendered body row. The row ordinal is an accessibility concern independent of any visible index column, so setting this (or rowCount) makes the table emit aria-rowindex on body rows and aria-rowcount on the table. For a paginated/windowed view, pass the offset of the first visible row (e.g. (page - 1) * pageSize + 1) so aria-rowindex reflects position in the full dataset. Data-driven mode only.',
+      default: '1',
+    },
+    {
+      name: 'rowCount',
+      type: 'number',
+      description: 'Total number of body rows across all pages/windows, used for aria-rowcount so assistive tech can announce "row X of Y" against the full dataset. When omitted but rowIndexStart is set (windowed view with an unknown total), aria-rowcount is set to -1 per the ARIA unknown-count convention. Data-driven mode only.',
+    },
+    {
       name: 'children',
       type: 'ReactNode',
-      description: 'Children mode: render TableRow/TableCell directly instead of using data-driven rendering.',
+      description: 'Children mode: compose the table yourself from TableHeader / TableBody / TableFooter, each holding TableRow and TableCell, instead of using data-driven rendering. The children are passed straight to the <table>, so the section is yours to supply. A TableRow placed directly in Table emits <table><tr>, which is invalid HTML and mismatches on hydration (the parser inserts an implied <tbody> for server-rendered markup; React does not on the client). Data-driven mode renders the sections for you.',
     },
     {
       name: 'xstyle',
@@ -105,12 +118,17 @@ export const docs = {
     },
   ],
   components: [
+    {name: 'TableHeader'},
+    {name: 'TableBody'},
+    {name: 'TableFooter'},
     {name: 'TableRow'},
     {name: 'TableCell'},
     {name: 'TableHeaderCell'},
     {name: 'useTableSelection'},
     {name: 'useTableSelectionState'},
     {name: 'useTableSortable'},
+    {name: 'useTableTreeData'},
+    {name: 'useTableTreeState'},
     {name: 'useTablePagination'},
     {name: 'useTableColumnSettings'},
     {name: 'useTableFiltering'},
@@ -122,6 +140,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
       { guidance: true, description: 'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.' },
+      { guidance: true, description: 'In children mode, put every row inside TableHeader, TableBody, or TableFooter. <table> cannot contain a <tr> directly: the HTML parser inserts an implied <tbody> for server-rendered markup and React does not on the client, so unwrapped rows mismatch on hydration.' },
       { guidance: true, description: 'Set explicit width on every column using proportional() or pixel(). proportional(1) gives equal flex distribution with a 120px minimum that prevents columns from collapsing on narrow viewports. Omitting width skips the minimum.' },
       { guidance: true, description: 'Use the data-driven API from React Server Components: proportional(), pixel(), and column definitions without function props are server-safe. Columns using renderCell (or any function prop) need the table wrapped in a "use client" component, since functions cannot cross the server-client boundary.' },
       { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
@@ -139,7 +158,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -161,7 +180,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Data-driven table w/ rich cell content via renderCell. Compose cells w/ Badge, StatusDot, Text, Avatar, layout primitives. BaseTable provides unstyled structural core w/ composable plugin pipeline.',
   usage: {
@@ -170,6 +189,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
       { guidance: true, description: 'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.' },
+      { guidance: true, description: 'Children mode: wrap rows in TableHeader/TableBody/TableFooter. <table> cannot hold a <tr> directly; the parser adds an implied <tbody> for SSR markup, React does not on the client, so unwrapped rows mismatch on hydration.' },
       { guidance: true, description: 'Set explicit width on every column via proportional() or pixel(). proportional(1) = equal flex w/ 120px min preventing collapse on narrow viewports. Omitting width skips the minimum.' },
       { guidance: true, description: 'Data-driven API is RSC-safe: proportional(), pixel(), column defs w/o function props work in Server Components. renderCell (any function prop) requires a "use client" wrapper.' },
       { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },

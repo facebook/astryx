@@ -3,13 +3,15 @@
 /**
  * @file useListFocus.test.tsx
  * @input Uses vitest, @testing-library/react, useListFocus hook
- * @output Unit tests for useListFocus disabled-item skipping + navigation
+ * @output Unit tests for useListFocus disabled-item skipping, navigation,
+ *   Escape consumption, and RTL auto-detection
  * @position Testing; validates useListFocus.ts keyboard navigation
  *
  * SYNC: When useListFocus.ts changes, update tests to match new behavior
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
+import type {KeyboardEvent as ReactKeyboardEvent} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {useListFocus} from './useListFocus';
 
@@ -371,5 +373,217 @@ describe('useListFocus shortcut passthrough', () => {
     fireEvent.keyDown(toolbar, {key: 'ArrowRight', metaKey: true});
     // Focus should not move on a modified chord.
     expect(screen.getByTestId('A')).toHaveFocus();
+  });
+});
+
+/**
+ * A horizontal list (menubar-like) for RTL direction tests. jsdom reflects the
+ * `dir` attribute into computed style only on the element that carries it, so
+ * `dir` is set on the list container itself — the element the hook reads via
+ * listRef.
+ */
+function HorizontalMenu({dir, isRtl}: {dir?: 'ltr' | 'rtl'; isRtl?: boolean}) {
+  const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({
+    orientation: 'horizontal',
+    isRtl,
+  });
+  const items = ['One', 'Two', 'Three'];
+  return (
+    <div ref={listRef} role="menu" dir={dir} onKeyDown={handleKeyDown}>
+      {items.map(label => (
+        <div key={label} role="menuitem" tabIndex={-1} data-testid={label}>
+          {label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+describe('useListFocus RTL auto-detection (WCAG 1.3.2)', () => {
+  it('auto-detects dir="rtl": ArrowLeft moves to the next item', () => {
+    render(<HorizontalMenu dir="rtl" />);
+    const menu = screen.getByRole('menu');
+    screen.getByTestId('One').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowLeft'});
+    expect(screen.getByTestId('Two')).toHaveFocus();
+  });
+
+  it('auto-detects dir="rtl": ArrowRight moves to the previous item', () => {
+    render(<HorizontalMenu dir="rtl" />);
+    const menu = screen.getByRole('menu');
+    screen.getByTestId('Two').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowRight'});
+    expect(screen.getByTestId('One')).toHaveFocus();
+  });
+
+  it('stays LTR without a direction: ArrowRight moves to the next item', () => {
+    render(<HorizontalMenu />);
+    const menu = screen.getByRole('menu');
+    screen.getByTestId('One').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowRight'});
+    expect(screen.getByTestId('Two')).toHaveFocus();
+  });
+
+  it('explicit isRtl={false} overrides a dir="rtl" container', () => {
+    render(<HorizontalMenu dir="rtl" isRtl={false} />);
+    const menu = screen.getByRole('menu');
+    screen.getByTestId('One').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowRight'});
+    expect(screen.getByTestId('Two')).toHaveFocus();
+  });
+
+  it('explicit isRtl={true} flips arrows without a dir attribute', () => {
+    render(<HorizontalMenu isRtl />);
+    const menu = screen.getByRole('menu');
+    screen.getByTestId('One').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowLeft'});
+    expect(screen.getByTestId('Two')).toHaveFocus();
+  });
+});
+
+// A menu whose second item contains a NESTED role="menu" (mirrors an inline
+// submenu flyout). Exercises boundarySelector: item scoping + event ownership.
+function NestedMenu() {
+  const {listRef, handleKeyDown, ownsEvent} = useListFocus<HTMLDivElement>({
+    boundarySelector: '[role="menu"]',
+    wrap: false,
+  });
+  return (
+    <div ref={listRef} role="menu" onKeyDown={handleKeyDown}>
+      <div role="menuitem" tabIndex={-1} data-testid="Outer1">
+        Outer1
+      </div>
+      <div role="menuitem" tabIndex={-1} data-testid="Outer2">
+        Outer2
+        {/* Nested submenu rendered inline (like a popover flyout). */}
+        <div role="menu" data-testid="inner-menu">
+          <div role="menuitem" tabIndex={-1} data-testid="Inner1">
+            Inner1
+          </div>
+          <div role="menuitem" tabIndex={-1} data-testid="Inner2">
+            Inner2
+          </div>
+        </div>
+      </div>
+      <div role="menuitem" tabIndex={-1} data-testid="Outer3">
+        Outer3
+      </div>
+      {/* Surface ownership for assertions. */}
+      <input
+        data-testid="probe-owns"
+        onKeyDown={e => {
+          e.currentTarget.setAttribute('data-owns', String(ownsEvent(e)));
+        }}
+      />
+    </div>
+  );
+}
+
+// Variant with the ownsEvent probe placed INSIDE the nested menu, so a key
+// event from it reports as not-owned by the outer list.
+function NestedMenuWithInnerProbe() {
+  const {listRef, handleKeyDown, ownsEvent} = useListFocus<HTMLDivElement>({
+    boundarySelector: '[role="menu"]',
+    wrap: false,
+  });
+  const report = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    e.currentTarget.setAttribute('data-owns', String(ownsEvent(e)));
+  };
+  return (
+    <div ref={listRef} role="menu" onKeyDown={handleKeyDown}>
+      <div role="menuitem" tabIndex={-1} data-testid="Outer1">
+        Outer1
+      </div>
+      <div role="menu" data-testid="inner-menu">
+        <input data-testid="inner-probe" onKeyDown={report} />
+      </div>
+    </div>
+  );
+}
+
+describe('useListFocus boundarySelector (nested lists)', () => {
+  it("ArrowDown skips over a nested list's items to the next own item", () => {
+    render(<NestedMenu />);
+    const menu = screen.getAllByRole('menu')[0];
+    screen.getByTestId('Outer2').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    // Lands on Outer3, not Inner1 (which is inside the nested menu).
+    expect(screen.getByTestId('Outer3')).toHaveFocus();
+  });
+
+  it('ownsEvent is true for an event originating at this level', () => {
+    render(<NestedMenu />);
+    const ownProbe = screen.getByTestId('probe-owns');
+    fireEvent.keyDown(ownProbe, {key: 'ArrowDown'});
+    expect(ownProbe).toHaveAttribute('data-owns', 'true');
+  });
+
+  it('ownsEvent is false for an event from inside a nested list', () => {
+    render(<NestedMenuWithInnerProbe />);
+    const innerProbe = screen.getByTestId('inner-probe');
+    fireEvent.keyDown(innerProbe, {key: 'ArrowDown'});
+    expect(innerProbe).toHaveAttribute('data-owns', 'false');
+  });
+});
+
+// A list inside a host that dismisses on Escape. The host's guard mirrors
+// `useFocusTrap`: it acts only on a key no inner handler has consumed.
+function EscapeHost({
+  onEscape,
+  onHostEscape,
+}: {
+  onEscape?: () => void;
+  onHostEscape: () => void;
+}) {
+  const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({onEscape});
+  return (
+    <div
+      data-testid="host"
+      onKeyDown={e => {
+        if (e.key === 'Escape' && !e.defaultPrevented) {
+          onHostEscape();
+        }
+      }}>
+      <div ref={listRef} role="menu" onKeyDown={handleKeyDown}>
+        <div role="menuitem" tabIndex={-1} data-testid="One">
+          One
+        </div>
+        <div role="menuitem" tabIndex={-1} data-testid="Two">
+          Two
+        </div>
+      </div>
+    </div>
+  );
+}
+
+describe('useListFocus Escape', () => {
+  it('leaves Escape to the host when no onEscape is supplied', () => {
+    const onHostEscape = vi.fn();
+    render(<EscapeHost onHostEscape={onHostEscape} />);
+
+    fireEvent.keyDown(screen.getByRole('menu'), {key: 'Escape'});
+    expect(onHostEscape).toHaveBeenCalledTimes(1);
+  });
+
+  it('consumes Escape and runs onEscape when one is supplied', () => {
+    const onEscape = vi.fn();
+    const onHostEscape = vi.fn();
+    render(<EscapeHost onEscape={onEscape} onHostEscape={onHostEscape} />);
+
+    fireEvent.keyDown(screen.getByRole('menu'), {key: 'Escape'});
+    expect(onEscape).toHaveBeenCalledTimes(1);
+    expect(onHostEscape).not.toHaveBeenCalled();
+  });
+
+  it('still consumes arrow keys with no onEscape (page-scroll suppression)', () => {
+    render(<EscapeHost onHostEscape={() => {}} />);
+    screen.getByTestId('One').focus();
+
+    // fireEvent returns false when a handler cancelled the event.
+    const wasCancelled = !fireEvent.keyDown(screen.getByRole('menu'), {
+      key: 'ArrowDown',
+    });
+    expect(wasCancelled).toBe(true);
+    expect(screen.getByTestId('Two')).toHaveFocus();
   });
 });

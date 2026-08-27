@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ButtonGroup',
@@ -15,7 +15,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-button-group', visualProps: ['size', 'orientation']},
+      {className: 'astryx-button-group', visualProps: ['size', 'orientation', 'elevation']},
     ],
   },
   components: [
@@ -29,6 +29,7 @@ export const docs = {
         {name: 'orientation', type: "'horizontal' | 'vertical'", description: 'Layout direction of the button group.', default: "'horizontal'"},
         {name: 'size', type: "'sm' | 'md' | 'lg'", description: 'Default size for buttons in the group. Individual buttons can override.', default: "'md'"},
         {name: 'isDisabled', type: 'boolean', description: 'Whether all buttons in the group are disabled.', default: 'false'},
+        {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: 'Resting shadow depth for the whole group. The connected buttons share one surface, so the shadow lifts them as a unit. Use for a group that floats above content.', default: "'none'"},
         {name: 'ref', type: 'React.Ref<HTMLDivElement>', description: 'Ref forwarded to the root element.'},
         {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization. Must be a stylex.create() value.'},
         {name: 'data-testid', type: 'string', description: 'Test selector for automated testing frameworks.'},
@@ -45,6 +46,9 @@ export const docs = {
       {guidance: false, description: "Don't mix wildly different actions. A Save button next to a Delete button in the same group is confusing."},
       {guidance: false, description: "Don't use ButtonGroup for navigation. Use SegmentedControl or TabList for switching between views."},
       {guidance: false, description: "Don't nest ButtonGroups. If you need multiple groups, place them side by side with a gap."},
+      {guidance: true, description: 'Name the group for what its buttons act on. The label is the group\'s accessible name and a screen reader reads it before each member.'},
+      {guidance: true, description: 'Keep the group a single Tab stop. Arrow keys move between members along the orientation, Home/End jump to the ends, and disabled members are skipped. This is the WAI-ARIA APG roving tabindex technique: https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/#kbd_roving_tabindex'},
+      {guidance: false, description: "Don't disable the group to show that an action is in flight. A disabled member drops focus, so a keyboard user loses their place; leave the group enabled and show progress on the button that started the work."},
     ],
     anatomy: [
       {name: 'Button', required: true, description: 'One or more Button or IconButton children that form the connected group.'},
@@ -53,7 +57,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   components: [
     {
@@ -66,6 +70,7 @@ export const docsZh = {
         orientation: '按钮组的布局方向。',
         size: '组内按钮的默认尺寸。单个按钮可覆盖。',
         isDisabled: '组内所有按钮是否禁用。',
+        elevation: '整个组的静止阴影深度。连接的按钮共享一个表面，阴影将它们作为整体抬起。',
         ref: '转发到根元素的引用。',
         xstyle: 'StyleX 样式，用于布局自定义。必须是 stylex.create() 的值。',
         'data-testid': '自动化测试的选择器。',
@@ -82,6 +87,9 @@ export const docsZh = {
       {guidance: false, description: '不要混合差异很大的操作，将保存按钮和删除按钮放在同一组中会令人困惑。'},
       {guidance: false, description: '不要使用 ButtonGroup 进行导航，使用 SegmentedControl 或 TabList 切换视图。'},
       {guidance: false, description: '不要嵌套 ButtonGroup。如需多个组，请并排放置并留有间隔。'},
+      {guidance: true, description: '按钮组的标签应说明这些按钮作用于什么。该标签是按钮组的无障碍名称，屏幕阅读器会在每个成员之前朗读它。'},
+      {guidance: true, description: '按钮组是单个 Tab 停靠点。方向键沿排列方向在成员间移动焦点，Home/End 跳到首尾，禁用成员会被跳过——即 WAI-ARIA APG 的 roving tabindex 技术。'},
+      {guidance: false, description: '不要用禁用整个按钮组来表示操作进行中。禁用的成员会失去焦点，键盘用户会丢失位置；请保持按钮组可用，并在发起操作的按钮上显示进度。'},
     ],
     anatomy: [
       {name: '按钮', required: true, description: '一个或多个 Button 或 IconButton 子元素，形成连接的组。'},
@@ -90,7 +98,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'connected button group w/ shared borders, outer-only radius, horizontal/vertical',
   usage: {
@@ -103,6 +111,9 @@ export const docsDense = {
       {guidance: false, description: "Don't mix unrelated actions in one group."},
       {guidance: false, description: "Don't use for navigation. Use SegmentedControl or TabList."},
       {guidance: false, description: "Don't nest ButtonGroups."},
+      {guidance: true, description: 'Label the group for what its buttons act on; it is the accessible name.'},
+      {guidance: true, description: 'Single Tab stop; arrows move between members, Home/End to ends, disabled skipped (APG roving tabindex).'},
+      {guidance: false, description: "Don't disable the group for an in-flight action; a disabled member drops focus."},
     ],
   },
   components: [
@@ -116,6 +127,7 @@ export const docsDense = {
         orientation: 'layout direction',
         size: 'default btn size; individual btns override',
         isDisabled: 'all btns disabled',
+        elevation: 'resting shadow depth for whole group: none|low|med|high',
         xstyle: 'StyleX layout styles; must be stylex.create() value',
         'data-testid': 'test selector',
       },

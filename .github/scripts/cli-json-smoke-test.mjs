@@ -25,7 +25,7 @@ import * as path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
-const CLI = path.join(ROOT, 'packages/cli/bin/astryx.mjs');
+const CLI = path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
 
 let passed = 0;
 let failed = 0;
@@ -203,7 +203,7 @@ checkJson('component --list', ['component', '--list'], {expectType: 'component.l
 const catResult = runJson(['component', '--list']);
 try {
   const catData = JSON.parse(catResult.stdout);
-  const firstCategory = Object.keys(catData.data)[0];
+  const firstCategory = Object.keys(catData.data.components)[0];
   if (firstCategory) {
     checkJson(`component --category ${firstCategory}`, ['component', '--category', firstCategory], {expectType: 'component.list'});
   }
@@ -233,6 +233,11 @@ checkJson('template (not found)', ['template', 'nonexistent_template_xyz'], {exp
 console.log('\nswizzle --json');
 checkJson('swizzle --list', ['swizzle', '--list'], {expectType: 'swizzle.list'});
 checkJson('swizzle (not found)', ['swizzle', 'NonexistentComponent99'], {expectError: true});
+
+// ── Build ────────────────────────────────────────────────────────────
+console.log('\nbuild --json');
+checkJson('build (playbook)', ['build'], {expectType: 'build.help'});
+checkJson('build dashboard', ['build', 'dashboard'], {expectType: 'build.kit'});
 
 // ── Summary ──────────────────────────────────────────────────────────
 console.log(`\n${passed + failed} checks: ${passed} passed, ${failed} failed`);

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CheckboxInput',
@@ -113,7 +113,7 @@ export const docs = {
     {
       name: 'labelIcon',
       type: 'IconType',
-      description: 'Icon to display before the label text. See `npx astryx docs icons` for valid semantic names.',
+      description: 'Icon to display before the label text. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'status',
@@ -121,11 +121,19 @@ export const docs = {
       description:
         'Status indicator. Displays a colored message box below the checkbox and sets aria-invalid for errors.',
     },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
   ],
   theming: {
     targets: [
       {className: 'astryx-checkbox-input', visualProps: ['size']},
-      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
+      {className: 'astryx-checkbox-label'},
     ],
   },
   usage: {
@@ -147,7 +155,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'CheckboxInput',
   displayName: 'Checkbox Input',
@@ -200,12 +208,14 @@ export const docsZh = {
           'size',
         ],
       },
-      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
+      {className: 'astryx-checkbox-label'},
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'single on/off toggle for settings, terms, and opt-in choices',
   usage: {

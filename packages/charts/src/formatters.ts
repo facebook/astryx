@@ -12,34 +12,45 @@
  * across the full magnitude range (K/M/B/T and beyond).
  */
 
-/** Lazily create a value once and cache it — keeps `Intl` construction off the import path. */
-function once<T>(create: () => T): () => T {
-  let cached: {value: T} | null = null;
-  return () => (cached ??= {value: create()}).value;
+import type {Locale} from '@astryxdesign/core/i18n';
+
+/** Lazily cache one formatter per locale, including the legacy host default. */
+function byLocale<T>(
+  create: (locale: Locale | undefined) => T,
+): (locale: Locale | undefined) => T {
+  const cache = new Map<Locale | undefined, T>();
+  return locale => {
+    let value = cache.get(locale);
+    if (value === undefined) {
+      value = create(locale);
+      cache.set(locale, value);
+    }
+    return value;
+  };
 }
 
-const getCompactFormat = once(
-  () =>
-    new Intl.NumberFormat(undefined, {
+const getCompactFormat = byLocale(
+  locale =>
+    new Intl.NumberFormat(locale, {
       notation: 'compact',
       maximumFractionDigits: 1,
     }),
 );
 
-const getPercentFormat = once(
-  () =>
-    new Intl.NumberFormat(undefined, {
+const getPercentFormat = byLocale(
+  locale =>
+    new Intl.NumberFormat(locale, {
       style: 'percent',
       maximumFractionDigits: 1,
     }),
 );
 
-const getShortDateFormat = once(
-  () => new Intl.DateTimeFormat(undefined, {month: 'short', day: 'numeric'}),
+const getShortDateFormat = byLocale(
+  locale => new Intl.DateTimeFormat(locale, {month: 'short', day: 'numeric'}),
 );
 
-const getMonthYearFormat = once(
-  () => new Intl.DateTimeFormat(undefined, {month: 'short', year: 'numeric'}),
+const getMonthYearFormat = byLocale(
+  locale => new Intl.DateTimeFormat(locale, {month: 'short', year: 'numeric'}),
 );
 
 /**
@@ -48,12 +59,12 @@ const getMonthYearFormat = once(
  * Non-numeric values (e.g. category labels) and non-finite numbers pass through
  * unchanged, so it is safe to use as a general-purpose tick formatter.
  */
-export function compactNumber(value: unknown): string {
+export function compactNumber(value: unknown, locale: Locale): string {
   const n = Number(value);
   if (!Number.isFinite(n)) {
     return String(value);
   }
-  return getCompactFormat().format(n);
+  return getCompactFormat(locale).format(n);
 }
 
 /**
@@ -64,12 +75,15 @@ export function compactNumber(value: unknown): string {
  *
  * @example
  * ```
- * <ChartAxis tickFormat={currency()} />       // $1.5K
- * <ChartAxis tickFormat={currency('€')} />    // €1.5K
- * <ChartAxis tickFormat={currency('¥')} />    // ¥1.5K
+ * <ChartAxis tickFormat={currency('$', locale)} />  // $1.5K
+ * <ChartAxis tickFormat={currency('€', locale)} />  // €1.5K
+ * <ChartAxis tickFormat={currency('¥', locale)} />  // ¥1.5K
  * ```
  */
-export function currency(symbol = '$'): (value: unknown) => string {
+export function currency(
+  symbol = '$',
+  locale?: Locale,
+): (value: unknown) => string {
   return (value: unknown) => {
     const n = Number(value);
     if (!Number.isFinite(n)) {
@@ -78,7 +92,9 @@ export function currency(symbol = '$'): (value: unknown) => string {
     const sign = n < 0 ? '-' : '';
     const abs = Math.abs(n);
     const body =
-      abs >= 1000 ? getCompactFormat().format(abs) : abs.toLocaleString();
+      abs >= 1000
+        ? getCompactFormat(locale).format(abs)
+        : abs.toLocaleString(locale);
     return `${sign}${symbol}${body}`;
   };
 }
@@ -89,12 +105,12 @@ export function currency(symbol = '$'): (value: unknown) => string {
  * The input is a ratio; it is multiplied by 100 and localized. Whole percents
  * render without a decimal, and up to one fractional digit is shown otherwise.
  */
-export function percent(value: unknown): string {
+export function percent(value: unknown, locale: Locale): string {
   const n = Number(value);
   if (!Number.isFinite(n)) {
     return String(value);
   }
-  return getPercentFormat().format(n);
+  return getPercentFormat(locale).format(n);
 }
 
 /**
@@ -144,24 +160,20 @@ function toDate(value: unknown): Date {
   return new Date(NaN);
 }
 
-/**
- * Date formatter — short date (e.g. "Jan 5", "Mar 12").
- */
-export function shortDate(value: unknown): string {
+/** Date formatter — short date (e.g. "Jan 5", "Mar 12"). */
+export function shortDate(value: unknown, locale: Locale): string {
   const d = toDate(value);
   if (Number.isNaN(d.getTime())) {
     return String(value);
   }
-  return getShortDateFormat().format(d);
+  return getShortDateFormat(locale).format(d);
 }
 
-/**
- * Date formatter — month/year (e.g. "Jan 2024", "Mar 2025").
- */
-export function monthYear(value: unknown): string {
+/** Date formatter — month/year (e.g. "Jan 2024", "Mar 2025"). */
+export function monthYear(value: unknown, locale: Locale): string {
   const d = toDate(value);
   if (Number.isNaN(d.getTime())) {
     return String(value);
   }
-  return getMonthYearFormat().format(d);
+  return getMonthYearFormat(locale).format(d);
 }

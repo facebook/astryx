@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file index.ts
  * @input Imports Section component
@@ -11,9 +9,24 @@
  * SYNC: When modified, update /packages/core/src/Section/Section.doc.mjs
  */
 
+/**
+ * Extensible variant map for Section.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@astryxdesign/core/Section' {
+ *   interface SectionVariantMap {
+ *     'elevated': true;
+ *   }
+ * }
+ * ```
+ */
+export interface SectionVariantMap {
+  section: true;
+  transparent: true;
+  muted: true;
+}
+
 export {Section} from './Section';
-export type {
-  SectionProps,
-  SectionVariant,
-  SectionVariantMap,
-} from './Section';
+export type {SectionProps, SectionVariant} from './Section';

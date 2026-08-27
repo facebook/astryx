@@ -2,7 +2,20 @@
 
 'use client';
 
+/**
+ * @file ToastViewport.tsx
+ * @input Uses React state/effects, ToastContext, useAnnounce, viewport tokens,
+ *   and placement-derived motion variables
+ * @output Exports the ToastViewport provider, stack, live announcement dispatch,
+ *   focus handoff, safe-area-aware edge gutters, and motion context
+ * @position Core provider/imperative viewport for useToast()
+ *
+ * SYNC: When placement, stacking, focus, announcement, or safe-area behavior
+ *   changes, update ToastViewport.test.tsx, Toast.doc.mjs, and Toast.stories.tsx.
+ */
+
 import {
+  isValidElement,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -10,21 +23,41 @@ import {
   useRef,
   useState,
 } from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {Toast} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
+import {useTranslator} from '../i18n';
+
+const SAFE_AREA_INLINE_START = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-left, 0px))`;
+const SAFE_AREA_INLINE_END = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-right, 0px))`;
+const SAFE_AREA_BLOCK_START = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-top, 0px))`;
+const SAFE_AREA_BLOCK_END = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-bottom, 0px))`;
+const TOAST_EDGE_DRIFT = spacingVars['--spacing-2'];
+const TOAST_EDGE_DRIFT_NEGATIVE = `calc(-1 * ${TOAST_EDGE_DRIFT})`;
 
 const styles = stylex.create({
   viewport: {
     position: 'fixed',
     zIndex: 500,
     display: 'flex',
+    boxSizing: 'border-box',
     flexDirection: 'column',
-    padding: spacingVars['--spacing-4'],
+    paddingBlockStart: SAFE_AREA_BLOCK_START,
+    paddingBlockEnd: SAFE_AREA_BLOCK_END,
+    paddingInlineStart: {
+      default: SAFE_AREA_INLINE_START,
+      ':is([dir="rtl"] *)': SAFE_AREA_INLINE_END,
+    },
+    paddingInlineEnd: {
+      default: SAFE_AREA_INLINE_END,
+      ':is([dir="rtl"] *)': SAFE_AREA_INLINE_START,
+    },
     pointerEvents: 'none',
     // Reset popover styles — the popover attribute puts us in the top
     // layer (above dialogs), but we don't want its default styles.
@@ -36,25 +69,29 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     overflow: 'visible',
   },
-  bottomEnd: {bottom: 0, insetInlineEnd: 0, alignItems: 'flex-end'},
-  bottomStart: {bottom: 0, insetInlineStart: 0, alignItems: 'flex-start'},
+  viewportInlineSpan: {
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
+  },
+  bottomEnd: {bottom: 0, alignItems: 'flex-end'},
+  bottomStart: {bottom: 0, alignItems: 'flex-start'},
   topEnd: {
     top: 0,
-    insetInlineEnd: 0,
     alignItems: 'flex-end',
     flexDirection: 'column-reverse',
   },
   topStart: {
     top: 0,
-    insetInlineStart: 0,
     alignItems: 'flex-start',
     flexDirection: 'column-reverse',
   },
   toastWrapper: {
     pointerEvents: 'auto',
     display: 'grid',
+    width: '100%',
+    maxWidth: 400,
+    minWidth: 0,
     gridTemplateRows: '1fr',
-    paddingBlockEnd: spacingVars['--spacing-3'],
     transitionProperty: 'grid-template-rows, padding',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -66,17 +103,63 @@ const styles = stylex.create({
       paddingBlockEnd: 0,
     },
   },
+  toastWrapperFromBottom: {
+    '--_toast-slide-y': TOAST_EDGE_DRIFT,
+  },
+  toastWrapperFromTop: {
+    '--_toast-slide-y': TOAST_EDGE_DRIFT_NEGATIVE,
+  },
+  // The inter-toast gap is padding on each wrapper so it collapses with the
+  // grid track. The wrapper nearest the viewport edge drops that padding; the
+  // child flips because top stacks use column-reverse.
+  toastWrapperGap: {
+    paddingBlockEnd: {default: spacingVars['--spacing-2'], ':last-child': 0},
+  },
+  toastWrapperGapReversed: {
+    paddingBlockEnd: {default: spacingVars['--spacing-2'], ':first-child': 0},
+  },
   toastWrapperExiting: {
     gridTemplateRows: '0fr',
     paddingBlockEnd: 0,
   },
   toastWrapperInner: {
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+    minHeight: 0,
+    // Required for the 1fr -> 0fr exit collapse to hide the shrinking Toast.
+    // This preserves main's paint containment; browser-chrome behavior is not
+    // changed or claimed by this responsive-layout fix.
     overflow: 'hidden',
   },
 });
 
+// Flatten a toast's rendered content (title, description, etc.) to the plain
+// text that should be spoken by a screen reader. Only text is announced —
+// interactive endContent is deliberately excluded (it is reachable via F6).
+function getNodeText(node: ReactNode): string {
+  if (node == null || typeof node === 'boolean') {
+    return '';
+  }
+  if (typeof node === 'string') {
+    return node;
+  }
+  if (typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(getNodeText).filter(Boolean).join(' ');
+  }
+  if (isValidElement(node)) {
+    const {children} = node.props as {children?: ReactNode};
+    return getNodeText(children);
+  }
+  return '';
+}
+
 export interface ToastViewportProps {
   position?: ToastPosition;
+  /** Maximum number of visible toasts. @default 5 */
   maxVisible?: number;
   inset?: {top?: number; bottom?: number; start?: number; end?: number};
   /**
@@ -107,6 +190,7 @@ export function ToastViewport({
   isTopLayer = true,
   children,
 }: ToastViewportProps) {
+  const t = useTranslator();
   const [toasts, setToasts] = useState<ToastEntry[]>([]);
   const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
   const toastsRef = useRef(toasts);
@@ -157,21 +241,54 @@ export function ToastViewport({
     [],
   );
 
-  const addToast = useCallback((entry: ToastEntry) => {
-    setToasts(prev => {
+  // Announce toasts through the persistent singleton live regions. Each
+  // <Toast> also renders its own role="status"/"alert" region, but that region
+  // is "born with content" — mounted together with its text — which many
+  // screen readers do not announce (see useAnnounce.ts); the singleton regions
+  // are mounted empty and only mutated afterwards, so they are what actually
+  // guarantees the announcement (the per-toast markup is kept for browse-mode
+  // discoverability). The announcement happens in addToast — the imperative
+  // dispatch path invoked once per useToast() call from an event handler,
+  // never from render — so each toast is announced exactly once by
+  // construction, independent of the React render lifecycle (StrictMode
+  // double-render/double-effect, viewport remounts, and unrelated list
+  // re-renders never re-announce). It is client-only (addToast never runs
+  // during SSR), so it is SSR-safe.
+  const announce = useAnnounce();
+
+  const addToast = useCallback(
+    (entry: ToastEntry) => {
       const {uniqueID, collisionBehavior = 'overwrite'} = entry.options;
-      if (uniqueID) {
-        const existing = prev.find(t => t.options.uniqueID === uniqueID);
-        if (existing) {
-          if (collisionBehavior === 'ignore') {
-            return prev;
-          }
-          return prev.map(t => (t.options.uniqueID === uniqueID ? entry : t));
-        }
+      // Resolve an ignored collision synchronously against the committed list
+      // so a suppressed toast is neither shown nor announced. The remaining
+      // announce + setToasts run outside the setToasts updater, which React may
+      // invoke more than once — keeping the announcement exactly-once.
+      if (
+        uniqueID &&
+        collisionBehavior === 'ignore' &&
+        toastsRef.current.some(t => t.options.uniqueID === uniqueID)
+      ) {
+        return;
       }
-      return [...prev, entry];
-    });
-  }, []);
+      const text = getNodeText(entry.options.body);
+      if (text) {
+        // Error toasts map to the assertive region (role="alert"); everything
+        // else to the polite region (role="status") — mirrors Toast.tsx.
+        announce(text, entry.options.type === 'error' ? 'assertive' : 'polite');
+      }
+      setToasts(prev => {
+        if (uniqueID) {
+          const existing = prev.find(t => t.options.uniqueID === uniqueID);
+          if (existing) {
+            // An ignored collision already returned above; overwrite in place.
+            return prev.map(t => (t.options.uniqueID === uniqueID ? entry : t));
+          }
+        }
+        return [...prev, entry];
+      });
+    },
+    [announce],
+  );
 
   const removeToast = useCallback((id: string, reason: ToastDismissReason) => {
     // An exiting toast stays in toastsRef until its exit transition ends, so
@@ -280,6 +397,7 @@ export function ToastViewport({
   );
 
   const visibleToasts = toasts.slice(-maxVisible);
+
   const insetStyle: React.CSSProperties = {};
   if (inset?.top) {
     insetStyle.top = inset.top;
@@ -356,21 +474,31 @@ export function ToastViewport({
         : position === 'bottomStart'
           ? styles.bottomStart
           : styles.bottomEnd;
+  const isReversed = position === 'topEnd' || position === 'topStart';
+  const toastWrapperPositionStyle = isReversed
+    ? styles.toastWrapperFromTop
+    : styles.toastWrapperFromBottom;
+  const gapStyle = isReversed
+    ? styles.toastWrapperGapReversed
+    : styles.toastWrapperGap;
 
   return (
     <ToastContext value={contextValue}>
       {children}
       <div
         ref={viewportRef}
-        role="region"
-        aria-label="Notifications"
-        tabIndex={-1}
+        role={hasToasts ? 'region' : undefined}
+        aria-label={hasToasts ? t('@astryx.toast.viewport') : undefined}
+        tabIndex={hasToasts ? -1 : undefined}
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.
         popover={isTopLayer ? 'manual' : undefined}
-        {...mergeProps(stylex.props(styles.viewport, posStyle), {
-          style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
-        })}>
+        {...mergeProps(
+          stylex.props(styles.viewport, styles.viewportInlineSpan, posStyle),
+          {
+            style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
+          },
+        )}>
         {visibleToasts.map(entry => {
           const o = entry.options;
           const type = o.type ?? 'info';
@@ -383,6 +511,8 @@ export function ToastViewport({
               data-toast-id={entry.id}
               {...stylex.props(
                 styles.toastWrapper,
+                toastWrapperPositionStyle,
+                gapStyle,
                 isExiting && styles.toastWrapperExiting,
               )}
               onTransitionEnd={

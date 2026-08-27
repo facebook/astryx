@@ -19,14 +19,16 @@
  * - /packages/core/src/Icon/Icon.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Icon/index.ts (exports if types change)
  * - /apps/storybook/stories/Icon.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Icon/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Icon/ (showcase blocks)
  */
 
 import React, {type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {useThemeName} from '../theme/useTheme';
 import {getIcon} from './globalIconRegistry';
-import type {IconName} from './globalIconRegistry';
+import type {IconName, NamespacedIconName} from './globalIconRegistry';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
@@ -111,51 +113,64 @@ const colorStyles = stylex.create({
 /**
  * Size styles for direct SVG icon components.
  * Uses width/height only — SVG components handle their own viewBox scaling.
+ *
+ * Sizes are expressed in `rem` (relative to the root font-size) so icons scale
+ * in step with text when the document font-size changes, matching the rest of
+ * the design system's rem-based type scale. Values are the px-equivalents at a
+ * 16px root: 12px → 0.75rem, 16px → 1rem, 20px → 1.25rem, 24px → 1.5rem.
  */
 const sizeStyles = stylex.create({
   xsm: {
-    width: 12,
-    height: 12,
+    width: '0.75rem',
+    height: '0.75rem',
   },
   sm: {
-    width: 16,
-    height: 16,
+    width: '1rem',
+    height: '1rem',
   },
   md: {
-    width: 20,
-    height: 20,
+    width: '1.25rem',
+    height: '1.25rem',
   },
   lg: {
-    width: 24,
-    height: 24,
+    width: '1.5rem',
+    height: '1.5rem',
   },
 });
 
 /**
  * Size styles for string-based (registry) icons.
  * Includes fontSize so that 1em-based icons from the registry scale correctly.
+ *
+ * Expressed in `rem` for the same reason as {@link sizeStyles} — icons track the
+ * root font-size instead of being locked to absolute pixels.
  */
 const spanSizeStyles = stylex.create({
+  /* eslint-disable @astryx/no-hardcoded-styles -- fontSize here sizes 1em-based
+     registry SVGs to the icon box; icons use their own 12/16/20/24 scale, not
+     the 14px-anchored textSizeVars type scale. Values are rem so icons track
+     the root font-size. */
   xsm: {
-    width: 12,
-    height: 12,
-    fontSize: 12,
+    width: '0.75rem',
+    height: '0.75rem',
+    fontSize: '0.75rem',
   },
   sm: {
-    width: 16,
-    height: 16,
-    fontSize: 16,
+    width: '1rem',
+    height: '1rem',
+    fontSize: '1rem',
   },
   md: {
-    width: 20,
-    height: 20,
-    fontSize: 20,
+    width: '1.25rem',
+    height: '1.25rem',
+    fontSize: '1.25rem',
   },
   lg: {
-    width: 24,
-    height: 24,
-    fontSize: 24,
+    width: '1.5rem',
+    height: '1.5rem',
+    fontSize: '1.5rem',
   },
+  /* eslint-enable @astryx/no-hardcoded-styles */
 });
 
 // =============================================================================
@@ -184,9 +199,11 @@ export interface IconProps extends Omit<
   /**
    * Icon to render. Can be:
    * - A semantic name string (e.g. 'close', 'chevronDown') — resolved from theme or built-in fallback
+   * - A namespaced extension key (e.g. 'richtext:bold') for a glyph owned by
+   *   one component or library — resolved the same way, themeable by key
    * - An SVG icon component (e.g. from @heroicons/react) — rendered directly
    */
-  icon: IconType | IconName;
+  icon: IconType | IconName | NamespacedIconName;
   /**
    * The color variant of the icon.
    * @default 'inherit'
@@ -194,13 +211,75 @@ export interface IconProps extends Omit<
   color?: IconColor;
   /**
    * The size of the icon.
-   * - 'xsm': 12px
-   * - 'sm': 16px
-   * - 'md': 20px
-   * - 'lg': 24px
+   * - 'xsm': 0.75rem (12px at a 16px root)
+   * - 'sm': 1rem (16px at a 16px root)
+   * - 'md': 1.25rem (20px at a 16px root)
+   * - 'lg': 1.5rem (24px at a 16px root)
    * @default 'md'
    */
   size?: IconSize;
+  /**
+   * Accessible name for the icon. Set this only when the icon is MEANINGFUL on
+   * its own — a standalone status glyph or an icon-only indicator with no
+   * adjacent text conveying the same information. Providing it exposes the icon
+   * to assistive tech as `role="img"` with this string as the accessible name
+   * (via `aria-label`) and drops the default `aria-hidden="true"`.
+   *
+   * Omit it (the default) for decorative icons — the common case, e.g. an icon
+   * beside a text label — and the icon stays hidden from assistive tech
+   * (`aria-hidden="true"`). An empty string (`''`) is treated the same as
+   * omitting it (decorative), since an empty accessible name is meaningless.
+   *
+   * Don't set `label` when an interactive parent (Button, IconButton, link)
+   * already names the control — that produces a duplicate announcement.
+   *
+   * Meaningful, standalone icon: give it a label.
+   *
+   * @example
+   * ```
+   * <Icon icon="success" label="Completed" />
+   * ```
+   *
+   * Decorative icon (the default): omit label.
+   *
+   * @example
+   * ```
+   * <Icon icon="search" />
+   * ```
+   */
+  label?: string;
+  /**
+   * StyleX styles created via `stylex.create()`. Folded into the icon's own
+   * `stylex.props()` call (as the last argument) so it merges with the base
+   * color/size styles for optimal deduplication, matching how other Astryx
+   * components accept `xstyle`.
+   *
+   * @example
+   * ```
+   * const overrides = stylex.create({ root: { opacity: 0.5 } });
+   * <Icon icon="search" xstyle={overrides.root} />
+   * ```
+   */
+  xstyle?: StyleXStyles;
+}
+
+/**
+ * Derives the ARIA attributes for an icon from its `label` prop.
+ *
+ * - Non-empty `label` → meaningful image: `role="img"` + `aria-label`, and no
+ *   `aria-hidden` (an `aria-hidden` element is removed from the accessibility
+ *   tree, so its accessible name would be ignored).
+ * - Omitted or empty `label` → decorative default: `aria-hidden="true"`.
+ *
+ * The result is spread BEFORE `{...props}` in both render modes so an explicit
+ * `aria-hidden` / `role` / `aria-label` from the consumer always wins.
+ */
+function getIconA11yProps(
+  label: string | undefined,
+): {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'} {
+  return label != null && label !== ''
+    ? {role: 'img', 'aria-label': label}
+    : {'aria-hidden': 'true'};
 }
 
 // =============================================================================
@@ -219,9 +298,17 @@ export function Icon({
   icon,
   color = 'inherit',
   size = 'md',
+  label,
   ref,
+  className,
+  style,
+  xstyle,
   ...props
 }: IconProps) {
+  // Derive ARIA from `label`: decorative (aria-hidden) by default, or a
+  // meaningful image (role="img" + aria-label) when `label` is non-empty.
+  const a11yProps = getIconA11yProps(label);
+
   // String mode: resolve from icon registry, wrap in styled span
   if (typeof icon === 'string') {
     return (
@@ -229,6 +316,10 @@ export function Icon({
         name={icon}
         color={color}
         size={size}
+        a11yProps={a11yProps}
+        className={className}
+        style={style}
+        xstyle={xstyle}
         spanProps={props}
       />
     );
@@ -239,10 +330,20 @@ export function Icon({
   return (
     <IconComponent
       ref={ref}
-      aria-hidden="true"
+      // Derived a11y (decorative default or meaningful `label`) is spread
+      // BEFORE {...props} so an explicit aria-hidden/role/aria-label from the
+      // consumer still wins as an escape hatch.
+      {...a11yProps}
+      // The styling props (className, style, xstyle) are handled here so they
+      // COMPOSE with the internal classes/styles instead of clobbering them:
+      // xstyle folds into stylex.props, and className/style merge via
+      // mergeProps. The remaining rest props keep their prior last-spread
+      // precedence as escape hatches.
       {...mergeProps(
         themeProps('icon', {size, color}),
-        stylex.props(styles.root, colorStyles[color], sizeStyles[size]),
+        stylex.props(styles.root, colorStyles[color], sizeStyles[size], xstyle),
+        className ?? undefined,
+        style,
       )}
       {...props}
     />
@@ -266,30 +367,54 @@ function IconFromRegistry({
   name,
   color,
   size,
+  a11yProps,
+  className,
+  style,
+  xstyle,
   spanProps,
 }: {
-  name: IconName;
+  name: IconName | NamespacedIconName;
   color: IconColor;
   size: IconSize;
+  a11yProps: {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'};
+  className?: string;
+  style?: React.CSSProperties;
+  xstyle?: StyleXStyles;
   spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
-  const resolvedIcon = getIcon(name);
+  const themeName = useThemeName();
+  const resolvedIcon = getIcon(name, themeName);
 
   if (resolvedIcon == null) {
     return null;
   }
 
+  // The styling props (className, style, xstyle) are handled here so they
+  // COMPOSE with the internal astryx-icon + StyleX classes/styles instead of
+  // being shadowed by the later spread: xstyle folds into stylex.props, and
+  // className/style merge via mergeProps. Other span props keep their prior
+  // precedence (spread before the internal merge).
+  const restSpanProps =
+    (spanProps as React.HTMLAttributes<HTMLSpanElement>) ?? {};
+
   return (
     <span
-      // Decorative by default, but placed BEFORE the prop spread so consumers
-      // can override it (e.g. `aria-hidden={false}` + `role="img"` +
-      // `aria-label`) to expose a meaningful standalone icon. This matches
-      // component-mode Icon, which already sets aria-hidden before its spread.
-      aria-hidden="true"
-      {...(spanProps as React.HTMLAttributes<HTMLSpanElement>)}
+      // Derived a11y — decorative (aria-hidden) by default, or a meaningful
+      // image (role="img" + aria-label) when `label` is set. Placed BEFORE the
+      // prop spread so consumers can still override it with explicit
+      // aria-hidden/role/aria-label. This mirrors component-mode Icon.
+      {...a11yProps}
+      {...restSpanProps}
       {...mergeProps(
         themeProps('icon', {size, color}),
-        stylex.props(styles.span, colorStyles[color], spanSizeStyles[size]),
+        stylex.props(
+          styles.span,
+          colorStyles[color],
+          spanSizeStyles[size],
+          xstyle,
+        ),
+        className ?? undefined,
+        style,
       )}>
       {resolvedIcon}
     </span>

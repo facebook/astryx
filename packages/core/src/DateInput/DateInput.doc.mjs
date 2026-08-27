@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'DateInput',
@@ -111,9 +111,16 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Status indicator object for error, warning, or success states with a message.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
     },
     {
       name: 'labelTooltip',
@@ -136,6 +143,33 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description:
+        'First day of week in the calendar popover. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
+      default: '0',
+    },
+    {
+      name: 'format',
+      type: "'date' | 'date_long' | 'date_weekday' | 'system_date' | ((value: ISODateString) => string)",
+      description:
+        "How the committed date value is displayed. Named values are reused from Timestamp's format vocabulary: 'date' shows 'Mar 21, 2026', 'date_long' shows 'March 21, 2026', 'date_weekday' shows 'Wed, Mar 21, 2026', 'system_date' shows '2026-03-21'. A function receives the ISO value and returns a custom string. Applies only to the committed value, never to text being typed.",
+      default: "'date_long'",
+    },
+    {
+      name: 'nativePicker',
+      type: "'touch' | 'always' | 'never'",
+      description:
+        "Which surface draws the date picker. 'touch' (the default) hands a touch device to the browser/OS: the field becomes an input type=date and the platform draws the picker (the iOS wheel, the Android calendar dialog); 'always' does that wherever the browser supports input type=date; 'never' keeps Astryx's own pickers everywhere (the bottom-sheet picker on a finger, the calendar popover on a mouse). Use 'never' for a field that needs weekStartsOn, numberOfMonths or dateConstraints, none of which a native picker can express. format and placeholder still apply in native mode; min and max are forwarded, but a native picker may not show them (on iOS an out-of-range date can be selected and is refused on commit rather than greyed out).",
+      default: "'touch'",
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -144,7 +178,9 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {className: 'astryx-date-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
   usage: {
@@ -236,7 +272,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'DateInput',
   displayName: 'Date Input',
@@ -374,8 +410,15 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: '错误、警告或成功状态的状态指示对象，附带消息。',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 隐藏消息框，并在状态图标上以提示气泡形式显示。',
+      default: "'attached'",
     },
     {
       name: 'labelTooltip',
@@ -389,6 +432,26 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description: '日历弹出层中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
+      default: '0',
+    },
+    {
+      name: 'format',
+      type: "'date' | 'date_long' | 'date_weekday' | 'system_date' | ((value: ISODateString) => string)",
+      description:
+        "已选日期的显示格式。命名值复用 Timestamp 的格式词汇：'date' 显示 'Mar 21, 2026'，'date_long' 显示 'March 21, 2026'，'date_weekday' 显示 'Wed, Mar 21, 2026'，'system_date' 显示 '2026-03-21'。函数接收 ISO 值并返回自定义字符串。仅作用于已提交的值，不影响正在输入的文本。",
+      default: "'date_long'",
+    },
+    {
+      name: 'nativePicker',
+      type: "'touch' | 'always' | 'never'",
+      description:
+        "由哪个界面绘制日期选择器。'touch'（默认）在触摸设备上交给浏览器/操作系统：字段变为 input type=date，由平台绘制选择器（iOS 滚轮、Android 日历对话框）；'always' 在所有支持 input type=date 的浏览器上都这样做；'never' 始终使用 Astryx 自带的选择器（触摸设备用底部弹出选择器，鼠标设备用日历弹出层）。需要 weekStartsOn、numberOfMonths 或 dateConstraints 的字段应使用 'never'，原生选择器无法表达这些。原生模式下 format 和 placeholder 仍然生效；min 和 max 会传递给原生控件，但原生选择器可能不会显示这些限制（在 iOS 上仍可选中超出范围的日期，会在提交时被拒绝，而不是变灰）。",
+      default: "'touch'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -400,12 +463,15 @@ export const docsZh = {
       {
         className: 'astryx-date-input',
         visualProps: ['size', 'status'],
+        states: ['disabled'],
       },
+      {className: 'astryx-date-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'text input w/ calendar popover for picking a date',
   usage: {
@@ -478,9 +544,15 @@ export const docsDense = {
     placeholder: 'placeholder text in input',
     size: 'input control size',
     status: 'error/warning/success status w/ message',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip text via info icon at label end',
     hasClear: 'Shows clear button when date is set. Clears value on click.',
     numberOfMonths: 'months shown simultaneously in calendar popover',
+    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
+    format:
+      "committed-value display: 'date_long' (default, March 21, 2026), 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Committed value only, not while typing.",
+    nativePicker:
+      "which surface draws the picker: 'touch' (default) = browser/OS on a coarse pointer, 'always', 'never' = Astryx's own everywhere. use 'never' for weekStartsOn/numberOfMonths/dateConstraints. format+placeholder still apply; min/max forwarded but not necessarily shown by the OS picker, refused on commit instead.",
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };

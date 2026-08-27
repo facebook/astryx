@@ -136,35 +136,23 @@ describe('List', () => {
     expect(container.querySelector('ul')).toBeInTheDocument();
   });
 
-  it('adds role="list" when listStyle is none (Safari fix)', () => {
-    const {container} = render(
-      <List>
-        <ListItem label="Item" />
-      </List>,
-    );
-    const ul = container.querySelector('ul');
-    expect(ul).toHaveAttribute('role', 'list');
-  });
-
-  it('does not add role="list" when listStyle is disc', () => {
-    const {container} = render(
-      <List listStyle="disc">
-        <ListItem label="Item" />
-      </List>,
-    );
-    const ul = container.querySelector('ul');
-    expect(ul).not.toHaveAttribute('role');
-  });
-
-  it('does not add role="list" when listStyle is decimal', () => {
-    const {container} = render(
-      <List listStyle="decimal">
-        <ListItem label="Item" />
-      </List>,
-    );
-    const ol = container.querySelector('ol');
-    expect(ol).not.toHaveAttribute('role');
-  });
+  it.each(['none', 'disc', 'circle', 'decimal'] as const)(
+    'adds an explicit role="list" when listStyle is %s (Safari fix)',
+    listStyle => {
+      // The base list style always sets list-style-type: none (markers are
+      // custom-rendered by ListItem), so Safari/VoiceOver drops the implicit
+      // list role for EVERY variant — the explicit role must always be there.
+      render(
+        <List listStyle={listStyle}>
+          <ListItem label="Item 1" />
+          <ListItem label="Item 2" />
+        </List>,
+      );
+      const list = screen.getByRole('list');
+      expect(list).toHaveAttribute('role', 'list');
+      expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    },
+  );
 
   it('renders items as <li> elements', () => {
     const {container} = render(
@@ -436,11 +424,7 @@ describe('List', () => {
   it('sets target on anchor when provided', () => {
     const {container} = render(
       <List>
-        <ListItem
-          label="External"
-          href="https://example.com"
-          target="_blank"
-        />
+        <ListItem label="External" href="https://example.com" target="_blank" />
       </List>,
     );
     const anchor = container.querySelector('a');
@@ -500,17 +484,21 @@ describe('List', () => {
   // Selected state
   // ===========================================================================
 
-  it('applies aria-selected when isSelected', () => {
+  it('conveys selection via aria-current when isSelected', () => {
+    // aria-selected is not permitted on an li (role listitem, axe:
+    // aria-allowed-attr), so selection is exposed via aria-current — valid on
+    // any element — so screen-reader users are still told which item is chosen.
     const {container} = render(
       <List>
         <ListItem label="Selected" isSelected onClick={() => {}} />
       </List>,
     );
     const item = container.querySelector('.astryx-item');
-    expect(item).toHaveAttribute('aria-selected', 'true');
+    expect(item).not.toHaveAttribute('aria-selected');
+    expect(item).toHaveAttribute('aria-current', 'true');
   });
 
-  it('does not apply aria-selected when not selected', () => {
+  it('applies neither aria-selected nor aria-current when not selected', () => {
     const {container} = render(
       <List>
         <ListItem label="Not Selected" />
@@ -518,6 +506,7 @@ describe('List', () => {
     );
     const li = container.querySelector('li');
     expect(li).not.toHaveAttribute('aria-selected');
+    expect(li).not.toHaveAttribute('aria-current');
   });
 
   // ===========================================================================
@@ -690,6 +679,44 @@ describe('List', () => {
       </List>,
     );
     expect(screen.getByText('Simple text')).toBeInTheDocument();
+  });
+
+  it('forwards data and aria attributes onto the list element', () => {
+    // BaseProps keeps data-*/aria-*; the list element dropped them.
+    const {container} = render(
+      <List listStyle="decimal" data-delimiter=")" aria-label="Steps">
+        <ListItem label="First" />
+      </List>,
+    );
+    const list = container.querySelector('ol')!;
+    expect(list.getAttribute('data-delimiter')).toBe(')');
+    expect(list.getAttribute('aria-label')).toBe('Steps');
+  });
+
+  it('keeps an aria-labelledby pointing outside the component', () => {
+    // With no header of its own there is nothing to associate, so the
+    // consumer's label must survive.
+    const {container} = render(
+      <List aria-labelledby="external-heading">
+        <ListItem label="First" />
+      </List>,
+    );
+    expect(container.querySelector('ul')!.getAttribute('aria-labelledby')).toBe(
+      'external-heading',
+    );
+  });
+
+  it('keeps its own list role and header association', () => {
+    // The rest spread comes first so a consumer prop cannot drop the
+    // Safari/VoiceOver role workaround or the generated header association.
+    const {container} = render(
+      <List header="Steps" role="presentation" aria-labelledby="elsewhere">
+        <ListItem label="First" />
+      </List>,
+    );
+    const list = container.querySelector('ul')!;
+    expect(list.getAttribute('role')).toBe('list');
+    expect(list.getAttribute('aria-labelledby')).not.toBe('elsewhere');
   });
 
   it('accepts number as description (ReactNode)', () => {

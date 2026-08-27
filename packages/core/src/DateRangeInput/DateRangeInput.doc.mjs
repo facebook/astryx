@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'DateRangeInput',
@@ -58,7 +58,7 @@ export const docs = {
       name: 'value',
       type: 'DateRange | null',
       description:
-        'Selected date range or null. Import the `DateRange` type from `@astryxdesign/core/DateRangeInput` — it is `{start: ISODateString, end: ISODateString}`. Do NOT redeclare your own DateRange type; use the exported one so TypeScript structurally matches.',
+        'Selected date range or null. Import the `DateRange` type from `@astryxdesign/core/DateRangeInput`; it is `{start: ISODateString, end: ISODateString}`. Do NOT redeclare your own DateRange type; use the exported one so TypeScript structurally matches.',
       required: true,
     },
     {
@@ -85,18 +85,30 @@ export const docs = {
       name: 'min',
       type: 'ISODateString',
       description:
-        'Minimum selectable date. `ISODateString` is a template literal type (`\\`${number}${number}${number}${number}-${number}${number}-${number}${number}\\``) — pass a string literal like `"2026-01-28"`, not a runtime string variable. Import it from `@astryxdesign/core/Calendar` or use `as ISODateString` if computing the value dynamically.',
+        'Minimum selectable date. `ISODateString` is a template literal type (`\\`${number}${number}${number}${number}-${number}${number}-${number}${number}\\``). Pass a string literal like `"2026-01-28"`, not a runtime string variable. Import it from `@astryxdesign/core/Calendar` or use `as ISODateString` if computing the value dynamically.',
     },
     {
       name: 'max',
       type: 'ISODateString',
       description:
-        'Maximum selectable date. Same template literal type as `min` — use a YYYY-MM-DD string literal or cast with `as ISODateString`.',
+        'Maximum selectable date. Same template literal type as `min`: use a YYYY-MM-DD string literal or cast with `as ISODateString`.',
     },
     {
       name: 'dateConstraints',
       type: 'Array<(date: Date) => boolean>',
       description: 'Custom constraint functions to disable specific dates.',
+    },
+    {
+      name: 'maxRangeSpan',
+      type: 'number',
+      description:
+        'Maximum days a selected range may span, counting both endpoints (`7` = a 7-day window, start + 6). Once a start is picked, days beyond this distance are disabled so the range cannot stretch past the cap. Rolling window relative to the start; for fixed calendar bounds use `min`/`max`. Constrains selection only; it never rewrites a `value` already wider than the cap (flag that with `status`).',
+    },
+    {
+      name: 'minRangeSpan',
+      type: 'number',
+      description:
+        'Minimum days a selected range must span, counting both endpoints (`2` forbids a single-day range). Once a start is picked, days closer than this are disabled. Clicking the start again commits a one-day range when allowed, or cancels the in-progress selection when the minimum is longer. Defaults to 1 (same-day start and end allowed).',
     },
     {
       name: 'presets',
@@ -124,8 +136,15 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: 'Status indicator for error, warning, or success states.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
     },
     {
       name: 'labelTooltip',
@@ -139,6 +158,19 @@ export const docs = {
       default: '2',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description:
+        'First day of week in the calendar. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
+      default: '0',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization.',
@@ -146,7 +178,9 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-range-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-range-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {className: 'astryx-date-range-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-range-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
   usage: {
@@ -232,7 +266,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'date range picker with dual-month calendar popover and preset ranges',
@@ -286,18 +320,24 @@ export const docsDense = {
     isDisabled: 'disable trigger+picker',
     disabledMessage:
       'reason shown in a tooltip on hover/focus when disabled; keeps trigger focusable via aria-disabled',
-    value: 'selected range {start, end} or null — import DateRange type from @astryxdesign/core/DateRangeInput (do not redeclare)',
+    value: 'selected range {start, end} or null; import DateRange type from @astryxdesign/core/DateRangeInput (do not redeclare)',
     onChange: 'callback on range change; null on clear',
-    min: 'min selectable date — ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
-    max: 'max selectable date — ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
+    min: 'min selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
+    max: 'max selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
     dateConstraints: 'custom constraint fns to disable dates',
+    maxRangeSpan:
+      'max days a range may span, both endpoints counted (7 = a 7-day window); caps the window from the picked start. Selection-only; does not rewrite an over-wide value',
+    minRangeSpan:
+      'min days a range must span, both endpoints counted (2 forbids a single-day range); repeated start click commits one day when allowed, otherwise cancels; default 1',
     presets: 'preset ranges as quick-select options',
     hasClear: 'clear button when range is set (default true)',
     placeholder: 'placeholder when empty',
     size: 'trigger size',
     status: 'error/warning/success status',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
+    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     changeAction:
       'async action fired after onChange; drives optimistic UI updates via useTransition',
     isLoading: 'loading state; disables interaction + shows a spinner',

@@ -53,4 +53,29 @@ describe('ChatReasoning', () => {
     render(<ChatReasoning defaultIsExpanded>Content</ChatReasoning>);
     expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'true');
   });
+
+  it('wires the trigger to the content region via aria-controls', () => {
+    render(<ChatReasoning>Full reasoning body</ChatReasoning>);
+    const button = screen.getByRole('button');
+    const controlsId = button.getAttribute('aria-controls');
+    expect(controlsId).toBeTruthy();
+    const region = document.getElementById(controlsId as string);
+    expect(region).not.toBeNull();
+    expect(region).toHaveTextContent('Full reasoning body');
+  });
+
+  it('marks the collapsed content inert and lifts it when expanded', () => {
+    render(<ChatReasoning>Hidden reasoning</ChatReasoning>);
+    const button = screen.getByRole('button');
+    const region = document.getElementById(
+      button.getAttribute('aria-controls') as string,
+    ) as HTMLElement;
+    // Collapsed: visually clipped by the 0fr grid row, so it must also be
+    // removed from the accessibility tree.
+    expect(region).toHaveAttribute('inert');
+    fireEvent.click(button);
+    expect(region).not.toHaveAttribute('inert');
+    fireEvent.click(button);
+    expect(region).toHaveAttribute('inert');
+  });
 });

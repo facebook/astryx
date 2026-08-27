@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'Resizable',
   displayName: 'Resizable',
@@ -104,7 +104,7 @@ export const docs = {
         {
           name: 'autoSaveId',
           type: 'string',
-          description: 'Key for persisting sizes to localStorage.',
+          description: 'Key for persisting sizes and collapse state to localStorage.',
         },
       ],
     },
@@ -188,7 +188,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Hook-based resizable panel system. useResizable() manages size state; ResizeHandle provides interactive pill-grip separator.',
   usage: {
@@ -212,7 +212,7 @@ export const docsDense = {
         collapsedSize: 'px threshold triggering collapse during drag',
         snaps: 'px values to snap to during resize',
         shrinkOrder: 'cascade priority: lower number shrinks first',
-        autoSaveId: 'key for persisting sizes to localStorage',
+        autoSaveId: 'key for persisting sizes + collapse state to localStorage',
       },
     },
     {

@@ -24,7 +24,15 @@ type ResizeCallback = (entry: ResizeObserverEntry) => void;
 let observer: ResizeObserver | null = null;
 const callbacks = new Map<Element, ResizeCallback>();
 
-function getObserver(): ResizeObserver {
+/**
+ * The shared observer, or null where the API does not exist (jsdom, an old
+ * browser). Callers still get the one-shot measurement `observeResize` fires
+ * on registration; live resize updates are the part that needs the API.
+ */
+function getObserver(): ResizeObserver | null {
+  if (typeof ResizeObserver === 'undefined') {
+    return null;
+  }
   if (!observer) {
     observer = new ResizeObserver(entries => {
       for (const entry of entries) {
@@ -64,7 +72,7 @@ export function observeResize(
   callback: ResizeCallback,
 ): void {
   callbacks.set(element, callback);
-  getObserver().observe(element);
+  getObserver()?.observe(element);
 
   // Fire once immediately so callers get an initial measurement
   // without duplicating their logic outside the observer path.

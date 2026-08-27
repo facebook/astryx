@@ -2,8 +2,10 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
+import type {ReactNode} from 'react';
 import {Markdown} from './Markdown';
 import type {MarkdownInlinePlugin} from './Markdown';
+import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
 
 describe('Markdown', () => {
   it('renders with role="document"', () => {
@@ -22,6 +24,83 @@ describe('Markdown', () => {
     expect(screen.getByText('Heading 2').tagName).toBe('H2');
   });
 
+  describe('heading ids', () => {
+    // Outline's documented contract: an outline item id "should match the
+    // target heading element id". Markdown renders the ids that
+    // useOutlineFromMarkdown derives, so hash navigation resolves.
+    it('renders generated id attributes on headings', () => {
+      render(<Markdown>{'# Overview\n\ncontent\n\n# Installation'}</Markdown>);
+      expect(screen.getByText('Overview')).toHaveAttribute('id', 'overview');
+      expect(screen.getByText('Installation')).toHaveAttribute(
+        'id',
+        'installation',
+      );
+    });
+
+    it('disambiguates duplicate headings with numeric suffixes', () => {
+      render(<Markdown>{'# Setup\n\n# Setup\n\n# Setup'}</Markdown>);
+      const ids = screen.getAllByText('Setup').map(el => el.id);
+      expect(ids).toEqual(['setup', 'setup-1', 'setup-2']);
+    });
+
+    it('renders ids matching parseOutlineFromMarkdown for the same source', () => {
+      // Parity invariant: every id the outline derives must resolve to a
+      // rendered heading with that exact id — including slugified formatting,
+      // duplicate numbering, the empty-slug fallback, and code-fence decoys.
+      const source = [
+        '# **Bold** and _italic_ text',
+        '## Setup',
+        '## Setup',
+        '### !!!',
+        '```',
+        '# not a heading',
+        '```',
+        '## The `useState` hook',
+      ].join('\n\n');
+      const {container} = render(<Markdown>{source}</Markdown>);
+      const outline = parseOutlineFromMarkdown(source);
+      expect(outline.length).toBe(5);
+      for (const item of outline) {
+        const target = container.querySelector(`[id="${item.id}"]`);
+        expect(target, `no rendered heading with id "${item.id}"`).not.toBe(
+          null,
+        );
+        expect(target!.tagName).toMatch(/^H[1-6]$/);
+        expect(target!.textContent?.trim()).toBe(item.label);
+      }
+    });
+
+    it('passes the generated id to a custom heading component', () => {
+      const received: (string | undefined)[] = [];
+      render(
+        <Markdown
+          components={{
+            heading: ({children, id}: {children: ReactNode; id?: string}) => {
+              received.push(id);
+              return <h2 id={id}>{children}</h2>;
+            },
+          }}>
+          {'# Overview\n\n# Overview'}
+        </Markdown>,
+      );
+      expect(received).toEqual(['overview', 'overview-1']);
+    });
+
+    it('does not assign ids to headings nested inside blockquotes', () => {
+      // parseOutlineFromMarkdown only lists top-level headings. If nested
+      // headings consumed slugs too, duplicate numbering would drift and
+      // outline links would land on the wrong heading.
+      const source = '> # Quoted\n\n# Quoted';
+      const {container} = render(<Markdown>{source}</Markdown>);
+      const outline = parseOutlineFromMarkdown(source);
+      expect(outline.map(i => i.id)).toEqual(['quoted']);
+      const [nested, topLevel] = screen.getAllByText('Quoted');
+      expect(container.querySelector('blockquote')).toContainElement(nested);
+      expect(nested).not.toHaveAttribute('id');
+      expect(topLevel).toHaveAttribute('id', 'quoted');
+    });
+  });
+
   it('renders paragraphs as block <div> (never <p>) for composition safety', () => {
     render(<Markdown>{'Hello world'}</Markdown>);
     // Markdown paragraphs render as <div> so block-level inline content
@@ -32,6 +111,134 @@ describe('Markdown', () => {
     const para = screen.getByText('Hello world');
     expect(para.tagName).toBe('DIV');
     expect(para).toHaveAttribute('role', 'paragraph');
+  });
+
+  it('renders the astryx-markdown-paragraph theme target on each paragraph', () => {
+    render(<Markdown>{'First para\n\nSecond para'}</Markdown>);
+    const first = screen.getByText('First para');
+    const second = screen.getByText('Second para');
+    // Stable theme-target class lets a theme adjust the inter-paragraph gap
+    // (marginBlockStart/marginBlockEnd) via defineTheme without reaching for
+    // fragile descendant selectors or global spacing tokens.
+    expect(first.className).toContain('astryx-markdown-paragraph');
+    expect(second.className).toContain('astryx-markdown-paragraph');
+  });
+
+  describe('base props', () => {
+    // BaseProps documents that data-*, aria-* and role are kept; the root
+    // dropped everything but data-testid.
+    it('forwards data and aria attributes to the block root', () => {
+      const {container} = render(
+        <Markdown data-source="turn-7" aria-label="Answer">
+          Hello
+        </Markdown>,
+      );
+      const root = container.firstElementChild!;
+      expect(root.getAttribute('data-source')).toBe('turn-7');
+      expect(root.getAttribute('aria-label')).toBe('Answer');
+    });
+
+    it('keeps its own role when a consumer passes one', () => {
+      // The rest spread comes first precisely so the component's own
+      // semantics survive a consumer prop.
+      const {container} = render(
+        <Markdown role="presentation">Hello</Markdown>,
+      );
+      expect(container.firstElementChild!.getAttribute('role')).toBe(
+        'document',
+      );
+    });
+
+    it('forwards them on the inline root too', () => {
+      const {container} = render(
+        <Markdown display="inline" data-source="turn-7">
+          Hello
+        </Markdown>,
+      );
+      expect(container.firstElementChild!.getAttribute('data-source')).toBe(
+        'turn-7',
+      );
+    });
+  });
+
+  describe('block spacing theme targets', () => {
+    // Every block type renders a stable astryx-markdown-<block> class so a
+    // theme can tune the gap around it (marginBlockStart/marginBlockEnd) via
+    // defineTheme — the whole prose rhythm is themeable, not just paragraphs.
+    it('renders a stable theme-target class on every block type', () => {
+      const {container} = render(
+        <Markdown>
+          {[
+            '# Heading',
+            'Paragraph text',
+            '- item one',
+            '```\ncode\n```',
+            '> quoted',
+            '| a | b |\n| - | - |\n| 1 | 2 |',
+            '---',
+            '![alt](https://example.com/x.png)',
+          ].join('\n\n')}
+        </Markdown>,
+      );
+      for (const cls of [
+        'astryx-markdown-heading',
+        'astryx-markdown-paragraph',
+        'astryx-markdown-list',
+        'astryx-markdown-codeblock',
+        'astryx-markdown-blockquote',
+        'astryx-markdown-table',
+        'astryx-markdown-hr',
+        'astryx-markdown-image',
+      ]) {
+        expect(
+          container.querySelector(`.${cls}`),
+          `expected a .${cls} element`,
+        ).not.toBeNull();
+      }
+    });
+
+    it('renders the theme target on task lists too', () => {
+      const {container} = render(<Markdown>{'- [ ] todo'}</Markdown>);
+      expect(container.querySelector('.astryx-markdown-list')).not.toBeNull();
+    });
+
+    it('reflects density on block targets as data-density', () => {
+      const {rerender} = render(<Markdown>{'Hello world'}</Markdown>);
+      // Default density is reflected so themes can tune spacing per density.
+      expect(screen.getByText('Hello world')).toHaveAttribute(
+        'data-density',
+        'default',
+      );
+      rerender(<Markdown density="compact">{'Hello world'}</Markdown>);
+      expect(screen.getByText('Hello world')).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
+    });
+
+    it('reflects the heading level on the heading target as data-level', () => {
+      render(<Markdown>{'## Section'}</Markdown>);
+      const heading = screen.getByText('Section');
+      expect(heading.className).toContain('astryx-markdown-heading');
+      expect(heading).toHaveAttribute('data-level', '2');
+    });
+
+    it('does not apply the theme target when a custom block component is provided', () => {
+      const {container} = render(
+        <Markdown
+          components={{
+            heading: ({children}: {children: ReactNode}) => (
+              <h2 data-custom>{children}</h2>
+            ),
+          }}>
+          {'# Custom heading'}
+        </Markdown>,
+      );
+      // Custom components own their own styling — the default target is not
+      // imposed on them.
+      expect(container.querySelector('.astryx-markdown-heading')).toBeNull();
+      expect(container.querySelector('[data-custom]')).not.toBeNull();
+    });
   });
 
   it('renders inline display without block wrappers', () => {
@@ -234,6 +441,27 @@ describe('Markdown', () => {
     expect(img).toBeInTheDocument();
     expect(img!.getAttribute('alt')).toBe('alt text');
     expect(img!.getAttribute('src')).toBe('image.png');
+  });
+
+  it('uses the components.image override for a standalone (block) image', () => {
+    // A standalone image line parses as a block image; its render path must
+    // honor components.image just like the inline image path does.
+    render(
+      <Markdown
+        components={{
+          image: ({src, alt}) => (
+            <span data-testid="custom-image" data-src={src}>
+              {alt}
+            </span>
+          ),
+        }}>
+        {'![alt text](image.png)'}
+      </Markdown>,
+    );
+    expect(document.querySelector('img')).not.toBeInTheDocument();
+    const custom = screen.getByTestId('custom-image');
+    expect(custom).toHaveTextContent('alt text');
+    expect(custom.getAttribute('data-src')).toBe('image.png');
   });
 
   it('shifts heading levels with headingLevelStart', () => {

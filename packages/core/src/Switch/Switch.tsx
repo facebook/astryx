@@ -13,7 +13,7 @@
  * - /packages/core/src/Switch/Switch.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Switch/index.ts (exports if types change)
  * - /apps/storybook/stories/Switch.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Switch/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Switch/ (showcase blocks)
  */
 
 import {
@@ -33,6 +33,7 @@ import {
   easeVars,
   typographyVars,
   typeScaleVars,
+  focusVars,
 } from '../theme/tokens.stylex';
 import {FieldLabel} from '../Field/FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
@@ -40,30 +41,107 @@ import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 
-// Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
-const SWITCH_WIDTH = 40;
-const SWITCH_HEIGHT = 24;
-const THUMB_SIZE_OFF = 16;
-const THUMB_SIZE_ON = 20;
-const TRACK_PADDING = 4;
-// Padding between thumb right edge and track inner edge when on
-const ON_RIGHT_PADDING = 2;
-// Travel distance for on state: positions thumb with ON_RIGHT_PADDING from right edge
-const THUMB_TRAVEL_ON =
-  SWITCH_WIDTH - TRACK_PADDING - THUMB_SIZE_ON - ON_RIGHT_PADDING;
+import {useMergedRefs} from '../hooks/useMergedRefs';
+const wrapperSizeStyles = stylex.create({
+  sm: {
+    width: 32,
+    height: 20,
+  },
+  md: {
+    width: 40,
+    height: 24,
+  },
+});
+
+const inputSizeStyles = stylex.create({
+  sm: {
+    width: 32,
+    height: 20,
+  },
+  md: {
+    width: 40,
+    height: 24,
+  },
+});
+
+const trackSizeStyles = stylex.create({
+  sm: {
+    width: 32,
+    height: 20,
+    padding: 2,
+  },
+  md: {
+    width: 40,
+    height: 24,
+    padding: 4,
+  },
+});
+
+const thumbOffSizeStyles = stylex.create({
+  sm: {
+    width: 14,
+    height: 14,
+    transform: 'translateX(0)',
+  },
+  md: {
+    width: 16,
+    height: 16,
+    transform: 'translateX(0)',
+  },
+});
+
+const thumbOnSizeStyles = stylex.create({
+  sm: {
+    width: 16,
+    height: 16,
+    // The thumb rests at the inline-start edge (flex-start, which flexbox
+    // already mirrors under RTL). The on-state travel toward the inline-end
+    // edge is a physical translateX, so it must flip sign under RTL — right
+    // in LTR, left in RTL — so the switch mirrors per convention (Material,
+    // iOS): off-thumb on the reading-start side, on-thumb on the reading-end.
+    transform: {
+      default: 'translateX(12px)',
+      ':is([dir="rtl"] *)': 'translateX(-12px)',
+    },
+  },
+  md: {
+    width: 20,
+    height: 20,
+    transform: {
+      default: 'translateX(14px)',
+      ':is([dir="rtl"] *)': 'translateX(-14px)',
+    },
+  },
+});
+
+const labelWrapperSizeStyles = stylex.create({
+  sm: {
+    minHeight: 20,
+  },
+  md: {
+    minHeight: 24,
+  },
+});
 
 const styles = stylex.create({
   container: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
+  },
+  // A hidden label is sr-only, so its wrapper is a zero-width flex item — the
+  // row gap would still be painted beside the track, making the field box
+  // wider than the control it contains. Matches CheckboxInput.
+  containerLabelHidden: {
+    gap: 0,
   },
   containerSpread: {
     justifyContent: 'space-between',
@@ -77,8 +155,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexShrink: 0,
-    width: SWITCH_WIDTH,
-    height: SWITCH_HEIGHT,
     isolation: 'isolate',
   },
   input: {
@@ -86,13 +162,34 @@ const styles = stylex.create({
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
-    width: SWITCH_WIDTH,
-    height: SWITCH_HEIGHT,
+    minInlineSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
+    minBlockSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
+    insetBlockStart: {
+      default: null,
+      '@media (pointer: coarse)': '50%',
+    },
+    insetInlineStart: {
+      default: null,
+      '@media (pointer: coarse)': '50%',
+    },
+    transform: {
+      default: null,
+      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+    },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputBusy: {
     pointerEvents: 'none',
@@ -100,9 +197,6 @@ const styles = stylex.create({
   track: {
     display: 'flex',
     alignItems: 'center',
-    width: SWITCH_WIDTH,
-    height: SWITCH_HEIGHT,
-    padding: TRACK_PADDING,
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'background-color',
     transitionDuration: {
@@ -111,37 +205,77 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     boxSizing: 'border-box',
+    // Forced colors (Windows High Contrast) strips painted backgrounds, which
+    // would leave the track invisible. A system-color border keeps the
+    // control's bounds perceivable (WCAG 1.4.11).
+    borderWidth: {
+      default: 0,
+      '@media (forced-colors: active)': '1px',
+    },
+    borderStyle: {
+      default: 'none',
+      '@media (forced-colors: active)': 'solid',
+    },
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
   },
+  // The one ring in the system not drawn by focusOutlineStyles. The focusable
+  // input is a sibling of the track, so the condition has to reach the shared
+  // scope marker — and a marker cannot be shared across components without
+  // leaking focus state from an outer one, so it cannot live in the utility.
+  // StyleX also cannot inline a constant imported from another module, so the
+  // values are read from the tokens the utility reads.
   trackFocus: {
     outline: {
       default: 'none',
       [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
+        `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]: '2px',
+      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
+        focusVars['--focus-outline-offset'],
     },
   },
   // State-dependent colors with ancestor hover behavior
   trackOff: {
     backgroundColor: {
       default: colorVars['--color-background-gray'],
+      // Off = empty (Canvas) track; on = Highlight track, so the two states
+      // stay distinguishable under forced colors.
+      '@media (forced-colors: active)': 'Canvas',
+      // The ancestor-hover tint is a non-system color-mix, and its rule
+      // outranks the plain forced-colors rule above. Left ungated it would
+      // reassert on hover under forced colors, where the UA flattens the
+      // color-mix back to Canvas — so the HighlightText thumb would sit on a
+      // white track (white-on-white). Gating on `forced-colors: none` keeps
+      // the tint out of forced colors and lets the system-color track stand.
       [stylex.when.ancestor(':hover', switchScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
+        '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
     },
   },
   trackOn: {
     backgroundColor: {
       default: colorVars['--color-accent'],
+      '@media (forced-colors: active)': 'Highlight',
+      // See trackOff: gate the hover tint out of forced colors so it cannot
+      // flatten the Highlight track to white under the HighlightText thumb.
       [stylex.when.ancestor(':hover', switchScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
+        '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
   },
   trackDisabled: {
     opacity: 0.5,
+    // Opacity dimming does not survive forced colors; GrayText is the
+    // platform's disabled affordance there.
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'GrayText',
+    },
   },
   trackDisabledOff: {
     backgroundColor: colorVars['--color-background-gray'],
@@ -151,7 +285,6 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-background-surface'],
     transitionProperty: 'transform, width, height',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -159,22 +292,27 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
+  // The thumb fill lives on the on/off styles (not the shared thumb style)
+  // because forced colors needs a per-state system color: CanvasText on the
+  // empty off track, HighlightText on the Highlight on track. Sizing stays in
+  // thumbOffSizeStyles/thumbOnSizeStyles; only the fill is state-dependent.
   thumbOff: {
-    width: THUMB_SIZE_OFF,
-    height: THUMB_SIZE_OFF,
-    transform: 'translateX(0)',
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (forced-colors: active)': 'CanvasText',
+    },
   },
   thumbOn: {
-    width: THUMB_SIZE_ON,
-    height: THUMB_SIZE_ON,
-    transform: `translateX(${THUMB_TRAVEL_ON}px)`,
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (forced-colors: active)': 'HighlightText',
+    },
   },
   labelWrapper: {
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
     justifyContent: 'center',
-    minHeight: SWITCH_HEIGHT,
   },
   description: {
     fontFamily: typographyVars['--font-family-body'],
@@ -185,11 +323,7 @@ const styles = stylex.create({
 
 export type SwitchLabelPosition = 'start' | 'end';
 
-export type SwitchLabelSpacing =
-  | 'hug'
-  | 'spread'
-  /** @deprecated Use `'hug'` instead. */
-  | 'default';
+export type SwitchLabelSpacing = 'hug' | 'spread';
 
 export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
   /** Ref forwarded to the root element */
@@ -303,8 +437,6 @@ export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
    * Spacing behavior between label and switch.
    * - 'hug': Label and switch are positioned next to each other
    * - 'spread': Label and switch are pushed to opposite ends
-   *
-   * 'default' is a deprecated alias for 'hug'.
    * @default 'hug'
    */
   labelSpacing?: SwitchLabelSpacing;
@@ -313,6 +445,13 @@ export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
    * When set with a message, displays a colored message box below the switch.
    */
   status?: InputStatus;
+  /**
+   * Size variant controlling track and thumb dimensions.
+   * - 'sm': 34x20px (matches sm checkbox/radio vertical rhythm)
+   * - 'md': 40x24px (default, matches md checkbox/radio vertical rhythm)
+   * @default 'md'
+   */
+  size?: 'sm' | 'md';
 }
 
 // Dynamic field width (number -> px, string used as-is).
@@ -358,6 +497,7 @@ export function Switch({
   labelPosition = 'end',
   labelSpacing = 'hug',
   status,
+  size = 'md',
   width,
   xstyle,
   className,
@@ -368,16 +508,16 @@ export function Switch({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  // Announce the effective required state (form default included) while the
+  // native `required` stays bound to the explicit `isRequired` so a layout
+  // default never switches on browser validation.
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
   const isOn = optimisticValue === true;
-
-  // 'default' is a deprecated alias for 'hug' (#2889).
-  const resolvedLabelSpacing: SwitchLabelSpacing =
-    labelSpacing === 'default' ? 'hug' : labelSpacing;
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the switch row (which already exists) and the
@@ -393,9 +533,11 @@ export function Switch({
   });
 
   // Build aria-describedby from description and status message
-  // Only include descriptionID when the element actually renders
+  // Only include descriptionID when the element actually renders.
+  // FieldLabel renders the description (with descriptionID) even when the
+  // label is visually hidden — it's sr-only, so keep it linked.
   const describedByParts: string[] = [];
-  if (description && !isLabelHidden) {
+  if (description) {
     describedByParts.push(descriptionID);
   }
   if (status?.message) {
@@ -408,9 +550,9 @@ export function Switch({
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
   const switchElement = (
-    <div {...stylex.props(styles.switchWrapper)}>
+    <div {...stylex.props(styles.switchWrapper, wrapperSizeStyles[size])}>
       <input
-        ref={mergeRefs(ref, disabledMessageTooltip.positionRef)}
+        ref={useMergedRefs(ref, disabledMessageTooltip.positionRef)}
         id={id}
         type="checkbox"
         role="switch"
@@ -424,7 +566,9 @@ export function Switch({
         // isDisabled guard in onChange below.
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
+        form={showsDisabledMessage ? '' : undefined}
         required={isRequired}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         onChange={e => {
           if (isDisabled || isBusy) {
             return;
@@ -445,6 +589,7 @@ export function Switch({
         aria-busy={isBusy || undefined}
         {...stylex.props(
           styles.input,
+          inputSizeStyles[size],
           isDisabled && styles.inputDisabled,
           isBusy && styles.inputBusy,
         )}
@@ -455,9 +600,11 @@ export function Switch({
           themeProps('switch', {
             checked: isOn ? 'checked' : null,
             disabled: isDisabled ? 'disabled' : null,
+            size,
           }),
           stylex.props(
             styles.track,
+            trackSizeStyles[size],
             isOn ? styles.trackOn : styles.trackOff,
             !isDisabled && styles.trackFocus,
             isDisabled && styles.trackDisabled,
@@ -466,8 +613,15 @@ export function Switch({
         )}>
         <div
           {...mergeProps(
-            themeProps('switch-thumb', {checked: isOn ? 'checked' : null}),
-            stylex.props(styles.thumb, isOn ? styles.thumbOn : styles.thumbOff),
+            themeProps('switch-thumb', {
+              checked: isOn ? 'checked' : null,
+              size,
+            }),
+            stylex.props(
+              styles.thumb,
+              isOn ? thumbOnSizeStyles[size] : thumbOffSizeStyles[size],
+              isOn ? styles.thumbOn : styles.thumbOff,
+            ),
           )}>
           {isBusy && <Spinner size="sm" />}
         </div>
@@ -477,8 +631,11 @@ export function Switch({
   );
 
   const labelElement = (
-    <div {...stylex.props(styles.labelWrapper)}>
+    <div {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
       <FieldLabel
+        // See CheckboxInput: the control names its own label target rather
+        // than the label guessing at its placement.
+        {...themeProps('switch-label')}
         label={label}
         inputID={id}
         isLabelHidden={isLabelHidden}
@@ -498,8 +655,7 @@ export function Switch({
       {...mergeProps(
         themeProps('switch-field', {
           labelPosition: labelPosition !== 'end' ? labelPosition : undefined,
-          labelSpacing:
-            resolvedLabelSpacing !== 'hug' ? resolvedLabelSpacing : undefined,
+          labelSpacing: labelSpacing !== 'hug' ? labelSpacing : undefined,
         }),
         stylex.props(width != null && dynamicWidthStyles.width(width), xstyle),
         className,
@@ -518,7 +674,8 @@ export function Switch({
         }}
         {...stylex.props(
           styles.container,
-          resolvedLabelSpacing === 'spread' && styles.containerSpread,
+          isLabelHidden && styles.containerLabelHidden,
+          labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
         )}>
         {' '}
@@ -535,14 +692,13 @@ export function Switch({
         )}
       </div>
       {status?.message && (
-        <div {...stylex.props(styles.statusGap)}>
-          <FieldStatus
-            type={status.type}
-            message={status.message}
-            id={statusMessageID}
-            variant="detached"
-          />
-        </div>
+        <FieldStatus
+          type={status.type}
+          message={status.message}
+          id={statusMessageID}
+          variant="detached"
+          xstyle={styles.statusGap}
+        />
       )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

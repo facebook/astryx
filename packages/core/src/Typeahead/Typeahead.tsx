@@ -15,7 +15,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
  * - /apps/storybook/stories/Typeahead.stories.tsx
- * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
 import React, {
@@ -36,6 +36,7 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Token} from '../Token';
 import {useTooltip} from '../Tooltip';
@@ -44,12 +45,14 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
-import {getInputARIA, mergeProps, mergeRefs} from '../utils';
+import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -74,6 +77,13 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
   isOptional?: boolean;
   /** Validation status. */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
   /**
    * Icon to display at the start of the input.
    * Accepts a ReactNode (e.g. `<Icon icon={SearchIcon} />`) or an SVG icon component directly.
@@ -101,6 +111,13 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
   hasEntriesOnFocus?: boolean;
   /** Max dropdown items. @default 10 */
   maxMenuItems?: number;
+  /**
+   * Minimum query length before the search source is queried. Below it no
+   * search runs and the menu stays closed — useful for remote sources where
+   * one or two characters match too much to be worth fetching.
+   * @default 1
+   */
+  minQueryLength?: number;
   /** Text shown when no results found. @default 'No results found' */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
@@ -158,7 +175,10 @@ const styles = stylex.create({
     // Standard padding minus border width to prevent height jump
     // when a token (28px) is added inside the input
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
-    cursor: 'text',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   token: {
     // Offset token so it sits 3px from the inner edge (4px from outer edge
@@ -225,6 +245,7 @@ export function Typeahead<T extends SearchableItem>({
   isRequired = false,
   isOptional = false,
   status,
+  statusVariant = 'attached',
   startIcon,
   labelTooltip,
   searchSource,
@@ -234,6 +255,7 @@ export function Typeahead<T extends SearchableItem>({
   placeholder,
   hasEntriesOnFocus,
   maxMenuItems,
+  minQueryLength,
   emptySearchResultsText,
   isDisabled = false,
   disabledMessage,
@@ -249,6 +271,7 @@ export function Typeahead<T extends SearchableItem>({
   style,
   'data-testid': testId,
 }: TypeaheadProps<T>) {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const inputId = useId();
   const inputLabelId = useId();
@@ -358,6 +381,15 @@ export function Typeahead<T extends SearchableItem>({
   // Handle Escape during edit mode — restore token
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // BaseTypeahead invokes this external handler *before* its own IME
+      // guard, so we must guard here too: an IME candidate window uses Escape
+      // to cancel the pending composition, and that composing Escape fires
+      // before compositionend. Without this, a Korean/Japanese/Chinese user
+      // cancelling a candidate would instead exit edit mode and blur the
+      // field. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'Escape' && editingValue) {
         e.preventDefault();
         setIsEditing(false);
@@ -395,7 +427,7 @@ export function Typeahead<T extends SearchableItem>({
   const typeaheadContent = (
     <>
       <div
-        ref={mergeRefs(
+        ref={useMergedRefs(
           wrapperRef,
           disabledMessageTooltip.ref,
           inputGroup ? ref : undefined,
@@ -410,7 +442,7 @@ export function Typeahead<T extends SearchableItem>({
             styles.wrapper,
             sizeStyle,
             status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
+            status && !isDisabled && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
             isDisabled && inputWrapperStyles.disabled,
             inputGroup && groupStyles.inGroup,
@@ -443,6 +475,7 @@ export function Typeahead<T extends SearchableItem>({
           placeholder={showToken ? undefined : placeholder}
           hasEntriesOnFocus={hasEntriesOnFocus}
           maxMenuItems={maxMenuItems}
+          minQueryLength={minQueryLength}
           emptySearchResultsText={emptySearchResultsText}
           isDisabled={isDisabled}
           hasAutoFocus={hasAutoFocus}
@@ -456,11 +489,17 @@ export function Typeahead<T extends SearchableItem>({
           anchorRef={wrapperRef}
           onKeyDown={handleKeyDown}
           inputXStyle={showToken ? styles.inputHidden : undefined}
+          // While the token is shown the input is collapsed (width 0 /
+          // opacity 0) — take it out of the Tab order so keyboard users
+          // don't hit an invisible stop (WCAG 2.4.3 / 2.4.7). It stays
+          // programmatically focusable: entering edit mode and clearing
+          // both refocus it after it uncollapses.
+          inputTabIndex={showToken ? -1 : undefined}
           size={size}
         />
         {hasClear && value && !isDisabled && (
           <InputClearButton
-            label="Clear selection"
+            label={t('@astryx.typeahead.clearSelection')}
             onClick={e => {
               e.stopPropagation();
               handleClear();
@@ -498,6 +537,7 @@ export function Typeahead<T extends SearchableItem>({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}
       xstyle={xstyle}
