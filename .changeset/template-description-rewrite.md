@@ -2,6 +2,6 @@
 '@astryxdesign/cli': patch
 ---
 
-[docs] rewrite all 46 page template descriptions to a consistent shape — archetype, the job someone is doing, the distinctive content, and the literal words people search for — so `build` and `search` can retrieve them from natural language instead of only from their slug.
+[docs] rewrite all 46 page template descriptions to describe layout, container, data shape and behaviour — the things that actually differentiate one template from its siblings — instead of the sample data they happen to ship with, so `build` and `search` retrieve them from a description of the problem rather than a guess at the slug.
 
 @ernestt

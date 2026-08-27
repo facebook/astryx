@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'File Explorer',
   displayName: 'File Explorer',
-  description: 'Column browser for navigating nested folders and files: breadcrumb path, multi-column drill-down, sortable list and grid modes, and an information pane showing kind, size, and modified date. Finder or directory tree.',
+  description: 'Hierarchical browser that drills through nested levels as adjacent columns rather than replacing the list each time, with breadcrumb history, switchable list and grid density, and a metadata pane for the selected node. Files, folders, directory, tree, or Finder-style navigator.',
   isReady: true,
   category: 'Tools - File Explorer',
 };

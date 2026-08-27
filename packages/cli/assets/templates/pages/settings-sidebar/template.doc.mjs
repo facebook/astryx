@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Settings Panels',
   displayName: 'Settings Panels',
-  description: 'Account settings with a nav-switched panel per section: inline row editing, grouped privacy controls, and a persistent section list. Preferences with sidebar navigation or configuration panels.',
+  description: 'Preferences split into nav-switched panels: a persistent section list swaps the pane beside it, and rows edit in place rather than opening a separate form. Settings, preferences, configuration, options, or account panels.',
   isReady: true,
   category: 'Settings - Panels',
 };

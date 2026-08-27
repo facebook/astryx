@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Simple Table',
   displayName: 'Simple Table',
-  description: 'Record list with sortable columns, row selection, a bulk operations toolbar, and a per-row action menu. Simple data grid, spreadsheet, or item roster.',
+  description: 'Flat row collection where columns sort, rows select into a bulk-action toolbar, and each row carries an overflow menu. Sortable but ungrouped, with no detail pane — the baseline shape. Table, list, rows, records, grid, spreadsheet, or roster.',
   isReady: false,
   category: 'Table - Basic',
   isHiddenFromOverview: true,

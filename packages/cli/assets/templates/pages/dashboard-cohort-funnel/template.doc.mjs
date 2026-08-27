@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Funnel & Cohort Dashboard',
   displayName: 'Funnel & Cohort Dashboard',
-  description: 'Growth analytics for diagnosing where users drop off: multi-stage conversion funnel with per-step drop-off, conversion trend over time, and a weekly cohort retention heatmap. Activation, churn, and signup reporting.',
+  description: 'Analytics for sequence and retention questions, pairing two shapes a plain dashboard cannot hold: a staged funnel where each step reads as drop-off against the one before, and a two-axis cohort matrix rendered as a heatmap. Conversion, drop-off, activation, churn, or retention reporting.',
   isReady: false,
   category: 'Dashboard - Funnel & Cohort',
 };

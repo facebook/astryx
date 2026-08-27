@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Basic Login',
   displayName: 'Basic Login',
-  description: 'Minimal login form for signing in to an account: email and password fields above a submit button and product wordmark. Authentication, credentials, or sign-in.',
+  description: 'Minimal centered credential form on a plain ground — two fields and a submit, nothing competing for attention. The least-chrome entry surface. Login, sign in, signin, authentication, credentials, or account access.',
   isReady: true,
   isHiddenFromOverview: true,
   category: 'Login - Basic',

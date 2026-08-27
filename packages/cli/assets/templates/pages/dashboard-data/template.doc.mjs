@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Data Dashboard',
   displayName: 'Data Dashboard',
-  description: 'Product usage analytics behind a filter bar: overview metrics with sparklines and day, week, month, and year deltas, active users split by device, plus audience demographics and acquisition channel reporting.',
+  description: 'Comparison-heavy analytics behind a persistent filter bar: tiles that each carry an inline sparkline and several period-over-period deltas, then segmented breakdowns underneath. Every number is shown against another number. Dashboard, metrics, stats, analytics, trends, or reporting.',
   isReady: false,
   category: 'Dashboard - Analytics',
   isHiddenFromOverview: true,

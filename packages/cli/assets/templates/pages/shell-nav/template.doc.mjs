@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Shell Nav',
   displayName: 'Shell Nav',
-  description: 'Desktop chrome combining a top menu bar and left sidebar: File, Edit and Window menus, command palette search, and a resizable file tree wrapped around placeholder content. Application frame or navigation scaffold.',
+  description: 'Application frame combining both navigation axes: a top menu bar with command-palette search over a resizable hierarchy rail, wrapping placeholder content. For when one axis is not enough. Shell, chrome, layout frame, navigation, sidebar, or menu bar.',
   isReady: true,
   category: 'Shell - Top Nav + Left Sidebar',
 };

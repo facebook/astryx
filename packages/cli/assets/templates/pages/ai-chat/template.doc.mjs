@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'AI Chat Conversation',
   displayName: 'AI Chat Conversation',
-  description: 'Assistant chat conversation for reading an AI transcript: tool call output, system message, markdown and code block rendering, plus a resizable artifact preview for generated documents. Chatbot or copilot thread.',
+  description: 'Transcript of alternating turns carrying mixed rich content inline — markdown, code blocks, collapsible tool-call output — beside a resizable artifact panel that holds generated output while the stream keeps scrolling. Chat, conversation, assistant, messages, or copilot thread.',
   isReady: true,
   category: 'AI Chat - Conversation',
 };

@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Documentation Technical',
   displayName: 'Documentation Technical',
-  description: 'Getting started guide walking a developer through setup: numbered install steps, an AI assistance prompt card, theming configuration, and next-step links. Onboarding tutorial or quickstart reference.',
+  description: 'Reference article ordered as sequential numbered steps with code at each stage, plus callout cards for prerequisites and onward links. A linear walkthrough rather than a browsable reference. Getting started, install, setup, tutorial, quickstart, or onboarding guide.',
   isReady: true,
   category: 'Content - Documentation Technical',
 };

@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Centered Hero',
   displayName: 'Centered Hero',
-  description: 'Marketing landing header with a centered headline, short blurb, and two call-to-action buttons above a wide full-bleed photo. Hero banner or splash intro.',
+  description: 'Symmetrical centered stack — headline, short blurb, paired call-to-action buttons — resting on one wide full-bleed picture, with nothing on either flank competing. Hero, banner, splash, landing image, or marketing masthead.',
   isReady: true,
   category: 'Gallery - Hero',
 };

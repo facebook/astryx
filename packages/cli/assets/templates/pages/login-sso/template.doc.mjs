@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Login SSO',
   displayName: 'Login SSO',
-  description: 'Enterprise single sign-on login that detects the identity provider from a work email: redirect for Google Workspace, Microsoft Entra, and Apple Business directories, with a password fallback. SAML authentication or corporate credentials.',
+  description: 'Progressive credential flow that branches on input: the email domain resolves an identity provider and redirects, with a password path as fallback. Two-stage rather than one form. Single sign-on, SSO, SAML, enterprise login, directory, or corporate authentication.',
   isReady: true,
   category: 'Login - SSO',
 };

@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Product Detail',
   displayName: 'Product Detail',
-  description: 'Single product detail for choosing and buying an item: image gallery, variant swatches for finish and glaze, quantity stepper, add-to-cart and buy actions, plus collapsible composition and dimension sections. Storefront listing or catalog entry.',
+  description: 'Single-item detail pairing a media gallery with a selection column: variant swatches, a quantity stepper, primary and secondary commit actions, and collapsible specification sections below. Product, listing, item, catalog entry, or storefront detail.',
   isReady: true,
   category: 'Content - Product Detail',
 };

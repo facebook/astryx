@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Kanban Board',
   displayName: 'Kanban Board',
-  description: 'Draggable card board for tracking work in progress: color-coded status columns, task cards carrying priority tag, assignee, and due metadata. Sprint, backlog, or issue swimlane.',
+  description: 'Horizontal lanes of draggable cards where the column itself is the status, so drag and drop between lanes is the state change. Fixed columns, variable-height cards. Kanban, board, swimlane, sprint, backlog, tasks, or pipeline.',
   isReady: true,
   category: 'Tools - Kanban Board',
 };

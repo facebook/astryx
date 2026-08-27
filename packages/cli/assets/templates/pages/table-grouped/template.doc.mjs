@@ -5,7 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Grouped Table',
   displayName: 'Grouped Table',
-  description: 'Record list bundled into collapsible sections by status: grouped rows with counts, query search, and a resizable inspector for the selected row. Grouped data grid or categorized roster.',
+  description: 'Row collection bundled into collapsible sections with per-group counts, so a long list reads as a handful of blocks that expand and collapse. Query filtering and a resizable inspector for the selected row. Table, list, rows, records, grid, or grouped dataset.',
   isReady: true,
   category: 'Table - Grouped',
 };
