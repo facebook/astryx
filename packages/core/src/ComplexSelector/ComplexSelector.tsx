@@ -203,7 +203,8 @@ export interface ComplexSelectorRenderState {
  * they respect focus restoration, light dismiss, and Escape. Prefer these
  * callbacks over mirroring open state in the parent — the selector owns its
  * visibility, and imperative calls avoid the focus-management pitfalls of
- * syncing an external `isOpen` prop.
+ * syncing an external `isOpen` prop. Pair with `onOpenChange` to observe every
+ * open and close, including the ones the selector performs itself.
  */
 export interface ComplexSelectorHandle {
   /** Open the selector surface. No-op when disabled or already open. */
@@ -280,6 +281,13 @@ export interface ComplexSelectorProps<Value> extends Omit<
    * state in the parent — the selector owns its visibility.
    */
   handleRef?: React.Ref<ComplexSelectorHandle>;
+  /**
+   * Called whenever the selector surface opens or closes, however it happened
+   * — the trigger, the keyboard, a light dismiss, Escape, content that calls
+   * `close()`, or the imperative handle. Pair it with `handleRef` to drive the
+   * surface from outside without mirroring its state.
+   */
+  onOpenChange?: (isOpen: boolean) => void;
   /** StyleX styles for the popup content container. */
   contentXstyle?: StyleXStyles;
   /** Test ID for the trigger container. */
@@ -337,6 +345,7 @@ export function ComplexSelector<Value>({
   placement = 'below',
   alignment = 'start',
   handleRef,
+  onOpenChange,
   contentXstyle,
   xstyle,
   className,
@@ -372,15 +381,23 @@ export function ComplexSelector<Value>({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
 
+  const handlePopoverShow = useCallback(() => {
+    onOpenChange?.(true);
+  }, [onOpenChange]);
+
   const handlePopoverHide = useCallback(() => {
+    // Focus is restored first so a consumer that moves focus elsewhere from
+    // the callback wins, instead of being overwritten a line later.
     triggerRef.current?.focus();
-  }, []);
+    onOpenChange?.(false);
+  }, [onOpenChange]);
 
   const popover = usePopover({
     dialogLabel: label,
     hasCloseButton: false,
     hasAutoFocus: true,
     surfaceTarget: 'complex-selector-popup',
+    onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
 

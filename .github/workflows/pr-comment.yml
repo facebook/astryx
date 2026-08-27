@@ -78,21 +78,33 @@ jobs:
       needs.resolve.outputs.valid == 'true'
     runs-on: ubuntu-slim
     permissions:
+      pull-requests: write
       statuses: write
     steps:
-      - name: Mark same-head reruns pending before evidence can change
+      - name: Invalidate visible approval for the new evidence run
         uses: actions/github-script@v9
         with:
           retries: 3
           script: |
+            const {owner, repo} = context.repo;
             const run = context.payload.workflow_run;
+            const pr = Number('${{ needs.resolve.outputs.pr_number }}');
+            const head = '${{ needs.resolve.outputs.head_sha }}';
             await github.rest.repos.createCommitStatus({
-              ...context.repo,
-              sha: '${{ needs.resolve.outputs.head_sha }}',
+              owner,
+              repo,
+              sha: head,
               context: 'visual-acceptance',
               state: 'pending',
               description: `CI run ${run.id}/${run.run_attempt} is producing fresh visual evidence.`,
             });
+            try {
+              await github.rest.issues.removeLabel({
+                owner, repo, issue_number: pr, name: 'visual-approved',
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
 
   comment:
     needs: resolve
@@ -103,7 +115,6 @@ jobs:
     runs-on: 2-core-ubuntu-arm
     permissions:
       pull-requests: write
-      issues: write
       statuses: write
       actions: read
       contents: write # immutable validated visual evidence on gh-pages
@@ -269,7 +280,7 @@ jobs:
       - name: Capture the trusted stable visual scope
         if: steps.identity.outputs.valid == 'true' && steps.scope.outputs.stable == 'true'
         env:
-          GITHUB_SHA: ${{ steps.identity.outputs.head_sha }}
+          ASTRYX_VISUAL_SHA: ${{ steps.identity.outputs.head_sha }}
           ASTRYX_VISUAL_RUN_ID: ${{ steps.identity.outputs.run_id }}
           ASTRYX_VISUAL_RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
           ASTRYX_PR_HEAD_SHA: ${{ steps.identity.outputs.head_sha }}

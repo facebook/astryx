@@ -81,6 +81,7 @@ function acceptanceFlags(overrides = {}) {
     approver: 'maintainer',
     'approver-id': 99,
     permission: 'maintain',
+    'effective-permission': 'maintain',
     'comment-id': 1234,
     reason: 'The new radius matches the approved component design.',
     ...overrides,
@@ -234,13 +235,113 @@ describe('visual acceptance', () => {
     ).toBe(true);
   });
 
+  it('accepts without installed packages in the archive job', () => {
+    const isolated = path.join(root, 'isolated-visual-gate');
+    fs.cpSync(path.dirname(SCRIPT), isolated, {recursive: true});
+    const args = [path.join(isolated, 'visual-acceptance.mjs'), 'accept'];
+    for (const [name, value] of Object.entries(acceptanceFlags()))
+      args.push(`--${name}`, String(value));
+    expect(execFileSync(process.execPath, args, {encoding: 'utf8'})).toContain(
+      'Accepted 1 visual delta',
+    );
+  });
+
+  it('accepts effective maintain capability and records owner provenance', () => {
+    run(
+      'accept',
+      acceptanceFlags({
+        approver: 'cixzhang',
+        permission: 'write',
+        'effective-permission': 'maintain',
+        'role-name': 'Repo Owner',
+      }),
+    );
+    expect(
+      JSON.parse(fs.readFileSync(acceptanceFile(), 'utf8')).decision,
+    ).toMatchObject({
+      approver: 'cixzhang',
+      permission: 'write',
+      effectivePermission: 'maintain',
+      roleName: 'Repo Owner',
+    });
+  });
+
+  it.each(['maintain', 'admin'])(
+    'accepts effective %s capability while preserving the reported role',
+    effectivePermission => {
+      run(
+        'accept',
+        acceptanceFlags({
+          permission: 'write',
+          'effective-permission': effectivePermission,
+          'role-name': 'Custom role',
+        }),
+      );
+      expect(
+        JSON.parse(fs.readFileSync(acceptanceFile(), 'utf8')).decision,
+      ).toMatchObject({
+        permission: 'write',
+        effectivePermission,
+        roleName: 'Custom role',
+      });
+    },
+  );
+
+  it.each(['maintain', 'admin'])(
+    'validates a legacy %s record without role metadata',
+    permission => {
+      run('accept', acceptanceFlags({permission}));
+      const record = JSON.parse(fs.readFileSync(acceptanceFile(), 'utf8'));
+      delete record.decision.roleName;
+      delete record.decision.effectivePermission;
+      writeJSON(acceptanceFile(), record);
+      expect(JSON.parse(run('state', {pages, pr: 42, head: HEAD}))).toMatchObject({
+        state: 'success',
+        reason: 'accepted',
+      });
+    },
+  );
+
+  it('rejects a legacy write record without effective capability data', () => {
+    run(
+      'accept',
+      acceptanceFlags({
+        permission: 'write',
+        'effective-permission': 'maintain',
+      }),
+    );
+    const record = JSON.parse(fs.readFileSync(acceptanceFile(), 'utf8'));
+    delete record.decision.roleName;
+    delete record.decision.effectivePermission;
+    writeJSON(acceptanceFile(), record);
+    expect(fail('state', {pages, pr: 42, head: HEAD})).toMatch(
+      /acceptance record is invalid/,
+    );
+  });
+
   it('requires an explanatory reason and maintainer permission', () => {
     expect(fail('accept', acceptanceFlags({reason: 'intentional...'}))).toMatch(
       /reason must explain/,
     );
-    expect(fail('accept', acceptanceFlags({permission: 'write'}))).toMatch(
-      /maintain\/admin/,
-    );
+    expect(
+      fail(
+        'accept',
+        acceptanceFlags({
+          permission: 'write',
+          'effective-permission': 'write',
+          'role-name': 'Repo Owner',
+        }),
+      ),
+    ).toMatch(/effective maintain\/admin/);
+    expect(
+      fail(
+        'accept',
+        acceptanceFlags({
+          permission: 'write',
+          'effective-permission': 'write',
+        }),
+      ),
+    ).toMatch(/effective maintain\/admin/);
   });
 
   it('binds acceptance to the exact reviewed run attempt', () => {
@@ -277,6 +378,14 @@ describe('visual acceptance', () => {
     expect(JSON.parse(run('state', stateFlags))).toMatchObject({
       state: 'success',
       reason: 'deferred',
+    });
+  });
+
+  it('returns success for a clean trusted capture without acceptance', () => {
+    writeEvidence({run: 124, status: 'pass'});
+    expect(JSON.parse(run('state', {pages, pr: 42, head: HEAD}))).toMatchObject({
+      state: 'success',
+      reason: 'clean',
     });
   });
 
