@@ -69,6 +69,7 @@ Options:
 | `hook`                 | List hooks or print hook docs                                                 |
 | `init`                 | Initialize the design system in your project                                  |
 | `layout`               | Generate XDS layouts from compressed expressions (XLE/XLO)                    |
+| `mcp`                  | Run a local MCP server over stdio for this project                            |
 | `search`               | Search components, hooks, docs, and templates in one ranked list              |
 | `swizzle`              | Copy component source for customization                                       |
 | `template`             | Inject a page or block template                                               |

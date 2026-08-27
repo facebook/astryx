@@ -117,6 +117,7 @@ const commands = [
   {name: 'search', path: './commands/search.mjs', register: 'registerSearch'},
   {name: 'build', path: './commands/build.mjs', register: 'registerBuild'},
   {name: 'doctor', path: './commands/doctor.mjs', register: 'registerDoctor'},
+  {name: 'mcp', path: './commands/mcp.mjs', register: 'registerMcp'},
   {
     name: 'validate-integration',
     path: './commands/validate-integration.mjs',
@@ -125,7 +126,10 @@ const commands = [
 ];
 
 const UPDATE_HINT_COMMANDS = new Set(['component', 'docs']);
-const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
+// `mcp` is exempt for the same reason `--json` is: it is machine mode. A client
+// launches it, so the nudge lands as a spurious log line on every session — and
+// serving a project that never ran `init` is the supported case, not a mistake.
+const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs', 'mcp']);
 
 /**
  * Build a fresh, fully-wired Astryx CLI program (root options, hooks, all
