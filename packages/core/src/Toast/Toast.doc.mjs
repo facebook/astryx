@@ -32,13 +32,13 @@ export const docs = {
     {
       name: 'autoHideDuration',
       type: 'number',
-      description: 'Duration in ms before auto-dismiss.',
+      description: 'Duration in ms before auto-dismiss. Timed content must satisfy WCAG 2.2.1.',
       default: '5000',
     },
     {
       name: 'endContent',
       type: 'ReactNode',
-      description: 'Content rendered at the trailing end (e.g. Undo button, link).',
+      description: 'Content rendered at the trailing end (e.g. Undo button, link). Keep action labels short.',
       slotElements: [
         {__element: 'Icon', props: {icon: 'chevronDown', size: 'sm'}},
         {__element: 'Badge', props: {label: '3'}},
@@ -60,18 +60,32 @@ export const docs = {
       type: '(reason: "auto" | "manual") => void',
       description: 'Callback fired when the toast is removed.',
     },
+    {
+      name: 'onDismiss',
+      type: '(reason: "auto" | "manual") => void',
+      description: 'Callback fired when the toast is dismissed.',
+      required: true,
+    },
   ],  theming: {
     targets: [
       {className: 'astryx-toast', visualProps: ['type']},
+    ],
+    vars: [
+      {
+        name: '--_toast-slide-y',
+        description: 'Private block-axis offset inherited from ToastViewport for entry and exit motion',
+        default: 'var(--spacing-2)',
+        private: true,
+      },
     ],
   },
 
   usage: {
     description:
-      'Toast shows a brief, non-blocking notification to confirm an action or present temporary information. Use it for scenarios where the user needs feedback but not a decision, such as saving, deleting, or changing a status.\n\nFor production use, prefer the `useToast()` hook; it handles positioning, stacking, auto-dismiss, and deduplication via `ToastViewport`. The `Toast` component renders the visual toast element inline and is useful for previews, documentation, and static showcases where the viewport lifecycle is not needed.',
+      'Toast shows a brief, non-blocking notification to confirm an action or present temporary information. Use it for scenarios where the user needs feedback but not a decision, such as saving, deleting, or changing a status.\n\nFor production use, prefer the `useToast()` hook; it handles positioning, stacking, auto-dismiss, and deduplication via `ToastViewport`. Toasts stay within viewport and safe-area gutters, wrap long message content, and enter or exit toward their configured top or bottom edge. Set `isAutoHide: false` explicitly when an action or message must remain available. The `Toast` component renders the visual toast element inline and is useful for previews, documentation, and static showcases where the viewport lifecycle is not needed.',
     bestPractices: [
       {guidance: true, description: 'Keep messages short: only a few words that tell the user what happened, like "Changes saved" or "Message sent".'},
-      {guidance: true, description: 'Add an undo action in the endContent slot for reversible operations like deleting an item, so the user can recover without navigating away.'},
+      {guidance: true, description: 'Add a short undo action in the endContent slot for reversible operations. Set isAutoHide to false when the action must remain available.'},
       {guidance: true, description: 'Use uniqueID to deduplicate toasts that fire from repeated actions, like clicking a save button multiple times.'},
       {guidance: true, description: 'Use error type for failures that need attention but not immediate action; it persists until dismissed so the user won\'t miss it.'},
       {guidance: false, description: 'Don\'t use a toast for critical errors that block the user. Use Banner for persistent, in-context messaging that requires acknowledgment.'},
@@ -98,18 +112,18 @@ export const docsZh = {
     body: '主要消息内容。',
     type: 'Toast 类型，控制背景颜色。error toast 持续显示直到关闭。',
     isAutoHide: '是否自动关闭。info 默认为 true，error 默认为 false。',
-    autoHideDuration: '自动关闭前的持续时间（毫秒）。',
-    endContent: '尾部渲染的内容（如撤销按钮、链接）。',
+    autoHideDuration: '自动关闭前的持续时间（毫秒）。定时内容必须符合 WCAG 2.2.1。',
+    endContent: '尾部渲染的内容（如撤销按钮、链接）。操作标签应保持简短。',
     uniqueID: '用于去重的唯一标识符。',
     collisionBehavior: '当已存在相同 uniqueID 的 toast 时的行为。',
     onHide: '当 toast 被移除时触发的回调。',
   },
   usage: {
     description:
-      'Toast 显示简短的非阻塞通知，用于确认操作或呈现临时信息。适用于用户需要反馈但不需要做决定的场景，如保存、删除或状态变更。\n\n生产环境中推荐使用 `useToast()` hook，它通过 `ToastViewport` 处理定位、堆叠、自动关闭和去重。`Toast` 组件以内联方式渲染 toast 视觉元素，适用于预览、文档和静态展示。',
+      'Toast 显示简短的非阻塞通知，用于确认操作或呈现临时信息。适用于用户需要反馈但不需要做决定的场景，如保存、删除或状态变更。\n\n生产环境中推荐使用 `useToast()` hook，它通过 `ToastViewport` 处理定位、堆叠、自动关闭和去重。Toast 会保持在视口和安全区域边距内，较长的消息会换行，并根据配置的顶部或底部边缘进入或退出。当操作或消息必须持续可用时，请显式设置 `isAutoHide: false`。`Toast` 组件以内联方式渲染 toast 视觉元素，适用于不需要视口生命周期的预览、文档和静态展示。',
     bestPractices: [
       {guidance: true, description: '保持消息简短，只需几个词告诉用户发生了什么，如"更改已保存"或"消息已发送"。'},
-      {guidance: true, description: '在 endContent 插槽中添加撤销操作，用于可逆操作如删除项目，让用户无需导航即可恢复。'},
+      {guidance: true, description: '在 endContent 插槽中添加简短的撤销操作，用于可逆操作。当操作必须持续可用时，将 isAutoHide 设置为 false。'},
       {guidance: true, description: '使用 uniqueID 去重重复操作触发的 toast，如多次点击保存按钮。'},
       {guidance: true, description: '对需要关注但不需要立即操作的错误使用 error 类型，它会持续显示直到关闭。'},
       {guidance: false, description: '不要对阻塞用户的严重错误使用 toast，使用 Banner 进行持久的上下文消息传递。'},
@@ -130,10 +144,10 @@ export const docsDense = {
     'toast notification w/ auto-dismiss, stacking, dedup, smooth animations; MediaTheme inverted surface',
   usage: {
     description:
-      'Brief non-blocking notification for action confirmations and temporary info. Use where user needs feedback not decisions: saves, deletes, status changes. useToast() hook for production (positioning, stacking, auto-dismiss, dedup via ToastViewport). Toast renders inline for previews/docs/static showcases.',
+      'Brief non-blocking notification for action confirmations and temporary info. Use where user needs feedback not decisions: saves, deletes, status changes. useToast() hook for production (safe-area positioning, responsive message wrapping, stacking, auto-dismiss, dedup via ToastViewport). Set isAutoHide false explicitly for must-remain actions/messages. Toast renders inline for previews/docs/static showcases.',
     bestPractices: [
       {guidance: true, description: 'Short messages, a few words: "Changes saved", "Message sent".'},
-      {guidance: true, description: 'Undo action in endContent for reversible ops like deletes.'},
+      {guidance: true, description: 'Short Undo action in endContent for reversible ops; set isAutoHide false when it must remain available.'},
       {guidance: true, description: 'uniqueID to dedup repeated action toasts.'},
       {guidance: true, description: 'Error type for failures needing attention; persists until dismissed.'},
       {guidance: false, description: 'Don\'t use for critical blocking errors. Use Banner for persistent in-context messaging.'},
@@ -145,8 +159,8 @@ export const docsDense = {
     body: 'primary message content',
     type: 'toast type; controls bg color; error persists until dismissed',
     isAutoHide: 'auto-dismiss; true for info, false for error',
-    autoHideDuration: 'ms before auto-dismiss',
-    endContent: 'trailing end content (undo btn, link)',
+    autoHideDuration: 'ms before auto-dismiss; timed content must satisfy WCAG 2.2.1',
+    endContent: 'trailing end content (undo btn, link); keep action labels short',
     uniqueID: 'unique id for dedup',
     collisionBehavior: 'behavior when matching uniqueID exists',
     onHide: 'callback when toast removed',

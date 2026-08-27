@@ -30,6 +30,7 @@
  */
 
 import {SHARED_DATE_FORMAT_OPTIONS, getTimeZoneParts} from '../utils/plainDate';
+import type {Locale} from '../i18n/types';
 import type {TimestampFormat} from './Timestamp';
 
 // =============================================================================
@@ -159,12 +160,13 @@ function getWallClock(date: Date, timeZone: string | undefined): WallClock {
 /**
  * Renders one instant in one absolute format.
  *
- * Pure: the same arguments always produce the same string for a given host
+ * Pure: the same arguments always produce the same string for the requested
  * locale (and, when no `timeZone` is given, host zone).
  */
 export function formatInstant(
   date: Date,
   format: InstantFormat,
+  locale: Locale,
   {
     timeZone,
     isTimezoneShown = false,
@@ -176,39 +178,39 @@ export function formatInstant(
 
   switch (format) {
     case 'full':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...FULL_OPTIONS,
         timeZoneName: timeZoneNameStyle,
         ...zone,
       }).format(date);
 
     case 'date':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...SHARED_DATE_FORMAT_OPTIONS.date,
         ...zone,
       }).format(date);
 
     case 'date_long':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...SHARED_DATE_FORMAT_OPTIONS.date_long,
         ...zone,
       }).format(date);
 
     case 'date_weekday':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...SHARED_DATE_FORMAT_OPTIONS.date_weekday,
         ...zone,
       }).format(date);
 
     case 'date_time':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...DATE_TIME_OPTIONS,
         ...zoneName,
         ...zone,
       }).format(date);
 
     case 'time':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...TIME_OPTIONS,
         ...zoneName,
         ...zone,

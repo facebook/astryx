@@ -144,6 +144,12 @@ export const docs = {
             'Imperative handle for programmatic control. Exposes open(), close(), toggle(), and isOpen().',
         },
         {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description:
+            'Called whenever the surface opens or closes, however it happened — trigger, keyboard, light dismiss, Escape, close(), or the imperative handle.',
+        },
+        {
           name: 'contentXstyle',
           type: 'StyleXStyles',
           description: 'StyleX styles for the popup content container.',
@@ -218,6 +224,16 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'Use variant="ghost" with a startIcon for a toolbar trigger. Use alignment="end" when a wide surface should align its end edge to the trigger.',
+      },
+      {
+        guidance: true,
+        description:
+          'For staged editors, keep draft state in the composed content and call the provided onChange helper only from Apply. Cancel or dismiss without committing.',
+      },
+      {
+        guidance: true,
+        description:
           'Compose content from the right accessible structure: RadioList for a simple choice, Calendar/date inputs for dates, TreeList or a searchable list for hierarchy, a custom grid for 2D arrow navigation.',
       },
       {
@@ -264,6 +280,7 @@ export const docsDense = {
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
     handleRef: 'Imperative open/close/toggle handle.',
+    onOpenChange: 'Notified on every open and close, whatever caused it.',
     accessibility:
       'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },

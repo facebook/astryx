@@ -118,13 +118,16 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         default: 'transparent',
         '@media (hover: hover)': colorVars['--color-border-emphasized'],
       },
     },
     backgroundColor: colorVars['--color-background-muted'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     fontFamily: typographyVars['--font-family-body'],
     boxSizing: 'border-box',
     transitionProperty: 'border-color, background-color',
@@ -138,7 +141,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
     borderColor: {
       default: colorVars['--color-accent'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         default: colorVars['--color-accent'],
         '@media (hover: hover)': colorVars['--color-accent'],
       },
@@ -170,14 +173,17 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         default: 'transparent',
         '@media (hover: hover)': colorVars['--color-border-emphasized'],
       },
     },
     backgroundColor: colorVars['--color-background-muted'],
     color: colorVars['--color-icon-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     boxSizing: 'border-box',
     fontSize: 15,
     lineHeight: typeScaleVars['--text-supporting-leading'],

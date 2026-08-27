@@ -46,7 +46,8 @@ export const docs = {
       type: 'boolean',
       description: 'Whether the menu trigger is disabled.',
       default: 'false',
-    },    {
+    },
+    {
       name: 'placement',
       type: "'above' | 'below' | 'start' | 'end'",
       description:
@@ -59,6 +60,11 @@ export const docs = {
       description:
         "Alignment along the placement axis. Use 'end' to align the menu with the trigger's trailing edge, which is usually what an overflow menu wants.",
       default: "'start'",
+    },
+    {
+      name: 'onOpenChange',
+      type: '(isOpen: boolean) => void',
+      description: 'Callback fired when the menu opens or closes.',
     },
     {
       name: 'xstyle',

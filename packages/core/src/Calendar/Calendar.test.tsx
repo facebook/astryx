@@ -13,6 +13,10 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, within, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getButton} from '../__tests__/fastRoleQueries';
+import {
+  getForcedColorsRules,
+  getAllInjectedCss,
+} from '../__tests__/forcedColors';
 import * as stylex from '@stylexjs/stylex';
 import {Calendar} from './Calendar';
 import type {CalendarHandle} from './Calendar';
@@ -21,6 +25,8 @@ import {calendarStyles} from './styles';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n/InternationalizationProvider';
+import {standaloneShortWeekdayNamesByLocale} from './standaloneShortWeekdayNames.generated';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -118,6 +124,45 @@ describe('Calendar', () => {
     expect(screen.getByText('Th')).toBeInTheDocument();
     expect(screen.getByText('Fr')).toBeInTheDocument();
     expect(screen.getByText('Sa')).toBeInTheDocument();
+  });
+
+  it('uses the provider locale for stand-alone short day names', () => {
+    const localizedNames = standaloneShortWeekdayNamesByLocale.es;
+    const englishNames = standaloneShortWeekdayNamesByLocale.en;
+    expect(localizedNames).not.toEqual(englishNames);
+
+    const {rerender} = render(
+      <InternationalizationProvider locale="es-ES">
+        <Calendar />
+      </InternationalizationProvider>,
+    );
+
+    expect(
+      screen.getAllByRole('columnheader').map(header => header.textContent),
+    ).toEqual(localizedNames);
+
+    rerender(
+      <InternationalizationProvider locale="en">
+        <Calendar />
+      </InternationalizationProvider>,
+    );
+    expect(
+      screen.getAllByRole('columnheader').map(header => header.textContent),
+    ).toEqual(englishNames);
+  });
+
+  it('rotates localized day names by numeric weekday index', () => {
+    const localizedNames = standaloneShortWeekdayNamesByLocale.es;
+
+    render(
+      <InternationalizationProvider locale="es-ES">
+        <Calendar weekStartsOn={1} />
+      </InternationalizationProvider>,
+    );
+
+    expect(
+      screen.getAllByRole('columnheader').map(header => header.textContent),
+    ).toEqual([...localizedNames.slice(1), localizedNames[0]]);
   });
 
   it('displays correct number of day cells', () => {
@@ -222,6 +267,58 @@ describe('Calendar', () => {
     expect(day15).not.toBeDisabled();
   });
 
+  // ─── Initial Visible Month ───────────────────────────────────
+
+  describe('opens on a month inside the min/max window', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({toFake: ['Date']});
+      vi.setSystemTime(new Date(2026, 7, 21, 12, 0, 0));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('opens on today when today is inside the window', () => {
+      render(<Calendar min="2026-01-01" max="2026-12-31" />);
+
+      expect(screen.getByText('August 2026')).toBeInTheDocument();
+    });
+
+    it('opens on min when the window is entirely in the future', () => {
+      render(<Calendar min="2027-03-04" max="2027-06-30" />);
+
+      expect(screen.getByText('March 2027')).toBeInTheDocument();
+      expect(getDayButton(4, 'March', 2027)).not.toBeDisabled();
+    });
+
+    it('opens on max when the window is entirely in the past', () => {
+      render(<Calendar min="2019-01-01" max="2019-04-30" />);
+
+      expect(screen.getByText('April 2019')).toBeInTheDocument();
+      expect(getDayButton(30, 'April', 2019)).not.toBeDisabled();
+    });
+
+    it('keeps max in the last pane in the two-month layout', () => {
+      render(<Calendar numberOfMonths={2} min="2019-01-01" max="2019-04-30" />);
+
+      expect(screen.getByText('March 2019 – April 2019')).toBeInTheDocument();
+    });
+
+    it('still honors an explicit focusDate outside the window', () => {
+      render(
+        <Calendar focusDate="2026-01-01" min="2027-03-04" max="2027-06-30" />,
+      );
+
+      expect(screen.getByText('January 2026')).toBeInTheDocument();
+    });
+
+    it('still opens on the selected value outside the window', () => {
+      render(<Calendar defaultValue="2031-07-04" min="2019-01-01" />);
+
+      expect(screen.getByText('July 2031')).toBeInTheDocument();
+    });
+  });
+
   it('respects custom dateConstraints', () => {
     // Only allow weekdays
     const isWeekday = (date: Date) => {
@@ -270,6 +367,46 @@ describe('Calendar', () => {
     expect(getDayButton(9)).toBeDisabled(); // 2-day span — too short
   });
 
+  it('commits a same-day range with the default minimum', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <Calendar mode="range" focusDate="2026-01-01" onChange={handleChange} />,
+    );
+
+    await user.click(getDayButton(10));
+    await user.click(getDayButton(10));
+
+    expect(handleChange).toHaveBeenCalledWith({
+      start: '2026-01-10',
+      end: '2026-01-10',
+    });
+  });
+
+  it('commits a same-day range when the minimum permits it, including with a maximum', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <Calendar
+        mode="range"
+        focusDate="2026-01-01"
+        onChange={handleChange}
+        minRangeSpan={1}
+        maxRangeSpan={7}
+      />,
+    );
+
+    await user.click(getDayButton(10));
+    await user.click(getDayButton(10));
+
+    expect(handleChange).toHaveBeenCalledWith({
+      start: '2026-01-10',
+      end: '2026-01-10',
+    });
+  });
+
   it('clears the in-progress start when the anchor is clicked again', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -294,6 +431,33 @@ describe('Calendar', () => {
     // the old anchor are selectable again, so a new start can be placed there.
     expect(getDayButton(11)).not.toBeDisabled();
     expect(getDayButton(9)).not.toBeDisabled();
+  });
+
+  it('announces the cleared range in the provider locale', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <InternationalizationProvider locale="ja-JP">
+        <Calendar mode="range" focusDate="2026-01-01" />
+      </InternationalizationProvider>,
+    );
+
+    // The day button's own accessible name is already localized through the
+    // provider. The announcement has to use the same date string: formatting
+    // it without the locale silently falls back to the host locale, so a
+    // Japanese user hears an English date.
+    const anchor = document.querySelector<HTMLButtonElement>(
+      'button[data-date="2026-01-10"]',
+    );
+    const localizedDate = anchor?.getAttribute('aria-label');
+    expect(localizedDate).toBeTruthy();
+
+    await user.click(anchor as HTMLButtonElement);
+    await user.click(anchor as HTMLButtonElement);
+
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toContain(localizedDate);
+    });
   });
 
   it('does not apply range-span constraints in single mode', async () => {
@@ -1335,5 +1499,25 @@ describe('Calendar', () => {
       expect(css).toContain('.astryx-calendar-nav.next');
       expect(css).toContain('background-color: var(--color-accent-muted)');
     });
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so this asserts that the
+// compiled output includes the forced-colors rules; visual behavior needs
+// manual verification under Windows High Contrast.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles a forced-colors fill so the selected date survives Windows High Contrast', () => {
+    render(
+      <Calendar mode="single" value="2026-01-15" focusDate="2026-01-01" />,
+    );
+
+    const css = getForcedColorsRules();
+    // Without these the accent fill is stripped and the selected date renders
+    // identically to every other day in the month.
+    expect(css).toContain('background-color: highlight;');
+    expect(css).toContain('color: highlighttext;');
+    // A <button> keeps the native ButtonFace surface and ignores the authored
+    // Highlight fill unless it opts out of UA remapping.
+    expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
   });
 });

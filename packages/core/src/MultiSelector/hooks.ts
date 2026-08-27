@@ -34,6 +34,12 @@ interface UseMultiComboboxOptions {
    * The Delete/Backspace clear path is skipped when false.
    */
   hasValue?: boolean;
+  /**
+   * Whether the browser's light dismiss just closed the popup. The trigger
+   * click that follows belongs to that same press, so acting on it would
+   * reopen the popup the user just closed.
+   */
+  wasJustDismissed?: () => boolean;
   listboxId: string;
 }
 
@@ -62,6 +68,7 @@ export function useMultiCombobox({
   onToggle,
   onClear,
   hasValue = false,
+  wasJustDismissed,
   listboxId,
 }: UseMultiComboboxOptions): UseMultiComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -87,7 +94,7 @@ export function useMultiCombobox({
   }, [onClose]);
 
   const onTriggerClick = useCallback(() => {
-    if (isDisabled) {
+    if (isDisabled || wasJustDismissed?.()) {
       return;
     }
     if (isOpen) {
@@ -98,7 +105,7 @@ export function useMultiCombobox({
         setHighlightedIndex(0);
       }
     }
-  }, [isDisabled, isOpen, onOpen, closeAndReset, hasSearch]);
+  }, [isDisabled, wasJustDismissed, isOpen, onOpen, closeAndReset, hasSearch]);
 
   const onItemMouseEnter = useCallback(
     (item: MultiSelectorOptionData, index: number) => {

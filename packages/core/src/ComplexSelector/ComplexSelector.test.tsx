@@ -353,6 +353,7 @@ describe('ComplexSelector', () => {
       .closest('[popover]');
     expect(popover).not.toBeNull();
 
+    fireEvent.pointerDown(trigger);
     const closeEvent = new Event('toggle');
     Object.defineProperty(closeEvent, 'newState', {value: 'closed'});
     fireEvent(popover as HTMLElement, closeEvent);
@@ -416,5 +417,187 @@ describe('ComplexSelector popup theme target', () => {
     expect(
       document.querySelector('.astryx-complex-selector-popup'),
     ).not.toBeNull();
+  });
+
+  it('stays closed when the trigger click follows its own light dismiss (#5004)', async () => {
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
+        {() => <button type="button">Done</button>}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Fruit blend'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The browser dismissed the popup on pointerup and queued the toggle. When
+    // that event lands before the click — WebKit, or any engine under load —
+    // the click used to read a closed popup and reopen it.
+    fireEvent.pointerDown(trigger);
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+    // Synchronously: the click falls inside the one gesture the guard covers,
+    // as it does in a browser a few milliseconds behind the dismissal.
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('ComplexSelector onOpenChange', () => {
+  function renderSelector(onOpenChange: (isOpen: boolean) => void) {
+    render(
+      <ComplexSelector
+        label="View options"
+        value={[]}
+        onOpenChange={onOpenChange}>
+        {(_value, _onChange, close) => (
+          <button type="button" onClick={close}>
+            Apply
+          </button>
+        )}
+      </ComplexSelector>,
+    );
+    return screen.getByRole('button', {name: 'View options'});
+  }
+
+  it('reports the open and the close of a trigger toggle', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const trigger = renderSelector(onOpenChange);
+
+    await user.click(trigger);
+    expect(onOpenChange.mock.calls).toEqual([[true]]);
+
+    await user.click(trigger);
+    expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('reports an open from ArrowDown', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const trigger = renderSelector(onOpenChange);
+
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+
+    expect(onOpenChange.mock.calls).toEqual([[true]]);
+  });
+
+  it('reports a close from Escape', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const trigger = renderSelector(onOpenChange);
+
+    await user.click(trigger);
+    onOpenChange.mockClear();
+    await user.keyboard('{Escape}');
+
+    expect(onOpenChange.mock.calls).toEqual([[false]]);
+  });
+
+  it('reports a close the browser performed (light dismiss)', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const trigger = renderSelector(onOpenChange);
+
+    await user.click(trigger);
+    onOpenChange.mockClear();
+
+    const popover = screen
+      .getByRole('dialog', {hidden: true})
+      .closest('[popover]') as HTMLElement;
+    const closeEvent = new Event('toggle');
+    Object.defineProperty(closeEvent, 'newState', {value: 'closed'});
+    fireEvent(popover, closeEvent);
+
+    expect(onOpenChange.mock.calls).toEqual([[false]]);
+  });
+
+  it('reports a gesture light dismiss once without reopening from its click', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const trigger = renderSelector(onOpenChange);
+
+    await user.click(trigger);
+    onOpenChange.mockClear();
+
+    const popover = screen
+      .getByRole('dialog', {hidden: true})
+      .closest('[popover]') as HTMLElement;
+    fireEvent.pointerDown(trigger);
+    fireEvent(
+      popover,
+      Object.assign(new Event('toggle'), {
+        oldState: 'open',
+        newState: 'closed',
+      }),
+    );
+    fireEvent.click(trigger);
+
+    expect(onOpenChange.mock.calls).toEqual([[false]]);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('reports a close from content calling close()', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const trigger = renderSelector(onOpenChange);
+
+    await user.click(trigger);
+    onOpenChange.mockClear();
+    await user.click(screen.getByRole('button', {name: 'Apply', ...h}));
+
+    expect(onOpenChange.mock.calls).toEqual([[false]]);
+  });
+
+  it('reports opens and closes driven through the imperative handle', () => {
+    const onOpenChange = vi.fn();
+    const handleRef = React.createRef<ComplexSelectorHandle>();
+    render(
+      <ComplexSelector
+        label="View options"
+        value={[]}
+        handleRef={handleRef}
+        onOpenChange={onOpenChange}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+
+    act(() => handleRef.current?.open());
+    act(() => handleRef.current?.close());
+    act(() => handleRef.current?.toggle());
+
+    expect(onOpenChange.mock.calls).toEqual([[true], [false], [true]]);
+  });
+
+  it('does not report a state it is already in', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const handleRef = React.createRef<ComplexSelectorHandle>();
+    render(
+      <ComplexSelector
+        label="View options"
+        value={[]}
+        handleRef={handleRef}
+        onOpenChange={onOpenChange}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('button', {name: 'View options'});
+
+    act(() => handleRef.current?.close());
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    await user.click(trigger);
+    act(() => handleRef.current?.open());
+    expect(onOpenChange.mock.calls).toEqual([[true]]);
   });
 });

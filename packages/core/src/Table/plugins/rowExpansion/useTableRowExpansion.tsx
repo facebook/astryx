@@ -21,6 +21,7 @@ import {useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
+import {VisuallyHidden} from '../../../VisuallyHidden';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator} from '../../../i18n';
 import {rtlStyles} from '../../../utils';
@@ -77,7 +78,10 @@ const expansionStyles = stylex.create({
     background: 'transparent',
     border: 'none',
     borderRadius: radiusVars['--radius-inner'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     color: colorVars['--color-icon-secondary'],
     transitionProperty: 'transform, color',
     transitionDuration: '150ms',
@@ -85,11 +89,11 @@ const expansionStyles = stylex.create({
     // Match IconButton ghost hover: subtle overlay background.
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
     },
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       color: colorVars['--color-icon-primary'],
     },
   },
@@ -204,7 +208,13 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
   const expansionColumn = useMemo(
     (): TableColumn<T> => ({
       key: '__expansion',
-      header: '',
+      // A `<th>` with no discernible text is announced as an unlabelled
+      // column; the label is hidden because the column shows only chevrons.
+      header: (
+        <VisuallyHidden>
+          {t('@astryx.tableRowExpansion.columnHeader')}
+        </VisuallyHidden>
+      ),
       width: EXPANSION_COLUMN_WIDTH,
       resizable: false,
       renderCell: (item: T) => {
@@ -223,7 +233,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         );
       },
     }),
-    [expandedKeys, onToggle, getRowKey, getIsItemExpandable],
+    [expandedKeys, onToggle, getRowKey, getIsItemExpandable, t],
   );
 
   return useMemo(

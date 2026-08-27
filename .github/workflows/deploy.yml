@@ -169,6 +169,7 @@ jobs:
           # otherwise its root-absolute asset URLs (/sandbox/_next/...) drop the
           # /<repo> segment and 404. Derived from the repo name so it survives renames.
           SANDBOX_BASE_PATH: /${{ github.event.repository.name }}/sandbox
+          SANDBOX_TEMPLATE_ASSETS_BASE_PATH: /${{ github.event.repository.name }}/sandbox/template-assets
           NODE_OPTIONS: '--max-old-space-size=4096'
 
       # The landing page (assembled in `deploy`) links these straight out of
@@ -338,10 +339,18 @@ jobs:
           # full rationale:
           #   --filter=blob:none  → clone fetches trees but NO file contents
           #   sparse-checkout     → only the stable paths are materialized;
-          #                         /pr/ & /reports/ stay in the index as
-          #                         skip-worktree entries (never written out)
+          #                         every other path (/pr/, /reports/,
+          #                         /visual-gate/) stays in the index as a
+          #                         skip-worktree entry (never written out)
           #   git write-tree      → rebuilds the full tree from the index, so
-          #                         /pr/ & /reports/ are reused by SHA
+          #                         those paths are reused by SHA
+          #
+          # This is an allow-BY-DEFAULT mechanism: anything outside the cone
+          # below survives automatically. Adding a path to the sparse-checkout
+          # set makes it a MANAGED path, wiped and republished each deploy — so
+          # never add a path that another workflow owns. /visual-gate/ holds the
+          # visual-regression baseline (owned by visual-baseline.yml); wiping it
+          # would silently disarm the release gate.
           #   commit-tree (no -p) → one ORPHAN commit == force_orphan, produced
           #                         without a full local copy of gh-pages
           REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
@@ -375,9 +384,9 @@ jobs:
             cp -r "$WORK_DIR"/staged/. ./
             touch .nojekyll
 
-            # git add -A respects skip-worktree, so /pr/ & /reports/ are NOT
-            # staged for deletion — they stay in the index and are carried
-            # forward by write-tree.
+            # git add -A respects skip-worktree, so /pr/, /reports/ and
+            # /visual-gate/ are NOT staged for deletion — they stay in the
+            # index and are carried forward by write-tree.
             git add -A
             if git diff --cached --quiet; then
               echo "Nothing to publish"; echo "::endgroup::"; exit 0

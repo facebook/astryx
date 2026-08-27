@@ -24,6 +24,7 @@ function scaffold({
   withCodemods = true,
   brokenComponent = false,
   brokenCodemod = false,
+  docs = null,
   integrationIssuesUrl = 'https://example.com/widgets/issues',
 } = {}) {
   fs.writeFileSync(
@@ -48,6 +49,7 @@ function scaffold({
   if (withComponents) manifest.components = './components';
   if (withTemplates) manifest.templates = './templates';
   if (withCodemods) manifest.codemods = './codemods';
+  if (docs) manifest.docs = './docs';
   if (integrationIssuesUrl) manifest.issuesUrl = integrationIssuesUrl;
   fs.writeFileSync(
     path.join(pkgDir, 'astryx.integration.mjs'),
@@ -99,7 +101,32 @@ function scaffold({
     }
   }
 
+  if (docs) {
+    const docsDir = path.join(pkgDir, 'docs');
+    fs.mkdirSync(docsDir, {recursive: true});
+    for (const [file, doc] of Object.entries(docs)) {
+      fs.writeFileSync(
+        path.join(docsDir, file),
+        typeof doc === 'string'
+          ? doc
+          : `export const docs = ${JSON.stringify(doc, null, 2)};\n`,
+      );
+    }
+  }
+
   return pkgDir;
+}
+
+/** A minimal, valid topic for the docs-root fixtures. */
+function topicDoc(fields) {
+  return {
+    type: 'generic',
+    name: 'deploying',
+    title: 'Deploying',
+    description: 'How to ship it.',
+    sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}],
+    ...fields,
+  };
 }
 
 beforeEach(() => {
@@ -196,6 +223,45 @@ describe('Project discovery', () => {
     expect(integration).toHaveLength(1);
     expect(integration[0].version).toBe('0.2.0');
     expect(integration[0].codemods[0].id).toBe('drop-foo');
+  });
+
+  it('docs() adds an integration topic beside the built-in ones', async () => {
+    scaffold({docs: {'deploying.doc.mjs': topicDoc()}});
+    const project = await Project.load(tmpDir);
+    const catalog = await project.docs();
+    expect(catalog.resolve('deploying')).toMatchObject({
+      name: 'deploying',
+      package: '@acme/widgets',
+    });
+    // The CLI's own topics are still there.
+    expect(catalog.resolve('tokens').package).toBe('@astryxdesign/cli');
+    expect(await project.issues()).toEqual([]);
+  });
+
+  it('docs() lets an integration replace a built-in topic, aliasing the old name', async () => {
+    scaffold({
+      docs: {
+        'setup.doc.mjs': topicDoc({name: 'setup', replaces: 'getting-started'}),
+      },
+    });
+    const project = await Project.load(tmpDir);
+    const catalog = await project.docs();
+    expect(catalog.resolve('setup').package).toBe('@acme/widgets');
+    expect(catalog.resolve('getting-started').name).toBe('setup');
+  });
+
+  it('docs() records an unusable topic as an issue and contributes none', async () => {
+    scaffold({
+      docs: {
+        'ok.doc.mjs': topicDoc(),
+        'broken.doc.mjs': topicDoc({name: 'broken', sections: []}),
+      },
+    });
+    const project = await Project.load(tmpDir);
+    const catalog = await project.docs();
+    expect(catalog.resolve('deploying')).toBeUndefined();
+    const issues = await project.issues();
+    expect(issues.some(i => i.code === 'invalid_doc' && i.severity === 'error')).toBe(true);
   });
 
   it('memoizes components() — the second call does not re-walk', async () => {

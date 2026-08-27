@@ -38,13 +38,15 @@ import {
   spacingVars,
   typeScaleVars,
   radiusVars,
+  fontWeightVars,
 } from '../theme/tokens.stylex';
-import {BreadcrumbContext} from './Breadcrumbs';
+import {BreadcrumbContext, type BreadcrumbsVariant} from './Breadcrumbs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {Icon} from '../Icon';
 import {usePopover} from '../Popover/usePopover';
 import {useListFocus} from '../hooks/useListFocus';
@@ -63,6 +65,7 @@ import {
 } from '../DropdownMenu/menuItemRoles';
 import type {DropdownMenuOption} from '../DropdownMenu/DropdownMenu';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Props
 // =============================================================================
@@ -158,17 +161,23 @@ const itemStyles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
     textDecoration: {
       default: 'none',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': 'underline',
       },
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
-  // Reset native button styles so onClick-only items match link appearance
+  // Reset native button styles so onClick-only items match link appearance.
+  // paddingInline rather than padding: a blanket `padding` also overrides the
+  // paddingBlock `link` sets above, which shrank the button crumbs to 20px
+  // against their sibling links' 28px.
   buttonReset: {
     background: 'none',
     border: 'none',
-    padding: 0,
+    paddingInline: 0,
     margin: 0,
     font: 'inherit',
   },
@@ -179,7 +188,7 @@ const itemStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   current: {
-    fontWeight: 'inherit',
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   defaultCurrent: {
     color: colorVars['--color-text-primary'],
@@ -339,6 +348,8 @@ export function BreadcrumbItem({
     }
   });
 
+  const mergedItemRef = useMergedRefs(ref, liRef);
+
   const content = (
     <>
       {startIcon && <span {...stylex.props(itemStyles.icon)}>{startIcon}</span>}
@@ -349,9 +360,9 @@ export function BreadcrumbItem({
   if (isCurrent) {
     return (
       <li
-        ref={mergeRefs(ref, liRef)}
+        ref={mergedItemRef}
         {...mergeProps(
-          themeProps('breadcrumb-item'),
+          themeProps('breadcrumb-item', {variant: ctx.variant}),
           stylex.props(
             itemStyles.root,
             isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
@@ -372,7 +383,7 @@ export function BreadcrumbItem({
             ref={contentRef}
             menu={menu}
             menuSize={resolvedMenuSize}
-            isSupporting={isSupporting}
+            variant={ctx.variant}
             isCurrent
             label={children}>
             {content}
@@ -398,9 +409,9 @@ export function BreadcrumbItem({
   // The effect handles adding aria-current for auto-last detection.
   return (
     <li
-      ref={mergeRefs(ref, liRef)}
+      ref={mergedItemRef}
       {...mergeProps(
-        themeProps('breadcrumb-item'),
+        themeProps('breadcrumb-item', {variant: ctx.variant}),
         stylex.props(
           itemStyles.root,
           isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
@@ -419,7 +430,7 @@ export function BreadcrumbItem({
           ref={contentRef}
           menu={menu}
           menuSize={resolvedMenuSize}
-          isSupporting={isSupporting}
+          variant={ctx.variant}
           label={children}>
           {content}
         </BreadcrumbMenuTrigger>
@@ -428,7 +439,7 @@ export function BreadcrumbItem({
           ref={contentRef}
           href={href}
           onClick={onClick}
-          {...stylex.props(
+          {...focusOutlineProps.focusVisible(
             itemStyles.link,
             isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
           )}>
@@ -439,7 +450,7 @@ export function BreadcrumbItem({
           ref={contentRef as React.RefObject<HTMLButtonElement | null>}
           type="button"
           onClick={onClick}
-          {...stylex.props(
+          {...focusOutlineProps.focusVisible(
             itemStyles.link,
             itemStyles.buttonReset,
             isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
@@ -477,7 +488,7 @@ interface BreadcrumbMenuTriggerProps {
   label: ReactNode;
   menu: DropdownMenuOption[] | ReactNode;
   menuSize: DropdownMenuSize;
-  isSupporting: boolean;
+  variant: BreadcrumbsVariant;
   isCurrent?: boolean;
 }
 
@@ -494,11 +505,12 @@ function BreadcrumbMenuTrigger({
   label,
   menu,
   menuSize,
-  isSupporting,
+  variant,
   isCurrent = false,
 }: BreadcrumbMenuTriggerProps) {
   const menuId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const isSupporting = variant === 'supporting';
 
   const popover = usePopover({
     onHide: useCallback(() => {
@@ -607,7 +619,7 @@ function BreadcrumbMenuTrigger({
   return (
     <>
       <button
-        ref={mergeRefs(
+        ref={useMergedRefs(
           ref as React.Ref<HTMLButtonElement>,
           buttonRef,
           popover.triggerRef,
@@ -615,16 +627,21 @@ function BreadcrumbMenuTrigger({
         type="button"
         onClick={handleClick}
         onKeyDown={handleKeyDown}
-        {...mergeProps(themeProps('breadcrumb-item-menu-trigger'), {
-          ...popover.triggerProps,
-          'aria-haspopup': 'menu' as const,
-          'aria-controls': menuId,
-          'aria-current': isCurrent ? ('page' as const) : undefined,
-        })}
-        {...stylex.props(
-          itemStyles.link,
-          itemStyles.buttonReset,
-          isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
+        {...popover.triggerProps}
+        aria-haspopup="menu"
+        aria-controls={menuId}
+        aria-current={isCurrent ? 'page' : undefined}
+        {...mergeProps(
+          themeProps('breadcrumb-item-menu-trigger', {variant}),
+          // Through mergeProps, not a second spread: a sibling stylex.props()
+          // spread replaces the className themeProps() built, which is how the
+          // documented breadcrumb-item-menu-trigger target came to render on
+          // nothing.
+          focusOutlineProps.focusVisible(
+            itemStyles.link,
+            itemStyles.buttonReset,
+            isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
+          ),
         )}>
         {children}
         <Icon

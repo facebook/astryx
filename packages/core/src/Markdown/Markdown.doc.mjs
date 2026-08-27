@@ -97,6 +97,11 @@ export const docs = {
         "Opt-in autolinking of bare URLs and emails. 'gfm' applies GitHub-Flavored Markdown autolink-literal rules: bare https?://..., www...., <scheme:url>, <email>, and user@host all become links. Trailing sentence punctuation and unbalanced trailing close-parens are excluded; matches inside code spans, code blocks, existing links, and image alt text are skipped. Default behavior (option unset) is unchanged.",
     },
     {
+      name: 'components',
+      type: 'MarkdownComponents',
+      description: 'Custom React component overrides for rendered Markdown elements (code, inlineCode, link, heading, paragraph, image, blockquote, hr, citation).',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -169,6 +174,7 @@ export const docs = {
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
+      { guidance: true, description: 'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },
@@ -381,6 +387,7 @@ export const docsZh = {
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
+      { guidance: true, description: 'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },
@@ -396,6 +403,7 @@ export const docsDense = {
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns (issue refs, diff refs, mentions) instead of preprocessing the markdown string.' },
+      { guidance: true, description: 'Headings render id attributes matching useOutlineFromMarkdown ids; pair with Outline for hash navigation.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },

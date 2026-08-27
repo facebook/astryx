@@ -98,8 +98,23 @@ const config: StorybookConfig = {
               '@astryxdesign/richtext': [
                 path.join(rootDir, 'packages/richtext/src'),
               ],
+              '@astryxdesign/theme-butter/*': [
+                path.join(rootDir, 'packages/themes/butter/src/*'),
+              ],
+              '@astryxdesign/theme-chocolate/*': [
+                path.join(rootDir, 'packages/themes/chocolate/src/*'),
+              ],
+              '@astryxdesign/theme-gothic/*': [
+                path.join(rootDir, 'packages/themes/gothic/src/*'),
+              ],
+              '@astryxdesign/theme-matcha/*': [
+                path.join(rootDir, 'packages/themes/matcha/src/*'),
+              ],
               '@astryxdesign/theme-neutral/*': [
                 path.join(rootDir, 'packages/themes/neutral/src/*'),
+              ],
+              '@astryxdesign/theme-probe/*': [
+                path.join(rootDir, 'packages/themes/probe/src/*'),
               ],
               '@astryxdesign/theme-stone/*': [
                 path.join(rootDir, 'packages/themes/stone/src/*'),
@@ -130,9 +145,29 @@ const config: StorybookConfig = {
             rootDir,
             'packages/richtext/src',
           ),
+          '@astryxdesign/theme-butter': path.resolve(
+            rootDir,
+            'packages/themes/butter/src/source.ts',
+          ),
+          '@astryxdesign/theme-chocolate': path.resolve(
+            rootDir,
+            'packages/themes/chocolate/src/source.ts',
+          ),
+          '@astryxdesign/theme-gothic': path.resolve(
+            rootDir,
+            'packages/themes/gothic/src/source.ts',
+          ),
+          '@astryxdesign/theme-matcha': path.resolve(
+            rootDir,
+            'packages/themes/matcha/src/source.ts',
+          ),
           '@astryxdesign/theme-neutral': path.resolve(
             rootDir,
             'packages/themes/neutral/src/source.ts',
+          ),
+          '@astryxdesign/theme-probe': path.resolve(
+            rootDir,
+            'packages/themes/probe/src/source.ts',
           ),
           '@astryxdesign/theme-stone': path.resolve(
             rootDir,

@@ -84,6 +84,12 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'minQueryLength',
+      type: 'number',
+      description: 'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
+      default: '1',
+    },
+    {
       name: 'status',
       type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
@@ -170,6 +176,11 @@ export const docs = {
       type: 'SizeValue',
       description:
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'startIcon',
+      type: 'IconType | ReactNode',
+      description: 'SVG icon component displayed at the start of the input.',
     },
     {
       name: 'xstyle',

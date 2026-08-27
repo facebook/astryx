@@ -19,10 +19,16 @@
  * - `::backdrop` pseudo-element
  * - Body scroll lock
  * - Focus trapping
- * - Escape key handling via `cancel` event
+ *
+ * Escape is owned by the shared dismissal stack (`useLayerDismissal`), so a
+ * drawer opened over another layer takes the press and nothing behind it
+ * closes. The native `cancel` event still handles the dismissals the browser
+ * starts itself, such as the Android back gesture.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
+ * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
+ * - /packages/core/src/hooks/scrollbarGutter.ts (shared scroll-lock gutter)
  * - /packages/cli/assets/templates/blocks/components/MobileNav/ (showcase blocks)
  */
 
@@ -47,11 +53,19 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {Heading} from '../Heading/Heading';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
-import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
+import {
+  holdScrollbarGutter,
+  type ScrollbarGutterHold,
+} from '../hooks/scrollbarGutter';
+import {mergeProps, composeEventHandlers} from '../utils';
+import {overlayPaddingReset} from '../Layout/padding.stylex';
+import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -70,7 +84,16 @@ const styles = stylex.create({
     width: '100vw',
     height: '100dvh',
     backgroundColor: 'transparent',
-    overflow: 'hidden',
+    // `clip`, not `hidden`. Both clip the off-screen drawer, but `hidden` makes
+    // the dialog a SCROLL CONTAINER, and a scroll container in the top layer
+    // whose subtree holds another scroller (the drawer's content area) does not
+    // paint a @starting-style entry transition for its descendants in Chromium:
+    // the transition ticks in the CSSOM while every painted frame shows the
+    // end value, so the drawer appears fully open. `clip` clips without
+    // creating a scroll container and the slide-in paints normally. The dialog
+    // never scrolls anyway — its child is absolutely positioned — so nothing
+    // depended on it being a scroll container.
+    overflow: 'clip',
     overscrollBehavior: 'contain',
     // Prevent touch gestures (pull-to-refresh, background scroll) passing through
     touchAction: 'none',
@@ -112,7 +135,14 @@ const styles = stylex.create({
   },
   backdropOpen: {
     '::backdrop': {
-      opacity: 1,
+      // The ::backdrop only exists once showModal() has put the dialog in the
+      // top layer, so its first rendered frame already has the open opacity.
+      // Without a starting style there is no earlier value to transition from
+      // and the scrim snaps in — @starting-style supplies that value.
+      opacity: {
+        default: 1,
+        '@starting-style': 0,
+      },
     },
   },
   drawer: {
@@ -143,7 +173,17 @@ const styles = stylex.create({
     },
   },
   drawerStartOpen: {
-    transform: 'translateX(0)',
+    // The whole dialog is `display: none` while closed, so the drawer is not
+    // rendered and the open transform is the only value it has ever had — a
+    // transition needs a previous value to run from. @starting-style gives the
+    // first rendered frame the off-screen transform, so the slide-in plays.
+    transform: {
+      default: 'translateX(0)',
+      '@starting-style': {
+        default: 'translateX(-100%)',
+        ':is([dir="rtl"] *)': 'translateX(100%)',
+      },
+    },
   },
   drawerEnd: {
     insetInlineEnd: 0,
@@ -156,7 +196,14 @@ const styles = stylex.create({
     },
   },
   drawerEndOpen: {
-    transform: 'translateX(0)',
+    // See drawerStartOpen — same starting style, mirrored edge.
+    transform: {
+      default: 'translateX(0)',
+      '@starting-style': {
+        default: 'translateX(100%)',
+        ':is([dir="rtl"] *)': 'translateX(-100%)',
+      },
+    },
   },
   header: {
     display: 'flex',
@@ -396,6 +443,15 @@ export function MobileNav({
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const gutterRef = useRef<ScrollbarGutterHold | null>(null);
+
+  // Gives back the gutter held open in place of the hidden scrollbar.
+  const releaseGutter = useCallback(() => {
+    if (gutterRef.current) {
+      gutterRef.current.release();
+      gutterRef.current = null;
+    }
+  }, []);
   // Resolved side — computed from trigger position when side='auto'
   const [resolvedSide, setResolvedSide] = useState<'start' | 'end'>(
     side === 'auto' ? 'end' : side,
@@ -438,6 +494,10 @@ export function MobileNav({
     }
 
     if (isOpen) {
+      // Taken first: every mutation below is one that can hide the scrollbar,
+      // and the gutter has to be measured while it is still there.
+      gutterRef.current ??= holdScrollbarGutter(document.documentElement);
+
       if (!dialog.open) {
         dialog.showModal();
       }
@@ -445,8 +505,10 @@ export function MobileNav({
       // overflow: clip avoids creating a scroll container (unlike hidden),
       // so there's no scroll bounce and no need to save/restore scroll position.
       document.documentElement.style.overflow = 'clip';
+      gutterRef.current.settle();
     } else if (dialog.open) {
       document.documentElement.style.overflow = '';
+      releaseGutter();
 
       closeTimeoutRef.current = setTimeout(() => {
         dialog.close();
@@ -459,8 +521,9 @@ export function MobileNav({
         closeTimeoutRef.current = null;
       }
       document.documentElement.style.overflow = '';
+      releaseGutter();
     };
-  }, [isOpen]);
+  }, [isOpen, releaseGutter]);
 
   // Close the native dialog on unmount if it's still open. Inside AppShell the
   // drawer is mounted in an <Activity> that switches to mode="hidden" when the
@@ -481,13 +544,28 @@ export function MobileNav({
     };
   }, []);
 
-  // Handle native cancel event (Escape key) — prevent default and route through onOpenChange
+  const {shouldDismissOnCloseRequest} = useLayerDismissal({
+    isActive: isOpen,
+    onDismiss: () => onOpenChange(false),
+  });
+
+  // The native `cancel` event is the browser's own close-watcher firing: an
+  // Android back gesture, or a close request the stack never saw a press for.
+  // Escape presses the stack owns never arrive here — it preventDefault()s
+  // those, which suppresses the close watcher.
+  //
+  // Always preventDefault so the browser cannot close a controlled <dialog>
+  // behind React's back, then answer with the stack's own rules: top-most
+  // only, and never while an IME composition is in progress.
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
+      if (!shouldDismissOnCloseRequest()) {
+        return;
+      }
       onOpenChange(false);
     },
-    [onOpenChange],
+    [onOpenChange, shouldDismissOnCloseRequest],
   );
 
   // Handle clicks on the dialog backdrop area (outside the drawer)
@@ -506,12 +584,13 @@ export function MobileNav({
 
   return (
     <dialog
-      ref={mergeRefs(ref, dialogRef)}
+      ref={useMergedRefs(ref, dialogRef)}
       id={dialogId}
       {...mergeProps(
         themeProps('mobile-nav', {side: resolvedSide}),
         stylex.props(
           styles.dialog,
+          overlayPaddingReset.reset,
           isOpen && styles.open,
           styles.backdrop,
           isOpen && styles.backdropOpen,
@@ -530,38 +609,41 @@ export function MobileNav({
       }
       onClick={composeEventHandlers(onClickProp, handleDialogClick)}
       onCancel={handleCancel}>
-      {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
-      <div
-        tabIndex={-1}
-        {...stylex.props(
-          styles.drawer,
-          dynamicStyles.width(width),
-          isStart && styles.drawerStart,
-          isStart && isOpen && styles.drawerStartOpen,
-          !isStart && styles.drawerEnd,
-          !isStart && isOpen && styles.drawerEndOpen,
-        )}>
-        {/* Header — content + close button */}
-        <div {...stylex.props(styles.header, !header && styles.headerNoTitle)}>
-          {typeof header === 'string' ? (
-            <Heading level={2} xstyle={styles.headerText}>
-              {header}
-            </Heading>
-          ) : (
-            (header ?? null)
-          )}
-          <Button
-            variant="ghost"
-            label={t('@astryx.mobileNav.closeNavigation')}
-            icon={<Icon icon="close" color="inherit" />}
-            onClick={() => onOpenChange(false)}
-            isIconOnly
-          />
-        </div>
+      <LayerDepthProvider>
+        {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
+        <div
+          tabIndex={-1}
+          {...stylex.props(
+            styles.drawer,
+            dynamicStyles.width(width),
+            isStart && styles.drawerStart,
+            isStart && isOpen && styles.drawerStartOpen,
+            !isStart && styles.drawerEnd,
+            !isStart && isOpen && styles.drawerEndOpen,
+          )}>
+          {/* Header — content + close button */}
+          <div
+            {...stylex.props(styles.header, !header && styles.headerNoTitle)}>
+            {typeof header === 'string' ? (
+              <Heading level={2} xstyle={styles.headerText}>
+                {header}
+              </Heading>
+            ) : (
+              (header ?? null)
+            )}
+            <Button
+              variant="ghost"
+              label={t('@astryx.mobileNav.closeNavigation')}
+              icon={<Icon icon="close" color="inherit" />}
+              onClick={() => onOpenChange(false)}
+              isIconOnly
+            />
+          </div>
 
-        {/* Scrollable content */}
-        <div {...stylex.props(styles.content)}>{children}</div>
-      </div>
+          {/* Scrollable content */}
+          <div {...stylex.props(styles.content)}>{children}</div>
+        </div>
+      </LayerDepthProvider>
     </dialog>
   );
 }

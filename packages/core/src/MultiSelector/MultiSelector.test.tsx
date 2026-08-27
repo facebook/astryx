@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -126,6 +127,90 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByText('2 selected')).toBeInTheDocument();
+  });
+
+  it('formats the count display with formatValue', () => {
+    render(
+      <MultiSelector
+        label="Spaces"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        formatValue={items => `${items.length} spaces selected`}
+      />,
+    );
+    expect(screen.getByText('2 spaces selected')).toBeInTheDocument();
+  });
+
+  it('passes selected values and resolved labels to formatValue', () => {
+    const formatValue = vi.fn(
+      (items: {value: string; label: string}[]) =>
+        `${items[0].label} and ${items.length - 1} more`,
+    );
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[
+          {value: 'a', label: 'Apple'},
+          {value: 'b', label: 'Banana'},
+        ]}
+        value={['a', 'b']}
+        onChange={() => {}}
+        formatValue={formatValue}
+      />,
+    );
+    expect(formatValue).toHaveBeenCalledWith([
+      {value: 'a', label: 'Apple'},
+      {value: 'b', label: 'Banana'},
+    ]);
+    expect(screen.getByText('Apple and 1 more')).toBeInTheDocument();
+  });
+
+  it('formats the labels display with formatValue', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana', 'Orange']}
+        onChange={() => {}}
+        triggerDisplay="labels"
+        formatValue={items => items.map(item => item.label).join(' & ')}
+      />,
+    );
+    expect(screen.getByText('Apple & Banana & Orange')).toBeInTheDocument();
+  });
+
+  it('ignores formatValue in badges display', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        triggerDisplay="badges"
+        formatValue={() => 'formatted'}
+      />,
+    );
+    expect(screen.queryByText('formatted')).not.toBeInTheDocument();
+    const trigger = within(screen.getByRole('combobox'));
+    expect(trigger.getByText('Apple')).toBeInTheDocument();
+    expect(trigger.getByText('Banana')).toBeInTheDocument();
+  });
+
+  it('shows the placeholder rather than calling formatValue when empty', () => {
+    const formatValue = vi.fn(() => 'formatted');
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        placeholder="Pick fruits..."
+        formatValue={formatValue}
+      />,
+    );
+    expect(screen.getByText('Pick fruits...')).toBeInTheDocument();
+    expect(formatValue).not.toHaveBeenCalled();
   });
 
   it('shows labels display', () => {
@@ -353,6 +438,7 @@ describe('MultiSelector', () => {
 
     await user.keyboard('{Tab}');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', {name: 'Next'})).toHaveFocus();
   });
 
   it('supports keyboard navigation with ArrowDown/ArrowUp', async () => {
@@ -824,6 +910,176 @@ describe('MultiSelector', () => {
     const listbox = screen.getByRole('listbox', h);
     const empty = within(listbox).getByText('No results found');
     expect(empty).toHaveAttribute('role', 'presentation');
+  });
+
+  it('renders emptySearchText in place of the default message', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        emptySearchText="Nothing like that here"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    const listbox = screen.getByRole('listbox', h);
+    expect(
+      within(listbox).getByText('Nothing like that here'),
+    ).toBeInTheDocument();
+    expect(
+      within(listbox).queryByText('No results found'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders emptyText, not emptySearchText, with no options and no query', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        emptySearchText="Nothing like that here"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+    const listbox = screen.getByRole('listbox', h);
+    expect(within(listbox).getByText('No options')).toBeInTheDocument();
+    expect(
+      within(listbox).queryByText('Nothing like that here'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('announces emptySearchText, not the catalog default', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        emptySearchText="Nothing like that here"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    // The panel message is role="presentation", so the live region is the
+    // only thing a screen reader gets — it has to say the same words.
+    await waitFor(() =>
+      expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+    );
+  });
+
+  it('announces the empty state when opened with no options', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        emptyText="Add a fruit first"
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+    await waitFor(() =>
+      expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+    );
+  });
+
+  it('shows and announces nothing while isLoading', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+    // useAnnounce writes on the next animation frame, so an immediate read
+    // would pass whether or not anything was announced.
+    await act(
+      async () =>
+        void (await new Promise(resolve => requestAnimationFrame(resolve))),
+    );
+
+    // The options have not arrived, so "No options" would be a claim the
+    // component cannot make; the trigger's spinner carries the state.
+    const listbox = screen.getByRole('listbox', h);
+    expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
+    expect(politeRegion()?.textContent ?? '').toBe('');
+  });
+
+  it('announces nothing while isLoading, matching the silent panel', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        isLoading
+        emptySearchText="Nothing like that here"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    // useAnnounce writes on the next animation frame, so an immediate read
+    // would pass whether or not anything was announced.
+    await act(
+      async () =>
+        void (await new Promise(resolve => requestAnimationFrame(resolve))),
+    );
+
+    // The panel is deliberately blank while loading; the live region is the
+    // only channel left, so a result there would be a claim the screen
+    // refuses to make.
+    const listbox = screen.getByRole('listbox', h);
+    expect(
+      within(listbox).queryByText('Nothing like that here'),
+    ).not.toBeInTheDocument();
+    expect(politeRegion()?.textContent ?? '').toBe('');
+  });
+
+  it('renders emptyText when there are no options and no search input', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        emptyText="Add a fruit first"
+      />,
+    );
+
+    // Without hasSearch the trigger itself is the combobox.
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+    const listbox = screen.getByRole('listbox', h);
+    expect(within(listbox).getByText('Add a fruit first')).toBeInTheDocument();
   });
 
   describe('result announcements', () => {
@@ -1790,7 +2046,7 @@ describe('MultiSelector clear icon theme target', () => {
     expect(css).toContain('.astryx-multi-selector-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-multi-selector-clear-icon:hover {');
+    expect(css).toContain('.astryx-multi-selector-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -1980,6 +2236,27 @@ describe('MultiSelector list structure', () => {
       heading!.compareDocumentPosition(firstOption) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it('hides a standalone divider from the accessibility tree (#4994)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', {type: 'divider'}, 'Banana']}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // role="listbox" only permits option/group children. The divider still
+    // renders role="separator" (unchanged visual/DOM), but must be excluded
+    // from the accessibility tree so it never reaches the listbox's exposed
+    // children (axe aria-required-children).
+    const divider = document.querySelector('[role="separator"]');
+    expect(divider).toBeTruthy();
+    expect(divider).toHaveAttribute('aria-hidden', 'true');
   });
 });
 
@@ -2382,5 +2659,39 @@ describe('MultiSelector popup theme target', () => {
     const layer = document.querySelector('[popover]') as HTMLElement;
     expect(popup).not.toBe(layer);
     expect(layer.contains(popup)).toBe(true);
+  });
+
+  it('stays closed when the trigger click follows its own light dismiss (#5004)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Cherry']}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The browser dismissed the popup on pointerup and queued the toggle. When
+    // that event lands before the click — WebKit, or any engine under load —
+    // the click used to read a closed popup and reopen it.
+    fireEvent.pointerDown(trigger);
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+    // Synchronously: the click falls inside the one gesture the guard covers,
+    // as it does in a browser a few milliseconds behind the dismissal.
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 });

@@ -482,6 +482,29 @@ export const docs = {
       },
     ],
   },
+  // Mirrors the themeProps() calls in TransferList.tsx. `astryx theme build`
+  // reads this inventory to learn which visual props a target can vary on, so
+  // a target missing here cannot be themed even though it carries the class.
+  theming: {
+    targets: [
+      {
+        className: 'astryx-transfer-list',
+        visualProps: [],
+      },
+      {
+        className: 'astryx-transfer-list-collection',
+        visualProps: [],
+      },
+      {
+        className: 'astryx-transfer-list-panel',
+        visualProps: ['side'],
+      },
+      {
+        className: 'astryx-transfer-list-item',
+        visualProps: ['side', 'state'],
+      },
+    ],
+  },
   examples: [
     {
       label: 'Default immediate selector',

@@ -260,6 +260,10 @@ const styles = stylex.create({
     opacity: 0.5,
     pointerEvents: 'none' as const,
   },
+  tokenSpan: {
+    display: 'inline-flex',
+    verticalAlign: 'middle',
+  },
 });
 
 // =============================================================================
@@ -772,7 +776,7 @@ export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
       data-astryx-token=""
       data-astryx-token-value={token.value}
       contentEditable={false}
-      style={{display: 'inline-flex', verticalAlign: 'baseline'}}>
+      {...stylex.props(styles.tokenSpan)}>
       {isCustomToken(token) ? (
         token.render()
       ) : (

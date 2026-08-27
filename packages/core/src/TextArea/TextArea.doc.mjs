@@ -105,7 +105,7 @@ export const docs = {
       name: 'maxLength',
       type: 'number',
       description:
-        'Maximum number of characters allowed, counted as user-perceived characters — an emoji or flag sequence counts as one. When set, a character counter (current/max) is displayed inside the input container, anchored to the bottom-right beneath the text. Does not enforce the limit natively; when exceeded the counter turns red and shows a warning icon (a non-color cue), and screen-reader users hear the remaining/over-limit count announced. Consumers validating the limit should count with characterCount (exported from the package) so enforcement matches the displayed count.',
+        'Maximum number of characters allowed, counted as user-perceived characters: an emoji or flag sequence counts as one. When set, a character counter (current/max) is displayed inside the input container, anchored to the bottom-right beneath the text. Does not enforce the limit natively; when exceeded the counter turns red and shows a warning icon (a non-color cue), and screen-reader users hear the remaining/over-limit count announced. Consumers validating the limit should count with characterCount (exported from the package) so enforcement matches the displayed count.',
     },
     {
       name: 'status',
@@ -186,7 +186,12 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
+      {className: 'astryx-text-area', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
+      {className: 'astryx-text-area-control'},
+      {className: 'astryx-text-area-counter'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled', 'readonly'], deprecatedFor: 'text-area'},
     ],
     vars: [
       {
@@ -381,7 +386,12 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
+      {className: 'astryx-text-area', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
+      {className: 'astryx-text-area-control'},
+      {className: 'astryx-text-area-counter'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled', 'readonly'], deprecatedFor: 'text-area'},
     ],
     vars: [
       {

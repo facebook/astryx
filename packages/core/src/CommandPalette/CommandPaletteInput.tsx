@@ -16,7 +16,7 @@ import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -29,6 +29,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   wrapper: {
     display: 'flex',
@@ -216,7 +217,7 @@ export function CommandPaletteInput({
         <Icon icon="search" size="sm" color="inherit" />
       </span>
       <input
-        ref={mergeRefs(ref, inputRef)}
+        ref={useMergedRefs(ref, inputRef)}
         type="text"
         role="combobox"
         aria-expanded={ctx?.isOpen ?? true}

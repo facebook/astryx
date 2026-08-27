@@ -81,7 +81,10 @@ const styles = stylex.create({
     border: 'none',
     background: 'none',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     // Own the interactivity so the tooltip opens on hover even when the field
     // renders this affordance inside a non-interactive trailing slot. TextArea
     // positions its end slot as an absolute overlay with `pointer-events: none`

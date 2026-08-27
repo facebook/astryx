@@ -29,7 +29,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {usePopover} from '../Popover/usePopover';
+import {usePopoverInternal} from '../Popover/usePopover';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {useIndicator} from '../Indicator';
@@ -37,7 +37,6 @@ import type {IndicatorPosition} from '../Indicator';
 import type {IconName} from '../Icon';
 import {
   Field,
-  InputClearButton,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
@@ -45,7 +44,8 @@ import {
 } from '../Field';
 import {Divider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import type {LayerPlacement} from '../Layer/useLayer';
+import {useKeepLayerOpenProps, type LayerPlacement} from '../Layer/useLayer';
+import {InternalInputClearButton} from '../Field/InputClearButton';
 import {Spinner} from '../Spinner';
 import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -73,12 +73,14 @@ import {useCombobox, useSelectedItemOffset} from './hooks';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {SelectorOption} from './SelectorOption';
+import {SelectorRowLayoutContext} from './SelectorRowLayoutContext';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -101,9 +103,18 @@ const styles = stylex.create({
       default: typeScaleVars['--text-label-size'],
       '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
     },
-    lineHeight: typeScaleVars['--text-label-leading'],
+    // A FIXED line box, not the ratio: the trigger's padding is derived from
+    // one line being `--spacing-5` tall, and a ratio makes the line box track
+    // the font — which the coarse-pointer bump above (and any theme that
+    // changes `--font-size-base`) then moves, taking the control off its size
+    // token. The glyphs still grow for touch; only the box they sit in is
+    // pinned. Item's own rows set their line heights and are unaffected.
+    lineHeight: spacingVars['--spacing-5'],
     color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Trigger button — the actual combobox button, visually integrated with the container
   trigger: {
@@ -124,7 +135,10 @@ const styles = stylex.create({
     fontSize: 'inherit',
     lineHeight: 'inherit',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     // The wrapper (inputWrapperStyles.base) renders the focus ring via
     // :focus-within when this button is focused, matching TextInput/NumberInput.
     // The button must not draw its own :focus-visible outline or the two stack
@@ -141,6 +155,43 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     textAlign: 'start',
+  },
+  // Inside an InputGroup the group's own height is the row, and the trigger
+  // takes it: `height: 100%` from `groupStyles.inGroup` can only govern if the
+  // trigger stops asserting a floor of its own — otherwise a control sized
+  // above its group (`<InputGroup size="md"><Selector size="lg">`) grows the
+  // row it was supposed to sit in. The padding goes with it: the row is
+  // already the size token, and the value box is centred in it.
+  triggerInGroup: {
+    minHeight: 0,
+    paddingBlock: 0,
+  },
+  // Wrapper for `renderValue` output. Takes the free width and clips
+  // horizontally so a long value ellipsizes rather than widening the trigger;
+  // vertically the content sizes the control, which the size styles below
+  // handle.
+  triggerValue: {
+    flexGrow: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+    textAlign: 'start',
+  },
+  // Inside an InputGroup the row height is the group's, so the trigger clamps
+  // its own value box to that row rather than asking the value to fit it: any
+  // node is cut off at the row's edge instead of bleeding through the border
+  // over whatever sits above and below the group. The rows the system draws
+  // itself never reach the cut — the row-layout context folds them onto one
+  // line first (SelectorRowLayoutContext).
+  //
+  // The clamp is a percentage, not the size token, because a group can be a
+  // different size than the control inside it; the row is whatever the group
+  // made it. That needs a definite height to resolve against, which is what
+  // stretching the button provides.
+  triggerButtonInGroup: {
+    alignSelf: 'stretch',
+  },
+  triggerValueInGroup: {
+    maxHeight: '100%',
   },
   // Only what Icon does not already provide: `size="sm"` gives the 16px box
   // and `color` the token, but the glyph still must not shrink inside the flex
@@ -167,18 +218,12 @@ const styles = stylex.create({
     width: 'auto',
     borderWidth: 0,
     backgroundColor: 'transparent',
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': 'none',
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
       ':focus-within': 'none',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -208,7 +253,10 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
   },
 
@@ -286,7 +334,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     outline: 'none',
   },
@@ -324,19 +375,36 @@ const styles = stylex.create({
   },
   itemDisabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
 });
 
+// The trigger is sized by PADDING, not by a fixed height, so it is the size
+// token plus one text line for each extra line the value uses: 28/32/36 for
+// one line, 48/52/56 for two. The token and a text line are both multiples of
+// 4, so every trigger lands on the 4px rhythm and lines up with the Buttons
+// and inputs beside it. No prop picks the height — the content does, and it
+// can only land on the grid.
+//
+// `--spacing-5` is one line here because `triggerContainer` pins its
+// line-height to exactly that; the two must stay in step, which is why both
+// read the same token rather than one hardcoding 20px.
+// Keep these calculations inline: a consumer's Babel preset can lower a
+// module-scope helper to a function expression before StyleX evaluates this
+// object, and StyleX cannot constant-evaluate that transformed helper.
+
 const sizeStyles = stylex.create({
   sm: {
-    height: sizeVars['--size-element-sm'],
+    minHeight: sizeVars['--size-element-sm'],
+    paddingBlock: `calc((${sizeVars['--size-element-sm']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   md: {
-    height: sizeVars['--size-element-md'],
+    minHeight: sizeVars['--size-element-md'],
+    paddingBlock: `calc((${sizeVars['--size-element-md']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   lg: {
-    height: sizeVars['--size-element-lg'],
+    minHeight: sizeVars['--size-element-lg'],
+    paddingBlock: `calc((${sizeVars['--size-element-lg']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
   },
 });
 
@@ -517,7 +585,8 @@ interface SelectorPropsBase<
   labelTooltip?: string;
 
   /**
-   * Icon displayed at the start of the selector trigger.
+   * Icon displayed at the start of the selector trigger. Takes precedence over
+   * the selected option's own `icon`, which the trigger otherwise renders.
    */
   startIcon?: ReactNode | IconType;
 
@@ -526,6 +595,31 @@ interface SelectorPropsBase<
    * Only called for selectable options (not dividers/sections).
    */
   renderOption?: (option: SelectorOptionData) => ReactNode;
+
+  /**
+   * Custom render function for the selected option inside the closed trigger.
+   * Only called when something is selected; the placeholder is unaffected.
+   *
+   * Passing this does not change the trigger's height — what it draws does. A
+   * one-line value measures exactly the `size` token, so the control still
+   * lines up with the Buttons and inputs beside it; each further line of
+   * content adds one text line. Inside an `InputGroup` the group owns the row
+   * height: the trigger clamps its value box to that row, so a `SelectorOption`
+   * folds onto one line and ellipsizes, and anything taller than the row is cut
+   * off at it rather than bleeding over the rows above and below.
+   *
+   * @example
+   * ```
+   * renderValue={option => (
+   *   <SelectorOption
+   *     icon={option.icon}
+   *     label={option.label}
+   *     description={option.description}
+   *   />
+   * )}
+   * ```
+   */
+  renderValue?: (option: SelectorOptionData) => ReactNode;
 
   /**
    * Which edge of the option row carries the selected mark. `start` reserves a
@@ -548,6 +642,25 @@ interface SelectorPropsBase<
    * @default 'Search...'
    */
   searchPlaceholder?: string;
+
+  /**
+   * Content shown in the panel when there are no options to show, and
+   * announced in a polite live region when the panel opens. Not shown while
+   * `isLoading` — the options have not arrived yet.
+   * @default 'No options'
+   */
+  emptyText?: ReactNode;
+
+  /**
+   * Content shown in the panel when a search query matches no options, and
+   * announced in a polite live region at the same time.
+   *
+   * The panel message is `role="presentation"`, so the live region is the only
+   * route to assistive tech: a string is announced verbatim, a richer node
+   * falls back to the default text since it cannot be spoken.
+   * @default 'No results found'
+   */
+  emptySearchText?: ReactNode;
 
   /**
    * Position placement relative to the trigger.
@@ -614,7 +727,11 @@ export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> =
  */
 function DefaultOption({option}: {option: SelectorOptionData}) {
   return (
-    <SelectorOption icon={option.icon} label={option.label ?? option.value} />
+    <SelectorOption
+      icon={option.icon}
+      label={option.label ?? option.value}
+      description={option.description}
+    />
   );
 }
 
@@ -687,9 +804,12 @@ export function Selector<T extends SelectorOptionType>(
     startIcon,
     htmlName,
     renderOption,
+    renderValue,
     indicatorPosition = 'end',
     hasSearch = false,
     searchPlaceholder: searchPlaceholderFromProps,
+    emptyText: emptyTextFromProps,
+    emptySearchText: emptySearchTextFromProps,
     placement,
     isDefaultOpen = false,
     'data-testid': testId,
@@ -698,12 +818,16 @@ export function Selector<T extends SelectorOptionType>(
     className,
     style,
     hasClear: hasClearProp,
+    id,
     ...rest
   } = props as SelectorPropsClearable<T>;
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const searchPlaceholder =
     searchPlaceholderFromProps ?? t('@astryx.selector.searchPlaceholder');
+  const emptyText = emptyTextFromProps ?? t('@astryx.selector.empty');
+  const emptySearchText =
+    emptySearchTextFromProps ?? t('@astryx.selector.emptySearchResults');
   const hasClear = hasClearProp === true;
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
@@ -713,7 +837,10 @@ export function Selector<T extends SelectorOptionType>(
 
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;
-  const triggerId = useId();
+  const generatedTriggerId = useId();
+  // A caller's `id` lands on the trigger either way, so the internal identity
+  // has to be that same value or the label and listbox point at nothing.
+  const triggerId = id ?? generatedTriggerId;
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
@@ -727,6 +854,9 @@ export function Selector<T extends SelectorOptionType>(
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
+  // Mirrors searchQuery for the seed path, which runs before focus reaches the
+  // input and so cannot read the rendered state.
+  const searchQueryRef = useRef('');
   // A typed query shows the search row's clear (✕) button, which becomes
   // the next tab stop after the search input.
   const hasQuery = searchQuery.length > 0;
@@ -735,6 +865,17 @@ export function Selector<T extends SelectorOptionType>(
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
   const announce = useAnnounce();
+
+  // The panel's empty message is role="presentation" and reaches assistive tech
+  // only through this live region, so the region has to speak whatever the
+  // panel shows. A ReactNode override cannot be spoken; fall back to the
+  // catalog copy for that case rather than announcing nothing.
+  const emptyAnnouncement =
+    typeof emptyText === 'string' ? emptyText : t('@astryx.selector.empty');
+  const emptySearchAnnouncement =
+    typeof emptySearchText === 'string'
+      ? emptySearchText
+      : t('@astryx.selector.emptySearchResults');
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the trigger container (which already exists)
@@ -803,6 +944,7 @@ export function Selector<T extends SelectorOptionType>(
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
+    searchQueryRef.current = '';
     resetTypeaheadRef.current();
     // Clear any lingering result count when the popover closes so stale status
     // text does not linger in the a11y tree.
@@ -810,7 +952,7 @@ export function Selector<T extends SelectorOptionType>(
     triggerRef.current?.focus();
   }, [announce]);
 
-  const popover = usePopover({
+  const popover = usePopoverInternal({
     onHide: handleLayerHide,
     hasLightDismiss: true,
     hasCloseButton: false,
@@ -822,6 +964,7 @@ export function Selector<T extends SelectorOptionType>(
     // `usePopover` owns — not on the scrolling list inside it.
     surfaceTarget: 'selector-popup',
   });
+  const keepOpenProps = useKeepLayerOpenProps(popover.id, popover.isOpen);
 
   // Open dropdown on mount when isDefaultOpen is true
   useEffect(() => {
@@ -831,27 +974,75 @@ export function Selector<T extends SelectorOptionType>(
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
 
-  // Announce the filtered result count from the query-change handler (matching
+  // Announce the filtered result count from the query-change handlers (matching
   // BaseTypeahead) rather than a reactive effect: computing the count for the
   // next query here fires the announcement exactly once per keystroke and does
-  // not re-speak on unrelated re-renders.
-  const handleSearchChange = useCallback(
+  // not re-speak on unrelated re-renders. Split out from handleSearchChange so
+  // the type-to-open seed below reaches the same live region — a query the user
+  // typed is a query however it arrived.
+  const announceSearchResults = useCallback(
     (nextQuery: string) => {
-      setSearchQuery(nextQuery);
       if (nextQuery.length === 0) {
         // Emptying the query clears the region rather than announcing a count.
+        announce('');
+        return;
+      }
+      // While isLoading the panel deliberately shows nothing, so announcing a
+      // result would put a claim in the one channel the screen has gone quiet
+      // for.
+      if (isLoading) {
         announce('');
         return;
       }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
-          ? t('@astryx.selector.emptySearchResults')
+          ? emptySearchAnnouncement
           : t('@astryx.selector.resultCount', {count}),
       );
     },
-    [announce, selectableItems, t],
+    [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
   );
+
+  const handleSearchChange = useCallback(
+    (nextQuery: string) => {
+      setSearchQuery(nextQuery);
+      searchQueryRef.current = nextQuery;
+      announceSearchResults(nextQuery);
+    },
+    [announceSearchResults],
+  );
+
+  // The panel's empty message is role="presentation", so this region is the
+  // only route to assistive tech. It has to watch the STATE rather than the
+  // open event: the panel can become empty either on open or when a fetch
+  // lands with nothing in it, and an open-only announcement leaves the second
+  // case silent while the message sits on screen. The ref makes it fire once
+  // per arrival at that state rather than on every re-render.
+  const announcedEmptyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const isPanelEmpty =
+      popover.isOpen &&
+      !isLoading &&
+      searchQuery === '' &&
+      selectableItems.length === 0;
+    if (!isPanelEmpty) {
+      announcedEmptyRef.current = null;
+      return;
+    }
+    if (announcedEmptyRef.current === emptyAnnouncement) {
+      return;
+    }
+    announcedEmptyRef.current = emptyAnnouncement;
+    announce(emptyAnnouncement);
+  }, [
+    popover.isOpen,
+    isLoading,
+    searchQuery,
+    selectableItems.length,
+    emptyAnnouncement,
+    announce,
+  ]);
 
   // Calculate offset to position selected item over trigger. Explicit
   // placement opts out of the selector-specific overlay behavior and uses the
@@ -888,10 +1079,20 @@ export function Selector<T extends SelectorOptionType>(
   }, [onChange, changeAction, startTransition, setOptimisticValue]);
 
   // Type-to-find appends to the query rather than replacing it: characters
-  // typed before focus reaches the search input must not be dropped.
-  const appendSearchQuery = useCallback((char: string) => {
-    setSearchQuery(query => query + char);
-  }, []);
+  // typed before focus reaches the search input must not be dropped. The ref
+  // is what makes that safe without a state updater — it advances
+  // synchronously, so a second character seeded in the same tick still sees
+  // the first, and the announcement can be computed here rather than inside a
+  // setState callback.
+  const appendSearchQuery = useCallback(
+    (char: string) => {
+      const nextQuery = searchQueryRef.current + char;
+      searchQueryRef.current = nextQuery;
+      setSearchQuery(nextQuery);
+      announceSearchResults(nextQuery);
+    },
+    [announceSearchResults],
+  );
 
   const commitValue = useCallback(
     (newValue: string) => {
@@ -917,6 +1118,7 @@ export function Selector<T extends SelectorOptionType>(
     onItemMouseEnter,
   } = useCombobox({
     selectableItems: filteredItems,
+    wasJustDismissed: popover.wasJustDismissed,
     // The optimistic value, not the raw prop: with a pending changeAction the
     // prop still holds the old selection, so the popup would open with the
     // highlight on it and Delete/Backspace could clear a value the action has
@@ -1166,12 +1368,27 @@ export function Selector<T extends SelectorOptionType>(
           aria-disabled={item.disabled}
           onClick={() => onItemSelect(item)}
           onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
-          {...stylex.props(
-            styles.item,
-            itemSizeStyles[size],
-            isHighlighted && styles.itemHighlighted,
-            isSelected && styles.itemSelected,
-            item.disabled && styles.itemDisabled,
+          {...mergeProps(
+            // Stable theme target on the option row itself, mirroring
+            // `multi-selector-option`: it carries the row's size and runtime
+            // state so a theme can express "selected option at large" or
+            // restyle a given row density without structural selectors. The
+            // row's padding is split across a base and a per-size override (the
+            // default `md` trims the block axis), so `size` is what a theme
+            // needs to reach it. Named `-option-row` because `selector-option`
+            // is the public SelectorOption content primitive, not this row.
+            themeProps('selector-option-row', {
+              size,
+              selected: isSelected ? 'selected' : null,
+              disabled: item.disabled ? 'disabled' : null,
+            }),
+            stylex.props(
+              styles.item,
+              itemSizeStyles[size],
+              isHighlighted && styles.itemHighlighted,
+              isSelected && styles.itemSelected,
+              item.disabled && styles.itemDisabled,
+            ),
           )}>
           {content}
         </div>
@@ -1194,8 +1411,11 @@ export function Selector<T extends SelectorOptionType>(
   const renderOptions = useCallback(() => {
     const isSearching = hasSearch && Boolean(searchQuery);
 
-    // Nothing matched across every group/option: show the empty state.
-    if (isSearching && filteredItems.length === 0) {
+    // Nothing to show — either the query matched nothing, or no options were
+    // given at all. Both render the same slot with different copy. While
+    // isLoading the options have not arrived yet, so asserting either would be
+    // a claim the component cannot make; the trigger's spinner covers it.
+    if (filteredItems.length === 0 && !isLoading) {
       // role="presentation" keeps the message out of the listbox's
       // accessibility tree (role="listbox" only permits option/group
       // children); the no-results outcome is announced via the
@@ -1208,7 +1428,7 @@ export function Selector<T extends SelectorOptionType>(
             themeProps('selector-empty-state'),
             stylex.props(styles.emptyState),
           )}>
-          No results found
+          {isSearching ? emptySearchText : emptyText}
         </div>,
       ];
     }
@@ -1225,7 +1445,17 @@ export function Selector<T extends SelectorOptionType>(
         if (isSearching) {
           continue;
         }
-        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
+        // role="listbox" only permits option/group children; the divider
+        // carries no information the options don't, so it's hidden from the
+        // accessibility tree entirely rather than exposing role="separator"
+        // as a disallowed listbox child (axe aria-required-children).
+        elements.push(
+          <Divider
+            key={`divider-${i}`}
+            aria-hidden="true"
+            xstyle={styles.divider}
+          />,
+        );
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
         for (const opt of option.options) {
@@ -1272,7 +1502,16 @@ export function Selector<T extends SelectorOptionType>(
     }
 
     return elements;
-  }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
+  }, [
+    options,
+    renderItem,
+    hasSearch,
+    searchQuery,
+    filteredItems,
+    isLoading,
+    emptyText,
+    emptySearchText,
+  ]);
 
   // The detached message box renders its own leading status icon, so the
   // on-field icon would duplicate it — keep the chevron indicator instead.
@@ -1280,6 +1519,40 @@ export function Selector<T extends SelectorOptionType>(
     status != null && effectiveStatusVariant !== 'detached';
   const showStatusTooltip =
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
+
+  // Two lines cannot fit inside an InputGroup: the group pins the row height,
+  // and the trigger clamps its value box to one line so nothing bleeds through
+  // its border (styles.triggerValueInGroup). The clamp holds for any node; the
+  // context is what lets the rows the system draws itself reflow into that one
+  // line — label and description side by side — instead of being cut off at
+  // it. Outside a group the caller's own row decides, and the trigger's
+  // padding sizes it to whatever that draws.
+  const rowLayout = inputGroup ? 'inline' : 'stacked';
+
+  // What the closed trigger shows for the current selection: the option's icon
+  // and label. `startIcon` wins over the option's own icon so a caller who
+  // pins a field icon does not get two.
+  const valueContent =
+    selectedItem && renderValue ? (
+      <SelectorRowLayoutContext value={rowLayout}>
+        <span
+          {...stylex.props(
+            styles.triggerValue,
+            inputGroup && styles.triggerValueInGroup,
+          )}>
+          {renderValue(selectedItem)}
+        </span>
+      </SelectorRowLayoutContext>
+    ) : (
+      <>
+        {!startIcon &&
+          selectedItem?.icon != null &&
+          renderIconSlot(selectedItem.icon, {size: 'sm', color: 'secondary'})}
+        <span {...stylex.props(styles.triggerLabel)}>
+          {selectedItem?.label ?? placeholder}
+        </span>
+      </>
+    );
 
   const selectorContent = (
     <>
@@ -1306,6 +1579,7 @@ export function Selector<T extends SelectorOptionType>(
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
+            variant === 'ghost' && interactionOverlayStyles.backgroundImage,
             variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
@@ -1318,6 +1592,7 @@ export function Selector<T extends SelectorOptionType>(
               !isDisabled &&
               inputStatusHoverShadowStyles[status.type],
             variant !== 'ghost' && inputGroup && groupStyles.inGroup,
+            inputGroup && styles.triggerInGroup,
             xstyle,
           ),
           className,
@@ -1357,10 +1632,11 @@ export function Selector<T extends SelectorOptionType>(
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
           onKeyDown={handleTriggerKeyDown}
           tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-          {...stylex.props(styles.trigger)}>
-          <span {...stylex.props(styles.triggerLabel)}>
-            {selectedItem?.label ?? placeholder}
-          </span>
+          {...stylex.props(
+            styles.trigger,
+            inputGroup && styles.triggerButtonInGroup,
+          )}>
+          {valueContent}
         </button>
         {htmlName != null && (
           <input
@@ -1374,7 +1650,8 @@ export function Selector<T extends SelectorOptionType>(
         )}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value != null && !isDisabled && (
-          <InputClearButton
+          <InternalInputClearButton
+            {...keepOpenProps}
             label={t('@astryx.selector.clearLabel', {label})}
             onClick={handleClear}
             iconClassName={stableClassName('selector-clear-icon')}
@@ -1393,6 +1670,7 @@ export function Selector<T extends SelectorOptionType>(
               type="button"
               aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
               aria-describedby={statusTooltip.describedBy}
+              {...keepOpenProps}
               onClick={e => e.stopPropagation()}
               {...stylex.props(
                 focusOutlineStyles.focusVisible,

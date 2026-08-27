@@ -44,6 +44,10 @@ import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
 import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
 import {
+  collectThemingTargets,
+  targetsByKey,
+} from '../../../foundation/discovery/theming-targets.mjs';
+import {
   collectUnloadedFonts,
   formatFontLoadingHelp,
 } from './font-warning.mjs';
@@ -58,12 +62,14 @@ import {
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
+/** @type {any} */ let _dataTokenDefaults = null;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
+  _dataTokenDefaults = coreTheme.dataTokenDefaults;
 } catch (e) {
   // Capture the reason so the theme action can surface a precise, actionable
   // error. We don't throw here: this module is imported eagerly by the CLI
@@ -345,8 +351,8 @@ const _augmentationTargetCache = new Map();
  * Resolve a rendered theme class token (the key without `astryx-`) to candidate
  * public core subpaths and interface prefixes that may own its augmentable prop
  * maps. Some tokens are subtargets documented by a parent component
- * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`), and some stable
- * class tokens intentionally omit word separators (`progressbar`, `statusdot`)
+ * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`), and some
+ * deprecated tokens still omit word separators (`progressbar`, `statusdot`)
  * while the public API keeps `ProgressBar`/`StatusDot` casing. Component docs
  * are the source of truth for the target token → owning component relationship.
  *
@@ -424,8 +430,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
 
       // Try the exact rendered token first for documented subtargets such as
       // avatar-status-dot → AvatarStatusDotVariantMap, then the owning public
-      // component name for unhyphenated public casings such as progressbar →
-      // ProgressBarVariantMap/statusdot → StatusDotVariantMap.
+      // component name for the deprecated unhyphenated tokens such as
+      // progressbar → ProgressBarVariantMap/statusdot → StatusDotVariantMap.
       addCandidate(moduleName, toPascalCase(componentName));
       addCandidate(moduleName, moduleName);
       if (Array.isArray(doc?.components)) {
@@ -882,6 +888,9 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
  * Returns null when docs are unavailable so validation can skip unknown-key
  * warnings rather than guessing from a second registry.
  *
+ * Shares its enumeration with `theme targets`, so what a theme author can list
+ * is exactly what this validator accepts.
+ *
  * @returns {Promise<Record<string, string[]> | null>}
  */
 async function loadKnownComponents() {
@@ -889,44 +898,7 @@ async function loadKnownComponents() {
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return null;
 
-  /** @type {Record<string, string[]>} */
-  const targets = {};
-
-  /** @param {string} dir */
-  async function scan(dir) {
-    const entries = fs.readdirSync(dir, {withFileTypes: true});
-    for (const entry of entries) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
-        await scan(full);
-        continue;
-      }
-      if (!entry.name.endsWith('.doc.mjs')) continue;
-
-      /** @type {any} */
-      let doc;
-      try {
-        doc = await loadComponentDoc(full);
-      } catch {
-        continue;
-      }
-
-      for (const target of doc?.theming?.targets || []) {
-        const className = target?.className;
-        if (typeof className !== 'string') continue;
-        const key = className.replace(/^astryx-/, '');
-        if (!key) continue;
-        const props = [target.visualProps, target.states]
-          .filter(list => Array.isArray(list))
-          .flat()
-          .filter((/** @type {unknown} */ p) => typeof p === 'string');
-        targets[key] = [...new Set([...(targets[key] || []), ...props])];
-      }
-    }
-  }
-
-  await scan(coreSrc);
+  const targets = targetsByKey(await collectThemingTargets(coreSrc));
   return Object.keys(targets).length > 0 ? targets : null;
 }
 
@@ -1196,8 +1168,15 @@ export async function themeBuild(
     if (component.length > 0) {
       const componentInner = component.join('\n\n');
       const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
-      // #3658: also emit attribute-specific rules so <Theme mode> can override color-scheme
-      const colorSchemeDecl = componentScope.includes('light-dark(')
+      // #3658: also emit attribute-specific rules so <Theme mode> can override color-scheme.
+      // Decided from the theme's own values, not the generated CSS: that CSS
+      // also carries the data-token defaults, which are light-dark() pairs, so
+      // a substring check on it would fire for every theme.
+      const themeOwnValues = JSON.stringify([
+        resolvedTheme.tokens ?? {},
+        resolvedTheme.components ?? {},
+      ]);
+      const colorSchemeDecl = themeOwnValues.includes('light-dark(')
         ? '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n'
         : '';
       cssParts.push(
@@ -1214,6 +1193,26 @@ export async function themeBuild(
     if (cssParts.length === 0) {
       logger.log('No overrides found — nothing to build.');
       return null;
+    }
+    // The data-token defaults are theme-independent and go in @layer
+    // astryx-base, below the theme's own overrides. Formatted here from the
+    // public `dataTokenDefaults` export, byte for byte as the `<Theme>`
+    // runtime emits it — build-theme.data-tokens.test.mjs is the drift guard.
+    // Placed after the reset block and before the theme block: a layer's order
+    // is fixed by where it is first declared, so emitting it anywhere else in
+    // the file would invert reset < astryx-base < astryx-theme for a consumer
+    // who imports this stylesheet on its own.
+    const baseCss = _dataTokenDefaults
+      ? `:root {\n${Object.entries(_dataTokenDefaults)
+          .map(([name, value]) => `  ${name}: ${value};`)
+          .join('\n')}\n}`
+      : '';
+    if (baseCss) {
+      cssParts.splice(
+        prose.length > 0 ? 1 : 0,
+        0,
+        `@layer astryx-base {\n${baseCss}\n}`,
+      );
     }
     css = cssParts.join('\n\n') + '\n';
   }
