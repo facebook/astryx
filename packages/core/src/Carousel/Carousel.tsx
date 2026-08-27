@@ -177,9 +177,6 @@ const styles = stylex.create({
     scrollbarWidth: 'none',
     maskImage: 'none',
   },
-  // fadeStart/fadeEnd are selected by the logical overflowStart/overflowEnd
-  // flags (start = right edge in RTL), but gradient directions are physical —
-  // mirror them under RTL so the fade paints the edge that hides content.
   fadeStart: {
     maskImage: {
       default: `linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 2px, black ${spacingVars['--spacing-1']})`,
