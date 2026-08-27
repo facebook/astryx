@@ -11,9 +11,10 @@
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
+import {createRequire} from 'node:module';
 import path from 'node:path';
-import {PNG} from 'pngjs';
 
+import {isVisualAcceptanceMaintainer} from './authorization.mjs';
 import {readStoryIndex, shotKey, storiesInPackages} from './lib/plan.mjs';
 
 const args = process.argv.slice(2);
@@ -276,14 +277,23 @@ function accept() {
   const approver = flag('approver') ?? '';
   const approverId = Number(flag('approver-id'));
   const permission = flag('permission') ?? '';
+  const effectivePermission = flag('effective-permission') ?? permission;
+  const roleName = flag('role-name');
   const commentId = Number(flag('comment-id'));
   const reason = validateReason(flag('reason'));
 
   validateIdentity(pr, head);
   if (!approver || !Number.isSafeInteger(approverId) || approverId <= 0)
     fail('invalid approver');
-  if (!['maintain', 'admin'].includes(permission))
-    fail('approver must have maintain/admin permission');
+  if (
+    !isVisualAcceptanceMaintainer({
+      permission,
+      effectivePermission,
+      roleName,
+    })
+  ) {
+    fail('approver must have maintain/admin permission or the Repo Owner role');
+  }
   if (!Number.isSafeInteger(commentId) || commentId <= 0)
     fail('invalid comment id');
 
@@ -351,6 +361,8 @@ function accept() {
       approver,
       approverId,
       permission,
+      effectivePermission,
+      roleName,
       reason,
       commentId,
       at: new Date().toISOString(),
@@ -467,7 +479,11 @@ function validateAcceptance(value, expected = {}) {
     !value.decision?.approver ||
     !Number.isSafeInteger(value.decision?.approverId) ||
     value.decision.approverId <= 0 ||
-    !['maintain', 'admin'].includes(value.decision?.permission) ||
+    !isVisualAcceptanceMaintainer({
+      permission: value.decision?.permission,
+      effectivePermission: value.decision?.effectivePermission,
+      roleName: value.decision?.roleName,
+    }) ||
     !Number.isSafeInteger(value.decision?.commentId) ||
     value.decision.commentId <= 0 ||
     !value.decision?.reason
@@ -584,7 +600,10 @@ function plan() {
   );
 }
 
+const require = createRequire(import.meta.url);
+
 function samePixels(first, second) {
+  const {PNG} = require('pngjs');
   const a = PNG.sync.read(fs.readFileSync(first));
   const b = PNG.sync.read(fs.readFileSync(second));
   return (

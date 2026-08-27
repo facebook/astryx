@@ -56,10 +56,27 @@ describe('visual acceptance workflow concurrency', () => {
     );
     expect(initialize).toContain("'No stable visual scope.'");
     expect(authorize).not.toContain(': write');
-    expect(authorize).not.toContain('actions/checkout');
+    expect(authorize).toContain('actions/checkout@v7');
+    expect(authorize).toContain('visualAcceptanceIdentity(response.data)');
+    expect(authorize).toContain('isVisualAcceptanceMaintainer(identity)');
+    expect(authorize).toContain(
+      "core.setOutput('effective_permission', identity.effectivePermission)",
+    );
+    expect(authorize).toContain(
+      "core.setOutput('role_name', identity.roleName ?? '')",
+    );
+    expect(authorize).not.toContain('author_association');
     expect(authorize).not.toContain('issues.createComment');
     expect(authorize).not.toContain('createCommitStatus');
     expect(accept).toContain('needs: authorize');
+    expect(accept).toContain(
+      'EFFECTIVE_PERMISSION: ${{ needs.authorize.outputs.effective_permission }}',
+    );
+    expect(accept).toContain(
+      'ROLE_NAME: ${{ needs.authorize.outputs.role_name }}',
+    );
+    expect(accept).toContain('--effective-permission "$EFFECTIVE_PERMISSION"');
+    expect(accept).toContain('--role-name "$ROLE_NAME"');
     expect(accept).toContain(
       'group: visual-acceptance-head-${{ needs.authorize.outputs.head_repo_id }}-${{ needs.authorize.outputs.head_ref }}',
     );
@@ -109,16 +126,15 @@ describe('visual acceptance workflow concurrency', () => {
     expect(capture).not.toContain('GITHUB_RUN_ATTEMPT:');
   });
 
-  it('normalizes GitHub role flags before authorizing a maintainer', () => {
+  it('uses the documented collaborator permission response shape', () => {
     const value = workflow('visual-acceptance.yml');
     const authorize = value.slice(
       value.indexOf('  authorize:'),
       value.indexOf('  accept:'),
     );
 
-    expect(authorize).toContain('actor.permissions?.admin');
-    expect(authorize).toContain('actor.permissions?.maintain');
-    expect(authorize).toContain("? 'maintain'");
+    expect(authorize).toContain('visualAcceptanceIdentity(response.data)');
+    expect(authorize).not.toContain('response.data.user.permission');
   });
 
   it('uses the same head identity for post-merge promotion', () => {

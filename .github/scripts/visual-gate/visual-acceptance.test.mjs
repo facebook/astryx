@@ -234,6 +234,73 @@ describe('visual acceptance', () => {
     ).toBe(true);
   });
 
+  it('accepts without installed packages in the archive job', () => {
+    const isolated = path.join(root, 'isolated-visual-gate');
+    fs.cpSync(path.dirname(SCRIPT), isolated, {recursive: true});
+    const args = [path.join(isolated, 'visual-acceptance.mjs'), 'accept'];
+    for (const [name, value] of Object.entries(acceptanceFlags()))
+      args.push(`--${name}`, String(value));
+    expect(execFileSync(process.execPath, args, {encoding: 'utf8'})).toContain(
+      'Accepted 1 visual delta',
+    );
+  });
+
+  it('accepts a repository owner and records the reported permission and role', () => {
+    run(
+      'accept',
+      acceptanceFlags({
+        approver: 'cixzhang',
+        permission: 'write',
+        'effective-permission': 'maintain',
+        'role-name': 'Repo Owner',
+      }),
+    );
+    expect(
+      JSON.parse(fs.readFileSync(acceptanceFile(), 'utf8')).decision,
+    ).toMatchObject({
+      approver: 'cixzhang',
+      permission: 'write',
+      effectivePermission: 'maintain',
+      roleName: 'Repo Owner',
+    });
+  });
+
+  it.each(['maintain', 'admin'])(
+    'accepts effective %s capability while preserving the reported role',
+    effectivePermission => {
+      run(
+        'accept',
+        acceptanceFlags({
+          permission: 'write',
+          'effective-permission': effectivePermission,
+          'role-name': 'Custom role',
+        }),
+      );
+      expect(
+        JSON.parse(fs.readFileSync(acceptanceFile(), 'utf8')).decision,
+      ).toMatchObject({
+        permission: 'write',
+        effectivePermission,
+        roleName: 'Custom role',
+      });
+    },
+  );
+
+  it.each(['maintain', 'admin'])(
+    'validates a legacy %s record without role metadata',
+    permission => {
+      run('accept', acceptanceFlags({permission}));
+      const record = JSON.parse(fs.readFileSync(acceptanceFile(), 'utf8'));
+      delete record.decision.roleName;
+      delete record.decision.effectivePermission;
+      writeJSON(acceptanceFile(), record);
+      expect(JSON.parse(run('state', {pages, pr: 42, head: HEAD}))).toMatchObject({
+        state: 'success',
+        reason: 'accepted',
+      });
+    },
+  );
+
   it('requires an explanatory reason and maintainer permission', () => {
     expect(fail('accept', acceptanceFlags({reason: 'intentional...'}))).toMatch(
       /reason must explain/,
