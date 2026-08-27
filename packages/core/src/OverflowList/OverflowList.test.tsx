@@ -749,6 +749,53 @@ describe('OverflowList', () => {
       expect(labelsOf(onOverflowChange)).toEqual(['D', 'B']);
     });
 
+    it('re-measures a same-count keyed set before reporting it', () => {
+      const onOverflowChange = vi.fn();
+      const renderItems = (
+        items: {key: string; label: string; width: number}[],
+      ) =>
+        items.map(item => (
+          <button type="button" data-w={item.width} key={item.key}>
+            {item.label}
+          </button>
+        ));
+      const {rerender} = render(
+        <OverflowList
+          gap={0}
+          data-w="300"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {renderItems([
+            {key: 'a', label: 'A', width: 60},
+            {key: 'b', label: 'B', width: 60},
+            {key: 'c', label: 'C', width: 60},
+            {key: 'd', label: 'D', width: 60},
+          ])}
+        </OverflowList>,
+      );
+      expect(onOverflowChange).not.toHaveBeenCalled();
+
+      rerender(
+        <OverflowList
+          gap={0}
+          data-w="300"
+          data-testid="ov"
+          onOverflowChange={onOverflowChange}>
+          {renderItems([
+            {key: 'a', label: 'A', width: 60},
+            {key: 'b', label: 'B', width: 60},
+            {key: 'wide', label: 'Wide', width: 200},
+            {key: 'd', label: 'D', width: 60},
+          ])}
+        </OverflowList>,
+      );
+
+      expect(onOverflowChange).toHaveBeenCalledTimes(1);
+      expect(indicesOf(onOverflowChange)).toEqual([2, 3]);
+      expect(visibleContainer()).toHaveTextContent('AB');
+      expect(visibleContainer()).not.toHaveTextContent('Wide');
+    });
+
     it('reports only the measured set when the number of children changes', () => {
       const onOverflowChange = vi.fn();
       const renderItems = (labels: string[], width: number) =>
