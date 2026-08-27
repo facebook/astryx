@@ -3,198 +3,143 @@
 /**
  * @file useScrollLock.test.ts
  * @input Uses vitest, @testing-library/react, useScrollLock hook
- * @output Unit tests for body scroll locking and restoration
+ * @output Unit tests for single and concurrent useScrollLock instances
  * @position Testing; validates useScrollLock.ts implementation
  *
  * SYNC: When useScrollLock.ts changes, update tests to match new behavior
  */
 
-import {
-  describe,
-  it,
-  expect,
-  vi,
-  beforeAll,
-  beforeEach,
-  afterEach,
-  afterAll,
-} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {cleanup, renderHook} from '@testing-library/react';
 import {useScrollLock} from './useScrollLock';
 
-// jsdom's window.scrollTo is a stub that logs "Not implemented" noise; spy on
-// it so we can assert the restore call without the console spam. The spy lives
-// for the whole file (not per test) because testing-library's auto-cleanup
-// unmounts — and therefore unlocks — after this file's afterEach has run.
-let scrollTo: ReturnType<typeof vi.spyOn>;
-
-// window.scrollX / scrollY are configurable accessors in jsdom (always 0).
-// Save the real descriptors so each test can pin a scroll offset and put the
-// window back afterwards.
-const scrollXDescriptor = Object.getOwnPropertyDescriptor(window, 'scrollX')!;
-const scrollYDescriptor = Object.getOwnPropertyDescriptor(window, 'scrollY')!;
-
-function setScroll(x: number, y: number): void {
-  Object.defineProperty(window, 'scrollX', {configurable: true, value: x});
-  Object.defineProperty(window, 'scrollY', {configurable: true, value: y});
-}
-
-beforeAll(() => {
-  scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-});
-
-beforeEach(() => {
-  scrollTo.mockClear();
-});
-
-afterEach(() => {
-  Object.defineProperty(window, 'scrollX', scrollXDescriptor);
-  Object.defineProperty(window, 'scrollY', scrollYDescriptor);
-  document.body.removeAttribute('style');
-});
-
-afterAll(() => {
-  scrollTo.mockRestore();
-});
-
 describe('useScrollLock', () => {
-  it('leaves the body styles alone when not locked', () => {
+  afterEach(() => {
+    cleanup();
+    document.body.style.cssText = '';
+    document.documentElement.style.cssText = '';
+    // @ts-expect-error -- drop the viewport stub so jsdom's own value comes back
+    delete document.documentElement.clientWidth;
+    vi.restoreAllMocks();
+  });
+
+  it('restores body styles and scroll position after a single lock is released', () => {
     document.body.style.overflow = 'auto';
     document.body.style.position = 'relative';
 
-    renderHook(() => useScrollLock(false));
+    vi.spyOn(window, 'scrollX', 'get').mockReturnValue(120);
+    vi.spyOn(window, 'scrollY', 'get').mockReturnValue(480);
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    const lock = renderHook(() => useScrollLock(true));
+
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.body.style.position).toBe('fixed');
+
+    lock.unmount();
 
     expect(document.body.style.overflow).toBe('auto');
     expect(document.body.style.position).toBe('relative');
+    expect(window.scrollTo).toHaveBeenCalledWith(120, 480);
+  });
+
+  it('stays locked while a second overlay is still open, even if the first closes out of order', () => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    const first = renderHook(() => useScrollLock(true));
+    const second = renderHook(() => useScrollLock(true));
+
+    first.unmount();
+
+    expect(document.body.style.position).toBe('fixed');
+    expect(document.body.style.overflow).toBe('hidden');
+
+    second.unmount();
+  });
+
+  it('fully restores the body once every overlay has closed, regardless of close order', () => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    const first = renderHook(() => useScrollLock(true));
+    const second = renderHook(() => useScrollLock(true));
+
+    first.unmount();
+    second.unmount();
+
+    expect(document.body.style.position).toBe('');
+    expect(document.body.style.overflow).toBe('');
     expect(document.body.style.top).toBe('');
     expect(document.body.style.left).toBe('');
     expect(document.body.style.right).toBe('');
   });
 
-  it('does not scroll the window on unmount when it never locked', () => {
-    const {unmount} = renderHook(() => useScrollLock(false));
-    unmount();
-    expect(scrollTo).not.toHaveBeenCalled();
-  });
-
-  it('pins the body with position fixed and hidden overflow when locked', () => {
-    setScroll(0, 250);
-
-    renderHook(() => useScrollLock(true));
-
-    expect(document.body.style.overflow).toBe('hidden');
-    expect(document.body.style.position).toBe('fixed');
-    expect(document.body.style.left).toBe('0px');
-    expect(document.body.style.right).toBe('0px');
-  });
-
-  it('offsets the pinned body upward by the current scroll position', () => {
-    setScroll(0, 250);
-
-    renderHook(() => useScrollLock(true));
-
-    expect(document.body.style.top).toBe('-250px');
-  });
-
-  it('restores every style it saved when the lock is released', () => {
-    document.body.style.overflow = 'auto';
-    document.body.style.position = 'relative';
-    document.body.style.top = '10px';
-    document.body.style.left = '5px';
-    document.body.style.right = '3px';
-    setScroll(0, 120);
-
-    const {rerender} = renderHook(({locked}) => useScrollLock(locked), {
-      initialProps: {locked: true},
+  it('holds the page still across the scrollbar it hides', () => {
+    // A 1024px window over a 1009px layout viewport = a 15px classic
+    // scrollbar. Pinning the body hides it, which would widen the page by
+    // those 15px and reflow everything sideways.
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1024,
+      configurable: true,
+      writable: true,
     });
-    expect(document.body.style.position).toBe('fixed');
-
-    rerender({locked: false});
-
-    expect(document.body.style.overflow).toBe('auto');
-    expect(document.body.style.position).toBe('relative');
-    expect(document.body.style.top).toBe('10px');
-    expect(document.body.style.left).toBe('5px');
-    expect(document.body.style.right).toBe('3px');
-  });
-
-  it('restores the body to its unstyled state after a lock/unlock cycle', () => {
-    setScroll(0, 400);
-
-    const {rerender} = renderHook(({locked}) => useScrollLock(locked), {
-      initialProps: {locked: false},
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 1009,
+      configurable: true,
     });
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-    rerender({locked: true});
-    expect(document.body.style.top).toBe('-400px');
+    const lock = renderHook(() => useScrollLock(true));
 
-    rerender({locked: false});
-    expect(document.body.getAttribute('style')).toBe('');
+    expect(document.documentElement.style.scrollbarGutter).toBe('stable');
+
+    lock.unmount();
+
+    expect(document.documentElement.style.scrollbarGutter).toBe('');
   });
 
-  it('scrolls the window back to the position captured at lock time', () => {
-    setScroll(30, 250);
-
-    const {rerender} = renderHook(({locked}) => useScrollLock(locked), {
-      initialProps: {locked: true},
+  it('leaves the page alone when the scrollbar is an overlay one', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1024,
+      configurable: true,
+      writable: true,
     });
-
-    // Pinning the body drops the document to the top in a real browser; the
-    // hook must restore from the value it saved, not from the current one.
-    setScroll(0, 0);
-    rerender({locked: false});
-
-    expect(scrollTo).toHaveBeenCalledTimes(1);
-    expect(scrollTo).toHaveBeenCalledWith(30, 250);
-  });
-
-  it('restores the saved styles and scroll position on unmount', () => {
-    document.body.style.overflow = 'auto';
-    setScroll(15, 90);
-
-    const {unmount} = renderHook(() => useScrollLock(true));
-    expect(document.body.style.overflow).toBe('hidden');
-
-    unmount();
-
-    expect(document.body.style.overflow).toBe('auto');
-    expect(document.body.style.position).toBe('');
-    expect(document.body.style.top).toBe('');
-    expect(scrollTo).toHaveBeenCalledWith(15, 90);
-  });
-
-  it('keeps the lock in place across rerenders with the same value', () => {
-    setScroll(0, 250);
-
-    const {rerender} = renderHook(({locked}) => useScrollLock(locked), {
-      initialProps: {locked: true},
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 1024,
+      configurable: true,
     });
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-    rerender({locked: true});
-    rerender({locked: true});
+    const lock = renderHook(() => useScrollLock(true));
 
-    // Re-running the effect would tear the lock down and back up, restoring
-    // scroll each time.
-    expect(scrollTo).not.toHaveBeenCalled();
-    expect(document.body.style.position).toBe('fixed');
-    expect(document.body.style.top).toBe('-250px');
+    expect(document.documentElement.style.scrollbarGutter).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
+
+    lock.unmount();
   });
 
-  it('captures the new scroll position when locked a second time', () => {
-    setScroll(0, 100);
-
-    const {rerender} = renderHook(({locked}) => useScrollLock(locked), {
-      initialProps: {locked: true},
+  it('holds the gutter for the outermost overlay only, and gives it back once', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1024,
+      configurable: true,
+      writable: true,
     });
-    expect(document.body.style.top).toBe('-100px');
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 1009,
+      configurable: true,
+    });
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-    rerender({locked: false});
-    setScroll(0, 300);
-    rerender({locked: true});
+    const first = renderHook(() => useScrollLock(true));
+    const second = renderHook(() => useScrollLock(true));
 
-    expect(document.body.style.top).toBe('-300px');
+    expect(document.documentElement.style.scrollbarGutter).toBe('stable');
 
-    rerender({locked: false});
-    expect(scrollTo).toHaveBeenLastCalledWith(0, 300);
+    first.unmount();
+
+    expect(document.documentElement.style.scrollbarGutter).toBe('stable');
+
+    second.unmount();
+
+    expect(document.documentElement.style.scrollbarGutter).toBe('');
   });
 });

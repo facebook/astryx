@@ -112,6 +112,30 @@ export const WithIcons: Story = {
   ),
 };
 
+export const DestructiveItem: Story = {
+  name: 'Destructive item',
+  render: () => (
+    <ContextMenu
+      items={[
+        {label: 'Rename', onClick: () => console.log('Rename')},
+        {
+          label: 'Duplicate',
+          icon: ClipboardDocumentIcon,
+          onClick: () => console.log('Duplicate'),
+        },
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: TrashIcon,
+          variant: 'destructive',
+          onClick: () => console.log('Delete'),
+        },
+      ]}>
+      <div {...stylex.props(triggerStyles.area)}>Right-click for actions</div>
+    </ContextMenu>
+  ),
+};
+
 export const WithSections: Story = {
   render: () => (
     <ContextMenu
@@ -330,7 +354,7 @@ export const WithSelectableItems: Story = {
             <ContextMenuRadioGroup
               value={sort}
               onChange={setSort}
-              aria-label="Sort by">
+              label="Sort by">
               <ContextMenuRadioItem value="name" label="Sort by name" />
               <ContextMenuRadioItem value="date" label="Sort by date" />
               <ContextMenuRadioItem value="size" label="Sort by size" />

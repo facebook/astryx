@@ -2,21 +2,19 @@
 
 /**
  * @file Chart.test.tsx
- * @input Renders Chart with a stubbed ResizeObserver; probes useChart outside a provider
- * @output Render-smoke coverage for the chart root: width gate, margin group, context guard (#4295)
- * @position Colocated test for Chart.tsx and ChartContext.ts
+ * @input Uses vitest, @testing-library/react, Chart component
+ * @output Unit tests for Chart accessibility (WCAG 1.1.1)
+ * @position Testing; validates Chart.tsx accessible name + data-table fallback
  */
 
-import {Component, type ReactNode} from 'react';
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
 import {Chart} from './Chart';
-import {useChart} from './ChartContext';
 
 const data = [
-  {month: 'Jan', revenue: 10},
-  {month: 'Feb', revenue: 20},
-  {month: 'Mar', revenue: 30},
+  {month: 'Jan', revenue: 100, profit: 20},
+  {month: 'Feb', revenue: 200, profit: 40},
+  {month: 'Mar', revenue: 150, profit: 30},
 ];
 
 // Capture the ResizeObserver callback so tests can drive the reported width.
@@ -50,85 +48,79 @@ function reportWidth(width: number) {
   });
 }
 
-/** Renders nothing; exists only to call useChart during render. */
-function Probe() {
-  useChart();
-  return null;
-}
-
-class Boundary extends Component<
-  {children: ReactNode},
-  {message: string | null}
-> {
-  state: {message: string | null} = {message: null};
-  static getDerivedStateFromError(error: Error) {
-    return {message: error.message};
-  }
-  render() {
-    return this.state.message !== null ? (
-      <div data-testid="caught">{this.state.message}</div>
-    ) : (
-      this.props.children
-    );
-  }
-}
-
-describe('Chart', () => {
-  it('renders no svg until the container reports a width', () => {
-    const {container} = render(
-      <Chart data={data} xKey="month" yKeys={['revenue']}>
-        <circle data-testid="mark" />
-      </Chart>,
-    );
-
-    expect(container.querySelector('svg')).toBeNull();
-    expect(screen.queryByTestId('mark')).toBeNull();
-  });
-
-  it('renders the svg at the reported width once the container measures', () => {
-    const {container} = render(
-      <Chart data={data} xKey="month" yKeys={['revenue']}>
-        <circle data-testid="mark" />
-      </Chart>,
-    );
-
-    reportWidth(464);
-
-    const svg = container.querySelector('svg');
-    expect(svg).not.toBeNull();
-    expect(svg).toHaveAttribute('width', '464');
-    // Default height
-    expect(svg).toHaveAttribute('height', '300');
-  });
-
-  it('renders children inside the margin-translated group', () => {
+describe('Chart accessible name', () => {
+  it('exposes the svg as a named image with a default label', () => {
     render(
-      <Chart data={data} xKey="month" yKeys={['revenue']}>
-        <circle data-testid="mark" />
+      <Chart data={data} xKey="month" yKeys={['revenue', 'profit']}>
+        <g />
       </Chart>,
     );
+    reportWidth(600);
 
-    reportWidth(464);
-
-    // Default margins: left 48, top 16 (d3 margin convention)
-    const mark = screen.getByTestId('mark');
-    expect(mark.closest('g')).toHaveAttribute('transform', 'translate(48,16)');
+    expect(
+      screen.getByRole('img', {name: 'Chart of revenue, profit by month'}),
+    ).toBeInTheDocument();
   });
 
-  it('throws a clear error when useChart is used outside <Chart>', () => {
-    // React logs the caught render error; keep test output quiet.
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    try {
-      render(
-        <Boundary>
-          <Probe />
-        </Boundary>,
-      );
-      expect(screen.getByTestId('caught')).toHaveTextContent(
-        'Chart components must be used inside <Chart>',
-      );
-    } finally {
-      errorSpy.mockRestore();
-    }
+  it('uses a custom label when provided', () => {
+    render(
+      <Chart data={data} xKey="month" yKeys={['revenue']} label="Q1 revenue">
+        <g />
+      </Chart>,
+    );
+    reportWidth(600);
+
+    expect(screen.getByRole('img', {name: 'Q1 revenue'})).toBeInTheDocument();
+  });
+});
+
+describe('Chart data table fallback', () => {
+  it('renders a visually hidden table mirroring the data', () => {
+    render(
+      <Chart data={data} xKey="month" yKeys={['revenue', 'profit']}>
+        <g />
+      </Chart>,
+    );
+    reportWidth(600);
+
+    const table = screen.getByRole('table');
+    expect(table).toBeInTheDocument();
+
+    // Column headers: x key + each y key
+    expect(
+      screen.getByRole('columnheader', {name: 'month'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: 'revenue'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: 'profit'}),
+    ).toBeInTheDocument();
+
+    // Row headers and values
+    expect(screen.getByRole('rowheader', {name: 'Feb'})).toBeInTheDocument();
+    expect(screen.getByRole('cell', {name: '200'})).toBeInTheDocument();
+    expect(screen.getByRole('cell', {name: '40'})).toBeInTheDocument();
+
+    // Visually hidden, but still in the a11y tree (StyleX clip class attached,
+    // not display:none/hidden — jsdom does not apply the stylesheet itself).
+    const wrapper = table.parentElement as HTMLElement;
+    expect(wrapper.getAttribute('class')).toBeTruthy();
+    expect(wrapper).not.toHaveAttribute('hidden');
+  });
+
+  it('skips the table when the dataset exceeds the size cutoff', () => {
+    const big = Array.from({length: 101}, (_, i) => ({
+      month: `m${i}`,
+      revenue: i,
+    }));
+    render(
+      <Chart data={big} xKey="month" yKeys={['revenue']}>
+        <g />
+      </Chart>,
+    );
+    reportWidth(600);
+
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 });

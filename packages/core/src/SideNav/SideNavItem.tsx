@@ -4,18 +4,23 @@
 
 /**
  * @file SideNavItem.tsx
- * @input Uses React, ReactNode, StyleX, Icon, IconType
+ * @input Uses React, ReactNode, StyleX, Icon, IconType, useMenuHover
  * @output Exports SideNavItem component and SideNavItemProps
  * @position Core implementation; used inside SideNav children
  *
- * Navigation item with icon, selected state, and nesting.
+ * Navigation item with icon, selected state, row-level actions, and nesting.
+ *
+ * Collapsed items with children open their submenu flyout through
+ * `useMenuHover`, the shared hover-intent hook (same one `SideNavHeading` and
+ * `TopNavMenu` use). Hover is a progressive enhancement over the popover's
+ * click behavior and is inert on coarse pointers.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
  * - /packages/core/src/SideNav/SideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import {
@@ -35,27 +40,30 @@ import {
   typeScaleVars,
   durationVars,
   easeVars,
-  borderVars,
   radiusVars,
 } from '../theme/tokens.stylex';
-import {renderIconSlot, type IconType} from '../Icon';
+import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {usePopover} from '../Popover/usePopover';
-import {mergeProps, mergeRefs} from '../utils';
+import {useMenuHover} from '../hooks/useMenuHover';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
+import {SizeProvider} from '../SizeContext/SizeContext';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {
   useSideNavCollapse,
   SideNavCollapseContext,
 } from './SideNavCollapseContext';
-import {getIcon} from '../Icon/globalIconRegistry';
 import {useSideNavRenderMode} from './SideNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -85,6 +93,18 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
   },
+  // Row-level secondary controls (actions slot) — siblings of the primary
+  // element at the trailing edge of the row. pointerEvents opts back in when
+  // a disabled row's navItemStyles.disabled sets pointer-events: none on the
+  // wrapper: the slot is passthrough, so each control owns its own disabled
+  // state (keyboard focus already reaches it either way).
+  actions: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    pointerEvents: 'auto',
+  },
   children: {
     paddingInlineStart: spacingVars['--spacing-6'],
   },
@@ -92,7 +112,10 @@ const styles = stylex.create({
     display: 'grid',
     gridTemplateRows: '1fr',
     transitionProperty: 'grid-template-rows',
-    transitionDuration: durationVars['--duration-medium'],
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   childrenCollapsed: {
@@ -109,8 +132,16 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: spacingVars['--spacing-6'],
     height: spacingVars['--spacing-6'],
+    // Icon's `lg` would also set font-size: 1.5rem, and the registry chevron
+    // is a 1em SVG — that would blow the glyph up from the 14px it inherits
+    // from the row to the full 24px box. The 24px box is the touch/alignment
+    // target, not the glyph size, so keep the glyph on the inherited size.
+    fontSize: 'inherit',
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     flexShrink: 0,
   },
@@ -118,7 +149,13 @@ const styles = stylex.create({
     transform: 'rotate(180deg)',
   },
   // Standalone toggle button for the chevron when collapsible + href.
+  // Boxed like a `size="sm"` icon Button so it and whatever sits in
+  // `actions` paint one size of hover pill; without a box of its own it
+  // shrank to the 24px chevron beside a 28px menu button.
+  // SYNC: matches ROW_CONTROL_SIZE below.
   expandToggle: {
+    width: sizeVars['--size-element-sm'],
+    height: sizeVars['--size-element-sm'],
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -129,23 +166,22 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
-    },
-    ':active': {
-      backgroundColor: colorVars['--color-overlay-pressed'],
-    },
   },
   // Primary action element inside the split-action row (link or button).
   // Flex:1 so it fills remaining space, giving a wide click target.
+  // `alignSelf: stretch` makes it fill the row's height too — without it the
+  // element collapses to its line box (20px), under the 24px WCAG 2.5.8
+  // target-size floor even though the row it sits in is 32px tall.
   // Resets both link and button appearance so it blends into the row.
   splitAction: {
     display: 'flex',
     alignItems: 'center',
+    alignSelf: 'stretch',
     gap: spacingVars['--spacing-2'],
     flex: 1,
     minWidth: 0,
@@ -161,17 +197,27 @@ const styles = stylex.create({
     fontWeight: 'inherit',
     lineHeight: 'inherit',
     textAlign: 'start',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
-  // Popover surface for collapsed items with children
+  // No border and no background: `usePopover` paints the panel this renders
+  // into. Drawing a second surface here put square corners inside its rounded
+  // ones. The radius matches so a theme retargeting `--radius-container`
+  // keeps the two in step.
   popoverSurface: {
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
+    borderRadius: radiusVars['--radius-container'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
-    marginInlineStart: spacingVars['--spacing-1'],
     minWidth: 180,
+  },
+  // The gap from the rail belongs on the positioned layer, where
+  // `DropdownMenu` keeps it. On the content div it insets the content instead,
+  // leaving the panel flush against the rail.
+  popoverGap: {
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: spacingVars['--spacing-1'],
   },
   popoverHeader: {
     paddingInline: spacingVars['--spacing-2'],
@@ -182,6 +228,16 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
   },
 });
+
+/**
+ * Cascaded to the `actions` slot through `SizeContext` so a consumer's row
+ * controls come out the same height as the built-in expand/collapse toggle,
+ * the way `SideNav` already cascades one size to its footer icons. An
+ * explicit `size` on a supplied control still wins.
+ *
+ * SYNC: `styles.expandToggle` carries the matching box.
+ */
+const ROW_CONTROL_SIZE = 'sm';
 
 // Non-collapsed state for popover children — ensures nested items render expanded
 const EXPANDED_COLLAPSE_STATE = {
@@ -285,9 +341,24 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
    */
   onClick?: (e: React.MouseEvent) => void;
   /**
-   * Right-side content (badges, counts).
+   * Passive right-side content only (badges, counts). Interactive
+   * controls (icon buttons, menus) go in `actions`. `endContent`
+   * renders inside the primary link or button.
    */
   endContent?: ReactNode;
+  /**
+   * Row-level secondary controls (icon buttons, menus) rendered as siblings
+   * of the primary element at the trailing edge of the row — after the
+   * expand/collapse toggle, and before any nested children in DOM and focus
+   * order. Content is passthrough: each control owns its accessible name,
+   * keyboard behavior, and disabled state. Hidden while the SideNav rail is
+   * collapsed.
+   *
+   * Controls inherit the row's control size through `SizeContext`, so an
+   * unsized icon button comes out the same box as the built-in
+   * expand/collapse toggle. An explicit `size` still wins.
+   */
+  actions?: ReactNode;
   /**
    * Sub-items for nesting.
    */
@@ -324,7 +395,10 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
 /**
  * Navigation item for SideNav.
  *
- * Supports icons, selected state, nesting, and end content like badges or counts.
+ * Supports icons, selected state, nesting, and end content like badges or
+ * counts. Interactive row-level controls (menus, icon buttons) go in
+ * `actions`, which renders them as siblings of the primary element — never
+ * nested inside it — before any nested children in DOM and focus order.
  *
  * @example
  * ```
@@ -339,6 +413,13 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
  *   <SideNavItem label="General" href="/settings/general" />
  *   <SideNavItem label="Security" href="/settings/security" />
  * </SideNavItem>
+ * <SideNavItem
+ *   label="Projects"
+ *   href="/projects"
+ *   collapsible
+ *   actions={<MoreMenu label="Project actions" items={items} />}>
+ *   <SideNavItem label="Alpha" href="/projects/alpha" />
+ * </SideNavItem>
  * ```
  */
 export function SideNavItem({
@@ -351,11 +432,14 @@ export function SideNavItem({
   href,
   onClick,
   endContent,
+  actions,
   children,
   collapsible: itemCollapsible,
   size = 'md',
   'data-testid': testId,
   ref,
+  xstyle,
+  ...rest
 }: SideNavItemProps) {
   const t = useTranslator();
   const {isCollapsed} = useSideNavCollapse();
@@ -371,8 +455,9 @@ export function SideNavItem({
     hasLightDismiss: true,
     hasAutoFocus: true,
     hasCloseButton: false,
-    dialogLabel: `${label} submenu`,
+    dialogLabel: t('@astryx.sideNavItem.submenuLabel', {label}),
   });
+  const mergedTriggerRef = useMergedRefs(ref, popover.triggerRef);
 
   // Collapse state for items with children
   const itemCollapsibleConfig = useMemo(
@@ -405,6 +490,7 @@ export function SideNavItem({
   const hasPrimaryAction = !!href || !!onClick;
   const hasIndependentToggle =
     isItemCollapsible && hasPrimaryAction && !isCollapsed;
+  const hasActions = !!actions;
 
   const handleClick = (e: React.MouseEvent) => {
     if (isDisabled) {
@@ -429,42 +515,22 @@ export function SideNavItem({
     toggleItemCollapse();
   };
 
-  // Hover handlers for collapsed popover (mirrors TopNavMenu pattern)
-  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearPopoverTimeouts = useCallback(() => {
-    if (showTimeoutRef.current) {
-      clearTimeout(showTimeoutRef.current);
-      showTimeoutRef.current = null;
-    }
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = null;
-    }
-  }, []);
-
-  const schedulePopoverShow = useCallback(() => {
-    clearPopoverTimeouts();
-    showTimeoutRef.current = setTimeout(() => {
-      popover.show({skipAutoFocus: true});
-    }, 150);
-  }, [clearPopoverTimeouts, popover]);
-
-  const schedulePopoverHide = useCallback(() => {
-    clearPopoverTimeouts();
-    hideTimeoutRef.current = setTimeout(() => {
-      popover.hide();
-    }, 200);
-  }, [clearPopoverTimeouts, popover]);
-
-  const handlePopoverMouseEnter = useCallback(() => {
-    schedulePopoverShow();
-  }, [schedulePopoverShow]);
-
-  const handlePopoverMouseLeave = useCallback(() => {
-    schedulePopoverHide();
-  }, [schedulePopoverHide]);
+  // Pointer half only. The hook's `onKeyDown`/`menuRef` drive a `useListFocus`
+  // over `[role="menuitem"]`, and this flyout is a focus-trapped dialog of
+  // links — wiring them would swallow arrow keys rather than navigate with
+  // them. Keyboard stays with `usePopover`'s trap, as in DropdownMenuSubMenu.
+  const {triggerProps: hoverTriggerProps, contentProps: hoverContentProps} =
+    useMenuHover({
+      show: popover.show,
+      hide: popover.hide,
+      isOpen: popover.isOpen,
+      isEnabled: isCollapsed && hasChildren,
+      // Standard popover toggling: the flyout opens beside the rail, not over
+      // the icon, so the click after a hover-open is a deliberate dismissal
+      // rather than the #3121 confirmation the nav menus need.
+      clickGuardMs: 0,
+      ownsFocus: false,
+    });
 
   // In collapsed mode: hide items without icons
   if (isCollapsed && !icon) {
@@ -479,17 +545,23 @@ export function SideNavItem({
       displayIcon &&
       renderIconSlot(displayIcon, {
         size: 'sm',
-        color: isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary',
+        // `inherit` so a selected row's icon follows the row to HighlightText
+        // under forced colors. Identical to `primary` otherwise: both token
+        // families are emitted from one expression.
+        color: isSelected ? 'inherit' : isDisabled ? 'disabled' : 'secondary',
       });
 
-    // Shared collapsed item styles — used by trigger, link, and button
+    // Shared collapsed item styles — used by trigger, link, and button.
+    // All three render a focusable element, so each draws the shared ring.
     const collapsedItemStyles = mergeProps(
       themeProps('side-nav-item', {
         size,
         selected: isSelected ? 'selected' : null,
+        disabled: isDisabled ? 'disabled' : null,
       }),
-      stylex.props(
+      focusOutlineProps.focusVisible(
         navItemStyles.item,
+        interactionOverlayStyles.backgroundColor,
         navItemStyles[size],
         styles.itemCollapsed,
         size === 'sm' && styles.itemCollapsedSm,
@@ -502,13 +574,12 @@ export function SideNavItem({
     // Items with children: popover trigger + popover
     if (hasChildren) {
       return (
-        <div {...stylex.props(styles.root)}>
+        <div {...stylex.props(styles.root, xstyle)}>
           <button
-            ref={mergeRefs(ref, popover.triggerRef)}
+            ref={mergedTriggerRef}
             type="button"
-            onClick={popover.toggle}
-            onMouseEnter={handlePopoverMouseEnter}
-            onMouseLeave={handlePopoverMouseLeave}
+            {...rest}
+            {...hoverTriggerProps}
             aria-label={label}
             data-testid={testId}
             {...popover.triggerProps}
@@ -518,15 +589,15 @@ export function SideNavItem({
           {popover.render(
             <div
               {...stylex.props(styles.popoverSurface)}
-              onMouseEnter={handlePopoverMouseEnter}
-              onMouseLeave={handlePopoverMouseLeave}
+              onMouseEnter={hoverContentProps.onMouseEnter}
+              onMouseLeave={hoverContentProps.onMouseLeave}
               onClick={() => popover.hide()}>
               <div {...stylex.props(styles.popoverHeader)}>{label}</div>
               <SideNavCollapseContext value={EXPANDED_COLLAPSE_STATE}>
                 {children}
               </SideNavCollapseContext>
             </div>,
-            {placement: 'end', alignment: 'start'},
+            {placement: 'end', alignment: 'start', xstyle: styles.popoverGap},
           )}
         </div>
       );
@@ -547,6 +618,7 @@ export function SideNavItem({
         as={as}
         isDisabled={isDisabled}
         onClick={handleClick}
+        {...rest}
         {...collapsedAriaProps}
         {...collapsedItemStyles}>
         {collapsedIcon}
@@ -554,7 +626,7 @@ export function SideNavItem({
     );
 
     return (
-      <div ref={itemRef} {...stylex.props(styles.root)}>
+      <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
         {collapsedElement}
         <Tooltip content={label} placement="end" anchorRef={itemRef} />
       </div>
@@ -566,84 +638,131 @@ export function SideNavItem({
       {displayIcon &&
         renderIconSlot(displayIcon, {
           size: 'sm',
-          color: isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary',
+          // `inherit` — see the collapsed path above.
+          color: isSelected ? 'inherit' : isDisabled ? 'disabled' : 'secondary',
         })}
       {!isCollapsed && <span {...stylex.props(styles.label)}>{label}</span>}
       {!isCollapsed && endContent && (
         <span {...stylex.props(styles.endContent)}>{endContent}</span>
       )}
       {!isCollapsed && isItemCollapsible && !hasIndependentToggle && (
-        <span
-          {...stylex.props(
+        <Icon
+          icon="chevronDown"
+          size="lg"
+          color="inherit"
+          xstyle={[
             styles.expandChevron,
             !isItemCollapsed && styles.expandChevronExpanded,
-          )}>
-          {getIcon('chevronDown')}
-        </span>
+          ]}
+        />
       )}
     </>
   );
 
-  const navItemStyleProps = mergeProps(
-    themeProps('side-nav-item', {
-      size,
-      selected: isSelected ? 'selected' : null,
-    }),
-    stylex.props(
-      navItemStyles.item,
-      navItemStyles[size],
-      isSelected && navItemStyles.selected,
-      isDisabled && navItemStyles.disabled,
-    ),
+  const itemThemeProps = themeProps('side-nav-item', {
+    size,
+    selected: isSelected ? 'selected' : null,
+    disabled: isDisabled ? 'disabled' : null,
+  });
+
+  const itemStyleArgs = [
+    navItemStyles.item,
+    interactionOverlayStyles.backgroundColor,
+    navItemStyles[size],
+    isSelected && navItemStyles.selected,
+    isDisabled && navItemStyles.disabled,
+  ] as const;
+
+  // Three shapes of the same row appearance:
+  // - `rowProps` — split-action path (toggle, no actions): presentational
+  //   <div>; the ring belongs on each child tab stop.
+  // - `focusableRowProps` — ordinary row: the row element is the control.
+  // - `actionsRowProps` — same pill, but the ring is drawn for the primary
+  //   only. The wrapper is not a tab stop, so `:focus-visible` on it would
+  //   never match, and matching any descendant instead would light the whole
+  //   row around the chevron's or an action's own ring.
+  const rowProps = mergeProps(itemThemeProps, stylex.props(...itemStyleArgs));
+  const focusableRowProps = mergeProps(
+    itemThemeProps,
+    focusOutlineProps.focusVisible(...itemStyleArgs),
+  );
+  const actionsRowProps = mergeProps(
+    itemThemeProps,
+    focusOutlineProps.focusWithinFirstChild(...itemStyleArgs),
   );
 
-  // ── Split-action path: <div> row with <a> + <button> as siblings ──
+  // Row-wrapper path: primary element + row controls as siblings.
   //
-  // When both collapsible and href are set, we can't nest a <button>
-  // inside an <a>. Instead we use a <div> as the flex row container,
-  // an <a display:contents> for the link (with ::before covering the row),
-  // and a <button> sibling lifted above the overlay via z-index.
-
-  // ── Split-action path: primary element + toggle button as siblings ──
-  //
-  // When collapsible and a primary action (href or onClick) are both set,
-  // we render a <div> row with the primary element and chevron toggle as
-  // siblings. This avoids nesting interactive elements (<button> inside <a>).
+  // Used when the row carries more than one control: an independent
+  // expand/collapse toggle (collapsible + href/onClick), consumer-supplied
+  // actions, or both. A <div> is the styled flex row; the primary link or
+  // button, the chevron toggle, and the actions slot render as siblings so
+  // no interactive element nests inside another, and every row-level
+  // control precedes the nested children group in DOM and focus order.
+  const hasRowWrapper = hasIndependentToggle || hasActions;
 
   let itemElement;
 
-  if (hasIndependentToggle) {
+  if (hasRowWrapper) {
+    // aria-expanded/-controls stay on the primary element only when the
+    // whole row is the collapse toggle (no independent chevron button).
+    const rowPrimaryAriaProps = hasIndependentToggle
+      ? {'aria-current': isSelected ? ('page' as const) : undefined}
+      : {
+          'aria-current': isSelected ? ('page' as const) : undefined,
+          'aria-disabled': isDisabled || undefined,
+          'aria-expanded': isItemCollapsible ? !isItemCollapsed : undefined,
+          'aria-controls': isItemCollapsible ? `${id}-children` : undefined,
+        };
+
     itemElement = (
-      <div data-testid={testId} {...navItemStyleProps}>
+      <div data-testid={testId} {...(hasActions ? actionsRowProps : rowProps)}>
         <NavItemElement
           ref={ref}
           href={href}
           as={as}
           isDisabled={isDisabled}
           onClick={handleClick}
-          aria-current={isSelected ? ('page' as const) : undefined}
-          {...stylex.props(styles.splitAction)}>
+          {...rest}
+          {...rowPrimaryAriaProps}
+          {...(hasActions
+            ? // The wrapper rings for this element; suppressing here is what
+              // keeps the UA's own ring from painting inside that one.
+              focusOutlineProps.suppressed(styles.splitAction)
+            : focusOutlineProps.focusVisible(styles.splitAction))}>
           {itemContent}
         </NavItemElement>
-        <button
-          type="button"
-          onClick={handleToggleClick}
-          aria-label={
-            isItemCollapsed
-              ? t('@astryx.sideNavItem.expand', {label})
-              : t('@astryx.sideNavItem.collapse', {label})
-          }
-          aria-expanded={!isItemCollapsed}
-          aria-controls={`${id}-children`}
-          {...stylex.props(styles.expandToggle)}>
-          <span
-            {...stylex.props(
-              styles.expandChevron,
-              !isItemCollapsed && styles.expandChevronExpanded,
+        {hasIndependentToggle && (
+          <button
+            type="button"
+            onClick={handleToggleClick}
+            aria-label={
+              isItemCollapsed
+                ? t('@astryx.sideNavItem.expand', {label})
+                : t('@astryx.sideNavItem.collapse', {label})
+            }
+            aria-expanded={!isItemCollapsed}
+            aria-controls={`${id}-children`}
+            {...focusOutlineProps.focusVisible(
+              styles.expandToggle,
+              interactionOverlayStyles.backgroundColor,
             )}>
-            {getIcon('chevronDown')}
+            <Icon
+              icon="chevronDown"
+              size="lg"
+              color="inherit"
+              xstyle={[
+                styles.expandChevron,
+                !isItemCollapsed && styles.expandChevronExpanded,
+              ]}
+            />
+          </button>
+        )}
+        {hasActions && (
+          <span {...stylex.props(styles.actions)}>
+            <SizeProvider value={ROW_CONTROL_SIZE}>{actions}</SizeProvider>
           </span>
-        </button>
+        )}
       </div>
     );
   } else {
@@ -662,15 +781,16 @@ export function SideNavItem({
         as={as}
         isDisabled={isDisabled}
         onClick={handleClick}
+        {...rest}
         {...ariaProps}
-        {...navItemStyleProps}>
+        {...focusableRowProps}>
         {itemContent}
       </NavItemElement>
     );
   }
 
   const item = (
-    <div ref={itemRef} {...stylex.props(styles.root)}>
+    <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
       {itemElement}
       {hasChildren && !isCollapsed && (
         <div

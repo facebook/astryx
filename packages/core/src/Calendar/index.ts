@@ -38,11 +38,6 @@ export type {
 } from './hooks';
 
 // Re-export calendar-specific utilities for advanced usage
-export {
-  isSameDay,
-  isDateInRange,
-  getWeekNumber,
-  formatAccessibleDate,
-} from './utils';
+export {isSameDay, isDateInRange, getWeekNumber} from './utils';
 
 // Re-export theme styles for customization

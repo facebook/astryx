@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'NavIcon',
@@ -22,7 +22,10 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-navicon'},
+      {className: 'astryx-nav-icon'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-navicon', deprecatedFor: 'nav-icon'},
     ],
   },
   usage: {
@@ -36,7 +39,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'NavIcon',
   displayName: 'Nav Icon',
@@ -51,7 +54,10 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-navicon'},
+      {className: 'astryx-nav-icon'},
+      // Still emitted beside the names above, so themes written against
+      // them keep working. Drop in the next major.
+      {className: 'astryx-navicon', deprecatedFor: 'nav-icon'},
     ],
   },
   usage: {
@@ -65,7 +71,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Circular icon container w/ accent background for navigation headers.',

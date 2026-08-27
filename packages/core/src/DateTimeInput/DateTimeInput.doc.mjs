@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'DateTimeInput',
@@ -124,6 +124,12 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'timeOptionInterval',
+      type: '5 | 10 | 15 | 30 | 60',
+      description:
+        'Minute cadence for a dropdown of preset times on the time portion. Set it to turn the time field into a combobox listing every valid time at that cadence (60 gives a 12 AM to 11 PM list). Omitted, the time field stays a plain text input and gains no combobox semantics. Typed entry keeps working either way, so a time between two options is still reachable. Independent of timeIncrement, which governs arrow-key stepping.',
+    },
+    {
       name: 'hasClear',
       type: 'boolean',
       description: 'Shows a clear button when a datetime value is set.',
@@ -174,6 +180,19 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description:
+        'First day of week in the calendar. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
+      default: '0',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -182,7 +201,19 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-time-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-date-time-input-date-segment',
+        visualProps: ['size', 'status'],
+      },
+      {
+        className: 'astryx-date-time-input-time-segment',
+        visualProps: ['size', 'status'],
+      },
+      {className: 'astryx-date-time-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-time-input-clock-icon'},
+      {className: 'astryx-date-time-input-time-listbox'},
+      {className: 'astryx-date-time-input-time-option'},
     ],
   },
   usage: {
@@ -261,6 +292,12 @@ export const docs = {
           'A text input for entering the time, displayed beside the date input.',
       },
       {
+        name: 'Time options popover',
+        required: false,
+        description:
+          'A list of preset times at the timeOptionInterval cadence, shown when that prop is set and the time input is clicked or opened with Alt+ArrowDown.',
+      },
+      {
         name: 'Clear button',
         required: false,
         description: 'A × button that resets the datetime value.',
@@ -274,7 +311,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'DateTimeInput',
   displayName: 'Date Time Input',
@@ -464,21 +501,38 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description: '日历中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
+      default: '0',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
         '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。',
     },
-
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-time-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-date-time-input-date-segment',
+        visualProps: ['size', 'status'],
+      },
+      {
+        className: 'astryx-date-time-input-time-segment',
+        visualProps: ['size', 'status'],
+      },
+      {className: 'astryx-date-time-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-time-input-clock-icon'},
+      {className: 'astryx-date-time-input-time-listbox'},
+      {className: 'astryx-date-time-input-time-option'},
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'combined date + time picker with calendar popover and time input',
@@ -547,6 +601,8 @@ export const docsDense = {
     hasSeconds: 'include seconds in time portion',
     hourFormat: "display format. '12h' shows AM/PM; '24h' uses 24-hour",
     timeIncrement: 'minutes to add/subtract on arrow keys in time input',
+    timeOptionInterval:
+      'minute cadence for a preset-time dropdown on the time input; omitted = plain text input, no combobox. typed entry still works',
     hasClear: 'Shows clear button when datetime is set',
     placeholder: 'date-portion placeholder when empty',
     timePlaceholder: 'time-portion placeholder when empty',
@@ -556,6 +612,7 @@ export const docsDense = {
     status: 'error/warning/success status w/ message',
     labelTooltip: 'tooltip text via info icon at label end',
     numberOfMonths: 'months shown simultaneously in calendar',
+    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };

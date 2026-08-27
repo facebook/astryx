@@ -20,6 +20,13 @@
         "../../packages/lab/src/*/index.ts",
         "../../packages/lab/src/*"
       ],
+      "@astryxdesign/richtext": [
+        "../../packages/richtext/src/index.ts"
+      ],
+      "@astryxdesign/richtext/*": [
+        "../../packages/richtext/src/*/index.ts",
+        "../../packages/richtext/src/*"
+      ],
       "@astryxdesign/build/vite": [
         "../../packages/build/src/vite.ts"
       ]

@@ -25,6 +25,14 @@ export interface DerivedVarEntry {
   vars?: string[];
   /** Named expansion strategy. 'container' expands padding to container tokens. */
   expand?: 'container';
+  /**
+   * Emit only the internal `vars`, dropping the source property from the rule.
+   * Use when the class-carrying element must NOT receive the standard property
+   * itself — the value is consumed by a child through the var instead. Without
+   * this, the property is emitted alongside the var (correct when the same
+   * element both reads the var and applies the property, e.g. Chat/DropdownMenu).
+   */
+  replaces?: boolean;
 }
 
 /**
@@ -35,6 +43,7 @@ export interface DerivedVarEntry {
  * entries share the same property.
  */
 export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
+  avatar: [{property: 'borderRadius', vars: ['--_avatar-radius']}],
   banner: [{property: 'borderRadius', vars: ['--_banner-radius']}],
   button: [{property: 'borderRadius', vars: ['--_button-radius']}],
   card: [
@@ -49,18 +58,52 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
     {property: 'borderRadius', vars: ['--_dialog-radius']},
     {property: 'padding', expand: 'container'},
   ],
+  'context-menu': [
+    {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
+    {property: 'padding', vars: ['--_dropdown-menu-padding']},
+  ],
   'dropdown-menu': [
     {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
     {property: 'padding', vars: ['--_dropdown-menu-padding']},
   ],
   field: [{property: 'borderRadius', vars: ['--_field-radius']}],
-  hovercard: [{property: 'borderRadius', vars: ['--_hovercard-radius']}],
+  'hover-card': [{property: 'borderRadius', vars: ['--_hovercard-radius']}],
+  'number-input': [
+    {property: 'padding', expand: 'container'},
+    {property: 'borderRadius', vars: ['--_field-radius']},
+  ],
   popover: [{property: 'borderRadius', vars: ['--_popover-radius']}],
+  'progress-bar-mark': [
+    {property: 'width', vars: ['--_progressbar-mark-width'], replaces: true},
+    {property: 'height', vars: ['--_progressbar-mark-height'], replaces: true},
+  ],
   section: [{property: 'padding', expand: 'container'}],
   'segmented-control': [
     {property: 'borderRadius', vars: ['--_segmented-control-radius']},
     {property: 'padding', vars: ['--_segmented-control-padding']},
   ],
+  'text-area': [
+    {
+      property: 'paddingInline',
+      vars: ['--_textarea-inline-padding'],
+      replaces: true,
+    },
+  ],
+};
+
+/**
+ * Deprecated component keys → the key that superseded them.
+ *
+ * A renamed target keeps emitting its old class, so a theme written against
+ * the old key still selects the element. Without this the rule would land but
+ * its derived vars would not expand, and the half that travels through a var
+ * (a hover card's radius, a text area's inline padding) would silently do
+ * nothing. Drop these with the classes, in the next major.
+ */
+const DEPRECATED_REGISTRY_KEYS: Record<string, string> = {
+  hovercard: 'hover-card',
+  'progressbar-mark': 'progress-bar-mark',
+  textarea: 'text-area',
 };
 
 /**
@@ -71,7 +114,10 @@ export function getDerivedVars(
   component: string,
   property: string,
 ): DerivedVarEntry[] {
-  const entries = derivedVarRegistry[component];
+  const renamedTo = DEPRECATED_REGISTRY_KEYS[component];
+  const entries =
+    derivedVarRegistry[component] ??
+    (renamedTo ? derivedVarRegistry[renamedTo] : undefined);
   if (!entries) {
     return [];
   }

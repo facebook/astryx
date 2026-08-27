@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Badge',
@@ -18,7 +18,8 @@ export const docs = {
     {
       name: 'label',
       type: 'ReactNode',
-      description: 'Badge text content.',
+      description:
+        'Badge text content. A badge is one line, so a label wider than the space available is cut with an ellipsis rather than escaping its container; a string or number label is also set as the badge\'s title so the full text stays reachable on hover.',
     },
     {
       name: 'icon',
@@ -60,7 +61,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Badge',
   displayName: 'Badge',
@@ -107,7 +108,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'highlights a status or category tag, NOT for general metadata',
   usage: {
@@ -132,7 +133,7 @@ export const docsDense = {
   },
   propDescriptions: {
     variant: 'visual style variant',
-    label: 'badge text content',
+    label: 'badge text content; over-wide labels clip with an ellipsis, full text in title',
     icon: 'optional leading icon',
   },
 };

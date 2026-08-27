@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TimeInput',
@@ -230,10 +230,23 @@ export const docs = {
         'Status indicator that colors the border and displays an icon. When a message is provided it is rendered below the input.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description:
         'Tooltip text rendered as an info icon at the end of the label row.',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
       name: 'xstyle',
@@ -244,12 +257,12 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-time-input', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TimeInput',
 
@@ -373,6 +386,13 @@ export const docsZh = {
         '为边框着色并显示图标的状态指示器。当提供消息时，消息渲染在输入框下方。',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 隐藏消息框，并在状态图标上以提示气泡形式显示。',
+      default: "'attached'",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description: '在标签行末尾以信息图标形式渲染的工具提示文本。',
@@ -386,7 +406,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-time-input', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -469,7 +489,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Time input that converts free-text entry to standard format with arrow-key adjustment.',
@@ -545,6 +565,7 @@ export const docsDense = {
     placeholder: 'Placeholder when empty. Focused+empty shows format hint.',
     size: 'Input element height.',
     status: 'Colored border+icon. Message rendered below input.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip as info icon at label row end.',
     xstyle:
       'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',

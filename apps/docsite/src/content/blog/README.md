@@ -127,7 +127,41 @@ Astryx-blue field with the Astryx mark as the separator between segments and
 the package name beneath. Set `releasePackage` to change the package label
 (defaults to `@astryxdesign/core`); set an explicit `coverImage` to opt out.
 
-## 5. Preview locally
+## 5. Images in the post body
+
+Reference images in the body with normal Markdown, from `public/blog/<slug>/`:
+
+```md
+![Descriptive alt text](/blog/<slug>/my-screenshot.png)
+```
+
+Always write meaningful alt text — it's read by screen readers and shown if the
+image fails to load. Body images are rendered with a subtle frame so screenshots
+read intentionally on either background.
+
+### Light / dark variants
+
+A body image can automatically swap in dark mode. Drop a second file next to it
+named `<name>.dark.<ext>` and it's used when the site is in dark mode — no
+frontmatter, no markup change. You still reference only the light file:
+
+```
+public/blog/<slug>/pipeline.png        ← shown in light mode
+public/blog/<slug>/pipeline.dark.png   ← shown in dark mode (optional)
+```
+
+```md
+![The build pipeline](/blog/<slug>/pipeline.png)
+```
+
+How it works: `scripts/generate-data.mjs` scans `public/blog/**` at build time
+and records every `*.dark.*` file in a `blogDarkImages` manifest. The blog
+renderer checks that manifest for a `<name>.dark.<ext>` sibling of each image,
+so the decision is made at build time — no runtime request, no flash. If no
+dark variant exists (the common case), the single image is used in both modes.
+The swap follows the site's theme toggle, not just the OS preference.
+
+## 6. Preview locally
 
 ```bash
 cd apps/docsite
@@ -137,7 +171,7 @@ pnpm dev            # runs `pnpm generate` first, then starts Next.js
 Visit `/blog` and `/blog/<slug>`. Drafts (`draft: true`) render in dev but are
 excluded from production builds.
 
-## 6. Validate before you push
+## 7. Validate before you push
 
 ```bash
 pnpm generate       # discovers + validates posts into src/generated/blogRegistry.ts

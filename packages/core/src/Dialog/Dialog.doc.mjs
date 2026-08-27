@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Dialog',
@@ -10,7 +10,7 @@ export const docs = {
   keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap","imperative"],
   // Intentionally a contained isInline preview, not playground.overlay: the
   // component stays visible on load and knobs stay live, whereas a real
-  // showModal() overlay makes the page inert — see PlaygroundConfig.overlay
+  // showModal() overlay makes the page inert — see ComponentPlaygroundConfig.overlay
   // in docs-types.ts (#3657).
   playground: {
     defaults: {
@@ -62,19 +62,21 @@ export const docs = {
     {
       name: 'width',
       type: 'number | string',
-      description: 'Width of the dialog in pixels or any CSS value.',
+      description: 'Preferred width of the dialog in pixels or any CSS value. Standard dialogs clamp to their container and the dynamic viewport with spacing-token gutters so narrow viewports keep content on screen.',
       default: '400',
     },
     {
       name: 'maxHeight',
       type: 'number | string',
-      description: 'Maximum height of the dialog.',
-      default: "'75vh'",
+      description: 'Maximum height of the dialog. Defaults to a dynamic viewport value so browser UI changes are reflected where supported.',
+      default: "'75dvh'",
     },
     {
       name: 'position',
       type: 'DialogPosition',
-      description: 'Static position for the dialog; centered by default when omitted.',
+      description:
+        'Static position for the dialog; centered by default when omitted. ' +
+        'Use logical `start`/`end` for inline offsets so positioned dialogs mirror correctly under RTL.',
     },
     {
       name: 'variant',
@@ -87,6 +89,11 @@ export const docs = {
       type: "'required' | 'form' | 'info'",
       description: 'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
       default: "'info'",
+    },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Internal padding of the dialog using the spacing scale step.',
     },
     {
       name: 'isInline',
@@ -111,7 +118,7 @@ export const docs = {
       { guidance: false, description: 'Use the fullscreen variant for simple confirmations; it is meant for complex content like editors or long forms.' },
     ],
     anatomy: [
-      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open for accessibility.'},
+      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open and labels the dialog via aria-labelledby.'},
       {name: 'Body', required: true, description: 'The main content area: text, forms, lists, or any layout.'},
       {name: 'Footer', required: false, description: 'Action buttons like Save/Cancel or Accept/Decline, aligned to the end.'},
       {name: 'Backdrop', required: true, description: 'Semi-transparent overlay behind the dialog that blocks page interaction.'},
@@ -119,7 +126,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.',
@@ -133,7 +140,7 @@ export const docsZh = {
       { guidance: false, description: 'Use the fullscreen variant for simple confirmations; it is meant for complex content like editors or long forms.' },
     ],
     anatomy: [
-      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open for accessibility.'},
+      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open and labels the dialog via aria-labelledby.'},
       {name: 'Body', required: true, description: 'The main content area: text, forms, lists, or any layout.'},
       {name: 'Footer', required: false, description: 'Action buttons like Save/Cancel or Accept/Decline, aligned to the end.'},
       {name: 'Backdrop', required: true, description: 'Semi-transparent overlay behind the dialog that blocks page interaction.'},
@@ -141,7 +148,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'modal overlay that blocks page interaction until the user responds',
   usage: {

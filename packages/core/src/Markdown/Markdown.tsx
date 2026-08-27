@@ -53,6 +53,9 @@ import {
   parseMarkdownIncremental,
   createIncrementalState,
   trimStreamingArtifacts,
+  inlineText,
+  slugify,
+  uniqueSlug,
 } from './parser';
 import type {BlockNode, InlineNode, IncrementalState} from './parser';
 import {themeProps} from '../utils/themeProps';
@@ -108,6 +111,14 @@ export interface MarkdownComponents {
   heading?: React.ComponentType<{
     level: 1 | 2 | 3 | 4 | 5 | 6;
     children: React.ReactNode;
+    /**
+     * Generated slug for this heading, matching the ids produced by
+     * useOutlineFromMarkdown / parseOutlineFromMarkdown. Render it as the
+     * element's `id` to keep Outline hash navigation working. Undefined for
+     * headings nested inside blockquotes or list items (the outline only
+     * lists top-level headings).
+     */
+    id?: string;
   }>;
   paragraph?: React.ComponentType<{children: React.ReactNode}>;
   image?: React.ComponentType<{src: string; alt: string}>;
@@ -226,7 +237,7 @@ const dynamicStyles = stylex.create({
 
 const cellAlignStyles = stylex.create({
   center: {textAlign: 'center'},
-  right: {textAlign: 'right'},
+  end: {textAlign: 'end'},
 });
 
 const styles = stylex.create({
@@ -550,14 +561,19 @@ const headingStyles = {
 const DANGEROUS_URL_PATTERN = /^(javascript|data|vbscript):/i;
 
 function sanitizeUrl(url: string): string | null {
-  const trimmed = url.trim();
-  if (trimmed.length === 0) {
+  // Strip control characters before testing, the same normalization the
+  // parser's isSafeUrl applies — the anchored pattern must see the URL the
+  // way a browser will. Return the normalized value so the stripped
+  // characters don't ride along into an attribute or component override.
+  // eslint-disable-next-line no-control-regex -- control chars are the bypass
+  const normalized = url.replace(/[\x00-\x1f\x7f]/g, '').trim();
+  if (normalized.length === 0) {
     return null;
   }
-  if (DANGEROUS_URL_PATTERN.test(trimmed)) {
+  if (DANGEROUS_URL_PATTERN.test(normalized)) {
     return null;
   }
-  return trimmed;
+  return normalized;
 }
 
 // ---------------------------------------------------------------------------
@@ -1045,6 +1061,7 @@ function renderBlock(
   inlinePlugins: MarkdownInlinePlugin[] | undefined,
   components: Partial<MarkdownComponents> | undefined,
   t: TranslatorFn,
+  headingIdMap?: ReadonlyMap<BlockNode, string>,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1071,10 +1088,15 @@ function renderBlock(
           components,
         ),
       );
+      // Only top-level headings get an id: the map is built from the same
+      // traversal parseOutlineFromMarkdown uses (which skips headings nested
+      // in blockquotes / list items), so rendered ids and outline ids stay
+      // identical — including duplicate-slug numbering.
+      const headingId = headingIdMap?.get(node);
       const HeadingComp = components?.heading;
       if (HeadingComp) {
         return (
-          <HeadingComp key={index} level={level}>
+          <HeadingComp key={index} level={level} id={headingId}>
             {headingChildren}
           </HeadingComp>
         );
@@ -1083,18 +1105,22 @@ function renderBlock(
       return (
         <Tag
           key={index}
-          {...stylex.props(
-            styles.headingBase,
-            headingStyles[level],
-            spacing,
-            contentWidthValue != null
-              ? dynamicStyles.proseWidth(contentWidthValue)
-              : null,
-            contentAlign !== 'start'
-              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
-              : null,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          id={headingId}
+          {...mergeProps(
+            themeProps('markdown-heading', {density, level}),
+            stylex.props(
+              styles.headingBase,
+              headingStyles[level],
+              spacing,
+              contentWidthValue != null
+                ? dynamicStyles.proseWidth(contentWidthValue)
+                : null,
+              contentAlign !== 'start'
+                ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+                : null,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           {headingChildren}
         </Tag>
@@ -1130,16 +1156,19 @@ function renderBlock(
         <div
           key={index}
           role="paragraph"
-          {...stylex.props(
-            spacing,
-            contentWidthValue != null
-              ? dynamicStyles.proseWidth(contentWidthValue)
-              : null,
-            contentAlign !== 'start'
-              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
-              : null,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-paragraph', {density}),
+            stylex.props(
+              spacing,
+              contentWidthValue != null
+                ? dynamicStyles.proseWidth(contentWidthValue)
+                : null,
+              contentAlign !== 'start'
+                ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+                : null,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           {paraChildren}
         </div>
@@ -1161,11 +1190,14 @@ function renderBlock(
       return (
         <div
           key={index}
-          {...stylex.props(
-            spacing,
-            styles.codeBlockWrapper,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-codeblock', {density}),
+            stylex.props(
+              spacing,
+              styles.codeBlockWrapper,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           <CodeBlock
             code={node.content}
@@ -1207,6 +1239,7 @@ function renderBlock(
       return (
         <Blockquote
           key={index}
+          {...themeProps('markdown-blockquote', {density})}
           xstyle={[
             spacing,
             contentWidthValue != null
@@ -1254,10 +1287,13 @@ function renderBlock(
         return (
           <div
             key={index}
-            {...stylex.props(
-              spacing,
-              isFirst && styles.noMarginBlockStart,
-              isLast && styles.noMarginBlockEnd,
+            {...mergeProps(
+              themeProps('markdown-list', {density}),
+              stylex.props(
+                spacing,
+                isFirst && styles.noMarginBlockStart,
+                isLast && styles.noMarginBlockEnd,
+              ),
             )}>
             <CheckboxList
               label={t('@astryx.markdown.taskList')}
@@ -1327,16 +1363,19 @@ function renderBlock(
       return (
         <div
           key={index}
-          {...stylex.props(
-            spacing,
-            contentWidthValue != null
-              ? dynamicStyles.proseWidth(contentWidthValue)
-              : null,
-            contentAlign !== 'start'
-              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
-              : null,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-list', {density}),
+            stylex.props(
+              spacing,
+              contentWidthValue != null
+                ? dynamicStyles.proseWidth(contentWidthValue)
+                : null,
+              contentAlign !== 'start'
+                ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+                : null,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           <List
             listStyle={node.ordered ? 'decimal' : 'disc'}
@@ -1414,17 +1453,20 @@ function renderBlock(
           tabIndex={0}
           role="group"
           aria-label={t('@astryx.markdown.table')}
-          {...stylex.props(
-            styles.tableWrapper,
-            spacing,
-            contentWidthValue != null
-              ? dynamicStyles.blockWidth(contentWidthValue)
-              : null,
-            BLOCK_ALIGN_MARGIN[contentAlign] != null
-              ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign])
-              : null,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-table', {density}),
+            stylex.props(
+              styles.tableWrapper,
+              spacing,
+              contentWidthValue != null
+                ? dynamicStyles.blockWidth(contentWidthValue)
+                : null,
+              BLOCK_ALIGN_MARGIN[contentAlign] != null
+                ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign])
+                : null,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           <Table dividers="rows" textOverflow="wrap">
             <TableHeader>
@@ -1436,7 +1478,7 @@ function renderBlock(
                     xstyle={[
                       dynamicStyles.cellMinWidth(`${colMinWidths[i]}px`),
                       node.alignments[i] === 'center' && cellAlignStyles.center,
-                      node.alignments[i] === 'right' && cellAlignStyles.right,
+                      node.alignments[i] === 'right' && cellAlignStyles.end,
                     ]}>
                     {h.children.map((c, j) =>
                       renderInline(
@@ -1462,7 +1504,7 @@ function renderBlock(
                     key={j}
                     xstyle={[
                       node.alignments[j] === 'center' && cellAlignStyles.center,
-                      node.alignments[j] === 'right' && cellAlignStyles.right,
+                      node.alignments[j] === 'right' && cellAlignStyles.end,
                     ]}>
                     {cell.children.map((c, k) =>
                       renderInline(
@@ -1499,11 +1541,14 @@ function renderBlock(
       return (
         <hr
           key={index}
-          {...stylex.props(
-            styles.hr,
-            spacing,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-hr', {density}),
+            stylex.props(
+              styles.hr,
+              spacing,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}
         />
       );
@@ -1514,22 +1559,32 @@ function renderBlock(
         return (
           <div
             key={index}
-            {...stylex.props(
-              spacing,
-              isFirst && styles.noMarginBlockStart,
-              isLast && styles.noMarginBlockEnd,
+            {...mergeProps(
+              themeProps('markdown-image', {density}),
+              stylex.props(
+                spacing,
+                isFirst && styles.noMarginBlockStart,
+                isLast && styles.noMarginBlockEnd,
+              ),
             )}>
             [{node.alt}]
           </div>
         );
       }
+      const ImageComp = components?.image;
+      if (ImageComp) {
+        return <ImageComp key={index} src={safeSrc} alt={node.alt} />;
+      }
       return (
         <div
           key={index}
-          {...stylex.props(
-            spacing,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-image', {density}),
+            stylex.props(
+              spacing,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           <img src={safeSrc} alt={node.alt} {...stylex.props(styles.image)} />
         </div>
@@ -1572,6 +1627,7 @@ export function Markdown({
   className,
   style,
   'data-testid': testId,
+  ...props
 }: MarkdownProps): React.ReactElement {
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
@@ -1619,6 +1675,27 @@ export function Markdown({
     }
     return parseMarkdown(children, parseOptions);
   }, [display, smoothedText, children, isStreaming, parseOptions]);
+
+  // Assign each top-level heading the slug that parseOutlineFromMarkdown
+  // would derive for it, so Outline hash links built from the same source
+  // always find a matching DOM id. Mirrors that function's traversal exactly:
+  // top-level blocks only, one shared duplicate-numbering sequence.
+  // NOTE: must stay above the `display === 'inline'` early return below —
+  // hooks cannot be conditional.
+  const headingIdMap = useMemo(() => {
+    if (display === 'inline' || blocks.length === 0) {
+      return undefined;
+    }
+    const map = new Map<BlockNode, string>();
+    const counts = new Map<string, number>();
+    for (const block of blocks) {
+      if (block.type === 'heading') {
+        const label = inlineText(block.children).trim();
+        map.set(block, uniqueSlug(slugify(label), counts));
+      }
+    }
+    return map;
+  }, [display, blocks]);
 
   const inlineNodes = useMemo(() => {
     if (display !== 'inline') {
@@ -1673,6 +1750,8 @@ export function Markdown({
     const renderedInline = (
       <span
         ref={ref}
+        // Consumer props first: what the component sets for itself wins.
+        {...props}
         data-testid={testId}
         {...mergeProps(
           themeProps('markdown', {density}),
@@ -1704,8 +1783,11 @@ export function Markdown({
 
   const rendered = (
     <div
-      role="document"
       ref={ref as React.Ref<HTMLDivElement>}
+      // Consumer props first: what the component sets for itself — the
+      // document role included — wins.
+      {...props}
+      role="document"
       data-testid={testId}
       {...mergeProps(
         themeProps('markdown', {density}),
@@ -1733,6 +1815,7 @@ export function Markdown({
           inlinePlugins,
           components,
           t,
+          headingIdMap,
         ),
       )}
     </div>

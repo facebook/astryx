@@ -22,6 +22,12 @@ const meta: Meta<typeof FormLayout> = {
       options: ['vertical', 'horizontal', 'horizontal-labels'],
       description: 'Direction of field arrangement',
     },
+    defaultOptionality: {
+      control: 'select',
+      options: [undefined, 'optional', 'required'],
+      description:
+        'Form-wide default so only the exception shows an optional/required indicator',
+    },
   },
 };
 
@@ -262,6 +268,52 @@ export const InDialog: Story = {
           </button>
         </div>
       </div>
+    );
+  },
+};
+
+// ─── Default optionality: mark only the exception ─────────────────────────
+
+export const DefaultOptionalityOptional: Story = {
+  name: 'Default Optionality — Optional',
+  render: () => {
+    const [bio, setBio] = useState('');
+    const [nickname, setNickname] = useState('');
+    const [email, setEmail] = useState('');
+    // Everything reads as optional; only the required field is marked.
+    return (
+      <FormLayout defaultOptionality="optional">
+        <TextInput label="Bio" value={bio} onChange={setBio} />
+        <TextInput
+          label="Nickname"
+          value={nickname}
+          onChange={setNickname}
+          isOptional
+        />
+        <TextInput label="Email" value={email} onChange={setEmail} isRequired />
+      </FormLayout>
+    );
+  },
+};
+
+export const DefaultOptionalityRequired: Story = {
+  name: 'Default Optionality — Required',
+  render: () => {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [nickname, setNickname] = useState('');
+    // Everything reads as required; only the optional field is marked.
+    return (
+      <FormLayout defaultOptionality="required">
+        <TextInput label="Name" value={name} onChange={setName} />
+        <TextInput label="Email" value={email} onChange={setEmail} isRequired />
+        <TextInput
+          label="Nickname"
+          value={nickname}
+          onChange={setNickname}
+          isOptional
+        />
+      </FormLayout>
     );
   },
 };

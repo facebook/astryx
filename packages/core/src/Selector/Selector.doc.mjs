@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Selector',
@@ -21,8 +21,27 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-selector', visualProps: ['size', 'status']},
+      {
+        className: 'astryx-selector',
+        visualProps: ['variant', 'size', 'status'],
+        states: ['disabled'],
+      },
       {className: 'astryx-selector-option'},
+      {
+        className: 'astryx-selector-option-row',
+        visualProps: ['size'],
+        states: ['selected', 'disabled'],
+      },
+      {className: 'astryx-selector-search'},
+      {className: 'astryx-selector-section-heading'},
+      {className: 'astryx-selector-empty-state'},
+      {
+        className: 'astryx-selector-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
+      {className: 'astryx-selector-indicator-icon', states: ['state']},
+      {className: 'astryx-selector-check'},
+      {className: 'astryx-selector-popup'},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
@@ -37,7 +56,7 @@ export const docs = {
       name: 'options',
       type: 'SelectorOption[]',
       description:
-        'Array of items: strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
+        'Array of items: strings, objects with value/label/description/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
       required: true,
     },
     {
@@ -61,7 +80,7 @@ export const docs = {
       name: 'hasSearch',
       type: 'boolean',
       description:
-        'Whether to show a search input for filtering options. As the user types, the match count (or "No results found") is announced to screen readers via a polite live region.',
+        'Whether to show a search input for filtering options. As the user types, the match count (or "No results found") is announced to screen readers via a polite live region. The search field has built-in affordances: a leading magnifier icon and, once a query is typed, a trailing clear (✕) button that resets the query and returns focus to the input.',
       default: 'false',
     },
     {
@@ -69,6 +88,20 @@ export const docs = {
       type: 'string',
       description: 'Placeholder text for the search input.',
       default: "'Search...'",
+    },
+    {
+      name: 'emptyText',
+      type: 'ReactNode',
+      description:
+        'Content shown in the dropdown panel when there are no options to show, and announced in a polite live region when the panel opens (a string override is announced verbatim; a richer node falls back to the default text). Not shown while isLoading.',
+      default: "'No options'",
+    },
+    {
+      name: 'emptySearchText',
+      type: 'ReactNode',
+      description:
+        'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time (a string override is announced verbatim; a richer node falls back to the default text).',
+      default: "'No results found'",
     },
     {
       name: 'placeholder',
@@ -81,6 +114,13 @@ export const docs = {
       type: "'sm' | 'md' | 'lg'",
       description: 'Size variant for the selector.',
       default: "'md'",
+    },
+    {
+      name: 'variant',
+      type: "'input' | 'ghost'",
+      description:
+        'Visual trigger style. input is the bordered input treatment for forms; ghost is borderless and matches ghost buttons for toolbar usage.',
+      default: "'input'",
     },
     {
       name: 'isDisabled',
@@ -129,10 +169,47 @@ export const docs = {
       description: 'Validation status with an optional message.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the bordered input and is only valid for the input variant; ghost selectors detach attached status messages by default. Use tooltip for compact toolbar controls.',
+      default: "'attached' for input selectors; 'detached' for ghost selectors",
+    },
+    {
       name: 'renderOption',
       type: '(option: SelectorOptionData) => ReactNode',
       description:
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
+    },
+    {
+      name: 'renderValue',
+      type: '(option: SelectorOptionData) => ReactNode',
+      description:
+        'Custom render function for the selected option inside the closed trigger. The trigger is sized by padding, so it is the size token for a one-line value (28/32/36) and exactly one text line taller for a two-line one (48/52/56), always on the 4px rhythm, always aligned with the buttons and inputs beside it. Inside an InputGroup the group owns the row height: a SelectorOption folds onto one line and ellipsizes, and any taller node is cut off at the row.',
+    },
+    {
+      name: 'indicatorPosition',
+      type: "'start' | 'end'",
+      description:
+        'Which edge of the option row carries the selected mark. start reserves a mark column ahead of every label so they stay aligned, the way a native menu does; end is the house convention shared with Typeahead and CommandPalette.',
+      default: "'end'",
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'startIcon',
+      type: 'IconType | ReactNode',
+      description: 'Icon displayed at the start of the selector trigger.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: 'Shows a loading spinner in the trigger.',
+      default: 'false',
     },
     {
       name: 'xstyle',
@@ -144,7 +221,7 @@ export const docs = {
   components: [{name: 'SelectorOption'}],
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,
@@ -172,6 +249,11 @@ export const docs = {
           'Use inside InputGroup only when the selector needs a short prefix or suffix addon as part of one decorated input surface.',
       },
       {
+        guidance: true,
+        description:
+          'Use variant="ghost" when a selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
+      },
+      {
         guidance: false,
         description:
           'Use for action menus; use Dropdown Menu for triggering commands or navigation.',
@@ -237,11 +319,11 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,
@@ -329,11 +411,11 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   usage: {
     description:
-      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options. Keyboard typeahead matches a native select: typing on the focused closed trigger selects the matching option directly, repeated presses cycle through options sharing a first letter, and spaces count as match characters ("new y" reaches "New York"). With the menu open, typing moves the highlight and Enter commits. With hasSearch, typing on the closed trigger opens the popup and seeds the search input.',
     bestPractices: [
       {
         guidance: true,
@@ -359,6 +441,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use inside InputGroup only when the selector needs a short prefix or suffix addon.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use variant="ghost" in toolbars with ghost buttons; prefer statusVariant="tooltip" for compact validation status.',
       },
       {
         guidance: false,

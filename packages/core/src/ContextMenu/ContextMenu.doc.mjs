@@ -1,5 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ContextMenu',
@@ -32,7 +32,7 @@ export const docs = {
     {
       name: 'items',
       type: 'ContextMenuOption[]',
-      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?}`, a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
+      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?, variant?}` (variant `"destructive"` renders it in the error color), a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
       required: true,
     },
     {
@@ -57,6 +57,11 @@ export const docs = {
       type: 'string',
       description: 'Accessible name for the menu surface, announced when it opens.',
       default: "'Context menu'",
+    },
+    {
+      name: 'onOpenChange',
+      type: '(isOpen: boolean) => void',
+      description: 'Callback fired when the menu opens or closes.',
     },
     {
       name: 'isDisabled',
@@ -95,7 +100,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: '右键点击时在光标位置出现的上下文菜单。用于为特定元素或区域提供上下文操作，而不使 UI 杂乱。',
@@ -109,7 +114,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'right-click context menu at cursor position',
   usage: {
