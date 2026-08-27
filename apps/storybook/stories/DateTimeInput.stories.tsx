@@ -103,6 +103,23 @@ export const Default: Story = {
   },
 };
 
+export const NarrowContainer: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T14:30' as ISODateTimeString,
+    );
+    return (
+      <div style={{width: '320px', maxWidth: '100%'}}>
+        <DateTimeInput {...args} value={value} onChange={setValue} />
+      </div>
+    );
+  },
+  args: {
+    label: 'Meeting time',
+    hasClear: true,
+  },
+};
+
 export const WithValue: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateTimeString | undefined>(

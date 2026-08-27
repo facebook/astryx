@@ -4,7 +4,7 @@
 
 /**
  * @file DateTimeInput.tsx
- * @input Uses React, Field, Calendar, usePopover, useAnnounce, time parsing utilities, TouchDateTimeField
+ * @input Uses React, Field, Calendar, usePopover, useAnnounce, time parsing utilities, TouchDateTimeField, StyleX intrinsic flex layout
  * @output Exports DateTimeInput component, DateTimeInputProps
  * @position Core implementation; consumed by index.ts, tested by DateTimeInput.test.tsx
  *
@@ -118,9 +118,14 @@ export type {
   InputStatusType as DateTimeInputStatusType,
 } from '../Field';
 
+// Two 196px segments plus the 8px gap fit at exactly 400px. Below that,
+// flex wrapping moves each growing segment onto its own full-width row.
+const HORIZONTAL_SEGMENT_BASIS = 196;
+
 const styles = stylex.create({
   row: {
     display: 'flex',
+    flexWrap: 'wrap',
     gap: spacingVars['--spacing-2'],
   },
   iconButton: {
@@ -175,11 +180,13 @@ const styles = stylex.create({
   },
   dateWrapper: {
     flex: 1,
-    flexBasis: 0,
+    flexBasis: HORIZONTAL_SEGMENT_BASIS,
+    minWidth: 0,
   },
   timeWrapper: {
     flex: 1,
-    flexBasis: 0,
+    flexBasis: HORIZONTAL_SEGMENT_BASIS,
+    minWidth: 0,
   },
   // Preset-time list. Paddings and states mirror BaseTypeahead's dropdown and
   // Selector's options so every list in the system reads the same.

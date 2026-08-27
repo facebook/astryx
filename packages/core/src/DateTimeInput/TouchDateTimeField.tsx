@@ -4,7 +4,7 @@
 
 /**
  * @file TouchDateTimeField.tsx
- * @input Uses React, Field, BottomSheet, SegmentedControl, DateInput month picker primitives, Wheel
+ * @input Uses React, Field, BottomSheet, SegmentedControl, DateInput month picker primitives, Wheel, StyleX intrinsic flex layout
  * @output Exports TouchDateTimeField — the coarse-pointer surface behind DateTimeInput
  * @position Internal component; consumed by DateTimeInput.tsx
  *
@@ -153,6 +153,8 @@ const sizeStyles = stylex.create({
   },
 });
 
+const HORIZONTAL_SEGMENT_BASIS = 196;
+
 const styles = stylex.create({
   iconButton: {
     display: 'flex',
@@ -197,18 +199,19 @@ const styles = stylex.create({
   },
   touchRow: {
     display: 'flex',
+    flexWrap: 'wrap',
     inlineSize: '100%',
     minInlineSize: 0,
     gap: spacingVars['--spacing-2'],
   },
   touchDateWrapper: {
     flex: 1,
-    flexBasis: 0,
+    flexBasis: HORIZONTAL_SEGMENT_BASIS,
     minInlineSize: 0,
   },
   touchTimeWrapper: {
     flex: 1,
-    flexBasis: 0,
+    flexBasis: HORIZONTAL_SEGMENT_BASIS,
     minInlineSize: 0,
   },
   touchInput: {

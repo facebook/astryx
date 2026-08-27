@@ -223,7 +223,7 @@ export const docs = {
   },
   usage: {
     description:
-      'DateTimeInput combines date and time selection in one field. On mouse/trackpad devices it uses a calendar popover plus text time input; on coarse-pointer devices the closed control still has separate Date and Time segments, and either segment opens a bottom sheet with Date and Time sections, a swipable month calendar, and accessible time wheels. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
+      'DateTimeInput combines date and time selection in one field. On mouse/trackpad devices it uses a calendar popover plus text time input; on coarse-pointer devices the closed control still has separate Date and Time segments, and either segment opens a bottom sheet with Date and Time sections, a swipable month calendar, and accessible time wheels. The closed date and time segments stay side by side when at least 400px is available and wrap into full-width rows below 400px, independent of viewport width. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [
       {
         guidance: true,
@@ -322,7 +322,7 @@ export const docsZh = {
   displayName: 'Date Time Input',
   usage: {
     description:
-      'DateTimeInput combines date and time selection in one field. On mouse/trackpad devices it uses a calendar popover plus text time input; on coarse-pointer devices the closed control still has separate Date and Time segments, and either segment opens a bottom sheet with Date and Time sections, a swipable month calendar, and accessible time wheels. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
+      'DateTimeInput combines date and time selection in one field. On mouse/trackpad devices it uses a calendar popover plus text time input; on coarse-pointer devices the closed control still has separate Date and Time segments, and either segment opens a bottom sheet with Date and Time sections, a swipable month calendar, and accessible time wheels. The closed date and time segments stay side by side when at least 400px is available and wrap into full-width rows below 400px, independent of viewport width. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [
       {
         guidance: true,
@@ -551,7 +551,7 @@ export const docsDense = {
     'combined date + time picker with calendar popover and time input',
   usage: {
     description:
-      'DateTimeInput combines date and time selection. Desktop uses a calendar popover plus time input; coarse pointers show separate Date/Time closed segments that open a bottom sheet with matching sections, a Save date step, and final time-wheel Save. Use for scheduling, events, deadlines, or any form field needing a datetime.',
+      'DateTimeInput combines date and time selection. Desktop uses a calendar popover plus time input; coarse pointers show separate Date/Time closed segments that open a bottom sheet with matching sections, a Save date step, and final time-wheel Save. Closed segments stay side by side when at least 400px is available and wrap into full-width rows below 400px, independent of the viewport. Use for scheduling, events, deadlines, or any form field needing a datetime.',
     bestPractices: [
       {
         guidance: true,

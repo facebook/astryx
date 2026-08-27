@@ -22,6 +22,7 @@ import {
   afterEach,
 } from 'vitest';
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {readFileSync} from 'node:fs';
 import {render, screen, fireEvent, within} from '@testing-library/react';
 import {DateTimeInput} from './DateTimeInput';
@@ -35,6 +36,24 @@ class MockResizeObserver {
 
 const HOVER_CAPABLE = /\(\s*hover\s*:\s*hover\s*\)/;
 const SCROLLPORT_WIDTH = 360;
+
+const responsiveLayoutProbe = stylex.create({
+  row: {flexWrap: 'wrap'},
+  segment: {flexBasis: 196, minInlineSize: 0},
+});
+
+function expectResponsiveProbeClasses(
+  element: HTMLElement,
+  style: (typeof responsiveLayoutProbe)[keyof typeof responsiveLayoutProbe],
+): void {
+  const classes = (stylex.props(style).className ?? '')
+    .split(' ')
+    .filter(className => className !== '' && !className.includes('__'));
+  expect(classes.length).toBeGreaterThan(0);
+  for (const className of classes) {
+    expect(element).toHaveClass(className);
+  }
+}
 
 function stubMedia(pointer: 'coarse' | 'fine', anyPointer = pointer): void {
   vi.stubGlobal('matchMedia', (query: string) => ({
@@ -182,6 +201,18 @@ describe('DateTimeInput touch surface', () => {
         'true',
       );
     });
+  });
+
+  it('uses intrinsic wrapping for the closed touch segments', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} />,
+    );
+    const row = container.querySelector(
+      '.astryx-date-time-input',
+    ) as HTMLElement;
+    expectResponsiveProbeClasses(row, responsiveLayoutProbe.row);
+    expectResponsiveProbeClasses(dateSegment(), responsiveLayoutProbe.segment);
+    expectResponsiveProbeClasses(timeSegment(), responsiveLayoutProbe.segment);
   });
 
   it('keeps the desktop two-field surface on a fine primary pointer', () => {
