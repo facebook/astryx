@@ -561,8 +561,10 @@ describe('Carousel', () => {
           <div>Item 3</div>
         </Carousel>,
       );
-      // Far more content than one step, so the trailing edge stays reachable.
-      makeScrollable(getScroller(), 2000);
+      // 600 gives 400 of travel against a 200 step, so the press lands mid-run
+      // with the trailing edge still two steps away. Tight on purpose: a loose
+      // fixture hides a prediction that counts the step twice.
+      makeScrollable(getScroller(), 600);
 
       const next = screen.getByLabelText('Scroll right');
       await user.click(next);

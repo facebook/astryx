@@ -70,6 +70,7 @@ export const docsZh = {
       {guidance: true, description: '当每个项目应精确对齐到起始边缘时启用滚动吸附，例如画廊或产品列表。'},
       {guidance: true, description: '在小型可循环的集合（如照片画廊）上使用 hasLoop，此时从最后一项绕回第一项的滚动更自然。'},
       {guidance: true, description: '始终提供描述轮播内容的 aria-label，例如"精选产品"或"团队成员"。'},
+      {guidance: true, description: 'Carousel 实现不含自动轮播的 WAI-ARIA APG carousel 模式（https://www.w3.org/WAI/ARIA/apg/patterns/carousel/）：区域带有标签和 aria-roledescription="carousel"，每个项目是名为“第 N 张，共 M 张”的 group，滚动容器可获得焦点，键盘用户可用方向键平移。'},
       {guidance: true, description: '使用一致的间距和项目宽度，让轮播看起来是有意为之，而不是内容意外溢出。'},
       {guidance: true, description: '信任内置导航：触控板用户可水平滑动，鼠标用户可按住 Shift 滚动滚轮来浏览项目。'},
       {guidance: false, description: '将每位用户都必须看到的内容放入轮播。并非所有人都会水平滚动，关键内容应放在首屏。'},

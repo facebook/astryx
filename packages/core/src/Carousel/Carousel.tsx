@@ -443,6 +443,11 @@ export function Carousel({
       const itemWidth = firstChild ? firstChild.offsetWidth : 0;
       const amount = el.clientWidth - itemWidth * 0.5;
       const distance = Math.max(amount, itemWidth);
+      // Read the position BEFORE scrolling. Under reduced motion the scroll is
+      // instant, so reading it afterwards counts this step twice and the edge
+      // looks one press nearer than it is. scrollLeft is negative under RTL, so
+      // this is the logical distance travelled from the start.
+      const from = Math.abs(el.scrollLeft);
       el.scrollBy({
         // `direction` is the logical intent (-1 = toward content start, +1 =
         // toward content end).
@@ -452,12 +457,11 @@ export function Carousel({
 
       // Report whether this press uses up the direction it went in. The button
       // that drove it disables on that transition, and the browser drops focus
-      // off a control it disables, so the caller hands focus to the opposite
-      // button first. Predicted here rather than watched from an effect,
-      // because the scroll is smooth and the overflow state lands frames later.
-      // scrollLeft is negative under RTL, so compare logical distance travelled.
+      // off a control it disables, so the caller rescues focus first. Predicted
+      // here rather than watched from an effect, because the overflow state
+      // lands frames after a smooth scroll.
       const maxScroll = el.scrollWidth - el.clientWidth;
-      const next = Math.abs(el.scrollLeft) + direction * distance;
+      const next = from + direction * distance;
       return direction === 1
         ? next >= maxScroll - SCROLL_EDGE_TOLERANCE
         : next <= SCROLL_EDGE_TOLERANCE;
@@ -638,7 +642,7 @@ export function Carousel({
                 // button mounted (stable layout) but removes it from the tab
                 // order and a11y tree while it's visually hidden, so keyboard
                 // users don't land on an invisible control. scrollFromButton
-                // hands focus to the opposite button when a press is what
+                // moves focus to the scroll container when a press is what
                 // disables this one.
                 isDisabled={!canScrollStart}
                 onClick={() => scrollFromButton(-1)}
