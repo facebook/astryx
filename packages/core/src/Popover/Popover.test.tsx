@@ -14,6 +14,7 @@ import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import React, {useRef} from 'react';
 import {Popover} from './Popover';
+import type {UsePopoverReturn} from './usePopover';
 import {Dialog} from '../Dialog';
 import {SegmentedControl, SegmentedControlItem} from '../SegmentedControl';
 
@@ -53,6 +54,15 @@ beforeAll(() => {
 afterAll(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (HTMLElement.prototype as any).matches = originalMatches;
+});
+
+describe('usePopover public return type', () => {
+  it('keeps the invoker props internal', () => {
+    const hasKeepOpenProps: 'keepOpenProps' extends keyof UsePopoverReturn
+      ? true
+      : false = false;
+    expect(hasKeepOpenProps).toBe(false);
+  });
 });
 
 describe('Popover', () => {

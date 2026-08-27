@@ -37,7 +37,6 @@ import type {IndicatorPosition} from '../Indicator';
 import type {IconName} from '../Icon';
 import {
   Field,
-  InputClearButton,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
@@ -45,7 +44,8 @@ import {
 } from '../Field';
 import {Divider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import type {LayerPlacement} from '../Layer/useLayer';
+import {useKeepLayerOpenProps, type LayerPlacement} from '../Layer/useLayer';
+import {InternalInputClearButton} from '../Field/InputClearButton';
 import {Spinner} from '../Spinner';
 import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -969,6 +969,7 @@ export function Selector<T extends SelectorOptionType>(
     // `usePopover` owns — not on the scrolling list inside it.
     surfaceTarget: 'selector-popup',
   });
+  const keepOpenProps = useKeepLayerOpenProps(popover.id, popover.isOpen);
 
   // Open dropdown on mount when isDefaultOpen is true
   useEffect(() => {
@@ -1122,6 +1123,7 @@ export function Selector<T extends SelectorOptionType>(
     onItemMouseEnter,
   } = useCombobox({
     selectableItems: filteredItems,
+    wasJustDismissed: popover.wasJustDismissed,
     // The optimistic value, not the raw prop: with a pending changeAction the
     // prop still holds the old selection, so the popup would open with the
     // highlight on it and Delete/Backspace could clear a value the action has
@@ -1652,7 +1654,8 @@ export function Selector<T extends SelectorOptionType>(
         )}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value != null && !isDisabled && (
-          <InputClearButton
+          <InternalInputClearButton
+            {...keepOpenProps}
             label={t('@astryx.selector.clearLabel', {label})}
             onClick={handleClear}
             iconClassName={stableClassName('selector-clear-icon')}
@@ -1671,6 +1674,7 @@ export function Selector<T extends SelectorOptionType>(
               type="button"
               aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
               aria-describedby={statusTooltip.describedBy}
+              {...keepOpenProps}
               onClick={e => e.stopPropagation()}
               {...stylex.props(
                 focusOutlineStyles.focusVisible,

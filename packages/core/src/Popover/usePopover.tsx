@@ -250,6 +250,15 @@ export interface UsePopoverReturn {
   toggle: () => void;
 
   /**
+   * Whether the browser's own light dismiss just closed this popover.
+   *
+   * Triggers that do not route through `toggle` — a combobox that also seeds a
+   * highlight, say — check this first and do nothing when it is true: the click
+   * is the tail of the gesture that already closed the popup.
+   */
+  wasJustDismissed: () => boolean;
+
+  /**
    * Whether the popover is currently open
    */
   isOpen: boolean;
@@ -400,6 +409,9 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
 
   // Toggle function
   const toggle = useCallback(() => {
+    if (layer.wasJustDismissed()) {
+      return;
+    }
     if (layer.isOpen) {
       layer.hide();
     } else {
@@ -491,6 +503,7 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
     show,
     hide: layer.hide,
     toggle,
+    wasJustDismissed: layer.wasJustDismissed,
     isOpen: layer.isOpen,
     id: layer.id,
     render,

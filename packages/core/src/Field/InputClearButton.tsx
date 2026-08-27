@@ -80,12 +80,24 @@ export interface InputClearButtonProps {
   iconClassName?: string;
 }
 
-export function InputClearButton({
+interface InternalInputClearButtonProps extends InputClearButtonProps {
+  onPointerDown: React.PointerEventHandler<HTMLElement>;
+  onClickCapture: React.MouseEventHandler<HTMLElement>;
+}
+
+type InputClearButtonRenderProps = InputClearButtonProps &
+  Partial<
+    Pick<InternalInputClearButtonProps, 'onPointerDown' | 'onClickCapture'>
+  >;
+
+function renderInputClearButton({
   label,
   onClick,
+  onPointerDown,
+  onClickCapture,
   xstyle,
   iconClassName,
-}: InputClearButtonProps): ReactNode {
+}: InputClearButtonRenderProps): ReactNode {
   const {className: iconTargetClassName} = themeProps('input-clear-icon');
   const {className: buttonTargetClassName} = themeProps('input-clear-button');
   return (
@@ -107,10 +119,23 @@ export function InputClearButton({
         />
       }
       onClick={onClick}
+      onPointerDown={onPointerDown}
+      onClickCapture={onClickCapture}
       isIconOnly
       xstyle={[styles.button, xstyle]}
     />
   );
+}
+
+export function InputClearButton(props: InputClearButtonProps): ReactNode {
+  return renderInputClearButton(props);
+}
+
+/** Internal variant used while popup-aware clear behavior is rolled out. */
+export function InternalInputClearButton(
+  props: InternalInputClearButtonProps,
+): ReactNode {
+  return renderInputClearButton(props);
 }
 
 InputClearButton.displayName = 'InputClearButton';
