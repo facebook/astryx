@@ -367,6 +367,46 @@ describe('Calendar', () => {
     expect(getDayButton(9)).toBeDisabled(); // 2-day span — too short
   });
 
+  it('commits a same-day range with the default minimum', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <Calendar mode="range" focusDate="2026-01-01" onChange={handleChange} />,
+    );
+
+    await user.click(getDayButton(10));
+    await user.click(getDayButton(10));
+
+    expect(handleChange).toHaveBeenCalledWith({
+      start: '2026-01-10',
+      end: '2026-01-10',
+    });
+  });
+
+  it('commits a same-day range when the minimum permits it, including with a maximum', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <Calendar
+        mode="range"
+        focusDate="2026-01-01"
+        onChange={handleChange}
+        minRangeSpan={1}
+        maxRangeSpan={7}
+      />,
+    );
+
+    await user.click(getDayButton(10));
+    await user.click(getDayButton(10));
+
+    expect(handleChange).toHaveBeenCalledWith({
+      start: '2026-01-10',
+      end: '2026-01-10',
+    });
+  });
+
   it('clears the in-progress start when the anchor is clicked again', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();

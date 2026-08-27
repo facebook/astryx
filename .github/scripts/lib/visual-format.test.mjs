@@ -37,6 +37,33 @@ describe('buildVisualSection', () => {
     expect(section).toContain('900 shots exceeds the 240-shot budget');
   });
 
+  it('renders verdict strings as one-line literal text', () => {
+    const section = buildVisualSection(
+      verdict({status: 'skipped', reason: 'first line\n## not a heading, just <em>text</em>'}),
+    );
+    expect(section).toContain('first line ## not a heading, just &lt;em&gt;text&lt;/em&gt;');
+    expect(section).not.toContain('\n## not a heading');
+  });
+
+  it('keeps a change row a single table row whatever the field contents', () => {
+    const section = buildVisualSection(
+      verdict({
+        counts: {total: 2, unchanged: 1, changed: 1, added: 0, removed: 0, failed: 0},
+        changes: [
+          {component: 'Cell | with pipes', name: 'story\nnewline', theme: 'y2k', mode: 'light', diffPixels: '1234'},
+        ],
+      }),
+    );
+    expect(section).toContain('| Cell \\| with pipes | story newline | y2k | light | 1,234 |');
+  });
+
+  it('drops a report link that is not a plain https URL', () => {
+    const good = buildVisualSection(verdict({status: 'failed', counts: {total: 1, failed: 1}}), 'https://example.com/report');
+    expect(good).toContain('href="https://example.com/report"');
+    const bad = buildVisualSection(verdict({status: 'failed', counts: {total: 1, failed: 1}}), 'report.html" onmouseover="x');
+    expect(bad).not.toContain('View the report');
+  });
+
   it('lists each changed shot with the theme and mode it changed in', () => {
     const section = buildVisualSection(
       verdict({
@@ -76,6 +103,50 @@ describe('buildVisualSection', () => {
       verdict({status: 'changed', counts: {total: 25, changed: 25}, changes}),
     );
     expect(section).toContain('and 5 more');
+  });
+
+  it('embeds before, after, and diff images for changed shots', () => {
+    const section = buildVisualSection(
+      verdict({
+        status: 'changed',
+        counts: {total: 2, unchanged: 1, changed: 1, added: 0, removed: 0, failed: 0},
+        changes: [
+          {
+            key: 'core-button--primary__y2k-light',
+            component: 'Button',
+            name: 'Primary',
+            theme: 'y2k',
+            mode: 'light',
+            diffPixels: 12,
+          },
+        ],
+      }),
+      'https://facebook.github.io/astryx/pr/123/visual/head/run/',
+      'https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/',
+    );
+    expect(section).toContain(
+      'https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/before/core-button--primary__y2k-light.png',
+    );
+    expect(section).toContain('raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/after/core-button--primary__y2k-light.png');
+    expect(section).toContain('raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/diff/core-button--primary__y2k-light.png');
+    expect(section).toContain('<th>Before</th><th>After</th><th>Diff</th>');
+  });
+
+  it('embeds at most three deltas so the PR comment stays readable', () => {
+    const changes = Array.from({length: 5}, (_, index) => ({
+      key: `shot-${index}`,
+      component: 'C',
+      name: 'S',
+      theme: 't',
+      mode: 'light',
+      diffPixels: 1,
+    }));
+    const section = buildVisualSection(
+      verdict({status: 'changed', counts: {total: 5, changed: 5}, changes}),
+      'https://example.com/visual/',
+    );
+    expect((section.match(/<details open>/g) ?? []).length).toBe(3);
+    expect(section).not.toContain('/before/shot-3.png');
   });
 
   it('reports a capture failure distinctly from a change', () => {

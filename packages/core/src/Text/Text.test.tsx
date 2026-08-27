@@ -297,3 +297,47 @@ describe('Text custom colors', () => {
     expect(screen.getByText('Accent').className).toContain('accent');
   });
 });
+
+// A truncated Text rendered its own Tooltip AND set `title` with the same
+// string, so the browser drew a second, unstyled tooltip on top of ours.
+describe('truncated text shows one tooltip, not two', () => {
+  function withOverflow() {
+    const proto = window.HTMLElement.prototype;
+    const original = {
+      scrollWidth: Object.getOwnPropertyDescriptor(proto, 'scrollWidth'),
+      offsetWidth: Object.getOwnPropertyDescriptor(proto, 'offsetWidth'),
+    };
+    Object.defineProperty(proto, 'scrollWidth', {
+      configurable: true,
+      get: () => 400,
+    });
+    Object.defineProperty(proto, 'offsetWidth', {
+      configurable: true,
+      get: () => 100,
+    });
+    return () => {
+      if (original.scrollWidth) {
+        Object.defineProperty(proto, 'scrollWidth', original.scrollWidth);
+      }
+      if (original.offsetWidth) {
+        Object.defineProperty(proto, 'offsetWidth', original.offsetWidth);
+      }
+    };
+  }
+
+  it('leaves the native title to the tooltip it already renders', () => {
+    const restore = withOverflow();
+    try {
+      render(
+        <Text type="body" maxLines={1}>
+          A label far wider than the space it has been given
+        </Text>,
+      );
+      expect(
+        screen.getByText('A label far wider than the space it has been given'),
+      ).not.toHaveAttribute('title');
+    } finally {
+      restore();
+    }
+  });
+});

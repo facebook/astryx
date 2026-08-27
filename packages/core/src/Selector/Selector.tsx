@@ -824,6 +824,7 @@ export function Selector<T extends SelectorOptionType>(
     className,
     style,
     hasClear: hasClearProp,
+    id,
     ...rest
   } = props as SelectorPropsClearable<T>;
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -842,7 +843,10 @@ export function Selector<T extends SelectorOptionType>(
 
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;
-  const triggerId = useId();
+  const generatedTriggerId = useId();
+  // A caller's `id` lands on the trigger either way, so the internal identity
+  // has to be that same value or the label and listbox point at nothing.
+  const triggerId = id ?? generatedTriggerId;
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();

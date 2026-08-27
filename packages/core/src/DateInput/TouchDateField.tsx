@@ -122,9 +122,8 @@ import {
 import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 
 /**
- * The comfortable minimum tap target on both iOS and Android. Applied as a
- * FLOOR under the size prop rather than replacing it: `size` still means what
- * it means, it just cannot produce a control a thumb misses.
+ * The comfortable minimum tap target on both iOS and Android, honoured by
+ * every target inside the sheet.
  */
 const TOUCH_TARGET = dateInputTouchSizes.daySize;
 
@@ -151,17 +150,14 @@ const sizeStyles = stylex.create({
   sm: {
     height: sizeVars['--size-element-sm'],
     minWidth: 180,
-    minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},
   },
   md: {
     height: sizeVars['--size-element-md'],
     minWidth: 180,
-    minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},
   },
   lg: {
     height: sizeVars['--size-element-lg'],
     minWidth: 180,
-    minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},
   },
 });
 
@@ -286,7 +282,7 @@ const styles = stylex.create({
   /**
    * `Button`'s own sizes top out at 36px, which is fine for a mouse and short
    * of the 44px every other target in this sheet honours. Floor it on a
-   * coarse pointer, the same way the field and the day cells do.
+   * coarse pointer, the same way the day cells do.
    */
   monthArrow: {
     minBlockSize: {default: null, '@media (pointer: coarse)': TOUCH_TARGET},

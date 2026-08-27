@@ -3,7 +3,7 @@
 /**
  * @file Card.tsx
  * @input Uses container utility, StyleX
- * @output Exports Card component and CardProps
+ * @output Exports Card component, CardProps, CardVariant types
  * @position Core card container component
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -15,6 +15,7 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   borderVars,
   colorVars,
@@ -28,13 +29,16 @@ import type {Elevation, SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import type {CardVariantMap} from './index';
 
 // =============================================================================
 // Variant type
 // =============================================================================
 
 /**
- * Background color variant for Card.
+ * Background color variant for Card, derived from CardVariantMap.
+ * Extensible via module augmentation of CardVariantMap.
+ *
  * - `default`: standard card background with visible border
  * - `transparent`: no background, no visible border — for grouping content without visual weight
  * - `muted`: subtle muted background for de-emphasised cards
@@ -46,20 +50,7 @@ import {themeProps} from '../utils/themeProps';
  * keeping content geometry faithful to the spacing scale and identical to the
  * borderless variants. Themes can override borderWidth/borderColor.
  */
-export type CardVariant =
-  | 'default'
-  | 'transparent'
-  | 'muted'
-  | 'blue'
-  | 'cyan'
-  | 'gray'
-  | 'green'
-  | 'orange'
-  | 'pink'
-  | 'purple'
-  | 'red'
-  | 'teal'
-  | 'yellow';
+export type CardVariant = keyof CardVariantMap;
 
 // =============================================================================
 // Styles
@@ -96,48 +87,53 @@ const styles = stylex.create({
   },
 });
 
-// Background variant styles — each maps to a design token
-const variantStyles = stylex.create({
-  default: {
-    backgroundColor: colorVars['--color-background-card'],
+// Background variant styles — each maps to a design token. Typed as PARTIAL
+// over CardVariant: a theme can add a variant, and the record deliberately has
+// no entry for it, so the lookup is undefined, StyleX drops it, and the card
+// takes base styles for the theme rule to paint over.
+const variantStyles: Partial<Record<CardVariant, StyleXStyles>> = stylex.create(
+  {
+    default: {
+      backgroundColor: colorVars['--color-background-card'],
+    },
+    transparent: {
+      backgroundColor: 'transparent',
+    },
+    muted: {
+      backgroundColor: colorVars['--color-background-muted'],
+    },
+    blue: {
+      backgroundColor: colorVars['--color-background-blue'],
+    },
+    cyan: {
+      backgroundColor: colorVars['--color-background-cyan'],
+    },
+    gray: {
+      backgroundColor: colorVars['--color-background-gray'],
+    },
+    green: {
+      backgroundColor: colorVars['--color-background-green'],
+    },
+    orange: {
+      backgroundColor: colorVars['--color-background-orange'],
+    },
+    pink: {
+      backgroundColor: colorVars['--color-background-pink'],
+    },
+    purple: {
+      backgroundColor: colorVars['--color-background-purple'],
+    },
+    red: {
+      backgroundColor: colorVars['--color-background-red'],
+    },
+    teal: {
+      backgroundColor: colorVars['--color-background-teal'],
+    },
+    yellow: {
+      backgroundColor: colorVars['--color-background-yellow'],
+    },
   },
-  transparent: {
-    backgroundColor: 'transparent',
-  },
-  muted: {
-    backgroundColor: colorVars['--color-background-muted'],
-  },
-  blue: {
-    backgroundColor: colorVars['--color-background-blue'],
-  },
-  cyan: {
-    backgroundColor: colorVars['--color-background-cyan'],
-  },
-  gray: {
-    backgroundColor: colorVars['--color-background-gray'],
-  },
-  green: {
-    backgroundColor: colorVars['--color-background-green'],
-  },
-  orange: {
-    backgroundColor: colorVars['--color-background-orange'],
-  },
-  pink: {
-    backgroundColor: colorVars['--color-background-pink'],
-  },
-  purple: {
-    backgroundColor: colorVars['--color-background-purple'],
-  },
-  red: {
-    backgroundColor: colorVars['--color-background-red'],
-  },
-  teal: {
-    backgroundColor: colorVars['--color-background-teal'],
-  },
-  yellow: {
-    backgroundColor: colorVars['--color-background-yellow'],
-  },
-});
+);
 
 // Elevation → shadow-token map. Sets the private --_card-elevation variable
 // (not box-shadow directly) so it composes with --_card-ring in the shadow
@@ -295,6 +291,8 @@ export function Card({
         themeProps('card', {variant, elevation}),
         stylex.props(
           styles.card,
+          // A theme's own variant is not a key here: the lookup is undefined,
+          // StyleX drops it, and the theme rule paints over base styles.
           variantStyles[variant],
           elevationStyles[elevation],
           hasFixedHeight && styles.scrollable,

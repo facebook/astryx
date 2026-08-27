@@ -11,7 +11,8 @@ import {CURRENT_TARGET, DOCS_VERSIONS, urlForTarget} from '../lib/docsVersions';
  * Full-width notice shown ONLY on canary builds (the `main` deploy and every PR
  * preview), warning readers that they are viewing unreleased, work-in-progress
  * documentation whose components and props may not exist in the published
- * package yet. Links to the same page on the stable site.
+ * package yet. Links to the same page on the stable site, and can be dismissed
+ * for the lifetime of the mounted shell via Banner's internal state.
  *
  * Rendered via AppShell's `banner` slot; callers gate the slot on
  * `CURRENT_TARGET === 'canary'` so production renders no banner region at all
@@ -33,6 +34,7 @@ export function CanaryBanner() {
     <Banner
       container="section"
       status="warning"
+      isDismissable
       title="You're viewing unreleased docs (Canary)"
       description="This documents the canary release from main. Some components and props shown here may not exist in the latest published package yet — they ship on the @canary npm tag until the next stable release."
       endContent={

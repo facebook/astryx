@@ -181,7 +181,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-button', visualProps: ['size', 'variant']},
+      {className: 'astryx-button', visualProps: ['size', 'variant', 'elevation']},
     ],
     vars: [
       {name: '--_button-radius', description: 'Border radius', default: 'var(--radius-element)', private: true},
@@ -262,6 +262,7 @@ export const docsZh = {
         visualProps: [
           'size',
           'variant',
+          'elevation',
         ],
       },
     ],
