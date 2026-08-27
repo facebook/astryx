@@ -242,7 +242,7 @@ export const PREVIEW_PLAN: ReadonlyArray<PreviewRow> = [
     shows:
       'The same rig as Dialog with the exit deliberately shorter, to test whether one token can serve both.',
     hardCase:
-      'Confirming a destructive action. The dialog should be gone before the consequence appears, which is an argument for exit being shorter than enter rather than symmetric.',
+      'Confirming a destructive action. The dialog should be gone before the consequence appears — the clearest case for a shorter exit, and worth contrasting with a dialog the user simply closes, where the dismissal is deliberate and may want the full enter duration.',
     controls: ['panel duration', 'exit duration', 'confirm vs cancel path'],
     status: 'built',
     rig: 'DialogRig',

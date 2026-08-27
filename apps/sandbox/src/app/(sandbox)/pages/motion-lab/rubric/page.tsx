@@ -332,6 +332,9 @@ function CriterionCard({criterion}: {criterion: Criterion}) {
           {criterion.guidance === 'reversal' && (
             <Badge variant="error" label="Reverses published guidance" />
           )}
+          {criterion.guidance === 'overreach' && (
+            <Badge variant="warning" label="Narrowed to fit its sources" />
+          )}
           {criterion.guidance === 'aligned' && (
             <Badge variant="success" label="Already published" />
           )}
@@ -353,12 +356,20 @@ function CriterionCard({criterion}: {criterion: Criterion}) {
             {criterion.evidence}
           </Text>
         )}
+        {criterion.contradictionNote != null && (
+          <Text type="supporting" color="secondary">
+            <strong>Pulls against criterion {criterion.contradicts}: </strong>
+            {criterion.contradictionNote}
+          </Text>
+        )}
         {criterion.guidanceNote != null && (
           <Text type="supporting" color="secondary">
             <strong>
               {criterion.guidance === 'reversal'
                 ? 'Contradicts the published Motion page: '
-                : 'Cites the published Motion page: '}
+                : criterion.guidance === 'overreach'
+                  ? 'Claimed more than its sources support: '
+                  : 'Cites the published Motion page: '}
             </strong>
             {criterion.guidanceNote}{' '}
             <Link href="/pages/motion-lab/published/">See the conflicts</Link>

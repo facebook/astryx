@@ -261,7 +261,7 @@ export const COMMITMENTS: ReadonlyArray<Commitment> = [
   {
     item: 'Layer exit + shared presence primitive',
     level: 'committed',
-    why: 'Eleven components from one change. The highest-leverage item in the audit.',
+    why: 'Four surfaces that genuinely want an exit, blocked by one primitive that cannot express one. The brief counts eleven; the triage on the exit-gap page argues most of those are correct as they are.',
   },
   {
     item: 'Dialog, AlertDialog, CommandPalette exit + backdrop',

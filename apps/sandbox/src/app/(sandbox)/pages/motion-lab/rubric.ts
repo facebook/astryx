@@ -58,8 +58,11 @@ export type Criterion = {
   /** Measured, from __generated__/motionAudit.ts. */
   readonly evidence?: string;
   /** How the criterion sits against the published Motion page. */
-  readonly guidance?: 'reversal' | 'aligned';
+  readonly guidance?: 'reversal' | 'overreach' | 'aligned';
   readonly guidanceNote?: string;
+  /** Another criterion this one pulls against, if any. */
+  readonly contradicts?: number;
+  readonly contradictionNote?: string;
 };
 
 export const SEVERITY_LABEL: Readonly<Record<Severity, string>> = {
@@ -124,6 +127,9 @@ export const RUBRIC_CRITERIA: ReadonlyArray<Criterion> = [
     guidanceNote:
       'The published page already names table row hovers and list item highlights under "Where Motion Hurts". The rubric formalises it; it does not invent it.',
     evidence: `${TINT_150} of the measured hardcoded values are 150ms tints in Table, on exactly the interaction that paragraph warns about.`,
+    contradicts: 7,
+    contradictionNote:
+      'This criterion decides whether a presence surface earns an exit at all. Criterion 7 as the brief wrote it overrode that for anything classed as an overlay, which made Tooltip simultaneously required to have no motion and required to animate out. Criterion 7 has been narrowed so this one wins.',
   },
   {
     n: 3,
@@ -180,16 +186,20 @@ export const RUBRIC_CRITERIA: ReadonlyArray<Criterion> = [
     id: 'presence',
     title: 'Enter and exit',
     severity: 'blocker',
-    severityNote: 'Blocker for overlays and presence surfaces.',
+    severityNote:
+      'Blocker for surfaces whose dismissal reveals content underneath — dialogs, drawers, sheets, lightboxes. Not applicable to surfaces the user has already looked away from.',
     automatable: 'partly',
     check:
       'Lint can see whether a component only ever transitions on mount. Whether the exit retraces the entry needs eyes.',
-    rule: 'Presence surfaces animate both directions. The exit retraces the entry path and is no slower than it.',
-    pass: 'A panel that slides in from the right slides back out to the right, faster, on the exit curve.',
-    fail: 'A surface that animates in and is removed on the next frame.',
-    guidance: 'reversal',
+    rule: 'An exit is animated when it aids orientation — the surface is spatially anchored, or its dismissal reveals what was underneath. When animated it retraces the entry path. A surface the user has already looked away from may dismiss instantly.',
+    pass: 'A drawer that slid in from the right slides back out to the right, on the exit curve. A tooltip disappears instantly, because the pointer has already left it.',
+    fail: 'A drawer that slides in and is removed on the next frame. Or an exit that leaves by a different edge than it arrived from.',
+    guidance: 'overreach',
     guidanceNote:
-      'This criterion contradicts the published page, which tells authors that tooltips, hover cards and dropdown menus can disappear instantly. Eleven components followed that instruction. The rubric cannot gate on this until the paragraph is rewritten.',
+      'Narrowed from the brief, which failed any surface that animated in and vanished out. That version contradicted the published page and the brief\u2019s own cited source: Emil\u2019s guidance says high-frequency UI often should not animate its exit at all. Orientation is the test, not presence. What survives unchanged is the direction rule, which every source states outright.',
+    contradicts: 2,
+    contradictionNote:
+      'As the brief wrote it, this criterion and criterion 2 could not both be satisfied. Tooltip is the highest-frequency surface in the system, so criterion 2 says give it no motion; it is also an overlay, so criterion 7 made an instant dismissal a blocker. The narrowing resolves it — frequency decides whether an exit is warranted, and this criterion governs only the exits that are.',
   },
   {
     n: 8,
