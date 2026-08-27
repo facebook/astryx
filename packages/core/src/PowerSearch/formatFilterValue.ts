@@ -12,12 +12,11 @@
 
 import type {OperatorValue, FilterValue, EnumItem} from './types';
 import type {InternalConfig} from './useInternalConfig';
+import type {Locale, TranslatorFn} from '../i18n';
+import {truncateCharacters} from '../utils/characters';
 
 function truncate(str: string, maxLength: number): string {
-  if (str.length <= maxLength) {
-    return str;
-  }
-  return str.slice(0, maxLength - 1) + '\u2026';
+  return truncateCharacters(str, maxLength);
 }
 
 function formatEnumLabel(
@@ -28,12 +27,16 @@ function formatEnumLabel(
   return item?.label ?? value;
 }
 
-function formatNumber(value: number, units?: string): string {
-  const formatted = new Intl.NumberFormat().format(value);
+function formatNumber(value: number, locale: Locale, units?: string): string {
+  const formatted = new Intl.NumberFormat(locale).format(value);
   return units ? `${formatted} ${units}` : formatted;
 }
 
-function formatDateAbsolute(unixSeconds: number, timezoneID?: string): string {
+export function formatDateAbsolute(
+  unixSeconds: number,
+  locale: Locale,
+  timezoneID?: string,
+): string {
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
@@ -42,7 +45,25 @@ function formatDateAbsolute(unixSeconds: number, timezoneID?: string): string {
     minute: '2-digit',
     ...(timezoneID ? {timeZone: timezoneID} : {}),
   };
-  return new Intl.DateTimeFormat(undefined, options).format(unixSeconds * 1000);
+  return new Intl.DateTimeFormat(locale, options).format(unixSeconds * 1000);
+}
+
+/**
+ * Compact date-only rendering (no time-of-day) for the token pill's inline
+ * value display, which has less room than the editor's full summary. Kept
+ * separate from {@link formatDateAbsolute} rather than reusing it with
+ * different options threaded through a param, since the two callers want
+ * genuinely different shapes, not a parameterization of the same one.
+ */
+export function formatDateAbsoluteCompact(
+  unixSeconds: number,
+  locale: Locale,
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(unixSeconds * 1000);
 }
 
 function formatRelativeDate(value: string): string {
@@ -50,8 +71,11 @@ function formatRelativeDate(value: string): string {
   return value;
 }
 
-function formatDateRange(_value: {start: unknown; end: unknown}): string {
-  return 'date range';
+function formatDateRange(
+  _value: {start: unknown; end: unknown},
+  t: TranslatorFn,
+): string {
+  return t('@astryx.powersearch.valueEditor.dateRange');
 }
 
 export function formatFilterValue(
@@ -59,6 +83,8 @@ export function formatFilterValue(
   operatorValue: OperatorValue,
   filterValue: FilterValue,
   maxLength: number,
+  t: TranslatorFn,
+  locale: Locale,
   timezoneID?: string,
 ): string {
   switch (filterValue.type) {
@@ -71,12 +97,14 @@ export function formatFilterValue(
     case 'integer':
       return formatNumber(
         filterValue.value,
+        locale,
         operatorValue.type === 'integer' ? operatorValue.units : undefined,
       );
 
     case 'float':
       return formatNumber(
         filterValue.value,
+        locale,
         operatorValue.type === 'float' ? operatorValue.units : undefined,
       );
 
@@ -101,7 +129,9 @@ export function formatFilterValue(
       if (joined.length <= maxLength) {
         return joined;
       }
-      return `${items.length} items`;
+      return t('@astryx.powersearch.valueEditor.itemsCount', {
+        count: items.length,
+      });
     }
 
     case 'enum_list': {
@@ -118,12 +148,16 @@ export function formatFilterValue(
         if (joined.length <= maxLength) {
           return joined;
         }
-        return `${labels.length} items`;
+        return t('@astryx.powersearch.valueEditor.itemsCount', {
+          count: labels.length,
+        });
       }
       if (items.length === 1) {
         return truncate(items[0], maxLength);
       }
-      return `${items.length} items`;
+      return t('@astryx.powersearch.valueEditor.itemsCount', {
+        count: items.length,
+      });
     }
 
     case 'entity_list': {
@@ -138,7 +172,9 @@ export function formatFilterValue(
       if (joined.length <= maxLength) {
         return joined;
       }
-      return `${entities.length} entities`;
+      return t('@astryx.powersearch.valueEditor.entitiesCount', {
+        count: entities.length,
+      });
     }
 
     case 'time':
@@ -146,7 +182,7 @@ export function formatFilterValue(
 
     case 'date_absolute':
       return truncate(
-        formatDateAbsolute(filterValue.unixSeconds, timezoneID),
+        formatDateAbsolute(filterValue.unixSeconds, locale, timezoneID),
         maxLength,
       );
 
@@ -154,7 +190,7 @@ export function formatFilterValue(
       return formatRelativeDate(filterValue.value);
 
     case 'date_range':
-      return formatDateRange(filterValue.value);
+      return formatDateRange(filterValue.value, t);
 
     case 'custom':
       if (operatorValue.type === 'custom') {
@@ -164,7 +200,7 @@ export function formatFilterValue(
 
     case 'nested': {
       const count = filterValue.value.length;
-      return count === 1 ? '1 filter' : `${count} filters`;
+      return t('@astryx.powersearch.valueEditor.filtersCount', {count});
     }
 
     default:

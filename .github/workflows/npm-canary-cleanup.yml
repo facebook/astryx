@@ -1,0 +1,90 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Manual cleanup for stale npm canary versions.
+#
+# npm trusted publishing covers `npm publish`; destructive registry maintenance
+# such as `npm unpublish` still needs an npm automation token. Keep dry-run on
+# unless you have confirmed the package/version set and configured NPM_TOKEN with
+# the minimum required package permissions.
+name: npm canary cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Report what would be unpublished without changing npm'
+        type: boolean
+        default: true
+      current-version:
+        description: 'Optional base version whose canaries should be retained'
+        type: string
+        required: false
+        default: ''
+      max-unpublish-age-hours:
+        description: 'Skip versions older than this unless include-older is true'
+        type: number
+        default: 72
+      include-older:
+        description: 'Attempt versions outside the ordinary npm unpublish window'
+        type: boolean
+        default: false
+      package:
+        description: 'Optional single package name, e.g. @astryxdesign/core'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  prune:
+    name: Prune canary versions
+    runs-on: ubuntu-slim
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Prune canaries
+        env:
+          DRY_RUN: ${{ inputs.dry-run }}
+          INCLUDE_OLDER: ${{ inputs.include-older }}
+          CURRENT_VERSION: ${{ inputs.current-version }}
+          MAX_UNPUBLISH_AGE_HOURS: ${{ inputs.max-unpublish-age-hours }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PACKAGE_NAME: ${{ inputs.package }}
+        run: |
+          set -eu
+          args=(
+            --max-unpublish-age-hours "${MAX_UNPUBLISH_AGE_HOURS}"
+          )
+
+          if [ -n "${CURRENT_VERSION}" ]; then
+            args+=(--current-version "${CURRENT_VERSION}")
+          fi
+
+          if [ -n "${PACKAGE_NAME}" ]; then
+            args+=(--package "${PACKAGE_NAME}")
+          fi
+
+          if [ "${INCLUDE_OLDER}" = "true" ]; then
+            args+=(--include-older)
+          fi
+
+          if [ "${DRY_RUN}" = "true" ]; then
+            args+=(--dry-run)
+          else
+            if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+              echo "::error::NPM_TOKEN is required when dry-run is false."
+              exit 1
+            fi
+            args+=(--yes)
+          fi
+
+          node scripts/npm/prune-canaries.mjs "${args[@]}"

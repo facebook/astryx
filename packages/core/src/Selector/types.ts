@@ -14,7 +14,10 @@ import type {IconType} from '../Icon';
  */
 export type SelectorOptionData = {
   value: string;
+  // Kept a string, not ReactNode: search filtering and type-ahead both
+  // lowercase this to match keystrokes.
   label?: string;
+  description?: ReactNode;
   disabled?: boolean;
   icon?: ReactNode | IconType;
 };
@@ -40,7 +43,4 @@ export type SelectorSection = {
  * Can be a plain string, option data object, divider, or section.
  */
 export type SelectorOptionType =
-  | string
-  | SelectorOptionData
-  | SelectorDivider
-  | SelectorSection;
+  string | SelectorOptionData | SelectorDivider | SelectorSection;

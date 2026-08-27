@@ -244,12 +244,13 @@ export function ListEventRow({
   const {categories} = useScheduleContext();
   const category = getEventCategory(event, categories);
   return (
-    <div {...stylex.props(styles.listEventRow, isPast && styles.listEventPast)}>
+    <div {...stylex.props(styles.listEventRow)}>
       <span
         aria-hidden
         {...stylex.props(
           styles.listEventDot,
           eventDotColorStyle(category.color),
+          isPast && styles.listEventDotPast,
         )}
       />
       <span {...stylex.props(styles.listEventTime)}>
@@ -257,7 +258,13 @@ export function ListEventRow({
           ? 'All day'
           : formatEventTimeRange(event, timezoneID)}
       </span>
-      <span {...stylex.props(styles.listEventTitle)}>{event.title}</span>
+      <span
+        {...stylex.props(
+          styles.listEventTitle,
+          isPast && styles.listEventTitlePast,
+        )}>
+        {event.title}
+      </span>
     </div>
   );
 }
@@ -272,32 +279,6 @@ export function getEventCategory(
       ? {label: event.category, color: DEFAULT_EVENT_CATEGORY.color}
       : DEFAULT_EVENT_CATEGORY)
   );
-}
-
-export function eventColorStyle(color: ScheduleEventColor | undefined) {
-  switch (color) {
-    case 'cyan':
-      return styles.eventCyan;
-    case 'gray':
-      return styles.eventGray;
-    case 'green':
-      return styles.eventGreen;
-    case 'orange':
-      return styles.eventOrange;
-    case 'pink':
-      return styles.eventPink;
-    case 'purple':
-      return styles.eventPurple;
-    case 'red':
-      return styles.eventRed;
-    case 'teal':
-      return styles.eventTeal;
-    case 'yellow':
-      return styles.eventYellow;
-    case 'blue':
-    default:
-      return styles.eventBlue;
-  }
 }
 
 export function eventDotColorStyle(color: ScheduleEventColor | undefined) {
@@ -326,9 +307,7 @@ export function eventDotColorStyle(color: ScheduleEventColor | undefined) {
   }
 }
 
-export function eventSurfaceColorStyle(
-  color: ScheduleEventColor | undefined,
-) {
+export function eventSurfaceColorStyle(color: ScheduleEventColor | undefined) {
   switch (color) {
     case 'cyan':
       return styles.eventSurfaceCyan;
@@ -415,30 +394,12 @@ export function formatWeekTitle(
     : `${startMonth} ${start.year} - ${endMonth} ${end.year}`;
 }
 
-export function formatRangeTitle(
-  start: PlainDate,
-  end: PlainDate,
-  timezoneID: string,
-): string {
-  return `${formatShortDate(start, timezoneID)} - ${formatShortDate(
-    end,
-    timezoneID,
-  )}`;
-}
-
 export function formatFullDate(date: PlainDate, timezoneID: string): string {
   return formatWithPlainDate(date, timezoneID, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
-  });
-}
-
-export function formatShortDate(date: PlainDate, timezoneID: string): string {
-  return formatWithPlainDate(date, timezoneID, {
-    month: 'short',
-    day: 'numeric',
   });
 }
 
@@ -1118,7 +1079,13 @@ export const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
   },
-  listEventPast: {
+  // A past row is muted with the secondary text token, which the theme
+  // guarantees at AA. Fading the whole row with opacity instead pulled its
+  // text toward the surface behind it — 2.35:1 on the light theme.
+  listEventTitlePast: {
+    color: colorVars['--color-text-secondary'],
+  },
+  listEventDotPast: {
     opacity: 0.5,
   },
   eventBlue: {

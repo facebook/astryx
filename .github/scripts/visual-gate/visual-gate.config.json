@@ -1,0 +1,18 @@
+{
+  "$comment": "Configuration for .github/scripts/visual-gate. Every excludeStories entry needs the reason the story cannot reproduce itself — the list stays reviewable instead of growing quietly, and `gate.mjs flaky` is how entries are found (run it, do not guess). A key ending in * covers a whole story file.",
+  "defaultTheme": "neutral",
+  "$probeTheme": "A generated fixture styling every declared target (packages/themes/probe). The gate treats it as the coverage instrument, not a design: it is what makes a NEW theming target verified from the day its doc lands.",
+  "probeTheme": "probe",
+  "$stableStoryPackages": "Only these Storybook package groups participate in the stable baseline. Canary-only packages have no stable visual baseline.",
+  "stableStoryPackages": ["Core"],
+  "tiers": ["surface", "theme-matrix", "probe"],
+  "viewport": {"width": 1024, "height": 768},
+  "settleMs": 50,
+  "threshold": 0.1,
+  "maxDiffPixels": 0,
+  "excludeStories": {
+    "lab-chartstreamgl--*": "Streams live data on a setInterval; every frame is a different chart.",
+    "lab-chartstreamperf--*": "Renders measured fps and frame times, which differ every run by construction.",
+    "lab-codeeditorperf--*": "Renders performance.now() mount timings on screen."
+  }
+}

@@ -23,7 +23,8 @@
  * - /packages/core/src/Icon/Icon.doc.mjs (fallback icon documentation)
  */
 
-import type {IconRegistry} from './globalIconRegistry';
+import type {ReactNode} from 'react';
+import type {IconRegistry, NamespacedIconName} from './globalIconRegistry';
 
 const svgProps = {
   xmlns: 'http://www.w3.org/2000/svg',
@@ -53,7 +54,8 @@ const solidSvgProps = {
   'aria-hidden': true as const,
 };
 
-export const defaultIcons: IconRegistry = {
+export const defaultIcons: IconRegistry &
+  Partial<Record<NamespacedIconName, ReactNode>> = {
   /** ✕ — two diagonal lines */
   close: (
     <svg {...svgProps}>
@@ -68,6 +70,13 @@ export const defaultIcons: IconRegistry = {
     </svg>
   ),
 
+  /** ⌄ — compact NumberInput stepper chevron */
+  'numberInput:stepperDown': (
+    <svg {...svgProps}>
+      <path d="M7.5 9.75l4.5 4.5 4.5-4.5" />
+    </svg>
+  ),
+
   /** ‹ — left chevron */
   chevronLeft: (
     <svg {...svgProps}>
@@ -79,6 +88,20 @@ export const defaultIcons: IconRegistry = {
   chevronRight: (
     <svg {...svgProps}>
       <path d="M9 6l6 6-6 6" />
+    </svg>
+  ),
+
+  /** « — double left chevron (first / jump to start) */
+  chevronsLeft: (
+    <svg {...svgProps}>
+      <path d="M18 6l-6 6 6 6M11 6l-6 6 6 6" />
+    </svg>
+  ),
+
+  /** » — double right chevron (last / jump to end) */
+  chevronsRight: (
+    <svg {...svgProps}>
+      <path d="M6 6l6 6-6 6M13 6l6 6-6 6" />
     </svg>
   ),
 

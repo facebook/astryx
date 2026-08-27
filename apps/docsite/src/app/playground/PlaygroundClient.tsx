@@ -8,8 +8,17 @@
  *
  * AppShell: side-nav-only shell; desktop nav is controlled collapsed to
  * an icon rail while AppShell owns the mobile top bar and drawer.
- * Left panel: Monaco editor (Code) or knobs (Properties).
+ * Left panel: header row (Format code · Themes · Templates) over the Monaco
+ *   editor (Code) or knobs (Properties). On mobile the row narrows to just
+ *   "Format code" over the Code view — there is no keyboard, so the button is
+ *   the only way to reach the formatter.
  *   - Code: Monaco editor (controlled) with real Astryx .d.ts typedefs.
+ *     "Format code" runs the repo's Prettier config over the buffer — the button
+ *     drives Monaco's own editor.action.formatDocument, so it shares a code path
+ *     with the built-in shortcut (Shift+Alt+F, Ctrl+Shift+I on Linux — the
+ *     tooltip names whichever one Monaco actually bound; see ./formatCode). If
+ *     Prettier fails to LOAD, the action would otherwise be silently dead, so
+ *     the failure is surfaced as an error toast.
  *   - Property: component selector + instance picker + knobs that edit the code.
  * Right panel: toolbar (dark mode · target element · viewport
  *   segmented control · share · expand) over a responsive
@@ -28,6 +37,7 @@ import dynamic from 'next/dynamic';
 import * as stylex from '@stylexjs/stylex';
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {compressCode, decompressCode} from '../../lib/compress';
+import {isTrustedPreviewMessage, trustedPreviewOrigin} from './previewChannel';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
@@ -54,6 +64,7 @@ import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
 import {ToggleButton} from '@astryxdesign/core/ToggleButton';
+import {useToast} from '@astryxdesign/core/Toast';
 import {
   Check,
   Code2,
@@ -68,6 +79,7 @@ import {
   Maximize2,
   RotateCw,
   Crosshair,
+  WandSparkles,
 } from 'lucide-react';
 import githubLight from './codeEditorThemes/github-light.json';
 import githubDark from './codeEditorThemes/github-dark.json';
@@ -88,6 +100,11 @@ import {generateThemeCode} from './themeEditor/helpers';
 import {DEFAULT_CODE} from './defaultCode';
 import {stripCodeExampleCopyrightHeader} from '../../lib/codeExamples';
 import {configureMonaco, type MonacoInstance} from './monacoSetup';
+import {
+  formatButtonTooltip,
+  formatShortcutHint,
+  runFormatAction,
+} from './formatCode';
 
 import type * as MonacoTypes from 'monaco-editor';
 import type {DefinedTheme} from '@astryxdesign/core/theme';
@@ -225,6 +242,7 @@ const s = stylex.create({
 
 export function PlaygroundClient() {
   const isMobile = useMediaQuery(MOBILE_BREAKPOINT_QUERY);
+  const toast = useToast();
   // The editor chrome follows the docsite's own light/dark mode, not the OS
   // (operator) color-scheme preference.
   const {mode: siteMode} = useThemeMode();
@@ -237,7 +255,11 @@ export function PlaygroundClient() {
   const searchParams = useSearchParams();
   const rawThemeParam = searchParams.get('theme');
   const themeParam =
-    rawThemeParam && rawThemeParam in themeByValue ? rawThemeParam : null;
+    // Object.hasOwn (not `in`): the param must match a real playground theme,
+    // not an inherited Object.prototype key like "constructor".
+    rawThemeParam && Object.hasOwn(themeByValue, rawThemeParam)
+      ? rawThemeParam
+      : null;
   const theme = themeParam ?? DEFAULT_PLAYGROUND_THEME;
   // The theme that seeds the Theme editor: the ?theme= theme on first load, then
   // whichever theme the user picks from "Themes". Changing it remounts the
@@ -340,7 +362,7 @@ export function PlaygroundClient() {
   const postToPreview = useCallback((message: unknown) => {
     iframeRef.current?.contentWindow?.postMessage(
       message,
-      window.location.origin,
+      trustedPreviewOrigin(),
     );
   }, []);
 
@@ -390,7 +412,13 @@ export function PlaygroundClient() {
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (e.source !== iframeRef.current?.contentWindow) {
+      if (
+        !isTrustedPreviewMessage(
+          e,
+          trustedPreviewOrigin(),
+          iframeRef.current?.contentWindow,
+        )
+      ) {
         return;
       }
       if (e.data?.type === 'preview-ready') {
@@ -525,6 +553,44 @@ export function PlaygroundClient() {
     }
   }, [postCode, code]);
 
+  // "Format code" — delegate to Monaco's own format-document action rather than
+  // rewriting `code` state directly: the action is what Shift+Alt+F is bound to,
+  // it routes through the registered Prettier provider (see ./formatCode), and
+  // going through the model keeps the edit on Monaco's undo stack. The resulting
+  // model change flows back into `code` via the editor's onChange.
+  //
+  // Returned, not fired-and-forgotten, so Button's `clickAction` can hold a
+  // spinner until the format lands: the first one downloads Prettier's ~1MB
+  // TypeScript parser, and Monaco silently cancels a format in flight the moment
+  // the cursor moves — so a user with no feedback clicks into the editor to see
+  // if it worked and cancels the very thing they are waiting for.
+  const handleFormatCode = useCallback(
+    () => runFormatAction(editorRef.current),
+    [],
+  );
+
+  // Prettier failing to LOAD (offline, CSP, a stale chunk hash after a deploy)
+  // leaves the button silently dead — the user clicks and nothing happens, with
+  // no way to tell that from "my code was already tidy". Say so. A broken-syntax
+  // buffer never lands here; Monaco's squiggles already cover that case.
+  const handleFormatFailure = useCallback(() => {
+    toast({
+      body: 'Could not format — the code formatter failed to load. Check your connection and try again.',
+      type: 'error',
+      uniqueID: 'playground-format-failed',
+    });
+  }, [toast]);
+
+  // Monaco binds Format Document to Ctrl+Shift+I on Linux and Shift+Alt+F
+  // elsewhere. The platform is only knowable from `navigator`, which does not
+  // exist during SSR — so start with no chord and fill it in after mount, where
+  // an effect cannot cause a hydration mismatch.
+  const [formatShortcut, setFormatShortcut] = useState<string | null>(null);
+  useEffect(() => {
+    setFormatShortcut(formatShortcutHint(navigator.userAgent));
+  }, []);
+  const formatTooltip = formatButtonTooltip(formatShortcut);
+
   const handleShare = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).then(() => {
       trackCopy({page: 'playground', target: 'share_url'});
@@ -562,13 +628,22 @@ export function PlaygroundClient() {
     monaco.editor.defineTheme('github-dark', githubDark);
   }, []);
 
+  // Mirror the failure handler in a ref so the stable onMount callback below can
+  // reach the latest one without taking it as a dependency (same reason as
+  // activeViewRef): the formatter is registered once, at mount, for the life of
+  // the page.
+  const handleFormatFailureRef = useRef(handleFormatFailure);
+  handleFormatFailureRef.current = handleFormatFailure;
+
   const handleMonacoMount = useCallback(
     (
       editor: MonacoTypes.editor.IStandaloneCodeEditor,
       monaco: MonacoInstance,
     ) => {
       editorRef.current = editor;
-      configureMonaco(monaco);
+      configureMonaco(monaco, {
+        onFormatFailure: () => handleFormatFailureRef.current(),
+      });
       // Focus on initial mount if the Code view is the active one.
       if (activeViewRef.current === 'code') {
         editor.focus();
@@ -785,28 +860,50 @@ export function PlaygroundClient() {
         <VStack
           xstyle={[s.leftPanel, !showEditorPanel && s.hidden]}
           width={isMobile ? '100%' : editorPanel.size || 440}>
-          {!isMobile && (
-            <HStack justify="between" align="center" xstyle={s.leftPanelHeader}>
-              <Heading level={3}>Playground</Heading>
+          {/* Header row. Desktop gets the full toolbar; mobile gets the format
+              action alone, and only over the Code view — TopNav already owns the
+              branding and tab switching there, and a phone has no keyboard, so
+              the button is the ONLY way a mobile user can reach the formatter.
+              (Themes/Templates stay desktop-only, as they were.) */}
+          {(!isMobile || activeView === 'code') && (
+            <HStack
+              justify={isMobile ? 'end' : 'between'}
+              align="center"
+              xstyle={s.leftPanelHeader}>
+              {!isMobile && <Heading level={3}>Playground</Heading>}
               <HStack gap={2} align="center">
-                <DropdownMenu
-                  button={{
-                    label: 'Themes',
-                    variant: 'secondary',
-                    size: 'md',
-                  }}
-                  hasChevron
-                  items={themeMenuItems}
+                <Button
+                  label="Format code"
+                  tooltip={formatTooltip}
+                  variant="secondary"
+                  size="md"
+                  isIconOnly
+                  icon={<WandSparkles size={16} />}
+                  isDisabled={activeView !== 'code'}
+                  clickAction={handleFormatCode}
                 />
-                <DropdownMenu
-                  button={{
-                    label: 'Templates',
-                    variant: 'secondary',
-                    size: 'md',
-                  }}
-                  hasChevron
-                  items={templateMenuItems}
-                />
+                {!isMobile && (
+                  <DropdownMenu
+                    button={{
+                      label: 'Themes',
+                      variant: 'secondary',
+                      size: 'md',
+                    }}
+                    hasChevron
+                    items={themeMenuItems}
+                  />
+                )}
+                {!isMobile && (
+                  <DropdownMenu
+                    button={{
+                      label: 'Templates',
+                      variant: 'secondary',
+                      size: 'md',
+                    }}
+                    hasChevron
+                    items={templateMenuItems}
+                  />
+                )}
               </HStack>
             </HStack>
           )}

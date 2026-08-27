@@ -1,18 +1,22 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file FieldLabel.tsx
- * @input Uses React, Icon, IconType
+ * @input Uses React, Icon, IconType, useTranslator, FormLayoutContext
  * @output Exports FieldLabel component, FieldLabelProps
  * @position Core label implementation; used by Field, CheckboxInput, Switch
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Field/Field.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Field/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
+ * - /packages/core/src/FormLayout/FormLayoutContext.ts (defaultOptionality drives the indicator)
+ * - /packages/cli/assets/templates/blocks/components/Field/ (showcase blocks)
+ * - /packages/core/locales/en.json (@astryx.field.required / @astryx.field.optional)
  */
 
-import type {ReactNode} from 'react';
+import {use, useMemo, useRef, type ReactNode, type RefObject} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
@@ -26,7 +30,10 @@ import {
 } from '../theme/tokens.stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Tooltip} from '../Tooltip';
+import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
+import {useInputContainer} from '../hooks';
+import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
 
 const styles = stylex.create({
   label: {
@@ -38,17 +45,20 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   srOnly: {
     borderStyle: 'none',
     clip: 'rect(0, 0, 0, 0)',
     height: 1,
-    left: 0,
+    insetInlineStart: 0,
     margin: -1,
     overflow: 'hidden',
     padding: 0,
@@ -71,6 +81,14 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
+  },
+  // When the description forwards clicks to a click-activatable control
+  // (checkbox/switch), it reads as part of the same hit target as the label.
+  descriptionClickable: {
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
 });
 
@@ -171,15 +189,73 @@ export function FieldLabel({
   labelTooltip,
   description,
   descriptionID,
+  className,
+  style,
+  xstyle,
   ref,
+  ...rest
 }: FieldLabelProps) {
-  const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
+  const t = useTranslator();
+  const {defaultOptionality} = use(FormLayoutContext);
+
+  // A form-level `defaultOptionality` means "only the exception is marked": a
+  // field that merely restates the form's default shows no indicator, and only
+  // a deviation from it does. This is the *visible indicator* only; the
+  // matching `aria-required` is resolved on each control (see
+  // useResolvedRequired) so the unmarked majority is still announced.
+  //
+  //   defaultOptionality  isRequired            isOptional
+  //   'optional'          → required indicator  → (matches default, hidden)
+  //   'required'          → (matches, hidden)   → optional indicator
+  //   unset               → required indicator  → optional indicator
+  const showRequired = isRequired && defaultOptionality !== 'required';
+  const showOptional = isOptional && defaultOptionality !== 'optional';
+  const statusText = showOptional
+    ? t('@astryx.field.optional')
+    : showRequired
+      ? t('@astryx.field.required')
+      : null;
 
   // A group label (e.g. for a radiogroup) must not be a literal `<label>`
   // element: a `<label>` semantically names a single form control and can't be
   // associated with a group. Render it as a `<span>` instead, keeping all the
   // label styling and slots. The group references it via `aria-labelledby`.
   const LabelElement = isGroupLabel ? 'span' : 'label';
+
+  // Clicking the description forwards to the associated control, so the whole
+  // label area (label text + description) is one hit target — mirroring native
+  // `<label>` click behavior, which the description can't get from `htmlFor`
+  // because it stays a sibling `<span>` (nesting it in the `<label>` would fold
+  // it into the control's accessible name and double-announce it alongside
+  // `aria-describedby`). A group label names a group, not one control, so it
+  // has nothing to forward to.
+  const forwardsDescriptionClick = !isGroupLabel && inputID != null;
+
+  // Reuse `useInputContainer` — the same hook input wrappers use to forward
+  // clicks on non-interactive chrome to their control. It skips nested
+  // interactive content (a link/button inside a ReactNode description) and
+  // guards against forwarding during text selection, so the description needs
+  // no bespoke click logic. The "input" is resolved from `inputID` lazily via
+  // a ref-shaped object, since FieldLabel points at the control by id rather
+  // than holding a ref to it.
+  const descriptionRef = useRef<HTMLSpanElement>(null);
+  const controlRef = useMemo<RefObject<HTMLElement | null>>(
+    () => ({
+      get current() {
+        return inputID == null
+          ? null
+          : (descriptionRef.current?.ownerDocument.getElementById(inputID) ??
+              null);
+      },
+      set current(_value) {},
+    }),
+    [inputID],
+  );
+  const descriptionClickProps = useInputContainer({
+    containerRef: descriptionRef,
+    inputRef: controlRef,
+    disabled: !forwardsDescriptionClick,
+  });
 
   const labelContent = (
     <>
@@ -207,20 +283,37 @@ export function FieldLabel({
         // `htmlFor` only applies to a real `<label>` associating with a single
         // control; a group label (span) has no `htmlFor`.
         htmlFor={isGroupLabel ? undefined : inputID}
+        {...rest}
         {...mergeProps(
+          // A control that knows what kind of label this is passes its own
+          // target down (CheckboxInput's `checkbox-label`, Switch's
+          // `switch-label`); it arrives as `className` and composes onto this
+          // one. The label itself does not describe its own placement — it
+          // cannot know it, and any encoding it guessed would be wrong for a
+          // caller that arranges labels differently (Field's
+          // `horizontal-labels`).
           themeProps('field-label'),
           stylex.props(
             styles.label,
             isDisabled && styles.labelDisabled,
             isLabelHidden && styles.srOnly,
+            xstyle,
           ),
+          className,
+          style,
         )}>
         {labelContent}
       </LabelElement>
       {description && (
         <span
+          ref={forwardsDescriptionClick ? descriptionRef : undefined}
           id={descriptionID}
-          {...stylex.props(styles.description, isLabelHidden && styles.srOnly)}>
+          {...(forwardsDescriptionClick ? descriptionClickProps : undefined)}
+          {...stylex.props(
+            styles.description,
+            forwardsDescriptionClick && styles.descriptionClickable,
+            isLabelHidden && styles.srOnly,
+          )}>
           {description}
         </span>
       )}

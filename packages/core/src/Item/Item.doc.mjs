@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Item',
@@ -19,6 +19,10 @@ export const docs = {
     targets: [
       {className: 'astryx-item', visualProps: ['density', 'align']},
     ],
+    vars: [
+      {name: '--_item-label-color', description: 'Color of the label line. Unset by default (the label uses the primary text token); a parent sets it to recolor the label it renders, as the destructive dropdown/context menu item does.', default: 'var(--color-text-primary)', private: true},
+      {name: '--_item-description-color', description: 'Companion to --_item-label-color for the secondary description line.', default: 'var(--color-text-secondary)', private: true},
+    ],
   },
   components: [
     {
@@ -28,7 +32,7 @@ export const docs = {
       props: [
         {name: 'label', type: 'ReactNode', description: 'Primary text identifying this item. Accepts string (auto-truncated) or ReactNode (for rich content).', required: true},
         {name: 'marker', type: 'ReactNode', description: 'Marker rendered before startContent as a direct flex child. Use for list bullets/counters that need custom baseline alignment.'},
-        {name: 'startContent', type: 'ReactNode', description: 'Content rendered before the label/description area, such as an icon, avatar, or checkbox.', slotElements: [{__element: 'Avatar', props: {name: 'Ada Lovelace', size: 'xsmall'}}, {__element: 'Icon', props: {icon: 'info', size: 'sm', color: 'secondary'}}]},
+        {name: 'startContent', type: 'ReactNode', description: 'Content rendered before the label/description area, such as an icon, avatar, or checkbox.', slotElements: [{__element: 'Avatar', props: {name: 'Ada Lovelace', size: 'sm'}}, {__element: 'Icon', props: {icon: 'info', size: 'sm', color: 'secondary'}}]},
         {name: 'description', type: 'ReactNode', description: 'Secondary text: subtitle, description, or supporting info.'},
         {name: 'endContent', type: 'ReactNode', description: 'Content rendered after the label/description area, such as badges, metadata, timestamps, or action buttons.', slotElements: [{__element: 'Badge', props: {label: 3}}, {__element: 'Text', props: {color: 'secondary'}, children: '2h ago'}]},
         {name: 'as', type: "'div' | 'li' | 'span'", description: 'HTML element to render as the root.', default: "'div'"},
@@ -36,7 +40,9 @@ export const docs = {
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Spacing density. "compact" uses 4px block padding, "balanced" uses 8px, and "spacious" uses 12px block and inline padding.', default: "'balanced'"},
         {name: 'labelLines', type: 'number', description: 'Max lines before label truncates with ellipsis.'},
         {name: 'descriptionLines', type: 'number', description: 'Max lines before description truncates with ellipsis.'},
+        {name: 'layout', type: "'stacked' | 'inline'", description: 'How the label and description sit together. stacked puts the description on its own line below the label; inline keeps both on one line, description ellipsizing first, so the row fits a fixed-height host.', default: "'stacked'"},
         {name: 'onClick', type: '(event: MouseEvent) => void', description: 'Click handler. Makes the item clickable with button semantics.'},
+        {name: 'interactiveRef', type: 'RefObject<HTMLElement | null>', description: 'Ref to a nested control (e.g. a checkbox in startContent) that owns the item\'s keyboard access and action. The row becomes an enlarged click/tap target that delegates surface clicks to it (useClickableContainer) and renders no invisible button/anchor, so the row adds no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href; those are ignored when set.'},
         {name: 'href', type: 'string', description: 'Link URL. Makes the item a link via an invisible anchor element.'},
         {name: 'target', type: "'_blank' | '_self'", description: 'Link target. Only used with href. target="_blank" automatically adds noopener noreferrer.'},
         {name: 'rel', type: 'string', description: 'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".'},
@@ -71,7 +77,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   components: [
     {
@@ -90,6 +96,8 @@ export const docsZh = {
         labelLines: '标签截断前的最大行数。',
         descriptionLines: '描述截断前的最大行数。',
         onClick: '点击处理函数。使项目可点击，具有按钮语义。',
+        interactiveRef:
+          '指向嵌套控件（如 startContent 中的复选框）的 ref，该控件承载项目的键盘访问和操作。行成为更大的点击/触摸目标，将表面点击委托给该控件（useClickableContainer），且不渲染不可见按钮/锚点，因此行不会增加第二个 Tab 停留点（WCAG 4.1.2）。与 onClick/href 互斥——设置后二者将被忽略。',
         href: '链接 URL。通过不可见锚点元素使项目成为链接。',
         target: '链接目标。仅与 href 一起使用。target="_blank" 会自动添加 noopener noreferrer。',
         rel: '链接关系标记。target="_blank" 会自动合并 noopener noreferrer。',
@@ -124,7 +132,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'universal item primitive w/ startContent+label+description+endContent layout. building block for list items, menu items, contacts, notifications',
   usage: {
@@ -157,6 +165,8 @@ export const docsDense = {
         labelLines: 'Max label lines before truncation.',
         descriptionLines: 'Max description lines before truncation.',
         onClick: 'Click handler; enables button semantics.',
+        interactiveRef:
+          'Ref to a nested control that owns the item\'s keyboard access/action; row delegates surface clicks to it (useClickableContainer), no invisible button/anchor, no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href.',
         href: 'Link URL; enables anchor semantics.',
         target:
           'Link target, only with href. target="_blank" auto-adds noopener noreferrer.',

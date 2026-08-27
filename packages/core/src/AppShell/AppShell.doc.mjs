@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'AppShell',
@@ -14,8 +14,19 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: true, description: 'Give every nav slot an accessible name. AppShell renders TopNav and SideNav as separate navigation landmarks, and a screen reader lists them by name, so pass `label` to each one.'},
+      {guidance: true, description: 'Start the page heading inside `children`. AppShell owns the skip link, the banner landmark and the main landmark, but it renders no heading, so the first heading in the content area is the page h1.'},
       {guidance: false, description: "Nest one AppShell inside another; it's the outermost layout frame."},
       {guidance: false, description: 'Use for sub-page layouts; use Layout for content areas within AppShell.'},
+      {guidance: false, description: 'Add your own skip link or <main> element. AppShell already renders both, and a second main landmark makes the first ambiguous.'},
+    ],
+    anatomy: [
+      {name: 'Skip link', required: true, description: 'First focusable element on the page. Visually hidden until focused, then moves focus to the main content area.'},
+      {name: 'Banner', required: false, description: 'The banner slot, for system-wide announcements. Renders above the top nav, inside the banner landmark.'},
+      {name: 'Top navigation', required: false, description: 'The topNav slot, typically TopNav. Below the mobile breakpoint it becomes a compact bar carrying the nav toggle.'},
+      {name: 'Side navigation', required: false, description: 'The sideNav slot, typically SideNav. Inline above the breakpoint, moved into the mobile drawer below it.'},
+      {name: 'Main content', required: true, description: 'children, rendered in the main landmark. Scrolls internally when height is fill, and with the page when it is auto.'},
+      {name: 'Mobile nav drawer', required: false, description: 'Generated below the breakpoint from the nav slots unless mobileNav disables or replaces it. A modal dialog: it traps focus and returns focus to the toggle on close.'},
     ],
   },
   props: [
@@ -45,9 +56,15 @@ export const docs = {
     },
     {
       name: 'mobileNav',
+      // Kept as the bare `ReactNode`, not widened to the true
+      // `false | MobileNavConfig | ReactNode`: the docsite playground hides a
+      // prop by exact-matching the type string against UNSUPPORTED_PROP_TYPES,
+      // and widening drops that match. This prop's slotElements happen to hide
+      // it a second way today, but the hide should not rest on that
+      // coincidence. The legal values live in the description instead (#1645).
       type: 'ReactNode',
       description:
-        'Mobile navigation configuration. Accepts false (disable), config object (tune auto behavior), or ReactNode (full custom drawer).',
+        "Mobile navigation configuration. Accepts false (disable), a config object (tune auto behavior), or ReactNode (full custom drawer). The config object is {hasToggle?: boolean, isOpen?: boolean, onOpenChange?: (isOpen: boolean) => void, content?: ReactNode, breakpoint?: 'sm' | 'md' | 'lg' | 'none', defaultIsMobile?: boolean}; breakpoint defaults to 'md'.",
       slotElements: [{__element: 'MobileNav', props: {}}],
     },
     {
@@ -114,7 +131,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'AppShell',
   displayName: 'App Shell',
@@ -139,7 +156,7 @@ export const docsZh = {
     },
     {name: 'topNav', type: 'ReactNode', description: '顶部导航插槽，通常为 TopNav。'},
     {name: 'sideNav', type: 'ReactNode', description: '侧边导航插槽，通常为 SideNav。'},
-    {name: 'mobileNav', type: 'ReactNode', description: '移动端导航配置。接受 false（禁用）、配置对象（调整自动行为）或 ReactNode（完全自定义抽屉）。'},
+    {name: 'mobileNav', type: 'ReactNode', description: "移动端导航配置。接受 false（禁用）、配置对象（调整自动行为）或 ReactNode（完全自定义抽屉）。配置对象为 {hasToggle?, isOpen?, onOpenChange?, content?, breakpoint?: 'sm' | 'md' | 'lg' | 'none', defaultIsMobile?}；breakpoint 默认为 'md'。"},
     {name: 'banner', type: 'ReactNode', description: '横幅插槽，用于全局公告，放置在 topNav 上方。'},
     {
       name: 'height',
@@ -176,7 +193,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'app-level layout shell w/ header, side nav, main content; composes Layout internally, replaces Page+PageLayout',
@@ -186,8 +203,11 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: true, description: 'Give every nav slot an accessible name: TopNav and SideNav are separate navigation landmarks, so pass `label` to each.'},
+      {guidance: true, description: 'Start the page heading inside `children`: AppShell owns the skip link, banner, and main landmarks but renders no heading, so the first content heading is the page h1.'},
       {guidance: false, description: "Nest one AppShell inside another; it's the outermost layout frame."},
       {guidance: false, description: 'Use for sub-page layouts; use Layout for content areas within AppShell.'},
+      {guidance: false, description: 'Add your own skip link or <main>; AppShell renders both, and a second main landmark makes the first ambiguous.'},
     ],
   },
   propDescriptions: {

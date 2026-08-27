@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Stack',
@@ -16,6 +16,140 @@ export const docs = {
   },
   components: [
     {
+      name: 'Stack',
+      displayName: 'Stack',
+      description:
+        'Unified stack layout component with a direction prop. Use direction="horizontal" for left-to-right flow or direction="vertical" (default) for top-to-bottom. For convenience, HStack and VStack are pre-configured wrappers.',
+      props: [
+        {
+          name: 'direction',
+          type: "'horizontal' | 'vertical'",
+          description:
+            "Direction of the stack layout. 'horizontal' flows items left-to-right (like HStack), 'vertical' flows top-to-bottom (like VStack). Note: the value is 'horizontal', NOT 'row'.",
+          default: "'vertical'",
+        },
+        {
+          name: 'gap',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Spacing step (number literal): 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Pass as a JSX number expression e.g. gap={4}, NOT a string like gap="4".',
+        },
+        {
+          name: 'padding',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inner padding on all sides, using the spacing scale. Pass as a JSX number expression e.g. padding={3}.',
+        },
+        {
+          name: 'paddingInline',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline (horizontal) padding. Overrides padding on the inline axis when both are set.',
+        },
+        {
+          name: 'paddingInlineStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-start padding, using the spacing scale (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
+          name: 'paddingInlineEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-end padding, using the spacing scale (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
+          name: 'paddingBlock',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block (vertical) padding. Overrides padding on the block axis when both are set.',
+        },
+        {
+          name: 'paddingBlockStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
+          name: 'paddingBlockEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
+          name: 'isScrollable',
+          type: 'boolean',
+          description:
+            'Enables scrollable overflow (overflow: auto).',
+          default: 'false',
+        },
+        {
+          name: 'width',
+          type: 'SizeValue',
+          description: "Width of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
+        },
+        {
+          name: 'height',
+          type: 'SizeValue',
+          description: "Height of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
+        },
+        {
+          name: 'maxWidth',
+          type: 'SizeValue',
+          description: "Maximum width of the stack container.",
+        },
+        {
+          name: 'minHeight',
+          type: 'SizeValue',
+          description: "Minimum height of the stack container.",
+        },
+        {
+          name: 'hAlign',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly' | 'stretch'",
+          description: "Horizontal alignment. When direction='horizontal': main-axis (justify-content). When direction='vertical': cross-axis (align-items).",
+        },
+        {
+          name: 'vAlign',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly' | 'stretch'",
+          description: "Vertical alignment. When direction='horizontal': cross-axis (align-items). When direction='vertical': main-axis (justify-content).",
+        },
+        {
+          name: 'justify',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
+          description: "Main-axis alignment alias. Resolves to hAlign (horizontal) or vAlign (vertical). Note: use 'between', NOT 'space-between'.",
+        },
+        {
+          name: 'align',
+          type: "'start' | 'center' | 'end' | 'stretch'",
+          description: 'Cross-axis alignment alias. Mirrors CSS align-items.',
+        },
+        {
+          name: 'wrap',
+          type: "'nowrap' | 'wrap' | 'wrap-reverse'",
+          description: 'Flex wrap behavior.',
+          default: "'nowrap'",
+        },
+        {
+          name: 'as',
+          type: 'ElementType',
+          description: 'HTML element to render as the stack container.',
+          default: "'div'",
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: 'Stack content.',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        },
+      ],
+    },
+
+    {
       name: 'HStack',
       isHiddenFromOverview: true,
       displayName: 'H Stack',
@@ -24,27 +158,51 @@ export const docs = {
       props: [
         {
           name: 'gap',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Spacing step (number literal): 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Pass as a JSX number expression e.g. gap={4}, NOT a string like gap="4".',
         },
         {
           name: 'padding',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Inner padding on all sides, using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Matches the padding prop on Card, LayoutContent, and LayoutPanel. Pass as a JSX number expression e.g. padding={3}.',
         },
         {
           name: 'paddingInline',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
         },
         {
+          name: 'paddingInlineStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-start padding, using the spacing scale (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
+          name: 'paddingInlineEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-end padding, using the spacing scale (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
           name: 'paddingBlock',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
+        },
+        {
+          name: 'paddingBlockStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
+          name: 'paddingBlockEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
         },
         {
           name: 'isScrollable',
@@ -141,27 +299,51 @@ export const docs = {
       props: [
         {
           name: 'gap',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Spacing step (number literal): 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Pass as a JSX number expression e.g. gap={4}, NOT a string like gap="4".',
         },
         {
           name: 'padding',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Inner padding on all sides, using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Matches the padding prop on Card, LayoutContent, and LayoutPanel. Pass as a JSX number expression e.g. padding={3}.',
         },
         {
           name: 'paddingInline',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
         },
         {
+          name: 'paddingInlineStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-start padding, using the spacing scale (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
+          name: 'paddingInlineEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-end padding, using the spacing scale (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
           name: 'paddingBlock',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
+        },
+        {
+          name: 'paddingBlockStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
+          name: 'paddingBlockEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
         },
         {
           name: 'isScrollable',
@@ -296,7 +478,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Stack',
   displayName: 'Stack',
@@ -317,7 +499,7 @@ export const docsZh = {
       props: [
         {
           name: 'gap',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             '间距步进（数字字面量）：0、0.5、1、1.5、2、3、4、5、6、8、10。在 JSX 中使用数字表达式 e.g. gap={4}，不要使用字符串 gap="4"。',
         },
@@ -400,7 +582,7 @@ export const docsZh = {
       props: [
         {
           name: 'gap',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             '间距步进（数字字面量）：0、0.5、1、1.5、2、3、4、5、6、8、10。在 JSX 中使用数字表达式 e.g. gap={4}，不要使用字符串 gap="4"。',
         },
@@ -513,7 +695,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Stack layout primitives for horizontal/vertical sequences using flexbox w/ themed spacing tokens.',
   usage: {
