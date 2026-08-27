@@ -226,6 +226,10 @@ jobs:
         if: needs.authorize.outputs.valid == 'true'
         uses: actions/checkout@v7
 
+      - name: Setup Node and pnpm
+        if: needs.authorize.outputs.valid == 'true'
+        uses: ./.github/actions/setup
+
       - name: Archive the acceptance decision
         id: record
         if: needs.authorize.outputs.valid == 'true'

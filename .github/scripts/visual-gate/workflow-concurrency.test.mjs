@@ -121,6 +121,18 @@ describe('visual acceptance workflow concurrency', () => {
     expect(authorize).toContain("? 'maintain'");
   });
 
+  it('installs the dependencies used by the acceptance archive script', () => {
+    const value = workflow('visual-acceptance.yml');
+    const accept = value.slice(value.indexOf('  accept:'));
+
+    expect(accept.indexOf('uses: ./.github/actions/setup')).toBeGreaterThan(-1);
+    expect(accept.indexOf('uses: ./.github/actions/setup')).toBeLessThan(
+      accept.indexOf(
+        'node .github/scripts/visual-gate/visual-acceptance.mjs accept',
+      ),
+    );
+  });
+
   it('uses the same head identity for post-merge promotion', () => {
     const value = workflow('visual-acceptance-promote.yml');
 
