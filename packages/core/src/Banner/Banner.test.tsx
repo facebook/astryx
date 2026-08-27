@@ -15,6 +15,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Banner} from './Banner';
 import {registerIcons, resetIcons} from '../Icon';
+import {InternationalizationProvider} from '../i18n';
 
 describe('Banner', () => {
   afterEach(() => {
@@ -696,6 +697,22 @@ describe('Banner', () => {
         name: 'Wartungshinweis schließen',
       });
       expect(button).toHaveAccessibleDescription('Wartungshinweis schließen');
+    });
+
+    it('keeps a translated verb when the titled message falls back to English', () => {
+      render(
+        <InternationalizationProvider
+          locale="de-DE"
+          overrides={{
+            'de-DE': {'@astryx.banner.dismiss': 'Schließen'},
+          }}>
+          <Banner status="info" title="Wartungshinweis" isDismissable />
+        </InternationalizationProvider>,
+      );
+      const button = screen.getByRole('button', {
+        name: 'Schließen Wartungshinweis',
+      });
+      expect(button).toHaveAccessibleDescription('Schließen');
     });
   });
 });

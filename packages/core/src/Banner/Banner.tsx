@@ -119,7 +119,7 @@ export interface BannerProps extends BaseProps<HTMLDivElement> {
    */
   onDismiss?: () => void;
   /**
-   * Accessible name for the dismiss button, replacing the default.
+   * Accessible name and visible tooltip for the dismiss button, replacing the default.
    * Pass an already-translated string.
    *
    * The default is "Dismiss {title}" when `title` is a string, so stacked
@@ -502,12 +502,13 @@ export function Banner({
   const hasChildren = isRenderable(children);
   // Keep the default tooltip concise while the accessible name identifies
   // the banner; an explicit translated override names both surfaces.
-  const dismissTooltip = dismissLabel ?? t('@astryx.banner.dismiss');
+  const dismiss = t('@astryx.banner.dismiss');
+  const dismissTooltip = dismissLabel ?? dismiss;
   const dismissName =
     dismissLabel ??
     (typeof title === 'string'
-      ? t('@astryx.banner.dismissTitled', {title})
-      : t('@astryx.banner.dismiss'));
+      ? t('@astryx.banner.dismissTitled', {dismiss, title})
+      : dismiss);
 
   if (isDismissed) {
     return null;

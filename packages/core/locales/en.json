@@ -288,8 +288,8 @@
     "description": "\"Dismiss\" = close/hide this notification (not \"reject a person\"). Tooltip on the small X button on a Banner, and its aria label when the banner's title is not plain text."
   },
   "@astryx.banner.dismissTitled": {
-    "defaultMessage": "Dismiss {title}",
-    "description": "Aria label on the small X button on a Banner, naming which banner it closes so stacked banners are distinguishable. `{title}` is the banner's own title text — example: `Dismiss Upload failed`. Reorder freely; pairs with `banner.dismiss`, which is the tooltip."
+    "defaultMessage": "{dismiss} {title}",
+    "description": "Aria label on the small X button on a Banner, naming which banner it closes so stacked banners are distinguishable. `{dismiss}` is the already-translated tooltip text from `banner.dismiss`; keep it verbatim in the message so visible and accessible labels match. `{title}` is the banner's own title text — example: `Dismiss Upload failed`. Reorder the placeholders freely."
   },
   "@astryx.calendar.previousMonth": {
     "defaultMessage": "Previous month",
