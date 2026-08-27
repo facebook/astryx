@@ -50,8 +50,21 @@ afterEach(() => fs.rmSync(root, {recursive: true, force: true}));
 describe('classifyVisualScope', () => {
   it('includes stable Core runtime changes', () => {
     const result = classifyVisualScope(['packages/core/src/Button/Button.tsx'], root);
-    expect(result.hasStableVisual).toBe(true);
+    expect(result).toMatchObject({
+      hasStableVisual: true,
+      stableComponents: ['Button'],
+      broadStableVisual: false,
+    });
     expect(result.stableCoreFiles).toEqual(['packages/core/src/Button/Button.tsx']);
+  });
+
+  it('marks shared Core infrastructure as broad stable scope', () => {
+    const result = classifyVisualScope(['packages/core/src/theme/Theme.tsx'], root);
+    expect(result).toMatchObject({
+      hasStableVisual: true,
+      broadStableVisual: true,
+      stableComponents: [],
+    });
   });
 
   it('ignores Core tests and component docs — they do not change pixels', () => {
@@ -69,6 +82,21 @@ describe('classifyVisualScope', () => {
     const result = classifyVisualScope(
       ['packages/themes/neutral/src/neutralTheme.ts'],
       root,
+    );
+    expect(result).toMatchObject({hasStableVisual: true, stableThemes: ['neutral']});
+  });
+
+  it('keeps a base-stable theme in scope when the PR marks it private', () => {
+    const result = classifyVisualScope(
+      ['packages/themes/neutral/package.json'],
+      root,
+      {
+        'packages/themes/neutral/package.json': {
+          name: '@astryxdesign/theme-neutral',
+          private: true,
+          astryx: {canaryOnly: true},
+        },
+      },
     );
     expect(result).toMatchObject({hasStableVisual: true, stableThemes: ['neutral']});
   });
