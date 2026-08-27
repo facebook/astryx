@@ -34,6 +34,16 @@ import {themeProps} from '../utils/themeProps';
  */
 const ARC_FRACTION = 0.375;
 
+/**
+ * The dash pattern, per unit of diameter: one arc, then the gap that closes
+ * the circle. The circumference is `pi x diameter`, so multiplying the
+ * resolved diameter by these two constants gives exactly the lengths the
+ * default render has always used, and scales them with a themed diameter.
+ */
+const PI = 3.141592653589793;
+const ARC_DASH = PI * ARC_FRACTION;
+const ARC_GAP = PI * (1 - ARC_FRACTION);
+
 const SIZES = {
   sm: {diameter: 10, border: 2},
   md: {diameter: 14, border: 3},
@@ -61,13 +71,25 @@ const TRACK_OPACITY: Record<SpinnerShade, number> = {
  * theme target, by `sizeStyles`.
  */
 const RESOLVED_DIAMETER = '--_spinner-ring-diameter';
-const RESOLVED_RAIL = '--_spinner-ring-rail';
-const RESOLVED_GEOMETRY_VARS = [RESOLVED_DIAMETER, RESOLVED_RAIL];
+const RESOLVED_STROKE = '--_spinner-ring-stroke';
+const RESOLVED_GEOMETRY_VARS = [RESOLVED_DIAMETER, RESOLVED_STROKE];
+
+/**
+ * The composed box size: diameter plus a stroke width on each side.
+ *
+ * It is deliberately NOT registered, unlike the pair above. The element reads
+ * it through an inline `width`/`height` with the size's own default as the
+ * `var()` fallback, so a render with no stylesheet — where nothing declares
+ * it — still sizes the box the way it always did. A registered property always
+ * has a value (its `initial-value`), which would swallow that fallback and
+ * collapse the box to zero.
+ */
+const BOX_SIZE = '--_spinner-box-size';
 
 /**
  * Register the resolved geometry vars as `<length>`.
  *
- * Both are consumed inside `calc()` — the box adds two rails to a diameter,
+ * Both are consumed inside `calc()` — the box adds two stroke widths to a diameter,
  * the circle halves one. Unregistered, a custom property substitutes as text,
  * so whatever a theme wrote lands in the expression verbatim and a bare `0`
  * (a valid length on its own, a `<number>` inside `calc()`) poisons the sum:
@@ -76,7 +98,7 @@ const RESOLVED_GEOMETRY_VARS = [RESOLVED_DIAMETER, RESOLVED_RAIL];
  * `calc()` sees it, so `0` means `0px` — a zero-width stroke that paints
  * nothing — rather than a bare `0` that invalidates the sum and leaves the box
  * with no size at all. One `stroke-width` drives both circles, so a themed
- * rail of `0` hides the arc along with the track; an arc with no track behind
+ * stroke width of `0` hides the arc along with the track; an arc with no track behind
  * it is `--spinner-track-color: transparent`.
  *
  * Only these private vars are registered. The four public ones deliberately
@@ -212,11 +234,13 @@ const styles = stylex.create({
     // it is the span that reads them whether the theme target is the span or
     // the wrapper — a custom property inherits either way.
     [RESOLVED_DIAMETER]: 'var(--spinner-diameter)',
-    [RESOLVED_RAIL]: 'var(--spinner-rail-width)',
-    // The box and the drawn ring read the same resolved vars, so a themed
-    // size moves both together.
-    width: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_RAIL}) * 2)`,
-    height: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_RAIL}) * 2)`,
+    [RESOLVED_STROKE]: 'var(--spinner-stroke-width)',
+    // The size of the box, composed here and applied as an inline style at the
+    // element, so that the box and the drawn ring come from the same two vars
+    // and a themed size moves both together — without the sizing moving from
+    // an inline style to a rule, which would hand a caller's `style={{width}}`
+    // a precedence over the box that it has never had.
+    [BOX_SIZE]: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_STROKE}) * 2)`,
   },
   ring: {
     backfaceVisibility: 'hidden',
@@ -248,17 +272,26 @@ const styles = stylex.create({
     // presentation attribute of the same name — so the attributes below stay
     // as the size's default (and as what a server render and a no-CSS render
     // draw), and these take over the moment the cascade has a themed value.
-    // The arc's dash pattern needs no rule of its own: `pathLength` normalizes
-    // it to the default circumference, so it scales with whatever `r` becomes.
     r: `calc(var(${RESOLVED_DIAMETER}) / 2)`,
-    strokeWidth: `var(${RESOLVED_RAIL})`,
+    strokeWidth: `var(${RESOLVED_STROKE})`,
   },
   // The two ring colors ride `stroke` directly, read off the public vars the
   // shade declares. The paint comes from the cascade, so every notation a
   // theme can write — `var()`, `color-mix()`, and the `currentColor` the
   // inherit shade is built on — resolves where it is used, and a color changed
   // after mount repaints instead of going stale.
-  arc: {stroke: 'var(--spinner-color)'},
+  //
+  // The dash pattern is composed from the resolved diameter the same way, so a
+  // themed ring keeps the same fraction of arc rather than the same absolute
+  // dash. `pathLength` would be the shorter route to that, but it rescales the
+  // pattern against the path length the UA measures on its own approximation
+  // of the circle — 87.398 against the 87.965 of pi x 28 — which shortens the
+  // default arc by 0.64% and moves the cap by half a pixel. Composing the
+  // lengths keeps the default byte-identical to what it drew before.
+  arc: {
+    stroke: 'var(--spinner-color)',
+    strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${ARC_DASH}) calc(var(${RESOLVED_DIAMETER}) * ${ARC_GAP})`,
+  },
   track: {stroke: 'var(--spinner-track-color)'},
 });
 
@@ -283,19 +316,19 @@ const styles = stylex.create({
 const sizeStyles = stylex.create({
   sm: {
     '--spinner-diameter': `${SIZES.sm.diameter}px`,
-    '--spinner-rail-width': `${SIZES.sm.border}px`,
+    '--spinner-stroke-width': `${SIZES.sm.border}px`,
   },
   md: {
     '--spinner-diameter': `${SIZES.md.diameter}px`,
-    '--spinner-rail-width': `${SIZES.md.border}px`,
+    '--spinner-stroke-width': `${SIZES.md.border}px`,
   },
   lg: {
     '--spinner-diameter': `${SIZES.lg.diameter}px`,
-    '--spinner-rail-width': `${SIZES.lg.border}px`,
+    '--spinner-stroke-width': `${SIZES.lg.border}px`,
   },
   xl: {
     '--spinner-diameter': `${SIZES.xl.diameter}px`,
-    '--spinner-rail-width': `${SIZES.xl.border}px`,
+    '--spinner-stroke-width': `${SIZES.xl.border}px`,
   },
 });
 
@@ -341,7 +374,7 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
   ref?: React.Ref<HTMLSpanElement>;
   /**
    * Spinner size. The diameter is the ring itself; the rendered box adds the
-   * rail width on each side (xl draws a 28px ring in a 36px box). A theme can
+   * stroke width on each side (xl draws a 28px ring in a 36px box). A theme can
    * redefine what each named size resolves to — see `--spinner-diameter`.
    * - 'sm': 10px diameter
    * - 'md': 14px diameter
@@ -451,7 +484,18 @@ export function Spinner({
           !hasLabel && xstyle,
         ),
         hasLabel ? undefined : className,
-        hasLabel ? {} : style,
+        // The box is sized here, after the caller's `style`, exactly as it was
+        // before the geometry became themeable: the component's own size wins
+        // over a `style={{width}}` a caller passes, and the precedence between
+        // the two is unchanged by this PR. What the value is made of has
+        // changed — it is the composed var rather than a number — so a themed
+        // diameter moves the box with the ring. The fallback is the size's own
+        // frame, for the render where no stylesheet has declared the var.
+        {
+          ...(hasLabel ? {} : style),
+          width: `var(${BOX_SIZE}, ${frameSize}px)`,
+          height: `var(${BOX_SIZE}, ${frameSize}px)`,
+        },
       )}>
       <svg
         ref={syncRotationPhase}
@@ -476,9 +520,9 @@ export function Spinner({
           cy={center}
           r={diameter / 2}
           strokeWidth={border}
-          // Normalized to the default circumference, so the dash pattern below
-          // stays 135deg of arc whatever `r` the cascade ends up drawing.
-          pathLength={circumference}
+          // The size's own dash, for the render with no stylesheet. The rule
+          // above composes the same lengths from the resolved diameter, so a
+          // themed ring keeps this fraction of arc rather than this length.
           strokeDasharray={`${arcLength} ${circumference - arcLength}`}
           transform={`rotate(-90 ${center} ${center})`}
           {...stylex.props(styles.circle, styles.arc)}

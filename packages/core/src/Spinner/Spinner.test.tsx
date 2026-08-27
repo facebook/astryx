@@ -143,6 +143,44 @@ describe('Spinner', () => {
     expect(spinner.tagName.toLowerCase()).toBe('span');
   });
 
+  // The box has always been sized by an inline width/height written after the
+  // caller's `style`, so the component's own size wins over a `style={{width}}`
+  // passed in. Making the geometry themeable changed what that value is made
+  // of — a composed var rather than a number — and deliberately not where it is
+  // written: moving the sizing into a rule would have handed a caller's inline
+  // width a precedence over the box it has never had. This pins the precedence
+  // itself, which is the part a consumer could be depending on.
+  describe('box sizing', () => {
+    it.each(Object.entries(SIZES))(
+      'falls back to the %s frame where no stylesheet has declared the var',
+      (size, {diameter, border}) => {
+        render(
+          <Spinner size={size as keyof typeof SIZES} data-testid="spinner" />,
+        );
+        const box = screen.getByTestId('spinner');
+        const expected = `var(--_spinner-box-size, ${diameter + border * 2}px)`;
+        expect(box.style.width).toBe(expected);
+        expect(box.style.height).toBe(expected);
+      },
+    );
+
+    it('keeps its own size over a width the caller passes in style', () => {
+      render(
+        <Spinner
+          size="xl"
+          style={{width: 999, height: 999, opacity: 0.5}}
+          data-testid="spinner"
+        />,
+      );
+      const box = screen.getByTestId('spinner');
+      expect(box.style.width).toBe('var(--_spinner-box-size, 36px)');
+      expect(box.style.height).toBe('var(--_spinner-box-size, 36px)');
+      // Everything else the caller passed still applies — only the two
+      // properties the box owns are taken back.
+      expect(box.style.opacity).toBe('0.5');
+    });
+  });
+
   // The themed geometry resolves in the cascade — jsdom implements no layout
   // and no custom-property registration, so no test here can reach what a
   // theme actually draws; that is verified in a browser and the numbers are in
@@ -239,24 +277,23 @@ describe('Spinner ring', () => {
     );
   });
 
-  // The dash pattern is authored in absolute lengths, but a theme can move `r`
-  // from the cascade — so the arc declares its length as the default
-  // circumference and lets the UA rescale the pattern to whatever it actually
-  // draws. At the default geometry that is a no-op, which is what this pins:
-  // pathLength and the dash total are the same number.
+  // The authored dash is the size's own absolute pattern, and stays that way:
+  // it is what a render with no stylesheet draws, and it is byte-for-byte the
+  // pattern this component drew before the geometry became themeable. Scaling
+  // with a themed diameter is the rule's job — it composes the same two
+  // lengths out of the resolved diameter — and deliberately not `pathLength`'s,
+  // which rescales against the path length the UA measures on its own
+  // approximation of the circle and shortens the default arc by 0.64%.
   it.each(Object.entries(SIZES))(
-    'normalizes the %s arc to its own circumference',
+    'leaves the %s arc its own absolute dash, with no pathLength',
     (size, {diameter}) => {
       render(
         <Spinner size={size as keyof typeof SIZES} data-testid="spinner" />,
       );
       const {track, arc} = circles();
       const [on, off] = dashOf(arc);
-      expect(Number(arc.getAttribute('pathLength'))).toBeCloseTo(on + off, 6);
-      expect(Number(arc.getAttribute('pathLength'))).toBeCloseTo(
-        Math.PI * diameter,
-        6,
-      );
+      expect(on + off).toBeCloseTo(Math.PI * diameter, 6);
+      expect(arc.getAttribute('pathLength')).toBeNull();
       // The track is a full ring, so it needs neither.
       expect(track.getAttribute('pathLength')).toBeNull();
     },
@@ -370,7 +407,7 @@ describe('geometry var registration', () => {
 
     expect(registerProperty.mock.calls.map(([d]) => d.name)).toEqual([
       '--_spinner-ring-diameter',
-      '--_spinner-ring-rail',
+      '--_spinner-ring-stroke',
     ]);
     // Both are `<length>` with an initial value, which is what makes a themed
     // `0` mean `0px` inside the `calc()` rather than poisoning it.

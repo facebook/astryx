@@ -306,7 +306,7 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   // would take the label's text color with it. They are public vars a theme
   // sets directly under a size- or shade-variant key.
   '--spinner-diameter',
-  '--spinner-rail-width',
+  '--spinner-stroke-width',
   '--spinner-color',
   '--spinner-track-color',
 ]);

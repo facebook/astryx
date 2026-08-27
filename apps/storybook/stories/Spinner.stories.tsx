@@ -100,19 +100,19 @@ const themedGeometry = defineTheme({
     spinner: {
       'size:sm': {
         '--spinner-diameter': '1rem',
-        '--spinner-rail-width': '0.125rem',
+        '--spinner-stroke-width': '0.125rem',
       },
       'size:md': {
         '--spinner-diameter': '1.5rem',
-        '--spinner-rail-width': '0.25rem',
+        '--spinner-stroke-width': '0.25rem',
       },
       'size:lg': {
         '--spinner-diameter': '2rem',
-        '--spinner-rail-width': '0.3125rem',
+        '--spinner-stroke-width': '0.3125rem',
       },
       'size:xl': {
         '--spinner-diameter': 'calc(2rem + 8px)',
-        '--spinner-rail-width': '0.375rem',
+        '--spinner-stroke-width': '0.375rem',
       },
     },
   },
@@ -142,8 +142,8 @@ export const ThemedGeometry: Story = {
   ),
 };
 
-// A hairline rail: geometry themed down to 1px while the diameter stays put.
-// Not `0` — one `stroke-width` drives both circles, so a rail of `0` is a
+// A hairline stroke: geometry themed down to 1px while the diameter stays put.
+// Not `0` — one `stroke-width` drives both circles, so a stroke width of `0` is a
 // zero-width stroke on each and paints nothing. An arc with no track behind it
 // is `--spinner-track-color: transparent`, which is what the subtle shade in
 // `ThemedColor` shows.
@@ -151,7 +151,7 @@ const themedHairline = defineTheme({
   name: 'spinner-themed-hairline',
   components: {
     spinner: {
-      'size:xl': {'--spinner-rail-width': '1px'},
+      'size:xl': {'--spinner-stroke-width': '1px'},
       base: {'--spinner-track-color': 'transparent'},
     },
   },
@@ -195,12 +195,12 @@ export const ThemedColor: Story = {
 
 // One Theme per story, for the same reason: two providers in one story would
 // each claim the document root and the last one mounted would paint both rows.
-export const ThemedHairlineRail: Story = {
-  name: 'Themed Hairline Rail',
+export const ThemedHairlineStroke: Story = {
+  name: 'Themed Hairline Stroke',
   render: () => (
     <VStack gap={2}>
       <Text type="supporting" color="secondary">
-        Themed — a 1px hairline rail over a transparent track
+        Themed — a 1px hairline stroke over a transparent track
       </Text>
       <Theme theme={themedHairline} mode="light">
         <Spinner size="xl" />
