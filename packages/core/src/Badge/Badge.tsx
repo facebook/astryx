@@ -181,6 +181,28 @@ export function Badge({
   ref,
   ...props
 }: BadgeProps) {
+  // Clipping a label makes its tail unrecoverable, so the full text has to
+  // stay reachable somewhere. `title` is the half of that answer which costs
+  // nothing: no measurement, no hook, so `Badge` renders the same on the
+  // server and stays usable in a server component. It follows the shape
+  // `BaseTable` already uses for a truncated header cell (BaseTable.tsx) —
+  // string content only, and only when there is something to show.
+  //
+  // A rich label is left alone: it is a subtree whose text would have to be
+  // flattened to a string, and flattening renders a guess — an icon, a
+  // `<strong>`, a nested element all read differently.
+  //
+  // It is set whether or not the label actually fits, because knowing that
+  // requires measuring. The refinement — a tooltip only when the text is
+  // really cut, reachable by hover and by focus — needs that measurement and
+  // a client component, so it is tracked separately.
+  const labelTitle =
+    typeof label === 'number'
+      ? String(label)
+      : typeof label === 'string' && label.length > 0
+        ? label
+        : undefined;
+
   return (
     <span
       ref={ref}
@@ -190,6 +212,7 @@ export function Badge({
         className,
         style,
       )}
+      title={labelTitle}
       {...props}>
       {icon}
       <span {...stylex.props(styles.label)}>{label}</span>

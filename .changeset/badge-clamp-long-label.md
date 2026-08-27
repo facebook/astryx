@@ -29,8 +29,17 @@ The ellipsis sits on an inner label span rather than the badge itself, because
 to get one would cost the icon its centring. With an icon, the icon holds its
 place and the label gives way.
 
-Not included: a tooltip carrying the full text. That needs runtime measurement
-and would make `Badge` a client component, so it is a separate change with its
-own trade-off to weigh.
+So that a clipped tail is not simply lost, a string or number label is also
+carried in the badge's `title` — the same shape `BaseTable` already uses for a
+truncated header cell. That costs no measurement and no hook, so
+`Badge` still renders the same on the server and stays usable in a server
+component. A rich `label` is left alone rather than flattened to a guess.
+
+Two gaps remain, both needing runtime measurement, and both tracked separately:
+the `title` is set whether or not the label actually fits, and a native `title`
+is a pointer affordance — it answers hover, not keyboard focus, and not touch
+at all. The refinement is a tooltip shown only when the text is really cut,
+reachable by hover and by focus, which makes `Badge` a client component and is
+its own trade-off to weigh.
 
 @freddymeta

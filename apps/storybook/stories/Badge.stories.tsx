@@ -94,8 +94,10 @@ export const NonSemanticColors: Story = {
 };
 
 // A badge is one line, so a label wider than the space it has is cut short
-// with an ellipsis rather than escaping the container. Hover a truncated one
-// for the full text.
+// with an ellipsis rather than escaping the container. The full text rides in
+// the badge's `title`, so hovering a truncated one shows it — a pointer-only
+// affordance for now; the focus- and touch-reachable tooltip needs runtime
+// measurement and is tracked separately.
 export const LongLabels: Story = {
   name: 'Long labels in tight space',
   render: () => (
