@@ -15,6 +15,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Button} from '@astryxdesign/core/Button';
+import {Popover} from '@astryxdesign/core/Popover';
 import {Card} from '@astryxdesign/core/Card';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {CodeBlock} from '@astryxdesign/core/CodeBlock';
@@ -143,6 +144,16 @@ function ComponentSpecimen() {
         <Badge label="Warning" variant="warning" />
         <Badge label="Error" variant="error" />
       </div>
+      <Popover
+        isOpen
+        hasAutoFocus={false}
+        hasCloseButton={false}
+        hasLightDismiss={false}
+        label="Popover radius probe"
+        width={240}
+        content={<Text type="body">Painted Popover surface</Text>}>
+        <Button label="Popover radius probe" />
+      </Popover>
     </Stack>
   );
 }
