@@ -4,9 +4,8 @@
 
 /**
  * @file gestureCounter.ts
- * @input Listens for pointerdown and keydown on the document
- * @output Exports currentGesture, a counter identifying the user gesture in
- *   flight
+ * @input Listens for pointerdown, keydown, and click on the document
+ * @output Exports the current gesture identity and whether its click has run
  * @position Internal to Layer; used by useLayer to tell a click that belongs
  *   to a dismissing press from a fresh one
  *
@@ -19,10 +18,15 @@
  */
 
 let gesture = 0;
+let clickedGesture: number | null = null;
 let isListening = false;
 
 function advance() {
   gesture += 1;
+}
+
+function markClicked() {
+  clickedGesture = gesture;
 }
 
 function listen() {
@@ -33,6 +37,8 @@ function listen() {
   // Capture phase: the count must advance before any handler reads it.
   document.addEventListener('pointerdown', advance, true);
   document.addEventListener('keydown', advance, true);
+  // Bubble phase lets a trigger install tracking from its own first click.
+  document.addEventListener('click', markClicked);
 }
 
 /**
@@ -42,4 +48,10 @@ function listen() {
 export function currentGesture(): number {
   listen();
   return gesture;
+}
+
+/** Whether the click belonging to the current gesture already bubbled. */
+export function currentGestureHasClicked(): boolean {
+  listen();
+  return clickedGesture === gesture;
 }

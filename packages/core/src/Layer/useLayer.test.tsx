@@ -16,6 +16,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   useKeepLayerOpenProps,
   useLayer,
+  useLayerInternal,
   getPositionTryFallbacks,
 } from './useLayer';
 import {typeScaleVars} from '../theme/tokens.stylex';
@@ -929,16 +930,24 @@ describe('useLayer context positioning', () => {
 });
 
 describe('useLayer public return types', () => {
-  it('keep the invoker props internal', () => {
+  it('keeps dismissal helpers internal', () => {
     const contextHasKeepOpenProps: 'keepOpenProps' extends keyof ContextLayerReturn
       ? true
       : false = false;
     const fixedHasKeepOpenProps: 'keepOpenProps' extends keyof FixedLayerReturn
       ? true
       : false = false;
+    const contextHasGuard: 'wasJustDismissed' extends keyof ContextLayerReturn
+      ? true
+      : false = false;
+    const fixedHasGuard: 'wasJustDismissed' extends keyof FixedLayerReturn
+      ? true
+      : false = false;
 
     expect(contextHasKeepOpenProps).toBe(false);
     expect(fixedHasKeepOpenProps).toBe(false);
+    expect(contextHasGuard).toBe(false);
+    expect(fixedHasGuard).toBe(false);
   });
 });
 
@@ -1027,7 +1036,7 @@ describe('internal keep-open props (controls on the trigger, #5004)', () => {
 
 describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => {
   function GuardedTriggerHarness() {
-    const layer = useLayer({mode: 'context'});
+    const layer = useLayerInternal({mode: 'context'});
     return (
       <>
         <button
@@ -1078,7 +1087,8 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
     await user.click(trigger);
     expect(getByTestId('state')).toHaveTextContent('open');
 
-    // Dismissal and click within one press: no pointerdown in between.
+    // The next press reaches the browser dismissal before its click.
+    fireEvent.pointerDown(trigger);
     lightDismiss(container);
     fireEvent.click(trigger);
 
@@ -1093,7 +1103,9 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
     const trigger = getByRole('button', {name: 'Trigger'});
 
     await user.click(trigger);
+    fireEvent.pointerDown(trigger);
     lightDismiss(container);
+    fireEvent.click(trigger);
     // A press of its own — a new gesture, however soon it lands.
     await user.click(trigger);
 
@@ -1113,7 +1125,7 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
     expect(getByTestId('state')).toHaveTextContent('open');
   });
 
-  it('acts on a synthesized click with no press of its own', async () => {
+  it('acts on a synthesized click after click-first light dismiss', async () => {
     const user = userEvent.setup();
     const {container, getByRole, getByTestId} = render(
       <GuardedTriggerHarness />,
@@ -1121,12 +1133,13 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
     const trigger = getByRole('button', {name: 'Trigger'});
 
     await user.click(trigger);
+    fireEvent.pointerDown(document.body);
+    fireEvent.click(document.body);
     lightDismiss(container);
-    fireEvent.click(trigger);
     expect(getByTestId('state')).toHaveTextContent('closed');
 
-    // AT activation reaches the trigger as a bare click: no pointerdown, so
-    // the gesture counter still reads what it read at the dismissal.
+    // Chromium delivers the dismissing click before the queued toggle. A later
+    // bare click is a new activation even though it has no pointerdown.
     act(() => {
       trigger.click();
     });
@@ -1136,7 +1149,7 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
 
   /** A trigger that calls show()/hide() directly, checking nothing. */
   function PlainTriggerHarness() {
-    const layer = useLayer({mode: 'context'});
+    const layer = useLayerInternal({mode: 'context'});
     return (
       <>
         <button
@@ -1159,6 +1172,7 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
     await user.click(trigger);
     expect(getByTestId('state')).toHaveTextContent('open');
 
+    fireEvent.pointerDown(trigger);
     lightDismiss(container);
     fireEvent.click(trigger);
 

@@ -2678,6 +2678,7 @@ describe('MultiSelector popup theme target', () => {
     // The browser dismissed the popup on pointerup and queued the toggle. When
     // that event lands before the click — WebKit, or any engine under load —
     // the click used to read a closed popup and reopen it.
+    fireEvent.pointerDown(trigger);
     const popover = document.querySelector('[popover]') as HTMLElement;
     act(() => {
       popover.dispatchEvent(

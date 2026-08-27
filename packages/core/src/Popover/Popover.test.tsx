@@ -57,11 +57,15 @@ afterAll(() => {
 });
 
 describe('usePopover public return type', () => {
-  it('keeps the invoker props internal', () => {
+  it('keeps dismissal internals out of the public contract', () => {
     const hasKeepOpenProps: 'keepOpenProps' extends keyof UsePopoverReturn
       ? true
       : false = false;
+    const hasDismissalGuard: 'wasJustDismissed' extends keyof UsePopoverReturn
+      ? true
+      : false = false;
     expect(hasKeepOpenProps).toBe(false);
+    expect(hasDismissalGuard).toBe(false);
   });
 });
 

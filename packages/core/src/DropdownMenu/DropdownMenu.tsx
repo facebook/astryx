@@ -37,7 +37,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {usePopover} from '../Popover/usePopover';
+import {usePopoverInternal} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
 import {Icon} from '../Icon';
 
@@ -288,7 +288,7 @@ export function DropdownMenu({
     }
   }, [isControlled, onOpenChange]);
 
-  const popover = usePopover({
+  const popover = usePopoverInternal({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
     hasLightDismiss: true,

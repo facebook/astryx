@@ -350,6 +350,7 @@ describe('DropdownMenu light-dismiss race', () => {
   it('does not re-open when the trigger click follows its own light dismiss', () => {
     const trigger = openMenu();
 
+    fireEvent.pointerDown(trigger);
     lightDismiss();
     fireEvent.click(trigger);
 
@@ -359,6 +360,7 @@ describe('DropdownMenu light-dismiss race', () => {
   it('re-opens on a press of its own after a light dismiss', () => {
     const trigger = openMenu();
 
+    fireEvent.pointerDown(trigger);
     lightDismiss();
     fireEvent.click(trigger);
     fireEvent.pointerDown(trigger);

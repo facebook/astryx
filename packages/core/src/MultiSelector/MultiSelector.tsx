@@ -28,7 +28,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {usePopover} from '../Popover/usePopover';
+import {usePopoverInternal} from '../Popover/usePopover';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import type {IconName} from '../Icon';
@@ -944,7 +944,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     triggerRef.current?.focus();
   }, [announce]);
 
-  const popover = usePopover({
+  const popover = usePopoverInternal({
     hasLightDismiss: true,
     onHide: handleLayerHide,
     hasCloseButton: false,

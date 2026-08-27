@@ -5,7 +5,7 @@
 /**
  * @file usePopover.tsx
  * @input Uses useLayer, useFocusTrap, React hooks
- * @output Exports usePopover hook for popover dialogs with focus trapping
+ * @output Exports usePopover and a package-internal trigger-aware variant.
  * @position Higher-level layer utility; used by DatePicker, Combobox, etc.
  *
  * Combines popover layer behavior with focus trap for dialog-like popovers.
@@ -17,7 +17,7 @@
 
 import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useLayer, type ContextRenderProps} from '../Layer/useLayer';
+import {useLayerInternal, type ContextRenderProps} from '../Layer/useLayer';
 import {useFocusTrap} from '../hooks/useFocusTrap';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -250,15 +250,6 @@ export interface UsePopoverReturn {
   toggle: () => void;
 
   /**
-   * Whether the browser's own light dismiss just closed this popover.
-   *
-   * Triggers that do not route through `toggle` — a combobox that also seeds a
-   * highlight, say — check this first and do nothing when it is true: the click
-   * is the tail of the gesture that already closed the popup.
-   */
-  wasJustDismissed: () => boolean;
-
-  /**
    * Whether the popover is currently open
    */
   isOpen: boolean;
@@ -290,6 +281,10 @@ export interface UsePopoverReturn {
     'aria-expanded': boolean;
     'aria-controls': string;
   };
+}
+
+interface InternalUsePopoverReturn extends UsePopoverReturn {
+  wasJustDismissed: () => boolean;
 }
 
 /**
@@ -332,7 +327,9 @@ export interface UsePopoverReturn {
  * }
  * ```
  */
-export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
+function usePopoverImplementation(
+  options: UsePopoverOptions = {},
+): InternalUsePopoverReturn {
   const {
     onShow,
     onHide,
@@ -360,7 +357,7 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
   const skipAutoFocusRef = useRef(false);
 
   // Core layer for popover positioning
-  const layer = useLayer({
+  const layer = useLayerInternal({
     mode: 'context',
     lightDismiss: hasLightDismiss,
     onShow,
@@ -509,4 +506,16 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
     render,
     triggerProps,
   };
+}
+
+export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
+  const {wasJustDismissed: _, ...popover} = usePopoverImplementation(options);
+  return popover;
+}
+
+/** @internal Used by trigger components; not exported from package barrels. */
+export function usePopoverInternal(
+  options: UsePopoverOptions = {},
+): InternalUsePopoverReturn {
+  return usePopoverImplementation(options);
 }

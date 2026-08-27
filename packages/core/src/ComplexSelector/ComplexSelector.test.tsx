@@ -353,6 +353,7 @@ describe('ComplexSelector', () => {
       .closest('[popover]');
     expect(popover).not.toBeNull();
 
+    fireEvent.pointerDown(trigger);
     const closeEvent = new Event('toggle');
     Object.defineProperty(closeEvent, 'newState', {value: 'closed'});
     fireEvent(popover as HTMLElement, closeEvent);
@@ -432,6 +433,7 @@ describe('ComplexSelector popup theme target', () => {
     // The browser dismissed the popup on pointerup and queued the toggle. When
     // that event lands before the click — WebKit, or any engine under load —
     // the click used to read a closed popup and reopen it.
+    fireEvent.pointerDown(trigger);
     const popover = document.querySelector('[popover]') as HTMLElement;
     act(() => {
       popover.dispatchEvent(

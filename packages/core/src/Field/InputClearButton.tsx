@@ -5,8 +5,7 @@
 /**
  * @file InputClearButton.tsx
  * @input Uses React, Button, Icon
- * @output Exports InputClearButton, the shared clear (✕) button rendered by
- *   every clearable input in the family.
+ * @output Exports the public InputClearButton and an internal popup-aware variant.
  * @position Shared primitive. Every input that renders a clear affordance —
  *   TextInput, NumberInput, TimeInput, DateInput, DateTimeInput,
  *   DateRangeInput, Selector, MultiSelector, Typeahead, Tokenizer, FileInput —

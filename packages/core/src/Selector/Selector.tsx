@@ -29,7 +29,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {usePopover} from '../Popover/usePopover';
+import {usePopoverInternal} from '../Popover/usePopover';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {useIndicator} from '../Indicator';
@@ -957,7 +957,7 @@ export function Selector<T extends SelectorOptionType>(
     triggerRef.current?.focus();
   }, [announce]);
 
-  const popover = usePopover({
+  const popover = usePopoverInternal({
     onHide: handleLayerHide,
     hasLightDismiss: true,
     hasCloseButton: false,
