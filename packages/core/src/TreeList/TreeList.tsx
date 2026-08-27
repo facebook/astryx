@@ -18,7 +18,7 @@
 import {useId, useState, useMemo, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {TreeListItem} from './TreeListItem';
 import type {
@@ -191,6 +191,7 @@ export function TreeList({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledby,
   ref,
+  onKeyDown: onKeyDownProp,
   ...restProps
 }: TreeListProps) {
   const headerId = useId();
@@ -351,7 +352,10 @@ export function TreeList({
         role="tree"
         aria-label={header != null ? undefined : ariaLabel}
         aria-labelledby={header != null ? headerId : ariaLabelledby}
-        onKeyDown={handleKeyDown}
+        onKeyDown={composeEventHandlers(
+          onKeyDownProp as unknown as React.KeyboardEventHandler<HTMLUListElement>,
+          handleKeyDown,
+        )}
         onFocus={handleFocus}
         {...stylex.props(styles.list)}>
         {renderItems(items, 0, [])}

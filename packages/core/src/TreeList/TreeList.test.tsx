@@ -1162,4 +1162,45 @@ describe('TreeList', () => {
       screen.getByText('Cherry').closest('li'),
     );
   });
+
+  it('lets a consumer prevent built-in TreeList keyboard navigation', () => {
+    render(
+      <TreeList
+        items={[
+          {id: 'one', label: 'One'},
+          {id: 'two', label: 'Two'},
+        ]}
+        onKeyDown={event => event.preventDefault()}
+      />,
+    );
+
+    const items = screen.getAllByRole('treeitem');
+    items[0].focus();
+    fireEvent.keyDown(items[0], {key: 'ArrowDown'});
+
+    expect(items[0]).toHaveFocus();
+    expect(items[0]).toHaveAttribute('tabindex', '0');
+    expect(items[1]).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('fires non-canceling consumer onKeyDown while built-in navigation works', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <TreeList
+        items={[
+          {id: 'one', label: 'One'},
+          {id: 'two', label: 'Two'},
+        ]}
+        onKeyDown={onKeyDown}
+      />,
+    );
+
+    const items = screen.getAllByRole('treeitem');
+    items[0].focus();
+    fireEvent.keyDown(items[0], {key: 'ArrowDown'});
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(items[1]).toHaveFocus();
+    expect(items[1]).toHaveAttribute('tabindex', '0');
+  });
 });
