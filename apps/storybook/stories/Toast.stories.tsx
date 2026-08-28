@@ -492,6 +492,50 @@ export const MobileRtlSafeAreaPlacement: StoryObj = {
   },
 };
 
+export const MobileSwipeToDismiss: StoryObj = {
+  name: 'Mobile situations / Swipe to dismiss',
+  render: () => (
+    <MobileCanvas
+      title="Swipe dismissal"
+      description="Swipe is an enhancement only; the surface fades as it approaches the edge, and the visible close button remains the simple alternative.">
+      <ToastViewport position="topEnd" isTopLayer={false} maxVisible={2}>
+        <MockCard>
+          <Text type="supporting" color="secondary">
+            Use touch or pen input, or browser touch emulation, to swipe the
+            toast toward its configured block edge: up for top placement, down
+            for bottom placement. This matches the direction each Toast enters
+            and exits, keeping one spatial model for the whole interaction. The
+            gesture claims the touch only after dominant travel matches the
+            dismiss edge, so opposite-direction and horizontal page scrolling
+            remain available. Pen is supported as direct-contact input; mouse
+            dragging is ignored to avoid conflicting with desktop text
+            selection, where the close button remains available.
+          </Text>
+          <ToastReplayControls
+            items={[
+              {
+                key: 'mobile-swipe-dismiss',
+                body: 'Swipe or close me',
+                isAutoHide: false,
+              },
+            ]}
+          />
+        </MockCard>
+      </ToastViewport>
+    </MobileCanvas>
+  ),
+  parameters: {
+    ...mobileStoryParameters,
+    docs: {
+      story: {
+        ...mobileStoryParameters.docs.story,
+        description:
+          'Interactive vertical edge swipe-to-dismiss example using real ToastViewport behavior. The vertical axis intentionally matches the Toast placement and motion model: top Toasts leave upward and bottom Toasts leave downward. A non-passive touchmove handoff claims only dominant travel toward that edge; opposite-direction and horizontal page scrolling remain available. Pen is supported as direct-contact input, while mouse drag is excluded to avoid conflicting with desktop selection; the close button and F6 keyboard access remain available.',
+      },
+    },
+  },
+};
+
 export const MobileMotionEdgeAwareEntrance: StoryObj = {
   name: 'Mobile situations / Motion edge-aware entrance',
   render: () => (
