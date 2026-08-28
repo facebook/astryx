@@ -52,6 +52,7 @@ export interface PowerSearchTouchValueEditorProps {
   /** Stage a value and commit the filter immediately (single-tap choices). */
   onCommit: (value: FilterValue) => void;
   isDisabled?: boolean;
+  maxMenuItems?: number;
   timezoneID?: string;
 }
 
@@ -65,6 +66,7 @@ export function PowerSearchTouchValueEditor({
   onChange,
   onCommit,
   isDisabled,
+  maxMenuItems,
   timezoneID,
 }: PowerSearchTouchValueEditorProps) {
   const t = useTranslator();
@@ -156,6 +158,7 @@ export function PowerSearchTouchValueEditor({
         onChange={handleFallbackChange}
         config={config}
         isDisabled={isDisabled}
+        maxMenuItems={maxMenuItems}
         timezoneID={timezoneID}
       />
     </div>

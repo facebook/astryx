@@ -11,12 +11,14 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, within} from '@testing-library/react';
-import {createRef} from 'react';
+import {createRef, useState} from 'react';
 import {PowerSearchTouchSurface} from './PowerSearchTouch';
 import type {
   PowerSearchConfig,
+  PowerSearchEditorProps,
   PowerSearchFilter,
   PowerSearchHandle,
+  PowerSearchTokenProps,
 } from './types';
 
 // jsdom implements neither <dialog> open/close nor pointer capture; the sheet
@@ -75,6 +77,7 @@ const config: PowerSearchConfig = {
           label: 'is not',
           value: {type: 'enum', values: STATUS_VALUES},
         },
+        {key: 'isEmpty', label: 'is empty', value: {type: 'empty'}},
       ],
     },
     {
@@ -262,6 +265,20 @@ describe('PowerSearchTouchSurface', () => {
     );
   });
 
+  it('commits a non-default empty operator without opening a blank value editor', () => {
+    const {onChange} = setup();
+    openSheet();
+    tapRow(/^Status/);
+    tapRow(/^Operator/);
+    tapRow('is empty');
+    expect(onChange).toHaveBeenCalledWith(
+      [{field: 'status', operator: 'isEmpty', value: {type: 'empty'}}],
+      'add',
+      0,
+    );
+    expect(isSheetOpen()).toBe(false);
+  });
+
   it('offers no operator row when the field defines one operator', () => {
     setup();
     openSheet();
@@ -320,6 +337,178 @@ describe('PowerSearchTouchSurface', () => {
     );
   });
 
+  it('offers a visible cancel action while editing', () => {
+    const {onChange} = setup({filters: [openFilter]});
+    fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Cancel'}));
+    expect(isSheetOpen()).toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('follows the original filter when controlled props reorder it', () => {
+    const authorFilter: PowerSearchFilter = {
+      field: 'author',
+      operator: 'is',
+      value: {type: 'string', value: 'Ada'},
+    };
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <PowerSearchTouchSurface
+        config={config}
+        filters={[openFilter, authorFilter]}
+        onChange={onChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
+    rerender(
+      <PowerSearchTouchSurface
+        config={config}
+        filters={[{...authorFilter}, {...openFilter}]}
+        onChange={onChange}
+      />,
+    );
+    tapRow('Closed');
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        authorFilter,
+        {
+          field: 'status',
+          operator: 'is',
+          value: {type: 'enum', value: 'closed'},
+        },
+      ],
+      'edit',
+      1,
+    );
+  });
+
+  it('restores focus when a controlled parent reorders in response to an edit', () => {
+    const authorFilter: PowerSearchFilter = {
+      field: 'author',
+      operator: 'is',
+      value: {type: 'string', value: 'Ada'},
+    };
+    function Harness() {
+      const [filters, setFilters] = useState<ReadonlyArray<PowerSearchFilter>>([
+        openFilter,
+        authorFilter,
+      ]);
+      return (
+        <PowerSearchTouchSurface
+          config={config}
+          filters={filters}
+          onChange={next => setFilters([...next].reverse())}
+        />
+      );
+    }
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
+    tapRow('Closed');
+    fireEvent.transitionEnd(document.querySelector('dialog')!);
+    expect(screen.getByRole('button', {name: 'Add filters…'})).toHaveFocus();
+  });
+
+  it('does not edit a different filter when the controlled target disappears', () => {
+    const authorFilter: PowerSearchFilter = {
+      field: 'author',
+      operator: 'is',
+      value: {type: 'string', value: 'Ada'},
+    };
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <PowerSearchTouchSurface
+        config={config}
+        filters={[openFilter]}
+        onChange={onChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
+    rerender(
+      <PowerSearchTouchSurface
+        config={config}
+        filters={[authorFilter]}
+        onChange={onChange}
+      />,
+    );
+    tapRow('Closed');
+    expect(onChange).not.toHaveBeenCalled();
+    expect(isSheetOpen()).toBe(false);
+  });
+
+  it('commits the complete filter returned by a custom editor', () => {
+    const savedFilter: PowerSearchFilter = {
+      field: 'author',
+      operator: 'is',
+      value: {type: 'string', value: 'Grace'},
+      isReadOnly: true,
+    };
+    function CustomEditor({onSave}: PowerSearchEditorProps) {
+      return (
+        <button type="button" onClick={() => onSave(savedFilter)}>
+          Custom save
+        </button>
+      );
+    }
+    const {onChange} = setup({
+      components: {enum: {Editor: CustomEditor}},
+    });
+    openSheet();
+    tapRow(/^Status/);
+    fireEvent.click(screen.getByRole('button', {name: 'Custom save'}));
+    expect(onChange).toHaveBeenCalledWith([savedFilter], 'add', 0);
+  });
+
+  it('restores focus after a custom edit remounts its invoking token', () => {
+    const savedFilter: PowerSearchFilter = {
+      field: 'author',
+      operator: 'is',
+      value: {type: 'string', value: 'Grace'},
+    };
+    function CustomEditor({onSave}: PowerSearchEditorProps) {
+      return (
+        <button type="button" onClick={() => onSave(savedFilter)}>
+          Custom save
+        </button>
+      );
+    }
+    function Harness() {
+      const [filters, setFilters] = useState<ReadonlyArray<PowerSearchFilter>>([
+        openFilter,
+      ]);
+      return (
+        <PowerSearchTouchSurface
+          config={config}
+          filters={filters}
+          onChange={next => setFilters(next)}
+          components={{enum: {Editor: CustomEditor}}}
+        />
+      );
+    }
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Custom save'}));
+    fireEvent.transitionEnd(document.querySelector('dialog')!);
+    expect(screen.getByRole('button', {name: 'Add filters…'})).toHaveFocus();
+  });
+
+  it('closes without changing filters when a creating custom editor saves null', () => {
+    function CustomEditor({onSave}: PowerSearchEditorProps) {
+      return (
+        <button type="button" onClick={() => onSave(null)}>
+          Cancel custom
+        </button>
+      );
+    }
+    const {onChange} = setup({
+      components: {enum: {Editor: CustomEditor}},
+    });
+    openSheet();
+    tapRow(/^Status/);
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel custom'}));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(isSheetOpen()).toBe(false);
+  });
+
   it('deletes the edited filter from the sheet footer', () => {
     const {onChange} = setup({filters: [openFilter]});
     fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
@@ -332,6 +521,80 @@ describe('PowerSearchTouchSurface', () => {
     fireEvent.click(screen.getByRole('button', {name: /^Remove/}));
     expect(onChange).toHaveBeenCalledWith([], 'remove', 0);
     expect(isSheetOpen()).toBe(false);
+  });
+
+  it('forwards the PowerSearch size to token overrides', () => {
+    const seenSize = vi.fn();
+    function CustomToken(props: PowerSearchTokenProps) {
+      seenSize(props.size);
+      return <span>Custom token</span>;
+    }
+    setup({
+      filters: [openFilter],
+      size: 'sm',
+      components: {enum: {Token: CustomToken}},
+    });
+    expect(seenSize).toHaveBeenCalledWith('sm');
+  });
+
+  it('moves focus to Add filters after direct token removal', () => {
+    function Harness() {
+      const [filters, setFilters] = useState<ReadonlyArray<PowerSearchFilter>>([
+        openFilter,
+      ]);
+      return (
+        <PowerSearchTouchSurface
+          config={config}
+          filters={filters}
+          onChange={next => setFilters(next)}
+        />
+      );
+    }
+    render(<Harness />);
+    const remove = screen.getByRole('button', {name: /^Remove/});
+    remove.focus();
+    fireEvent.click(remove);
+    expect(screen.getByRole('button', {name: 'Add filters…'})).toHaveFocus();
+  });
+
+  it('moves focus to Add filters after clearing every removable filter', () => {
+    function Harness() {
+      const [filters, setFilters] = useState<ReadonlyArray<PowerSearchFilter>>([
+        openFilter,
+      ]);
+      return (
+        <PowerSearchTouchSurface
+          config={config}
+          filters={filters}
+          onChange={next => setFilters(next)}
+        />
+      );
+    }
+    render(<Harness />);
+    const clear = screen.getByRole('button', {name: 'Clear all'});
+    clear.focus();
+    fireEvent.click(clear);
+    expect(screen.getByRole('button', {name: 'Add filters…'})).toHaveFocus();
+  });
+
+  it('moves focus to Add filters after deleting from the edit sheet', () => {
+    function Harness() {
+      const [filters, setFilters] = useState<ReadonlyArray<PowerSearchFilter>>([
+        openFilter,
+      ]);
+      return (
+        <PowerSearchTouchSurface
+          config={config}
+          filters={filters}
+          onChange={next => setFilters(next)}
+        />
+      );
+    }
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Delete'}));
+    fireEvent.transitionEnd(document.querySelector('dialog')!);
+    expect(screen.getByRole('button', {name: 'Add filters…'})).toHaveFocus();
   });
 
   it('clears every removable filter but keeps the read-only ones', () => {
@@ -365,6 +628,28 @@ describe('PowerSearchTouchSurface', () => {
     expect(isSheetOpen()).toBe(false);
   });
 
+  it('auto-focuses the Add filters button when requested', () => {
+    setup({hasAutoFocus: true});
+    expect(screen.getByRole('button', {name: 'Add filters…'})).toHaveFocus();
+  });
+
+  it('fires focus callbacks only when focus crosses the whole field boundary', () => {
+    const onFocus = vi.fn();
+    const onBlur = vi.fn();
+    setup({filters: [openFilter], onFocus, onBlur});
+    const token = screen.getByRole('button', {name: 'Status: is'});
+    const add = screen.getByRole('button', {name: 'Add filters…'});
+
+    fireEvent.focus(token, {relatedTarget: null});
+    fireEvent.blur(token, {relatedTarget: add});
+    fireEvent.focus(add, {relatedTarget: token});
+    expect(onFocus).toHaveBeenCalledTimes(1);
+    expect(onBlur).not.toHaveBeenCalled();
+
+    fireEvent.blur(add, {relatedTarget: document.body});
+    expect(onBlur).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps the tap target focusable when a disabled reason is given', () => {
     setup({isDisabled: true, disabledMessage: 'Pick a project first'});
     const button = document.querySelector<HTMLElement>(
@@ -383,11 +668,15 @@ describe('PowerSearchTouchSurface', () => {
         operators: [{key: 'is', label: 'is', value: {type: 'string'} as const}],
       })),
     };
-    setup({config: many});
+    setup({config: many, maxSearchResults: 2});
     openSheet();
     const search = within(sheet()).getByRole('textbox', {
       name: 'Search filters',
     });
+    fireEvent.change(search, {target: {value: 'Field'}});
+    expect(
+      within(sheet()).getAllByRole('button', {name: /^Field/}),
+    ).toHaveLength(2);
     fireEvent.change(search, {target: {value: 'Field 7'}});
     expect(within(sheet()).getByRole('button', {name: /Field 7/})).toBeTruthy();
     expect(within(sheet()).queryByRole('button', {name: /Field 3/})).toBeNull();

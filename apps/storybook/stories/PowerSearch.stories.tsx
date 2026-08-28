@@ -1,9 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import React, {useState} from 'react';
+import React, {useLayoutEffect, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {PowerSearch} from '@astryxdesign/core/PowerSearch';
-import {PowerSearchTouchSurface} from '../../../packages/core/src/PowerSearch/PowerSearchTouch';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -444,6 +443,36 @@ const issueTrackerConfig: PowerSearchConfig = {
   ],
 };
 
+function CoarsePointerPowerSearch(
+  props: React.ComponentProps<typeof PowerSearch>,
+) {
+  const [isReady, setIsReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const originalMatchMedia = window.matchMedia;
+    const coarsePointerMedia: MediaQueryList = {
+      matches: true,
+      media: '(pointer: coarse)',
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => true,
+    };
+    window.matchMedia = query =>
+      query === '(pointer: coarse)'
+        ? coarsePointerMedia
+        : originalMatchMedia.call(window, query);
+    setIsReady(true);
+    return () => {
+      window.matchMedia = originalMatchMedia;
+    };
+  }, []);
+
+  return isReady ? <PowerSearch {...props} /> : null;
+}
+
 // =============================================================================
 // Meta
 // =============================================================================
@@ -529,7 +558,7 @@ export const TouchSurface: Story = {
     ]);
     return (
       <div style={{width: 390, maxWidth: '100%'}}>
-        <PowerSearchTouchSurface
+        <CoarsePointerPowerSearch
           {...args}
           config={fullConfig}
           filters={filters}

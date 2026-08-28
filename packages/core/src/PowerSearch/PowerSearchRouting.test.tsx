@@ -70,4 +70,52 @@ describe('PowerSearch pointer routing', () => {
     expect(screen.getByRole('combobox', {name: 'Search'})).toBeTruthy();
     expect(screen.queryByRole('button', {name: 'Add filters…'})).toBeNull();
   });
+
+  it('keeps the typeahead surface for content-search configurations', () => {
+    setCoarsePointer(true);
+    render(
+      <PowerSearch
+        config={{...config, contentSearchFieldKey: 'status'}}
+        filters={[]}
+        onChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole('combobox', {name: 'Search'})).toBeTruthy();
+  });
+
+  it('keeps the typeahead surface when nested filters need the desktop editor', () => {
+    setCoarsePointer(true);
+    const nestedConfig: PowerSearchConfig = {
+      name: 'NestedRoutingTest',
+      fields: [
+        {
+          key: 'group',
+          label: 'Group',
+          operators: [
+            {key: 'matches', label: 'matches', value: {type: 'nested'}},
+          ],
+        },
+      ],
+    };
+    render(
+      <PowerSearch config={nestedConfig} filters={[]} onChange={() => {}} />,
+    );
+
+    expect(screen.getByRole('combobox', {name: 'Search'})).toBeTruthy();
+  });
+
+  it('keeps configured token-overflow behavior on the typeahead surface', () => {
+    setCoarsePointer(true);
+    render(
+      <PowerSearch
+        config={config}
+        filters={[]}
+        onChange={() => {}}
+        tokenOverflowBehavior="unfocusedInline"
+      />,
+    );
+
+    expect(screen.getByRole('combobox', {name: 'Search'})).toBeTruthy();
+  });
 });
