@@ -1048,7 +1048,7 @@ function PointerPowerSearch({
       hasMountedRef.current = true;
       return;
     }
-    if (isRenderable(resultCountText)) {
+    if (resultCountText != null && resultCountText !== '') {
       announce(resultCountText);
     }
   }, [resultCountText, announce]);
