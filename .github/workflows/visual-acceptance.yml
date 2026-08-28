@@ -1,6 +1,8 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# Required status and explicit human decision for stable visual changes.
+# Explicit human decisions for stable visual changes. Initial status creation and
+# rerun invalidation live in the trusted PR Comment workflow_run publisher, so
+# they do not create a cancellable pull-request check that GitHub renders red.
 # This workflow never checks out or executes PR-controlled code. It runs the
 # default-branch implementation, resolves the current PR head through GitHub,
 # and stores the signed decision beside trusted, immutable evidence on gh-pages.
@@ -8,84 +10,12 @@
 name: Visual acceptance
 
 on:
-  pull_request_target:
-    branches: ['main']
-    types: [opened, reopened, synchronize]
   issue_comment:
     types: [created]
 
 permissions: {}
 
 jobs:
-  initialize:
-    if: github.event_name == 'pull_request_target'
-    concurrency:
-      group: visual-acceptance-head-${{ github.event.pull_request.head.repo.id }}-${{ github.event.pull_request.head.ref }}
-      cancel-in-progress: true
-    runs-on: ubuntu-slim
-    permissions:
-      contents: read
-      pull-requests: read
-      statuses: write
-    steps:
-      - name: Checkout trusted default-branch code
-        uses: actions/checkout@v7
-
-      - name: Classify scope and initialize the required status
-        uses: actions/github-script@v9
-        with:
-          retries: 3
-          script: |
-            const fs = require('node:fs');
-            const {spawnSync} = require('node:child_process');
-            const {owner, repo} = context.repo;
-            const pr = context.payload.pull_request;
-            const files = await github.paginate(github.rest.pulls.listFiles, {
-              owner, repo, pull_number: pr.number, per_page: 100,
-            });
-            const manifestPaths = new Set();
-            for (const {filename} of files) {
-              const theme = filename.match(/^packages\/themes\/([^/]+)\//);
-              const pkg = filename.match(/^packages\/([^/]+)\//);
-              if (theme) manifestPaths.add(`packages/themes/${theme[1]}/package.json`);
-              else if (pkg) manifestPaths.add(`packages/${pkg[1]}/package.json`);
-            }
-            const manifests = {};
-            const [headOwner, headRepo] = pr.head.repo.full_name.split('/');
-            for (const manifestPath of manifestPaths) {
-              try {
-                const {data} = await github.rest.repos.getContent({
-                  owner: headOwner, repo: headRepo, path: manifestPath, ref: pr.head.sha,
-                });
-                if (!Array.isArray(data) && data.content) {
-                  manifests[manifestPath] = JSON.parse(Buffer.from(data.content, 'base64').toString());
-                }
-              } catch (error) {
-                if (error.status !== 404) throw error;
-              }
-            }
-            fs.writeFileSync('visual-scope-manifests.json', JSON.stringify(manifests));
-            const result = spawnSync(
-              process.execPath,
-              ['.github/scripts/visual-scope.mjs', '--manifests', 'visual-scope-manifests.json'],
-              {input: `${files.map((file) => file.filename).join('\n')}\n`, encoding: 'utf8'},
-            );
-            if (result.status !== 0) {
-              core.setFailed(result.stderr || 'Stable visual scope classification failed.');
-              return;
-            }
-            const scope = JSON.parse(result.stdout);
-            await github.rest.repos.createCommitStatus({
-              owner,
-              repo,
-              sha: pr.head.sha,
-              context: 'visual-acceptance',
-              state: scope.hasStableVisual ? 'pending' : 'success',
-              description: scope.hasStableVisual
-                ? 'Stable visual capture is still running.'
-                : 'No stable visual scope.',
-            });
-
   authorize:
     if: >-
       github.event_name == 'issue_comment' &&

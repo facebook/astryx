@@ -31,12 +31,20 @@ describe('visual acceptance workflow concurrency', () => {
     expect(jobs).not.toContain('    concurrency:');
   });
 
+  it('keeps status initialization out of pull-request checks', () => {
+    const acceptance = workflow('visual-acceptance.yml');
+    const publisher = workflow('pr-comment.yml');
+
+    expect(acceptance).not.toContain('pull_request_target:');
+    expect(acceptance).not.toContain('  initialize:');
+    expect(publisher).toContain('types: [requested, in_progress, completed]');
+    expect(publisher).toContain(
+      'description: `CI run ${run.id}/${run.run_attempt} is producing fresh visual evidence.`',
+    );
+  });
+
   it('keeps comment authorization read-only until the shared lock is held', () => {
     const value = workflow('visual-acceptance.yml');
-    const initialize = value.slice(
-      value.indexOf('  initialize:'),
-      value.indexOf('  authorize:'),
-    );
     const authorize = value.slice(
       value.indexOf('  authorize:'),
       value.indexOf('  accept:'),
@@ -47,18 +55,6 @@ describe('visual acceptance workflow concurrency', () => {
     );
     const accept = value.slice(value.indexOf('  accept:'));
 
-    expect(initialize).toContain(
-      'group: visual-acceptance-head-${{ github.event.pull_request.head.repo.id }}-${{ github.event.pull_request.head.ref }}',
-    );
-    expect(initialize).toContain('cancel-in-progress: true');
-    expect(initialize).toContain('pull-requests: read');
-    expect(initialize).not.toContain('pull-requests: write');
-    expect(initialize).not.toContain('issues: write');
-    expect(initialize).not.toContain('removeLabel');
-    expect(initialize).toContain(
-      "state: scope.hasStableVisual ? 'pending' : 'success'",
-    );
-    expect(initialize).toContain("'No stable visual scope.'");
     expect(authorize).not.toContain(': write');
     expect(authorize).toContain('actions/checkout@v7');
     expect(authorizeCheckout).not.toContain('ref:');
