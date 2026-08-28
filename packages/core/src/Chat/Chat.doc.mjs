@@ -25,6 +25,10 @@ export const docs = {
       {className: 'astryx-chat-message-list', visualProps: ['density']},
       {className: 'astryx-chat-system-message', visualProps: ['variant']},
       {className: 'astryx-chat-message-metadata'},
+      {
+        className: 'astryx-chat-message-metadata-status-icon',
+        visualProps: ['status'],
+      },
       {className: 'astryx-chat-send-button'},
       {className: 'astryx-chat-dictation-button'},
       {className: 'astryx-chat-layout-scroll-button'},

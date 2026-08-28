@@ -2057,6 +2057,26 @@ function getStatusIndicatorContrast(theme: DefinedTheme, mode: Mode) {
     ),
   );
 
+  const chatMetadataIconBlock =
+    theme.components?.['chat-message-metadata-status-icon'] ?? {};
+  const chatMetadataIconLocal = Object.fromEntries(
+    Object.entries(chatMetadataIconBlock['status:error'] ?? {}).filter(
+      (entry): entry is [string, string] =>
+        entry[0].startsWith('--') && typeof entry[1] === 'string',
+    ),
+  );
+  const chatIconRatio = Math.min(
+    minimumAgainstParents(resolveToken(theme, '--color-text-secondary', mode)),
+    minimumAgainstParents(
+      resolveThemeColor(
+        theme,
+        'var(--color-error)',
+        mode,
+        chatMetadataIconLocal,
+      ),
+    ),
+  );
+
   const chatToolBlock = theme.components?.['chat-tool-calls'] ?? {};
   const chatToolLocal = Object.fromEntries(
     Object.entries(chatToolBlock.base ?? {}).filter(
@@ -2110,11 +2130,19 @@ function getStatusIndicatorContrast(theme: DefinedTheme, mode: Mode) {
         semanticsPass: true,
       },
       {
-        consumer: 'ChatMessageMetadata',
+        consumer: 'ChatMessageMetadata text',
         relationship: 'visible status label against message parent',
         ratio: chatRatio,
         minimum: 4.5,
         semantics: 'Pass: visible + accessible label',
+        semanticsPass: true,
+      },
+      {
+        consumer: 'ChatMessageMetadata icon',
+        relationship: 'delivery glyph against message parent',
+        ratio: chatIconRatio,
+        minimum: 3,
+        semantics: 'Pass: paired with visible status label',
         semanticsPass: true,
       },
       {

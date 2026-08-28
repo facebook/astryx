@@ -29,4 +29,13 @@ describe('ChatMessageMetadata', () => {
     expect(root).toHaveAttribute('data-custom', 'x');
     expect(root).toHaveAttribute('id', 'meta-1');
   });
+
+  it('exposes the delivery-status icon as a status-specific theme target', () => {
+    const {container} = render(<ChatMessageMetadata status="error" />);
+    const icon = container.querySelector(
+      '.astryx-chat-message-metadata-status-icon',
+    );
+    expect(icon).not.toBeNull();
+    expect(icon).toHaveAttribute('data-status', 'error');
+  });
 });

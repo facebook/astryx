@@ -69,6 +69,10 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
   },
+  statusIcon: {
+    display: 'inline-flex',
+    color: 'inherit',
+  },
   statusError: {
     color: colorVars['--color-error'],
   },
@@ -161,7 +165,16 @@ export function ChatMessageMetadata({
             status === 'error' && styles.statusError,
             status === 'sending' && styles.statusPulse,
           )}>
-          <Icon icon={statusConfig.icon} size="xsm" color="inherit" />
+          <span
+            {...mergeProps(
+              themeProps('chat-message-metadata-status-icon', {status}),
+              stylex.props(
+                styles.statusIcon,
+                status === 'error' && styles.statusError,
+              ),
+            )}>
+            <Icon icon={statusConfig.icon} size="xsm" color="inherit" />
+          </span>
           <span>{statusLabel}</span>
         </span>
       )}
