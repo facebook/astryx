@@ -10,6 +10,8 @@ import {fileURLToPath} from 'node:url';
 import {afterEach, describe, expect, it} from 'vitest';
 import {PNG} from 'pngjs';
 
+import {resolvePullRequestIdentity} from './lib/promotion-identity.mjs';
+
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../..',
@@ -238,10 +240,18 @@ function makeFixture(mutate) {
     path.join(ROOT, '.github', 'scripts', 'visual-gate'),
     path.join(sandbox, '.github', 'scripts', 'visual-gate'),
   );
+  fs.symlinkSync(
+    path.join(ROOT, '.github', 'scripts', 'gh-pages-publisher.mjs'),
+    path.join(sandbox, '.github', 'scripts', 'gh-pages-publisher.mjs'),
+  );
+  fs.symlinkSync(
+    path.join(ROOT, '.github', 'scripts', 'lib'),
+    path.join(sandbox, '.github', 'scripts', 'lib'),
+  );
   const plan = path.join(sandbox, 'accepted-plan.json');
   runAcceptance('plan', {acceptance, output: plan});
 
-  const capture = path.join(sandbox, '.visual-merged');
+  const capture = path.join(sandbox, '.visual-main');
   fs.mkdirSync(path.join(capture, 'shots'), {recursive: true});
   fs.writeFileSync(path.join(capture, 'shots', `${KEY}.png`), after);
   writeJSON(path.join(capture, 'manifest.json'), {
@@ -253,6 +263,16 @@ function makeFixture(mutate) {
     context: {sha: MERGE},
     shots: {[KEY]: {...SHOT, sha256: digest(after), width: 2, height: 2}},
   });
+
+  writeJSON(
+    path.join(pages, '.astryx-gh-pages', 'publication-queue', 'holder.json'),
+    {
+      version: 1,
+      repository: 'facebook/astryx',
+      runId: 931,
+      scope: 'visual-gate/baseline',
+    },
+  );
 
   mutate?.({acceptance, baselineShot, capture, pages});
   git(pages, 'add', '.');
@@ -270,6 +290,7 @@ function runPromotion({
   race = false,
 }) {
   const marker = path.join(fixture.root, 'race-injected');
+  fs.mkdirSync(path.join(fixture.root, 'runner'), {recursive: true});
   const result = spawnSync(
     '/bin/bash',
     ['-c', workflowStepScript('Verify and promote the baseline')],
@@ -283,10 +304,11 @@ function runPromotion({
         GITHUB_REPOSITORY: 'facebook/astryx',
         PR_NUMBER: '42',
         HEAD_SHA: HEAD,
-        MERGE_SHA: MERGE,
+        MAIN_SHA: MERGE,
         RECORD_REL,
         RUNNER_TEMP: path.join(fixture.root, 'runner'),
         GITHUB_OUTPUT: path.join(fixture.root, 'github-output'),
+        GITHUB_RUN_ID: '931',
         GH_RUNS_JSON: JSON.stringify({
           workflow_runs: [{name: 'CI', ...latest}],
         }),
@@ -304,7 +326,7 @@ function runPromotion({
 }
 
 describe('visual acceptance promotion workflow', () => {
-  it('captures the resolved historical merge when workflow main differs', () => {
+  it('captures the resolved historical main commit when workflow main differs', () => {
     const currentMain = 'f'.repeat(40);
     const root = fs.mkdtempSync(
       path.join(os.tmpdir(), 'visual-promotion-capture-identity-'),
@@ -317,7 +339,7 @@ describe('visual acceptance promotion workflow', () => {
     const step = workflowStep('Recapture exactly the accepted shots');
     const gate = fs.readFileSync(GATE, 'utf8');
     expect(step).toContain(
-      'ASTRYX_VISUAL_SHA: ${{ needs.resolve.outputs.merge_sha }}',
+      'ASTRYX_VISUAL_SHA: ${{ matrix.promotion.mainSha }}',
     );
     expect(step).not.toContain('GITHUB_SHA:');
     const manifestContext = gate.slice(
@@ -344,27 +366,27 @@ describe('visual acceptance promotion workflow', () => {
     ).toBe(MERGE);
   });
 
-  it('shares the merge-bound recapture between recovery and normal close', () => {
+  it('shares the main-bound recapture between recovery and normal push', () => {
     const workflow = fs.readFileSync(WORKFLOW, 'utf8');
     const capture = workflowStep('Recapture exactly the accepted shots');
-    const checkout = workflowStep('Checkout the resolved merged result');
+    const checkout = workflowStep('Checkout the resolved main result');
 
     expect(workflow).toContain('workflow_dispatch:');
-    expect(workflow).toContain('types: [closed]');
+    expect(workflow).toContain("branches: ['main']");
     expect(
       workflow.match(/- name: Recapture exactly the accepted shots/g),
     ).toHaveLength(1);
     expect(capture).toContain(
-      'ASTRYX_VISUAL_SHA: ${{ needs.resolve.outputs.merge_sha }}',
+      'ASTRYX_VISUAL_SHA: ${{ matrix.promotion.mainSha }}',
     );
     expect(capture).toContain(
-      '--storybook-dir .visual-merged-source/apps/storybook/dist',
+      '--storybook-dir .visual-main-source/apps/storybook/dist',
     );
     expect(capture).toContain(
       'node .github/scripts/visual-gate/gate.mjs capture',
     );
-    expect(checkout).toContain('ref: ${{ needs.resolve.outputs.merge_sha }}');
-    expect(checkout).toContain('allow-unsafe-pr-checkout: true');
+    expect(checkout).toContain('ref: ${{ matrix.promotion.mainSha }}');
+    expect(checkout).not.toContain('allow-unsafe-pr-checkout: true');
   });
 
   it('retries from the immutable record after cleanup wins the first push race', () => {
@@ -478,7 +500,7 @@ describe('visual acceptance promotion workflow', () => {
       error: /record identity does not match this merged head/,
     },
     {
-      name: 'the wrong merged capture identity',
+      name: 'the wrong main capture identity',
       mutate: ({capture}) => {
         const manifestFile = path.join(capture, 'manifest.json');
         const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
@@ -509,11 +531,56 @@ describe('visual acceptance promotion workflow', () => {
     expect(`${result.stdout}\n${result.stderr}`).toMatch(error);
   });
 
+  it('resolves a squash-merged PR to the exact trusted main commit', () => {
+    const pull = {
+      number: 42,
+      state: 'closed',
+      merged: true,
+      merged_at: '2026-08-27T08:00:00Z',
+      base: {ref: 'main', repo: {full_name: 'facebook/astryx'}},
+      head: {sha: HEAD},
+      merge_commit_sha: MERGE,
+    };
+
+    expect(
+      resolvePullRequestIdentity({
+        pull,
+        requestedPr: 42,
+        compareStatus: 'identical',
+        mainSha: MERGE,
+      }),
+    ).toMatchObject({pr: 42, headSha: HEAD, mainSha: MERGE, mergeSha: MERGE});
+    expect(() =>
+      resolvePullRequestIdentity({
+        pull,
+        requestedPr: 42,
+        compareStatus: 'identical',
+        mainSha: 'e'.repeat(40),
+      }),
+    ).toThrow(/does not match main/);
+  });
+
+  it('projects post-merge failures onto main, not the contributor head', () => {
+    const workflow = fs.readFileSync(WORKFLOW, 'utf8');
+    const failure = workflowStep('Mark trusted main promotion failure');
+    const pending = workflowStep('Mark trusted promotion pending');
+
+    expect(workflow).toContain('push:');
+    expect(workflow).not.toContain('pull_request_target:');
+    expect(failure).toContain('sha: process.env.MAIN_SHA');
+    expect(failure).toContain('target_url: process.env.PR_URL');
+    expect(failure).not.toContain('sha: process.env.HEAD_SHA');
+    expect(pending).toContain('sha: process.env.MAIN_SHA');
+    expect(workflow).toContain("workflow_id: 'release-gate.yml'");
+    expect(workflow).toContain("source: 'visual-promotion'");
+    expect(workflow).toContain('source_main_sha: process.env.MAIN_SHA');
+  });
+
   it('does not consult ephemeral PR evidence during promotion', () => {
     const script = workflowStepScript('Verify and promote the baseline');
-    expect(script).toContain('promotion-identity.mjs resolve-acceptance');
+    expect(script).toContain('gh-pages-publisher.mjs visual-baseline-accepted');
+    expect(script).toContain('--merge-sha "$MAIN_SHA"');
     expect(script).toContain('--expected-record-rel "$RECORD_REL"');
-    expect(script).toContain('visual-acceptance.mjs promote');
     expect(script).not.toContain('visual-acceptance.mjs state');
     expect(script).not.toContain('/pr/');
   });

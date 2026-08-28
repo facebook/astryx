@@ -18,8 +18,14 @@ const FAILURE_DESCRIPTIONS = {
     'Recovery refused: acceptance is not from the latest completed CI attempt.',
   'active-ci-retry':
     'Visual promotion deferred: a newer CI retry is still active.',
+  'invalid-main': 'Recovery refused: the resolved main commit was invalid.',
+  'main-sha-mismatch':
+    'Recovery refused: the merged PR does not match the trusted main commit.',
   'merge-not-main':
     'Recovery refused: the merge commit is not reachable from main.',
+  'multiple-main-candidates':
+    'Recovery refused: multiple merged PRs matched the same main commit.',
+  'recovery-not-main': 'Recovery must be dispatched from main.',
   'pointer-invalid':
     'Recovery refused: the current acceptance pointer was invalid.',
   'pointer-missing':
@@ -150,6 +156,7 @@ export function resolvePullRequestIdentity({
   repository = REPO,
   baseRef = 'main',
   compareStatus,
+  mainSha = null,
 }) {
   const pr = Number(requestedPr);
   if (!Number.isSafeInteger(pr) || pr <= 0)
@@ -170,6 +177,16 @@ export function resolvePullRequestIdentity({
   if (!SHA.test(pull.merge_commit_sha ?? '')) {
     refuse('invalid-merge', 'resolved merge SHA is invalid');
   }
+  if (mainSha !== null) {
+    if (!SHA.test(mainSha))
+      refuse('invalid-main', 'resolved main SHA is invalid');
+    if (pull.merge_commit_sha !== mainSha) {
+      refuse(
+        'main-sha-mismatch',
+        `PR #${pr} merge ${pull.merge_commit_sha} does not match main ${mainSha}`,
+      );
+    }
+  }
   if (!['ahead', 'identical'].includes(compareStatus)) {
     refuse(
       'merge-not-main',
@@ -180,7 +197,118 @@ export function resolvePullRequestIdentity({
     pr,
     headSha: pull.head.sha,
     mergeSha: pull.merge_commit_sha,
+    mainSha: mainSha ?? pull.merge_commit_sha,
   };
+}
+
+export async function resolveMainPromotionCandidates({
+  eventName,
+  payload = {},
+  requestedPr = null,
+  repository = REPO,
+  baseRef = 'main',
+  currentRef = `refs/heads/${baseRef}`,
+  listPullRequestsAssociatedWithCommit,
+  getPull,
+  compareCommitsWithBasehead,
+}) {
+  if (typeof getPull !== 'function') {
+    refuse('actions-response-invalid', 'GitHub pull resolver is invalid');
+  }
+  const seen = new Set();
+  const pushCandidate = (candidates, identity) => {
+    const key = `${identity.pr}:${identity.headSha}:${identity.mainSha}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      candidates.push(identity);
+    }
+  };
+
+  if (eventName === 'workflow_dispatch') {
+    if (currentRef !== `refs/heads/${baseRef}`) {
+      refuse('recovery-not-main', 'recovery must be dispatched from main');
+    }
+    const pr = Number(requestedPr);
+    if (!Number.isSafeInteger(pr) || pr <= 0) {
+      refuse('invalid-pr', 'invalid PR number');
+    }
+    if (typeof compareCommitsWithBasehead !== 'function') {
+      refuse(
+        'actions-response-invalid',
+        'GitHub comparison resolver is invalid',
+      );
+    }
+    const pull = await getPull(pr);
+    const mainSha = pull?.merge_commit_sha ?? '';
+    if (!SHA.test(mainSha)) {
+      refuse('invalid-merge', 'resolved merge SHA is invalid');
+    }
+    const comparison = await compareCommitsWithBasehead(
+      `${mainSha}...${baseRef}`,
+    );
+    return [
+      resolvePullRequestIdentity({
+        pull,
+        requestedPr: pr,
+        repository,
+        baseRef,
+        compareStatus: comparison?.status,
+        mainSha,
+      }),
+    ];
+  }
+
+  if (eventName !== 'push') return [];
+  if (typeof listPullRequestsAssociatedWithCommit !== 'function') {
+    refuse('actions-response-invalid', 'GitHub commit PR resolver is invalid');
+  }
+  const mainShas = [
+    ...(Array.isArray(payload.commits)
+      ? payload.commits.map(commit => commit?.id)
+      : []),
+    payload.after,
+  ].filter(sha => SHA.test(sha ?? ''));
+  const candidates = [];
+  for (const mainSha of [...new Set(mainShas)]) {
+    const associated = await listPullRequestsAssociatedWithCommit(mainSha);
+    if (!Array.isArray(associated)) {
+      refuse(
+        'actions-response-invalid',
+        'GitHub associated PR response is invalid',
+      );
+    }
+    const matches = [];
+    for (const summary of associated) {
+      const pr = Number(summary?.number);
+      if (!Number.isSafeInteger(pr) || pr <= 0) continue;
+      const pull = await getPull(pr);
+      if (pull?.merge_commit_sha !== mainSha) continue;
+      matches.push(
+        resolvePullRequestIdentity({
+          pull,
+          requestedPr: pr,
+          repository,
+          baseRef,
+          compareStatus: 'identical',
+          mainSha,
+        }),
+      );
+    }
+    const unique = new Map(
+      matches.map(identity => [
+        `${identity.pr}:${identity.headSha}:${identity.mainSha}`,
+        identity,
+      ]),
+    );
+    if (unique.size > 1) {
+      refuse(
+        'multiple-main-candidates',
+        `main commit ${mainSha} matched multiple merged PRs`,
+      );
+    }
+    for (const identity of unique.values()) pushCandidate(candidates, identity);
+  }
+  return candidates;
 }
 
 export function resolveAcceptanceIdentity({

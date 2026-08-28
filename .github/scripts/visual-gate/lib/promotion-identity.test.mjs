@@ -15,6 +15,7 @@ import {
   recoveryOperationResult,
   resolveAcceptanceIdentity,
   resolveCIState,
+  resolveMainPromotionCandidates,
   resolvePullRequestIdentity,
 } from './promotion-identity.mjs';
 
@@ -91,6 +92,7 @@ describe('promotion PR identity', () => {
       pr: 42,
       headSha: HEAD,
       mergeSha: MERGE,
+      mainSha: MERGE,
     });
   });
 
@@ -99,6 +101,7 @@ describe('promotion PR identity', () => {
       pr: 42,
       headSha: HEAD,
       mergeSha: MERGE,
+      mainSha: MERGE,
     });
   });
 
@@ -149,6 +152,125 @@ describe('promotion PR identity', () => {
     ],
   ])('fails closed for %s', (_name, value, overrides, error) => {
     expect(() => resolvePull(value, overrides)).toThrow(error);
+  });
+});
+
+describe('main promotion candidate discovery', () => {
+  const MAIN_A = 'c'.repeat(40);
+  const MAIN_B = 'd'.repeat(40);
+  const STALE_MAIN = 'e'.repeat(40);
+  const UNRELATED_MAIN = 'f'.repeat(40);
+  const HEAD_A = '1'.repeat(40);
+  const HEAD_B = '2'.repeat(40);
+  const HEAD_STALE = '3'.repeat(40);
+
+  function mergedPull(number, {head = HEAD_A, merge = MAIN_A} = {}) {
+    return pull({
+      number,
+      head: {sha: head},
+      merge_commit_sha: merge,
+    });
+  }
+
+  async function resolveCandidates({
+    eventName = 'push',
+    payload = {commits: [{id: MAIN_A}], after: MAIN_A},
+    requestedPr = null,
+    currentRef = 'refs/heads/main',
+    associated = {},
+    pulls = {},
+    comparisons = {},
+  }) {
+    return resolveMainPromotionCandidates({
+      eventName,
+      payload,
+      requestedPr,
+      repository: 'facebook/astryx',
+      baseRef: 'main',
+      currentRef,
+      listPullRequestsAssociatedWithCommit: async mainSha =>
+        associated[mainSha] ?? [],
+      getPull: async pullNumber => pulls[pullNumber],
+      compareCommitsWithBasehead: async basehead => ({
+        status: comparisons[basehead] ?? 'identical',
+      }),
+    });
+  }
+
+  it('selects only PRs whose merge commit is in the trusted main push', async () => {
+    await expect(
+      resolveCandidates({
+        payload: {
+          commits: [{id: UNRELATED_MAIN}, {id: MAIN_A}],
+          after: MAIN_B,
+        },
+        associated: {
+          [UNRELATED_MAIN]: [{number: 40}],
+          [MAIN_A]: [{number: 41}, {number: 42}],
+          [MAIN_B]: [{number: 43}],
+        },
+        pulls: {
+          40: mergedPull(40, {merge: STALE_MAIN, head: HEAD_STALE}),
+          41: mergedPull(41, {merge: STALE_MAIN, head: HEAD_STALE}),
+          42: mergedPull(42, {merge: MAIN_A, head: HEAD_A}),
+          43: mergedPull(43, {merge: MAIN_B, head: HEAD_B}),
+        },
+      }),
+    ).resolves.toEqual([
+      {pr: 42, headSha: HEAD_A, mergeSha: MAIN_A, mainSha: MAIN_A},
+      {pr: 43, headSha: HEAD_B, mergeSha: MAIN_B, mainSha: MAIN_B},
+    ]);
+  });
+
+  it('returns no candidates when a main push has no associated PRs', async () => {
+    await expect(resolveCandidates({associated: {}})).resolves.toEqual([]);
+  });
+
+  it('ignores an unrelated main commit associated with a stale PR', async () => {
+    await expect(
+      resolveCandidates({
+        payload: {commits: [{id: UNRELATED_MAIN}], after: UNRELATED_MAIN},
+        associated: {[UNRELATED_MAIN]: [{number: 41}]},
+        pulls: {
+          41: mergedPull(41, {merge: STALE_MAIN, head: HEAD_STALE}),
+        },
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('fails closed when multiple merged PRs claim the same main commit', async () => {
+    await expect(
+      resolveCandidates({
+        associated: {[MAIN_A]: [{number: 42}, {number: 43}]},
+        pulls: {
+          42: mergedPull(42, {merge: MAIN_A, head: HEAD_A}),
+          43: mergedPull(43, {merge: MAIN_A, head: HEAD_B}),
+        },
+      }),
+    ).rejects.toThrow(/multiple merged PRs/);
+  });
+
+  it('fails closed when recovery targets a stale or unreachable merge', async () => {
+    await expect(
+      resolveCandidates({
+        eventName: 'workflow_dispatch',
+        requestedPr: 42,
+        pulls: {42: mergedPull(42, {merge: MAIN_A, head: HEAD_A})},
+        comparisons: {[`${MAIN_A}...main`]: 'diverged'},
+      }),
+    ).rejects.toThrow(/not reachable from main/);
+  });
+
+  it('resolves manual recovery from the PR number on main', async () => {
+    await expect(
+      resolveCandidates({
+        eventName: 'workflow_dispatch',
+        requestedPr: 42,
+        pulls: {42: mergedPull(42, {merge: MAIN_A, head: HEAD_A})},
+      }),
+    ).resolves.toEqual([
+      {pr: 42, headSha: HEAD_A, mergeSha: MAIN_A, mainSha: MAIN_A},
+    ]);
   });
 });
 

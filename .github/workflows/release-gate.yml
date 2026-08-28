@@ -41,6 +41,18 @@ on:
         description: 'Shot tiers: surface, theme-matrix, full'
         required: false
         default: 'surface,theme-matrix'
+      source:
+        description: 'Release readiness source'
+        required: false
+        default: ''
+      source_pr:
+        description: 'PR whose post-merge visual promotion requested this run'
+        required: false
+        default: ''
+      source_main_sha:
+        description: 'Main SHA whose post-merge visual promotion requested this run'
+        required: false
+        default: ''
 
 permissions: {}
 
@@ -265,20 +277,40 @@ jobs:
           A11Y_STATUS: ${{ needs.a11y.outputs.status || 'crashed' }}
           A11Y_VIOLATIONS: ${{ needs.a11y.outputs.total_violations || '0' }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RELEASE_SOURCE: ${{ inputs.source || '' }}
+          RELEASE_SOURCE_PR: ${{ inputs.source_pr || '' }}
+          RELEASE_SOURCE_MAIN_SHA: ${{ inputs.source_main_sha || '' }}
         run: |
           set -eu
           REPORT_URL="https://facebook.github.io/astryx/visual-gate/${GITHUB_RUN_ID}/"
-          cat > report/release-gate.json <<JSON
-          {
-            "generatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "sha": "${GITHUB_SHA}",
-            "runId": "${GITHUB_RUN_ID}",
-            "runUrl": "${RUN_URL}",
-            "reportUrl": "${REPORT_URL}",
-            "visual": {"status": "${VISUAL_STATUS}"},
-            "a11y": {"status": "${A11Y_STATUS}", "violations": ${A11Y_VIOLATIONS}}
-          }
-          JSON
+          export REPORT_URL
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+
+          const number = value => {
+            const parsed = Number(value);
+            return Number.isSafeInteger(parsed) ? parsed : 0;
+          };
+          const source = {
+            kind: process.env.RELEASE_SOURCE || null,
+            pr: process.env.RELEASE_SOURCE_PR || null,
+            mainSha: process.env.RELEASE_SOURCE_MAIN_SHA || null,
+          };
+          const report = {
+            generatedAt: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+            sha: process.env.GITHUB_SHA,
+            runId: process.env.GITHUB_RUN_ID,
+            runUrl: process.env.RUN_URL,
+            reportUrl: process.env.REPORT_URL,
+            source,
+            visual: {status: process.env.VISUAL_STATUS},
+            a11y: {
+              status: process.env.A11Y_STATUS,
+              violations: number(process.env.A11Y_VIOLATIONS),
+            },
+          };
+          fs.writeFileSync('report/release-gate.json', `${JSON.stringify(report, null, 2)}\n`);
+          NODE
           cat report/release-gate.json
 
       - name: Publish to gh-pages
