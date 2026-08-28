@@ -54,7 +54,7 @@
  * below), never around the step itself.
  */
 
-import {useId, useMemo, useState, type CSSProperties} from 'react';
+import {useId, useMemo, useRef, useState, type CSSProperties} from 'react';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Banner} from '@astryxdesign/core/Banner';
 import {Button} from '@astryxdesign/core/Button';
@@ -63,7 +63,6 @@ import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {CheckboxList, CheckboxListItem} from '@astryxdesign/core/CheckboxList';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Field} from '@astryxdesign/core/Field';
-import {FieldStatus} from '@astryxdesign/core/FieldStatus';
 import {FormLayout} from '@astryxdesign/core/FormLayout';
 import {Grid} from '@astryxdesign/core/Grid';
 import {
@@ -175,13 +174,6 @@ const footerZone: CSSProperties = {flexBasis: 0};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// The footer summarises rather than quoting a field's message, so a blocked
-// step never shows the same sentence in two places.
-const blockedMessage = (count: number) =>
-  count === 1
-    ? 'One problem above needs fixing first.'
-    : `${count} problems above need fixing first.`;
-
 const money = (n: number) => (n === 0 ? '$0' : `$${n.toLocaleString()}`);
 
 /** Split a textarea of addresses on newlines and commas, dropping blanks. */
@@ -199,6 +191,19 @@ export default function FormWizardPage() {
   // point its label at. useId, not a hand-written string, so two of these
   // templates on one page cannot collide.
   const planID = useId();
+
+  // Focus targets for every field `validate` can complain about, keyed by the
+  // same names it uses. Pressing Next on a blocked step sends focus to the
+  // first of these that has a problem, which scrolls it into view and lets the
+  // field's own error announce itself — so the footer needs no summary line,
+  // and there is no second copy of the message to keep in sync.
+  const fieldRefs = {
+    name: useRef<HTMLInputElement>(null),
+    slug: useRef<HTMLInputElement>(null),
+    invites: useRef<HTMLTextAreaElement>(null),
+    seats: useRef<HTMLInputElement>(null),
+    terms: useRef<HTMLInputElement>(null),
+  };
 
   const [step, setStep] = useState(0);
   // Steps the user has tried to advance past. Errors stay silent until a step
@@ -294,7 +299,6 @@ export default function FormWizardPage() {
     attempted.has(index) ? errorsByStep[index] : {};
 
   const currentErrors = shownErrors(step);
-  const isStepValid = Object.keys(errorsByStep[step]).length === 0;
   const isLastStep = step === STEPS.length - 1;
 
   // Steps before the current one that the user has already tried and left
@@ -310,7 +314,20 @@ export default function FormWizardPage() {
 
   const goNext = () => {
     markAttempted(step);
-    if (Object.keys(errorsByStep[step]).length === 0 && !isLastStep) {
+
+    // `validate` records each step's problems in the order the fields appear,
+    // so the first key is the first thing on the page that needs attention.
+    // Sending focus there is the whole response to a blocked Next: it scrolls
+    // the field into view, and the error the field is already showing becomes
+    // its accessible description, so a screen reader hears exactly which field
+    // and why rather than a count of how many.
+    const [firstProblem] = Object.keys(errorsByStep[step]);
+    if (firstProblem) {
+      fieldRefs[firstProblem as keyof typeof fieldRefs]?.current?.focus();
+      return;
+    }
+
+    if (!isLastStep) {
       setStep(s => s + 1);
     }
   };
@@ -415,6 +432,7 @@ export default function FormWizardPage() {
               <FormLayout defaultOptionality="optional">
                 <TextInput
                   label="Workspace name"
+                  ref={fieldRefs.name}
                   isRequired
                   value={name}
                   onChange={setName}
@@ -427,6 +445,7 @@ export default function FormWizardPage() {
                 />
                 <TextInput
                   label="Workspace URL"
+                  ref={fieldRefs.slug}
                   isRequired
                   value={slug}
                   onChange={setSlug}
@@ -496,6 +515,7 @@ export default function FormWizardPage() {
               <FormLayout defaultOptionality="optional">
                 <TextArea
                   label="Email addresses"
+                  ref={fieldRefs.invites}
                   rows={4}
                   value={invites}
                   onChange={setInvites}
@@ -604,6 +624,7 @@ export default function FormWizardPage() {
                 </Field>
                 <NumberInput
                   label="Seats"
+                  ref={fieldRefs.seats}
                   value={seats}
                   onChange={setSeats}
                   min={1}
@@ -759,6 +780,7 @@ export default function FormWizardPage() {
 
               <CheckboxInput
                 label="I agree to the Terms of Service and the Data Processing Addendum"
+                ref={fieldRefs.terms}
                 value={acceptedTerms}
                 onChange={setAcceptedTerms}
                 status={
@@ -785,25 +807,14 @@ export default function FormWizardPage() {
                 <Button label="Skip" variant="ghost" onClick={goSkip} />
               )}
             </StackItem>
-            {/* One centre slot, two jobs: where you are, or why you cannot
-                leave. They never need to be read at the same time — a blocked
-                step is not a moment to count remaining steps — and the header
-                stepper is still showing position anyway, so the error is
-                strictly the better use of the space while it lasts.
-                FieldStatus rather than styled Text, because it carries the
-                assertive live region: pressing Next on a broken step
-                announces something instead of silently doing nothing. */}
-            {!isStepValid && attempted.has(step) ? (
-              <FieldStatus
-                type="error"
-                variant="detached"
-                message={blockedMessage(Object.keys(errorsByStep[step]).length)}
-              />
-            ) : (
-              <Text type="supporting" color="secondary">
-                {step + 1} of {STEPS.length}
-              </Text>
-            )}
+            {/* Just the position, at every moment. A blocked step used to put
+                a summary here, which was a second copy of a message the field
+                was already showing and told you a count rather than which
+                field. Now Next moves focus to the offending field instead, so
+                the answer arrives where the fix has to happen. */}
+            <Text type="supporting" color="secondary">
+              {step + 1} of {STEPS.length}
+            </Text>
             <StackItem size="fill" style={footerZone}>
               <HStack gap={3} hAlign="end">
                 <Button
