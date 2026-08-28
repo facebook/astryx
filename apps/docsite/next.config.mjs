@@ -6,6 +6,9 @@ import {resolve} from 'node:path';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
+  async redirects() {
+    return [{source: '/home', destination: '/', permanent: true}];
+  },
   // A dynamic route segment can't carry a static extension, so the public
   // plaintext URL /blog/<slug>.txt is served by the /blog/txt/[slug] handler.
   async rewrites() {
