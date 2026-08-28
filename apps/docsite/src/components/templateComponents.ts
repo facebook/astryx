@@ -34,6 +34,10 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/centered-hero/page'),
   ),
+  'checkout-wizard': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/checkout-wizard/page'),
+  ),
   'classic-gallery': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/classic-gallery/page'),
