@@ -393,7 +393,7 @@ describe('ChatComposerInput', () => {
       textbox.textContent = 'pending draft';
       fireEvent.input(textbox);
       textbox.focus();
-      placeCaret(textbox.firstChild!, 0);
+      placeCaret(textbox, 0);
       const cloneContents = vi.spyOn(Range.prototype, 'cloneContents');
 
       const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
@@ -413,14 +413,14 @@ describe('ChatComposerInput', () => {
       textbox.textContent = draft;
       fireEvent.input(textbox);
       textbox.focus();
-      placeCaret(textbox.firstChild!, 0);
+      placeCaret(textbox, 0);
       fireEvent.keyDown(textbox, {key: 'ArrowUp'});
 
       // The prior ArrowUp selected a recalled message. Put the pending
-      // draft back in place, then navigate forward from its end.
+      // draft back in place, then navigate forward from the editable's end.
       textbox.textContent = draft;
       fireEvent.input(textbox);
-      placeCaret(textbox.firstChild!, draft.length);
+      placeCaret(textbox, textbox.childNodes.length);
       const cloneContents = vi.spyOn(Range.prototype, 'cloneContents');
 
       const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowDown'});
@@ -494,7 +494,7 @@ describe('ChatComposerInput', () => {
       fireEvent.input(textbox);
       textbox.focus();
       // Caret at the very start — ArrowUp recalls and stashes the draft.
-      placeCaret(textbox.firstChild!, 0);
+      placeCaret(textbox, 0);
 
       fireEvent.keyDown(textbox, {key: 'ArrowUp'});
       expect(textbox.textContent).toBe('first');
@@ -510,7 +510,7 @@ describe('ChatComposerInput', () => {
       textbox.textContent = 'hello';
       fireEvent.input(textbox);
       textbox.focus();
-      placeCaret(textbox.firstChild!, 0);
+      placeCaret(textbox, 0);
 
       const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
       expect(prevented).toBe(false);
