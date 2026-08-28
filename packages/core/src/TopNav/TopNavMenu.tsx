@@ -39,6 +39,7 @@ import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {
   colorVars,
   spacingVars,
@@ -458,6 +459,7 @@ export function TopNavMenu({
           {...mergeProps(
             focusOutlineProps.focusVisible(
               navItemStyles.item,
+              interactionOverlayStyles.backgroundColor,
               drawerStyles.header,
               xstyle,
             ),
@@ -492,6 +494,7 @@ export function TopNavMenu({
                 }}
                 {...focusOutlineProps.focusVisible(
                   navItemStyles.item,
+                  interactionOverlayStyles.backgroundColor,
                   drawerStyles.item,
                 )}>
                 {item.icon && (

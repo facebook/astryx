@@ -10,7 +10,16 @@ import {fileURLToPath} from 'node:url';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {PNG} from 'pngjs';
 
-const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'publish-pr-report.mjs');
+import {canonicalizePng} from './lib/canonical-png.mjs';
+
+const SCRIPT = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  'publish-pr-report.mjs',
+);
+const ACCEPTANCE_SCRIPT = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  'visual-acceptance.mjs',
+);
 const HEAD = 'a'.repeat(40);
 const RUN = '123456';
 const KEY = 'core-button--default__neutral-light';
@@ -52,7 +61,10 @@ function writeBaseline(shots = {[KEY]: {shot: SHOT, bytes: png()}}) {
     const file = path.join(baseline, 'shots', `${key}.png`);
     fs.mkdirSync(path.dirname(file), {recursive: true});
     fs.writeFileSync(file, bytes);
-    manifestShots[key] = {...shot, sha256: createHash('sha256').update(bytes).digest('hex')};
+    manifestShots[key] = {
+      ...shot,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    };
   }
   writeJSON(path.join(baseline, 'manifest.json'), {
     version: 1,
@@ -64,7 +76,10 @@ function writeBaseline(shots = {[KEY]: {shot: SHOT, bytes: png()}}) {
   });
 }
 
-function writeCapture(shots = {[KEY]: {shot: SHOT, bytes: png(0, 0, 255)}}, overrides = {}) {
+function writeCapture(
+  shots = {[KEY]: {shot: SHOT, bytes: png(0, 0, 255)}},
+  overrides = {},
+) {
   fs.rmSync(input, {recursive: true, force: true});
   const manifestShots = {};
   const shotsDir = path.join(input, 'shots');
@@ -104,17 +119,33 @@ function run() {
     process.execPath,
     [
       SCRIPT,
-      '--input', input,
-      '--output', output,
-      '--baseline', baseline,
-      '--scope', scope,
-      '--pr', '42',
-      '--head-sha', HEAD,
-      '--run-id', RUN,
-      '--run-attempt', '1',
+      '--input',
+      input,
+      '--output',
+      output,
+      '--baseline',
+      baseline,
+      '--scope',
+      scope,
+      '--pr',
+      '42',
+      '--head-sha',
+      HEAD,
+      '--run-id',
+      RUN,
+      '--run-attempt',
+      '1',
     ],
     {encoding: 'utf8'},
   );
+}
+
+function runAcceptance(command, flags) {
+  const args = [ACCEPTANCE_SCRIPT, command];
+  for (const [name, value] of Object.entries(flags)) {
+    args.push(`--${name}`, String(value));
+  }
+  return execFileSync(process.execPath, args, {encoding: 'utf8'});
 }
 
 beforeEach(() => {
@@ -136,9 +167,119 @@ beforeEach(() => {
 afterEach(() => fs.rmSync(root, {recursive: true, force: true}));
 
 describe('trusted PR visual publisher', () => {
+  it('canonicalizes raw capture bytes through acceptance and promotion', () => {
+    const rawImage = PNG.sync.read(png(0, 0, 255));
+    rawImage.gamma = 0.45455;
+    const rawAfter = PNG.sync.write(rawImage, {
+      deflateLevel: 0,
+      deflateStrategy: 0,
+      filterType: 0,
+    });
+    writeCapture({[KEY]: {shot: SHOT, bytes: rawAfter}});
+    run();
+
+    const publishedAfter = fs.readFileSync(
+      path.join(output, 'after', `${KEY}.png`),
+    );
+    expect(publishedAfter).toEqual(canonicalizePng(rawAfter).bytes);
+    expect(publishedAfter).not.toEqual(rawAfter);
+    const evidence = JSON.parse(
+      fs.readFileSync(path.join(output, 'evidence.json'), 'utf8'),
+    );
+    expect(evidence.deltas[0].shot.sha256).toBe(
+      createHash('sha256').update(publishedAfter).digest('hex'),
+    );
+
+    const pages = path.join(root, 'pages');
+    fs.mkdirSync(path.join(pages, 'visual-gate'), {recursive: true});
+    fs.cpSync(baseline, path.join(pages, 'visual-gate', 'baseline'), {
+      recursive: true,
+    });
+    const evidenceDir = path.join(pages, 'pr', '42', 'visual', HEAD, RUN, '1');
+    fs.mkdirSync(path.dirname(evidenceDir), {recursive: true});
+    fs.cpSync(output, evidenceDir, {recursive: true});
+    execFileSync('git', ['init', '-q', '-b', 'gh-pages'], {cwd: pages});
+    execFileSync('git', ['config', 'user.name', 'Test'], {cwd: pages});
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], {
+      cwd: pages,
+    });
+    execFileSync('git', ['add', '.'], {cwd: pages});
+    execFileSync('git', ['commit', '-qm', 'trusted evidence'], {cwd: pages});
+
+    runAcceptance('accept', {
+      pages,
+      pr: 42,
+      head: HEAD,
+      'run-id': RUN,
+      'run-attempt': 1,
+      approver: 'maintainer',
+      'approver-id': 99,
+      permission: 'maintain',
+      'effective-permission': 'maintain',
+      'comment-id': 1234,
+      reason: 'The changed frame matches the approved component design.',
+    });
+    const acceptance = path.join(
+      pages,
+      'visual-gate',
+      'acceptances',
+      '42',
+      HEAD,
+      RUN,
+      '1',
+      'acceptance.json',
+    );
+    expect(
+      JSON.parse(fs.readFileSync(acceptance, 'utf8')).keys[0].afterSha256,
+    ).toBe(createHash('sha256').update(publishedAfter).digest('hex'));
+
+    const mergeImage = PNG.sync.read(rawAfter);
+    mergeImage.gamma = 0.8;
+    const rawMerged = PNG.sync.write(mergeImage, {
+      deflateLevel: 1,
+      deflateStrategy: 1,
+      filterType: 4,
+    });
+    expect(rawMerged).not.toEqual(rawAfter);
+    expect(canonicalizePng(rawMerged).bytes).toEqual(publishedAfter);
+    const merged = path.join(root, 'merged');
+    fs.mkdirSync(path.join(merged, 'shots'), {recursive: true});
+    fs.writeFileSync(path.join(merged, 'shots', `${KEY}.png`), rawMerged);
+    writeJSON(path.join(merged, 'manifest.json'), {
+      version: 1,
+      platform: 'linux-arm64',
+      browser: 'chromium-140.0',
+      viewport: {width: 1280, height: 900},
+      capturedAt: '2026-08-27T09:00:00.000Z',
+      context: {sha: 'd'.repeat(40)},
+      shots: {
+        [KEY]: {
+          ...SHOT,
+          sha256: createHash('sha256').update(rawMerged).digest('hex'),
+          width: 2,
+          height: 2,
+        },
+      },
+    });
+
+    runAcceptance('promote', {
+      pages,
+      acceptance,
+      capture: merged,
+      'merge-sha': 'd'.repeat(40),
+    });
+    expect(
+      fs.readFileSync(
+        path.join(pages, 'visual-gate', 'baseline', 'shots', `${KEY}.png`),
+      ),
+    ).toEqual(publishedAfter);
+  });
+
   it('derives a changed verdict even when PR data claims pass', () => {
     expect(run()).toContain('trusted changed verdict');
-    const verdict = JSON.parse(fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'));
+    const verdict = JSON.parse(
+      fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'),
+    );
     expect(verdict).toMatchObject({status: 'changed', counts: {changed: 1}});
     expect(fs.existsSync(path.join(output, 'before', `${KEY}.png`))).toBe(true);
     expect(fs.existsSync(path.join(output, 'after', `${KEY}.png`))).toBe(true);
@@ -148,7 +289,9 @@ describe('trusted PR visual publisher', () => {
   it('derives pass only from a trusted capture matching the baseline', () => {
     writeCapture({[KEY]: {shot: SHOT, bytes: png()}});
     run();
-    const verdict = JSON.parse(fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'));
+    const verdict = JSON.parse(
+      fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'),
+    );
     expect(verdict.status).toBe('pass');
   });
 
@@ -164,7 +307,9 @@ describe('trusted PR visual publisher', () => {
     });
     writeCapture({[key]: {shot, bytes: png(0, 255, 0)}});
     run();
-    const verdict = JSON.parse(fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'));
+    const verdict = JSON.parse(
+      fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'),
+    );
     expect(verdict).toMatchObject({status: 'changed', added: [key]});
     expect(fs.existsSync(path.join(output, 'after', `${key}.png`))).toBe(true);
   });
@@ -172,20 +317,26 @@ describe('trusted PR visual publisher', () => {
   it('derives a removed baseline shot when trusted capture omits expected scope', () => {
     writeCapture({});
     run();
-    const verdict = JSON.parse(fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'));
+    const verdict = JSON.parse(
+      fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'),
+    );
     expect(verdict).toMatchObject({status: 'changed', removed: [KEY]});
     expect(fs.existsSync(path.join(output, 'before', `${KEY}.png`))).toBe(true);
   });
 
   it('rejects a trusted capture that claims another run', () => {
-    const manifest = JSON.parse(fs.readFileSync(path.join(input, 'manifest.json'), 'utf8'));
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(input, 'manifest.json'), 'utf8'),
+    );
     manifest.context.runId = '999';
     writeJSON(path.join(input, 'manifest.json'), manifest);
     expect(() => run()).toThrow(/identity mismatch/);
   });
 
   it('rejects traversal-shaped manifest keys', () => {
-    writeCapture({'../bad': {shot: {...SHOT, storyId: '../bad'}, bytes: png()}});
+    writeCapture({
+      '../bad': {shot: {...SHOT, storyId: '../bad'}, bytes: png()},
+    });
     expect(() => run()).toThrow(/metadata is invalid/);
   });
 

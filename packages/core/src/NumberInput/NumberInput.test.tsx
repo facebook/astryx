@@ -10,11 +10,12 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {useState} from 'react';
+import {act, useState} from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
+import {registerIcons, resetIcons} from '../Icon';
 import {InputGroup} from '../InputGroup';
 import {NumberInput} from './NumberInput';
 import {defineTheme} from '../theme/defineTheme';
@@ -26,6 +27,7 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 // file never match a leftover region.
 afterEach(() => {
   __resetLiveRegionsForTest();
+  resetIcons();
 });
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
@@ -1758,6 +1760,34 @@ describe('NumberInput statusVariant forwarding', () => {
 });
 
 describe('NumberInput stepping', () => {
+  const stepInteractions = [
+    [
+      'keyboard',
+      (input: HTMLElement, direction: 'up' | 'down') =>
+        fireEvent.keyDown(input, {
+          key: direction === 'up' ? 'ArrowUp' : 'ArrowDown',
+        }),
+    ],
+    [
+      'wheel',
+      (input: HTMLElement, direction: 'up' | 'down') => {
+        input.focus();
+        act(() => {
+          fireEvent.wheel(input, {deltaY: direction === 'up' ? -100 : 100});
+        });
+      },
+    ],
+    [
+      'number stepper',
+      (_input: HTMLElement, direction: 'up' | 'down') =>
+        fireEvent.click(
+          screen.getByRole('button', {
+            name: direction === 'up' ? 'Increment Amount' : 'Decrement Amount',
+          }),
+        ),
+    ],
+  ] as const;
+
   it('increments with ArrowUp and decrements with ArrowDown', () => {
     const onChange = vi.fn();
     render(<NumberInput label="Amount" value={5} onChange={onChange} />);
@@ -1890,6 +1920,76 @@ describe('NumberInput stepping', () => {
     );
     fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowDown'});
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it.each(stepInteractions)(
+    'clamps at a fractional max after rounding via the %s',
+    (_name, interact) => {
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Amount"
+          value={99}
+          onChange={onChange}
+          max={99.99}
+          hasNumberSteppers
+        />,
+      );
+
+      interact(screen.getByRole('spinbutton'), 'up');
+
+      expect(onChange).toHaveBeenCalledWith(99.99);
+      expect(onChange).not.toHaveBeenCalledWith(100);
+    },
+  );
+
+  it.each(stepInteractions)(
+    'clamps at a fractional min after rounding via the %s',
+    (_name, interact) => {
+      const onChange = vi.fn();
+      const min = 4e-13;
+      render(
+        <NumberInput
+          label="Amount"
+          value={0.5}
+          onChange={onChange}
+          min={min}
+          hasNumberSteppers
+        />,
+      );
+
+      interact(screen.getByRole('spinbutton'), 'down');
+
+      expect(onChange).toHaveBeenCalledWith(min);
+      expect(onChange).not.toHaveBeenCalledWith(0);
+    },
+  );
+
+  it('reflects a reached fractional max in the spinbutton and stepper state', () => {
+    function ControlledNumberInput() {
+      const [value, setValue] = useState(99);
+      return (
+        <NumberInput
+          label="Amount"
+          value={value}
+          onChange={setValue}
+          max={99.99}
+          hasNumberSteppers
+        />
+      );
+    }
+    render(<ControlledNumberInput />);
+
+    const input = screen.getByRole('spinbutton');
+    const increment = screen.getByRole('button', {name: 'Increment Amount'});
+    expect(increment).toBeEnabled();
+
+    fireEvent.click(increment);
+
+    expect(input).toHaveValue('99.99');
+    expect(input).toHaveAttribute('aria-valuenow', '99.99');
+    expect(input).not.toHaveAttribute('aria-invalid');
+    expect(increment).toBeDisabled();
   });
 
   it('allows wheel stepping by default and consumes the focused gesture', () => {
@@ -2072,6 +2172,33 @@ describe('NumberInput stepping', () => {
       expect(
         screen.getByRole('button', {name: 'Decrement Quantity'}),
       ).toHaveAttribute('tabindex', '-1');
+    });
+
+    it('uses the NumberInput extension icon for both stepper buttons', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      registerIcons({
+        chevronDown: <svg data-testid="generic-chevron-down" />,
+        'numberInput:stepperDown': <svg data-testid="number-stepper-down" />,
+      });
+
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          hasNumberSteppers
+        />,
+      );
+
+      const stepperIcons = screen.getAllByTestId('number-stepper-down');
+      expect(stepperIcons).toHaveLength(2);
+      for (const icon of stepperIcons) {
+        expect(icon.parentElement).toHaveAttribute('data-size', 'xsm');
+      }
+      expect(
+        screen.queryByTestId('generic-chevron-down'),
+      ).not.toBeInTheDocument();
+      warnSpy.mockRestore();
     });
 
     it('steps the value and returns focus to the input', () => {

@@ -12,6 +12,7 @@ import {
 import {render, screen, act, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Timestamp} from './Timestamp';
+import {formatInstant} from './formatInstant';
 import {formatTooltipLines} from './tooltipEntries';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
@@ -275,6 +276,36 @@ describe('Timestamp', () => {
 
     rerender(timestamp('de-DE'));
     expect(screen.getByTestId('ts')).toHaveTextContent('25. Januar 2026');
+  });
+
+  it.each(['full', 'date', 'date_long', 'date_weekday', 'date_time'] as const)(
+    'keeps Gregorian years for the %s format under a non-Gregorian locale',
+    format => {
+      const value = formatInstant(
+        new Date('2026-08-22T12:00:00Z'),
+        format,
+        'th-TH',
+        {timeZone: 'UTC'},
+      );
+      expect(value).toContain('2026');
+      expect(value).not.toContain('2569');
+    },
+  );
+
+  it('keeps Gregorian years in Timestamp output under a non-Gregorian locale', () => {
+    render(
+      <InternationalizationProvider locale="th-TH">
+        <Timestamp
+          value="2026-08-22T12:00:00Z"
+          format="date_long"
+          hasTooltip={false}
+          data-testid="ts"
+        />
+      </InternationalizationProvider>,
+    );
+
+    expect(screen.getByTestId('ts')).toHaveTextContent('2026');
+    expect(screen.getByTestId('ts')).not.toHaveTextContent('2569');
   });
 
   it('renders date format', () => {

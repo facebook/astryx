@@ -26,7 +26,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-      issues: write
       statuses: write
     steps:
       - name: Checkout trusted default-branch code
@@ -86,13 +85,6 @@ jobs:
                 ? 'Stable visual capture is still running.'
                 : 'No stable visual scope.',
             });
-            try {
-              await github.rest.issues.removeLabel({
-                owner, repo, issue_number: pr.number, name: 'visual-approved',
-              });
-            } catch (error) {
-              if (error.status !== 404) throw error;
-            }
 
   authorize:
     if: >-
@@ -117,17 +109,29 @@ jobs:
       approver: ${{ steps.authorize.outputs.approver }}
       approver_id: ${{ steps.authorize.outputs.approver_id }}
       permission: ${{ steps.authorize.outputs.permission }}
+      effective_permission: ${{ steps.authorize.outputs.effective_permission }}
+      role_name: ${{ steps.authorize.outputs.role_name }}
       comment_id: ${{ steps.authorize.outputs.comment_id }}
       reason: ${{ steps.authorize.outputs.reason }}
     steps:
       # This job is deliberately read-only. The mutation job acquires the shared
       # head-branch lock using these trusted API-derived outputs.
+      - name: Checkout trusted default-branch code
+        uses: actions/checkout@v7
+
       - name: Authorize and resolve the decision
         id: authorize
         uses: actions/github-script@v9
         with:
           retries: 3
           script: |
+            const {pathToFileURL} = require('node:url');
+            const {
+              isVisualAcceptanceEndpointMaintainer,
+              visualAcceptanceIdentity,
+            } = await import(
+              pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/visual-gate/authorization.mjs`).href,
+            );
             const {owner, repo} = context.repo;
             const number = context.issue.number;
             const {data: pr} = await github.rest.pulls.get({owner, repo, pull_number: number});
@@ -173,16 +177,16 @@ jobs:
               refuse('that evidence is not from the latest completed CI attempt for this head.');
               return;
             }
-            let permission = 'none';
+            let identity = visualAcceptanceIdentity();
             try {
               const response = await github.rest.repos.getCollaboratorPermissionLevel({
                 owner, repo, username: context.actor,
               });
-              permission = response.data.user.permission;
+              identity = visualAcceptanceIdentity(response.data);
             } catch (error) {
               if (error.status !== 404) throw error;
             }
-            if (!['maintain', 'admin'].includes(permission)) {
+            if (!isVisualAcceptanceEndpointMaintainer(identity)) {
               refuse('only a repository maintainer may accept stable visual changes.');
               return;
             }
@@ -191,7 +195,9 @@ jobs:
             core.setOutput('run_attempt', String(runAttempt));
             core.setOutput('approver', context.actor);
             core.setOutput('approver_id', String(context.payload.comment.user.id));
-            core.setOutput('permission', permission);
+            core.setOutput('permission', identity.permission);
+            core.setOutput('effective_permission', identity.effectivePermission);
+            core.setOutput('role_name', identity.roleName ?? '');
             core.setOutput('comment_id', String(context.payload.comment.id));
             core.setOutput('reason', reason);
 
@@ -207,8 +213,7 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: write
-      pull-requests: read
-      issues: write
+      pull-requests: write
       statuses: write
     steps:
       - name: Report a refused decision
@@ -230,6 +235,10 @@ jobs:
         if: needs.authorize.outputs.valid == 'true'
         uses: actions/checkout@v7
 
+      - name: Setup Node and pnpm
+        if: needs.authorize.outputs.valid == 'true'
+        uses: ./.github/actions/setup
+
       - name: Archive the acceptance decision
         id: record
         if: needs.authorize.outputs.valid == 'true'
@@ -242,6 +251,8 @@ jobs:
           APPROVER: ${{ needs.authorize.outputs.approver }}
           APPROVER_ID: ${{ needs.authorize.outputs.approver_id }}
           PERMISSION: ${{ needs.authorize.outputs.permission }}
+          EFFECTIVE_PERMISSION: ${{ needs.authorize.outputs.effective_permission }}
+          ROLE_NAME: ${{ needs.authorize.outputs.role_name }}
           COMMENT_ID: ${{ needs.authorize.outputs.comment_id }}
           REASON: ${{ needs.authorize.outputs.reason }}
         run: |
@@ -261,6 +272,8 @@ jobs:
               --approver "$APPROVER" \
               --approver-id "$APPROVER_ID" \
               --permission "$PERMISSION" \
+              --effective-permission "$EFFECTIVE_PERMISSION" \
+              --role-name "$ROLE_NAME" \
               --comment-id "$COMMENT_ID" \
               --reason "$REASON"
             if [ -z "$(git -C "$PAGES" status --porcelain -- "$DEST")" ]; then

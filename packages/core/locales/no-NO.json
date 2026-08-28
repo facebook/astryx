@@ -273,7 +273,7 @@
   },
   "@astryx.banner.dismiss": {
     "defaultMessage": "Lukk",
-    "description": "\"Dismiss\" = close/hide this notification (not \"reject a person\"). Aria label AND tooltip on the small X button on a Banner."
+    "description": "\"Dismiss\" = close/hide this notification (not \"reject a person\"). Tooltip on the small X button on a Banner, and its aria label when the banner's title is not plain text."
   },
   "@astryx.calendar.previousMonth": {
     "defaultMessage": "Forrige måned",

@@ -12,9 +12,14 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import {PNG} from 'pngjs';
 
+import {
+  isVisualAcceptanceEndpointMaintainer,
+  isVisualAcceptanceRecordMaintainer,
+} from './authorization.mjs';
+import {canonicalizePng} from './lib/canonical-png.mjs';
 import {readStoryIndex, shotKey, storiesInPackages} from './lib/plan.mjs';
+import {renderReport} from './lib/report.mjs';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -24,6 +29,7 @@ const flag = name => {
 };
 const SHA = /^[0-9a-f]{40}$/;
 const KEY = /^[A-Za-z0-9._-]{1,240}$/;
+const NAME = /^[A-Za-z0-9._-]{1,120}$/;
 const REPO = 'facebook/astryx';
 
 function fail(message) {
@@ -72,14 +78,23 @@ function evidenceRoot(pages, pr, head) {
 }
 
 function evidenceAt(pages, pr, head, run, attempt) {
-  if (!Number.isSafeInteger(run) || run <= 0 || !Number.isSafeInteger(attempt) || attempt <= 0) {
+  if (
+    !Number.isSafeInteger(run) ||
+    run <= 0 ||
+    !Number.isSafeInteger(attempt) ||
+    attempt <= 0
+  ) {
     fail('invalid evidence run/attempt');
   }
-  const dir = path.join(evidenceRoot(pages, pr, head), String(run), String(attempt));
-  if (!fs.existsSync(dir)) fail(`no published evidence for run ${run}/${attempt}`);
+  const dir = path.join(
+    evidenceRoot(pages, pr, head),
+    String(run),
+    String(attempt),
+  );
+  if (!fs.existsSync(dir))
+    fail(`no published evidence for run ${run}/${attempt}`);
   const evidence = readJSON(path.join(dir, 'evidence.json'));
-  validateEvidence(evidence, {pr, head, run});
-  if (evidence.run.attempt !== attempt) fail('evidence attempt identity mismatch');
+  validateEvidence(evidence, {pr, head, run, attempt});
   return {dir, evidence};
 }
 
@@ -105,7 +120,8 @@ function latestEvidence(pages, pr, head, {required = true} = {}) {
     .filter(entry => entry.isDirectory() && /^\d+$/.test(entry.name))
     .map(entry => Number(entry.name))
     .sort((a, b) => b - a);
-  const dir = attempts.length > 0 ? path.join(runDir, String(attempts[0])) : runDir;
+  const dir =
+    attempts.length > 0 ? path.join(runDir, String(attempts[0])) : runDir;
   const evidence = readJSON(path.join(dir, 'evidence.json'));
   validateEvidence(evidence, {pr, head, run});
   if (attempts.length > 0 && evidence.run.attempt !== attempts[0]) {
@@ -154,7 +170,9 @@ function validateEvidence(evidence, expected) {
     !SHA.test(evidence.baseSha ?? '') ||
     evidence.run?.id !== expected.run ||
     !Number.isSafeInteger(evidence.run?.attempt) ||
-    evidence.run.attempt <= 0
+    evidence.run.attempt <= 0 ||
+    (expected.attempt !== undefined &&
+      evidence.run.attempt !== expected.attempt)
   ) {
     fail('evidence identity mismatch');
   }
@@ -167,8 +185,31 @@ function validateEvidence(evidence, expected) {
     fail('evidence delta list is invalid');
   }
   if (evidence.verdict.status === 'skipped') {
+    const counts = evidence.verdict.counts;
     if (evidence.capture !== null || evidence.deltas.length !== 0) {
       fail('skipped evidence must not claim a capture or deltas');
+    }
+    if (
+      typeof evidence.verdict.reason !== 'string' ||
+      !evidence.verdict.reason.trim() ||
+      !Number.isSafeInteger(counts?.total) ||
+      counts.total <= 0 ||
+      ['unchanged', 'changed', 'added', 'removed', 'failed'].some(
+        name => counts[name] !== 0,
+      )
+    ) {
+      fail('skipped evidence must carry a trusted reason and count');
+    }
+    if (
+      evidence.verdict.context?.sha !== evidence.testedSha ||
+      evidence.verdict.context?.headSha !== evidence.headSha ||
+      evidence.verdict.context?.baseSha !== evidence.baseSha ||
+      String(evidence.verdict.context?.runId ?? '') !==
+        String(evidence.run.id) ||
+      String(evidence.verdict.context?.runAttempt ?? '') !==
+        String(evidence.run.attempt)
+    ) {
+      fail('skipped evidence run identity mismatch');
     }
   } else {
     validateCapture(evidence.capture);
@@ -264,7 +305,14 @@ function recordPath(pages, pr, head, run, attempt) {
 }
 
 function pointerPath(pages, pr, head) {
-  return path.join(pages, 'visual-gate', 'acceptances', String(pr), head, 'current.json');
+  return path.join(
+    pages,
+    'visual-gate',
+    'acceptances',
+    String(pr),
+    head,
+    'current.json',
+  );
 }
 
 function accept() {
@@ -276,18 +324,27 @@ function accept() {
   const approver = flag('approver') ?? '';
   const approverId = Number(flag('approver-id'));
   const permission = flag('permission') ?? '';
+  const effectivePermission = flag('effective-permission') ?? 'none';
+  const roleName = flag('role-name');
   const commentId = Number(flag('comment-id'));
   const reason = validateReason(flag('reason'));
 
   validateIdentity(pr, head);
   if (!approver || !Number.isSafeInteger(approverId) || approverId <= 0)
     fail('invalid approver');
-  if (!['maintain', 'admin'].includes(permission))
-    fail('approver must have maintain/admin permission');
+  if (!isVisualAcceptanceEndpointMaintainer({effectivePermission})) {
+    fail('approver must have effective maintain/admin permission');
+  }
   if (!Number.isSafeInteger(commentId) || commentId <= 0)
     fail('invalid comment id');
 
-  const {dir: evidenceDir, evidence} = evidenceAt(pages, pr, head, runId, runAttempt);
+  const {dir: evidenceDir, evidence} = evidenceAt(
+    pages,
+    pr,
+    head,
+    runId,
+    runAttempt,
+  );
   if (evidence.verdict.status !== 'changed' || evidence.deltas.length === 0) {
     fail('current visual bundle has no delta to accept');
   }
@@ -351,6 +408,8 @@ function accept() {
       approver,
       approverId,
       permission,
+      effectivePermission,
+      roleName,
       reason,
       commentId,
       at: new Date().toISOString(),
@@ -467,7 +526,10 @@ function validateAcceptance(value, expected = {}) {
     !value.decision?.approver ||
     !Number.isSafeInteger(value.decision?.approverId) ||
     value.decision.approverId <= 0 ||
-    !['maintain', 'admin'].includes(value.decision?.permission) ||
+    !isVisualAcceptanceRecordMaintainer({
+      permission: value.decision?.permission,
+      effectivePermission: value.decision?.effectivePermission,
+    }) ||
     !Number.isSafeInteger(value.decision?.commentId) ||
     value.decision.commentId <= 0 ||
     !value.decision?.reason
@@ -494,7 +556,10 @@ function validateAcceptance(value, expected = {}) {
       validateShot(entry.shot, entry.key);
       if (expected.dir) {
         const archived = path.join(expected.dir, 'after', `${entry.key}.png`);
-        if (!fs.existsSync(archived) || shaFile(archived) !== entry.afterSha256) {
+        if (
+          !fs.existsSync(archived) ||
+          shaFile(archived) !== entry.afterSha256
+        ) {
           fail(`archived AFTER is missing or changed for ${entry.key}`);
         }
       }
@@ -508,30 +573,142 @@ function validateAcceptance(value, expected = {}) {
   }
 }
 
-function trustedPlan() {
+function readTrustedScope() {
   const scope = readJSON(path.resolve(flag('scope')));
-  const baseline = readJSON(path.join(path.resolve(flag('baseline')), 'manifest.json'));
-  const storybookDir = path.resolve(flag('storybook-dir'));
-  const output = path.resolve(flag('output'));
   if (
     scope?.hasStableVisual !== true ||
     typeof scope.broadStableVisual !== 'boolean' ||
     !Array.isArray(scope.stableComponents) ||
-    !Array.isArray(scope.stableThemes)
+    !Array.isArray(scope.stableThemes) ||
+    !scope.stableComponents.every(name => NAME.test(name)) ||
+    !scope.stableThemes.every(name => NAME.test(name))
   ) {
     fail('trusted visual scope is invalid');
   }
+  return scope;
+}
 
-  const baselineEntries = Object.entries(baseline.shots ?? {});
-  const baselineThemes = [...new Set(baselineEntries.map(([, shot]) => shot.theme))].filter(Boolean);
-  const shots = scope.broadStableVisual
-    ? baselineEntries.map(([key, shot]) => ({...shot, key, reasons: ['trusted:broad']}))
-    : [];
+function readTrustedBaseline() {
+  const baseline = readJSON(
+    path.join(path.resolve(flag('baseline')), 'manifest.json'),
+  );
+  if (
+    !baseline?.shots ||
+    typeof baseline.shots !== 'object' ||
+    Array.isArray(baseline.shots)
+  ) {
+    fail('trusted visual baseline is invalid');
+  }
+  const entries = Object.entries(baseline.shots);
+  if (entries.length === 0 || entries.length > 5000) {
+    fail(`trusted visual baseline has invalid size ${entries.length}`);
+  }
+  return {baseline, entries};
+}
+
+function trustedDefer() {
+  const scope = readTrustedScope();
+  if (!scope.broadStableVisual) fail('trusted visual scope is not broad');
+
+  const {entries} = readTrustedBaseline();
+  const output = path.resolve(flag('output'));
+  const pr = Number(flag('pr'));
+  const head = flag('head') ?? '';
+  const base = flag('base') ?? '';
+  const runId = Number(flag('run-id'));
+  const runAttempt = Number(flag('run-attempt'));
+  validateIdentity(pr, head);
+  if (!SHA.test(base)) fail('invalid base SHA');
+  if (
+    !Number.isSafeInteger(runId) ||
+    runId <= 0 ||
+    !Number.isSafeInteger(runAttempt) ||
+    runAttempt <= 0
+  ) {
+    fail('invalid evidence run/attempt');
+  }
+
+  const total = entries.length;
+  const reason =
+    'Broad stable scope is deferred to the daily release gate. ' +
+    `It covers ${total} trusted baseline shot${total === 1 ? '' : 's'} ` +
+    'instead of recapturing them for this PR.';
+  const verdict = {
+    version: 1,
+    status: 'skipped',
+    generatedAt: new Date().toISOString(),
+    reason,
+    context: {
+      sha: head,
+      headSha: head,
+      baseSha: base,
+      runId: String(runId),
+      runAttempt: String(runAttempt),
+      trustedScope: scope,
+    },
+    counts: {
+      total,
+      unchanged: 0,
+      changed: 0,
+      added: 0,
+      removed: 0,
+      failed: 0,
+    },
+    components: scope.stableComponents,
+    changes: [],
+    added: [],
+    removed: [],
+    failures: [],
+  };
+  const evidence = {
+    version: 1,
+    repo: REPO,
+    pr,
+    headSha: head,
+    testedSha: head,
+    baseSha: base,
+    run: {id: runId, attempt: runAttempt},
+    capture: null,
+    deltas: [],
+    verdict,
+  };
+  validateEvidence(evidence, {
+    pr,
+    head,
+    run: runId,
+    attempt: runAttempt,
+  });
+
+  fs.rmSync(output, {recursive: true, force: true});
+  writeJSON(path.join(output, 'evidence.json'), evidence);
+  writeJSON(path.join(output, 'verdict.json'), verdict);
+  fs.writeFileSync(path.join(output, 'index.html'), renderReport(verdict));
+  process.stdout.write(
+    `Deferred ${total} trusted baseline shot${total === 1 ? '' : 's'} for PR #${pr}, run ${runId}/${runAttempt}.\n`,
+  );
+}
+
+function trustedPlan() {
+  const scope = readTrustedScope();
+  if (scope.broadStableVisual)
+    fail('broad stable scope must be deferred instead of captured');
+  const {entries: baselineEntries} = readTrustedBaseline();
+  const storybookDir = path.resolve(flag('storybook-dir'));
+  const output = path.resolve(flag('output'));
+
+  const baselineThemes = [
+    ...new Set(baselineEntries.map(([, shot]) => shot.theme)),
+  ].filter(Boolean);
+  const shots = [];
 
   if (scope.stableComponents.length > 0 || scope.stableThemes.length > 0) {
-    const indexed = storiesInPackages(readStoryIndex(storybookDir, []), ['Core']);
+    const indexed = storiesInPackages(readStoryIndex(storybookDir, []), [
+      'Core',
+    ]);
     const stories = new Map();
-    const newTheme = scope.stableThemes.some(theme => !baselineThemes.includes(theme));
+    const newTheme = scope.stableThemes.some(
+      theme => !baselineThemes.includes(theme),
+    );
     for (const [, shot] of baselineEntries) {
       if (
         newTheme ||
@@ -542,9 +719,11 @@ function trustedPlan() {
       }
     }
     for (const story of indexed) {
-      if (scope.stableComponents.includes(story.component)) stories.set(story.id, story);
+      if (scope.stableComponents.includes(story.component))
+        stories.set(story.id, story);
     }
-    const themes = scope.stableThemes.length > 0 ? scope.stableThemes : baselineThemes;
+    const themes =
+      scope.stableThemes.length > 0 ? scope.stableThemes : baselineThemes;
     for (const story of stories.values()) {
       for (const theme of themes) {
         for (const mode of ['light', 'dark']) {
@@ -567,7 +746,9 @@ function trustedPlan() {
     fail(`trusted visual plan has invalid size ${unique.length}`);
   }
   writeJSON(output, unique);
-  process.stdout.write(`Wrote ${unique.length} trusted PR shot(s) to ${output}.\n`);
+  process.stdout.write(
+    `Wrote ${unique.length} trusted PR shot(s) to ${output}.\n`,
+  );
 }
 
 function plan() {
@@ -581,16 +762,6 @@ function plan() {
   writeJSON(output, shots);
   process.stdout.write(
     `Wrote ${shots.length} post-merge shot(s) to ${output}.\n`,
-  );
-}
-
-function samePixels(first, second) {
-  const a = PNG.sync.read(fs.readFileSync(first));
-  const b = PNG.sync.read(fs.readFileSync(second));
-  return (
-    a.width === b.width &&
-    a.height === b.height &&
-    Buffer.compare(a.data, b.data) === 0
   );
 }
 
@@ -671,8 +842,23 @@ function promote() {
     if (!fs.existsSync(recaptured) || !capturedShot) {
       fail(`post-merge capture is missing ${entry.key}`);
     }
-    if (capturedShot.sha256 !== shaFile(recaptured)) {
+    const rawRecapturedSha256 = shaFile(recaptured);
+    if (capturedShot.sha256 !== rawRecapturedSha256) {
       fail(`post-merge manifest hash does not match ${entry.key}`);
+    }
+    let canonical;
+    try {
+      canonical = canonicalizePng(fs.readFileSync(recaptured));
+    } catch (error) {
+      fail(
+        `post-merge capture is not a valid PNG for ${entry.key}: ${error.message}`,
+      );
+    }
+    const canonicalSha256 = shaBytes(canonical.bytes);
+    if (canonicalSha256 !== entry.afterSha256) {
+      fail(
+        `canonical post-merge hash does not match accepted AFTER for ${entry.key}`,
+      );
     }
     for (const field of ['storyId', 'theme', 'mode']) {
       if (capturedShot[field] !== entry.shot[field]) {
@@ -681,14 +867,24 @@ function promote() {
         );
       }
     }
-    if (!samePixels(acceptedAfter, recaptured)) {
-      fail(`post-merge pixels do not match accepted AFTER for ${entry.key}`);
+    if (
+      capturedShot.width !== canonical.width ||
+      capturedShot.height !== canonical.height
+    ) {
+      fail(`post-merge dimensions do not match ${entry.key}`);
     }
-    actions.push({entry, baselineFile, recaptured, capturedShot});
+    actions.push({
+      entry,
+      baselineFile,
+      canonicalBytes: canonical.bytes,
+      capturedShot: {...capturedShot, sha256: canonicalSha256},
+    });
   }
 
   if (actions.every(action => action.alreadyPromoted)) {
-    process.stdout.write(`Accepted visual bundle for PR #${acceptance.pr} was already promoted.\n`);
+    process.stdout.write(
+      `Accepted visual bundle for PR #${acceptance.pr} was already promoted.\n`,
+    );
     return;
   }
 
@@ -698,7 +894,7 @@ function promote() {
       if (fs.existsSync(action.baselineFile)) fs.rmSync(action.baselineFile);
       delete manifest.shots[action.entry.key];
     } else {
-      fs.copyFileSync(action.recaptured, action.baselineFile);
+      fs.writeFileSync(action.baselineFile, action.canonicalBytes);
       manifest.shots[action.entry.key] = action.capturedShot;
     }
   }
@@ -738,6 +934,9 @@ switch (command) {
   case 'state':
     state();
     break;
+  case 'trusted-defer':
+    trustedDefer();
+    break;
   case 'trusted-plan':
     trustedPlan();
     break;
@@ -748,5 +947,7 @@ switch (command) {
     promote();
     break;
   default:
-    fail('usage: visual-acceptance.mjs <accept|state|trusted-plan|plan|promote>');
+    fail(
+      'usage: visual-acceptance.mjs <accept|state|trusted-defer|trusted-plan|plan|promote>',
+    );
 }

@@ -47,6 +47,12 @@ const flag = name => {
   return index === -1 ? null : argv[index + 1];
 };
 const has = name => argv.includes(`--${name}`);
+const captureIdentity = () => ({
+  sha: process.env.ASTRYX_VISUAL_SHA ?? process.env.GITHUB_SHA ?? null,
+  runId: process.env.ASTRYX_VISUAL_RUN_ID ?? process.env.GITHUB_RUN_ID ?? null,
+  runAttempt:
+    process.env.ASTRYX_VISUAL_RUN_ATTEMPT ?? process.env.GITHUB_RUN_ATTEMPT ?? null,
+});
 
 const config = loadConfig(REPO_ROOT);
 const storybookDir = path.resolve(flag('storybook-dir') ?? 'apps/storybook/dist');
@@ -197,12 +203,10 @@ async function runCapture(shots) {
     // contributor's head and the base separately: acceptance binds to the head
     // humans reviewed, while post-merge verification bridges to the final
     // squash commit by comparing rendered hashes.
-    sha: process.env.GITHUB_SHA ?? null,
+    ...captureIdentity(),
     headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
     baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
     ref: process.env.GITHUB_REF ?? null,
-    runId: process.env.GITHUB_RUN_ID ?? null,
-    runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
   };
   fs.writeFileSync(
     path.join(outDir, 'manifest.json'),
@@ -238,12 +242,10 @@ async function check() {
       generatedAt: new Date().toISOString(),
       reason: `${shots.length} shots exceeds the ${maxShots}-shot budget${components.length ? ` (${components.length} components touched)` : ''} — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
       context: {
-        sha: process.env.GITHUB_SHA ?? null,
+        ...captureIdentity(),
         headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
         baseSha: process.env.ASTRYX_PR_BASE_SHA ?? null,
         ref: process.env.GITHUB_REF ?? null,
-        runId: process.env.GITHUB_RUN_ID ?? null,
-        runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
         tiers,
         scoped: components.length > 0,
         components,

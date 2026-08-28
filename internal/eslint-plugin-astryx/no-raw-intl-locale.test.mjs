@@ -25,6 +25,7 @@ const ambientIntlInImplementation = {
   messageId: 'ambientIntlInImplementation',
 };
 const navigatorLocale = {messageId: 'navigatorLocale'};
+const dateHelperLocale = {messageId: 'dateHelperLocale'};
 
 // A file outside the approved infrastructure allowlist — the common case for
 // shipped component code. Used as the default `filename` for every case that
@@ -40,8 +41,10 @@ const NUMBER_PARSER_TEST_ORACLE_FILE =
 const NUMBER_PARSER_DOCBLOCK_ORACLE_FILE =
   'packages/core/src/NumberInput/numberParser.docblock.test.ts';
 const CHARTS_INFRA_FILE = 'packages/charts/src/formatters.ts';
-const TIMESTAMP_TEST_ORACLE_FILE = 'packages/core/src/Timestamp/Timestamp.test.tsx';
-const CALENDAR_TEST_ORACLE_FILE = 'packages/core/src/Calendar/Calendar.test.tsx';
+const TIMESTAMP_TEST_ORACLE_FILE =
+  'packages/core/src/Timestamp/Timestamp.test.tsx';
+const CALENDAR_TEST_ORACLE_FILE =
+  'packages/core/src/Calendar/Calendar.test.tsx';
 // A test file that is NOT one of the named oracle exceptions — proves the
 // allowlist is exact-file, not "any *.test.tsx".
 const OTHER_TEST_FILE = 'packages/core/src/DateInput/DateInput.test.tsx';
@@ -111,16 +114,9 @@ tester.run('no-raw-intl-locale', rule, {
       filename: INFRA_FILE,
     },
     {code: `new Intl.NumberFormat(locale).format(123);`, filename: INFRA_FILE},
-    {code: `new Intl.DateTimeFormat('en-US', {timeZone});`, filename: INFRA_FILE},
-    // -- The only ambient implementation calls are the two named legacy
-    //    helpers pending #5120. A second call in either file is invalid. --
     {
-      code: `function plainDateFormat() { return new Intl.DateTimeFormat(undefined, options); }`,
+      code: `new Intl.DateTimeFormat('en-US', {timeZone});`,
       filename: INFRA_FILE,
-    },
-    {
-      code: `function isLocaleDayFirst() { return new Intl.DateTimeFormat(); }`,
-      filename: DATE_PARSER_INFRA_FILE,
     },
     {code: `value.toLocaleString(locale);`, filename: INFRA_FILE},
     {code: `left.localeCompare(right, locale);`, filename: INFRA_FILE},
@@ -143,7 +139,8 @@ tester.run('no-raw-intl-locale', rule, {
     },
     {
       code: `left.localeCompare(right, 'en-US');`,
-      filename: 'packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx',
+      filename:
+        'packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx',
     },
     {
       code: `new Intl.NumberFormat('de-DE').format(1234234234);`,
@@ -166,6 +163,44 @@ tester.run('no-raw-intl-locale', rule, {
       filename: CALENDAR_TEST_ORACLE_FILE,
     },
 
+    // -- Date helper calls resolve through real imports and pass locale. --
+    {
+      code: `import {plainDateFormat, formatSharedDate} from '../utils/plainDate'; plainDateFormat(date, options, locale); formatSharedDate(date, format, locale);`,
+      filename: COMPONENT_FILE,
+    },
+    {
+      code: `import {parseDateInput as parse, isLocaleDayFirst as dayFirst} from '../utils'; parse(value, locale); dayFirst(locale);`,
+      filename: COMPONENT_FILE,
+    },
+    {
+      code: `import * as dateHelpers from '../utils/plainDate'; dateHelpers.plainDateFormat(date, options, locale); dateHelpers['formatSharedDate'](date, format, locale);`,
+      filename: COMPONENT_FILE,
+    },
+    {
+      code: `function plainDateFormat(date, options) { return value; } plainDateFormat(date, options);`,
+      filename: COMPONENT_FILE,
+    },
+    {
+      code: `import {plainDateFormat} from 'another-library'; plainDateFormat(date, options);`,
+      filename: COMPONENT_FILE,
+    },
+    {
+      code: `import {plainDateFormat} from '../utils/plainDate'; function render(plainDateFormat) { return plainDateFormat(date, options); }`,
+      filename: COMPONENT_FILE,
+    },
+    {
+      code: `function plainDateFormat(date, options, locale) { return value; } plainDateFormat(date, options, locale);`,
+      filename: INFRA_FILE,
+    },
+    {
+      code: `import {plainDateFormat} from './plainDate'; plainDateFormat(date, options);`,
+      filename: 'packages/core/src/utils/plainDate.test.ts',
+    },
+    {
+      code: `import {parseDateInput} from './dateParser'; parseDateInput(value);`,
+      filename: 'packages/core/src/utils/dateParser.test.ts',
+    },
+
     // -- KNOWN GAP (syntax-only limitation, documented in the rule's file
     //    doc and README): a computed method name held in a variable cannot
     //    be resolved to 'toLocaleString' (or any other name) without
@@ -180,6 +215,43 @@ tester.run('no-raw-intl-locale', rule, {
   ],
 
   invalid: [
+    // -- Production date-helper calls must pass the provider locale. --
+    {
+      code: `import {plainDateFormat} from '../utils/plainDate'; plainDateFormat(date, options);`,
+      filename: COMPONENT_FILE,
+      errors: [dateHelperLocale],
+    },
+    {
+      code: `import {formatSharedDate} from '../utils/plainDate'; formatSharedDate(date, format, undefined);`,
+      filename: COMPONENT_FILE,
+      errors: [dateHelperLocale],
+    },
+    {
+      code: `import {parseDateInput as parse} from '../utils'; parse(value);`,
+      filename: COMPONENT_FILE,
+      errors: [dateHelperLocale],
+    },
+    {
+      code: `import * as dateHelpers from '../utils/dateParser'; dateHelpers.isLocaleDayFirst();`,
+      filename: COMPONENT_FILE,
+      errors: [dateHelperLocale],
+    },
+    {
+      code: `import * as dateHelpers from '../utils/plainDate'; dateHelpers['plainDateFormat'](date, options);`,
+      filename: COMPONENT_FILE,
+      errors: [dateHelperLocale],
+    },
+    {
+      code: `function plainDateFormat(date, options, locale) { return value; } plainDateFormat(date, options);`,
+      filename: INFRA_FILE,
+      errors: [dateHelperLocale],
+    },
+    {
+      code: `function isLocaleDayFirst(locale) { return false; } isLocaleDayFirst();`,
+      filename: DATE_PARSER_INFRA_FILE,
+      errors: [dateHelperLocale],
+    },
+
     // -- Approved implementation files still reject ambient locale calls and
     //    indirect Intl references. --
     {
@@ -195,6 +267,16 @@ tester.run('no-raw-intl-locale', rule, {
     {
       code: `value.toLocaleString();`,
       filename: CHARTS_INFRA_FILE,
+      errors: [ambientIntlInImplementation],
+    },
+    {
+      code: `function plainDateFormat() { return new Intl.DateTimeFormat(undefined, options); }`,
+      filename: INFRA_FILE,
+      errors: [ambientIntlInImplementation],
+    },
+    {
+      code: `function isLocaleDayFirst() { return new Intl.DateTimeFormat(); }`,
+      filename: DATE_PARSER_INFRA_FILE,
       errors: [ambientIntlInImplementation],
     },
     {
@@ -232,7 +314,11 @@ tester.run('no-raw-intl-locale', rule, {
       errors: [rawIntlLocale],
     },
     // -- Nor does a missing/ambient locale, as before --
-    {code: `new Intl.DateTimeFormat();`, filename: COMPONENT_FILE, errors: [rawIntlLocale]},
+    {
+      code: `new Intl.DateTimeFormat();`,
+      filename: COMPONENT_FILE,
+      errors: [rawIntlLocale],
+    },
     {
       code: `Intl.NumberFormat(undefined);`,
       filename: COMPONENT_FILE,
@@ -285,7 +371,11 @@ tester.run('no-raw-intl-locale', rule, {
       errors: [rawIntlLocale],
     },
     // -- Locale-sensitive prototype methods, with or without a locale arg --
-    {code: `value.toLocaleString();`, filename: COMPONENT_FILE, errors: [rawIntlLocale]},
+    {
+      code: `value.toLocaleString();`,
+      filename: COMPONENT_FILE,
+      errors: [rawIntlLocale],
+    },
     {
       code: `value.toLocaleString(locale);`,
       filename: COMPONENT_FILE,

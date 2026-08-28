@@ -130,6 +130,7 @@ export function getTimeZoneParts(
     minute: '2-digit',
     second: '2-digit',
     hourCycle: 'h23',
+    calendar: 'gregory',
   }).formatToParts(new Date(instant));
 
   const lookup = Object.fromEntries(
@@ -307,12 +308,26 @@ export const DATE_FORMAT_SHORT_WITH_YEAR: Intl.DateTimeFormatOptions = {
   year: 'numeric',
 };
 
+/**
+ * Format a `PlainDate` for display.
+ *
+ * The locale defaults to the same `'en'` fallback as `useLocale()`, avoiding
+ * runtime-dependent output when no provider locale is available. Astryx date
+ * APIs currently model Gregorian dates, so this helper defaults to Gregorian
+ * when `options.calendar` is omitted. The explicit option remains supported for
+ * compatibility with the public `Intl.DateTimeFormatOptions` signature; it is a
+ * display-only escape hatch and does not change PlainDate arithmetic, parsing,
+ * serialization, or any Astryx component's calendar semantics.
+ */
 export function plainDateFormat(
   pd: PlainDate,
   options: Intl.DateTimeFormatOptions,
-  locale?: Locale,
+  locale: Locale = 'en',
 ): string {
-  return new Intl.DateTimeFormat(locale, options).format(plainDateToDate(pd));
+  return new Intl.DateTimeFormat(locale, {
+    ...options,
+    calendar: options.calendar ?? 'gregory',
+  }).format(plainDateToDate(pd));
 }
 
 // =============================================================================
@@ -360,7 +375,7 @@ export const SHARED_DATE_FORMAT_OPTIONS: Record<
 export function formatSharedDate(
   pd: PlainDate,
   format: SharedDateFormat,
-  locale?: Locale,
+  locale: Locale = 'en',
 ): string {
   if (format === 'system_date') {
     return plainDateToISO(pd);

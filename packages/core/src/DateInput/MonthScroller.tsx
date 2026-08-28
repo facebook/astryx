@@ -39,7 +39,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useCalendarDays} from '../Calendar';
-import {useDirection} from '../i18n';
+import {useDirection, useLocale} from '../i18n';
 import {
   colorVars,
   radiusVars,
@@ -763,6 +763,7 @@ function MonthPane({
   onDayKeyDown,
   onDayFocus,
 }: MonthPaneProps) {
+  const locale = useLocale();
   const {year, month} = fromMonthIndex(monthIndex);
   const {weeks} = useCalendarDays({
     year,
@@ -776,6 +777,7 @@ function MonthPane({
   const monthLabel = plainDateFormat(
     {year, month, day: 1},
     DATE_FORMAT_MONTH_YEAR,
+    locale,
   );
 
   // Exactly one day per pane is tab-reachable, so Tab moves through the
@@ -836,6 +838,7 @@ function MonthPane({
                   aria-label={plainDateFormat(
                     day.date,
                     DATE_FORMAT_WITH_WEEKDAY,
+                    locale,
                   )}
                   aria-disabled={isDisabled || undefined}
                   aria-current={isToday ? 'date' : undefined}

@@ -25,8 +25,11 @@ on:
 permissions: {}
 
 # The event already carries a stable head-repository/branch identity. Acquire
-# this shared lock before resolving the PR so a rerun can cancel any older
-# acceptance, report publication, or promotion mutation for the same head.
+# this shared lock before resolving the PR so a rerun can cancel older
+# invalidation, report-publication, or acceptance mutations for the same head.
+# Post-merge promotion does not join this cancellation group: it serializes
+# durably with every baseline publisher, then recaptures the merged commit and
+# requires its canonical pixels to match the latest completed accepted CI.
 concurrency:
   group: visual-acceptance-head-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: ${{ github.event.action == 'requested' || github.event.action == 'in_progress' }}
@@ -51,11 +54,16 @@ jobs:
             const {owner, repo} = context.repo;
             let numbers = (run.pull_requests || []).map((pr) => pr.number);
             if (numbers.length === 0) {
-              const associated = await github.paginate(
-                github.rest.repos.listPullRequestsAssociatedWithCommit,
-                {owner, repo, commit_sha: run.head_sha, per_page: 100},
-              );
-              numbers = associated.filter((pr) => pr.state === 'open').map((pr) => pr.number);
+              // commits/{sha}/pulls only indexes base-repo branches, so a fork
+              // head returns [] (and run.pull_requests is empty on forks too).
+              // Resolve by the run's own head repo + branch instead; the
+              // exact-SHA check below keeps it pinned to this run.
+              const {data: byHead} = await github.rest.pulls.list({
+                owner, repo, state: 'open',
+                head: `${run.head_repository.owner.login}:${run.head_branch}`,
+                per_page: 100,
+              });
+              numbers = byHead.map((pr) => pr.number);
             }
             numbers = [...new Set(numbers)];
             if (numbers.length !== 1) {
@@ -78,21 +86,33 @@ jobs:
       needs.resolve.outputs.valid == 'true'
     runs-on: ubuntu-slim
     permissions:
+      pull-requests: write
       statuses: write
     steps:
-      - name: Mark same-head reruns pending before evidence can change
+      - name: Invalidate visible approval for the new evidence run
         uses: actions/github-script@v9
         with:
           retries: 3
           script: |
+            const {owner, repo} = context.repo;
             const run = context.payload.workflow_run;
+            const pr = Number('${{ needs.resolve.outputs.pr_number }}');
+            const head = '${{ needs.resolve.outputs.head_sha }}';
             await github.rest.repos.createCommitStatus({
-              ...context.repo,
-              sha: '${{ needs.resolve.outputs.head_sha }}',
+              owner,
+              repo,
+              sha: head,
               context: 'visual-acceptance',
               state: 'pending',
               description: `CI run ${run.id}/${run.run_attempt} is producing fresh visual evidence.`,
             });
+            try {
+              await github.rest.issues.removeLabel({
+                owner, repo, issue_number: pr, name: 'visual-approved',
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
 
   comment:
     needs: resolve
@@ -103,7 +123,6 @@ jobs:
     runs-on: 2-core-ubuntu-arm
     permissions:
       pull-requests: write
-      issues: write
       statuses: write
       actions: read
       contents: write # immutable validated visual evidence on gh-pages
@@ -127,11 +146,16 @@ jobs:
             const {owner, repo} = context.repo;
             let numbers = (run.pull_requests || []).map((pr) => pr.number);
             if (numbers.length === 0) {
-              const associated = await github.paginate(
-                github.rest.repos.listPullRequestsAssociatedWithCommit,
-                {owner, repo, commit_sha: run.head_sha, per_page: 100},
-              );
-              numbers = associated.map((pr) => pr.number);
+              // Fork heads are invisible to commits/{sha}/pulls and to
+              // run.pull_requests — resolve by head repo + branch (see the
+              // resolve job above); the SHA and repo checks below still pin
+              // the result to this exact run.
+              const {data: byHead} = await github.rest.pulls.list({
+                owner, repo, state: 'open',
+                head: `${run.head_repository.owner.login}:${run.head_branch}`,
+                per_page: 100,
+              });
+              numbers = byHead.map((pr) => pr.number);
             }
             numbers = [...new Set(numbers)];
             if (numbers.length !== 1) {
@@ -232,7 +256,10 @@ jobs:
         continue-on-error: true
 
       - name: Download Storybook for trusted visual capture
-        if: steps.identity.outputs.valid == 'true' && steps.scope.outputs.stable == 'true'
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad != 'true'
         uses: actions/download-artifact@v8
         with:
           pattern: storybook-*
@@ -267,11 +294,14 @@ jobs:
             "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
 
       - name: Capture the trusted stable visual scope
-        if: steps.identity.outputs.valid == 'true' && steps.scope.outputs.stable == 'true'
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad != 'true'
         env:
-          GITHUB_SHA: ${{ steps.identity.outputs.head_sha }}
-          GITHUB_RUN_ID: ${{ steps.identity.outputs.run_id }}
-          GITHUB_RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+          ASTRYX_VISUAL_SHA: ${{ steps.identity.outputs.head_sha }}
+          ASTRYX_VISUAL_RUN_ID: ${{ steps.identity.outputs.run_id }}
+          ASTRYX_VISUAL_RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
           ASTRYX_PR_HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
           ASTRYX_PR_BASE_SHA: ${{ steps.identity.outputs.base_sha }}
         run: |
@@ -286,13 +316,37 @@ jobs:
             --out trusted-capture \
             --plan-file trusted-plan.json
 
+      - name: Derive trusted broad visual deferral
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad == 'true'
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          BASE_SHA: ${{ steps.identity.outputs.base_sha }}
+          RUN_ID: ${{ steps.identity.outputs.run_id }}
+          RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+        run: |
+          node .github/scripts/visual-gate/visual-acceptance.mjs trusted-defer \
+            --scope trusted-scope.json \
+            --baseline /tmp/gh-pages/visual-gate/baseline \
+            --output trusted-visual \
+            --pr "$PR_NUMBER" \
+            --head "$HEAD_SHA" \
+            --base "$BASE_SHA" \
+            --run-id "$RUN_ID" \
+            --run-attempt "$RUN_ATTEMPT"
+
       # The Storybook bundle is untrusted. Default-branch code chooses the plan,
       # captures it in an off-origin-blocked browser, derives the comparison,
       # validates/re-encodes PNGs, and generates the report. PR-authored verdicts
       # and job conclusions are never authority for the required status.
       - name: Derive trusted visual evidence and report
-        id: visual
-        if: steps.identity.outputs.valid == 'true' && steps.scope.outputs.stable == 'true'
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true' &&
+          steps.scope.outputs.broad != 'true'
         env:
           PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
           HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
@@ -308,6 +362,21 @@ jobs:
             --head-sha "$HEAD_SHA" \
             --run-id "$RUN_ID" \
             --run-attempt "$RUN_ATTEMPT"
+
+      - name: Resolve trusted visual evidence path
+        id: visual
+        if: >-
+          steps.identity.outputs.valid == 'true' &&
+          steps.scope.outputs.stable == 'true'
+        env:
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+          RUN_ID: ${{ steps.identity.outputs.run_id }}
+          RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
+        run: |
+          test -f trusted-visual/evidence.json
+          test -f trusted-visual/verdict.json
+          test -f trusted-visual/index.html
           echo "ready=true" >> "$GITHUB_OUTPUT"
           echo "path=pr/${PR_NUMBER}/visual/${HEAD_SHA}/${RUN_ID}/${RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
 
@@ -363,7 +432,7 @@ jobs:
         with:
           script: |
             const fs = require('node:fs');
-            const { execSync } = require('node:child_process');
+            const { execFileSync } = require('node:child_process');
 
             // The analysis artifact is only produced for non-docsite-only PRs.
             // If it's absent, there's nothing to report — exit quietly.
@@ -415,8 +484,8 @@ jobs:
               '--pr-number', String(prNumber),
             ];
 
-            const body = execSync(`node ${args.map((a) => JSON.stringify(a)).join(' ')}`,
-              { encoding: 'utf8' });
+            // Argument vector, no shell — report inputs are data, not command text.
+            const body = execFileSync('node', args, { encoding: 'utf8' });
             fs.writeFileSync('pr-comment.md', body);
 
             const { owner, repo } = context.repo;

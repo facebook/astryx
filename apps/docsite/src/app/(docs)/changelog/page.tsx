@@ -1,7 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {Suspense} from 'react';
 import type {Metadata} from 'next';
-import {ChangelogView} from '../../../components/ChangelogView';
+import {
+  ChangelogView,
+  UrlChangelogView,
+} from '../../../components/ChangelogView';
 import {components} from '../../../generated/componentRegistry';
 import {packages} from '../../../generated/packageRegistry';
 import {pageMetadata} from '../../../lib/pageMetadata';
@@ -22,7 +26,11 @@ export default function ChangelogPage() {
     .flat()
     .map(c => c.name);
 
+  const viewProps = {changelogs, componentNames};
+
   return (
-    <ChangelogView changelogs={changelogs} componentNames={componentNames} />
+    <Suspense fallback={<ChangelogView {...viewProps} />}>
+      <UrlChangelogView {...viewProps} />
+    </Suspense>
   );
 }

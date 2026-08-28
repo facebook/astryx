@@ -37,6 +37,7 @@ import {Icon} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useSideNavCollapse} from './SideNavCollapseContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -433,6 +434,7 @@ export function SideNavHeading({
             themeProps('side-nav-heading'),
             focusOutlineProps.focusVisible(
               navItemStyles.item,
+              interactionOverlayStyles.backgroundColor,
               styles.rootCollapsed,
               xstyle,
             ),
@@ -456,6 +458,7 @@ export function SideNavHeading({
               themeProps('side-nav-heading'),
               focusOutlineProps.focusVisible(
                 navItemStyles.item,
+                interactionOverlayStyles.backgroundColor,
                 styles.rootCollapsed,
                 styles.menuTrigger,
                 xstyle,

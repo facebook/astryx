@@ -51,6 +51,7 @@ import {
   isRenderable,
   themeProps,
 } from '../utils';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -655,13 +656,7 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
+    backgroundColor: 'transparent',
   },
 
   // ===================== ON-TRACK LAYOUT =====================
@@ -702,13 +697,7 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
+    backgroundColor: 'transparent',
   },
 
   otRowWrap: {
@@ -1411,6 +1400,7 @@ export function Step({
               aria-label={stepAriaLabel}
               {...stylex.props(
                 styles.otInteractive,
+                interactionOverlayStyles.backgroundColor,
                 styles.otRowWrap,
                 styles.otRowPadV(densitySpace),
                 focusOutlineStyles.focusVisible,
@@ -1493,6 +1483,7 @@ export function Step({
             aria-label={stepAriaLabel}
             {...stylex.props(
               styles.otInteractive,
+              interactionOverlayStyles.backgroundColor,
               styles.otColWrap,
               styles.otPadBlock(densitySpace),
               focusOutlineStyles.focusVisible,
@@ -1549,6 +1540,7 @@ export function Step({
               aria-label={stepAriaLabel}
               {...stylex.props(
                 styles.buttonReset,
+                interactionOverlayStyles.backgroundColor,
                 focusOutlineStyles.focusVisible,
                 density === 'compact' && styles.densityCompact,
                 density === 'balanced' && styles.densityBalanced,
@@ -1609,6 +1601,7 @@ export function Step({
           aria-label={stepAriaLabel}
           {...stylex.props(
             styles.buttonReset,
+            interactionOverlayStyles.backgroundColor,
             focusOutlineStyles.focusVisible,
             density === 'compact' && styles.densityCompact,
             density === 'balanced' && styles.densityBalanced,

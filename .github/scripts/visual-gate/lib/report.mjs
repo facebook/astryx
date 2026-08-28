@@ -140,6 +140,22 @@ function targetingSection(targeting) {
  */
 export function renderReport(verdict, options = {}) {
   const {counts, status} = verdict;
+  if (status === 'skipped') {
+    return `<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visual gate — skipped</title>
+<style>
+  body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 24px; max-width: 720px; }
+  .status { color: #0969da; }
+</style>
+<h1>Visual gate <span class="status">skipped</span></h1>
+<p><b>Capture deferred.</b> ${escapeHtml(verdict.reason)}</p>
+<p>${counts.total} trusted baseline shot(s) remain covered by the daily release gate.</p>
+</html>
+`;
+  }
   const acceptHint =
     options.acceptHint ??
     'node .github/scripts/visual-gate/gate.mjs accept --keys <key,key> --reason "<why the after is correct>"';

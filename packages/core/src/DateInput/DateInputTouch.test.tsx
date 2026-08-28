@@ -41,6 +41,7 @@ import {fileURLToPath} from 'node:url';
 import {useState} from 'react';
 import type {ISODateString} from '../utils';
 import {InputGroup} from '../InputGroup';
+import {InternationalizationProvider} from '../i18n';
 import {stableClassName} from '../naming';
 import {DateInput} from './DateInput';
 import {
@@ -355,6 +356,41 @@ describe('DateInput — surface selection', () => {
     expect(input).toHaveAttribute('readonly');
     // What actually keeps the virtual keyboard from covering the sheet.
     expect(input).toHaveAttribute('inputmode', 'none');
+  });
+
+  it('updates the field and open picker when the provider locale changes', () => {
+    const renderDateInput = (locale: 'en-US' | 'es-ES') => (
+      <InternationalizationProvider locale={locale}>
+        <Controlled initial="2026-03-21" />
+      </InternationalizationProvider>
+    );
+
+    withLayout(() => {
+      const {rerender} = render(renderDateInput('en-US'));
+      expect(field()).toHaveValue('March 21, 2026');
+
+      fireEvent.click(field());
+      expect(
+        document.querySelector('[data-title="month-year"]'),
+      ).toHaveTextContent('March 2026');
+      expect(pane('March 2026')).toBeInTheDocument();
+
+      rerender(renderDateInput('es-ES'));
+      expect(field()).toHaveValue('21 de marzo de 2026');
+      expect(
+        document.querySelector('[data-title="month-year"]'),
+      ).toHaveTextContent('marzo de 2026');
+      expect(pane('marzo de 2026')).toBeInTheDocument();
+
+      const nextButton = document.querySelector<HTMLButtonElement>(
+        '[data-arrows="months"] button:last-child',
+      );
+      expect(nextButton).not.toBeNull();
+      fireEvent.click(nextButton!);
+      expect(
+        document.querySelector('[data-title="month-year"]'),
+      ).toHaveTextContent('abril de 2026');
+    });
   });
 
   it('forwards ref to the input on both surfaces', () => {

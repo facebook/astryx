@@ -19,7 +19,6 @@
  */
 
 import {
-  use,
   useState,
   useMemo,
   useCallback,
@@ -61,6 +60,7 @@ import {
 } from '../utils/plainDate';
 import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {getInitialFocusDate} from './getInitialFocusDate';
 import {
   computeDayCellState,
@@ -89,7 +89,7 @@ import type {
 } from '../utils/dateTypes';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator, InternationalizationContext} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -227,7 +227,7 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
  */
 export function Calendar({ref, ...props}: CalendarProps) {
   const t = useTranslator();
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
   const {
     handleRef,
     mode = 'single',
@@ -653,7 +653,7 @@ function MonthGrid({
   pendingFocus,
   onPendingFocusHandled,
 }: MonthGridProps) {
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
   const year = month.year;
 
   // Use hooks for days generation and constraints
@@ -1034,7 +1034,7 @@ function DayCell({
   onDayHover,
 }: DayCellProps) {
   const t = useTranslator();
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
   const {date, isOutside, dayNumber} = day;
 
   if (isOutside && !hasOutsideDays) {
@@ -1179,6 +1179,7 @@ function DayCell({
           focusOutlineProps.focusVisible(
             dayCellStyles.day,
             dayCellTheme.day,
+            interactionOverlayStyles.backgroundImage,
             isOutside && dayCellStyles.dayOutside,
             isOutside && dayCellTheme.dayOutside,
             showsTodayRing && dayCellStyles.dayToday,

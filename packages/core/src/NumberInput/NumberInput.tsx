@@ -51,6 +51,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -161,13 +162,6 @@ const styles = stylex.create({
     borderStyle: 'none',
     color: colorVars['--color-icon-secondary'],
     backgroundColor: colorVars['--color-background-surface'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -491,6 +485,14 @@ function getSteppedValue({
     nextValue = stepBase + nextStepPosition * effectiveStep;
   }
 
+  const precision = Math.min(
+    12,
+    Math.max(getDecimalPlaces(effectiveStep), getDecimalPlaces(stepBase)),
+  );
+  nextValue = Number(nextValue.toFixed(precision));
+
+  // Clamp after rounding so a bound with finer precision than the step cannot
+  // be rounded back out of its own range.
   if (min != null) {
     nextValue = Math.max(min, nextValue);
   }
@@ -501,16 +503,10 @@ function getSteppedValue({
   if (!Number.isFinite(nextValue)) {
     return currentValue;
   }
-
-  const precision = Math.min(
-    12,
-    Math.max(getDecimalPlaces(effectiveStep), getDecimalPlaces(stepBase)),
-  );
-  const roundedValue = Number(nextValue.toFixed(precision));
-  if (isIntegerOnly && !Number.isInteger(roundedValue)) {
+  if (isIntegerOnly && !Number.isInteger(nextValue)) {
     return currentValue;
   }
-  return Object.is(roundedValue, -0) ? 0 : roundedValue;
+  return Object.is(nextValue, -0) ? 0 : nextValue;
 }
 
 /**
@@ -968,11 +964,12 @@ export function NumberInput({
             }}
             {...stylex.props(
               styles.numberStepperButton,
+              interactionOverlayStyles.backgroundImage,
               (isDisabled || isReadOnly || !canIncrement) &&
                 styles.numberStepperButtonDisabled,
             )}>
             <Icon
-              icon="chevronDown"
+              icon="numberInput:stepperDown"
               size="xsm"
               color="inherit"
               xstyle={styles.incrementIcon}
@@ -990,11 +987,12 @@ export function NumberInput({
             }}
             {...stylex.props(
               styles.numberStepperButton,
+              interactionOverlayStyles.backgroundImage,
               styles.decrementButton,
               (isDisabled || isReadOnly || !canDecrement) &&
                 styles.numberStepperButtonDisabled,
             )}>
-            <Icon icon="chevronDown" size="xsm" color="inherit" />
+            <Icon icon="numberInput:stepperDown" size="xsm" color="inherit" />
           </button>
         </div>
       )}

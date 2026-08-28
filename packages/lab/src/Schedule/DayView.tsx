@@ -34,12 +34,16 @@ export interface ScheduleDayViewOptions {
 function ScheduleDayView({
   options,
 }: ScheduleViewComponentProps<ScheduleDayViewOptions>) {
-  const {events, date, focusDate, timezoneID, range, isLoading} =
+  const {events, date, focusDate, timezoneID, locale, range, isLoading} =
     useScheduleContext();
   const {minHour = 0, maxHour = 24, hourHeight = 100} = options;
   const rangeDate = date.toPlainDate();
   const days = enumerateDates(range.startDate, range.endDate);
-  const titleLabel = plainDateFormat(rangeDate, DATE_FORMAT_WITH_WEEKDAY);
+  const titleLabel = plainDateFormat(
+    rangeDate,
+    DATE_FORMAT_WITH_WEEKDAY,
+    locale,
+  );
 
   return (
     <ScheduleFrame

@@ -37,6 +37,7 @@ import {TokenLink} from './TokenLink';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 import type {TokenColorMap} from './index';
 
@@ -143,13 +144,6 @@ const styles = stylex.create({
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   disabled: {
     cursor: 'default',
@@ -362,6 +356,7 @@ export function Token({
               sizeStyles[size],
               colorStyles[color],
               styles.interactive,
+              interactionOverlayStyles.backgroundImage,
               isDisabled && styles.disabled,
               xstyle,
             ),
@@ -409,6 +404,7 @@ export function Token({
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
+            interactionOverlayStyles.backgroundImage,
             isDisabled && styles.disabled,
             xstyle,
           ),
@@ -441,6 +437,7 @@ export function Token({
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
+            interactionOverlayStyles.backgroundImage,
             isDisabled && styles.disabled,
             xstyle,
           ),
