@@ -234,6 +234,29 @@ describe('themeBuild() — receipt', () => {
     expect(built).toContain('"50": "#123456"');
   });
 
+  it('validates approved palette metadata from plain-object themes', async () => {
+    const themeFile = path.join(tmpDir, 'invalid-palette-theme.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default ${JSON.stringify({
+        name: 'invalid-palette-theme',
+        tokens: {'--color-accent': '#123456'},
+        palettes: {
+          blue: {
+            semantic: 42,
+            light: {0: '#000000', 5: 'not-a-color'},
+          },
+        },
+      })};\n`,
+    );
+
+    await expect(
+      themeBuild('invalid-palette-theme.mjs', {}, {cwd: tmpDir}),
+    ).rejects.toThrow(
+      'Palette "blue" light tone 5 must be an opaque six-digit hex color, got not-a-color.',
+    );
+  });
+
   it('is silent by default (noopLogger) — no console output for a scripted caller', async () => {
     const themeFile = path.join(tmpDir, 'quiet.mjs');
     fs.writeFileSync(

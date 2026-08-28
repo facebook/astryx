@@ -261,7 +261,10 @@ export const brandTheme = defineTheme({
   name: 'brand',
   palettes: brandPalettes,
   tokens: {
-    '--color-accent': brandPalettes.blue.light[45],
+    // Pair the approved background stop with its audited foreground. Do not
+    // change one side independently: primary Button labels need 4.5:1.
+    '--color-accent': brandPalettes.blue.light[40],
+    '--color-on-accent': brandPalettes.blue.light[100],
   },
 });`,
         },

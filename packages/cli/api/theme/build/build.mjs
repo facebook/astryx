@@ -57,6 +57,7 @@ import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 // A built, resolvable `@astryxdesign/core` is a hard requirement. These are
 // populated from a dynamic import (a runtime boundary), so `any` is intentional.
 /** @type {any} */ let _defineTheme = null;
+/** @type {any} */ let _defineTonalPalettes = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
 /** @type {any} */ let _dataTokenDefaults = null;
@@ -64,6 +65,7 @@ import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
+  _defineTonalPalettes = coreTheme.defineTonalPalettes;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
   _dataTokenDefaults = coreTheme.dataTokenDefaults;
@@ -1123,7 +1125,7 @@ export async function themeBuild(
   // `astryx theme build` and the `<Theme>` runtime MUST emit identical CSS, so
   // there is exactly one generation path: @astryxdesign/core/theme. If core could not
   // be imported, fail hard rather than silently producing divergent output.
-  if (!_defineTheme || !_generateThemeRulesSplit) {
+  if (!_defineTheme || !_defineTonalPalettes || !_generateThemeRulesSplit) {
     throw new AstryxError(
       'Could not load @astryxdesign/core/theme — `astryx theme build` requires a ' +
         'built, resolvable @astryxdesign/core so it emits the same CSS as the ' +
@@ -1163,6 +1165,9 @@ export async function themeBuild(
       resolvedTheme = _defineTheme({...themeDef});
     } else {
       resolvedTheme = themeDef;
+    }
+    if (themeDef.palettes) {
+      _defineTonalPalettes(themeDef.palettes);
     }
     const scopeSelector = themeScopeStart(themeDef.name);
     const scopeTo = THEME_SCOPE_TO;
