@@ -3600,6 +3600,20 @@ function SurfacesSection({mode}: {mode: Mode}) {
           </div>
         ))}
       </div>
+      <p
+        style={{
+          margin: '12px 0 0',
+          color: 'var(--color-text-secondary)',
+          fontSize: 10,
+          lineHeight: 1.5,
+        }}>
+        These swatches are shown for token and visual-hierarchy review. A static
+        container background or border is decorative when removing it still
+        leaves the grouping clear through spacing, headings, and content, so it
+        does not inherently need 3:1 against the page. If the boundary is
+        required to identify a control, state, or distinct region, it becomes
+        meaningful and must meet its applicable contrast requirement.
+      </p>
     </div>
   );
 }
@@ -3700,6 +3714,20 @@ function ElevationsSection({
           </div>
         ))}
       </div>
+      <p
+        style={{
+          margin: '12px 0 0',
+          color: 'var(--color-text-secondary)',
+          fontSize: 10,
+          lineHeight: 1.5,
+        }}>
+        Elevation is decorative when it only reinforces grouping or visual
+        hierarchy that remains understandable without the shadow. WCAG does not
+        require that optional shadow to reach 3:1. If elevation is the only cue
+        that identifies an interactive target, boundary, or state, it is no
+        longer sufficient by itself; provide a persistent qualifying visual
+        indicator and audit that indicator instead.
+      </p>
     </div>
   );
 }
