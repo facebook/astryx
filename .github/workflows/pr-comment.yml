@@ -386,39 +386,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EVIDENCE_PATH: ${{ steps.visual.outputs.path }}
-        run: |
-          set -eu
-          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK_DIR="$PWD"
-          for attempt in 1 2 3 4 5; do
-            rm -rf /tmp/gh-pages
-            git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
-            DEST="/tmp/gh-pages/${EVIDENCE_PATH}"
-            if [ -e "$DEST" ]; then
-              if diff -qr "$WORK_DIR/trusted-visual" "$DEST" >/dev/null; then
-                echo "Immutable evidence already published"
-                echo "published=true" >> "$GITHUB_OUTPUT"
-                exit 0
-              fi
-              echo "::error::Immutable evidence path already exists with different bytes"
-              exit 1
-            fi
-            mkdir -p "$DEST"
-            cp -r "$WORK_DIR/trusted-visual/." "$DEST/"
-            cd /tmp/gh-pages
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add "$EVIDENCE_PATH"
-            git commit -m "Visual evidence: ${EVIDENCE_PATH}"
-            if git push origin gh-pages; then
-              echo "published=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            cd "$WORK_DIR"
-            sleep $((attempt * 2))
-          done
-          echo "::error::Could not publish visual evidence after 5 attempts"
-          exit 1
+        run: >
+          node .github/scripts/gh-pages-publisher.mjs immutable-path
+          --source trusted-visual
+          --destination "$EVIDENCE_PATH"
+          --scope pr-visual/evidence
+          --message "Visual evidence: ${EVIDENCE_PATH}"
+
+      - name: Refresh trusted visual state checkout
+        if: steps.publish.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
+        run: >
+          rm -rf /tmp/gh-pages &&
+          git clone --depth=1 --filter=blob:none --sparse --single-branch --branch gh-pages
+          "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages &&
+          git -C /tmp/gh-pages sparse-checkout set
+          visual-gate/baseline
+          "pr/${PR_NUMBER}/visual/${HEAD_SHA}"
 
       - name: Generate and post PR comment
         if: steps.identity.outputs.valid == 'true'

@@ -187,7 +187,7 @@ describe('visual acceptance workflow concurrency', () => {
     expect(accept.indexOf('uses: ./.github/actions/setup')).toBeGreaterThan(-1);
     expect(accept.indexOf('uses: ./.github/actions/setup')).toBeLessThan(
       accept.indexOf(
-        'node .github/scripts/visual-gate/visual-acceptance.mjs accept',
+        'node .github/scripts/gh-pages-publisher.mjs visual-acceptance-record',
       ),
     );
   });
@@ -195,8 +195,7 @@ describe('visual acceptance workflow concurrency', () => {
   it('serializes normal, recovery, and manual publication without Actions cancellation', () => {
     const value = workflow('visual-acceptance-promote.yml');
     const manual = workflow('visual-baseline.yml');
-    const helper =
-      'node .github/scripts/visual-gate/lib/baseline-publication-lock.mjs';
+    const helper = 'node .github/scripts/gh-pages-publisher.mjs';
 
     expect(value).toContain('workflow_dispatch:');
     expect(value).toContain("context.ref !== 'refs/heads/main'");
@@ -208,11 +207,15 @@ describe('visual acceptance workflow concurrency', () => {
     );
     expect(value).toContain('ref: main');
     for (const command of ['enqueue', 'wait', 'release']) {
-      expect(value.match(new RegExp(`${helper} ${command}`, 'g'))).toHaveLength(
-        1,
-      );
       expect(
-        manual.match(new RegExp(`${helper} ${command}`, 'g')),
+        value.match(
+          new RegExp(`${helper} ${command} --scope visual-gate/baseline`, 'g'),
+        ),
+      ).toHaveLength(1);
+      expect(
+        manual.match(
+          new RegExp(`${helper} ${command} --scope visual-gate/baseline`, 'g'),
+        ),
       ).toHaveLength(1);
     }
     expect(value).not.toContain('group: visual-baseline');
@@ -223,13 +226,14 @@ describe('visual acceptance workflow concurrency', () => {
     expect(
       value.indexOf('Wait for the baseline publication turn'),
     ).toBeLessThan(value.indexOf('Verify and promote the baseline'));
+    expect(value).toContain('visual-baseline-accepted');
     expect(value).toContain('--expected-record-rel "$RECORD_REL"');
     expect(workflow('pr-comment.yml')).toContain(
       'Post-merge promotion does not join this cancellation group',
     );
     expect(
       manual.indexOf('Wait for the baseline publication turn'),
-    ).toBeLessThan(manual.indexOf('Fetch the current baseline'));
+    ).toBeLessThan(manual.indexOf('Promote and publish the baseline'));
     expect(workflow('release-gate.yml')).toContain(
       'node .github/scripts/gh-pages-publisher.mjs release-gate --source report',
     );
@@ -276,6 +280,63 @@ describe('visual acceptance workflow concurrency', () => {
     expect(publishJob).toContain('actions: read');
     expect(publishJob).toContain('contents: write');
     expect(releaseGate).toContain('gh-pages-publisher.mjs release-gate');
+  });
+
+  it('moves high-conflict visual gh-pages writers behind the shared publisher', () => {
+    const comment = workflow('pr-comment.yml');
+    const acceptance = workflow('visual-acceptance.yml');
+    const promote = workflow('visual-acceptance-promote.yml');
+    const manual = workflow('visual-baseline.yml');
+
+    expect(comment).toContain('gh-pages-publisher.mjs immutable-path');
+    expect(comment).toContain('--scope pr-visual/evidence');
+    expect(comment).not.toContain('Immutable evidence already published');
+    expect(acceptance).toContain(
+      'gh-pages-publisher.mjs visual-acceptance-record',
+    );
+    expect(acceptance).not.toContain('DEST="visual-gate/acceptances');
+    expect(promote).toContain(
+      'gh-pages-publisher.mjs visual-baseline-accepted',
+    );
+    expect(promote).not.toContain('baseline-publication-lock.mjs');
+    expect(manual).toContain('gh-pages-publisher.mjs visual-baseline-manual');
+    expect(manual).not.toContain('baseline-publication-lock.mjs');
+    expect(manual).not.toContain('git rebase origin/gh-pages');
+  });
+
+  it('grants visual publisher jobs read access to overlapping workflow runs', () => {
+    const comment = workflow('pr-comment.yml');
+    const commentJob = comment.slice(
+      comment.indexOf('  comment:'),
+      comment.indexOf('      - name: Checkout trusted default-branch code'),
+    );
+    const acceptance = workflow('visual-acceptance.yml');
+    const acceptJob = acceptance.slice(
+      acceptance.indexOf('  accept:'),
+      acceptance.indexOf(
+        '      - name: Reject an invalid visual acceptance request',
+      ),
+    );
+    const promote = workflow('visual-acceptance-promote.yml');
+    const promoteJob = promote.slice(
+      promote.indexOf('  promote:'),
+      promote.indexOf(
+        '      - name: Checkout trusted current main',
+        promote.indexOf('  promote:'),
+      ),
+    );
+    const manual = workflow('visual-baseline.yml');
+    const manualJob = manual.slice(
+      manual.indexOf('  promote:'),
+      manual.indexOf('      - name: Checkout'),
+    );
+
+    for (const job of [commentJob, acceptJob, manualJob]) {
+      expect(job).toContain('actions: read');
+      expect(job).toContain('contents: write');
+    }
+    expect(promoteJob).toContain('actions: write');
+    expect(promoteJob).toContain('contents: write');
   });
 
   it('projects every known validation or publication failure from an always-running job', () => {
@@ -349,7 +410,8 @@ describe('visual acceptance workflow concurrency', () => {
       value.indexOf('  project-status:'),
     );
 
-    expect(value).toContain('publication_confirmed=true');
+    expect(value).toContain("publication_confirmed == 'true'");
+    expect(value).toContain('visual-baseline-accepted');
     expect(gate).toContain(
       "steps.promote.outputs.publication_confirmed == 'true'",
     );
