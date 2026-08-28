@@ -177,11 +177,21 @@ const styles = stylex.create({
     scrollbarWidth: 'none',
     maskImage: 'none',
   },
+  // useScrollOverflow reports logical edges (start = left in LTR, right in
+  // RTL), but a mask-image gradient direction is physical. Flip the two
+  // physical directions under RTL so the fade still lands on the edge that
+  // actually has hidden content (#5622).
   fadeStart: {
-    maskImage: `linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 2px, black ${spacingVars['--spacing-1']})`,
+    maskImage: {
+      default: `linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 2px, black ${spacingVars['--spacing-1']})`,
+      ':is([dir="rtl"] *)': `linear-gradient(to left, transparent 0%, rgba(0,0,0,0.3) 2px, black ${spacingVars['--spacing-1']})`,
+    },
   },
   fadeEnd: {
-    maskImage: `linear-gradient(to left, transparent 0%, rgba(0,0,0,0.3) 2px, black ${spacingVars['--spacing-1']})`,
+    maskImage: {
+      default: `linear-gradient(to left, transparent 0%, rgba(0,0,0,0.3) 2px, black ${spacingVars['--spacing-1']})`,
+      ':is([dir="rtl"] *)': `linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 2px, black ${spacingVars['--spacing-1']})`,
+    },
   },
   fadeBoth: {
     maskImage: `linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 2px, black ${spacingVars['--spacing-1']}, black calc(100% - ${spacingVars['--spacing-1']}), rgba(0,0,0,0.3) calc(100% - 2px), transparent 100%)`,
