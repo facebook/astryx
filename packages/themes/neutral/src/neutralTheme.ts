@@ -611,32 +611,37 @@ const neutralSyntax = defineSyntaxTheme({
   },
 });
 
-/** Shared filled-state colors for Badge, status dots, and ProgressBar. */
-const FILLED_STATE_COLORS = {
-  info: lightDark(
-    getPaletteStop('blue', 45),
-    getPaletteStop('blue', 60, 'dark'),
-  ),
-  success: lightDark(
-    getPaletteStop('green', 45),
-    getPaletteStop('green', 60, 'dark'),
-  ),
-  warning: lightDark(
-    getPaletteStop('yellow', 80),
-    getPaletteStop('yellow', 75, 'dark'),
-  ),
-  error: lightDark(
-    getPaletteStop('red', 50),
-    getPaletteStop('red', 60, 'dark'),
-  ),
-} as const;
-
-const FILLED_STATE_TEXT = {
-  standard: lightDark(
-    getPaletteStop('neutral', 100),
-    getPaletteStop('neutral', 10),
-  ),
-  onBright: getPaletteStop('neutral', 10),
+/** Shared semantic colors organized by visual role. */
+const STATUS_COLOR_ROLES = {
+  fill: {
+    info: lightDark(getPaletteStop('blue', 45), getPaletteStop('blue', 60, 'dark')),
+    success: lightDark(getPaletteStop('green', 45), getPaletteStop('green', 60, 'dark')),
+    warning: lightDark(getPaletteStop('yellow', 80), getPaletteStop('yellow', 75, 'dark')),
+    error: lightDark(getPaletteStop('red', 50), getPaletteStop('red', 60, 'dark')),
+  },
+  onFill: {
+    standard: lightDark(getPaletteStop('neutral', 100), getPaletteStop('neutral', 10)),
+    onBright: getPaletteStop('neutral', 10),
+  },
+  foreground: {
+    info: 'var(--color-text-blue)',
+    success: 'var(--color-text-green)',
+    warning: 'var(--color-text-yellow)',
+    error: 'var(--color-text-red)',
+  },
+  graphic: {
+    info: lightDark(getPaletteStop('blue', 45), getPaletteStop('blue', 60, 'dark')),
+    success: lightDark(getPaletteStop('green', 45), getPaletteStop('green', 60, 'dark')),
+    // Yellow stop 55 clears 3:1 against card and body surfaces.
+    warning: lightDark(getPaletteStop('yellow', 55), getPaletteStop('yellow', 80, 'dark')),
+    error: lightDark(getPaletteStop('red', 50), getPaletteStop('red', 60, 'dark')),
+  },
+  surface: {
+    info: 'var(--color-background-blue)',
+    success: 'var(--color-background-green)',
+    warning: 'var(--color-background-yellow)',
+    error: 'var(--color-background-red)',
+  },
 } as const;
 
 /** Shared ProgressBar track. */
@@ -1194,9 +1199,37 @@ export const neutralTheme = defineTheme({
         '--color-warning': 'var(--color-text-yellow)',
       },
       'status:error': {
-        '--color-text-primary': 'var(--color-text-red)',
-        '--color-text-secondary': 'var(--color-text-red)',
-        '--color-error': 'var(--color-text-red)',
+        '--color-error-muted': STATUS_COLOR_ROLES.surface.error,
+        '--color-text-primary': STATUS_COLOR_ROLES.foreground.error,
+        '--color-text-secondary': STATUS_COLOR_ROLES.foreground.error,
+        '--color-error': STATUS_COLOR_ROLES.foreground.error,
+      },
+    },
+
+    // Stepper status glyphs are backgroundless graphics, so they can use the
+    // brighter 3:1 graphic role instead of the darker 4.5:1 text role.
+    'step-indicator': {
+      'status:accent': {'--color-accent': STATUS_COLOR_ROLES.graphic.info},
+      'status:success': {
+        '--color-success': STATUS_COLOR_ROLES.graphic.success,
+      },
+      'status:warning': {
+        '--color-warning': STATUS_COLOR_ROLES.graphic.warning,
+      },
+      'status:error': {'--color-error': STATUS_COLOR_ROLES.graphic.error},
+    },
+
+    // Chat statuses are also foreground content. ChatMessageMetadata only
+    // recolors errors; ChatToolCalls additionally exposes running and complete
+    // states, so both receive the same shared foreground role aliases.
+    'chat-message-metadata': {
+      base: {'--color-error': STATUS_COLOR_ROLES.foreground.error},
+    },
+    'chat-tool-calls': {
+      base: {
+        '--color-accent': STATUS_COLOR_ROLES.foreground.info,
+        '--color-success': STATUS_COLOR_ROLES.foreground.success,
+        '--color-error': STATUS_COLOR_ROLES.foreground.error,
       },
     },
 
@@ -1215,16 +1248,16 @@ export const neutralTheme = defineTheme({
         '--color-icon-red': STATUS_COLOR_ROLES.fill.error,
       },
       'color:accent+presentation:icon': {
-        '--color-accent': STATUS_COLOR_ROLES.foreground.info,
+        '--color-accent': STATUS_COLOR_ROLES.graphic.info,
       },
       'color:success+presentation:icon': {
-        '--color-success': STATUS_COLOR_ROLES.foreground.success,
+        '--color-success': STATUS_COLOR_ROLES.graphic.success,
       },
       'color:warning+presentation:icon': {
-        '--color-warning': STATUS_COLOR_ROLES.foreground.warning,
+        '--color-warning': STATUS_COLOR_ROLES.graphic.warning,
       },
       'color:error+presentation:icon': {
-        '--color-error': STATUS_COLOR_ROLES.foreground.error,
+        '--color-error': STATUS_COLOR_ROLES.graphic.error,
       },
     },
 

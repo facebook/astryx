@@ -927,6 +927,7 @@ function StatusIndicatorSection({
   mode: Mode;
 }) {
   const audit = getStatusIndicatorContrast(theme, mode);
+  const iconColorOptions = getStatusIconColorOptions(theme, mode);
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Status indicators</h3>
@@ -939,8 +940,9 @@ function StatusIndicatorSection({
         }}>
         The same semantic hue families appear as standalone dots, Avatar
         presence, table-row signifiers, Stepper states, and chat delivery
-        metadata. Filled indicators use Badge fill colors; glyphs and text use
-        darker or lighter foreground stops chosen for their adjacent surface.
+        metadata. Filled indicators use Badge fill colors, backgroundless icons
+        use brighter graphic stops, and text or icons on tinted surfaces use
+        foreground stops.
       </p>
 
       <h4 style={{margin: '0 0 10px', fontSize: 14}}>Semantic color roles</h4>
@@ -959,8 +961,13 @@ function StatusIndicatorSection({
           },
           {
             role: 'Foreground',
-            consumers: 'Banner, Stepper, Table icons, chat status',
-            rule: 'A darker or lighter semantic stop sits directly on a surface.',
+            consumers: 'Banner text/icons and chat status content',
+            rule: 'A text-safe semantic stop sits on a tinted surface.',
+          },
+          {
+            role: 'Graphic',
+            consumers: 'Stepper and Table status icons',
+            rule: 'A brighter semantic stop clears the 3:1 graphic threshold.',
           },
           {
             role: 'Surface',
@@ -1125,6 +1132,115 @@ function StatusIndicatorSection({
             ]}
           />
         </div>
+      </div>
+
+      <h4 style={{margin: '28px 0 6px', fontSize: 14}}>
+        Status icon color alternatives
+      </h4>
+      <p
+        style={{
+          margin: '0 0 10px',
+          color: 'var(--color-text-secondary)',
+          fontSize: 10,
+          lineHeight: 1.5,
+        }}>
+        Text-safe colors target 4.5:1. Graphic-safe colors can be brighter
+        because meaningful icons require 3:1. Filled plates use the Badge pair.
+      </p>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+          gap: 10,
+        }}>
+        {[
+          {
+            title: 'Text-safe',
+            description: 'Banner and semantic text foregrounds',
+            render: (item: (typeof iconColorOptions)[number]) => (
+              <Icon icon={item.icon} size="sm" color="inherit" />
+            ),
+            color: (item: (typeof iconColorOptions)[number]) => item.textSafe,
+            ratio: (item: (typeof iconColorOptions)[number]) =>
+              item.textSafeRatio,
+          },
+          {
+            title: 'Selected · graphic-safe',
+            description: 'Backgroundless icon colors with a 3:1 floor',
+            render: (item: (typeof iconColorOptions)[number]) => (
+              <Icon icon={item.icon} size="sm" color="inherit" />
+            ),
+            color: (item: (typeof iconColorOptions)[number]) => item.graphic,
+            ratio: (item: (typeof iconColorOptions)[number]) =>
+              item.graphicRatio,
+          },
+          {
+            title: 'Filled plate',
+            description: 'Badge fill plus its on-fill icon color',
+            render: (item: (typeof iconColorOptions)[number]) => (
+              <span
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 999,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: item.badgeBackground,
+                  color: item.badgeForeground,
+                }}>
+                <Icon icon={item.icon} size="xsm" color="inherit" />
+              </span>
+            ),
+            color: (_item: (typeof iconColorOptions)[number]) => undefined,
+            ratio: (item: (typeof iconColorOptions)[number]) => item.badgeRatio,
+          },
+        ].map(option => (
+          <div
+            key={option.title}
+            style={{
+              padding: 12,
+              border: '1px solid var(--color-border)',
+              borderRadius: 10,
+              background: 'var(--color-background-card)',
+            }}>
+            <div style={{fontSize: 12, fontWeight: 700}}>{option.title}</div>
+            <div
+              style={{
+                color: 'var(--color-text-secondary)',
+                fontSize: 10,
+                margin: '2px 0 10px',
+              }}>
+              {option.description}
+            </div>
+            <div style={{display: 'grid', gap: 8}}>
+              {iconColorOptions.map(item => (
+                <div
+                  key={item.status}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '24px 1fr auto',
+                    gap: 8,
+                    alignItems: 'center',
+                    color: option.color(item),
+                  }}>
+                  {option.render(item)}
+                  <span style={{color: 'var(--color-text-primary)'}}>
+                    {item.name}
+                  </span>
+                  <span
+                    style={{
+                      color: 'var(--color-text-secondary)',
+                      fontFamily: MONO,
+                      fontSize: 9,
+                    }}>
+                    {option.ratio(item).toFixed(2)}:1
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       <h4 style={{margin: '28px 0 6px', fontSize: 14}}>
@@ -1447,8 +1563,8 @@ function StatusIndicatorSection({
         TopNavHeading end content, remeasure it against every host background
         and interaction state; slot ownership is not a contrast exception. The
         table-row plugin exposes separate dot and icon theme targets: semantic
-        dots use the shared fill role, while semantic icons use the shared
-        foreground role.
+        dots use the shared fill role, while backgroundless semantic icons use
+        the shared graphic role.
       </p>
     </div>
   );
@@ -1849,6 +1965,93 @@ const STATUS_DOT_DEFAULTS = {
     color: 'var(--color-background-surface)',
   },
 } as const;
+
+const STATUS_ICON_VARIANTS = [
+  {
+    name: 'Info',
+    status: 'accent',
+    badge: 'info',
+    token: '--color-accent',
+    textToken: '--color-text-blue',
+    icon: 'info',
+  },
+  {
+    name: 'Success',
+    status: 'success',
+    badge: 'success',
+    token: '--color-success',
+    textToken: '--color-text-green',
+    icon: 'check',
+  },
+  {
+    name: 'Warning',
+    status: 'warning',
+    badge: 'warning',
+    token: '--color-warning',
+    textToken: '--color-text-yellow',
+    icon: 'warning',
+  },
+  {
+    name: 'Error',
+    status: 'error',
+    badge: 'error',
+    token: '--color-error',
+    textToken: '--color-text-red',
+    icon: 'error',
+  },
+] as const;
+
+function getStatusIconColorOptions(theme: DefinedTheme, mode: Mode) {
+  const surface = resolveToken(theme, '--color-background-card', mode);
+  const stepBlock = theme.components?.['step-indicator'] ?? {};
+  const badgeBlock = theme.components?.badge ?? {};
+
+  return STATUS_ICON_VARIANTS.map(item => {
+    const stepLocal = Object.fromEntries(
+      Object.entries({
+        ...(stepBlock.base ?? {}),
+        ...(stepBlock[`status:${item.status}`] ?? {}),
+      }).filter(
+        (entry): entry is [string, string] =>
+          entry[0].startsWith('--') && typeof entry[1] === 'string',
+      ),
+    );
+    const badgeOverride = badgeBlock[`variant:${item.badge}`] ?? {};
+    const badgeBackground = resolveThemeColor(
+      theme,
+      String(badgeOverride.backgroundColor ?? `var(${item.token})`),
+      mode,
+    );
+    const badgeForeground = resolveThemeColor(
+      theme,
+      String(
+        badgeOverride.color ??
+          (item.status === 'warning'
+            ? 'var(--color-on-warning)'
+            : `var(--color-on-${item.status})`),
+      ),
+      mode,
+    );
+    const textSafe = resolveToken(theme, item.textToken, mode);
+    const graphic = resolveThemeColor(
+      theme,
+      `var(${item.token})`,
+      mode,
+      stepLocal,
+    );
+
+    return {
+      ...item,
+      textSafe,
+      textSafeRatio: contrastRatio(textSafe, surface),
+      graphic,
+      graphicRatio: contrastRatio(graphic, surface),
+      badgeBackground,
+      badgeForeground,
+      badgeRatio: contrastRatio(badgeForeground, badgeBackground),
+    };
+  });
+}
 
 function getStatusIndicatorContrast(theme: DefinedTheme, mode: Mode) {
   const parentTokens = [

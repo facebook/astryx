@@ -220,6 +220,47 @@ describe('neutral theme component-pair contrast', () => {
   );
 
   it.each(MODES)(
+    'keeps backgroundless status icons aligned and perceivable in $name mode',
+    ({index}) => {
+      const step = neutralTheme.components['step-indicator'];
+      const table = neutralTheme.components['table-row-status'];
+      const statusTokens = {
+        accent: '--color-accent',
+        success: '--color-success',
+        warning: '--color-warning',
+        error: '--color-error',
+      };
+      const surfaces = [
+        'var(--color-background-body)',
+        'var(--color-background-surface)',
+        'var(--color-background-card)',
+      ];
+
+      for (const [status, token] of Object.entries(statusTokens)) {
+        const stepLocal = {
+          ...(step?.base ?? {}),
+          ...(step?.[`status:${status}`] ?? {}),
+        };
+        const tableLocal = {
+          ...(table?.base ?? {}),
+          ...(table?.[`color:${status}+presentation:icon`] ?? {}),
+        };
+        const stepColor = resolve(`var(${token})`, index, stepLocal);
+        const tableColor = resolve(`var(${token})`, index, tableLocal);
+
+        expect(tableColor, `${status} icon roles should match`).toBe(stepColor);
+        for (const surface of surfaces) {
+          const background = resolve(surface, index);
+          expect(
+            contrastRatio(stepColor, background),
+            `${status} icon ${stepColor} should contrast with ${background}`,
+          ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+        }
+      }
+    },
+  );
+
+  it.each(MODES)(
     'keeps every ProgressBar fill distinct from its track in $name mode',
     ({index}) => {
       const progress = neutralTheme.components['progress-bar'];
