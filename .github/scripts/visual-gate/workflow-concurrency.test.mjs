@@ -339,6 +339,105 @@ describe('visual acceptance workflow concurrency', () => {
     expect(promoteJob).toContain('contents: write');
   });
 
+  it('resolves automatic previews from trusted API state before checking artifacts', () => {
+    const value = workflow('deploy-preview.yml');
+    const resolve = value.indexOf('Resolve trusted preview target');
+    const metadata = value.indexOf('Download PR metadata from the CI run');
+    const crossCheck = value.indexOf('Cross-check artifact identity');
+
+    expect(value).toContain("run.conclusion !== 'success'");
+    expect(value).toContain('pr.draft');
+    expect(value).toContain('listPullRequestsAssociatedWithCommit');
+    expect(value).toContain('pr.head?.sha === run.head_sha');
+    expect(value).toContain('pr.head?.repo?.id');
+    expect(value).not.toContain('PR_NUMBER="$(jq');
+    expect(resolve).toBeGreaterThan(-1);
+    expect(resolve).toBeLessThan(metadata);
+    expect(metadata).toBeLessThan(crossCheck);
+    expect(value).toContain('artifact PR number does not match trusted PR');
+    expect(value).toContain('artifact head does not match trusted PR head');
+    expect(value).toContain('steps.preview.outputs.ready');
+    expect(value).toContain('steps.artifact.outputs.ready');
+  });
+
+  it('rechecks trusted preview readiness immediately before publishing', () => {
+    const value = workflow('deploy-preview.yml');
+    const verify = value.indexOf('Verify preview artifacts are present');
+    const final = value.indexOf('Confirm preview target before publish');
+    const publish = value.indexOf('Deploy PR preview to GitHub Pages');
+    const finalBlock = value.slice(final, publish);
+    const publishBlock = value.slice(publish);
+
+    expect(final).toBeGreaterThan(verify);
+    expect(final).toBeLessThan(publish);
+    expect(finalBlock).toContain("pr.state !== 'open'");
+    expect(finalBlock).toContain('pr.draft');
+    expect(finalBlock).toContain('pr.head.sha !== process.env.HEAD_SHA');
+    expect(finalBlock).toContain('pr.head.ref !== process.env.HEAD_REF');
+    expect(finalBlock).toContain('pr.head.repo?.id');
+    expect(publishBlock).toContain(
+      "if: steps.final-preview.outputs.ready == 'true'",
+    );
+  });
+
+  it('keeps every remaining gh-pages writer behind the shared publisher', () => {
+    const files = [
+      '.github/workflows/deploy-preview.yml',
+      '.github/workflows/redeploy-preview.yml',
+      '.github/workflows/cleanup-previews.yml',
+      '.github/workflows/compact-gh-pages.yml',
+      '.github/workflows/vibe-screenshots.yml',
+      'internal/vibe-tests/src/deploy-report.ts',
+    ];
+    const combined = files
+      .map(file => fs.readFileSync(path.join(ROOT, file), 'utf8'))
+      .join('\n');
+    expect(combined).toContain('gh-pages-publisher.mjs');
+    expect(combined).not.toContain('git push origin gh-pages');
+    expect(combined).not.toContain('ref: gh-pages');
+    expect(combined).not.toContain('git clone --depth 1 --branch gh-pages');
+  });
+
+  it('grants remaining publisher jobs read access to overlapping workflow runs', () => {
+    const jobs = [
+      [workflow('cleanup-previews.yml'), '  cleanup:'],
+      [workflow('compact-gh-pages.yml'), '  compact:'],
+      [workflow('vibe-screenshots.yml'), '  deploy-screenshots:'],
+    ];
+    for (const [value, jobName] of jobs) {
+      const job = value.slice(
+        value.indexOf(jobName),
+        value.indexOf('    steps:', value.indexOf(jobName)),
+      );
+      expect(job).toContain('actions: read');
+      expect(job).toContain('contents: write');
+    }
+  });
+
+  it('routes previews, cleanup, compaction, and vibe screenshots through the shared publisher', () => {
+    const deployPreview = workflow('deploy-preview.yml');
+    const redeployPreview = workflow('redeploy-preview.yml');
+    const cleanup = workflow('cleanup-previews.yml');
+    const compact = workflow('compact-gh-pages.yml');
+    const vibe = workflow('vibe-screenshots.yml');
+
+    expect(deployPreview).toContain('gh-pages-publisher.mjs pr-preview');
+    expect(redeployPreview).toContain('gh-pages-publisher.mjs pr-preview');
+    expect(cleanup).toContain('gh-pages-publisher.mjs cleanup-previews');
+    expect(compact).toContain('gh-pages-publisher.mjs compact');
+    expect(vibe).toContain('gh-pages-publisher.mjs vibe-screenshots');
+    for (const value of [
+      deployPreview,
+      redeployPreview,
+      cleanup,
+      compact,
+      vibe,
+    ]) {
+      expect(value).not.toContain('git push origin gh-pages');
+      expect(value).not.toContain('ref: gh-pages');
+    }
+  });
+
   it('projects every known validation or publication failure from an always-running job', () => {
     const value = workflow('visual-acceptance-promote.yml');
     const status = value.slice(value.indexOf('  project-status:'));
