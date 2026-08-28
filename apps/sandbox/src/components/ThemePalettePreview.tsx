@@ -1127,6 +1127,142 @@ function StatusIndicatorSection({
         </div>
       </div>
 
+      <h4 style={{margin: '28px 0 6px', fontSize: 14}}>
+        Existing standalone usage patterns
+      </h4>
+      <p
+        style={{
+          margin: '0 0 10px',
+          color: 'var(--color-text-secondary)',
+          fontSize: 10,
+          lineHeight: 1.5,
+        }}>
+        These recreate current repository examples where nearby text identifies
+        the object, but the dot is the only visible cue for its status.
+      </p>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: 10,
+        }}>
+        <div
+          style={{
+            padding: 12,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+          }}>
+          <div style={buttonRowLabelStyle}>Grouped table status cell</div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '16px 64px minmax(0, 1fr)',
+              gap: 8,
+              alignItems: 'center',
+            }}>
+            <StatusDot variant="warning" label="In review" />
+            <Text type="supporting" color="secondary">
+              TASK-184
+            </Text>
+            <Text>Review palette</Text>
+          </div>
+        </div>
+
+        <div
+          style={{
+            padding: 12,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+          }}>
+          <div style={buttonRowLabelStyle}>Side navigation end content</div>
+          <HStack gap={2} vAlign="center" hAlign="between">
+            <Text>Design system</Text>
+            <StatusDot variant="warning" label="Degraded" />
+          </HStack>
+        </div>
+
+        <div
+          style={{
+            padding: 12,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+          }}>
+          <div style={buttonRowLabelStyle}>Messaging header</div>
+          <HStack gap={2} vAlign="center">
+            <Text weight="bold"># product</Text>
+            <div style={{flex: 1}} />
+            <StatusDot variant="success" label="12 online" />
+          </HStack>
+        </div>
+
+        <div
+          style={{
+            padding: 12,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+          }}>
+          <div style={buttonRowLabelStyle}>Incident severity</div>
+          <HStack gap={2} vAlign="center">
+            <StatusDot variant="error" label="SEV1" isPulsing />
+            <Text>Checkout latency</Text>
+            <div style={{flex: 1}} />
+            <Badge variant="warning" label="Investigating" />
+          </HStack>
+        </div>
+
+        <div
+          style={{
+            padding: 12,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+          }}>
+          <div style={buttonRowLabelStyle}>Monitoring tile</div>
+          <HStack gap={2} vAlign="center">
+            <StatusDot variant="error" label="Critical" isPulsing />
+            <Text type="label" color="secondary">
+              API latency
+            </Text>
+          </HStack>
+          <div style={{fontSize: 22, fontWeight: 700, marginTop: 8}}>2.8s</div>
+        </div>
+
+        <div
+          style={{
+            padding: 12,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+          }}>
+          <div style={buttonRowLabelStyle}>Tab end content</div>
+          <HStack gap={4} vAlign="center" wrap="wrap">
+            <HStack gap={1} vAlign="center">
+              <Text>Production</Text>
+              <StatusDot variant="success" label="Healthy" />
+            </HStack>
+            <HStack gap={1} vAlign="center">
+              <Text>Staging</Text>
+              <StatusDot variant="warning" label="Degraded" />
+            </HStack>
+          </HStack>
+        </div>
+      </div>
+      <p
+        style={{
+          margin: '8px 0 0',
+          color: 'var(--color-warning)',
+          fontSize: 10,
+          lineHeight: 1.5,
+          fontWeight: 700,
+        }}>
+        In every example above, the status name is hidden from sighted users.
+        Add visible status text or a distinct shape when the state matters.
+      </p>
+
       <h4 style={{margin: '28px 0 6px', fontSize: 14}}>Contrast evaluation</h4>
       <p
         style={{
