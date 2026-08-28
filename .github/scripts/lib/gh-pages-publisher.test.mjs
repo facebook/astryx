@@ -1,15 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {execFileSync, spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 import {afterEach, describe, expect, it} from 'vitest';
+import {PNG} from 'pngjs';
 
 import {
   enqueuePublication,
+  publishAcceptedVisualBaseline,
+  publishImmutablePath,
   publishReleaseGateReport,
+  publishVisualAcceptanceRecord,
   publishStableSite,
   releasePublication,
   waitForPublicationTurn,
@@ -18,6 +24,90 @@ import {
 
 const REPO = 'facebook/astryx';
 const roots = [];
+const LEGACY_LOCK = fileURLToPath(
+  new URL('../visual-gate/lib/baseline-publication-lock.mjs', import.meta.url),
+);
+
+const HEAD = 'a'.repeat(40);
+const TESTED = 'b'.repeat(40);
+const BASE = 'd'.repeat(40);
+const MERGE = 'c'.repeat(40);
+const KEY = 'core-button--default__neutral-light';
+
+const SHARED_HOLDER = path.join(
+  '.astryx-gh-pages',
+  'publication-queue',
+  'holder.json',
+);
+const LEGACY_HOLDER = path.join(
+  'visual-gate',
+  'publication-queue',
+  'holder.json',
+);
+
+function holderCommit(checkout, holder) {
+  return git(checkout, 'log', '-1', '--format=%H', '--', holder);
+}
+
+function holderAt(checkout, commit, holder) {
+  const result = spawnSync(
+    'git',
+    ['-C', checkout, 'show', `${commit}:${holder}`],
+    {
+      encoding: 'utf8',
+    },
+  );
+  if (result.status !== 0) return null;
+  return JSON.parse(result.stdout);
+}
+
+function holderStates(checkout, runId) {
+  return git(checkout, 'rev-list', '--reverse', 'HEAD')
+    .split('\n')
+    .filter(Boolean)
+    .map(commit => ({
+      commit,
+      shared: holderAt(checkout, commit, SHARED_HOLDER)?.runId === runId,
+      legacy: holderAt(checkout, commit, LEGACY_HOLDER)?.runId === runId,
+    }));
+}
+
+function expectNoPartialHolderState(checkout, runId) {
+  expect(
+    holderStates(checkout, runId).filter(
+      state => state.shared !== state.legacy,
+    ),
+  ).toEqual([]);
+}
+
+const SHOT = {
+  storyId: 'core-button--default',
+  title: 'Core/Button',
+  name: 'Default',
+  component: 'Button',
+  theme: 'neutral',
+  mode: 'light',
+  reasons: ['component:Button'],
+};
+
+function png(red, green = 0, blue = 0) {
+  const image = new PNG({width: 2, height: 2});
+  for (let offset = 0; offset < image.data.length; offset += 4) {
+    image.data[offset] = red;
+    image.data[offset + 1] = green;
+    image.data[offset + 2] = blue;
+    image.data[offset + 3] = 255;
+  }
+  return PNG.sync.write(image);
+}
+
+function digest(bytes) {
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+function writeJSON(file, value) {
+  writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
+}
 
 function git(cwd, ...args) {
   return execFileSync('git', ['-C', cwd, ...args], {encoding: 'utf8'}).trim();
@@ -50,10 +140,47 @@ function fixture() {
   writeFile(path.join(seed, 'assets', 'old.css'), 'old asset');
   writeFile(path.join(seed, 'pr', '123', 'index.html'), 'preview');
   writeFile(path.join(seed, 'reports', 'vibe', 'index.html'), 'vibe');
+  const before = png(255);
+  const after = png(0, 0, 255);
   writeFile(
-    path.join(seed, 'visual-gate', 'baseline', 'manifest.json'),
-    '{}\n',
+    path.join(seed, 'visual-gate', 'baseline', 'shots', `${KEY}.png`),
+    before,
   );
+  writeJSON(path.join(seed, 'visual-gate', 'baseline', 'manifest.json'), {
+    version: 1,
+    platform: 'linux-arm64',
+    browser: 'chromium-140.0',
+    viewport: {width: 1280, height: 900},
+    shots: {
+      [KEY]: {...SHOT, key: KEY, sha256: digest(before), width: 2, height: 2},
+    },
+    decisions: [],
+  });
+  const evidence = path.join(seed, 'pr', '42', 'visual', HEAD, '123', '1');
+  writeFile(path.join(evidence, 'after', `${KEY}.png`), after);
+  writeJSON(path.join(evidence, 'evidence.json'), {
+    version: 1,
+    repo: REPO,
+    pr: 42,
+    headSha: HEAD,
+    testedSha: TESTED,
+    baseSha: BASE,
+    run: {id: 123, attempt: 1},
+    capture: {
+      platform: 'linux-arm64',
+      browser: 'chromium-140.0',
+      viewport: {width: 1280, height: 900},
+    },
+    deltas: [
+      {
+        key: KEY,
+        kind: 'changed',
+        beforeSha256: digest(before),
+        shot: SHOT,
+      },
+    ],
+    verdict: {version: 1, status: 'changed'},
+  });
   writeFile(path.join(seed, 'visual-gate', '55', 'old.html'), 'old report');
   writeFile(path.join(seed, 'index.html'), 'old landing');
   writeFile(path.join(seed, 'latest'), 'oldsha');
@@ -63,10 +190,120 @@ function fixture() {
   git(root, 'clone', '-q', '--bare', seed, remote);
   writeFile(
     path.join(bin, 'gh'),
-    '#!/bin/sh\nprintf \'{"status":"in_progress"}\\n\'\n',
+    `#!/bin/sh
+printf '{"workflow_runs":[{"name":"CI","id":123,"run_attempt":1,"status":"completed","conclusion":"success"}],"name":"CI","id":123,"run_attempt":1,"status":"completed","conclusion":"success","head_sha":"${HEAD}"}\n'
+`,
   );
   fs.chmodSync(path.join(bin, 'gh'), 0o755);
   return {root, remote, bin};
+}
+
+function writeLegacyTicket(remote, root, runId) {
+  const writer = cloneRemote(remote, root, `legacy-${runId}`);
+  git(writer, 'config', 'user.name', 'Test');
+  git(writer, 'config', 'user.email', 'test@example.com');
+  writeJSON(
+    path.join(writer, 'visual-gate', 'publication-queue', `${runId}.json`),
+    {
+      version: 1,
+      repository: REPO,
+      runId,
+    },
+  );
+  git(writer, 'add', '.');
+  git(writer, 'commit', '-qm', `legacy ticket ${runId}`);
+  git(writer, 'push', '-q', 'origin', 'gh-pages');
+}
+
+function runLegacyLock(fx, command, runId, extra = {}) {
+  return spawnSync(process.execPath, [LEGACY_LOCK, command], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      PATH: `${fx.bin}:${process.env.PATH}`,
+      ASTRYX_BASELINE_QUEUE_URL: `file://${fx.remote}`,
+      GH_TOKEN: 'test-token',
+      GITHUB_REPOSITORY: REPO,
+      GITHUB_RUN_ID: String(runId),
+      RUNNER_TEMP: fx.root,
+      ...extra,
+    },
+  });
+}
+
+function writeSharedHolder(remote, root, runId, scope) {
+  const writer = cloneRemote(remote, root, `shared-holder-${runId}`);
+  git(writer, 'config', 'user.name', 'Test');
+  git(writer, 'config', 'user.email', 'test@example.com');
+  writeJSON(
+    path.join(writer, '.astryx-gh-pages', 'publication-queue', `${runId}.json`),
+    {
+      version: 1,
+      repository: REPO,
+      runId,
+      scope,
+    },
+  );
+  writeJSON(
+    path.join(writer, '.astryx-gh-pages', 'publication-queue', 'holder.json'),
+    {
+      version: 1,
+      repository: REPO,
+      runId,
+      scope,
+    },
+  );
+  git(writer, 'add', '.');
+  git(writer, 'commit', '-qm', `shared holder ${runId}`);
+  git(writer, 'push', '-q', 'origin', 'gh-pages');
+}
+
+function writeLegacyHolder(remote, root, runId, {withTicket = false} = {}) {
+  const writer = cloneRemote(remote, root, `legacy-holder-${runId}`);
+  git(writer, 'config', 'user.name', 'Test');
+  git(writer, 'config', 'user.email', 'test@example.com');
+  if (withTicket) {
+    writeJSON(
+      path.join(writer, 'visual-gate', 'publication-queue', `${runId}.json`),
+      {
+        version: 1,
+        repository: REPO,
+        runId,
+      },
+    );
+  }
+  writeJSON(path.join(writer, LEGACY_HOLDER), {
+    version: 1,
+    repository: REPO,
+    runId,
+  });
+  git(writer, 'add', '.');
+  git(writer, 'commit', '-qm', `legacy holder ${runId}`);
+  git(writer, 'push', '-q', 'origin', 'gh-pages');
+}
+
+function writeCompetingSharedHolder(remote, root, runId, scope) {
+  const writer = cloneRemote(remote, root, `competing-shared-${runId}`);
+  git(writer, 'config', 'user.name', 'Test');
+  git(writer, 'config', 'user.email', 'test@example.com');
+  writeJSON(
+    path.join(writer, '.astryx-gh-pages', 'publication-queue', `${runId}.json`),
+    {
+      version: 1,
+      repository: REPO,
+      runId,
+      scope,
+    },
+  );
+  writeJSON(path.join(writer, SHARED_HOLDER), {
+    version: 1,
+    repository: REPO,
+    runId,
+    scope,
+  });
+  git(writer, 'add', '.');
+  git(writer, 'commit', '-qm', `competing shared holder ${runId}`);
+  git(writer, 'push', '-q', 'origin', 'gh-pages');
 }
 
 function cloneRemote(remote, root, name = 'final') {
@@ -206,11 +443,13 @@ describe('gh-pages publisher', () => {
       ),
     ).toBe('vibe');
     expect(
-      fs.readFileSync(
-        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
-        'utf8',
-      ),
-    ).toBe('{}\n');
+      JSON.parse(
+        fs.readFileSync(
+          path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+          'utf8',
+        ),
+      ).version,
+    ).toBe(1);
     expect(
       fs.readFileSync(
         path.join(final, '.astryx-gh-pages', 'publication-queue', '700.json'),
@@ -249,11 +488,13 @@ describe('gh-pages publisher', () => {
       ),
     ).toBe('new report');
     expect(
-      fs.readFileSync(
-        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
-        'utf8',
-      ),
-    ).toBe('{}\n');
+      JSON.parse(
+        fs.readFileSync(
+          path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+          'utf8',
+        ),
+      ).version,
+    ).toBe(1);
     expect(
       fs.readFileSync(path.join(final, 'storybook', 'old.html'), 'utf8'),
     ).toBe('old storybook');
@@ -332,5 +573,427 @@ describe('gh-pages publisher', () => {
     expect(
       fs.existsSync(path.join(final, '.astryx-gh-pages', 'publication-queue')),
     ).toBe(true);
+  });
+
+  it('does not claim either holder while waiting for an older legacy baseline ticket', async () => {
+    const fx = fixture();
+    writeLegacyTicket(fx.remote, fx.root, 899);
+    const turn = context(fx, 900, 'visual-gate/reports');
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${previousPath}`;
+    try {
+      await enqueuePublication(turn);
+      await expect(
+        waitForPublicationTurn({...turn, timeoutMs: 0}),
+      ).rejects.toThrow(/timed out behind gh-pages publication run 899/);
+    } finally {
+      process.env.PATH = previousPath;
+    }
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.existsSync(
+        path.join(
+          final,
+          '.astryx-gh-pages',
+          'publication-queue',
+          'holder.json',
+        ),
+      ),
+    ).toBe(false);
+    expect(
+      fs.existsSync(
+        path.join(final, 'visual-gate', 'publication-queue', 'holder.json'),
+      ),
+    ).toBe(false);
+  });
+
+  it('lets a late older legacy run finish while the newer shared holder waits', async () => {
+    const fx = fixture();
+    const turn = context(fx, 900, 'visual-gate/reports');
+    await enqueuePublication(turn);
+    writeLegacyTicket(fx.remote, fx.root, 899);
+
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${previousPath}`;
+    try {
+      await expect(
+        waitForPublicationTurn({...turn, timeoutMs: 0}),
+      ).rejects.toThrow(/timed out behind gh-pages publication run 899/);
+      expect(runLegacyLock(fx, 'wait', 899).status).toBe(0);
+      expect(runLegacyLock(fx, 'release', 899).status).toBe(0);
+      await waitForPublicationTurn(turn);
+    } finally {
+      process.env.PATH = previousPath;
+    }
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      JSON.parse(fs.readFileSync(path.join(final, SHARED_HOLDER), 'utf8')),
+    ).toMatchObject({runId: 900, scope: 'visual-gate/reports'});
+    expect(
+      JSON.parse(fs.readFileSync(path.join(final, LEGACY_HOLDER), 'utf8')),
+    ).toMatchObject({runId: 900});
+    expect(holderCommit(final, SHARED_HOLDER)).toBe(
+      holderCommit(final, LEGACY_HOLDER),
+    );
+    expectNoPartialHolderState(final, 900);
+  });
+
+  it('bridges the legacy and shared queues for a new report writer', async () => {
+    const fx = fixture();
+    const turn = context(fx, 900, 'visual-gate/reports');
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${previousPath}`;
+    try {
+      await enqueuePublication(turn);
+      await waitForPublicationTurn(turn);
+    } finally {
+      process.env.PATH = previousPath;
+    }
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      JSON.parse(
+        fs.readFileSync(
+          path.join(
+            final,
+            '.astryx-gh-pages',
+            'publication-queue',
+            'holder.json',
+          ),
+          'utf8',
+        ),
+      ),
+    ).toMatchObject({runId: 900, scope: 'visual-gate/reports'});
+    expect(
+      JSON.parse(
+        fs.readFileSync(
+          path.join(final, 'visual-gate', 'publication-queue', 'holder.json'),
+          'utf8',
+        ),
+      ),
+    ).toMatchObject({runId: 900});
+  });
+
+  it('allows only one simultaneous current writer to claim both holders', async () => {
+    const fx = fixture();
+    const first = context(fx, 900, 'visual-gate/reports');
+    const second = context(fx, 901, 'pr-visual/evidence');
+    await enqueuePublication(first);
+    await enqueuePublication(second);
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${previousPath}`;
+    try {
+      await Promise.all([
+        waitForPublicationTurn(first),
+        expect(
+          waitForPublicationTurn({...second, timeoutMs: 0}),
+        ).rejects.toThrow(/timed out behind gh-pages publication run 900/),
+      ]);
+    } finally {
+      process.env.PATH = previousPath;
+    }
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      JSON.parse(fs.readFileSync(path.join(final, SHARED_HOLDER), 'utf8')),
+    ).toMatchObject({runId: 900, scope: 'visual-gate/reports'});
+    expect(
+      JSON.parse(fs.readFileSync(path.join(final, LEGACY_HOLDER), 'utf8')),
+    ).toMatchObject({runId: 900});
+    expect(holderCommit(final, SHARED_HOLDER)).toBe(
+      holderCommit(final, LEGACY_HOLDER),
+    );
+    expectNoPartialHolderState(final, 900);
+  });
+
+  it('retries an interrupted dual-holder claim without publishing a partial holder', async () => {
+    const fx = fixture();
+    const turn = context(fx, 900, 'visual-gate/reports');
+    await enqueuePublication(turn);
+    let raced = false;
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${previousPath}`;
+    try {
+      await waitForPublicationTurn({
+        ...turn,
+        beforeClaimPush: async ({attempt}) => {
+          if (attempt !== 1 || raced) return;
+          raced = true;
+          const writer = cloneRemote(fx.remote, fx.root, 'dual-queue-race');
+          git(writer, 'config', 'user.name', 'Test');
+          git(writer, 'config', 'user.email', 'test@example.com');
+          writeFile(path.join(writer, 'race.txt'), 'race');
+          git(writer, 'add', '.');
+          git(writer, 'commit', '-qm', 'race');
+          git(writer, 'push', '-q', 'origin', 'gh-pages');
+        },
+      });
+    } finally {
+      process.env.PATH = previousPath;
+    }
+    expect(raced).toBe(true);
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(fs.readFileSync(path.join(final, 'race.txt'), 'utf8')).toBe('race');
+    expect(holderCommit(final, SHARED_HOLDER)).toBe(
+      holderCommit(final, LEGACY_HOLDER),
+    );
+    expectNoPartialHolderState(final, 900);
+  });
+
+  it('prunes a completed legacy blocker and then acquires both holders', async () => {
+    const fx = fixture();
+    writeLegacyTicket(fx.remote, fx.root, 899);
+    const turn = context(fx, 900, 'visual-gate/reports');
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${previousPath}`;
+    try {
+      await enqueuePublication(turn);
+      await waitForPublicationTurn(turn);
+    } finally {
+      process.env.PATH = previousPath;
+    }
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.existsSync(
+        path.join(final, 'visual-gate', 'publication-queue', '899.json'),
+      ),
+    ).toBe(false);
+    expect(
+      JSON.parse(
+        fs.readFileSync(
+          path.join(final, 'visual-gate', 'publication-queue', 'holder.json'),
+          'utf8',
+        ),
+      ),
+    ).toMatchObject({runId: 900});
+  });
+
+  it('releases both holders in one commit without an observable partial release', async () => {
+    const fx = fixture();
+    const turn = context(fx, 900, 'visual-gate/reports');
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${previousPath}`;
+    try {
+      await enqueuePublication(turn);
+      await waitForPublicationTurn(turn);
+      await releasePublication(turn);
+    } finally {
+      process.env.PATH = previousPath;
+    }
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(fs.existsSync(path.join(final, SHARED_HOLDER))).toBe(false);
+    expect(fs.existsSync(path.join(final, LEGACY_HOLDER))).toBe(false);
+    expectNoPartialHolderState(final, 900);
+  });
+
+  it('prunes a terminal legacy holder without a ticket before claiming both holders', async () => {
+    const fx = fixture();
+    writeLegacyHolder(fx.remote, fx.root, 899);
+    const turn = context(fx, 900, 'visual-gate/reports');
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${previousPath}`;
+    try {
+      await enqueuePublication(turn);
+      await waitForPublicationTurn(turn);
+    } finally {
+      process.env.PATH = previousPath;
+    }
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.existsSync(
+        path.join(final, 'visual-gate', 'publication-queue', '899.json'),
+      ),
+    ).toBe(false);
+    expect(
+      JSON.parse(fs.readFileSync(path.join(final, SHARED_HOLDER), 'utf8')),
+    ).toMatchObject({runId: 900});
+    expect(
+      JSON.parse(fs.readFileSync(path.join(final, LEGACY_HOLDER), 'utf8')),
+    ).toMatchObject({runId: 900});
+    expectNoPartialHolderState(final, 900);
+  });
+
+  it('rechecks a fresh tip before claiming when a competing holder appears', async () => {
+    const fx = fixture();
+    const turn = context(fx, 900, 'visual-gate/reports');
+    await enqueuePublication(turn);
+    let raced = false;
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${previousPath}`;
+    try {
+      await expect(
+        waitForPublicationTurn({
+          ...turn,
+          timeoutMs: 0,
+          beforeClaimPush: async ({attempt}) => {
+            if (attempt !== 1 || raced) return;
+            raced = true;
+            writeCompetingSharedHolder(fx.remote, fx.root, 899, 'whole-tree');
+          },
+        }),
+      ).rejects.toThrow(/timed out behind gh-pages publication run 899/);
+    } finally {
+      process.env.PATH = previousPath;
+    }
+    expect(raced).toBe(true);
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      JSON.parse(fs.readFileSync(path.join(final, SHARED_HOLDER), 'utf8')),
+    ).toMatchObject({runId: 899, scope: 'whole-tree'});
+    expect(fs.existsSync(path.join(final, LEGACY_HOLDER))).toBe(false);
+  });
+
+  it('publishes immutable visual evidence without overwriting different bytes', async () => {
+    const fx = fixture();
+    const source = path.join(fx.root, 'immutable-source');
+    writeFile(path.join(source, 'index.html'), 'evidence');
+    writeJSON(path.join(source, 'evidence.json'), {ok: true});
+
+    await queuedPublish(fx, 910, 'pr-visual/evidence', () =>
+      publishImmutablePath({
+        ...context(fx, 910, 'pr-visual/evidence'),
+        source,
+        destination: 'pr/42/visual/head/run/1',
+        message: 'Visual evidence: pr/42/visual/head/run/1',
+      }),
+    );
+    await queuedPublish(fx, 911, 'pr-visual/evidence', () =>
+      publishImmutablePath({
+        ...context(fx, 911, 'pr-visual/evidence'),
+        source,
+        destination: 'pr/42/visual/head/run/1',
+        message: 'Visual evidence: pr/42/visual/head/run/1',
+      }),
+    );
+    writeFile(path.join(source, 'index.html'), 'changed evidence');
+    await expect(
+      queuedPublish(fx, 912, 'pr-visual/evidence', () =>
+        publishImmutablePath({
+          ...context(fx, 912, 'pr-visual/evidence'),
+          source,
+          destination: 'pr/42/visual/head/run/1',
+          message: 'Visual evidence: pr/42/visual/head/run/1',
+        }),
+      ),
+    ).rejects.toThrow(/immutable destination already exists/);
+  });
+
+  it('archives acceptance records through the shared queue', async () => {
+    const fx = fixture();
+    await queuedPublish(fx, 920, 'visual-gate/acceptances', () =>
+      publishVisualAcceptanceRecord({
+        ...context(fx, 920, 'visual-gate/acceptances'),
+        pr: 42,
+        head: HEAD,
+        acceptedRunId: 123,
+        acceptedRunAttempt: 1,
+        approver: 'maintainer',
+        approverId: 99,
+        permission: 'maintain',
+        effectivePermission: 'maintain',
+        roleName: '',
+        commentId: 1234,
+        reason: 'The new radius matches the approved component design.',
+      }),
+    );
+
+    const final = cloneRemote(fx.remote, fx.root);
+    const acceptance = JSON.parse(
+      fs.readFileSync(
+        path.join(
+          final,
+          'visual-gate',
+          'acceptances',
+          '42',
+          HEAD,
+          '123',
+          '1',
+          'acceptance.json',
+        ),
+        'utf8',
+      ),
+    );
+    expect(acceptance.keys.map(entry => entry.key)).toEqual([KEY]);
+    expect(
+      fs.existsSync(
+        path.join(
+          final,
+          'visual-gate',
+          'acceptances',
+          '42',
+          HEAD,
+          '123',
+          '1',
+          'after',
+          `${KEY}.png`,
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('promotes accepted baseline pixels only while holding the shared turn', async () => {
+    const fx = fixture();
+    await queuedPublish(fx, 930, 'visual-gate/acceptances', () =>
+      publishVisualAcceptanceRecord({
+        ...context(fx, 930, 'visual-gate/acceptances'),
+        pr: 42,
+        head: HEAD,
+        acceptedRunId: 123,
+        acceptedRunAttempt: 1,
+        approver: 'maintainer',
+        approverId: 99,
+        permission: 'maintain',
+        effectivePermission: 'maintain',
+        roleName: '',
+        commentId: 1234,
+        reason: 'The new radius matches the approved component design.',
+      }),
+    );
+    const capture = path.join(fx.root, 'merged-capture');
+    const after = png(0, 0, 255);
+    writeFile(path.join(capture, 'shots', `${KEY}.png`), after);
+    writeJSON(path.join(capture, 'manifest.json'), {
+      version: 1,
+      platform: 'linux-arm64',
+      browser: 'chromium-140.0',
+      viewport: {width: 1280, height: 900},
+      context: {sha: MERGE},
+      shots: {
+        [KEY]: {...SHOT, key: KEY, sha256: digest(after), width: 2, height: 2},
+      },
+    });
+    const turn = context(fx, 931, 'visual-gate/baseline');
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${previousPath}`;
+    try {
+      await enqueuePublication(turn);
+      await waitForPublicationTurn(turn);
+      await publishAcceptedVisualBaseline({
+        ...turn,
+        pr: 42,
+        head: HEAD,
+        mergeSha: MERGE,
+        expectedRecordRel: '123/1/acceptance.json',
+        capture,
+      });
+      await releasePublication(turn);
+    } finally {
+      process.env.PATH = previousPath;
+    }
+
+    const final = cloneRemote(fx.remote, fx.root);
+    const manifest = JSON.parse(
+      fs.readFileSync(
+        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+        'utf8',
+      ),
+    );
+    expect(manifest.shots[KEY].sha256).toBe(digest(after));
+    expect(manifest.decisions.at(-1)).toMatchObject({
+      pr: 42,
+      headSha: HEAD,
+      mergeSha: MERGE,
+    });
   });
 });

@@ -58,7 +58,7 @@ jobs:
       - name: Queue baseline publication
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node .github/scripts/visual-gate/lib/baseline-publication-lock.mjs enqueue
+        run: node .github/scripts/gh-pages-publisher.mjs enqueue --scope visual-gate/baseline
 
       - name: Download the capture being promoted
         uses: actions/download-artifact@v8
@@ -71,58 +71,28 @@ jobs:
       - name: Wait for the baseline publication turn
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node .github/scripts/visual-gate/lib/baseline-publication-lock.mjs wait
+        run: node .github/scripts/gh-pages-publisher.mjs wait --scope visual-gate/baseline
 
-      - name: Fetch the current baseline
-        run: |
-          set -eu
-          rm -rf /tmp/gh-pages
-          git clone --depth=1 --filter=blob:none --sparse --single-branch --branch gh-pages \
-            "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
-          git -C /tmp/gh-pages sparse-checkout set visual-gate/baseline
-          mkdir -p /tmp/gh-pages/visual-gate/baseline
-
-      - name: Promote
+      - name: Promote and publish the baseline
         env:
           KEYS: ${{ inputs.keys }}
           REASON: ${{ inputs.reason }}
           PROMOTER: ${{ github.actor }}
-        run: |
-          set -eu
-          node .github/scripts/visual-gate/gate.mjs accept \
-            --baseline /tmp/gh-pages/visual-gate/baseline \
-            --out .visual-run \
-            --keys "$KEYS" \
-            --reason "$REASON" \
-            --actor "$PROMOTER" \
-            ${{ inputs.prune && '--prune' || '' }}
-
-      - name: Push the baseline
-        run: |
-          set -eu
-          cd /tmp/gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A visual-gate/baseline
-          git commit -m "visual baseline: ${{ inputs.keys }} (run ${{ inputs.run_id }})" || {
-            echo "Baseline unchanged"; exit 0;
-          }
-          for attempt in 1 2 3; do
-            if git push origin gh-pages; then
-              echo "Baseline updated"
-              exit 0
-            fi
-            git fetch origin gh-pages && git rebase origin/gh-pages || true
-            sleep $((attempt * 10))
-          done
-          echo "::error::Could not push the updated baseline"
-          exit 1
+          PRUNE: ${{ inputs.prune && 'true' || 'false' }}
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          node .github/scripts/gh-pages-publisher.mjs visual-baseline-manual
+          --capture .visual-run
+          --keys "$KEYS"
+          --reason "$REASON"
+          --actor "$PROMOTER"
+          --prune "$PRUNE"
 
       - name: Release the baseline publication turn
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node .github/scripts/visual-gate/lib/baseline-publication-lock.mjs release
+        run: node .github/scripts/gh-pages-publisher.mjs release --scope visual-gate/baseline
 
       - name: Summary
         run: |
