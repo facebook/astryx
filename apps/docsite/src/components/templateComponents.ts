@@ -85,6 +85,10 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/form-wizard-inline/page'),
   ),
+  'form-wizard-vertical': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard-vertical/page'),
+  ),
   'gallery-hero': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/gallery-hero/page'),
