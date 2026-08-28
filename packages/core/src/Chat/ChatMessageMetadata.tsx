@@ -71,6 +71,10 @@ const styles = stylex.create({
   },
   statusIcon: {
     display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    lineHeight: 0,
     color: 'inherit',
   },
   statusError: {
