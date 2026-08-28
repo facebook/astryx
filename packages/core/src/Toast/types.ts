@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {ComponentType, ReactNode} from 'react';
+import type {ReactNode} from 'react';
 
 /** Toast status type. Controls color scheme. */
 export type ToastType = 'info' | 'error';
@@ -38,18 +38,16 @@ export interface ToastOptions {
   /**
    * Replaces the content of this toast's card with your own layout.
    *
-   * Astryx keeps the card — its surface, its `astryx-toast` theme target, the
-   * live-region role and the auto-hide timer — and hands the renderer this
-   * toast's message, its `endContent`, and a `DismissButton` component to
-   * place. Rendering it puts Astryx's own close at that spot; leaving it out
-   * puts the close in the card's default corner, so a custom layout cannot
-   * produce a toast with no way out.
+   * Astryx keeps the card, live-region role and auto-hide behavior, then hands
+   * the renderer this toast's content, resolved settings and `dismiss`
+   * callback. The renderer owns every control inside its layout; call
+   * `dismiss` from the control that should close the toast. Astryx does not
+   * inject a fallback control into custom content.
    *
    * Per-toast rather than app-wide on purpose. An app that wants every one of
    * its toasts to share a layout wraps `useToast()` once and passes this on
    * every call; a toast raised by library code that knows nothing about that
-   * wrapper then renders as an ordinary Astryx toast — intact, dismissible —
-   * rather than inheriting a layout written for someone else's payload.
+   * wrapper then renders as an ordinary Astryx toast.
    */
   renderContent?: ToastContentRenderFn;
 
@@ -67,34 +65,12 @@ export interface ToastOptions {
 /** Function to programmatically dismiss a toast. */
 export type ToastDismissFn = () => void;
 
-/**
- * What a `renderContent` function receives: one toast's message and trailing
- * slot, plus the dismiss control Astryx has already built for it.
- *
- * `DismissButton` is the point of the whole thing. Astryx builds the close —
- * a ghost icon `Button` carrying the translated `@astryx.toast.dismiss` label
- * — and hands it over as a component the layout places. So it stays a real
- * Astryx `Button`: themeable through `astryx-button` like every other, named
- * in the user's language, impossible to mislabel — and, because an unplaced
- * close falls back to the card's corner, impossible to lose. The layout is
- * the consumer's; the control is not.
- */
+/** Values passed to a custom toast content renderer. */
 export interface ToastContentRenderProps {
   /** Primary message content, as passed to `showToast`. */
   body: ReactNode;
   /** Trailing content, as passed to `showToast`. Place it in your layout. */
   endContent?: ReactNode;
-  /**
-   * The toast's close, for your layout to place. Render `<DismissButton />`
-   * where you want it: it renders Astryx's own control — the ghost icon
-   * `Button` with the translated `@astryx.toast.dismiss` label and the
-   * `astryx-button` theme target — so a layout positions the close rather
-   * than rebuilding it.
-   *
-   * Leaving it out is allowed, and safe: the toast then renders its close in
-   * the card's default corner. A toast always has a way out.
-   */
-  DismissButton: ComponentType;
   /** Resolved toast type — `'error'` also makes the live region assertive. */
   type: ToastType;
   /** Whether this toast will dismiss itself. */
@@ -102,9 +78,8 @@ export interface ToastContentRenderProps {
   /** Milliseconds until auto-dismiss, when `isAutoHide`. */
   autoHideDuration: number;
   /**
-   * Dismisses this toast, as a manual dismissal — the same thing
-   * `DismissButton` does. For a layout whose own control dismisses too, e.g.
-   * an Undo that closes the toast after undoing.
+   * Dismisses this toast with reason `'manual'`. Pass it through any nested
+   * components that need to close the toast.
    */
   dismiss: ToastDismissFn;
 }

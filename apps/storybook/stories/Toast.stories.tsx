@@ -868,7 +868,7 @@ function ProductToastContent({
   type,
   body,
   endContent,
-  DismissButton,
+  dismiss,
 }: ToastContentRenderProps) {
   return (
     <div {...stylex.props(customContentStyles.row)}>
@@ -882,14 +882,17 @@ function ProductToastContent({
       />
       <div {...stylex.props(customContentStyles.text)}>{body}</div>
       {endContent}
-      <DismissButton />
+      <Button
+        label="Dismiss custom toast"
+        variant="ghost"
+        size="sm"
+        onClick={dismiss}
+      />
     </div>
   );
 }
 
-// The same layout with the close left out. Astryx keeps it dismissible by
-// putting the close in the card's corner.
-function ForgetfulToastContent({type, body}: ToastContentRenderProps) {
+function ContentWithoutDismiss({type, body}: ToastContentRenderProps) {
   return (
     <div {...stylex.props(customContentStyles.row)}>
       <div
@@ -947,14 +950,13 @@ export const CustomContent: StoryObj = {
           }}
         />
         <Button
-          label="Layout without the close"
+          label="Layout without a close"
           variant="ghost"
           onClick={() => {
             toast({
-              body: 'This layout never renders DismissButton.',
-              type: 'error',
+              body: 'This layout relies on auto-hide.',
               renderContent: toastProps => (
-                <ForgetfulToastContent {...toastProps} />
+                <ContentWithoutDismiss {...toastProps} />
               ),
             });
           }}
@@ -973,7 +975,7 @@ export const CustomContent: StoryObj = {
     docs: {
       description: {
         story:
-          "`renderContent` replaces the content of one toast's card. Astryx keeps the transport and hands over the message, `endContent` and a `DismissButton` to place. If a nested layout removes that button later, Astryx immediately restores its corner close. The last button omits `renderContent`, showing that a library-raised toast keeps the ordinary Astryx layout.",
+          "`renderContent` replaces the content of one toast's card and receives a `dismiss` callback. The custom layout composes its own Astryx `Button`; a layout without a close is left as-is and can rely on auto-hide. The last button omits `renderContent`, showing the ordinary Astryx layout and dismiss control.",
       },
     },
   },
