@@ -37,6 +37,7 @@ import {
 } from './themePreview/themeAudit';
 import {
   buildOverrideCSSVars,
+  countOverrides,
   overridesReducer,
   type OverridesMap,
   type SerializeContext,
@@ -4565,6 +4566,7 @@ export function ThemePalettePreview({
     overridesReducer,
     emptyOverrides as OverridesMap,
   );
+  const overrideCount = countOverrides(overrides);
 
   // Map of `--token: light-dark(#L, #D)` for every pending override.
   // Spread directly onto the page root so the values cascade into every
@@ -4663,6 +4665,32 @@ export function ThemePalettePreview({
             <div style={S.inner}>
               <h1 style={S.title}>{title}</h1>
               <p style={S.subtitle}>{subtitle}</p>
+              <div
+                role="status"
+                aria-live="polite"
+                style={{
+                  alignItems: 'center',
+                  background: overrideCount
+                    ? 'var(--color-warning-muted)'
+                    : 'var(--color-background-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 999,
+                  color: overrideCount
+                    ? 'var(--color-warning)'
+                    : 'var(--color-text-secondary)',
+                  display: 'inline-flex',
+                  fontFamily: 'var(--font-family-code)',
+                  fontSize: 11,
+                  fontWeight: 650,
+                  gap: 6,
+                  marginBottom: 20,
+                  padding: '5px 9px',
+                }}>
+                <span aria-hidden="true">{overrideCount ? '◆' : '●'}</span>
+                {overrideCount
+                  ? `Draft preview · ${overrideCount} pending token ${overrideCount === 1 ? 'override' : 'overrides'}`
+                  : `Built ${theme.name} theme · no pending overrides`}
+              </div>
               {tonalModes.map(m => (
                 <Theme key={m} theme={theme} mode={m}>
                   <LayerProvider>
