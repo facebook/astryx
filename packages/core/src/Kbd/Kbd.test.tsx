@@ -10,13 +10,14 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import {describe, it, expect, afterEach} from 'vitest';
+import {describe, it, expect, afterEach, vi} from 'vitest';
 import {Kbd} from './Kbd';
 
 describe('Kbd', () => {
   const originalPlatform = navigator.platform;
 
   afterEach(() => {
+    vi.restoreAllMocks();
     // Restore platform after any test that spoofs it \u2014 ensures no
     // test pollution even if an assertion fails mid-test.
     Object.defineProperty(navigator, 'platform', {
@@ -71,6 +72,61 @@ describe('Kbd', () => {
     render(<Kbd keys="escape" />);
     expect(screen.getByText('Esc')).toBeInTheDocument();
   });
+
+  it.each([
+    {alias: 'esc', display: 'Esc', label: 'Escape'},
+    {alias: 'return', display: '\u21B5', label: 'Enter'},
+  ])('normalizes the $alias key alias', ({alias, display, label}) => {
+    render(<Kbd keys={alias} />);
+    expect(screen.getByText(display)).toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', label);
+  });
+
+  it.each([
+    {alias: 'esc', canonical: 'escape'},
+    {alias: 'return', canonical: 'enter'},
+  ])('$alias renders identically to $canonical', ({alias, canonical}) => {
+    const {container, rerender} = render(<Kbd keys={canonical} />);
+    const text = container.textContent;
+    const label = screen.getByRole('img').getAttribute('aria-label');
+    rerender(<Kbd keys={alias} />);
+    expect(container.textContent).toBe(text);
+    expect(screen.getByRole('img').getAttribute('aria-label')).toBe(label);
+  });
+
+  it.each([
+    {keys: 'ctrl + ESC', display: 'Esc', label: 'Control + Escape'},
+    {keys: 'shift + RETURN', display: '\u21B5', label: 'Shift + Enter'},
+  ])('normalizes aliases inside the $keys combo', ({keys, display, label}) => {
+    render(<Kbd keys={keys} />);
+    expect(screen.getByText(display)).toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', label);
+  });
+
+  it('keeps child keys unique after alias normalization', () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const {container} = render(
+      <Kbd keys="escape+esc+ESC+enter+return+return" />,
+    );
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(
+      Array.from(container.querySelectorAll('kbd'), key => key.textContent),
+    ).toEqual(['Esc', 'Esc', 'Esc', '↵', '↵', '↵']);
+  });
+
+  it.each(['constructor', '__proto__'])(
+    'renders the unknown %s key without consulting object prototypes',
+    key => {
+      render(<Kbd keys={key} />);
+      expect(screen.getByText(key.toUpperCase())).toBeInTheDocument();
+      expect(screen.getByRole('img')).toHaveAttribute(
+        'aria-label',
+        key.toUpperCase(),
+      );
+    },
+  );
 
   it('exposes a spoken accessible name and hides the glyphs (obs-1)', () => {
     render(<Kbd keys="mod+shift+k" />);
