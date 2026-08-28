@@ -194,9 +194,17 @@ function overlayComponentDoc(docs, translation) {
     });
   };
 
-  /** @param {any} baseUsage @param {any} translatedUsage */
-  const mergeUsage = (baseUsage, translatedUsage) =>
-    baseUsage || translatedUsage ? {...(baseUsage ?? {}), ...(translatedUsage ?? {})} : undefined;
+  /** Preserve the new accessibility field without changing established translated output.
+   * @param {any} baseUsage
+   * @param {any} translatedUsage
+   */
+  const mergeUsage = (baseUsage, translatedUsage) => {
+    if (!translatedUsage) return baseUsage;
+    if (!baseUsage?.accessibility || translatedUsage.accessibility !== undefined) {
+      return translatedUsage;
+    }
+    return {...translatedUsage, accessibility: baseUsage.accessibility};
+  };
 
   const merged = {...docs, ...translation, usage: mergeUsage(docs.usage, translation.usage)};
 

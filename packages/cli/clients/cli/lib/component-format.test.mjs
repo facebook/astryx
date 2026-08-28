@@ -30,6 +30,14 @@ describe('component accessibility guidance', () => {
   it('omits the section when a component has no authored requirements', () => {
     expect(formatFull({...docs, usage: {}})).not.toContain('## Accessibility');
   });
+
+  it('ignores legacy non-array accessibility content', () => {
+    const legacyDocs = {...docs, usage: {accessibility: 'Follow WCAG guidance.'}};
+
+    expect(() => formatFull(legacyDocs)).not.toThrow();
+    expect(formatFull(legacyDocs)).not.toContain('## Accessibility');
+    expect(formatCompact(legacyDocs, 'Button')).not.toContain('## Accessibility');
+  });
 });
 
 describe('formatFull sub-component rendering', () => {

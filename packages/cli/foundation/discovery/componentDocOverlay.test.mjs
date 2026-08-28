@@ -120,5 +120,7 @@ describe('the reported symptom', () => {
 
     expect(english.usage.accessibility.length).toBeGreaterThan(0);
     expect(dense.usage.accessibility).toEqual(english.usage.accessibility);
+    expect(dense.usage.bestPractices).toBeUndefined();
+    expect(dense.usage.anatomy).toBeUndefined();
   });
 });

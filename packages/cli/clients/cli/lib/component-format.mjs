@@ -77,8 +77,8 @@ function formatPropsTable(props) {
  * @param {'##' | '####'} [heading]
  * @returns {string[]}
  */
-function formatAccessibility(accessibility, heading = '##') {
-  if (!accessibility?.length) return [];
+export function formatAccessibility(accessibility, heading = '##') {
+  if (!Array.isArray(accessibility) || accessibility.length === 0) return [];
   return [
     `${heading} Accessibility\n`,
     ...accessibility.map(item => `- **${item.name}:** ${item.description}`),
