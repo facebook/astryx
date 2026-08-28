@@ -45,12 +45,6 @@ const SECTION_STYLE: CSSProperties = {
   borderTop: '1px solid var(--color-border)',
 };
 
-const GRID_STYLE: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
-  gap: 12,
-};
-
 function Section({title, children}: {title: string; children: ReactNode}) {
   return (
     <section style={SECTION_STYLE}>

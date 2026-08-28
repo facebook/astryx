@@ -2712,15 +2712,16 @@ function ProgressBarSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
     track: supplementalTrack,
     fills: {warning: supplementalWarningFill},
   });
-  const getSupplementalStyle = (variant: (typeof PROGRESS_VARIANTS)[number]) =>
-    ({
-      '--color-background-muted': supplementalTrack,
-      ...(variant === 'warning'
-        ? {
-            '--color-warning': supplementalWarningFill,
-          }
-        : {}),
-    }) as CSSProperties;
+  const getSupplementalStyle = (
+    variant: (typeof PROGRESS_VARIANTS)[number],
+  ): CSSProperties => ({
+    '--color-background-muted': supplementalTrack,
+    ...(variant === 'warning'
+      ? {
+          '--color-warning': supplementalWarningFill,
+        }
+      : {}),
+  });
 
   const trackOptions = [
     {
