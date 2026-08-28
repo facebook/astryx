@@ -41,6 +41,7 @@ export const docs = {
       },
       {className: 'astryx-selector-indicator-icon', states: ['state']},
       {className: 'astryx-selector-check'},
+      {className: 'astryx-selector-list'},
       {className: 'astryx-selector-popup'},
     ],
   },
