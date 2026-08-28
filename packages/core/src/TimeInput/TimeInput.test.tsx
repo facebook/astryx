@@ -698,3 +698,141 @@ describe('TimeInput disabled theme state', () => {
     expect(root).not.toHaveAttribute('data-disabled');
   });
 });
+
+describe('TimeInput pass-through props', () => {
+  it('forwards pass-through props to the input element', () => {
+    render(
+      <TimeInput
+        label="Time"
+        onChange={() => {}}
+        data-tracking="meeting-time"
+        data-analytics-id="start-time"
+      />,
+    );
+    const input = screen.getByLabelText('Time');
+    expect(input).toHaveAttribute('data-tracking', 'meeting-time');
+    expect(input).toHaveAttribute('data-analytics-id', 'start-time');
+  });
+
+  it('runs a consumer onKeyDown for keys the component does not consume', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <TimeInput label="Time" onChange={() => {}} onKeyDown={onKeyDown} />,
+    );
+    fireEvent.keyDown(screen.getByLabelText('Time'), {key: '1'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
+  });
+
+  it('keeps arrow stepping when a consumer onKeyDown cancels', () => {
+    const onChange = vi.fn();
+    const onKeyDown = vi.fn((e: React.KeyboardEvent) => {
+      e.preventDefault();
+    });
+    render(
+      <TimeInput
+        label="Time"
+        value={'14:30' as ISOTimeString}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByLabelText('Time'), {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalledWith('14:31');
+    // Stepping consumes the arrow (preventDefault), so the consumer handler
+    // does not observe it — component-first composition by design.
+    expect(onKeyDown).not.toHaveBeenCalled();
+  });
+
+  it('honors a caller id and composes a caller aria-describedby', () => {
+    render(
+      <>
+        <span id="consumer-help">External help</span>
+        <TimeInput
+          label="Time"
+          onChange={() => {}}
+          id="meeting-time"
+          aria-describedby="consumer-help"
+          description="Built-in help"
+        />
+      </>,
+    );
+    const input = screen.getByLabelText('Time');
+    expect(input).toHaveAttribute('id', 'meeting-time');
+    const ids = input.getAttribute('aria-describedby')?.split(/\s+/) ?? [];
+    expect(ids).toContain('consumer-help');
+    expect(ids.length).toBeGreaterThan(1);
+  });
+
+  it('composes a caller aria-labelledby ahead of any owned label ids', () => {
+    render(
+      <>
+        <span id="consumer-label">External label</span>
+        <TimeInput
+          label="Time"
+          onChange={() => {}}
+          aria-labelledby="consumer-label"
+        />
+      </>,
+    );
+    const input = screen.getByRole('textbox');
+    const ids = input.getAttribute('aria-labelledby')?.split(/\s+/) ?? [];
+    expect(ids).toContain('consumer-label');
+    // The visible label stays in the accessible name alongside the caller's.
+    expect(input).toHaveAccessibleName('External label Time');
+  });
+
+  it('keeps blur formatting when a consumer onBlur cancels', () => {
+    const onChange = vi.fn();
+    render(
+      <TimeInput
+        label="Time"
+        onChange={onChange}
+        onBlur={e => e.preventDefault()}
+      />,
+    );
+    const input = screen.getByLabelText('Time');
+    fireEvent.focus(input);
+    fireEvent.change(input, {target: {value: '2:30 PM'}});
+    fireEvent.blur(input);
+    // The owned blur handler still parses and commits despite the cancel.
+    expect(onChange).toHaveBeenCalledWith('14:30');
+  });
+
+  it('composes a caller aria-labelledby with the group label ids in InputGroup', () => {
+    render(
+      <>
+        <span id="consumer-label">External label</span>
+        <InputGroup label="Meeting">
+          <TimeInput
+            label="Time"
+            onChange={() => {}}
+            aria-labelledby="consumer-label"
+          />
+        </InputGroup>
+      </>,
+    );
+    const input = screen.getByRole('textbox');
+    const ids = input.getAttribute('aria-labelledby')?.split(/\s+/) ?? [];
+    expect(ids).toContain('consumer-label');
+    // The owned group + input label ids survive alongside the caller's.
+    expect(ids.length).toBeGreaterThan(1);
+  });
+
+  it('runs a consumer onFocus and onBlur alongside the built-in handlers', () => {
+    const onFocus = vi.fn();
+    const onBlur = vi.fn();
+    render(
+      <TimeInput
+        label="Time"
+        onChange={() => {}}
+        onFocus={onFocus}
+        onBlur={onBlur}
+      />,
+    );
+    const input = screen.getByLabelText('Time');
+    fireEvent.focus(input);
+    expect(onFocus).toHaveBeenCalledOnce();
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
+  });
+});

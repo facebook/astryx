@@ -199,6 +199,7 @@ export function MetadataList({
   style,
   'data-testid': testId,
   ref,
+  ...restProps
 }: MetadataListProps) {
   const isMultiColumn =
     columns === 'multi' || (typeof columns === 'number' && columns > 1);
@@ -280,6 +281,7 @@ export function MetadataList({
   return (
     <MetadataListContext value={contextValue}>
       <div
+        {...restProps}
         ref={ref}
         data-testid={testId}
         {...mergeProps(

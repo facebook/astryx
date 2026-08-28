@@ -60,7 +60,9 @@ import {
   isTimeInRange,
   mergeProps,
   getInputARIA,
+  composeEventHandlers,
 } from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
@@ -148,7 +150,7 @@ export interface TimeInputProps extends Omit<
   BaseProps,
   'onChange' | 'defaultValue'
 > {
-  /** Ref forwarded to the root element */
+  /** Ref forwarded to the input element */
   ref?: React.Ref<HTMLInputElement>;
   /**
    * Label text for the input (required for accessibility).
@@ -370,6 +372,13 @@ export function TimeInput({
   className,
   style,
   ref,
+  id: idProp,
+  'aria-labelledby': ariaLabelledByProp,
+  'aria-describedby': ariaDescribedByProp,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
+  onKeyDown: onKeyDownProp,
+  ...restProps
 }: TimeInputProps) {
   const t = useTranslator();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -384,7 +393,10 @@ export function TimeInput({
   const usesNativeTimePicker =
     requestsNativePicker && !hasSeconds && increment === 1;
 
-  const id = useId();
+  const generatedId = useId();
+  // A caller id must stay the input's identity or their label/description
+  // wiring points at nothing; the generated id is only the fallback.
+  const id = idProp ?? generatedId;
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -433,9 +445,12 @@ export function TimeInput({
       isInGroup: !!inputGroup,
     });
 
-  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+  const {ariaLabelledBy: ownedLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelID,
     [
+      // A caller aria-describedby is additive: their ids come first, then the
+      // component-owned description/status/tooltip ids.
+      ariaDescribedByProp ?? null,
       description ? descriptionID : null,
       statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
       // The tooltip variant renders no message box; describe the input by the
@@ -445,6 +460,14 @@ export function TimeInput({
     ],
     inputGroup,
   );
+  // A caller aria-labelledby is additive: their ids come first, then the
+  // component-owned label ids. Standalone, the owned id is the Field label's
+  // (aria-labelledby outranks the native <label> association, so the visible
+  // label must stay in the accessible name); without a caller value the
+  // native <label htmlFor> association stands alone, unchanged.
+  const ariaLabelledBy = ariaLabelledByProp
+    ? joinAriaIDs(ariaLabelledByProp, ownedLabelledBy ?? inputLabelID)
+    : ownedLabelledBy;
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -681,6 +704,15 @@ export function TimeInput({
       )}
       {usesNativeTimePicker ? (
         <NativeTimeSegment
+          inputProps={{
+            ...restProps,
+            onFocus: onFocusProp,
+            onBlur: onBlurProp,
+            // NativeTimeSegment owns no keydown handler, so this passes
+            // through directly; a consumer onKeyDown always fires on the
+            // native-picker path (unlike the typed path's stepping arrows).
+            onKeyDown: onKeyDownProp,
+          }}
           id={id}
           inputRef={mergedInputRef}
           value={optimisticValue}
@@ -705,14 +737,15 @@ export function TimeInput({
             <Icon icon="clock" size="sm" color="secondary" />
           </div>
           <input
+            {...restProps}
             ref={mergedInputRef}
             id={id}
             type="text"
             value={displayValue}
             onChange={handleInputChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onKeyDown={handleInputKeyDown}
+            onFocus={composeEventHandlers(handleFocus, onFocusProp)}
+            onBlur={composeEventHandlers(handleBlur, onBlurProp)}
+            onKeyDown={composeEventHandlers(handleInputKeyDown, onKeyDownProp)}
             placeholder={displayPlaceholder}
             // With a disabledMessage the input keeps focusability via
             // aria-disabled so the reason is focus-discoverable; typing and
@@ -772,6 +805,7 @@ export function TimeInput({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={inputLabelID}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}

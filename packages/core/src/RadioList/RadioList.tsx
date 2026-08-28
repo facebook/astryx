@@ -30,7 +30,8 @@ import {Field} from '../Field/Field';
 import type {InputStatus} from '../Field/types';
 import {useTooltip} from '../Tooltip';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
-import {mergeProps} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -209,6 +210,10 @@ export function RadioList({
   'data-testid': dataTestId,
   htmlName,
   children,
+  onFocus: onFocusProp,
+  'aria-labelledby': ariaLabelledByProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...restProps
 }: RadioListProps) {
   const autoName = useId();
   const name = htmlName ?? autoName;
@@ -375,6 +380,7 @@ export function RadioList({
       className={className}
       style={style}>
       <div
+        {...restProps}
         ref={el => {
           groupRef.current = el;
           // Anchor + hover/focus listeners for the disabled-message tooltip.
@@ -383,17 +389,18 @@ export function RadioList({
           disabledMessageTooltip.ref(el);
         }}
         role="radiogroup"
-        aria-labelledby={labelID}
-        onFocus={handleFocus}
-        aria-describedby={
-          [
-            description ? descriptionID : null,
-            status?.message ? statusMessageID : null,
-            showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-          ]
-            .filter(Boolean)
-            .join(' ') || undefined
+        aria-labelledby={
+          // Caller ids are additive, ahead of the component-owned label id.
+          joinAriaIDs(ariaLabelledByProp, labelID)
         }
+        onFocus={composeEventHandlers(handleFocus, onFocusProp)}
+        aria-describedby={joinAriaIDs(
+          // Caller ids are additive, ahead of the component-owned ones.
+          ariaDescribedByProp,
+          description ? descriptionID : null,
+          status?.message ? statusMessageID : null,
+          showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+        )}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-required={isEffectivelyRequired || undefined}
         {...mergeProps(

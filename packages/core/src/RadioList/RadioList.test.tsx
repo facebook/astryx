@@ -966,3 +966,121 @@ describe('forced colors (WCAG 1.4.11)', () => {
     expect(getForcedColorsRules()).toContain('background-color: canvastext;');
   });
 });
+
+describe('RadioList pass-through props', () => {
+  it('forwards pass-through props to the radiogroup element', () => {
+    render(
+      <RadioList
+        label="Preference"
+        value=""
+        onChange={() => {}}
+        id="pref-group"
+        data-form-section="prefs">
+        <RadioListItem label="Option A" value="a" />
+      </RadioList>,
+    );
+    const group = screen.getByRole('radiogroup');
+    expect(group).toHaveAttribute('id', 'pref-group');
+    expect(group).toHaveAttribute('data-form-section', 'prefs');
+  });
+
+  it('runs a consumer onFocus alongside the built-in focus handling', () => {
+    const handleFocus = vi.fn();
+    render(
+      <RadioList
+        label="Preference"
+        value=""
+        onChange={() => {}}
+        onFocus={handleFocus}>
+        <RadioListItem label="Option A" value="a" />
+      </RadioList>,
+    );
+    fireEvent.focus(screen.getByRole('radio', {name: 'Option A'}));
+    expect(handleFocus).toHaveBeenCalledOnce();
+  });
+
+  it('keeps built-in focus normalization when a consumer onFocus cancels', () => {
+    render(
+      <>
+        <button type="button">before</button>
+        <RadioList
+          label="Preference"
+          value=""
+          onChange={() => {}}
+          onFocus={e => e.preventDefault()}>
+          <RadioListItem label="Option A" value="a" />
+          <RadioListItem label="Option B" value="b" />
+          <RadioListItem label="Option C" value="c" />
+        </RadioList>
+      </>,
+    );
+    // Landing mid-group from outside normalizes to the first radio. A consumer
+    // preventDefault must not cancel that owned behavior.
+    const radios = screen.getAllByRole('radio');
+    screen.getByText('before').focus();
+    radios[1].focus();
+    expect(radios[0]).toHaveFocus();
+  });
+
+  it('keeps the radiogroup contract over colliding pass-throughs', () => {
+    render(
+      <RadioList
+        label="Preference"
+        value=""
+        onChange={() => {}}
+        role="group"
+        data-form-section="prefs">
+        <RadioListItem label="Option A" value="a" />
+      </RadioList>,
+    );
+    // The owned role wins over the colliding pass-through role.
+    expect(
+      screen.getByRole('radiogroup', {name: 'Preference'}),
+    ).toBeInTheDocument();
+  });
+
+  it('composes a caller aria-describedby with the built-in description', () => {
+    render(
+      <>
+        <span id="consumer-help">External help</span>
+        <RadioList
+          label="Preference"
+          description="Built-in help"
+          aria-describedby="consumer-help"
+          value=""
+          onChange={() => {}}>
+          <RadioListItem label="Option A" value="a" />
+        </RadioList>
+      </>,
+    );
+    const ids =
+      screen
+        .getByRole('radiogroup')
+        .getAttribute('aria-describedby')
+        ?.split(/\s+/) ?? [];
+    expect(ids).toContain('consumer-help');
+    expect(ids.length).toBeGreaterThan(1);
+  });
+
+  it('composes a caller aria-labelledby ahead of the owned label id', () => {
+    render(
+      <>
+        <span id="consumer-label">External label</span>
+        <RadioList
+          label="Preference"
+          aria-labelledby="consumer-label"
+          value=""
+          onChange={() => {}}>
+          <RadioListItem label="Option A" value="a" />
+        </RadioList>
+      </>,
+    );
+    const ids =
+      screen
+        .getByRole('radiogroup')
+        .getAttribute('aria-labelledby')
+        ?.split(/\s+/) ?? [];
+    expect(ids).toContain('consumer-label');
+    expect(ids.length).toBe(2);
+  });
+});
