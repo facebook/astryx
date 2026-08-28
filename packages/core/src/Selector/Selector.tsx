@@ -4,15 +4,17 @@
 
 /**
  * @file Selector.tsx
- * @input Uses React, StyleX, usePopover, useTooltip, Icon, InputGroupContext,
- *   and Selector positioning hooks
- * @output Exports Selector component
+ * @input Uses React, StyleX, adaptive selection surfaces, theme-resolved
+ *   indicators, Field, and InputGroup context
+ * @output Exports Selector with content-derived option-mark layout
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/Selector/Selector.spec.md
  * - /packages/core/src/Selector/Selector.doc.mjs
  * - /packages/core/src/Selector/Selector.test.tsx
  * - /packages/core/src/Selector/index.ts
+ * - /apps/storybook/stories/Selector.stories.tsx
  * - /apps/storybook/stories/InputGroup.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Selector/ (showcase blocks)
  */
@@ -367,18 +369,20 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
-  // The mark's column, reserved on every row and at either position, so a row
-  // occupies the same geometry whether or not it is the chosen one — the
-  // default check draws nothing when unchecked, and without the column a list
-  // would indent (or truncate) its chosen row differently from the rest.
-  // `minWidth` rather than `width`: a theme can replace `check` with a larger
-  // indicator (a radio is 20px at `sm`), and the column has to grow with it.
+  // The wrapper keeps a visible mark at either logical position and lets a
+  // replacement indicator grow beyond the default 1rem minimum. When the
+  // resolved indicator draws nothing, `:empty` removes the wrapper from layout
+  // instead of reserving blank space. Selected and unselected labels may
+  // therefore shift or have different available width by design (AST-004).
   itemMarkColumn: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
     minWidth: '1rem',
+    ':empty': {
+      display: 'none',
+    },
   },
   itemCheckmark: {
     flexShrink: 0,
@@ -654,10 +658,10 @@ interface SelectorPropsBase<
   renderValue?: (option: SelectorOptionData) => ReactNode;
 
   /**
-   * Which edge of the option row carries the selected mark. `start` reserves a
-   * mark column ahead of every label so they stay aligned, the way a native
-   * menu does; `end` is the house convention shared with Typeahead and
-   * CommandPalette.
+   * Which logical edge of the option row carries a rendered selection mark. An
+   * empty mark consumes no space, so selected and unselected labels may shift or
+   * have different available width. `end` is the house convention shared with
+   * Typeahead and CommandPalette.
    *
    * @default 'end'
    */

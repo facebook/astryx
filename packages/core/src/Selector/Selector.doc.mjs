@@ -83,7 +83,7 @@ const anatomy = [
     name: 'Option selection indicator',
     required: false,
     description:
-      'Resolved selection mark rendered for each option in its checked or unchecked state.',
+      'Resolved selection mark rendered for each option in its checked or unchecked state. Its layout space collapses when the resolved indicator draws nothing.',
   },
   {
     name: 'Option divider',
@@ -330,7 +330,7 @@ export const docs = {
       name: 'indicatorPosition',
       type: "'start' | 'end'",
       description:
-        'Which edge of the option row carries the selected mark. start reserves a mark column ahead of every label so they stay aligned, the way a native menu does; end is the house convention shared with Typeahead and CommandPalette.',
+        'Which logical edge of the option row carries a rendered selection mark. An empty mark consumes no space, so selected and unselected labels may shift or have different available width. end is the house convention shared with Typeahead and CommandPalette.',
       default: "'end'",
     },
     {
