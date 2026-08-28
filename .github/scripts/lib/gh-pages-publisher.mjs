@@ -1611,6 +1611,142 @@ function pruneReleaseGateRuns(visualGateRoot) {
   }
 }
 
+function assertCommitSha(value, name) {
+  if (!/^[0-9a-f]{40}$/i.test(String(value ?? ''))) {
+    refuse(`${name} must be a full 40-character commit SHA`);
+  }
+}
+
+function compareMainCommits(repository, base, head) {
+  assertCommitSha(base, 'latest main-quality SHA');
+  assertCommitSha(head, '--sha');
+  const result = tryRun('gh', [
+    'api',
+    `repos/${repository}/compare/${base}...${head}`,
+  ]);
+  if (result.status !== 0) {
+    refuse(
+      `cannot compare main-quality SHAs: ${
+        result.stderr?.trim() ||
+        result.stdout?.trim() ||
+        `exit ${result.status}`
+      }`,
+    );
+  }
+  try {
+    return JSON.parse(result.stdout).status;
+  } catch (error) {
+    refuse(`cannot parse main-quality SHA comparison: ${error.message}`);
+  }
+}
+
+export function shouldAdvanceMainQualityLatest({
+  repository,
+  currentSha,
+  currentRunId,
+  latest,
+  compare = compareMainCommits,
+}) {
+  assertCommitSha(currentSha, '--sha');
+  if (!latest?.sha || !latest?.runId) return true;
+  assertCommitSha(latest.sha, 'latest main-quality SHA');
+  const latestRunId = Number(latest.runId);
+  if (!Number.isSafeInteger(latestRunId) || latestRunId <= 0) return true;
+  if (latest.sha.toLowerCase() === currentSha.toLowerCase()) {
+    return currentRunId > latestRunId;
+  }
+  return compare(repository, latest.sha, currentSha) === 'ahead';
+}
+
+function readLatestMainQuality(root) {
+  return readJSON(path.join(root, 'latest', 'main-quality.json'));
+}
+
+export async function publishMainQualityReport({
+  repository,
+  token,
+  tempRoot,
+  remoteURL,
+  source,
+  sha,
+  runId,
+  maxAttempts = 5,
+  beforePush,
+  compareMain = compareMainCommits,
+}) {
+  const sourceDir = path.resolve(source);
+  assertCommitSha(sha, '--sha');
+  if (!fs.existsSync(sourceDir) || !fs.statSync(sourceDir).isDirectory()) {
+    refuse('--source must be a directory');
+  }
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const checkout = checkoutPages({
+      repository,
+      token,
+      tempRoot,
+      remoteURL,
+      sparsePaths: [path.join('main-quality')],
+      prefix: 'gh-pages-main-quality-',
+    });
+    try {
+      const root = path.join(checkout, 'main-quality');
+      const runDir = path.join(root, sha, String(runId));
+      const latestDir = path.join(root, 'latest');
+      const latest = readLatestMainQuality(root);
+      fs.rmSync(runDir, {recursive: true, force: true});
+      copyContents(sourceDir, runDir);
+      if (
+        shouldAdvanceMainQualityLatest({
+          repository,
+          currentSha: sha,
+          currentRunId: runId,
+          latest,
+          compare: compareMain,
+        })
+      ) {
+        fs.rmSync(latestDir, {recursive: true, force: true});
+        copyContents(sourceDir, latestDir);
+      } else {
+        process.stdout.write(
+          `Preserved newer main-quality latest while publishing ${sha}/${runId}.\n`,
+        );
+      }
+      const commit = commitIfNeeded(
+        checkout,
+        `main quality: ${sha.slice(0, 7)} ${runId}`,
+        ['-A', 'main-quality'],
+      );
+      if (commit === null) {
+        process.stdout.write('Nothing to publish.\n');
+        output('published', 'true');
+        return {published: true};
+      }
+      await beforePush?.({attempt, checkout, commit});
+      const pushed = tryRun('git', [
+        '-C',
+        checkout,
+        'push',
+        'origin',
+        PAGES_BRANCH,
+      ]);
+      if (pushOrRetry(pushed)) {
+        const url = `https://facebook.github.io/astryx/main-quality/${sha}/${runId}/`;
+        output('published', 'true');
+        output('report_url', url);
+        process.stdout.write(`Published ${url}\n`);
+        return {published: true, commit, url};
+      }
+    } finally {
+      fs.rmSync(checkout, {recursive: true, force: true});
+    }
+    process.stdout.write(
+      `Push rejected; retrying main-quality publish (${attempt}/${maxAttempts}).\n`,
+    );
+    await sleep(attempt * 2000);
+  }
+  refuse(`could not publish main-quality report after ${maxAttempts} attempts`);
+}
+
 export async function publishStableSite({
   repository,
   token,
@@ -1786,6 +1922,15 @@ export async function main(argv = process.argv.slice(2)) {
       scope: 'visual-gate/reports',
       publish: () => publishReleaseGateReport({...context, source}),
     });
+  } else if (command === 'main-quality') {
+    const source = flag(argv, '--source');
+    const sha = flag(argv, '--sha', process.env.GITHUB_SHA ?? '');
+    if (!source) refuse('--source is required');
+    await withPublicationTurn({
+      ...context,
+      scope: 'main-quality/reports',
+      publish: () => publishMainQualityReport({...context, source, sha}),
+    });
   } else if (command === 'immutable-path') {
     const source = flag(argv, '--source');
     const destination = flag(argv, '--destination');
@@ -1844,7 +1989,7 @@ export async function main(argv = process.argv.slice(2)) {
     });
   } else {
     refuse(
-      'usage: gh-pages-publisher.mjs <enqueue|wait|release|stable-site|release-gate|immutable-path|visual-acceptance-record|visual-baseline-accepted|visual-baseline-manual>',
+      'usage: gh-pages-publisher.mjs <enqueue|wait|release|stable-site|release-gate|main-quality|immutable-path|visual-acceptance-record|visual-baseline-accepted|visual-baseline-manual>',
     );
   }
 }

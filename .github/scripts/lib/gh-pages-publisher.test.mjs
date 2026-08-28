@@ -14,7 +14,9 @@ import {
   enqueuePublication,
   publishAcceptedVisualBaseline,
   publishImmutablePath,
+  publishMainQualityReport,
   publishReleaseGateReport,
+  shouldAdvanceMainQualityLatest,
   publishVisualAcceptanceRecord,
   publishStableSite,
   releasePublication,
@@ -457,6 +459,130 @@ describe('gh-pages publisher', () => {
       ),
     ).toContain('whole-tree');
     expect(git(final, 'rev-list', '--count', 'HEAD')).toBe('1');
+  });
+
+  it('publishes main-quality reports by exact SHA without touching release assets', async () => {
+    const fx = fixture();
+    const report = path.join(fx.root, 'main-quality-report');
+    const sha = 'e'.repeat(40);
+    writeFile(path.join(report, 'index.html'), 'quality');
+    writeJSON(path.join(report, 'main-quality.json'), {
+      sha,
+      aggregate: {verdict: 'debt'},
+    });
+
+    await publishMainQualityReport({
+      ...context(fx, 950, 'main-quality/reports'),
+      source: report,
+      sha,
+      runId: 950,
+    });
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.readFileSync(
+        path.join(final, 'main-quality', sha, '950', 'index.html'),
+        'utf8',
+      ),
+    ).toBe('quality');
+    expect(
+      fs.readFileSync(
+        path.join(final, 'main-quality', 'latest', 'index.html'),
+        'utf8',
+      ),
+    ).toBe('quality');
+    expect(
+      JSON.parse(
+        fs.readFileSync(
+          path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+          'utf8',
+        ),
+      ).version,
+    ).toBe(1);
+    expect(
+      fs.readFileSync(path.join(final, 'storybook', 'old.html'), 'utf8'),
+    ).toBe('old storybook');
+  });
+
+  it('keeps main-quality latest monotonic when an older main run finishes late', async () => {
+    const fx = fixture();
+    const oldSha = '1'.repeat(40);
+    const newSha = '2'.repeat(40);
+    const seed = cloneRemote(fx.remote, fx.root, 'seed-main-quality-latest');
+    git(seed, 'config', 'user.name', 'Test');
+    git(seed, 'config', 'user.email', 'test@example.com');
+    writeFile(
+      path.join(seed, 'main-quality', 'latest', 'index.html'),
+      'new latest',
+    );
+    writeJSON(path.join(seed, 'main-quality', 'latest', 'main-quality.json'), {
+      sha: newSha,
+      runId: 200,
+      aggregate: {verdict: 'clean'},
+    });
+    git(seed, 'add', '.');
+    git(seed, 'commit', '-qm', 'seed main quality latest');
+    git(seed, 'push', '-q', 'origin', 'gh-pages');
+
+    const report = path.join(fx.root, 'stale-main-quality-report');
+    writeFile(path.join(report, 'index.html'), 'old late report');
+    writeJSON(path.join(report, 'main-quality.json'), {
+      sha: oldSha,
+      runId: 150,
+      aggregate: {verdict: 'debt'},
+    });
+
+    await publishMainQualityReport({
+      ...context(fx, 150, 'main-quality/reports'),
+      source: report,
+      sha: oldSha,
+      runId: 150,
+      compareMain: () => 'behind',
+    });
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.readFileSync(
+        path.join(final, 'main-quality', oldSha, '150', 'index.html'),
+        'utf8',
+      ),
+    ).toBe('old late report');
+    expect(
+      fs.readFileSync(
+        path.join(final, 'main-quality', 'latest', 'index.html'),
+        'utf8',
+      ),
+    ).toBe('new latest');
+  });
+
+  it('orders main-quality latest by SHA first, then run id for the same SHA', () => {
+    const latest = {sha: '1'.repeat(40), runId: 200};
+    expect(
+      shouldAdvanceMainQualityLatest({
+        repository: REPO,
+        currentSha: '2'.repeat(40),
+        currentRunId: 150,
+        latest,
+        compare: () => 'ahead',
+      }),
+    ).toBe(true);
+    expect(
+      shouldAdvanceMainQualityLatest({
+        repository: REPO,
+        currentSha: '0'.repeat(40),
+        currentRunId: 250,
+        latest,
+        compare: () => 'behind',
+      }),
+    ).toBe(false);
+    expect(
+      shouldAdvanceMainQualityLatest({
+        repository: REPO,
+        currentSha: latest.sha,
+        currentRunId: 199,
+        latest,
+      }),
+    ).toBe(false);
   });
 
   it('publishes release-gate reports without touching the stable site or baseline', async () => {

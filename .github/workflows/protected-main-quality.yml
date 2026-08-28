@@ -1,0 +1,540 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Protected-main full quality sweep.
+#
+# Shadow mode: this workflow publishes a single aggregate status/report for the
+# exact main commit it tested, but suite debt does not fail the status yet. The
+# current full sweep is known to have unresolved visual deltas and 108 a11y
+# violations, so making it required today would only strand main.
+#
+# Rollout switch: after one clean run on the current main SHA, set
+# QUALITY_SHADOW_MODE=false and add the `protected-main-quality` status context
+# to main's required checks. Do not change baseline ownership or pruning here;
+# that remains owned by #5608.
+
+name: Protected Main Quality
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      main_sha:
+        description: 'Exact main commit SHA to test (defaults to current main)'
+        required: false
+        default: ''
+
+permissions: {}
+
+env:
+  QUALITY_SHADOW_MODE: 'true'
+  QUALITY_STATUS_CONTEXT: protected-main-quality
+
+concurrency:
+  group: protected-main-quality-${{ github.event_name == 'workflow_dispatch' && inputs.main_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Resolve exact main SHA
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      main_sha: ${{ steps.resolve.outputs.main_sha }}
+      short_sha: ${{ steps.resolve.outputs.short_sha }}
+    steps:
+      - name: Checkout main metadata
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve and validate SHA
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_SHA: ${{ github.sha }}
+          INPUT_SHA: ${{ inputs.main_sha || '' }}
+        run: |
+          set -eu
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$INPUT_SHA" ]; then
+            MAIN_SHA="$INPUT_SHA"
+          elif [ "$EVENT_NAME" = "push" ]; then
+            MAIN_SHA="$PUSH_SHA"
+          else
+            MAIN_SHA="$(git rev-parse origin/main)"
+          fi
+          if ! printf '%s' "$MAIN_SHA" | grep -Eq '^[0-9a-fA-F]{40}$'; then
+            echo "::error::main_sha must be a full 40-character commit SHA"
+            exit 1
+          fi
+          git cat-file -e "$MAIN_SHA^{commit}"
+          git merge-base --is-ancestor "$MAIN_SHA" origin/main
+          {
+            echo "main_sha=$MAIN_SHA"
+            echo "short_sha=${MAIN_SHA:0:7}"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build exact main Storybook
+    needs: resolve
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    outputs:
+      storybook_built: ${{ steps.build.outputs.storybook_built }}
+      short_sha: ${{ needs.resolve.outputs.short_sha }}
+    steps:
+      - name: Checkout exact main result
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.main_sha }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      - name: Build packages and Storybook
+        id: build
+        run: |
+          set +e
+          pnpm build && pnpm -F @astryxdesign/storybook build
+          code=$?
+          if [ "$code" -eq 0 ]; then
+            echo "storybook_built=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "storybook_built=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Storybook build failed; aggregate report will mark dependent suites crashed."
+          fi
+          exit 0
+
+      - name: Upload Storybook artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: main-quality-storybook-${{ needs.resolve.outputs.short_sha }}
+          path: apps/storybook/dist/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload built themes and core
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: main-quality-dists-${{ needs.resolve.outputs.short_sha }}
+          path: |
+            packages/themes/*/dist/
+            packages/core/dist/
+          retention-days: 1
+          if-no-files-found: ignore
+
+  visual:
+    name: Full stable visual
+    needs: [resolve, build]
+    if: needs.build.outputs.storybook_built == 'true'
+    runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.summarize.outputs.status }}
+    steps:
+      - name: Checkout exact main result
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.main_sha }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: main-quality-storybook-${{ needs.resolve.outputs.short_sha }}
+          path: apps/storybook/dist
+
+      - name: Download built themes and core
+        uses: actions/download-artifact@v8
+        with:
+          name: main-quality-dists-${{ needs.resolve.outputs.short_sha }}
+          path: packages
+
+      - name: Install Playwright browser
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      - name: Fetch visual baseline from gh-pages
+        run: |
+          set -eu
+          rm -rf /tmp/gh-pages
+          git clone --depth=1 --filter=blob:none --sparse --single-branch --branch gh-pages \
+            "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
+          git -C /tmp/gh-pages sparse-checkout set visual-gate/baseline
+          mkdir -p .visual-baseline
+          if [ -d /tmp/gh-pages/visual-gate/baseline ]; then
+            cp -r /tmp/gh-pages/visual-gate/baseline/. .visual-baseline/
+          fi
+
+      - name: Run full stable visual gate
+        id: visual
+        env:
+          ASTRYX_VISUAL_SHA: ${{ needs.resolve.outputs.main_sha }}
+        run: |
+          set +e
+          node .github/scripts/visual-gate/gate.mjs check \
+            --storybook-dir apps/storybook/dist \
+            --baseline .visual-baseline \
+            --out .visual-run \
+            --tiers full,theme-matrix,probe \
+            --summary-output visual-summary.md
+          code=$?
+          [ -f visual-summary.md ] && cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Summarize visual verdict
+        id: summarize
+        run: |
+          if [ -f .visual-run/verdict.json ]; then
+            status=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(".visual-run/verdict.json", "utf8")).status || "crashed")')
+          else
+            status=crashed
+          fi
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Stage visual result artifact
+        if: always()
+        run: |
+          node .github/scripts/main-quality-report.mjs stage-visual \
+            --source .visual-run \
+            --summary visual-summary.md \
+            --out-dir visual-result
+
+      - name: Upload visual result
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: main-quality-visual
+          path: visual-result/
+          retention-days: 14
+          if-no-files-found: warn
+
+  accessibility:
+    name: Full accessibility
+    needs: [resolve, build]
+    if: needs.build.outputs.storybook_built == 'true'
+    runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.summarize.outputs.status }}
+      total_violations: ${{ steps.summarize.outputs.total_violations }}
+    steps:
+      - name: Checkout exact main result
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.main_sha }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: main-quality-storybook-${{ needs.resolve.outputs.short_sha }}
+          path: apps/storybook/dist
+
+      - name: Install Playwright browser
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      - name: Run full-suite accessibility audit
+        id: audit
+        continue-on-error: true
+        run: |
+          BASELINE_FLAGS=""
+          if [ -f .github/a11y-baseline.json ]; then
+            BASELINE_FLAGS="--baseline .github/a11y-baseline.json --fail-on-new"
+          fi
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output a11y-report.json \
+            $BASELINE_FLAGS
+
+      - name: Summarize report
+        id: summarize
+        env:
+          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+        run: |
+          node .github/scripts/weekly-a11y-summary.js \
+            --report a11y-report.json \
+            --audit-outcome "$AUDIT_OUTCOME" \
+            --summary-output a11y-summary.md \
+            --github-output "$GITHUB_OUTPUT"
+          cat a11y-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload accessibility result
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: main-quality-accessibility
+          path: |
+            a11y-report.json
+            a11y-summary.md
+          retention-days: 14
+          if-no-files-found: ignore
+
+  rtl:
+    name: Full RTL
+    needs: [resolve, build]
+    if: needs.build.outputs.storybook_built == 'true'
+    runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.summarize.outputs.status }}
+      total_findings: ${{ steps.summarize.outputs.total_findings }}
+    steps:
+      - name: Checkout exact main result
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.main_sha }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: main-quality-storybook-${{ needs.resolve.outputs.short_sha }}
+          path: apps/storybook/dist
+
+      - name: Install Playwright browser
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      - name: Run full-suite RTL audit
+        id: audit
+        continue-on-error: true
+        run: |
+          node apps/storybook/rtl-audit/rtl-audit.mjs \
+            --storybook-dir apps/storybook/dist \
+            --output rtl-report.json \
+            --concurrency 4
+
+      - name: Summarize report
+        id: summarize
+        env:
+          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+        run: |
+          node .github/scripts/weekly-rtl-summary.js \
+            --report rtl-report.json \
+            --audit-outcome "$AUDIT_OUTCOME" \
+            --summary-output rtl-summary.md \
+            --github-output "$GITHUB_OUTPUT"
+          cat rtl-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload RTL result
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: main-quality-rtl
+          path: |
+            rtl-report.json
+            rtl-summary.md
+          retention-days: 14
+          if-no-files-found: ignore
+
+  forced_colors:
+    name: Forced-colors unit suite
+    needs: resolve
+    runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.summarize.outputs.status }}
+    steps:
+      - name: Checkout exact main result
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.main_sha }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      - name: Run forced-colors tests
+        id: test
+        run: |
+          set +e
+          pnpm exec vitest run \
+            packages/core/src/Calendar/Calendar.test.tsx \
+            packages/core/src/CheckboxInput/CheckboxInput.test.tsx \
+            packages/core/src/RadioList/RadioList.test.tsx \
+            packages/core/src/SegmentedControl/SegmentedControl.test.tsx \
+            packages/core/src/SideNav/SideNav.test.tsx \
+            packages/core/src/Skeleton/Skeleton.test.tsx \
+            packages/core/src/Switch/Switch.test.tsx \
+            packages/core/src/ToggleButton/ToggleButton.test.tsx \
+            -t "forced colors|Windows High Contrast" \
+            --reporter=json \
+            --outputFile forced-colors-report.json > forced-colors.log 2>&1
+          code=$?
+          cat forced-colors.log
+          echo "outcome=$([ "$code" -eq 0 ] && echo success || echo failure)" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Summarize forced-colors result
+        id: summarize
+        run: |
+          node .github/scripts/main-quality-report.mjs forced-colors-summary \
+            --report forced-colors-report.json \
+            --outcome "${{ steps.test.outputs.outcome }}" \
+            --summary-output forced-colors-summary.md \
+            --github-output "$GITHUB_OUTPUT"
+          cat forced-colors-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload forced-colors result
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: main-quality-forced-colors
+          path: |
+            forced-colors-report.json
+            forced-colors-summary.md
+            forced-colors.log
+          retention-days: 14
+          if-no-files-found: ignore
+
+  publish:
+    name: Publish aggregate result
+    needs: [resolve, build, visual, accessibility, rtl, forced_colors]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-slim
+    permissions:
+      actions: read
+      contents: write
+      statuses: write
+    steps:
+      - name: Checkout publisher
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.main_sha }}
+
+      - name: Download visual result
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: main-quality-visual
+          path: suites/visual
+
+      - name: Download accessibility result
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: main-quality-accessibility
+          path: suites/accessibility
+
+      - name: Download RTL result
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: main-quality-rtl
+          path: suites/rtl
+
+      - name: Download forced-colors result
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: main-quality-forced-colors
+          path: suites/forced-colors
+
+      - name: Compose aggregate report
+        env:
+          MAIN_SHA: ${{ needs.resolve.outputs.main_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPORT_URL: https://facebook.github.io/astryx/main-quality/${{ needs.resolve.outputs.main_sha }}/${{ github.run_id }}/
+          A11Y_STATUS: ${{ needs.accessibility.outputs.status || 'crashed' }}
+          RTL_STATUS: ${{ needs.rtl.outputs.status || 'crashed' }}
+          FORCED_COLORS_OUTCOME: ${{ needs.forced_colors.outputs.status == 'clean' && 'success' || 'failure' }}
+        run: |
+          set -eu
+          mkdir -p report/visual-report report/visual-capture
+          if [ -d suites/visual/report ]; then
+            cp -R suites/visual/report/. report/visual-report/
+          else
+            printf '<!doctype html><title>No visual report</title><p>No visual report was produced.</p>\n' > report/visual-report/index.html
+          fi
+          if [ -d suites/visual/capture ]; then
+            cp -R suites/visual/capture/. report/visual-capture/
+          else
+            printf '{"error":"No visual capture was produced"}\n' > report/visual-capture/missing.json
+          fi
+          node .github/scripts/main-quality-report.mjs compose \
+            --out-dir report \
+            --sha "$MAIN_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-url "$RUN_URL" \
+            --report-url "$REPORT_URL" \
+            --shadow-mode "$QUALITY_SHADOW_MODE" \
+            --visual-verdict suites/visual/verdict.json \
+            --visual-summary suites/visual/summary.md \
+            --a11y-report suites/accessibility/a11y-report.json \
+            --a11y-summary suites/accessibility/a11y-summary.md \
+            --a11y-status "$A11Y_STATUS" \
+            --rtl-report suites/rtl/rtl-report.json \
+            --rtl-summary suites/rtl/rtl-summary.md \
+            --rtl-status "$RTL_STATUS" \
+            --forced-colors-report suites/forced-colors/forced-colors-report.json \
+            --forced-colors-summary suites/forced-colors/forced-colors-summary.md \
+            --forced-colors-log suites/forced-colors/forced-colors.log \
+            --forced-colors-outcome "$FORCED_COLORS_OUTCOME"
+          cat report/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish to gh-pages
+        id: publish
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node .github/scripts/gh-pages-publisher.mjs main-quality \
+            --source report \
+            --sha "${{ needs.resolve.outputs.main_sha }}"
+
+      - name: Project aggregate status
+        if: always()
+        uses: actions/github-script@v9
+        env:
+          MAIN_SHA: ${{ needs.resolve.outputs.main_sha }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          retries: 3
+          script: |
+            const fs = require('node:fs');
+            const {pathToFileURL} = require('node:url');
+            const {buildCommitStatus} = await import(
+              pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/main-quality-report.mjs`).href,
+            );
+            const report = JSON.parse(fs.readFileSync('report/main-quality.json', 'utf8'));
+            const status = buildCommitStatus(report, {
+              publicationState: process.env.PUBLISH_OUTCOME === 'success' ? 'success' : 'failure',
+            });
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: process.env.MAIN_SHA,
+              state: status.state,
+              context: status.context,
+              description: status.description,
+              target_url: status.target_url || process.env.RUN_URL,
+            });
+            await core.summary.addRaw(`Projected ${status.context}: ${status.state} — ${status.description}\n`).write();
+            if (process.env.PUBLISH_OUTCOME !== 'success') {
+              core.setFailed('Protected-main quality report publication failed.');
+            }

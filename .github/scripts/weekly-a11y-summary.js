@@ -47,8 +47,80 @@ function readReport(file) {
   }
 }
 
+function a11yIntegrity(report) {
+  const summary = report?.summary;
+  if (!summary || summary.scanStatus !== 'complete') {
+    return {ok: false, reason: 'scan did not complete'};
+  }
+  if (summary.indexStatus !== 'parsed') {
+    return {ok: false, reason: 'Storybook index was not parsed'};
+  }
+  if (
+    !Number.isSafeInteger(summary.expectedStories) ||
+    summary.expectedStories <= 0
+  ) {
+    return {ok: false, reason: 'no eligible stories were found'};
+  }
+  for (const field of [
+    'auditedStories',
+    'failedStories',
+    'resultStories',
+    'uniqueResultStories',
+  ]) {
+    if (!Number.isSafeInteger(summary[field])) {
+      return {ok: false, reason: `${field} is missing`};
+    }
+  }
+  if (summary.failedStories !== 0) {
+    return {ok: false, reason: `${summary.failedStories} story/stories failed`};
+  }
+  if (summary.auditedStories !== summary.expectedStories) {
+    return {ok: false, reason: 'audited story count does not match expected'};
+  }
+  if (
+    summary.resultStories !== summary.expectedStories ||
+    summary.uniqueResultStories !== summary.expectedStories
+  ) {
+    return {ok: false, reason: 'per-story result integrity mismatch'};
+  }
+  const seen = new Set();
+  let details = 0;
+  for (const [componentName, component] of Object.entries(
+    report.components || {},
+  )) {
+    const storyDetails = component.storyDetails;
+    if (!Array.isArray(storyDetails)) {
+      return {ok: false, reason: `${componentName} has no story details`};
+    }
+    if (component.storiesAudited !== storyDetails.length) {
+      return {ok: false, reason: `${componentName} story count mismatch`};
+    }
+    for (const story of storyDetails) {
+      if (!story?.id || !Array.isArray(story.violations)) {
+        return {
+          ok: false,
+          reason: `${componentName} has malformed story result`,
+        };
+      }
+      if (seen.has(story.id)) {
+        return {ok: false, reason: `duplicate story result ${story.id}`};
+      }
+      seen.add(story.id);
+      details++;
+    }
+  }
+  if (
+    details !== summary.resultStories ||
+    seen.size !== summary.uniqueResultStories
+  ) {
+    return {ok: false, reason: 'reported story totals do not match details'};
+  }
+  return {ok: true, reason: 'complete'};
+}
+
 function computeStatus(report, outcome) {
   if (!report || report.error) return 'crashed';
+  if (!a11yIntegrity(report).ok) return 'crashed';
   if (outcome !== 'success') return 'failed';
   const total = report.summary?.totalViolations ?? 0;
   return total > 0 ? 'violations' : 'clean';
@@ -67,7 +139,7 @@ function countStoryErrors(report) {
 function buildSummary(report, status) {
   const lines = ['## Weekly full-suite accessibility scan', ''];
 
-  if (status === 'crashed') {
+  if (status === 'crashed' && (!report || report.error)) {
     lines.push(
       '**Status:** the audit did not produce a usable report — the audit ' +
         'script crashed or the Storybook build was missing. See the workflow ' +
@@ -82,6 +154,19 @@ function buildSummary(report, status) {
   const componentsAudited = report.summary?.componentsAudited ?? 0;
   const auditedAt = report.summary?.auditedAt || 'unknown';
   const storyErrors = countStoryErrors(report);
+  const integrity = a11yIntegrity(report);
+
+  if (status === 'crashed') {
+    lines.push(
+      '**Status:** the audit did not complete every expected story. Zero ' +
+        'violations is only clean when the scan is complete.',
+      '',
+      `**Reason:** ${integrity.reason}.`,
+      `**Coverage:** ${report.summary?.auditedStories ?? 0}/${report.summary?.expectedStories ?? 0} story/stories audited; ${report.summary?.failedStories ?? storyErrors} failed.`,
+      '',
+    );
+    return lines.join('\n') + '\n';
+  }
 
   lines.push(
     `**Scope:** full component library — ${componentsAudited} component(s) audited (${auditedAt}).`,

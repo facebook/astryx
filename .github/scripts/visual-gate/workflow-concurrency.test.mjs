@@ -244,6 +244,28 @@ describe('visual acceptance workflow concurrency', () => {
     expect(value).toContain("source: 'visual-promotion'");
   });
 
+  it('runs protected-main quality in shadow mode on an exact main SHA', () => {
+    const value = workflow('protected-main-quality.yml');
+    const publish = value.slice(value.indexOf('  publish:'));
+
+    expect(value).toContain('push:');
+    expect(value).toContain('branches: [main]');
+    expect(value).toContain("QUALITY_SHADOW_MODE: 'true'");
+    expect(value).toContain('one clean run on the current main SHA');
+    expect(value).toContain('owned by #5608');
+    expect(value).toContain('ref: ${{ needs.resolve.outputs.main_sha }}');
+    expect(value).toContain('--tiers full,theme-matrix,probe');
+    expect(value).toContain('node .github/scripts/weekly-a11y-summary.js');
+    expect(value).toContain('node .github/scripts/weekly-rtl-summary.js');
+    expect(value).toContain('-t "forced colors|Windows High Contrast"');
+    expect(publish).toContain('gh-pages-publisher.mjs main-quality');
+    expect(publish).toContain('statuses: write');
+    expect(publish).toContain('createCommitStatus');
+    expect(publish).toContain('publicationState');
+    expect(value).not.toContain('required_status_checks');
+    expect(value).not.toContain('branches/update-protection');
+  });
+
   it('publishes the stable site and release gate through the shared gh-pages publisher', () => {
     const deploy = workflow('deploy.yml');
     const releaseGate = workflow('release-gate.yml');
