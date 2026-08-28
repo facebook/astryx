@@ -49,6 +49,26 @@ export interface ComponentBestPractice {
 }
 
 /**
+ * A component-specific accessibility requirement.
+ *
+ * Keep this focused on what a consumer must preserve in the rendered result:
+ * naming, semantics, keyboard behavior, state exposure, contrast, and supported
+ * content combinations. Repository audit procedure belongs in the wiki rubric,
+ * not in this field.
+ *
+ * @example
+ * ```
+ * {name: 'Loading', description: 'Expose aria-busy and prevent duplicate activation unless the action is explicitly interruptible.'}
+ * ```
+ */
+export interface ComponentAccessibilityRequirement {
+  /** Short scannable label, e.g. `"Accessible name"` or `"Loading"`. */
+  name: string;
+  /** The accessibility contract consumers must preserve. */
+  description: string;
+}
+
+/**
  * Code example for a component or sub-component.
  */
 export interface ComponentExampleDoc {
@@ -406,8 +426,8 @@ export interface HookReturnDoc {
 }
 
 /**
- * Component usage documentation — a concise summary, design guidance
- * best practices, and optional visual anatomy.
+ * Component usage documentation — a concise summary, design guidance,
+ * component-specific accessibility requirements, and optional visual anatomy.
  *
  * ## description
  * Exactly 2-3 short sentences:
@@ -439,6 +459,9 @@ export interface UsageDoc {
   /** 3-4 do/don't design guidance items. Usually 2 Do's then 1-2 Don'ts.
    *  Focus on how a designer would USE the component, not how it's built. */
   bestPractices?: ComponentBestPractice[];
+  /** Accessibility requirements specific to this component and its supported
+   * content combinations. Generic audit procedure stays in the wiki rubric. */
+  accessibility?: ComponentAccessibilityRequirement[];
   /** Structural/visual anatomy of the component. Each entry describes one
    *  element that makes up the component (icon slot, label, container, etc.).
    *  Order entries in the visual reading order (leading → trailing, top → bottom). */

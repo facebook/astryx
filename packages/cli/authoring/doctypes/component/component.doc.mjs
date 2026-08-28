@@ -112,7 +112,7 @@ export const doc = {
       name: 'usage',
       type: 'UsageDoc',
       description:
-        'Component usage documentation: concise summary, best practices, and optional visual anatomy. (Optional on SubComponentDoc, where the sub-component description is used instead.)',
+        'Component usage documentation: concise summary, best practices, component-specific accessibility requirements, and optional visual anatomy. (Optional on SubComponentDoc, where the sub-component description is used instead.)',
       required: true,
       fields: [
         {
@@ -127,6 +127,12 @@ export const doc = {
           type: 'ComponentBestPractice[]',
           description:
             "3-4 do/don't design-guidance items ({guidance: boolean, description: string}). Never start the description with 'Do' or 'Don't'.",
+        },
+        {
+          name: 'usage.accessibility',
+          type: 'ComponentAccessibilityRequirement[]',
+          description:
+            'Component-specific accessibility requirements ({name, description}) rendered as a dedicated Accessibility section. Keep audit procedures in the wiki rubric.',
         },
         {
           name: 'usage.anatomy',

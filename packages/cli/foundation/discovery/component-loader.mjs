@@ -73,6 +73,7 @@ export function mergeTranslation(docs, translation) {
     if (translation.usage?.description) merged.usage.description = translation.usage.description;
     else if (translation.description) merged.usage.description = translation.description;
     if (translation.usage?.bestPractices) merged.usage.bestPractices = translation.usage.bestPractices;
+    if (translation.usage?.accessibility) merged.usage.accessibility = translation.usage.accessibility;
   }
 
   // Legacy top-level fields (for docsZh that are full ComponentDoc clones)
@@ -193,7 +194,11 @@ function overlayComponentDoc(docs, translation) {
     });
   };
 
-  const merged = {...docs, ...translation};
+  /** @param {any} baseUsage @param {any} translatedUsage */
+  const mergeUsage = (baseUsage, translatedUsage) =>
+    baseUsage || translatedUsage ? {...(baseUsage ?? {}), ...(translatedUsage ?? {})} : undefined;
+
+  const merged = {...docs, ...translation, usage: mergeUsage(docs.usage, translation.usage)};
 
   merged.props = overlayProps(docs.props, translation.props);
 
@@ -204,7 +209,7 @@ function overlayComponentDoc(docs, translation) {
     merged.components = docs.components.map((/** @type {any} */ base) => {
       const t = tByName.get(base.name);
       if (!t) return base;
-      return {...base, ...t, props: overlayProps(base.props, t.props)};
+      return {...base, ...t, usage: mergeUsage(base.usage, t.usage), props: overlayProps(base.props, t.props)};
     });
   }
 

@@ -5,6 +5,7 @@
  */
 
 import type {
+  ComponentAccessibilityRequirement,
   ComponentAnatomyElement,
   ComponentBestPractice,
   ComponentExampleDoc,
@@ -251,6 +252,7 @@ export interface ComponentTranslationDoc {
   usage?: {
     description?: string;
     bestPractices?: ComponentBestPractice[];
+    accessibility?: ComponentAccessibilityRequirement[];
     anatomy?: ComponentAnatomyElement[];
   };
   /** Sub-component translations. Must match docs.components length and order (if present). */

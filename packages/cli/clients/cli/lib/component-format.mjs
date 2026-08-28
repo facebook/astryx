@@ -72,6 +72,21 @@ function formatPropsTable(props) {
 }
 
 /**
+ * Render component-specific accessibility requirements.
+ * @param {{name: string, description: string}[] | undefined} accessibility
+ * @param {'##' | '####'} [heading]
+ * @returns {string[]}
+ */
+function formatAccessibility(accessibility, heading = '##') {
+  if (!accessibility?.length) return [];
+  return [
+    `${heading} Accessibility\n`,
+    ...accessibility.map(item => `- **${item.name}:** ${item.description}`),
+    '',
+  ];
+}
+
+/**
  * Render a sub-component block (the `### Name` sections under "## Components").
  *
  * Sub-components are sometimes declared as a bare reference, e.g.
@@ -88,6 +103,7 @@ function formatSubComponent(comp) {
   if (comp.description) {
     out.push(comp.description + '\n');
   }
+  out.push(...formatAccessibility(comp.usage?.accessibility, '####'));
   const table = formatPropsTable(comp.props);
   if (table) {
     out.push(table + '\n');
@@ -223,6 +239,8 @@ export function formatFull(docs, options = {}) {
     }
     sections.push('');
   }
+
+  sections.push(...formatAccessibility(docs.usage?.accessibility));
 
   // Single component props
   if ('props' in docs) {
@@ -387,6 +405,8 @@ export function formatCompact(docs, componentName, importHint) {
     }
     sections.push('');
   }
+
+  sections.push(...formatAccessibility(docs.usage?.accessibility));
 
   // Props
   if ('props' in docs) {
