@@ -8,23 +8,15 @@
  *   mode, and pending keyboard focus
  *
  * NOTE: Every test passes `initialValue` or `focusDate` so the hook never
- * falls back to plainDateToday() — CI has no pinned timezone or clock.
+ * falls back to plainDateToday() — CI has no pinned timezone or clock. Month
+ * labels are asserted as English literals: with no InternationalizationProvider
+ * mounted, useLocale() resolves to 'en', so the hook's formatting is
+ * deterministic and independent of the machine locale.
  */
 
 import {describe, it, expect, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
 import {useCalendarNavigation} from './useCalendarNavigation';
-
-/**
- * Expected month label, built directly with Intl (never via the hook's own
- * helpers) so the assertion holds in any locale the test machine runs under.
- */
-function monthLabel(year: number, month: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'long',
-  }).format(new Date(year, month - 1, 1));
-}
 
 // =============================================================================
 // Initialization
@@ -61,7 +53,7 @@ describe('useCalendarNavigation — initialization', () => {
       useCalendarNavigation({initialValue: '2026-04-10'}),
     );
 
-    expect(result.current.monthYearLabel).toBe(monthLabel(2026, 4));
+    expect(result.current.monthYearLabel).toBe('April 2026');
   });
 });
 
@@ -80,7 +72,7 @@ describe('useCalendarNavigation — uncontrolled navigation', () => {
     });
 
     expect(result.current.baseMonth).toEqual({year: 2026, month: 6, day: 1});
-    expect(result.current.monthYearLabel).toBe(monthLabel(2026, 6));
+    expect(result.current.monthYearLabel).toBe('June 2026');
   });
 
   it('navigateMonth(-1) from January rolls back into December of the previous year', () => {
@@ -243,9 +235,7 @@ describe('useCalendarNavigation — numberOfMonths=2', () => {
       {year: 2026, month: 1, day: 1},
       {year: 2026, month: 2, day: 1},
     ]);
-    expect(result.current.monthYearLabel).toBe(
-      `${monthLabel(2026, 1)} – ${monthLabel(2026, 2)}`,
-    );
+    expect(result.current.monthYearLabel).toBe('January 2026 – February 2026');
   });
 
   it('spans the year boundary in the two-month view', () => {
@@ -257,8 +247,6 @@ describe('useCalendarNavigation — numberOfMonths=2', () => {
       {year: 2026, month: 12, day: 1},
       {year: 2027, month: 1, day: 1},
     ]);
-    expect(result.current.monthYearLabel).toBe(
-      `${monthLabel(2026, 12)} – ${monthLabel(2027, 1)}`,
-    );
+    expect(result.current.monthYearLabel).toBe('December 2026 – January 2027');
   });
 });
