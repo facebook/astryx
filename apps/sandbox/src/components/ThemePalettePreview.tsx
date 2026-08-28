@@ -2194,7 +2194,7 @@ function getStatusIndicatorContrast(theme: DefinedTheme, mode: Mode) {
         relationship: 'semantic status icon against row surface',
         ratio: tableStatusRatio,
         minimum: 3,
-        semantics: 'Pass here with icon + label',
+        semantics: 'Pass: distinct icon + required accessible name',
         semanticsPass: true,
       },
       {
