@@ -48,7 +48,7 @@
   },
   "scripts": {
     "prepack": "pnpm build",
-    "build": "rimraf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
+    "build": "node ../../scripts/clean-dist.mjs && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
     "build:esm": "babel src --out-dir dist --extensions \".ts,.tsx\" --out-file-extension \".js\" --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.json",
     "build:css": "node ../../scripts/build-css.mjs --package richtext",
     "dev": "babel src --watch --out-dir dist --extensions \".ts,.tsx\" --out-file-extension \".js\" --ignore \"**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*\" --config-file ./babel.config.json",
@@ -122,7 +122,6 @@
     "@lexical/rich-text": "^0.46.0",
     "@lexical/selection": "^0.46.0",
     "@lexical/utils": "^0.46.0",
-    "lexical": "^0.46.0",
-    "rimraf": "^6.0.1"
+    "lexical": "^0.46.0"
   }
 }

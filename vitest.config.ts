@@ -138,8 +138,8 @@ export default defineConfig({
           hookTimeout: 30_000,
           // Build @astryxdesign/core once before workers fork. The build-theme
           // suites need a compiled core; doing it here (not per-suite in
-          // parallel workers) avoids concurrent `rimraf dist && build`
-          // collisions that flake under Vitest 4's reworked pool.
+          // parallel workers) avoids concurrent clean-and-build collisions that
+          // flake under Vitest 4's reworked pool.
           globalSetup: ['./vitest.global-setup.node.mjs'],
           include: [
             'packages/**/src/**/*.test.{ts,tsx,mjs}',
