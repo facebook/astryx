@@ -1238,6 +1238,20 @@ export const neutralTheme = defineTheme({
         '--color-error': STATUS_COLOR_ROLES.foreground.error,
       },
     },
+    'chat-tool-call-status': {
+      'status:running': {
+        backgroundColor: STATUS_COLOR_ROLES.surface.info,
+        color: STATUS_COLOR_ROLES.foreground.info,
+      },
+      'status:complete': {
+        backgroundColor: STATUS_COLOR_ROLES.surface.success,
+        color: STATUS_COLOR_ROLES.foreground.success,
+      },
+      'status:error': {
+        backgroundColor: STATUS_COLOR_ROLES.surface.error,
+        color: STATUS_COLOR_ROLES.foreground.error,
+      },
+    },
 
     // Dots use filled-state colors; icons use foreground colors.
     'table-row-status': {

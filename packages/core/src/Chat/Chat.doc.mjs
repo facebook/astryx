@@ -34,6 +34,10 @@ export const docs = {
       {className: 'astryx-chat-layout-scroll-button'},
       {className: 'astryx-chat-tokenized-text'},
       {className: 'astryx-chat-tool-calls'},
+      {
+        className: 'astryx-chat-tool-call-status',
+        visualProps: ['status'],
+      },
       {className: 'astryx-trigger-menu'},
     ],
     vars: [

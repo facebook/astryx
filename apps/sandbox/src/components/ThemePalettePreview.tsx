@@ -2091,19 +2091,49 @@ function getStatusIndicatorContrast(theme: DefinedTheme, mode: Mode) {
         entry[0].startsWith('--') && typeof entry[1] === 'string',
     ),
   );
+  const chatToolStatusBlock = theme.components?.['chat-tool-call-status'] ?? {};
+  const chatToolDefaults = {
+    pending: {
+      backgroundColor: 'var(--color-background-muted)',
+      color: 'var(--color-text-secondary)',
+    },
+    running: {
+      backgroundColor: 'var(--color-accent-muted)',
+      color: 'var(--color-accent)',
+    },
+    complete: {
+      backgroundColor: 'var(--color-success-muted)',
+      color: 'var(--color-success)',
+    },
+    error: {
+      backgroundColor: 'var(--color-error-muted)',
+      color: 'var(--color-error)',
+    },
+  } as const;
   const toolStatusRatio = Math.min(
-    minimumAgainstParents(resolveToken(theme, '--color-text-secondary', mode)),
-    ...(['--color-success', '--color-error'] as const).flatMap(token => {
+    ...Object.entries(chatToolDefaults).flatMap(([status, defaults]) => {
+      const override = chatToolStatusBlock[`status:${status}`] ?? {};
+      const local = Object.fromEntries(
+        Object.entries({...chatToolLocal, ...override}).filter(
+          (entry): entry is [string, string] =>
+            entry[0].startsWith('--') && typeof entry[1] === 'string',
+        ),
+      );
       const foreground = resolveThemeColor(
         theme,
-        `var(${token})`,
+        String(override.color ?? defaults.color),
         mode,
-        chatToolLocal,
+        local,
       );
-      const channels = parseColor(foreground).rgb.join(', ');
+      const plateColor = resolveThemeColor(
+        theme,
+        String(override.backgroundColor ?? defaults.backgroundColor),
+        mode,
+        local,
+      );
       return parentTokens.map(parentToken => {
         const parent = resolveToken(theme, parentToken, mode);
-        const plate = compositeColor(`rgba(${channels}, 0.15)`, parent);
+        const plate = compositeColor(plateColor, parent);
         return contrastRatio(foreground, plate);
       });
     }),
@@ -2154,7 +2184,7 @@ function getStatusIndicatorContrast(theme: DefinedTheme, mode: Mode) {
       },
       {
         consumer: 'ChatToolCalls',
-        relationship: 'status icon / tinted plate or spinner / row surface',
+        relationship: 'status icon or spinner / status-message surface',
         ratio: toolStatusRatio,
         minimum: 3,
         semantics: 'Gap: non-error status is not named',

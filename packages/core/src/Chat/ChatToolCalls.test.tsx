@@ -11,13 +11,16 @@ describe('ChatToolCalls', () => {
   });
 
   it('renders single call inline without group chrome', () => {
-    render(
+    const {container} = render(
       <ChatToolCalls
         calls={[{name: 'bash', status: 'complete', duration: '1.2s'}]}
       />,
     );
     expect(screen.getByText('bash')).toBeInTheDocument();
     expect(screen.getByText('1.2s')).toBeInTheDocument();
+    expect(
+      container.querySelector('.astryx-chat-tool-call-status'),
+    ).toHaveAttribute('data-status', 'complete');
     // No group header / expand button for single call
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });

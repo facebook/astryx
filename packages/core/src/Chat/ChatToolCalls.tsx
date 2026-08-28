@@ -224,13 +224,6 @@ const styles = stylex.create({
     height: '16px',
     borderRadius: radiusVars['--radius-full'],
   },
-  statusIconCircle: {
-    position: 'absolute',
-    inset: 0,
-    borderRadius: 'inherit',
-    backgroundColor: 'currentColor',
-    opacity: 0.15,
-  },
   statusIconInner: {
     position: 'relative',
     display: 'inline-flex',
@@ -338,10 +331,22 @@ const styles = stylex.create({
   },
 
   // Status colors
-  colorPending: {color: colorVars['--color-text-disabled']},
-  colorRunning: {color: colorVars['--color-accent']},
-  colorComplete: {color: colorVars['--color-success']},
-  colorError: {color: colorVars['--color-error']},
+  colorPending: {
+    backgroundColor: colorVars['--color-background-muted'],
+    color: colorVars['--color-text-secondary'],
+  },
+  colorRunning: {
+    backgroundColor: colorVars['--color-accent-muted'],
+    color: colorVars['--color-accent'],
+  },
+  colorComplete: {
+    backgroundColor: colorVars['--color-success-muted'],
+    color: colorVars['--color-success'],
+  },
+  colorError: {
+    backgroundColor: colorVars['--color-error-muted'],
+    color: colorVars['--color-error'],
+  },
 });
 
 // =============================================================================
@@ -415,22 +420,22 @@ function CallRow({call}: {call: ChatToolCallItem}) {
       {...stylex.props(styles.callRow, hasDetail && styles.callRowClickable)}>
       <span
         title={status === 'error' ? call.errorMessage : undefined}
-        {...stylex.props(styles.statusIcon, STATUS_STYLES[status])}>
+        {...mergeProps(
+          themeProps('chat-tool-call-status', {status}),
+          stylex.props(styles.statusIcon, STATUS_STYLES[status]),
+        )}>
         {status === 'running' ? (
-          <Spinner size="sm" shade="subtle" />
+          <Spinner size="sm" shade="inherit" />
         ) : status === 'pending' ? (
-          <Spinner size="sm" shade="subtle" />
+          <Spinner size="sm" shade="inherit" />
         ) : (
-          <>
-            <span {...stylex.props(styles.statusIconCircle)} />
-            <span {...stylex.props(styles.statusIconInner)}>
-              <Icon
-                icon={STATUS_ICON_NAMES[status] ?? 'check'}
-                size="xsm"
-                color="inherit"
-              />
-            </span>
-          </>
+          <span {...stylex.props(styles.statusIconInner)}>
+            <Icon
+              icon={STATUS_ICON_NAMES[status] ?? 'check'}
+              size="xsm"
+              color="inherit"
+            />
+          </span>
         )}
         {status === 'error' && call.errorMessage != null && (
           // The title attribute above is hover-only; expose the error detail
@@ -618,22 +623,22 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
         ) : (
           <>
             <span
-              {...stylex.props(styles.statusIcon, STATUS_STYLES[latestStatus])}>
+              {...mergeProps(
+                themeProps('chat-tool-call-status', {status: latestStatus}),
+                stylex.props(styles.statusIcon, STATUS_STYLES[latestStatus]),
+              )}>
               {latestStatus === 'running' ? (
-                <Spinner size="sm" shade="subtle" />
+                <Spinner size="sm" shade="inherit" />
               ) : latestStatus === 'pending' ? (
-                <Spinner size="sm" shade="subtle" />
+                <Spinner size="sm" shade="inherit" />
               ) : (
-                <>
-                  <span {...stylex.props(styles.statusIconCircle)} />
-                  <span {...stylex.props(styles.statusIconInner)}>
-                    <Icon
-                      icon={STATUS_ICON_NAMES[latestStatus] ?? 'check'}
-                      size="xsm"
-                      color="inherit"
-                    />
-                  </span>
-                </>
+                <span {...stylex.props(styles.statusIconInner)}>
+                  <Icon
+                    icon={STATUS_ICON_NAMES[latestStatus] ?? 'check'}
+                    size="xsm"
+                    color="inherit"
+                  />
+                </span>
               )}
             </span>
             <span {...stylex.props(styles.callName)}>{latestCall.name}</span>
