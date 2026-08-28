@@ -3,11 +3,11 @@
 'use client';
 
 /**
- * @file PowerSearchMobile.tsx
+ * @file PowerSearchTouch.tsx
  * @input PowerSearchConfig, filters, onChange — the PowerSearch props, unchanged
- * @output Touch-first structured filter bar: a tap target plus a bottom-sheet
- *   filter builder
- * @position Sibling of PowerSearch; a drop-in replacement on touch layouts
+ * @output Private coarse-pointer surface: in-field filter actions plus a
+ *   bottom-sheet filter builder
+ * @position Internal PowerSearch surface selected by PowerSearch on coarse pointers
  *
  * PowerSearch's desktop shape is a typeahead that drops a popover under the
  * field, and an edit popover that lays field / operator / value out in a row.
@@ -23,9 +23,9 @@
  * accommodation, which the text and number value editors need.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/PowerSearch/index.ts
- * - /packages/core/src/PowerSearch/PowerSearchMobile.doc.mjs
- * - /apps/storybook/stories/PowerSearchMobile.stories.tsx
+ * - /packages/core/src/PowerSearch/PowerSearch.doc.mjs
+ * - /packages/core/src/PowerSearch/PowerSearchTouch.test.tsx
+ * - /apps/storybook/stories/PowerSearch.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/PowerSearch/ (showcase blocks)
  */
 
@@ -70,7 +70,7 @@ import {
 } from '../theme/tokens.stylex';
 import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-import {PowerSearchMobileValueEditor} from './PowerSearchMobileValueEditor';
+import {PowerSearchTouchValueEditor} from './PowerSearchTouchValueEditor';
 import {PowerSearchToken} from './PowerSearchToken';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {useInternalConfig} from './useInternalConfig';
@@ -87,25 +87,26 @@ import type {
 // =============================================================================
 
 /**
- * PowerSearchMobile takes the same props as PowerSearch so the two can be
- * swapped behind one responsive branch without rewriting the call site.
- *
- * Four props describe desktop-only affordances and are inert here, because the
- * surfaces they configure do not exist on this variant: `hasAutoFocus` (the
- * sheet is never auto-opened), `menuWidth` and `maxOperatorMenuItems` (the
- * dropdown menus are lists in a sheet), and `tokenOverflowBehavior` (tokens
- * wrap in the tap target rather than collapsing into a "+N more").
+ * PowerSearch uses this component internally on coarse pointers. It keeps the
+ * same props, filter model, and token rendering while replacing pointer-oriented
+ * popovers with a bottom-sheet flow.
  */
-export type PowerSearchMobileProps = PowerSearchProps;
+type PowerSearchTouchProps = PowerSearchProps;
 
 // =============================================================================
 // Styles
 // =============================================================================
 
 const sizeStyles = stylex.create({
-  sm: {minHeight: sizeVars['--size-element-sm']},
-  md: {minHeight: sizeVars['--size-element-md']},
-  lg: {minHeight: sizeVars['--size-element-lg']},
+  sm: {
+    minHeight: `max(${sizeVars['--size-element-sm']}, ${spacingVars['--spacing-11']})`,
+  },
+  md: {
+    minHeight: `max(${sizeVars['--size-element-md']}, ${spacingVars['--spacing-11']})`,
+  },
+  lg: {
+    minHeight: `max(${sizeVars['--size-element-lg']}, ${spacingVars['--spacing-11']})`,
+  },
 });
 
 const styles = stylex.create({
@@ -115,7 +116,10 @@ const styles = stylex.create({
     position: 'relative',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
-    cursor: {default: 'pointer', ':is(:disabled,[aria-disabled="true"])': 'default'},
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     height: 'auto',
   },
   wrapperWithTokens: {
@@ -135,7 +139,7 @@ const styles = stylex.create({
     minWidth: sizeVars['--size-element-lg'],
     display: 'flex',
     alignItems: 'center',
-    minHeight: sizeVars['--size-element-sm'],
+    minHeight: spacingVars['--spacing-11'],
     paddingBlock: 0,
     paddingInline: spacingVars['--spacing-1'],
     margin: 0,
@@ -144,9 +148,8 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-family-body'],
-    // Matches the text size the desktop field's input renders at, including
-    // its coarse-pointer floor, so swapping variants does not resize the
-    // placeholder.
+    // Matches the text size the fine-pointer input renders at, including the
+    // coarse-pointer floor that prevents iOS Safari zoom.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
       '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
@@ -267,7 +270,7 @@ interface FilterDraft {
   readonly value?: FilterValue;
 }
 
-/** Operators the mobile editor can render. */
+/** Operators the touch editor can render. */
 function isSupportedOperator(operator: PowerSearchOperator): boolean {
   // Nested filter groups are a desktop-density affordance: the desktop editor
   // gives them a dedicated recursive row layout that has no touch equivalent
@@ -300,32 +303,21 @@ const SEARCHABLE_FIELD_COUNT = 8;
 // =============================================================================
 
 /**
- * Touch-first PowerSearch: a tap target that shows the active filters as
- * tokens, and a bottom sheet that builds one filter at a time.
- *
- * Same props, same `PowerSearchFilter` model and same tokens as
- * {@link PowerSearch} — pick between them on viewport, and the call site does
- * not change:
- *
- * @example
- * ```
- * const isTouch = useMediaQuery('(max-width: 768px)');
- * const Search = isTouch ? PowerSearchMobile : PowerSearch;
- * <Search config={config} filters={filters} onChange={setFilters} />
- * ```
+ * Private coarse-pointer surface for PowerSearch. Active filters stay in the
+ * field as tokens, followed by an “Add filters…” button. A bottom sheet builds
+ * or edits one filter at a time.
  *
  * Tapping the field opens a pinned-tall sheet listing the available fields.
  * Choosing one opens its value editor; a field with more than one operator
  * shows the operator as a row that drills into its own list. Tapping a token
  * reopens that filter's editor, where Delete removes it.
  */
-export function PowerSearchMobile({
+export function PowerSearchTouchSurface({
   config: configProp,
   filters,
   onChange,
   label: labelFromProps,
   isLabelHidden = true,
-  placeholder: placeholderFromProps,
   hasClear = true,
   isReadOnly = false,
   isDisabled = false,
@@ -348,14 +340,12 @@ export function PowerSearchMobile({
   className,
   style,
   components: componentOverrides,
-}: PowerSearchMobileProps) {
+}: PowerSearchTouchProps) {
   const size = useSize(sizeProp, 'md');
   const config = useInternalConfig(configProp);
   const t = useTranslator();
 
   const label = labelFromProps ?? t('@astryx.powersearch.label');
-  const placeholder =
-    placeholderFromProps ?? t('@astryx.powersearch.placeholder');
   const saveButtonLabel =
     saveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const addFilterLabel = t('@astryx.powersearch.mobile.addFilter');
@@ -386,8 +376,8 @@ export function PowerSearchMobile({
 
   const droppedFieldCount = config.getVisibleFields().length - fields.length;
   useDevWarning(
-    'PowerSearchMobile',
-    `${droppedFieldCount} field(s) were left out of the filter list because every operator they define has a 'nested' value type, which this variant cannot edit. Give those fields a non-nested operator, or render PowerSearch instead on touch layouts.`,
+    'PowerSearch',
+    `${droppedFieldCount} field(s) were left out of the touch filter list because every operator they define has a 'nested' value type, which the bottom-sheet editor cannot edit yet. Give those fields a non-nested operator to make them available on coarse pointers.`,
     droppedFieldCount > 0,
   );
 
@@ -747,7 +737,7 @@ export function PowerSearchMobile({
           onBlur={onBlur}
           data-testid={testId}
           {...mergeProps(
-            themeProps('power-search-mobile', {
+            themeProps('power-search', {
               size,
               status: status?.type,
               disabled: isDisabled ? 'disabled' : null,
@@ -791,7 +781,7 @@ export function PowerSearchMobile({
               styles.trigger,
               isReadOnly && styles.triggerReadOnly,
             )}>
-            {filters.length === 0 ? placeholder : addFilterLabel}
+            {addFilterLabel}
           </button>
           {(endContent || isRenderable(resultCountText) || isClearShown) && (
             <div {...stylex.props(styles.endSection)}>
@@ -1004,7 +994,7 @@ export function PowerSearchMobile({
                         />
                       </List>
                     )}
-                    <PowerSearchMobileValueEditor
+                    <PowerSearchTouchValueEditor
                       key={`${draft.field}-${draft.operator}`}
                       config={config}
                       operatorValue={draftOperator.value}
@@ -1051,7 +1041,7 @@ export function PowerSearchMobile({
   );
 }
 
-PowerSearchMobile.displayName = 'PowerSearchMobile';
+PowerSearchTouchSurface.displayName = 'PowerSearchTouchSurface';
 
 // =============================================================================
 // Field row

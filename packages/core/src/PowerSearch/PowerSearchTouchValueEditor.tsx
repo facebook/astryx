@@ -3,10 +3,10 @@
 'use client';
 
 /**
- * @file PowerSearchMobileValueEditor.tsx
+ * @file PowerSearchTouchValueEditor.tsx
  * @input OperatorValue, FilterValue, onChange callback
- * @output Touch-native value editor for one filter, rendered inside a BottomSheet
- * @position Sub-component; consumed by PowerSearchMobile
+ * @output Sheet-native value editor for the private PowerSearch touch surface
+ * @position Internal sub-component consumed by PowerSearchTouch
  *
  * The desktop value editor renders `enum` and `enum_list` as Selectors, which
  * open a dropdown layer. Inside a bottom sheet that stacks a second overlay on
@@ -43,7 +43,7 @@ const styles = stylex.create({
   },
 });
 
-export interface PowerSearchMobileValueEditorProps {
+export interface PowerSearchTouchValueEditorProps {
   config: InternalConfig;
   operatorValue: OperatorValue;
   filterValue: FilterValue | undefined;
@@ -58,7 +58,7 @@ export interface PowerSearchMobileValueEditorProps {
 /**
  * Renders the value control for one filter inside the mobile editor sheet.
  */
-export function PowerSearchMobileValueEditor({
+export function PowerSearchTouchValueEditor({
   config,
   operatorValue,
   filterValue,
@@ -66,7 +66,7 @@ export function PowerSearchMobileValueEditor({
   onCommit,
   isDisabled,
   timezoneID,
-}: PowerSearchMobileValueEditorProps) {
+}: PowerSearchTouchValueEditorProps) {
   const t = useTranslator();
 
   const handleFallbackChange = useCallback(
@@ -162,4 +162,4 @@ export function PowerSearchMobileValueEditor({
   );
 }
 
-PowerSearchMobileValueEditor.displayName = 'PowerSearchMobileValueEditor';
+PowerSearchTouchValueEditor.displayName = 'PowerSearchTouchValueEditor';

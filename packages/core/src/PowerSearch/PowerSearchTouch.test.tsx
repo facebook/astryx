@@ -1,18 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file PowerSearchMobile.test.tsx
- * @input Uses vitest, @testing-library/react, PowerSearchMobile component
- * @output Unit tests for the touch filter-builder flow
- * @position Core testing; validates PowerSearchMobile.tsx implementation
+ * @file PowerSearchTouch.test.tsx
+ * @input Uses vitest, @testing-library/react, PowerSearchTouchSurface component
+ * @output Unit tests for the private coarse-pointer PowerSearch surface
+ * @position Core testing; validates PowerSearchTouch.tsx implementation
  *
- * SYNC: When PowerSearchMobile.tsx changes, update tests to match new behavior
+ * SYNC: When PowerSearchTouch.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, within} from '@testing-library/react';
 import {createRef} from 'react';
-import {PowerSearchMobile} from './PowerSearchMobile';
+import {PowerSearchTouchSurface} from './PowerSearchTouch';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -115,11 +115,11 @@ const openFilter: PowerSearchFilter = {
 };
 
 function setup(
-  props: Partial<React.ComponentProps<typeof PowerSearchMobile>> = {},
+  props: Partial<React.ComponentProps<typeof PowerSearchTouchSurface>> = {},
 ) {
   const onChange = vi.fn();
   const result = render(
-    <PowerSearchMobile
+    <PowerSearchTouchSurface
       config={config}
       filters={[]}
       onChange={onChange}
@@ -168,18 +168,22 @@ function tapRow(name: RegExp | string): void {
 // Tests
 // =============================================================================
 
-describe('PowerSearchMobile', () => {
+describe('PowerSearchTouchSurface', () => {
   it('names the group with the label and the tap target with its own text', () => {
     setup({label: 'Filter issues'});
     expect(screen.getByRole('group', {name: 'Filter issues'})).toBeTruthy();
     // The visible text is the accessible name — a <label> pointed at the
     // button would silently replace it (WCAG 2.5.3).
-    expect(screen.getByRole('button', {name: 'Search…'})).toBeTruthy();
+    expect(screen.getByRole('button', {name: 'Add filters…'})).toBeTruthy();
   });
 
-  it('reads "Add filter" once a filter exists', () => {
+  it('keeps “Add filters…” after the existing capsules', () => {
     setup({filters: [openFilter]});
-    expect(screen.getByRole('button', {name: 'Add filter'})).toBeTruthy();
+    const value = screen.getByText('Open');
+    const add = screen.getByRole('button', {name: 'Add filters…'});
+    expect(
+      value.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('lists the fields, grouped, when the tap target is pressed', () => {
@@ -323,10 +327,11 @@ describe('PowerSearchMobile', () => {
     expect(onChange).toHaveBeenCalledWith([], 'remove', 0);
   });
 
-  it("removes a filter from its token's remove button", () => {
+  it("removes a filter from its token's remove button without opening the sheet", () => {
     const {onChange} = setup({filters: [openFilter]});
     fireEvent.click(screen.getByRole('button', {name: /^Remove/}));
     expect(onChange).toHaveBeenCalledWith([], 'remove', 0);
+    expect(isSheetOpen()).toBe(false);
   });
 
   it('clears every removable filter but keeps the read-only ones', () => {
@@ -415,7 +420,7 @@ describe('PowerSearchMobile', () => {
     openSheet();
     expect(within(sheet()).queryByRole('button', {name: /^Group/})).toBeNull();
     expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('PowerSearchMobile: 1 field(s) were left out'),
+      expect.stringContaining('PowerSearch: 1 field(s) were left out'),
     );
     warn.mockRestore();
   });
@@ -433,7 +438,7 @@ describe('PowerSearchMobile', () => {
     const {rerender} = setup({resultCount: 12});
     expect(screen.getByText('12 results')).toBeTruthy();
     rerender(
-      <PowerSearchMobile
+      <PowerSearchTouchSurface
         config={config}
         filters={[]}
         onChange={vi.fn()}

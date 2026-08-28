@@ -3,6 +3,7 @@
 import React, {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {PowerSearch} from '@astryxdesign/core/PowerSearch';
+import {PowerSearchTouchSurface} from '../../../packages/core/src/PowerSearch/PowerSearchTouch';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -512,6 +513,30 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Search by status, title, priority...',
+  },
+};
+
+export const TouchSurface: Story = {
+  name: 'Touch Surface',
+  render: args => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+      {
+        field: 'priority',
+        operator: 'is',
+        value: {type: 'enum', value: 'p1'},
+      },
+    ]);
+    return (
+      <div style={{width: 390, maxWidth: '100%'}}>
+        <PowerSearchTouchSurface
+          {...args}
+          config={fullConfig}
+          filters={filters}
+          onChange={newFilters => setFilters([...newFilters])}
+        />
+      </div>
+    );
   },
 };
 

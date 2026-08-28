@@ -5,12 +5,16 @@
 /**
  * @file PowerSearch.tsx
  * @input PowerSearchConfig, filters, onChange
- * @output Structured filter bar with token-based filter management
- * @position Main component; forwards DOM ref and exposes tokenizer control via
- *   handleRef
+ * @output Structured filter bar with pointer and coarse-pointer surfaces
+ * @position Public component; selects the touch surface on coarse pointers,
+ *   forwards DOM ref, and exposes surface focus control via handleRef
  *
  * SYNC: When modified, update:
- * - /packages/core/src/PowerSearch/index.ts
+ * - /packages/core/src/PowerSearch/PowerSearch.doc.mjs
+ * - /packages/core/src/PowerSearch/PowerSearch.test.tsx
+ * - /packages/core/src/PowerSearch/PowerSearchRouting.test.tsx
+ * - /packages/core/src/PowerSearch/PowerSearchTouch.tsx
+ * - /apps/storybook/stories/PowerSearch.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/PowerSearch/ (showcase blocks)
  */
 
@@ -55,6 +59,7 @@ import {
 } from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
+import {isRenderable} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {truncateCharacters} from '../utils/characters';
 import {useTranslator} from '../i18n';
@@ -75,6 +80,8 @@ import type {
 } from './types';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useMediaQuery} from '../hooks/useMediaQuery';
+import {PowerSearchTouchSurface} from './PowerSearchTouch';
 // =============================================================================
 // Icon mapping for typeahead entries
 // =============================================================================
@@ -372,7 +379,10 @@ export interface PowerSearchProps extends Omit<
   label?: string;
   /** Visually hide the label. @default true */
   isLabelHidden?: boolean;
-  /** Placeholder text. @default 'Search...' */
+  /**
+   * Placeholder text on fine-pointer input surfaces. On coarse pointers, the
+   * field instead shows the “Add filters…” button. @default 'Search...'
+   */
   placeholder?: string;
   /** Auto-focus on mount. @default false */
   hasAutoFocus?: boolean;
@@ -481,9 +491,10 @@ type PopoverState =
 /**
  * Structured filter bar where each token represents a filter (field + operator + value).
  *
- * Users select a field from a typeahead dropdown, then configure the operator
- * and value in an edit popover. Filters appear as tokens that can be clicked
- * to edit or removed individually.
+ * On fine pointers, users select fields from a typeahead and configure them in
+ * an edit popover. On coarse pointers, the same component renders an in-field
+ * “Add filters…” button and uses a bottom-sheet flow for adding and editing.
+ * Existing token remove buttons delete directly on either surface.
  *
  * @example
  * ```
@@ -544,7 +555,17 @@ type PopoverState =
  * };
  * ```
  */
-export function PowerSearch({
+export function PowerSearch(props: PowerSearchProps): ReactNode {
+  const isTouch = useMediaQuery('(pointer: coarse)');
+
+  return isTouch ? (
+    <PowerSearchTouchSurface {...props} />
+  ) : (
+    <PointerPowerSearch {...props} />
+  );
+}
+
+function PointerPowerSearch({
   config: configProp,
   filters,
   onChange,
@@ -1027,17 +1048,16 @@ export function PowerSearch({
       hasMountedRef.current = true;
       return;
     }
-    if (resultCountText != null) {
+    if (isRenderable(resultCountText)) {
       announce(resultCountText);
     }
   }, [resultCountText, announce]);
 
   // Build combined endContent from resultCount + endContent props
   const combinedEndContent = useMemo((): React.ReactNode => {
-    const resultCountNode =
-      resultCountText != null ? (
-        <span {...stylex.props(resultCountStyles.text)}>{resultCountText}</span>
-      ) : null;
+    const resultCountNode = isRenderable(resultCountText) ? (
+      <span {...stylex.props(resultCountStyles.text)}>{resultCountText}</span>
+    ) : null;
 
     if (resultCountNode && endContent) {
       return (
@@ -1101,3 +1121,4 @@ export function PowerSearch({
 }
 
 PowerSearch.displayName = 'PowerSearch';
+PointerPowerSearch.displayName = 'PointerPowerSearch';

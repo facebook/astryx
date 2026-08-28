@@ -173,17 +173,20 @@ export const docs = {
     {
       name: 'menuWidth',
       type: 'number',
-      description: 'Maximum width for the operator/value dropdown menu in pixels.',
+      description:
+        'Maximum width for the operator/value dropdown menu in pixels.',
     },
     {
       name: 'maxOperatorMenuItems',
       type: 'number',
-      description: 'Maximum number of items displayed in the operator dropdown.',
+      description:
+        'Maximum number of items displayed in the operator dropdown.',
     },
     {
       name: 'tokenOverflowBehavior',
       type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
-      description: 'Controls how tokens overflow when the container is too narrow. Forwarded to Tokenizer.',
+      description:
+        'Controls how tokens overflow when the container is too narrow. Forwarded to Tokenizer.',
       default: "'none'",
     },
     {
@@ -250,7 +253,7 @@ export const docs = {
   },
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, an in-field “Add filters…” button and each existing token open a bottom-sheet editor; the token remove button still deletes directly. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
@@ -442,7 +445,7 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, an in-field “Add filters…” button and each existing token open a bottom-sheet editor; the token remove button still deletes directly. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
@@ -471,10 +474,10 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Structured filter bar where each token represents filter (field+operator+value). Users select fields from typeahead dropdown, configure operators+values in edit popover, manage filters as removable tokens.',
+    'Structured filter bar where each token represents filter (field+operator+value). Uses a typeahead and edit popover on fine pointers, and an in-field Add filters button with a bottom-sheet editor on coarse pointers.',
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. Use it for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, an in-field “Add filters…” button and each existing token open a bottom-sheet editor; the token remove button still deletes directly. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
