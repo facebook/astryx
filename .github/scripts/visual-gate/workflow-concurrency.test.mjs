@@ -231,11 +231,51 @@ describe('visual acceptance workflow concurrency', () => {
       manual.indexOf('Wait for the baseline publication turn'),
     ).toBeLessThan(manual.indexOf('Fetch the current baseline'));
     expect(workflow('release-gate.yml')).toContain(
-      "grep -Ev '/(baseline|latest|publication-queue)/$'",
+      'node .github/scripts/gh-pages-publisher.mjs release-gate --source report',
     );
     expect(value).toContain(
       "context.eventName === 'workflow_dispatch' ? 'true' : 'false'",
     );
+  });
+
+  it('publishes the stable site and release gate through the shared gh-pages publisher', () => {
+    const deploy = workflow('deploy.yml');
+    const releaseGate = workflow('release-gate.yml');
+
+    expect(deploy).toContain('Checkout publisher');
+    expect(deploy).toContain(
+      'node .github/scripts/gh-pages-publisher.mjs stable-site --source staged',
+    );
+    expect(deploy).not.toContain('/tmp/ghp');
+    expect(releaseGate).toContain('Checkout publisher');
+    expect(releaseGate).toContain(
+      'node .github/scripts/gh-pages-publisher.mjs release-gate --source report',
+    );
+    const releasePublisher = releaseGate.slice(
+      releaseGate.indexOf('  publish:'),
+    );
+    expect(releasePublisher).not.toContain('release-gate-publish');
+    expect(releasePublisher).not.toContain('/tmp/gh-pages');
+  });
+
+  it('grants queued gh-pages publishers read access to overlapping workflow runs', () => {
+    const deploy = workflow('deploy.yml');
+    const deployJob = deploy.slice(
+      deploy.indexOf('  deploy:'),
+      deploy.indexOf('      - name: Checkout publisher'),
+    );
+    const releaseGate = workflow('release-gate.yml');
+    const publishJob = releaseGate.slice(
+      releaseGate.indexOf('  publish:'),
+      releaseGate.indexOf('      - name: Checkout publisher'),
+    );
+
+    expect(deployJob).toContain('actions: read');
+    expect(deployJob).toContain('contents: write');
+    expect(deploy).toContain('gh-pages-publisher.mjs stable-site');
+    expect(publishJob).toContain('actions: read');
+    expect(publishJob).toContain('contents: write');
+    expect(releaseGate).toContain('gh-pages-publisher.mjs release-gate');
   });
 
   it('projects every known validation or publication failure from an always-running job', () => {

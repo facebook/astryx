@@ -247,14 +247,12 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-slim
     permissions:
+      actions: read
       contents: write
-    # Not the pages-deploy group: GitHub keeps only the newest pending run per
-    # group, so joining it could cancel a pending site deploy (see
-    # cleanup-previews.yml for the same reasoning).
-    concurrency:
-      group: release-gate-publish
-      cancel-in-progress: false
     steps:
+      - name: Checkout publisher
+        uses: actions/checkout@v7
+
       - name: Download report
         uses: actions/download-artifact@v8
         with:
@@ -284,39 +282,9 @@ jobs:
           cat report/release-gate.json
 
       - name: Publish to gh-pages
-        run: |
-          set -eu
-          REPO_URL="https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git"
-          for attempt in 1 2 3; do
-            rm -rf /tmp/gh-pages
-            git clone --depth=1 --filter=blob:none --sparse --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
-            git -C /tmp/gh-pages sparse-checkout set visual-gate
-            RUN_DIR="/tmp/gh-pages/visual-gate/${GITHUB_RUN_ID}"
-            rm -rf "$RUN_DIR" /tmp/gh-pages/visual-gate/latest
-            mkdir -p "$RUN_DIR" /tmp/gh-pages/visual-gate/latest
-            cp -r report/. "$RUN_DIR"/
-            cp -r report/. /tmp/gh-pages/visual-gate/latest/
-
-            # Keep the twenty most recent run directories; the report images are
-            # only useful while the change they describe is still a live question.
-            ls -1d /tmp/gh-pages/visual-gate/*/ 2>/dev/null \
-              | grep -Ev '/(baseline|latest|publication-queue)/$' \
-              | sort -V | head -n -20 | xargs -r rm -rf
-
-            cd /tmp/gh-pages
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add -A visual-gate
-            git commit -m "release gate: ${GITHUB_RUN_ID}" || { echo "Nothing to publish"; exit 0; }
-            if git push origin gh-pages; then
-              echo "Published https://facebook.github.io/astryx/visual-gate/${GITHUB_RUN_ID}/"
-              exit 0
-            fi
-            echo "Push failed (attempt $attempt), retrying"
-            sleep $((attempt * 10))
-          done
-          echo "::error::Could not publish the release-gate report to gh-pages"
-          exit 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .github/scripts/gh-pages-publisher.mjs release-gate --source report
 
       - name: Summary
         env:
