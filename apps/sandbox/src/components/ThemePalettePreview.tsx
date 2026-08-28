@@ -1013,10 +1013,11 @@ function StatusIndicatorSection({
           <div style={buttonRowLabelStyle}>StatusDot — default</div>
           <HStack gap={3} vAlign="center" wrap="wrap">
             {audit.statusDots.map(row => (
-              <HStack key={row.variant} gap={1} vAlign="center">
-                <StatusDot variant={row.variant} label={row.name} />
-                <Text type="supporting">{row.name}</Text>
-              </HStack>
+              <StatusDot
+                key={row.variant}
+                variant={row.variant}
+                label={row.name}
+              />
             ))}
           </HStack>
         </div>
