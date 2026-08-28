@@ -659,7 +659,9 @@ export default function FormWizardVerticalPage() {
   // than repeating the hint already attached to the field.
   const helpPanel = (
     <VStack gap={3}>
-      <Heading level={2} type="label">
+      {/* Sized down to a label, but kept at level 2 for the outline: the panel
+          sits beside the step, not under it. */}
+      <Heading level={5} accessibilityLevel={2}>
         Helpful tips
       </Heading>
       <List listStyle="disc" density="compact">
