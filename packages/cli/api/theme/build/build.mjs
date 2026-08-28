@@ -303,25 +303,26 @@ function resolveCoreRoot() {
 const _componentDeclCache = new Map();
 /**
  * @param {string} pascalName
+ * @param {{includeTypes?: boolean}} [options]
  * @returns {string}
  */
-function readComponentDeclarations(pascalName) {
-  if (_componentDeclCache.has(pascalName)) {
-    return _componentDeclCache.get(pascalName) ?? '';
+function readComponentDeclarations(pascalName, options = {}) {
+  const includeTypes = options.includeTypes === true;
+  const cacheKey = `${pascalName}:${includeTypes ? 'with-types' : 'index-only'}`;
+  if (_componentDeclCache.has(cacheKey)) {
+    return _componentDeclCache.get(cacheKey) ?? '';
   }
   let contents = '';
   const coreRoot = resolveCoreRoot();
   if (coreRoot) {
     const candidateSets = [
-      [
-        path.join(coreRoot, 'dist', pascalName, 'index.d.ts'),
-        path.join(coreRoot, 'dist', pascalName, 'types.d.ts'),
-      ],
-      [
-        path.join(coreRoot, 'src', pascalName, 'index.ts'),
-        path.join(coreRoot, 'src', pascalName, 'types.ts'),
-      ],
+      [path.join(coreRoot, 'dist', pascalName, 'index.d.ts')],
+      [path.join(coreRoot, 'src', pascalName, 'index.ts')],
     ];
+    if (includeTypes) {
+      candidateSets[0].push(path.join(coreRoot, 'dist', pascalName, 'types.d.ts'));
+      candidateSets[1].push(path.join(coreRoot, 'src', pascalName, 'types.ts'));
+    }
     for (const files of candidateSets) {
       if (fs.existsSync(files[0])) {
         for (const file of files) {
@@ -337,7 +338,7 @@ function readComponentDeclarations(pascalName) {
       }
     }
   }
-  _componentDeclCache.set(pascalName, contents);
+  _componentDeclCache.set(cacheKey, contents);
   return contents;
 }
 
@@ -458,10 +459,11 @@ async function resolveAugmentationTargetCandidates(componentName) {
  * re-exported) as a type/interface.
  * @param {string} pascalName
  * @param {string} interfaceName
+ * @param {{includeTypes?: boolean}} [options]
  * @returns {boolean}
  */
-function componentHasAugmentableInterface(pascalName, interfaceName) {
-  const decl = readComponentDeclarations(pascalName);
+function componentHasAugmentableInterface(pascalName, interfaceName, options) {
+  const decl = readComponentDeclarations(pascalName, options);
   if (!decl) return false;
   // Require an actual interface declaration in this public subpath, not just a
   // type re-export. Module augmentation only widens consumers that import the
@@ -560,6 +562,7 @@ async function generateVariantDeclarationsAsync(themeDef) {
           componentHasAugmentableInterface(
             override.module,
             override.interface,
+            {includeTypes: true},
           )
         ) {
           target = { moduleName: override.module };
