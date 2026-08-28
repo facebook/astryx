@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useListFocus',
   displayName: 'useListFocus',
@@ -36,7 +36,7 @@ export const docs = {
     {
       name: 'options.onEscape',
       type: '() => void',
-      description: 'Callback when Escape key is pressed (e.g., close menu).',
+      description: 'Callback when Escape key is pressed (e.g., close menu). Supplying it also consumes the key (preventDefault); without it Escape passes through to the surrounding layer.',
       required: false,
     },
     {
@@ -135,7 +135,7 @@ export const docs = {
   category: 'focus',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
     'Manages keyboard navigation within linear list following WAI-ARIA menu/listbox/toolbar patterns. Supports arrow key navigation (vertical / horizontal), Home/End for boundaries, optional wrap-around, Escape to close. Suitable for dropdown menus, toolbars, any 1D focusable list.',
@@ -144,7 +144,7 @@ export const docsDense = {
     'options.itemSelector': 'selector for focusable items in list.',
     'options.boundarySelector': "boundary selector for lists that contain nested lists (e.g. submenu flyouts); scopes items + key handling to this level.",
     'options.wrap': 'whether arrow navigation wraps around at ends.',
-    'options.onEscape': 'callback when Escape key pressed (e.g. close menu).',
+    'options.onEscape': 'callback when Escape key pressed (e.g. close menu). Also consumes the key; without it Escape passes through to the surrounding layer.',
     'options.orientation': "navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown, 'both' accepts all four arrows.",
     'options.hasHomeEnd': 'whether Home/End jump to first/last enabled item.',
     'options.isRtl': 'ArrowLeft/ArrowRight swap for horizontal nav (RTL). default: auto-detect from container computed direction; explicit boolean wins.',

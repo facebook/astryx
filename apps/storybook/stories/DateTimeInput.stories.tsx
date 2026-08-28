@@ -186,6 +186,50 @@ export const WithTimeIncrement: Story = {
   },
 };
 
+/**
+ * `timeOptionInterval` turns the time field into a combobox over a list of
+ * preset times at that cadence. Click the time field or press Alt+ArrowDown to
+ * open it; ArrowUp/ArrowDown move through the list, Enter picks, Escape closes.
+ *
+ * The list is a shortcut, not a restriction — a time between two options can
+ * still be typed, and with the list closed the arrow keys keep stepping by
+ * `timeIncrement` exactly as they do without this prop.
+ */
+export const WithTimeOptions: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T09:00' as ISODateTimeString,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Meeting time',
+    timeOptionInterval: 30,
+    description: 'Pick from half-hour slots, or type any time',
+  },
+};
+
+/**
+ * An hourly list — the 12 AM to 11 PM shape most scheduling flows want.
+ * `min` and `max` trim the list on the boundary date, so only bookable hours
+ * are offered.
+ */
+export const WithHourlyTimeOptions: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T13:00' as ISODateTimeString,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Office hours',
+    timeOptionInterval: 60,
+    min: '2026-03-15T09:00' as ISODateTimeString,
+    max: '2026-03-15T17:00' as ISODateTimeString,
+    description: 'Hourly slots, trimmed to 9 AM - 5 PM',
+  },
+};
+
 export const Optional: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateTimeString | undefined>(

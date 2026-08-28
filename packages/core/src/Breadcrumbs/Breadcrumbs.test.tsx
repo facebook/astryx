@@ -519,7 +519,7 @@ describe('BreadcrumbItem menu', () => {
         <BreadcrumbItem
           menu={
             <BreadcrumbMenuRadioGroup
-              aria-label="Sort by"
+              label="Sort by"
               value="name"
               onChange={onChange}>
               <BreadcrumbMenuRadioItem value="name" label="Name" />
@@ -674,6 +674,37 @@ describe('BreadcrumbItem menu', () => {
       expect.stringContaining('`menu` and `href` are mutually exclusive'),
     );
     warn.mockRestore();
+  });
+
+  it('reflects the variant on the item and menu-trigger theme targets', () => {
+    const {container} = render(
+      <Breadcrumbs variant="supporting">
+        <BreadcrumbItem href="/">Home</BreadcrumbItem>
+        <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    // The variant selects between style objects on both elements, so a theme
+    // needs it as a data attribute on both targets to reach them.
+    for (const item of container.querySelectorAll('.astryx-breadcrumb-item')) {
+      expect(item).toHaveAttribute('data-variant', 'supporting');
+    }
+    expect(
+      container.querySelector('.astryx-breadcrumb-item-menu-trigger'),
+    ).toHaveAttribute('data-variant', 'supporting');
+  });
+
+  it('defaults the item theme target to the default variant', () => {
+    const {container} = render(
+      <Breadcrumbs>
+        <BreadcrumbItem href="/">Home</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    expect(container.querySelector('.astryx-breadcrumb-item')).toHaveAttribute(
+      'data-variant',
+      'default',
+    );
   });
 
   it('keeps mid-trail separators intact around a menu crumb', () => {

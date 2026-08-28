@@ -15,17 +15,17 @@
  *   and lib/component-loader; the discover dispatcher + leaves consume it.
  */
 
-import {Project} from '../../lib/project.mjs';
+import {Project} from '../../foundation/config/project.mjs';
 import {
   scanAllPackages,
   findComponentInPackages,
-} from '../../lib/package-scanner.mjs';
-import {loadDocs} from '../../lib/component-loader.mjs';
+} from './_package-scanner.mjs';
+import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /**
- * @typedef {import('../../lib/package-scanner.mjs').ScannedPackage} ScannedPackage
+ * @typedef {import('./_package-scanner.mjs').ScannedPackage} ScannedPackage
  */
 
 /**
@@ -62,16 +62,18 @@ function validateDocs(docs) {
  *
  * External packages come from configured integrations that declare a components
  * root; each becomes a scannable package keyed by its docsDir. `configured`
- * reports whether ANY integration declared a components root — it lets an empty
- * result distinguish "nothing configured" (`false`) from "configured but
- * nothing discovered" (`true`), which the list leaf surfaces as `meta`.
+ * reports whether the project configured ANY integration — including one whose
+ * manifest failed to load, which contributes nothing but is emphatically not
+ * "nothing configured". It lets an empty result distinguish "nothing
+ * configured" (`false`) from "configured but nothing discovered" (`true`),
+ * which the list leaf surfaces as `meta`.
  *
  * @returns {Promise<{packages: ScannedPackage[], configured: boolean}>}
  */
 export async function discoverPackages() {
   const project = await Project.load();
   const loadedIntegrations =
-    /** @type {import('../../lib/integrations.mjs').LoadedIntegration[]} */ (
+    /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} */ (
       project.loadedIntegrations
     );
 
@@ -84,7 +86,7 @@ export async function discoverPackages() {
       docsDir: integration.components,
     }));
   if (explicitPackages.length === 0) {
-    return {packages: [], configured: false};
+    return {packages: [], configured: loadedIntegrations.length > 0};
   }
 
   const packages = scanAllPackages(
@@ -99,7 +101,7 @@ export async function discoverPackages() {
  * by the list and detail leaves so the entry keys (and their order) stay in one
  * place.
  * @param {ScannedPackage} pkg
- * @returns {import('../../types/discover').DiscoverListEntry}
+ * @returns {import('./discover.type.mjs').DiscoverListEntry}
  */
 export function toEntry(pkg) {
   return {
@@ -129,7 +131,7 @@ export function findComponent(packages, name) {
  * `discover.detail.doc` envelope.
  * @param {ComponentResolution} result
  * @param {{lang?: string | null, zh?: boolean}} opts
- * @returns {Promise<import('../../types/discover').DiscoverDetailDocResponse['data']>}
+ * @returns {Promise<import('./discover.type.mjs').DiscoverDetailDocResponse['data']>}
  */
 export async function loadValidatedDoc(result, {lang, zh}) {
   let docs;

@@ -16,6 +16,7 @@
  * - /packages/core/src/DropdownMenu/DropdownMenuItem.tsx
  * - /packages/core/src/DropdownMenu/DropdownMenuCheckboxItem.tsx
  * - /packages/core/src/DropdownMenu/DropdownMenuRadioItem.tsx
+ * - /packages/core/src/DropdownMenu/DropdownMenuSubMenu.tsx
  */
 
 import type {PointerEvent} from 'react';

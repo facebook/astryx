@@ -11,35 +11,33 @@
  *     pending core CONFIG codemod would repair it; preview the fix, don't write.
  *
  * These builders own the exact human progress lines for their path (emitted via
- * the injected `logger`) and return the `upgrade.status` envelope; the caller
+ * the shared `logger`) and return the `upgrade.status` envelope; the caller
  * just returns what they hand back.
  */
 
-import {formatCliCommand} from '../../../utils/package-manager.mjs';
-import {noopLogger} from '../../../lib/term-log.mjs';
+import {formatCliCommand} from '../../../foundation/env/package-manager.mjs';
+import {logger} from '../../logger.mjs';
 
 /**
  * `--from` is at/after the installed target (and no `--force`): nothing to run.
- * @param {{from: string, to: string, agentDocs: import('../../../types/upgrade').AgentDocsSummary}} data
- * @param {import('../../../lib/term-log.mjs').CliLogger} [logger]
- * @returns {import('../../../types/upgrade').UpgradeStatusResponse}
+ * @param {{from: string, to: string, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary}} data
+ * @returns {import('../upgrade.type.mjs').UpgradeStatusResponse}
  */
-export function statusUpToDate({from, to, agentDocs}, logger = noopLogger) {
-  logger.success('Already up to date — no codemods to run.');
-  logger.info('Use --force to run codemods anyway.');
-  logger.outro('Done');
+export function statusUpToDate({from, to, agentDocs}) {
+  logger.log('✓ Already up to date — no codemods to run.');
+  logger.log('Use --force to run codemods anyway.');
+  logger.log('Done\n');
   return {type: 'upgrade.status', data: {status: 'up_to_date', from, to, agentDocs}};
 }
 
 /**
  * No core or integration codemods apply to the requested version range.
- * @param {{from: string, to: string, agentDocs: import('../../../types/upgrade').AgentDocsSummary}} data
- * @param {import('../../../lib/term-log.mjs').CliLogger} [logger]
- * @returns {import('../../../types/upgrade').UpgradeStatusResponse}
+ * @param {{from: string, to: string, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary}} data
+ * @returns {import('../upgrade.type.mjs').UpgradeStatusResponse}
  */
-export function statusNoCodemods({from, to, agentDocs}, logger = noopLogger) {
-  logger.success('No codemods available for this version range.');
-  logger.outro('Done');
+export function statusNoCodemods({from, to, agentDocs}) {
+  logger.log('✓ No codemods available for this version range.');
+  logger.log('Done\n');
   return {type: 'upgrade.status', data: {status: 'no_codemods', from, to, agentDocs}};
 }
 
@@ -47,11 +45,10 @@ export function statusNoCodemods({from, to, agentDocs}, logger = noopLogger) {
  * DRY-RUN only: the consumer's astryx.config fails strict validation, but a
  * pending core CONFIG codemod previewed a change that would repair it. Preview
  * the fix + report the exact `--apply` command; integrations are skipped here.
- * @param {{from: string, to: string, configError: string, configCodemods: string[], agentDocs: import('../../../types/upgrade').AgentDocsSummary}} data
- * @param {import('../../../lib/term-log.mjs').CliLogger} [logger]
- * @returns {import('../../../types/upgrade').UpgradeStatusResponse}
+ * @param {{from: string, to: string, configError: string, configCodemods: string[], agentDocs: import('../upgrade.type.mjs').AgentDocsSummary}} data
+ * @returns {import('../upgrade.type.mjs').UpgradeStatusResponse}
  */
-export function statusConfigFixable({from, to, configError, configCodemods, agentDocs}, logger = noopLogger) {
+export function statusConfigFixable({from, to, configError, configCodemods, agentDocs}) {
   const codemodFlags = configCodemods.map(name => `--codemod ${name}`).join(' ');
   const suggestedCommand = `astryx upgrade --from ${from} ${codemodFlags} --apply`;
   const guidance =
@@ -60,9 +57,9 @@ export function statusConfigFixable({from, to, configError, configCodemods, agen
     'writing. Re-run with --apply to apply it, or run just the config codemod(s) ' +
     'now:';
   logger.warn(guidance);
-  logger.info(`  ${formatCliCommand(suggestedCommand)}`);
-  logger.info('Integrations are skipped in this preview; they will be processed on the --apply run.');
-  logger.outro('Dry run complete');
+  logger.log(`  ${formatCliCommand(suggestedCommand)}`);
+  logger.log('Integrations are skipped in this preview; they will be processed on the --apply run.');
+  logger.log('Dry run complete\n');
   return {
     type: 'upgrade.status',
     data: {

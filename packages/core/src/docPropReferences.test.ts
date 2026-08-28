@@ -30,7 +30,7 @@ type DocModule = {
 };
 
 /**
- * Props intentionally omitted from doc props[]: PropDoc in docs-types.ts
+ * Props intentionally omitted from doc props[]: ComponentPropDoc in docs-types.ts
  * says to skip internal/styling props, so prose may reference them even
  * though no doc lists them.
  */

@@ -13,7 +13,7 @@
  * - /packages/core/src/Table/Table.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Table/index.ts (exports if types change)
  * - /apps/storybook/stories/Table.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import {useMemo, type ReactElement, type Ref} from 'react';
@@ -186,16 +186,11 @@ function buildTableStylePlugin<
 >(): TablePlugin<T> {
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
-      const existingClass = props.htmlProps.className ?? '';
-      const tableClass = themeProps('table').className;
+      // The `astryx-table` class itself comes from BaseTable, which renders
+      // the <table> element and now names it `table` (with `base-table` as its
+      // legacy name). Adding it here too would put the token on twice.
       return {
         ...props,
-        htmlProps: {
-          ...props.htmlProps,
-          className: existingClass
-            ? `${existingClass} ${tableClass}`
-            : tableClass,
-        },
         xstyle: [...props.xstyle, tableStyles.base],
       };
     },

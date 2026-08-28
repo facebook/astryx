@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Switch',
@@ -141,7 +141,7 @@ export const docs = {
       name: 'labelSpacing',
       type: "'hug' | 'spread'",
       description:
-        'Spacing behavior between label and switch. "hug" places them next to each other; "spread" pushes them to opposite ends of the container (full width). "default" is a deprecated alias for "hug".',
+        'Spacing behavior between label and switch. "hug" places them next to each other; "spread" pushes them to opposite ends of the container (full width).',
       default: "'hug'",
     },
     {
@@ -167,6 +167,7 @@ export const docs = {
         className: 'astryx-switch-field',
         visualProps: ['labelPosition', 'labelSpacing'],
       },
+      {className: 'astryx-switch-label'},
     ],
   },
   usage: {
@@ -202,7 +203,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Switch',
   displayName: 'Switch',
@@ -338,6 +339,7 @@ export const docsZh = {
         className: 'astryx-switch-field',
         visualProps: ['labelPosition', 'labelSpacing'],
       },
+      {className: 'astryx-switch-label'},
     ],
   },
   usage: {
@@ -373,7 +375,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Toggle switch for boolean values w/ integrated label support.',
   usage: {
@@ -429,6 +431,6 @@ export const docsDense = {
     labelTooltip: 'Tooltip text in info icon at label end.',
     labelPosition: 'Which side label appears; "start" places before switch.',
     labelSpacing:
-      'Spacing behavior; "hug" places next to each other, "spread" pushes to opposite ends (full width). "default" is deprecated alias for "hug".',
+      'Spacing behavior; "hug" places next to each other, "spread" pushes to opposite ends (full width).',
   },
 };

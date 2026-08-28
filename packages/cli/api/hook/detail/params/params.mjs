@@ -17,7 +17,7 @@ import {resolveCoreDir, resolveHookDoc} from '../../_adapter.mjs';
 /**
  * @param {string} name
  * @param {{cwd?: string, zh?: boolean, lang?: string|null}} [options]
- * @returns {Promise<import('../../../../types/hook').HookDetailParamsResponse>}
+ * @returns {Promise<import('../../hook.type.mjs').HookDetailParamsResponse>}
  */
 export async function params(name, {cwd = process.cwd(), zh = false, lang = null} = {}) {
   const coreDir = resolveCoreDir(cwd);

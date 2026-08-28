@@ -12,7 +12,7 @@
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
- * - /packages/cli/templates/blocks/components/SegmentedControl/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
 import React, {useMemo, useCallback, type ReactNode} from 'react';
@@ -26,11 +26,12 @@ import type {
   SegmentedControlSize,
   SegmentedControlLayout,
 } from './SegmentedControlContext';
-import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface SegmentedControlProps extends Omit<
   BaseProps<HTMLDivElement>,
   'onChange'
@@ -258,7 +259,7 @@ export function SegmentedControl({
   return (
     <SegmentedControlContext value={contextValue}>
       <div
-        ref={mergeRefs(ref, listRef, disabledMessageTooltip.ref)}
+        ref={useMergedRefs(ref, listRef, disabledMessageTooltip.ref)}
         {...rest}
         role="radiogroup"
         aria-label={label}

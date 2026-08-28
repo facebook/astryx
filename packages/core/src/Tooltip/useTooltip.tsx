@@ -4,8 +4,8 @@
 
 /**
  * @file useTooltip.tsx
- * @input Uses useLayer, React hooks
- * @output Exports useTooltip hook for hover/focus triggered tooltips
+ * @input Uses useLayer, useTouchTrigger, React hooks
+ * @output Exports useTooltip hook for hover/focus/tap triggered tooltips
  * @position Layer hook; builds on useLayer for tooltip behavior
  *
  * SYNC: When modified, update:
@@ -15,7 +15,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   type ReactNode,
   type RefCallback,
@@ -27,7 +26,12 @@ import {
   type LayerAlignment,
   type LayerPlacement,
 } from '../Layer/useLayer';
+import {
+  useTouchTrigger,
+  type LayerTouchTrigger,
+} from '../Layer/useTouchTrigger';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {themeProps} from '../utils/themeProps';
 import {
   colorVars,
@@ -57,18 +61,6 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
   },
   // Position-based margin styles
-  marginBlock: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-    marginInlineStart: 0,
-    marginInlineEnd: 0,
-  },
-  marginInline: {
-    marginBlockStart: 0,
-    marginBlockEnd: 0,
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
-  },
   // Content wrapper for padding
   content: {
     paddingBlockStart: spacingVars['--spacing-1'],
@@ -84,6 +76,11 @@ const styles = stylex.create({
  * Focus trigger behavior for tooltips
  */
 export type TooltipFocusTrigger = 'auto' | 'always' | 'never';
+
+/**
+ * Touch trigger behavior for tooltips
+ */
+export type TooltipTouchTrigger = LayerTouchTrigger;
 
 export interface TooltipOptions {
   /**
@@ -121,6 +118,20 @@ export interface TooltipOptions {
   focusTrigger?: TooltipFocusTrigger;
 
   /**
+   * What a tap does on a touch pointer, where there is no hover:
+   * - `auto`: tap opens the tooltip, unless the trigger performs an action of
+   *   its own (a button, a link, a form control) — that tap belongs to the
+   *   control, and a hint about a control the user just operated is noise
+   * - `tap`: tap always opens the tooltip. This is what an info icon rendered
+   *   as a button wants: it looks like an action to the DOM, but revealing the
+   *   tooltip is the only thing it does
+   * - `none`: touch never opens the tooltip
+   *
+   * @default 'auto'
+   */
+  touchTrigger?: TooltipTouchTrigger;
+
+  /**
    * Whether the tooltip is enabled.
    * When false, hover/focus triggers are disabled.
    *
@@ -133,6 +144,11 @@ export interface TooltipOptions {
    * - `true`: force-show the tooltip (hover/focus hide is suppressed)
    * - `false`: force-hide the tooltip
    * - `undefined`: uncontrolled — hover/focus triggers manage visibility
+   *
+   * A controlled tooltip still takes Escape when it is the top-most layer, and
+   * answers by calling `onHide` without hiding itself — closing is your
+   * update's decision, exactly as for a controlled Dialog. Ignore the call and
+   * the tip stays, and so does the press: nothing underneath dismisses.
    */
   isOpen?: boolean;
 
@@ -230,6 +246,7 @@ function isFocusable(element: HTMLElement): boolean {
  * Builds on useLayer to add:
  * - Hover triggers with configurable delay
  * - Focus triggers with auto-detection for focusable elements
+ * - Tap triggers on touch, where there is no hover (see useTouchTrigger)
  * - Inverted color palette for high contrast
  *
  * Unlike HoverCard, tooltips:
@@ -254,6 +271,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     delay = 200,
     hideDelay = 0,
     focusTrigger = 'auto',
+    touchTrigger = 'auto',
     isEnabled = true,
     isOpen,
     isDefaultOpen = false,
@@ -261,22 +279,13 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     onHide,
   } = options;
 
-  // Select margin style based on placement axis
-  const marginStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.marginBlock
-      : styles.marginInline;
-
   const layer = useLayer({
     mode: 'context',
     onShow,
     onHide,
   });
 
-  const popoverXstyle = useMemo(
-    () => [styles.container, marginStyle],
-    [marginStyle],
-  );
+  const popoverXstyle = styles.container;
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -293,6 +302,29 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       hideTimeoutRef.current = null;
     }
   }, []);
+
+  // Touch resolves immediately: the hover delays exist to filter out a pointer
+  // passing across the trigger, and a tap is never that.
+  const showNow = useCallback(() => {
+    clearTimeouts();
+    layer.show();
+  }, [clearTimeouts, layer]);
+
+  const hideNow = useCallback(() => {
+    clearTimeouts();
+    layer.hide();
+  }, [clearTimeouts, layer]);
+
+  const touch = useTouchTrigger({
+    touchTrigger,
+    isEnabled,
+    isControlled: isOpen !== undefined,
+    isOpen: layer.isOpen,
+    layerId: layer.id,
+    triggerRef,
+    show: showNow,
+    hide: hideNow,
+  });
 
   // Schedule show with delay (suppressed when isOpen is false)
   const scheduleShow = useCallback(() => {
@@ -330,24 +362,36 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
 
   // Event handlers
   const handleMouseEnter = useCallback(() => {
-    // Suppress tooltips on touch devices — hover is simulated and eats a tap
-    if (
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(hover: none)').matches
-    ) {
+    // A tap synthesizes mouseenter. On touch the tap path owns the decision,
+    // so hover must not also fire — including the tap that just opened the
+    // tooltip, which would otherwise be double-handled.
+    if (touch.isTouchPointerRef.current) {
       return;
     }
     scheduleShow();
-  }, [scheduleShow]);
+  }, [touch, scheduleShow]);
 
   const handleMouseLeave = useCallback(() => {
+    // On touch the synthesized mouseleave arrives with the next tap elsewhere,
+    // which the outside-tap dismissal already handles — and handling it here
+    // too would close the tooltip behind the tap-open bookkeeping's back.
+    if (touch.isTouchPointerRef.current) {
+      return;
+    }
     scheduleHide();
-  }, [scheduleHide]);
+  }, [touch, scheduleHide]);
 
   const handleFocusIn = useCallback(
     (e: Event) => {
       if (!isEnabled) {
+        return;
+      }
+      // A tap focuses the trigger it activates, and `:focus-visible` does not
+      // filter that out on every element: a tapped `<input>` or contenteditable
+      // matches it. Those are exactly the action triggers `auto` just decided
+      // to keep shut, so without this the focus reopens what the tap
+      // suppressed, over the field the user is trying to type into.
+      if (touch.isTouchInteraction()) {
         return;
       }
       // Only show tooltip for keyboard focus (:focus-visible),
@@ -359,7 +403,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       clearTimeouts();
       layer.show();
     },
-    [isEnabled, clearTimeouts, layer],
+    [isEnabled, touch, clearTimeouts, layer],
   );
 
   const handleFocusOut = useCallback(() => {
@@ -371,15 +415,24 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
   // just-pressed control reads as stale. Fires on pointerdown so it feels
   // immediate. Uncontrolled tooltips only — a controlled tooltip's visibility
   // is owned by the consumer. `layer.hide()` self-guards when already closed.
-  const handlePointerDown = useCallback(() => {
-    if (isOpen !== undefined) {
-      return;
-    }
-    clearTimeouts();
-    layer.hide();
-  }, [isOpen, clearTimeouts, layer]);
+  // A touch press is a different gesture (it may be the only way to open the
+  // tooltip at all), so the touch path answers it first.
+  const handlePointerDown = useCallback(
+    (event: PointerEvent) => {
+      if (touch.handlePointerDown(event)) {
+        return;
+      }
+      if (isOpen !== undefined) {
+        return;
+      }
+      clearTimeouts();
+      layer.hide();
+    },
+    [touch, isOpen, clearTimeouts, layer],
+  );
 
   // Interaction ref that handles event listeners only
+  const {handlePointerEnter, clearTapOpen} = touch;
   const interactionRef: RefCallback<HTMLElement> = useCallback(
     (el: HTMLElement | null) => {
       // Cleanup previous element
@@ -389,16 +442,23 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
         triggerRef.current.removeEventListener('focusin', handleFocusIn);
         triggerRef.current.removeEventListener('focusout', handleFocusOut);
         triggerRef.current.removeEventListener(
+          'pointerenter',
+          handlePointerEnter,
+        );
+        triggerRef.current.removeEventListener(
           'pointerdown',
           handlePointerDown,
         );
       }
 
       if (el) {
-        // Attach hover listeners
+        // Attach hover listeners. `pointerenter` runs before the synthesized
+        // `mouseenter` a tap produces, which is what lets the hover path know
+        // it is looking at a finger.
+        el.addEventListener('pointerenter', handlePointerEnter);
         el.addEventListener('mouseenter', handleMouseEnter);
         el.addEventListener('mouseleave', handleMouseLeave);
-        // Press-to-dismiss: activating the trigger hides its own tooltip.
+        // Press-to-dismiss on a mouse; tap-to-open on a touch pointer.
         el.addEventListener('pointerdown', handlePointerDown);
 
         // Attach focus listeners based on focusTrigger option
@@ -420,6 +480,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       handleMouseLeave,
       handleFocusIn,
       handleFocusOut,
+      handlePointerEnter,
       handlePointerDown,
     ],
   );
@@ -462,31 +523,52 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     }
   }, [isOpen, clearTimeouts, layer]);
 
-  // Dismiss on Escape (WCAG 1.4.13 — dismissible). Uncontrolled tooltips only;
-  // a controlled tooltip's visibility is owned by the consumer. The listener is
-  // mounted for the lifetime of an uncontrolled tooltip rather than gated on
-  // `layer.isOpen` (React state, which can lag a frame behind the DOM) —
-  // `layer.hide()` self-guards and no-ops when the layer is already closed.
-  // Guarded against IME composition-cancel.
-  useEffect(() => {
-    if (isOpen !== undefined) {
-      return;
-    }
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') {
-        return;
+  // Dismiss on Escape (WCAG 1.4.13 — dismissible) through the shared layer
+  // stack. A visible tip is the top-most layer, so it takes the press and
+  // consumes it: Escape hides the tip and leaves the dialog underneath open.
+  // The user presses Escape again to close that. Consuming (rather than also
+  // dismissing what is beneath) keeps one rule with no per-component
+  // exceptions, and the failure mode is one extra keystroke instead of a
+  // dialog closing under someone who only wanted the tip gone.
+  //
+  // A controlled tooltip stays on the stack and takes the press like any other
+  // layer, but answers it by reporting instead of hiding: `isOpen` is the
+  // consumer's value, so only their update may change it. Same contract as a
+  // controlled Dialog.
+  useLayerDismissal({
+    // Registered for the hook's lifetime rather than gated on `layer.isOpen`:
+    // that state can lag a frame behind the DOM, so a press arriving right after
+    // the layer appears would find nothing registered. Because this layer
+    // CONSUMES the press, a stale registration would be worse than a missed one
+    // — it would silently eat Escapes meant for the dialog underneath — so
+    // presence is answered from the DOM at press time instead of from state.
+    isActive: true,
+    isPresent: () => {
+      const el =
+        typeof document === 'undefined'
+          ? null
+          : document.getElementById(layer.id);
+      if (el == null) {
+        return false;
       }
-      if (e.isComposing || e.keyCode === 229) {
-        return;
+      try {
+        return el.matches(':popover-open');
+      } catch {
+        // Browsers without the Popover API (and some test environments) cannot
+        // answer the selector; fall back to the hook's own state.
+        return layer.isOpen;
       }
+    },
+    onDismiss: () => {
       clearTimeouts();
+      clearTapOpen();
+      if (isOpen !== undefined) {
+        onHide?.();
+        return;
+      }
       layer.hide();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, layer, clearTimeouts]);
+    },
+  });
 
   // Render function that wraps layer.render with tooltip styling
   const renderTooltip = useCallback(
@@ -498,6 +580,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
+        offset: spacingVars['--spacing-1'],
         role: 'tooltip',
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
         className: themeProps('tooltip').className,

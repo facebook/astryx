@@ -293,6 +293,151 @@ const fullConfig: PowerSearchConfig = {
   ],
 };
 
+function simpleField(
+  key: string,
+  label: string,
+  group?: string,
+): PowerSearchConfig['fields'][number] {
+  return {
+    key,
+    label,
+    group,
+    defaultOperator: 'contains',
+    operators: [
+      {key: 'contains', label: 'contains', value: {type: 'string'}},
+      {
+        key: 'not_contains',
+        label: 'does not contain',
+        value: {type: 'string'},
+      },
+    ],
+  };
+}
+
+const issueTrackerPeople: SearchableItem[] = Array.from(
+  {length: 25},
+  (_, index) => ({
+    id: `person-${index + 1}`,
+    label: `Person ${String(index + 1).padStart(2, '0')}`,
+  }),
+);
+
+const issueTrackerPeopleSource: SearchSource = {
+  search: query =>
+    issueTrackerPeople.filter(person =>
+      person.label.toLowerCase().includes(query.toLowerCase()),
+    ),
+  bootstrap: () => issueTrackerPeople,
+};
+
+function peopleField(
+  key: string,
+  label: string,
+): PowerSearchConfig['fields'][number] {
+  return {
+    key,
+    label,
+    group: 'People',
+    defaultOperator: 'any_of',
+    operators: [
+      {
+        key: 'any_of',
+        label: 'is any of',
+        value: {type: 'entity_list', searchSource: issueTrackerPeopleSource},
+      },
+    ],
+  };
+}
+
+const issueTrackerConfig: PowerSearchConfig = {
+  name: 'IssueTrackerSearch',
+  fields: [
+    {
+      key: 'status',
+      label: 'Status',
+      defaultOperator: 'any_of',
+      operators: [
+        {
+          key: 'any_of',
+          label: 'is any of',
+          value: {type: 'enum_list', values: statusValues},
+        },
+      ],
+    },
+    {
+      key: 'priority',
+      label: 'Priority',
+      defaultOperator: 'is',
+      operators: [
+        {key: 'is', label: 'is', value: {type: 'enum', values: priorityValues}},
+      ],
+    },
+    simpleField('title', 'Title'),
+    simpleField('labels', 'Labels'),
+    peopleField('owner', 'Owner'),
+    peopleField('creator', 'Creator'),
+    peopleField('subscriber', 'Subscriber'),
+    peopleField('reviewer', 'Reviewer'),
+    simpleField('project', 'Project', 'Planning'),
+    simpleField('milestone', 'Milestone', 'Planning'),
+    simpleField('sprint', 'Sprint', 'Planning'),
+    simpleField('estimate', 'Estimate', 'Planning'),
+    {
+      key: 'due_date',
+      label: 'Due date',
+      group: 'Planning',
+      defaultOperator: 'before',
+      operators: [
+        {
+          key: 'before',
+          label: 'is before',
+          value: {type: 'date_absolute', isDateOnly: true},
+        },
+      ],
+    },
+    {
+      key: 'created',
+      label: 'Created',
+      group: 'Activity',
+      defaultOperator: 'after',
+      operators: [
+        {
+          key: 'after',
+          label: 'is after',
+          value: {type: 'date_absolute', isDateOnly: true},
+        },
+      ],
+    },
+    {
+      key: 'updated',
+      label: 'Updated',
+      group: 'Activity',
+      defaultOperator: 'after',
+      operators: [
+        {
+          key: 'after',
+          label: 'is after',
+          value: {type: 'date_absolute', isDateOnly: true},
+        },
+      ],
+    },
+    {
+      key: 'comment_count',
+      label: 'Comment count',
+      group: 'Activity',
+      defaultOperator: 'gt',
+      operators: [
+        {
+          key: 'gt',
+          label: 'is greater than',
+          value: {type: 'integer', minValue: 0},
+        },
+      ],
+    },
+    simpleField('linked_items', 'Linked items', 'Activity'),
+  ],
+};
+
 // =============================================================================
 // Meta
 // =============================================================================
@@ -319,6 +464,19 @@ const meta: Meta<typeof PowerSearch> = {
     isReadOnly: {control: 'boolean'},
     hasClear: {control: 'boolean'},
     maxTokenLength: {control: 'number'},
+    maxSearchResults: {
+      control: 'number',
+      description: 'Main ranked results shown after typing a query.',
+    },
+    maxOperatorMenuItems: {
+      control: 'number',
+      description:
+        'Value results shown after selecting a field, such as people in the Owner picker.',
+    },
+    menuWidth: {
+      control: 'number',
+      description: 'Main field/search menu width in pixels.',
+    },
     popoverSaveButtonLabel: {control: 'text'},
     size: {
       control: 'radio',
@@ -417,6 +575,43 @@ export const FullFeatured: Story = {
     ),
   ],
   name: 'Full Featured (All Field Types)',
+};
+
+export const IssueTracker: Story = {
+  render: args => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
+    return (
+      <PowerSearch
+        {...args}
+        config={issueTrackerConfig}
+        filters={filters}
+        onChange={newFilters => setFilters([...newFilters])}
+      />
+    );
+  },
+  args: {
+    placeholder: 'Filter issues...',
+    hasAutoFocus: true,
+    maxSearchResults: 2,
+    maxOperatorMenuItems: 2,
+    menuWidth: 700,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A realistic issue-tracker field set. Open the empty search to browse ungrouped fields first, followed by optional People, Planning, and Activity sections. Typing switches back to a flat ranked list. Use maxSearchResults to cap the main ranked list; use maxOperatorMenuItems for values after selecting a field, such as Owner.',
+      },
+    },
+  },
+  decorators: [
+    Story => (
+      <div style={{width: 500, minHeight: 420}}>
+        <Story />
+      </div>
+    ),
+  ],
+  name: 'Issue Tracker (Grouped Fields)',
 };
 
 export const WithEnumListFilters: Story = {
@@ -1331,7 +1526,12 @@ export const WithCustomComponents: Story = {
           onChange={newFilters => setFilters([...newFilters])}
           components={customComponents}
         />
-        <p style={{marginTop: 16, fontSize: 13, color: '#666'}}>
+        <p
+          style={{
+            marginTop: 16,
+            fontSize: 13,
+            color: 'var(--color-text-secondary)',
+          }}>
           <strong>Custom overrides:</strong> Status tokens show colored text
           (custom Token). Integer fields use a range slider editor (custom
           Editor).
@@ -1381,7 +1581,8 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<PowerSearchFilter[]>([]);
     const [b, setB] = useState<PowerSearchFilter[]>([]);
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 400}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 400}}>
         <PowerSearch
           config={basicConfig}
           filters={a}

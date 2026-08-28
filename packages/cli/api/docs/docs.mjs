@@ -29,14 +29,15 @@ export {list, detail, sectionLeaf as section};
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
+ * @param {string} [options.cwd]
  * @returns {Promise<
- *   import('../../types/docs').DocsListResponse |
- *   import('../../types/docs').DocsDetailResponse |
- *   import('../../types/docs').DocsDetailSectionResponse
+ *   import('./docs.type.mjs').DocsListResponse |
+ *   import('./docs.type.mjs').DocsDetailResponse |
+ *   import('./docs.type.mjs').DocsDetailSectionResponse
  * >}
  */
 export async function docs(topic, section, options = {}) {
-  if (!topic) return list();
+  if (!topic) return list(options);
   if (section) return sectionLeaf(topic, section, options);
   return detail(topic, options);
 }

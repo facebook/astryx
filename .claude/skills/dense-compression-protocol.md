@@ -4,12 +4,12 @@ Apply this protocol to create a dense translation for an Astryx component `.doc.
 
 ## Purpose
 
-Produce a `docsDense` `TranslationDoc` that compresses the prose of a component's `docs` export while preserving every piece of guidance an agent needs to call the API correctly. Dense is a translation, not a different document — same information, fewer tokens.
+Produce a `docsDense` `ComponentTranslationDoc` that compresses the prose of a component's `docs` export while preserving every piece of guidance an agent needs to call the API correctly. Dense is a translation, not a different document — same information, fewer tokens.
 
-## TranslationDoc Shape
+## ComponentTranslationDoc Shape
 
 ```js
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'compressed component description',
   features: ['compressed feature 1', 'compressed feature 2'],

@@ -35,7 +35,7 @@
  * - /packages/core/src/DropdownMenu/DropdownMenuSubMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/DropdownMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DropdownMenu/ (showcase blocks)
  */
 
 import React, {
@@ -44,6 +44,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  type PointerEvent,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -78,6 +79,7 @@ import {
   useDropdownMenuContext,
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
+import {focusMenuItemOnHover} from './menuItemHover';
 
 const triggerStyles = stylex.create({
   root: {
@@ -93,13 +95,11 @@ const triggerStyles = stylex.create({
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
     },
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
-    },
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     outline: 'none',
   },
@@ -110,7 +110,7 @@ const triggerStyles = stylex.create({
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   caret: {
     display: 'flex',
@@ -150,14 +150,9 @@ const flyoutStyles = stylex.create({
   },
   popover: {
     minWidth: '160px',
-    // Small inline gap so the flyout doesn't sit flush against the parent menu.
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
   },
   popoverCustomWidth: (width: string | number) => ({
     minWidth: typeof width === 'number' ? `${width}px` : width,
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
   }),
 });
 
@@ -307,12 +302,16 @@ export function DropdownMenuSubMenu(
 
   // Hover-intent: entering the trigger opens after a short delay; leaving
   // either surface closes after a delay. Hover-open does not steal focus.
-  const {triggerProps, contentProps} = useMenuHover<HTMLDivElement>({
-    show: showLayer,
-    hide: hideLayer,
-    isOpen,
-    isEnabled: canOpen,
-  });
+  // Hover intent and the shared hover→click guard only: this level owns its own
+  // click handling, roving focus and typeahead. popover="manual", so the
+  // invoker wiring other consumers need does not apply.
+  const {triggerProps, contentProps, confirmHoverOpen} =
+    useMenuHover<HTMLDivElement>({
+      show: showLayer,
+      hide: hideLayer,
+      isOpen,
+      isEnabled: canOpen,
+    });
 
   const open = useCallback(
     (options?: {focusFirst?: boolean}) => {
@@ -321,18 +320,12 @@ export function DropdownMenuSubMenu(
       }
       layer.show();
       if (options?.focusFirst) {
-        requestAnimationFrame(() => {
-          // Move focus into the flyout. When it has no focusable items yet
-          // (e.g. an async submenu showing only a disabled "Loading…" row via
-          // hasSpinner), focusFirst() finds nothing — fall back to focusing the
-          // flyout container itself so keyboard ownership still transfers off
-          // the parent list. Otherwise the parent would keep focus, letting
-          // arrow keys rove the parent while the empty flyout stays open.
-          const focusedItem = focusFirst();
-          if (!focusedItem) {
-            menuRef.current?.focus();
-          }
-        });
+        // Synchronous by design — see the focus note in useMenuHover. A
+        // still-loading flyout has no focusable item, so fall back to the
+        // container: keyboard ownership must leave the parent list either way.
+        if (!focusFirst()) {
+          menuRef.current?.focus();
+        }
       }
     },
     [canOpen, layer, focusFirst, menuRef],
@@ -362,13 +355,19 @@ export function DropdownMenuSubMenu(
     if (isDisabled) {
       return;
     }
-    // Click toggles the flyout, moving focus into it on open.
+    // Toggles, except for the click that follows a hover-open (#3121).
     if (isOpen) {
+      if (confirmHoverOpen()) {
+        if (!focusFirst()) {
+          menuRef.current?.focus();
+        }
+        return;
+      }
       close({focusTrigger: true});
     } else {
       open({focusFirst: true});
     }
-  }, [isDisabled, isOpen, open, close]);
+  }, [isDisabled, isOpen, open, close, confirmHoverOpen, focusFirst, menuRef]);
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -391,6 +390,16 @@ export function DropdownMenuSubMenu(
       }
     },
     [isDisabled, open],
+  );
+
+  // Move the single focus-driven highlight onto the trigger as the pointer
+  // enters it, so a sibling item that still holds focus doesn't stay
+  // highlighted alongside the hovered trigger. This is separate from the
+  // hover-open intent (onMouseEnter/onMouseLeave) — the flyout still opens on
+  // the hover delay; this only keeps the highlight single.
+  const handlePointerMove = useCallback(
+    (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
+    [isDisabled],
   );
 
   // Enter/Space activate the focused row; typeahead jumps by first character;
@@ -472,7 +481,12 @@ export function DropdownMenuSubMenu(
     </span>
   ) : (
     <span {...stylex.props(triggerStyles.caret)}>
-      <Icon icon="chevronRight" size="sm" color="secondary" />
+      <Icon
+        icon="chevronRight"
+        size="sm"
+        color="secondary"
+        {...themeProps('dropdown-menu-indicator-icon')}
+      />
     </span>
   );
 
@@ -494,6 +508,7 @@ export function DropdownMenuSubMenu(
         data-testid={testId}
         onMouseEnter={triggerProps.onMouseEnter}
         onMouseLeave={triggerProps.onMouseLeave}
+        onPointerMove={handlePointerMove}
         startContent={
           icon
             ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
@@ -543,6 +558,7 @@ export function DropdownMenuSubMenu(
         {
           placement: 'end',
           alignment: 'start',
+          offset: spacingVars['--spacing-1'],
           xstyle: [popoverXstyle, layerAnimations.end],
         },
       )}

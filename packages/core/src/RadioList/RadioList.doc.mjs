@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'RadioList',
@@ -11,9 +11,11 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-radio-list', visualProps: ['orientation', 'size']},
-      {className: 'astryx-radio-list-item'},
-      {className: 'astryx-radio', visualProps: ['size'], states: ['checked', 'disabled']},
-      {className: 'astryx-radio-dot', visualProps: ['size']},
+      {className: 'astryx-radio-list-item', visualProps: ['size'], states: ['selected', 'disabled']},
+      {className: 'astryx-radio-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-radio-indicator-dot', visualProps: ['size']},
+      {className: 'astryx-radio', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'radio-indicator'},
+      {className: 'astryx-radio-dot', visualProps: ['size'], deprecatedFor: 'radio-indicator-dot'},
     ],
   },
   description: 'Radio group container with field integration for label, description, and status.',
@@ -149,7 +151,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -171,7 +173,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Radio group component for single-value selection from list of options.',

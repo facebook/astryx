@@ -16,12 +16,12 @@
 
 import {findComponent} from '../_adapter.mjs';
 import {docFromResult} from '../detail/doc/doc.mjs';
-import {levenshteinDistance} from '../../../lib/string-utils.mjs';
+import {levenshteinDistance} from '../../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 
 /**
- * @typedef {import('../../../lib/package-scanner.mjs').ScannedPackage} ScannedPackage
+ * @typedef {import('../_package-scanner.mjs').ScannedPackage} ScannedPackage
  */
 
 /**
@@ -34,11 +34,21 @@ import {ERROR_CODES} from '../../../lib/error-codes.mjs';
  * @param {string} query
  * @param {{lang?: string | null, zh?: boolean}} opts
  * @returns {Promise<
- *   import('../../../types/discover').DiscoverDetailDocResponse |
- *   import('../../../types/discover').DiscoverSearchResponse
+ *   import('../discover.type.mjs').DiscoverDetailDocResponse |
+ *   import('../discover.type.mjs').DiscoverSearchResponse
  * >}
  */
 export async function search(packages, query, {lang, zh}) {
+  // An empty query must error, not match every component via `.includes('')`
+  // (parity with the api/search leaf). The discover() dispatcher already routes
+  // an empty query to list, but the leaf must be safe on its own.
+  if (!query || !String(query).trim()) {
+    throw new AstryxError(
+      'A search query is required',
+      [{name: 'astryx discover button', reason: 'example'}],
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
   const lower = query.toLowerCase();
 
   const exact = findComponent(packages, query);

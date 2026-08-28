@@ -58,7 +58,6 @@ const STATIC_EXPORTS = {
     types: './src/astryx.css.d.ts',
     default: './dist/astryx.css',
   },
-  './astryx.umd.js': './dist/astryx.umd.js',
   './tailwind-theme.css': {
     types: './src/tailwind-theme.css.d.ts',
     default: './src/tailwind-theme.css',
@@ -72,16 +71,6 @@ const STATIC_EXPORTS = {
     source: './src/naming.ts',
     types: './dist/naming.d.ts',
     default: './dist/naming.js',
-  },
-  './config': {
-    source: './src/config.ts',
-    types: './dist/config.d.ts',
-    default: './dist/config.js',
-  },
-  './authoring': {
-    source: './src/authoring/index.ts',
-    types: './dist/authoring/index.d.ts',
-    default: './dist/authoring/index.js',
   },
   './theme/tokens': {
     source: './src/theme/tokens.ts',

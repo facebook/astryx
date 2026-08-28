@@ -61,6 +61,12 @@ export interface InternationalizationProviderProps {
    * from `locale` via `Intl.Locale.getTextInfo()`. Provide this to force a
    * direction (e.g. RTL layout testing under an English catalog) or to skip the
    * derivation when you already know the direction.
+   *
+   * This sets the direction astryx reads via context; it does NOT set the DOM
+   * `dir` attribute. You must set `dir` on `<html>` (or a wrapping element)
+   * yourself — astryx components mirror layout and directional icons from the
+   * DOM `dir`, so an RTL locale won't visually mirror without it. Keep the two
+   * in sync (e.g. `dir={getLocaleDirection(locale)}` on both).
    */
   dir?: 'ltr' | 'rtl';
   children: ReactNode;

@@ -14,12 +14,12 @@
  * @position api/hook/_adapter.mjs — shared by ./list, ./detail, ./detail/params
  */
 
-import {findCoreDir} from '../../utils/paths.mjs';
-import {findHookDoc, getAllHookNames} from '../../lib/hook-discovery.mjs';
-import {loadDocs} from '../../lib/component-loader.mjs';
-import {levenshteinDistance} from '../../lib/string-utils.mjs';
+import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {findHookDoc, getAllHookNames} from '../../foundation/discovery/hook-discovery.mjs';
+import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
+import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /**
  * Locate the @astryxdesign/core package directory, or throw the same
@@ -42,7 +42,7 @@ export function resolveCoreDir(cwd) {
  * @param {string} coreDir
  * @param {string} name
  * @param {{zh?: boolean, lang?: string|null}} [opts]
- * @returns {Promise<import('../../types/hook').HookDoc>}
+ * @returns {Promise<import('./hook.type.mjs').HookDoc>}
  */
 export async function resolveHookDoc(coreDir, name, {zh = false, lang = null} = {}) {
   const docPath = findHookDoc(coreDir, name);

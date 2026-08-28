@@ -11,6 +11,28 @@ const meta: Meta<typeof DateInput> = {
   title: 'Core/DateInput',
   component: DateInput,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A date field that fits the pointer it is used with. Every story ' +
+          'below shows the pointer surface — a text input you can type into ' +
+          'with a calendar in a popover — because that is the right answer ' +
+          'for the mouse you are reading this with.\n\n' +
+          'Where the primary pointer is a finger (`pointer: coarse`), the ' +
+          'same component renders a picker built for one instead: a bottom ' +
+          'sheet of months swiped sideways, with month and year wheels ' +
+          'behind the header title, and no text entry (the keyboard would ' +
+          'cover the sheet it is meant to fill in). Same props either way — ' +
+          'there is nothing to opt into.\n\n' +
+          '**Seeing the touch surface:** open any story below on a phone or ' +
+          'tablet, or in a device-emulated tab reporting a coarse pointer. ' +
+          'Every one of them renders it — they are the same stories, and ' +
+          'that is the point. There is no separate touch story because there ' +
+          'is no separate thing to adopt.',
+      },
+    },
+  },
   argTypes: {
     label: {
       control: 'text',
@@ -58,11 +80,38 @@ const meta: Meta<typeof DateInput> = {
       options: [1, 2],
       description: 'Number of months to display in calendar',
     },
+    weekStartsOn: {
+      control: 'select',
+      options: [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        'sun',
+        'mon',
+        'tue',
+        'wed',
+        'thu',
+        'fri',
+        'sat',
+      ],
+      description:
+        'First day of week in the calendar popover (0 = Sunday, or a three-letter day name)',
+    },
     format: {
       control: 'select',
       options: ['date_long', 'date', 'date_weekday', 'system_date'],
       description:
         "Display format for the committed value, reusing Timestamp's vocabulary. Defaults to 'date_long' (long-month date).",
+    },
+    nativePicker: {
+      control: 'radio',
+      options: ['touch', 'always', 'never'],
+      description:
+        'Whether the browser or Astryx draws the picker for each pointer type',
     },
   },
 };
@@ -90,6 +139,19 @@ export const WithValue: Story = {
   },
   args: {
     label: 'Event date',
+  },
+};
+
+export const MondayFirstWeek: Story = {
+  name: 'Week starts on Monday',
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>(undefined);
+    return <DateInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Date',
+    placeholder: 'Select a date',
+    weekStartsOn: 'mon',
   },
 };
 
@@ -139,6 +201,40 @@ export const Formats: Story = {
               new Date(iso + 'T00:00'),
             )
           }
+        />
+      </div>
+    );
+  },
+};
+
+export const NativePickerModes: Story = {
+  name: 'Native picker modes',
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-03-21' as ISODateString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <DateInput
+          label="nativePicker='touch' (default)"
+          description="Native picker on a coarse pointer; Astryx picker otherwise"
+          value={value}
+          onChange={setValue}
+          nativePicker="touch"
+        />
+        <DateInput
+          label="nativePicker='always'"
+          description="Native picker wherever the browser supports it"
+          value={value}
+          onChange={setValue}
+          nativePicker="always"
+        />
+        <DateInput
+          label="nativePicker='never'"
+          description="Astryx picker on every pointer type"
+          value={value}
+          onChange={setValue}
+          nativePicker="never"
         />
       </div>
     );

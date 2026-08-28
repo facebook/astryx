@@ -85,4 +85,25 @@ describe('themeAdd (api/theme/add)', () => {
       themeAdd('neutral', {cwd: tmpDir, targetPath: '../escape'}),
     ).rejects.toMatchObject({code: 'ERR_PATH_TRAVERSAL'});
   });
+
+  it('surfaces ERR_WRITE_FAILED (not a raw errno) when the target path is an existing file', async () => {
+    fs.writeFileSync(path.join(tmpDir, 'blocker'), 'x');
+    await expect(
+      themeAdd('neutral', {cwd: tmpDir, targetPath: 'blocker'}),
+    ).rejects.toMatchObject({code: 'ERR_WRITE_FAILED'});
+  });
+
+  it('surfaces ERR_WRITE_FAILED when an ancestor of the default dir is a file', async () => {
+    // A file named `src` blocks mkdir of src/themes/neutral (ENOTDIR).
+    fs.writeFileSync(path.join(tmpDir, 'src'), 'x');
+    await expect(themeAdd('neutral', {cwd: tmpDir})).rejects.toMatchObject({
+      code: 'ERR_WRITE_FAILED',
+    });
+  });
+
+  it('adds into an existing empty target directory', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'mydir'));
+    const r = await themeAdd('neutral', {cwd: tmpDir, targetPath: 'mydir'});
+    expect(r.data.outputDir).toBe('mydir');
+  });
 });

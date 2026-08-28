@@ -18,8 +18,10 @@
  * deduped, so each leaf stays a thin projection.
  */
 
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
-import {findCoreDir, discoverExternalPackages} from '../../utils/paths.mjs';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {findCoreDir, discoverExternalPackages} from '../../foundation/fs/paths.mjs';
 import {
   CORE_PACKAGE,
   discoverComponents,
@@ -29,10 +31,10 @@ import {
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
   resolveImportPath,
-} from '../../lib/component-discovery.mjs';
-import {Project} from '../../lib/project.mjs';
-import {loadDocs} from '../../lib/component-loader.mjs';
-import {searchComponents} from '../../lib/string-utils.mjs';
+} from '../../foundation/discovery/component-discovery.mjs';
+import {Project} from '../../foundation/config/project.mjs';
+import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
+import {searchComponents} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
 
 export {CORE_PACKAGE};
@@ -48,6 +50,7 @@ export {CORE_PACKAGE};
  * @property {any[]} [components]
  * @property {{description?: string}} [usage]
  * @property {any} [theming]
+ * @property {string} [import] set when the doc states its own import specifier
  */
 
 /**
@@ -65,7 +68,14 @@ export {CORE_PACKAGE};
  * @property {string} docPath
  * @property {string|null} sourcePath
  * @property {string|undefined} issuesUrl
- * @property {import('../../lib/integrations.mjs').LoadedIntegration|null} integration
+ * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration|null} integration
+ */
+
+/**
+ * What ownership shaping needs from an owner. The core and legacy-external
+ * paths synthesize a bare `{package, sourcePath}` rather than resolving a full
+ * {@link ComponentOwner}, so everything past those two is optional here.
+ * @typedef {Partial<ComponentOwner> & {package: string, sourcePath: string|null}} OwnershipSubject
  */
 
 /**
@@ -110,12 +120,12 @@ export function requireCoreDir(cwd) {
  * component discovery never hard-fails on a malformed/absent integration. An
  * empty list means "core only".
  * @param {string} cwd
- * @returns {Promise<import('../../lib/integrations.mjs').LoadedIntegration[]>}
+ * @returns {Promise<import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]>}
  */
 export async function loadIntegrationsSafely(cwd) {
   try {
     const project = await Project.load(cwd);
-    return /** @type {import('../../lib/integrations.mjs').LoadedIntegration[]} */ (
+    return /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} */ (
       project.loadedIntegrations
     );
   } catch {
@@ -125,9 +135,9 @@ export async function loadIntegrationsSafely(cwd) {
 
 /**
  * Resolve a loaded integration by package name.
- * @param {import('../../lib/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
  * @param {string} packageName
- * @returns {import('../../lib/integrations.mjs').LoadedIntegration|null}
+ * @returns {import('../../foundation/integrations/integrations.mjs').LoadedIntegration|null}
  */
 function findLoadedIntegration(loadedIntegrations, packageName) {
   return loadedIntegrations.find(i => i.name === packageName) ?? null;
@@ -150,7 +160,7 @@ function resolveExternalPackage(packageName, cwd) {
  * disambiguate by package and expose the owner's source + issuesUrl.
  * @param {string} coreDir
  * @param {string} dirName - bare component name (no `XDS` prefix)
- * @param {import('../../lib/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
  * @returns {ComponentOwner[]}
  */
 export function resolveOwners(coreDir, dirName, loadedIntegrations) {
@@ -185,7 +195,7 @@ export function resolveOwners(coreDir, dirName, loadedIntegrations) {
  * component that exists in both core and an external package (e.g. AppShell,
  * Button, SideNav) resolves to the package the caller asked for.
  * @param {string} packageScope
- * @param {{owners: ComponentOwner[], loadedIntegrations: import('../../lib/integrations.mjs').LoadedIntegration[], cwd: string, name: string}} ctx
+ * @param {{owners: ComponentOwner[], loadedIntegrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[], cwd: string, name: string}} ctx
  * @returns {ScopeResolution}
  */
 export function classifyScope(packageScope, {owners, loadedIntegrations, cwd, name}) {
@@ -270,6 +280,9 @@ export async function resolveUnscopedDoc(dirName, {coreDir, cwd, name}) {
   let resolvedName = dirName;
   // Track the resolving owner so the detail payload can carry ownership info.
   // Defaults to core; the legacy-external fallback below may reassign it.
+  // Annotated because CORE_PACKAGE's generated declaration carries the literal
+  // type, which (unlike a fresh literal) does not widen on assignment.
+  /** @type {string} */
   let resolvedOwnerPackage = CORE_PACKAGE;
   let resolvedSourcePath = readmePath ? findComponentSource(coreDir, dirName) : null;
 
@@ -354,22 +367,60 @@ export function extractProps(docs) {
  * swizzleable source file exists for the owner). Existing doc fields (name,
  * usage, props, …) are preserved.
  * @param {LoadedComponentDoc} docs
- * @param {{package: string, sourcePath: string|null}} owner
+ * @param {OwnershipSubject} owner
  * @param {string} componentName
  * @param {string} coreDir
- * @returns {import('../../types/component').ComponentDetailResponse['data']}
+ * @returns {import('./component.type.mjs').ComponentDetailResponse['data']}
  */
 export function withOwnership(docs, owner, componentName, coreDir) {
   const importSpec =
     owner.package === CORE_PACKAGE
       ? resolveImportPath(coreDir, componentName)
-      : `${owner.package}/${componentName}`;
+      : resolveIntegrationImportPath(owner, componentName);
   return /** @type {any} */ ({
     ...docs,
     package: owner.package,
-    import: importSpec,
+    // A doc file may state its own specifier, e.g. when one entry point exports
+    // several components. Only fall back to a resolved one when it does not.
+    import: docs.import ?? importSpec,
     sourceAvailable: owner.sourcePath != null,
   });
+}
+
+/**
+ * Resolve the specifier an integration component is imported from, against the
+ * owning package's `exports` map.
+ *
+ * A component lives in a directory that need not share its name — several
+ * components can be exported from one entry point — so the specifier has to
+ * come from the directory the doc file sits in, checked against `exports`,
+ * rather than from the component name. Falls back to the package root when the
+ * directory is not an exported subpath, matching what a consumer would have to
+ * write by hand.
+ *
+ * @param {OwnershipSubject} owner
+ * @param {string} componentName
+ * @returns {string}
+ */
+function resolveIntegrationImportPath(owner, componentName) {
+  const packageDir = owner.integration?.__packageDir;
+  const directory = owner.docPath
+    ? path.basename(path.dirname(owner.docPath))
+    : componentName;
+  if (!packageDir) {
+    return owner.package;
+  }
+  try {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+    );
+    if (manifest.exports?.[`./${directory}`]) {
+      return `${owner.package}/${directory}`;
+    }
+  } catch {
+    // An unreadable or malformed manifest is not worth failing a lookup over.
+  }
+  return owner.package;
 }
 
 /**

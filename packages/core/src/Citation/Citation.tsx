@@ -13,7 +13,7 @@
  * - /packages/core/src/Citation/Citation.doc.mjs (props table, features)
  * - /packages/core/src/Citation/Citation.test.tsx (tests for new/changed behavior)
  * - /apps/storybook/stories/Citation.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Citation/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Citation/ (showcase blocks)
  */
 
 import type React from 'react';
@@ -99,11 +99,14 @@ const styles = stylex.create({
     minWidth: 0,
   },
   labelInteractive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   labelHover: {
     backgroundColor: {
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -112,7 +115,7 @@ const styles = stylex.create({
       // the base secondary color from `label` (last-wins property merge),
       // leaving linked citations to inherit the surrounding text color.
       default: colorVars['--color-text-secondary'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-text-primary'],
       },
     },
@@ -137,7 +140,10 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   numberInteractive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   numberHover: {
     backgroundColor: {
@@ -145,7 +151,7 @@ const styles = stylex.create({
       // hover-only conditional replaces the base accent-muted pill from
       // `number` on merge, leaving linked badges transparent.
       default: colorVars['--color-accent-muted'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },

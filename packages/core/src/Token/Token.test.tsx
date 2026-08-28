@@ -330,6 +330,151 @@ describe('Token accessibility', () => {
   });
 });
 
+describe('Token link with remove button', () => {
+  it('does not nest the remove button inside the link', () => {
+    render(<Token label="Tag" href="/test" onRemove={() => {}} />);
+    const link = screen.getByRole('link', {name: 'Tag'});
+    const removeButton = screen.getByRole('button', {name: 'Remove Tag'});
+    expect(link.contains(removeButton)).toBe(false);
+  });
+
+  it('keeps the link keyboard-focusable and fires onRemove from the sibling button', async () => {
+    const user = userEvent.setup();
+    const handleRemove = vi.fn();
+    render(<Token label="Tag" href="/test" onRemove={handleRemove} />);
+
+    const link = screen.getByRole('link', {name: 'Tag'});
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('href', '/test');
+
+    // Tab reaches the link first, then the remove button
+    await user.tab();
+    expect(link).toHaveFocus();
+    await user.tab();
+    const removeButton = screen.getByRole('button', {name: 'Remove Tag'});
+    expect(removeButton).toHaveFocus();
+
+    // Activating the remove button fires onRemove without involving the link
+    await user.keyboard('{Enter}');
+    expect(handleRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it('wrapper structure matches the onClick branch pattern', () => {
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={() => {}}
+        data-testid="link-token"
+      />,
+    );
+    render(
+      <Token
+        label="Tag"
+        onClick={() => {}}
+        onRemove={() => {}}
+        data-testid="click-token"
+      />,
+    );
+
+    const linkRoot = screen.getByTestId('link-token');
+    const clickRoot = screen.getByTestId('click-token');
+
+    // Both render a <span> container with the same visual classes
+    expect(linkRoot.tagName).toBe('SPAN');
+    expect(linkRoot.className).toBe(clickRoot.className);
+  });
+
+  it('clicking the container activates the link', () => {
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={() => {}}
+        icon={<span data-testid="icon">★</span>}
+        data-testid="link-token"
+      />,
+    );
+    const link = screen.getByRole('link', {name: 'Tag'});
+    const handleLinkClick = vi.fn((e: MouseEvent) => e.preventDefault());
+    link.addEventListener('click', handleLinkClick);
+
+    // Clicking outside the anchor (e.g. the icon) still activates the link
+    fireEvent.click(screen.getByTestId('icon'));
+    expect(handleLinkClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('clicking the remove button does not activate the link', () => {
+    const handleRemove = vi.fn();
+    render(<Token label="Tag" href="/test" onRemove={handleRemove} />);
+    const link = screen.getByRole('link', {name: 'Tag'});
+    const handleLinkClick = vi.fn((e: MouseEvent) => e.preventDefault());
+    link.addEventListener('click', handleLinkClick);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Remove Tag'}));
+    expect(handleRemove).toHaveBeenCalledTimes(1);
+    expect(handleLinkClick).not.toHaveBeenCalled();
+  });
+
+  it('cmd/ctrl+click on the container opens the link in a new tab', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={() => {}}
+        icon={<span data-testid="icon">★</span>}
+      />,
+    );
+
+    // Clicking the surface (not the anchor) with a modifier opens a new tab
+    // rather than navigating in place — provided by useClickableContainer.
+    fireEvent.click(screen.getByTestId('icon'), {metaKey: true});
+    expect(openSpy).toHaveBeenCalledWith('/test', '_blank', 'noopener');
+    openSpy.mockRestore();
+  });
+
+  it('middle-click on the container opens the link in a new tab', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={() => {}}
+        icon={<span data-testid="icon">★</span>}
+      />,
+    );
+
+    fireEvent.mouseUp(screen.getByTestId('icon'), {button: 1});
+    expect(openSpy).toHaveBeenCalledWith('/test', '_blank', 'noopener');
+    openSpy.mockRestore();
+  });
+
+  it('a modified click that opens a new tab does not fire onRemove', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const handleRemove = vi.fn();
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={handleRemove}
+        icon={<span data-testid="icon">★</span>}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('icon'), {metaKey: true});
+    fireEvent.mouseUp(screen.getByTestId('icon'), {button: 1});
+    expect(handleRemove).not.toHaveBeenCalled();
+    expect(openSpy).toHaveBeenCalledTimes(2);
+    openSpy.mockRestore();
+  });
+
+  it('link without onRemove still renders the anchor as the root', () => {
+    const {container} = render(<Token label="Link" href="/test" />);
+    expect(container.firstElementChild?.tagName).toBe('A');
+  });
+});
+
 describe('Token text overflow', () => {
   it('label element has overflow hidden and text-overflow ellipsis styles', () => {
     const {container} = render(<Token label="A very long label text" />);
@@ -374,5 +519,100 @@ describe('Token focus outline', () => {
     // not the button itself
     const container = screen.getByTestId('focus-token');
     expect(container.tagName).toBe('SPAN');
+  });
+});
+
+describe('Token pass-through props', () => {
+  it('forwards pass-through props to the token element', () => {
+    render(
+      <Token
+        label="Design"
+        aria-label="Design tag"
+        id="design-token"
+        data-source="filters"
+        data-testid="token"
+      />,
+    );
+    const token = screen.getByTestId('token');
+    expect(token).toHaveAttribute('aria-label', 'Design tag');
+    expect(token).toHaveAttribute('id', 'design-token');
+    expect(token).toHaveAttribute('data-source', 'filters');
+  });
+
+  it('forwards pass-through props on the clickable and link variants', () => {
+    const {rerender} = render(
+      <Token
+        label="Design"
+        onClick={() => {}}
+        id="clickable"
+        data-testid="token"
+      />,
+    );
+    expect(screen.getByTestId('token')).toHaveAttribute('id', 'clickable');
+
+    rerender(
+      <Token label="Design" href="/tags" id="link" data-testid="token" />,
+    );
+    expect(screen.getByTestId('token')).toHaveAttribute('id', 'link');
+  });
+
+  it('keeps its own label when the label is visually hidden', () => {
+    render(
+      <Token
+        label="Design"
+        isLabelHidden
+        aria-label="Caller label"
+        data-source="filters"
+        data-testid="token"
+      />,
+    );
+    const token = screen.getByTestId('token');
+    expect({
+      ariaLabel: token.getAttribute('aria-label'),
+      dataSource: token.getAttribute('data-source'),
+    }).toEqual({ariaLabel: 'Design', dataSource: 'filters'});
+  });
+});
+
+describe('Token — owned handlers on the link+remove container', () => {
+  it("composes a caller's onMouseUp with the container's link delegation", () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const handleMouseUp = vi.fn();
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={() => {}}
+        onMouseUp={handleMouseUp}
+        icon={<span data-testid="icon">★</span>}
+      />,
+    );
+
+    fireEvent.mouseUp(screen.getByTestId('icon'), {button: 1});
+
+    expect(handleMouseUp).toHaveBeenCalledOnce();
+    expect(openSpy).toHaveBeenCalledWith('/test', '_blank', 'noopener');
+    openSpy.mockRestore();
+  });
+
+  it("does not fire the container's delegation when disabled, but still forwards the caller's onMouseUp", () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const handleMouseUp = vi.fn();
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={() => {}}
+        onMouseUp={handleMouseUp}
+        isDisabled
+        icon={<span data-testid="icon">★</span>}
+      />,
+    );
+
+    fireEvent.mouseUp(screen.getByTestId('icon'), {button: 1});
+
+    expect(handleMouseUp).toHaveBeenCalledOnce();
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
   });
 });

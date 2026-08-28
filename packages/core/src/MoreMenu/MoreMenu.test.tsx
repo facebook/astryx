@@ -10,9 +10,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MoreMenu} from './MoreMenu';
+import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -196,5 +197,71 @@ describe('MoreMenu', () => {
     render(<MoreMenu items={defaultItems} />);
     const menu = screen.getByRole('menu', {hidden: true});
     expect(menu.className).toContain('astryx-more-menu');
+  });
+
+  it('pointer open focuses the menu container, not the first item (#4477)', async () => {
+    const user = userEvent.setup();
+    render(<MoreMenu items={defaultItems} />);
+
+    await user.click(screen.getByRole('button', {name: 'More options'}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveFocus();
+  });
+
+  it('first ArrowDown after a pointer open moves focus to the first item (#4477)', async () => {
+    const user = userEvent.setup();
+    render(<MoreMenu items={defaultItems} />);
+
+    await user.click(screen.getByRole('button', {name: 'More options'}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  describe('placement and alignment', () => {
+    const positionAreaOf = (menu: HTMLElement) =>
+      menu
+        .closest('[popover]')
+        ?.getAttribute('style')
+        ?.match(/position-area:[^;]*/)?.[0];
+
+    it('resolves the same default position as DropdownMenu', () => {
+      render(
+        <>
+          <MoreMenu items={defaultItems} />
+          <DropdownMenu button={{label: 'Actions'}} items={defaultItems} />
+        </>,
+      );
+      const [moreMenu, dropdownMenu] = screen.getAllByRole('menu', {
+        hidden: true,
+      });
+
+      expect(positionAreaOf(moreMenu)).toBe(positionAreaOf(dropdownMenu));
+      expect(positionAreaOf(moreMenu)).toBe(
+        'position-area: self-block-end span-self-inline-end',
+      );
+    });
+
+    it('forwards alignment to the menu layer', () => {
+      render(<MoreMenu items={defaultItems} alignment="end" />);
+      expect(positionAreaOf(screen.getByRole('menu', {hidden: true}))).toBe(
+        'position-area: self-block-end span-self-inline-start',
+      );
+    });
+
+    it('forwards placement to the menu layer', () => {
+      render(<MoreMenu items={defaultItems} placement="above" />);
+      expect(positionAreaOf(screen.getByRole('menu', {hidden: true}))).toBe(
+        'position-area: self-block-start span-self-inline-end',
+      );
+    });
   });
 });

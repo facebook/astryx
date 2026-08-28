@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Typeahead',
@@ -82,6 +82,12 @@ export const docs = {
       type: 'number',
       description: 'Maximum number of dropdown items to display.',
       default: '10',
+    },
+    {
+      name: 'minQueryLength',
+      type: 'number',
+      description: 'Minimum query length before the search source is queried. Below it no search runs and the menu stays closed.',
+      default: '1',
     },
     {
       name: 'status',
@@ -172,6 +178,11 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
+      name: 'startIcon',
+      type: 'IconType | ReactNode',
+      description: 'SVG icon component displayed at the start of the input.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -183,6 +194,7 @@ export const docs = {
     targets: [
       {className: 'astryx-typeahead', visualProps: ['status', 'size']},
       {className: 'astryx-typeahead-dropdown'},
+      {className: 'astryx-typeahead-empty-state'},
       {className: 'astryx-typeahead-item'},
     ],
   },
@@ -233,7 +245,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -277,7 +289,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Searchable dropdown for single-item selection w/ keyboard navigation. Supports async+sync search via searchSource interface.',

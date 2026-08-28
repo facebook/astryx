@@ -210,10 +210,14 @@ const stickyStyles = stylex.create({
 // ::after gradient strip just past the pinned edge (visible thanks to the cell's
 // overflow: visible). Opacity is gated by the scroll-state variable above.
 const SHADOW_WIDTH = '6px';
-// --color-shadow is only ~10% alpha (too faint here); use a slightly stronger soft tint.
-const SHADOW_TINT = 'light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.32))';
+const SHADOW_TINT = colorVars['--color-shadow'];
 const shadowStyles = stylex.create({
-  // start-pinned: shadow falls to the right (inline-end), over scrolled content
+  // start-pinned: shadow falls toward inline-end (over scrolled content).
+  // insetInlineEnd anchors the strip to the column's inline-end edge; the strip
+  // must then be nudged one full width OUTWARD (past that edge) into the
+  // scrolled region. Outward is +X under LTR (inline-end = right) but −X under
+  // RTL (inline-end = left), and the fade must run from the pinned edge toward
+  // content in each direction — hence both transform and gradient flip on dir.
   start: {
     '::after': {
       content: '""',
@@ -222,14 +226,24 @@ const shadowStyles = stylex.create({
       bottom: 0,
       insetInlineEnd: 0,
       width: SHADOW_WIDTH,
-      transform: 'translateX(100%)',
+      transform: {
+        default: 'translateX(100%)',
+        ':is([dir="rtl"] *)': 'translateX(-100%)',
+      },
       pointerEvents: 'none',
       transition: 'opacity 150ms ease',
       opacity: `var(${SHADOW_VAR_START}, 0)`,
-      backgroundImage: `linear-gradient(to right, ${SHADOW_TINT}, transparent)`,
+      backgroundImage: {
+        default: `linear-gradient(to right, ${SHADOW_TINT}, transparent)`,
+        ':is([dir="rtl"] *)': `linear-gradient(to left, ${SHADOW_TINT}, transparent)`,
+      },
     },
   },
-  // end-pinned: shadow falls to the left (inline-start), over scrolled content
+  // end-pinned: shadow falls toward inline-start (over scrolled content).
+  // insetInlineStart anchors the strip to the column's inline-start edge; the
+  // strip is nudged one full width OUTWARD into content — −X under LTR
+  // (inline-start = left) but +X under RTL (inline-start = right) — with the
+  // gradient fading from the pinned edge toward content in each direction.
   end: {
     '::after': {
       content: '""',
@@ -238,11 +252,17 @@ const shadowStyles = stylex.create({
       bottom: 0,
       insetInlineStart: 0,
       width: SHADOW_WIDTH,
-      transform: 'translateX(-100%)',
+      transform: {
+        default: 'translateX(-100%)',
+        ':is([dir="rtl"] *)': 'translateX(100%)',
+      },
       pointerEvents: 'none',
       transition: 'opacity 150ms ease',
       opacity: `var(${SHADOW_VAR_END}, 0)`,
-      backgroundImage: `linear-gradient(to left, ${SHADOW_TINT}, transparent)`,
+      backgroundImage: {
+        default: `linear-gradient(to left, ${SHADOW_TINT}, transparent)`,
+        ':is([dir="rtl"] *)': `linear-gradient(to right, ${SHADOW_TINT}, transparent)`,
+      },
     },
   },
 });
@@ -289,16 +309,24 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
       const {hasStart: hs, hasEnd: he} = stateRef.current;
       const maxScroll = el.scrollWidth - el.clientWidth;
       const hasOverflow = maxScroll > 1;
+      // RTL-safe scroll position. Spec-compliant browsers report a NEGATIVE
+      // scrollLeft under RTL (0 at the inline-start edge, decreasing toward the
+      // inline-end edge), so a raw `scrollLeft > 1` start test would never fire
+      // and the end test would be wrong-signed. Math.abs collapses both
+      // conventions to a distance-from-inline-start, matching the repo's own
+      // useScrollOverflow (overflowStart/overflowEnd use Math.abs, tolerance 1).
+      // No-op under LTR where scrollLeft is already >= 0.
+      const pos = Math.abs(el.scrollLeft);
       if (hs) {
         el.style.setProperty(
           SHADOW_VAR_START,
-          hasOverflow && el.scrollLeft > 1 ? '1' : '0',
+          hasOverflow && pos > 1 ? '1' : '0',
         );
       }
       if (he) {
         el.style.setProperty(
           SHADOW_VAR_END,
-          hasOverflow && el.scrollLeft < maxScroll - 1 ? '1' : '0',
+          hasOverflow && pos < maxScroll - 1 ? '1' : '0',
         );
       }
     };

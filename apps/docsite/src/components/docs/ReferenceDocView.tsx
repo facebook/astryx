@@ -84,10 +84,14 @@ function buildOutline(sections: DocSection[]): {
   return {sectionIds, blockIds, outline};
 }
 
-function isBestPracticesSection(section: DocSection): boolean {
-  return section.content.every(
-    b => b.type === 'list' && (b.style === 'do' || b.style === 'dont'),
+function isGuidanceList(block: DocSection['content'][number] | undefined) {
+  return (
+    block?.type === 'list' && (block.style === 'do' || block.style === 'dont')
   );
+}
+
+function isBestPracticesSection(section: DocSection): boolean {
+  return section.content.every(isGuidanceList);
 }
 
 function BestPracticesSection({
@@ -161,6 +165,30 @@ export function ReferenceDocView({
                         </AnchorHeading>
                       );
                     }
+                  }
+                  // A run of do/dont lists is one badge table, so guidance
+                  // keeps its Do/Don't label outside all-guidance sections.
+                  if (isGuidanceList(block)) {
+                    if (isGuidanceList(section.content[blockIndex - 1])) {
+                      return null;
+                    }
+                    const items: {guidance: boolean; description: string}[] =
+                      [];
+                    for (let j = blockIndex; j < section.content.length; j++) {
+                      const run = section.content[j];
+                      if (!isGuidanceList(run)) {
+                        break;
+                      }
+                      for (const item of run.items ?? []) {
+                        items.push({
+                          guidance: run.style === 'do',
+                          description: item,
+                        });
+                      }
+                    }
+                    return (
+                      <BestPracticesBlock key={blockIndex} items={items} />
+                    );
                   }
                   return (
                     <ContentBlockRenderer key={blockIndex} block={block} />

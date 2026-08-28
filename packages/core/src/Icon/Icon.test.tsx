@@ -13,7 +13,11 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {TestIcon} from '../__tests__/TestIcon';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
+import {resetThemes} from '../theme/themeRegistry';
 import {Icon} from './Icon';
+import {registerIcons, resetIcons} from './globalIconRegistry';
 
 describe('Icon', () => {
   it('renders the icon component', () => {
@@ -167,6 +171,79 @@ describe('Icon', () => {
   it('applies aria-hidden by default in string (registry) mode', () => {
     render(<Icon icon="check" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('resolves string-mode icons from the nearest Theme without leaking globally', () => {
+    resetIcons();
+    resetThemes();
+    const outer = defineTheme({name: 'outer', icons: {check: 'outer-check'}});
+    const inner = defineTheme({name: 'inner', icons: {check: 'inner-check'}});
+
+    render(
+      <Theme theme={outer}>
+        <Icon icon="check" data-testid="outer" />
+        <Theme theme={inner}>
+          <Icon icon="check" data-testid="inner" />
+        </Theme>
+      </Theme>,
+    );
+
+    expect(screen.getByTestId('outer')).toHaveTextContent('outer-check');
+    expect(screen.getByTestId('inner')).toHaveTextContent('inner-check');
+  });
+
+  describe('namespaced extension keys', () => {
+    it('renders a theme-registered namespaced key with size and color applied', () => {
+      resetIcons();
+      resetThemes();
+      const theme = defineTheme({
+        name: 'ns-theme',
+        icons: {'numberInput:stepperDown': 'themed-stepper'},
+      });
+
+      render(
+        <Theme theme={theme}>
+          <Icon icon="numberInput:stepperDown" size="xsm" data-testid="icon" />
+        </Theme>,
+      );
+
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveTextContent('themed-stepper');
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+      expect(icon.className).not.toBe('');
+    });
+
+    it('resolves a namespaced key registered globally', () => {
+      resetIcons();
+      resetThemes();
+      registerIcons({'numberInput:stepperDown': 'global-stepper'});
+
+      render(<Icon icon="numberInput:stepperDown" data-testid="icon" />);
+
+      expect(screen.getByTestId('icon')).toHaveTextContent('global-stepper');
+    });
+
+    it('still rejects a misspelled built-in name', () => {
+      render(
+        // @ts-expect-error — the prop takes built-in names and namespaced
+        // keys, not any string, so a typo is still a compile error.
+        <Icon icon="chevrondown" data-testid="icon" />,
+      );
+
+      expect(screen.queryByTestId('icon')).not.toBeInTheDocument();
+    });
+
+    it('renders nothing when a namespaced key resolves to nothing', () => {
+      resetIcons();
+      resetThemes();
+
+      const {container} = render(
+        <Icon icon="numberInput:missing" data-testid="icon" />,
+      );
+
+      expect(screen.queryByTestId('icon')).not.toBeInTheDocument();
+      expect(container).toBeEmptyDOMElement();
+    });
   });
 
   it('lets a string-mode icon be made meaningful by overriding aria-hidden', () => {

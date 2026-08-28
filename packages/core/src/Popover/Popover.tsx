@@ -14,7 +14,7 @@
  * - /packages/core/src/Popover/Popover.test.tsx
  * - /packages/core/src/Popover/index.ts
  * - /apps/storybook/stories/Popover.stories.tsx
- * - /packages/cli/templates/blocks/components/Popover/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Popover/ (showcase blocks)
  */
 
 import React, {
@@ -25,7 +25,6 @@ import React, {
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
-import {mergeProps} from '../utils';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
@@ -33,7 +32,6 @@ import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
-import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Helpers
@@ -163,9 +161,28 @@ export interface PopoverProps extends Pick<
 
   /**
    * Accessible label for the popover dialog.
-   * Recommended for accessibility (used as aria-label on the dialog).
+   * Recommended for accessibility when `role` is `'dialog'`.
    */
   label?: string;
+
+  /**
+   * ARIA role stamped on the popover content wrapper.
+   *
+   * Use `'dialog'` for dialog-style popovers. Use `'none'` when the popup
+   * content owns its own role, such as a child `role="menu"` or
+   * `role="listbox"`.
+   *
+   * @default 'dialog'
+   */
+  role?: 'dialog' | 'none';
+
+  /**
+   * Whether a dialog-style popover is modal (`aria-modal`). Only applies when
+   * `role` is `'dialog'`.
+   *
+   * @default true
+   */
+  isModal?: boolean;
 
   /**
    * Whether to include a hidden close button for accessibility.
@@ -224,16 +241,13 @@ const styles = stylex.create({
   anchorWrapper: {
     display: 'inline-flex',
   },
-  // Visual styles for the inner content container
+  // Content padding, applied to the popup surface so a theme's `padding`
+  // replaces it instead of nesting inside it.
   contentPadding: {
     paddingBlockStart: spacingVars['--spacing-3'],
     paddingBlockEnd: spacingVars['--spacing-3'],
     paddingInlineStart: spacingVars['--spacing-3'],
     paddingInlineEnd: spacingVars['--spacing-3'],
-  },
-  gap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
   },
   customWidth: (width: string | number) => ({
     width: typeof width === 'number' ? `${width}px` : width,
@@ -293,6 +307,8 @@ export function Popover({
   isEnabled = true,
   width,
   label,
+  role = 'dialog',
+  isModal,
   hasCloseButton,
   closeButtonLabel,
   hasAutoFocus,
@@ -305,26 +321,31 @@ export function Popover({
 }: PopoverProps): ReactElement {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const isControlled = isOpen !== undefined;
-  // Track when the popover was last hidden by light dismiss to prevent
-  // the trigger click from immediately re-opening it.
-  const lastHideTimeRef = useRef(0);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
   }, [onOpenChange]);
 
   const handlePopoverHide = useCallback(() => {
-    lastHideTimeRef.current = Date.now();
     onOpenChange?.(false);
   }, [onOpenChange]);
 
   const popover = usePopover({
     dialogLabel: label,
+    role,
+    isModal,
     hasLightDismiss,
     hasEscapeDismiss,
     hasCloseButton,
     closeButtonLabel,
     hasAutoFocus,
+    // The surface is the box that paints background, radius and elevation, so
+    // it is the element the `popover` theme target has to sit on — a target on
+    // the content div inside it styles a box that paints nothing.
+    surfaceTarget: 'popover',
+    xstyle: [styles.contentPadding, xstyle],
+    className,
+    style,
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
@@ -334,11 +355,7 @@ export function Popover({
     if (!isEnabled) {
       return;
     }
-    // If the popover was just closed by light dismiss (clicking outside),
-    // the trigger click fires in the same event — skip re-opening.
-    if (Date.now() - lastHideTimeRef.current < 50) {
-      return;
-    }
+    // `toggle` absorbs a click that belongs to its own light dismiss.
     popover.toggle();
   }, [isEnabled, popover]);
 
@@ -492,23 +509,12 @@ export function Popover({
   if (anchorRef && children == null) {
     return (
       <>
-        {popover.render(
-          <div
-            data-testid={testId}
-            {...mergeProps(
-              themeProps('popover'),
-              stylex.props(styles.contentPadding, xstyle),
-              className,
-              style,
-            )}>
-            {content}
-          </div>,
-          {
-            placement,
-            alignment,
-            xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
-          },
-        )}
+        {popover.render(<div data-testid={testId}>{content}</div>, {
+          placement,
+          alignment,
+          offset: spacingVars['--spacing-1'],
+          xstyle: [popoverXstyle, layerAnimations[placement]],
+        })}
       </>
     );
   }
@@ -528,23 +534,12 @@ export function Popover({
     return (
       <>
         {children(triggerProps)}
-        {popover.render(
-          <div
-            data-testid={testId}
-            {...mergeProps(
-              themeProps('popover'),
-              stylex.props(styles.contentPadding, xstyle),
-              className,
-              style,
-            )}>
-            {content}
-          </div>,
-          {
-            placement,
-            alignment,
-            xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
-          },
-        )}
+        {popover.render(<div data-testid={testId}>{content}</div>, {
+          placement,
+          alignment,
+          offset: spacingVars['--spacing-1'],
+          xstyle: [popoverXstyle, layerAnimations[placement]],
+        })}
       </>
     );
   }
@@ -557,23 +552,12 @@ export function Popover({
           {children}
         </div>
       </InteractiveRoleContext>
-      {popover.render(
-        <div
-          data-testid={testId}
-          {...mergeProps(
-            themeProps('popover'),
-            stylex.props(styles.contentPadding, xstyle),
-            className,
-            style,
-          )}>
-          {content}
-        </div>,
-        {
-          placement,
-          alignment,
-          xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
-        },
-      )}
+      {popover.render(<div data-testid={testId}>{content}</div>, {
+        placement,
+        alignment,
+        offset: spacingVars['--spacing-1'],
+        xstyle: [popoverXstyle, layerAnimations[placement]],
+      })}
     </>
   );
 }

@@ -25,7 +25,7 @@ export {rewriteImports};
  *
  * @param {string} [component] bare or XDS-prefixed component name; omit to list
  * @param {{cwd?: string, output?: string, package?: string, list?: boolean, overwrite?: boolean}} [options]
- * @returns {Promise<import('../../types/swizzle').SwizzleListResponse | import('../../types/swizzle').SwizzleCopyResponse>}
+ * @returns {Promise<import('./swizzle.type.mjs').SwizzleListResponse | import('./swizzle.type.mjs').SwizzleCopyResponse>}
  */
 export async function swizzle(component, options = {}) {
   const {cwd = process.cwd(), list = false} = options;

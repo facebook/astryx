@@ -5,7 +5,14 @@
 /**
  * @description Runs accessibility audits on component stories using axe-core
  * @input --storybook-dir <path> --output <file> --components <comma-separated>
- * @output JSON report with accessibility violations
+ *   --baseline <path> (compare violations against a checked-in baseline)
+ *   --fail-on-new (exit 1 when violations not present in the baseline exist)
+ *   --update-baseline (rewrite the baseline file from this run's report)
+ * @output JSON report with accessibility violations; with --baseline, a gate
+ *   summary (new / baselined / resolved) on stdout and a non-zero exit code
+ *   when --fail-on-new finds regressions. Diff logic lives in
+ *   lib/a11y-baseline.js. Pages are scanned with animations held at their end
+ *   state.
  */
 
 const { chromium } = require('playwright');
@@ -13,17 +20,46 @@ const { AxeBuilder } = require('@axe-core/playwright');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
+const {
+  buildBaseline,
+  diffAgainstBaseline,
+  formatDiffSummary,
+} = require('./lib/a11y-baseline');
 
 const args = process.argv.slice(2);
 const getArg = (name) => {
   const idx = args.indexOf(`--${name}`);
   return idx !== -1 ? args[idx + 1] : null;
 };
+const hasFlag = (name) => args.includes(`--${name}`);
 
 const storybookDir = getArg('storybook-dir') || 'apps/storybook/dist';
 const outputFile = getArg('output') || 'a11y-report.json';
-const componentsArg = getArg('components') || '';
-const components = componentsArg.split(',').filter(Boolean);
+const componentsArg = getArg('components');
+const components = (componentsArg || '').split(',').filter(Boolean);
+// --components present but EMPTY means the caller derived an explicit empty
+// audit set (pr-a11y on a PR whose core/src changes map to no component —
+// e.g. a shared test file). Audit nothing and pass. Only an ABSENT flag
+// means "all stories" (the a11y-weekly contract).
+const emptyComponentSet = componentsArg !== null && components.length === 0;
+const baselineFile = getArg('baseline');
+const failOnNew = hasFlag('fail-on-new');
+const updateBaseline = hasFlag('update-baseline');
+
+// Held at the end state before every scan, the way the visual gate does it
+// (visual-gate/lib/capture.mjs). axe blends an element's opacity into the
+// foreground color, so a scan that lands mid-transition measures a frame no
+// user is expected to read: Markdown's streaming fade reported contrast of
+// 1.63 on text whose resting color is #171717, on ~1 run in 6.
+const FREEZE_CSS = `
+*, *::before, *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+`;
 
 // Rules to disable — these are Storybook-context false positives, not component issues
 const DISABLED_RULES = [
@@ -93,6 +129,17 @@ async function getStories(storybookPath) {
 
 async function runAccessibilityAudit() {
   console.log('Starting accessibility audit...');
+
+  if (emptyComponentSet) {
+    console.log('No components to audit (--components is empty) — skipping.');
+    const report = {
+      components: {},
+      summary: { componentsAudited: 0, totalViolations: 0 },
+    };
+    fs.writeFileSync(outputFile, JSON.stringify(report, null, 2));
+    return report;
+  }
+
   console.log(`Components to audit: ${components.length > 0 ? components.join(', ') : 'all affected'}`);
 
   const storybookPath = path.resolve(process.cwd(), storybookDir);
@@ -105,7 +152,7 @@ async function runAccessibilityAudit() {
       summary: { total: 0, violations: 0 },
     };
     fs.writeFileSync(outputFile, JSON.stringify(report, null, 2));
-    return;
+    return report;
   }
 
   // Start server
@@ -157,6 +204,7 @@ async function runAccessibilityAudit() {
   try {
     const context = await browser.newContext({
       viewport: { width: 1280, height: 720 },
+      reducedMotion: 'reduce',
     });
 
     for (const [component, componentStories] of Object.entries(storyGroups)) {
@@ -169,6 +217,7 @@ async function runAccessibilityAudit() {
           const url = `http://localhost:${port}/iframe.html?id=${story.id}&viewMode=story`;
           // Higher timeout to accommodate axe-core's heavier DOM analysis
           await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
+          await page.addStyleTag({ content: FREEZE_CSS }).catch(() => {});
           // Brief wait for any post-load rendering before axe-core scans the DOM
           await page.waitForTimeout(500);
 
@@ -259,9 +308,58 @@ async function runAccessibilityAudit() {
   fs.writeFileSync(outputFile, JSON.stringify(report, null, 2));
   console.log(`\nAudit complete: ${totalViolations} total violations found`);
   console.log(`Report written to ${outputFile}`);
+
+  return report;
 }
 
-runAccessibilityAudit().catch((e) => {
-  console.error('Accessibility audit failed:', e);
-  process.exit(1);
-});
+// Read the baseline file; a missing file behaves as an empty baseline so
+// every current violation counts as new.
+function loadBaselineFile(filePath) {
+  if (!fs.existsSync(filePath)) {
+    console.warn(`Baseline file not found at ${filePath} — treating as empty`);
+    return { version: 1, entries: [] };
+  }
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+// Compare the report against the checked-in baseline (or rewrite it with
+// --update-baseline). Returns the exit code for the process.
+function applyBaselineGate(report) {
+  if (!baselineFile) return 0;
+
+  if (updateBaseline) {
+    // Merge-aware: entries for components outside this (possibly
+    // --components-scoped) run are preserved.
+    const existing = fs.existsSync(baselineFile)
+      ? JSON.parse(fs.readFileSync(baselineFile, 'utf8'))
+      : null;
+    fs.writeFileSync(
+      baselineFile,
+      JSON.stringify(buildBaseline(report, { existing }), null, 2) + '\n'
+    );
+    console.log(`Baseline written to ${baselineFile}`);
+    return 0;
+  }
+
+  const baseline = loadBaselineFile(baselineFile);
+  const diff = diffAgainstBaseline(report, baseline);
+  console.log(formatDiffSummary(diff, { baselinePath: baselineFile }));
+
+  if (diff.newViolations.length > 0 && failOnNew) {
+    console.error(
+      `\nFailing: ${diff.newViolations.length} accessibility violation(s) not in baseline.`
+    );
+    return 1;
+  }
+  return 0;
+}
+
+runAccessibilityAudit()
+  .then((report) => {
+    const code = applyBaselineGate(report);
+    if (code !== 0) process.exitCode = code;
+  })
+  .catch((e) => {
+    console.error('Accessibility audit failed:', e);
+    process.exit(1);
+  });

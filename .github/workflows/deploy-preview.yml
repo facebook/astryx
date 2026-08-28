@@ -36,7 +36,7 @@ jobs:
   deploy-preview:
     # Only for CI runs triggered by a pull request.
     if: github.event.workflow_run.event == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: write
       actions: read
@@ -148,7 +148,9 @@ jobs:
             mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}
             cp -r storybook-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
             mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
-            cp -r sandbox-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/
+            # Every preview points at the one shared main-sandbox asset copy.
+            find sandbox-dist -mindepth 1 -maxdepth 1 ! -name template-assets \
+              -exec cp -r {} /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/ \;
 
             cd /tmp/gh-pages
             git add -A

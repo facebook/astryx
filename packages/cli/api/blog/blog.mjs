@@ -28,7 +28,7 @@ import {detail} from './detail/detail.mjs';
  * The feed is always the canonical site — there is no user-supplied URL.
  *
  * @param {string} [slug]
- * @returns {Promise<import('../../types/blog').BlogListResponse | import('../../types/blog').BlogDetailResponse>}
+ * @returns {Promise<import('./blog.type.mjs').BlogListResponse | import('./blog.type.mjs').BlogDetailResponse>}
  */
 export async function blog(slug) {
   return slug ? detail(slug) : list();

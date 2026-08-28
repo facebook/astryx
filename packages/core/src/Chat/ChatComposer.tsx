@@ -20,7 +20,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/Chat.doc.mjs
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatComposer/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposer/ (block examples)
  */
 
 import React, {
@@ -152,7 +152,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     borderRadius: 'var(--_chat-composer-radius)',
     backgroundColor: colorVars['--color-background-popover'],
-    cursor: 'text',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transition: `box-shadow ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}, border-color ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
   },
   header: {
@@ -230,16 +233,16 @@ const styles = stylex.create({
     paddingBlockEnd:
       'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
     marginBlockEnd: 'calc(-1 * var(--_chat-composer-radius))',
-    borderTopLeftRadius: 'var(--_chat-composer-radius)',
-    borderTopRightRadius: 'var(--_chat-composer-radius)',
+    borderStartStartRadius: 'var(--_chat-composer-radius)',
+    borderStartEndRadius: 'var(--_chat-composer-radius)',
   },
   statusBottom: {
     paddingBlockStart:
       'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
     paddingBlockEnd: 'var(--_chat-composer-padding)',
     marginBlockStart: 'calc(-1 * var(--_chat-composer-radius))',
-    borderBottomLeftRadius: 'var(--_chat-composer-radius)',
-    borderBottomRightRadius: 'var(--_chat-composer-radius)',
+    borderEndStartRadius: 'var(--_chat-composer-radius)',
+    borderEndEndRadius: 'var(--_chat-composer-radius)',
   },
   statusError: {
     backgroundColor: colorVars['--color-error-muted'],
@@ -273,7 +276,9 @@ const elevationStyles = stylex.create({
   low: {
     boxShadow: {
       default: shadowVars['--shadow-low'],
-      ':hover': {'@media (hover: hover)': shadowVars['--shadow-med']},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        '@media (hover: hover)': shadowVars['--shadow-med'],
+      },
     },
     ':focus-within': {
       boxShadow: shadowVars['--shadow-med'],
@@ -292,9 +297,10 @@ const elevationStyles = stylex.create({
     padding: `calc(var(--_chat-composer-padding) - ${borderVars['--border-width']})`,
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': `inset 0px 0px 0px 2px color-mix(in srgb, ${colorVars['--color-border-emphasized']} 30%, transparent)`,
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': `inset 0px 0px 0px 2px color-mix(in srgb, ${colorVars['--color-border-emphasized']} 30%, transparent)`,
+        },
       ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
     },
   },

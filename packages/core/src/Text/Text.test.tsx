@@ -6,9 +6,10 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {Text} from './Text';
 import type {TextType} from './Text';
+import type {TextColor} from '../theme/types';
 
 describe('Text', () => {
   describe('rendering', () => {
@@ -20,6 +21,28 @@ describe('Text', () => {
     it('renders children correctly', () => {
       render(<Text type="body">Hello World</Text>);
       expect(screen.getByText('Hello World')).toBeInTheDocument();
+    });
+
+    it('keeps a forwarded ref attached across rerenders', () => {
+      const ref = vi.fn();
+      const {rerender} = render(
+        <Text ref={ref} type="body">
+          Before
+        </Text>,
+      );
+
+      const element = screen.getByText('Before');
+      expect(ref).toHaveBeenLastCalledWith(element);
+      ref.mockClear();
+
+      rerender(
+        <Text ref={ref} type="body">
+          After
+        </Text>,
+      );
+
+      expect(ref).not.toHaveBeenCalled();
+      expect(screen.getByText('After')).toBe(element);
     });
 
     it('renders as span by default', () => {
@@ -231,5 +254,90 @@ describe('Text custom types', () => {
       </Text>,
     );
     expect(screen.getByText('Muted').className).toContain('secondary');
+  });
+});
+
+describe('Text custom colors', () => {
+  it('renders a custom color as a stable class for theme CSS to target', () => {
+    // A theme adds a custom color (e.g. via TextColorMap augmentation +
+    // defineTheme). The rendered element carries the color as a class
+    // (astryx-text.<color>) so `.astryx-text.brand { color: ... }` from the
+    // theme applies — mirroring how custom `type`s work.
+    render(<Text color={'brand' as TextColor}>Branded</Text>);
+    const el = screen.getByText('Branded');
+    expect(el.className).toContain('astryx-text');
+    expect(el.className).toContain('brand');
+  });
+
+  it('does not crash on a custom color (falls back to the primary StyleX baseline)', () => {
+    // colorStyles has no entry for a custom color; the component must resolve a
+    // built-in baseline instead of indexing undefined. Built-in `primary` is
+    // the baseline, so both share its StyleX color class.
+    render(
+      <>
+        <Text color={'brand' as TextColor}>Custom</Text>
+        <Text color="primary">Builtin</Text>
+      </>,
+    );
+    const custom = screen.getByText('Custom');
+    const builtin = screen.getByText('Builtin');
+    // Neither throws, and the custom color reuses primary's baseline StyleX
+    // class (the real color comes from theme CSS via the `brand` class).
+    const primaryAtomic = builtin.className
+      .split(/\s+/)
+      .filter(c => c.startsWith('x'));
+    expect(primaryAtomic.length).toBeGreaterThan(0);
+    for (const cls of primaryAtomic) {
+      expect(custom.className).toContain(cls);
+    }
+  });
+
+  it('still applies built-in colors directly', () => {
+    render(<Text color="accent">Accent</Text>);
+    expect(screen.getByText('Accent').className).toContain('accent');
+  });
+});
+
+// A truncated Text rendered its own Tooltip AND set `title` with the same
+// string, so the browser drew a second, unstyled tooltip on top of ours.
+describe('truncated text shows one tooltip, not two', () => {
+  function withOverflow() {
+    const proto = window.HTMLElement.prototype;
+    const original = {
+      scrollWidth: Object.getOwnPropertyDescriptor(proto, 'scrollWidth'),
+      offsetWidth: Object.getOwnPropertyDescriptor(proto, 'offsetWidth'),
+    };
+    Object.defineProperty(proto, 'scrollWidth', {
+      configurable: true,
+      get: () => 400,
+    });
+    Object.defineProperty(proto, 'offsetWidth', {
+      configurable: true,
+      get: () => 100,
+    });
+    return () => {
+      if (original.scrollWidth) {
+        Object.defineProperty(proto, 'scrollWidth', original.scrollWidth);
+      }
+      if (original.offsetWidth) {
+        Object.defineProperty(proto, 'offsetWidth', original.offsetWidth);
+      }
+    };
+  }
+
+  it('leaves the native title to the tooltip it already renders', () => {
+    const restore = withOverflow();
+    try {
+      render(
+        <Text type="body" maxLines={1}>
+          A label far wider than the space it has been given
+        </Text>,
+      );
+      expect(
+        screen.getByText('A label far wider than the space it has been given'),
+      ).not.toHaveAttribute('title');
+    } finally {
+      restore();
+    }
   });
 });

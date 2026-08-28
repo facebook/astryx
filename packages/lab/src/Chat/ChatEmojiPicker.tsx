@@ -34,7 +34,7 @@ import {
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import type {BaseProps} from '@astryxdesign/core';
-import {mergeProps} from '@astryxdesign/core/utils';
+import {focusOutlineStyles, mergeProps} from '@astryxdesign/core/utils';
 import {themeProps} from '@astryxdesign/core/utils';
 import {Popover} from '@astryxdesign/core/Popover';
 import {TextInput} from '@astryxdesign/core/TextInput';
@@ -140,19 +140,20 @@ const styles = stylex.create({
     padding: 0,
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         default: 'transparent',
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     fontSize: 18,
     lineHeight: typeScaleVars['--text-body-leading'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: -2,
+    // Inset, not the shared offset: the cells sit in a tight 8-across grid, so
+    // an outset ring would overlap its neighbors.
+    outlineOffset: {default: '0', ':focus-visible': -2},
     transitionProperty: 'background-color',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -271,7 +272,10 @@ export function ChatEmojiPicker({
                   data-emoji={option.emoji}
                   aria-label={`React with ${option.name}`}
                   onClick={() => handleSelect(option.emoji)}
-                  {...stylex.props(styles.cell)}>
+                  {...stylex.props(
+                    focusOutlineStyles.focusVisible,
+                    styles.cell,
+                  )}>
                   <span aria-hidden="true">{option.emoji}</span>
                 </button>
               ))}

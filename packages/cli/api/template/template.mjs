@@ -5,23 +5,24 @@
  *
  * This module is BOTH the template dispatcher and the stable import surface for
  * the template family. `template()` discovers the available templates, resolves
- * the requested one, and routes to a leaf (list/show/skeleton/copy). The shared
- * discovery/IO + cross-command helpers live in `./_adapter.mjs` and are
+ * the requested one, and routes to a leaf (list/show/skeleton/copy/cdn). The shared
+ * discovery/IO + cross-command helpers live in `foundation/discovery/template-adapter.mjs` and are
  * RE-EXPORTED here so external import paths (`api/template/template.mjs`) —
  * used by component, layout, search, init, discover, validate-integration, and
  * lib/project — keep resolving unchanged.
  *
  * @position api/template — the template dispatcher + barrel; leaves live under
- *   ./list, ./show, ./skeleton, ./copy and shared discovery under ./_adapter.
+ *   ./list, ./show, ./skeleton, ./copy, ./cdn and shared discovery in foundation/discovery.
  */
 
-import {discoverAll, pkgOf} from './_adapter.mjs';
+import {discoverAll, pkgOf} from '../../foundation/discovery/template-adapter.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {templateList} from './list/list.mjs';
 import {templateShow} from './show/show.mjs';
 import {templateSkeleton} from './skeleton/skeleton.mjs';
 import {templateCopy} from './copy/copy.mjs';
+import {templateCdn} from './cdn/cdn.mjs';
 
 // Re-export the shared discovery/IO + cross-command helpers so this module
 // stays the single import surface for the template family (same exports as
@@ -37,24 +38,26 @@ export {
   findRelatedBlocks,
   findShowcase,
   extractComponents,
-} from './_adapter.mjs';
+} from '../../foundation/discovery/template-adapter.mjs';
 
 /**
- * @typedef {import('./_adapter.mjs').DiscoveredTemplate} DiscoveredTemplate
+ * @typedef {import('../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} DiscoveredTemplate
  */
 /**
- * @typedef {import('./_adapter.mjs').TemplateDiscoveryError} TemplateDiscoveryError
+ * @typedef {import('../../foundation/discovery/template-adapter.mjs').TemplateDiscoveryError} TemplateDiscoveryError
  */
 /**
- * @typedef {import('./_adapter.mjs').TemplateDocModule} TemplateDocModule
+ * @typedef {import('../../foundation/discovery/template-adapter.mjs').TemplateDocModule} TemplateDocModule
  */
 
 /**
  * @param {string} [name]
  * @param {object} [options]
  * @param {string} [options.targetPath]
+ * @param {boolean} [options.overwrite]
  * @param {boolean} [options.list]
  * @param {boolean} [options.skeleton]
+ * @param {boolean | string} [options.cdn] - Write the no-build-step CDN starter page; a string is used as the destination path.
  * @param {boolean} [options.show]
  * @param {'page'|'block'} [options.type] - Filter list views / narrow lookups by template kind.
  * @param {string} [options.package] - Narrow lookups to a specific package (id-only matches across packages are ambiguous).
@@ -66,11 +69,24 @@ export async function template(name, options = {}) {
     list = false,
     skeleton = false,
     show = false,
+    cdn = false,
     targetPath,
+    overwrite = false,
     type,
     package: packageFilter,
     cwd = process.cwd(),
   } = options;
+
+  // The CDN starter ships as an asset rather than as a discovered template, so
+  // it answers before discovery — nothing here needs a name resolved.
+  if (cdn) {
+    return templateCdn({
+      targetPath: typeof cdn === 'string' ? cdn : targetPath,
+      overwrite,
+      cwd,
+    });
+  }
+
   const templates = await discoverAll(cwd);
 
   if (list || (!name && !skeleton)) {
@@ -111,5 +127,5 @@ export async function template(name, options = {}) {
     return templateShow(match);
   }
 
-  return templateCopy(match, {targetPath, cwd});
+  return templateCopy(match, {targetPath, cwd, overwrite});
 }

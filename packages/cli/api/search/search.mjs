@@ -21,30 +21,41 @@
  *    80  name Levenshtein distance 1
  *    70  keyword substring / distance 1
  *    60  name substring (>=4 chars, >=50% coverage)
+ *    60  exact weak-keyword match
  *    50  description / prose mentions the term
  *    40  name Levenshtein distance 2
+ *    40  weak-keyword substring
  *    30  keyword Levenshtein distance 2
  *    20  name Levenshtein distance 3
  *
  * Name + keyword signals always outweigh description/prose, so an exact match
  * sorts above an incidental mention.
+ *
+ * `keywords` carry AUTHORED intent — a block's `componentsUsed`, a page's
+ * `category` words. `weakKeywords` are DERIVED: the components a page template
+ * happens to render, scraped out of its JSX. Derived signal is deliberately
+ * capped below the confident-match gate on its own, because breadth is not
+ * relevance. At full keyword strength every rendered component is an
+ * independent 90-point shot with no penalty for how many a template has, so
+ * the broadest pages (a theme showcase rendering one of everything) win
+ * queries they have nothing to do with.
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {findCoreDir, CLI_ROOT} from '../../utils/paths.mjs';
+import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
+  discoverIntegrationComponents,
   findComponentReadme,
   resolveImportPath,
-} from '../../lib/component-discovery.mjs';
-import {discoverHooks, findHookDoc} from '../../lib/hook-discovery.mjs';
-import {levenshteinDistance} from '../../lib/string-utils.mjs';
+} from '../../foundation/discovery/component-discovery.mjs';
+import {discoverHooks, findHookDoc} from '../../foundation/discovery/hook-discovery.mjs';
+import {loadIntegrationsSafely} from '../component/_adapter.mjs';
+import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
+import {loadDocsCatalog, loadTopicDoc} from '../docs/_adapter.mjs';
 import {AstryxError} from '../error.mjs';
-
-const DOCS_DIR = path.join(CLI_ROOT, 'docs');
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /**
  * A search candidate gathered from one content domain. Extra underscore-
@@ -53,6 +64,7 @@ const DOCS_DIR = path.join(CLI_ROOT, 'docs');
  * @property {'component'|'hook'|'doc'|'template'} domain
  * @property {string} name
  * @property {string[]} [keywords]
+ * @property {string[]} [weakKeywords]
  * @property {string} [description]
  * @property {string[]} [prose]
  * @property {string} [_import]
@@ -222,28 +234,39 @@ export function scoreQuery(term, tokens, candidate) {
 
   // Multi-word natural language: score each content token, counting only
   // strong hits, then reward coverage so candidates matching more terms win.
-  let sum = 0;
+  let strongest = 0;
   let matched = 0;
   /** @type {string[]} */
   const hitTerms = [];
   for (const tok of tokens) {
     const h = bestForToken(tok, candidate);
     if (h && h.score >= MIN_TOKEN_SCORE) {
-      sum += h.score;
+      if (h.score > strongest) strongest = h.score;
       matched++;
       hitTerms.push(tok);
     }
   }
   if (matched === 0) return full;
 
-  // Reward the AVERAGE strength of the concepts that matched (not divided by
-  // total query length — that penalizes verbose / low-fidelity prompts), plus
-  // a bonus per additional matched concept and a coverage term. A candidate
-  // that matches several of the query's concepts beats one matching a single
-  // incidental word.
-  const avgMatched = sum / matched;
+  // Base the score on the STRONGEST concept that matched, plus a bonus per
+  // additional matched concept and a coverage term.
+  //
+  // Deliberately not the mean, and deliberately not divided by total query
+  // length. Dividing by total length penalizes verbose / low-fidelity prompts.
+  // Dividing by the number of MATCHED tokens (what this used to do) made the
+  // score non-monotonic: a second, weaker hit could drag the mean down by more
+  // than the coverage bonus added it back, so matching fewer terms well beat
+  // matching more terms partially. Concretely, `build "file browser"` scored
+  // two form wizards matching only "file" at 98, above the actual file browser
+  // matching both terms at 97 — and 98 clears the PAGE_DIRECT gate, so the
+  // wrong template was returned as a confident match.
+  //
+  // Taking the max keeps both properties: a verbose prompt is still scored on
+  // the concepts it did hit, and matching a superset of another candidate's
+  // terms can never score lower, since every term of the expression is
+  // non-decreasing in the set of matched tokens.
   const coverage = matched / tokens.length;
-  const tokenScore = Math.round(avgMatched + Math.min(matched - 1, 3) * 12 + coverage * 15);
+  const tokenScore = Math.round(strongest + Math.min(matched - 1, 3) * 12 + coverage * 15);
 
   if (full && full.score >= tokenScore) return full;
   return {
@@ -260,12 +283,16 @@ export function scoreQuery(term, tokens, candidate) {
  * @param {string} term - Lowercased search term.
  * @param {object} candidate
  * @param {string} candidate.name - Primary identifier (component/hook name, topic, template name).
- * @param {string[]} [candidate.keywords]
+ * @param {string[]} [candidate.keywords] - Authored intent (componentsUsed, category words).
+ * @param {string[]} [candidate.weakKeywords] - Derived signal (components a page renders).
  * @param {string} [candidate.description]
  * @param {string[]} [candidate.prose] - Extra free-text blobs (doc section text, best practices).
  * @returns {{score: number, reason: string} | null}
  */
-export function scoreCandidate(term, {name, keywords = [], description = '', prose = []}) {
+export function scoreCandidate(
+  term,
+  {name, keywords = [], weakKeywords = [], description = '', prose = []},
+) {
   let best = 0;
   let reason = '';
   /**
@@ -314,6 +341,24 @@ export function scoreCandidate(term, {name, keywords = [], description = '', pro
     else if (dist === 2) consider(30, `keyword "${kw}" (distance ${dist})`);
   }
 
+  // ── Weak keyword signals (derived, not authored) ─────────────────
+  // Capped at 60 so one incidental component match cannot clear the
+  // confident-match gate on its own; it still counts toward multi-term
+  // coverage, which is where "this page renders that" is real evidence.
+  // No Levenshtein tier — fuzzy matching a derived signal is pure noise.
+  for (const kw of weakKeywords) {
+    const kwLower = String(kw).toLowerCase();
+    if (kwLower === term) {
+      consider(60, `renders ${kw}`);
+      continue;
+    }
+    const s = term.length < kwLower.length ? term : kwLower;
+    const l = term.length < kwLower.length ? kwLower : term;
+    if (s.length >= 4 && l.includes(s) && s.length / l.length >= 0.5) {
+      consider(40, `renders ${kw}`);
+    }
+  }
+
   // ── Prose / description signals (stem-tolerant whole word) ──────
   // Match the term's stem as a whole word, tolerating plural/gerund suffixes
   // so "chart" matches "charts" and "filter" matches "filtering".
@@ -352,12 +397,12 @@ async function loadModuleDoc(docPath, exportName = 'docs') {
 }
 
 /**
- * Build component candidates: name + keywords + usage/description from the
- * component's .doc.mjs.
+ * Build component candidates from core's own tree: name + keywords +
+ * usage/description from the component's .doc.mjs.
  * @param {string} coreDir
  * @returns {Promise<Candidate[]>}
  */
-async function gatherComponents(coreDir) {
+async function gatherCoreComponents(coreDir) {
   const grouped = discoverComponents(coreDir);
   const names = Object.values(grouped).flat();
   /** @type {Candidate[]} */
@@ -383,6 +428,50 @@ async function gatherComponents(coreDir) {
     });
   }
   return candidates;
+}
+
+/**
+ * Build component candidates contributed by the project's configured
+ * integrations (astryx.config's `integrations`): name + keywords +
+ * usage/description from each component's .doc.mjs, same as core. Without
+ * this, an integration component is invisible to `search`/`build` even
+ * though `component --list`/`component <Name>` already resolve it — the two
+ * discovery paths silently disagreed.
+ * @param {string} cwd
+ * @returns {Promise<Candidate[]>}
+ */
+async function gatherIntegrationComponents(cwd) {
+  const loadedIntegrations = await loadIntegrationsSafely(cwd);
+  /** @type {Candidate[]} */
+  const candidates = [];
+  for (const integration of loadedIntegrations) {
+    for (const rec of discoverIntegrationComponents(integration)) {
+      const doc = await loadModuleDoc(rec.docPath);
+      candidates.push({
+        domain: 'component',
+        name: rec.name,
+        keywords: doc && Array.isArray(doc.keywords) ? doc.keywords : [],
+        description: doc ? doc.usage?.description || doc.description || '' : '',
+        _import: rec.package,
+      });
+    }
+  }
+  return candidates;
+}
+
+/**
+ * Build component candidates: core's own tree plus every configured
+ * integration's components.
+ * @param {string} coreDir
+ * @param {string} cwd
+ * @returns {Promise<Candidate[]>}
+ */
+async function gatherComponents(coreDir, cwd) {
+  const [core, integrations] = await Promise.all([
+    gatherCoreComponents(coreDir),
+    gatherIntegrationComponents(cwd),
+  ]);
+  return [...core, ...integrations];
 }
 
 /**
@@ -423,17 +512,31 @@ async function gatherHooks(coreDir) {
 
 /**
  * Build doc-topic candidates: topic name + description + section prose.
+ *
+ * Reads the project's catalog rather than the CLI's own docs directory, so a
+ * topic an integration contributed (or replaced) is searchable exactly like a
+ * built-in one — otherwise the replacement is served by `astryx docs` but
+ * invisible to the command whose job is finding it.
+ * @param {string} cwd
  * @returns {Promise<Candidate[]>}
  */
-async function gatherDocs() {
-  if (!fs.existsSync(DOCS_DIR)) return [];
+async function gatherDocs(cwd) {
   /** @type {Candidate[]} */
   const candidates = [];
-  for (const file of fs.readdirSync(DOCS_DIR)) {
-    const match = file.match(/^([\w-]+)\.doc\.mjs$/);
-    if (!match) continue;
-    const topic = match[1];
-    const doc = await loadModuleDoc(path.join(DOCS_DIR, file));
+  let entries;
+  try {
+    entries = (await loadDocsCatalog(cwd)).entries();
+  } catch {
+    return candidates;
+  }
+  for (const entry of entries) {
+    let doc = null;
+    try {
+      doc = await loadTopicDoc(entry);
+    } catch {
+      // A topic that cannot be loaded is reported by the commands that own
+      // integration issues; search just cannot index it.
+    }
     let description = '';
     /** @type {string[]} */
     const prose = [];
@@ -448,11 +551,11 @@ async function gatherDocs() {
     }
     candidates.push({
       domain: 'doc',
-      name: topic,
+      name: entry.name,
       keywords: [],
       description,
       prose,
-      _title: doc?.title || topic,
+      _title: doc?.title || entry.title || entry.name,
     });
   }
   return candidates;
@@ -471,24 +574,33 @@ async function gatherTemplates(cwd) {
     return [];
   }
   return templates.map(t => {
-    // Blocks ship componentsUsed; page templates don't, so derive them from the
-    // source. Category words (e.g. "Dashboard - Analytics") are strong intent
-    // signal for pages, which otherwise only index on name + description.
-    let keywords = Array.isArray(t.componentsUsed) ? [...t.componentsUsed] : [];
+    // Blocks ship an authored componentsUsed; page templates don't, so derive
+    // them from the source. Category words (e.g. "Dashboard - Analytics") are
+    // strong intent signal for pages, which otherwise only index on name +
+    // description.
+    //
+    // Authored signal and derived signal are kept apart: componentsUsed and
+    // category words are a deliberate statement of what the template is for,
+    // while scraped JSX tags only say what it happens to render. See the
+    // scoring table at the top of this file for why the derived set is capped.
+    const keywords = Array.isArray(t.componentsUsed) ? [...t.componentsUsed] : [];
+    /** @type {string[]} */
+    let weakKeywords = [];
     if (t.type === 'page') {
       if (t.filePath) {
         try {
-          keywords = keywords.concat(extractComponents(t.filePath));
+          weakKeywords = extractComponents(t.filePath);
         } catch {
           // Best-effort: skip keyword enrichment if the source can't be read.
         }
       }
-      if (t.category) keywords = keywords.concat(t.category.split(/[^A-Za-z0-9]+/).filter(Boolean));
+      if (t.category) keywords.push(...t.category.split(/[^A-Za-z0-9]+/).filter(Boolean));
     }
     return {
       domain: 'template',
       name: t.dirName,
       keywords,
+      weakKeywords,
       description: t.description || '',
       _displayName: t.name,
       _kind: t.type, // 'page' | 'block'
@@ -558,15 +670,32 @@ export async function search(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 20} = options;
 
   if (!query || !String(query).trim()) {
-    throw new AstryxError('A search query is required', [
-      {name: 'astryx search button', reason: 'example'},
-    ]);
+    throw new AstryxError(
+      'A search query is required',
+      [{name: 'astryx search button', reason: 'example'}],
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
   }
 
   if (type && !SEARCH_DOMAINS.includes(type)) {
     throw new AstryxError(
       `Unknown --type "${type}"`,
       SEARCH_DOMAINS.map(d => ({name: d, reason: 'valid type'})),
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+
+  // Validate limit here (not just in the CLI) so direct API callers get the same
+  // contract: a non-positive or non-integer limit is an error, never a silent
+  // "return everything". (Previously `limit <= 0` fell through to the full set.)
+  if (
+    limit != null &&
+    (!Number.isInteger(limit) || limit <= 0)
+  ) {
+    throw new AstryxError(
+      `Invalid limit "${limit}". Must be a positive integer.`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
 
@@ -582,9 +711,9 @@ export async function search(query, options = {}) {
   /** @param {string} d */
   const wants = d => !type || type === d;
   const [components, hooks, docTopics, templates] = await Promise.all([
-    wants('component') ? gatherComponents(coreDir) : [],
+    wants('component') ? gatherComponents(coreDir, cwd) : [],
     wants('hook') ? gatherHooks(coreDir) : [],
-    wants('doc') ? gatherDocs() : [],
+    wants('doc') ? gatherDocs(cwd) : [],
     wants('template') ? gatherTemplates(cwd) : [],
   ]);
 
@@ -610,7 +739,7 @@ export async function search(query, options = {}) {
       a.name.localeCompare(b.name),
   );
 
-  const limited = limit > 0 ? scored.slice(0, limit) : scored;
+  const limited = scored.slice(0, limit);
 
   return {type: 'search', data: {query: String(query).trim(), results: limited}};
 }

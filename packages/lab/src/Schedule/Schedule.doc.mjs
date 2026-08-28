@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Schedule',
@@ -10,7 +10,7 @@ export const docs = {
 
   usage: {
     description:
-      'Schedule is a read-only calendar surface that renders events as a month grid, a day or week time grid, or a list grouped by day — the layout comes from a view object you pass in. It handles timezone-aware date math, paging between ranges, and async event loading, and exposes header slots that plugins fill with navigation controls. Use it to display an existing schedule; it has no event selection, creation, or editing affordances.',
+      'Schedule is a read-only calendar surface that renders events as a month grid, a day or week time grid, or a list grouped by day: the layout comes from a view object you pass in. It handles timezone-aware date math, paging between ranges, and async event loading, and exposes header slots that plugins fill with navigation controls. Use it to display an existing schedule; it has no event selection, creation, or editing affordances.',
     bestPractices: [
       {
         guidance: true,
@@ -25,12 +25,17 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Wrap Schedule in InternationalizationProvider to choose the language, numbering, and field order used by its date and time labels. Schedule date values and calendar arithmetic remain Gregorian for every locale.',
+      },
+      {
+        guidance: true,
+        description:
           'Give each event a category string that matches a categories entry so its color is meaningful and screen readers announce the category name. An unmatched name still renders, but always in blue.',
       },
       {
         guidance: false,
         description:
-          'Reach for Schedule when the user has to pick a date. It has no selection model — use DateInput, DateRangeInput, or Calendar instead.',
+          'Reach for Schedule when the user has to pick a date. It has no selection model; use DateInput, DateRangeInput, or Calendar instead.',
       },
       {
         guidance: false,
@@ -40,7 +45,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Pass a custom plugins array without re-adding the pagination plugin unless you deliberately want no navigation controls — a custom array replaces the default set rather than extending it.',
+          'Pass a custom plugins array without re-adding the pagination plugin unless you deliberately want no navigation controls; a custom array replaces the default set rather than extending it.',
       },
     ],
     anatomy: [
@@ -101,7 +106,7 @@ export const docs = {
       name: 'events',
       type: 'ReadonlyArray<CalendarEvent> | ((start: Instant, end: Instant) => Promise<ReadonlyArray<CalendarEvent>>)',
       description:
-        "Either a static array, filtered to the events overlapping the rendered range and sorted by start, or a loader called with that range's start and end epoch milliseconds. A loader suspends while pending — the header shows a spinner and the view renders empty. Results are cached per loader identity and range, so keep the loader reference stable (useCallback) or every re-render refetches.",
+        "Either a static array, filtered to the events overlapping the rendered range and sorted by start, or a loader called with that range's start and end epoch milliseconds. A loader suspends while pending; the header shows a spinner and the view renders empty. Results are cached per loader identity and range, so keep the loader reference stable (useCallback) or every re-render refetches.",
       required: true,
     },
     {
@@ -115,7 +120,7 @@ export const docs = {
       name: 'date',
       type: 'Instant',
       description:
-        'Unix epoch milliseconds anywhere inside the range to render; the view expands it to a full month, week, day, or list window. Fully controlled — Schedule never changes it, so pair it with onChangeDate.',
+        'Unix epoch milliseconds anywhere inside the range to render; the view expands it to a full month, week, day, or list window. Fully controlled; Schedule never changes it, so pair it with onChangeDate.',
       required: true,
     },
     {
@@ -129,7 +134,7 @@ export const docs = {
       name: 'onChangeDate',
       type: '(date: Instant) => void',
       description:
-        "Called with the epoch milliseconds to render next when a pagination plugin pages backward or forward, or when Today is pressed. Paging preserves the time of day; Today passes the current time. This is the component's only callback — there is no event-level interaction.",
+        "Called with the epoch milliseconds to render next when a pagination plugin pages backward or forward, or when Today is pressed. Paging preserves the time of day; Today passes the current time. This is the component's only callback; there is no event-level interaction.",
     },
     {
       name: 'timezoneID',
@@ -142,14 +147,14 @@ export const docs = {
       name: 'plugins',
       type: 'ReadonlyArray<SchedulePlugin>',
       description:
-        'Header plugins, applied in order; each may wrap or replace the start, center, and end header content. Supplying an array replaces the default pagination controls — compose useSchedulePaginationPlugin and useScheduleViewSelectorPlugin to keep both.',
+        'Header plugins, applied in order; each may wrap or replace the start, center, and end header content. Supplying an array replaces the default pagination controls; compose useSchedulePaginationPlugin and useScheduleViewSelectorPlugin to keep both.',
       default: 'defaultSchedulePlugins',
     },
     {
       name: 'headingLevel',
       type: '2 | 3 | 4 | 5 | 6',
       description:
-        'Heading level for sub-headings inside the schedule — the weekday and day column headers in the grid views, and the day headings in the list view — so the schedule nests correctly under the surrounding page outline. The header range title is always a level-2 heading.',
+        'Heading level for sub-headings inside the schedule (the weekday and day column headers in the grid views, and the day headings in the list view), so the schedule nests correctly under the surrounding page outline. The header range title is always a level-2 heading.',
       default: '3',
     },
   ],
