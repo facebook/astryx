@@ -14,6 +14,9 @@
 export {PowerSearch} from './PowerSearch';
 export type {PowerSearchProps, PowerSearchSize} from './PowerSearch';
 
+export {PowerSearchMobile} from './PowerSearchMobile';
+export type {PowerSearchMobileProps} from './PowerSearchMobile';
+
 export {PowerSearchToken} from './PowerSearchToken';
 export {PowerSearchFilterEditor} from './PowerSearchFilterEditor';
 
