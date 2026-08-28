@@ -946,6 +946,157 @@ function StatusConsumerTable() {
   );
 }
 
+type StatusIndicatorAudit = ReturnType<typeof getStatusIndicatorContrast>;
+
+function ComponentContrastTable({
+  component,
+  rows,
+}: {
+  component: string;
+  rows: StatusIndicatorAudit['consumers'];
+}) {
+  return (
+    <div style={{overflowX: 'auto', marginTop: 14}}>
+      <table
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          fontSize: 10,
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+        <thead>
+          <tr>
+            {['Measure', 'Relationship', 'Worst ratio', 'Result'].map(label => (
+              <th
+                key={label}
+                style={{
+                  padding: '6px 7px',
+                  borderBottom: '1px solid var(--color-border)',
+                  textAlign: label === 'Worst ratio' ? 'right' : 'left',
+                }}>
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(row => {
+            const passes = row.ratio != null && row.ratio >= row.minimum;
+            const measure =
+              row.consumer === component
+                ? 'Overall'
+                : row.consumer.replace(`${component} `, '');
+            return (
+              <tr key={row.consumer}>
+                <td style={{padding: '7px'}}>{measure}</td>
+                <td style={{padding: '7px'}}>{row.relationship}</td>
+                <td style={{padding: '7px', textAlign: 'right'}}>
+                  {row.ratio == null ? '—' : `${row.ratio.toFixed(2)}:1`}
+                </td>
+                <td
+                  style={{
+                    padding: '7px',
+                    color: passes
+                      ? 'var(--color-success)'
+                      : 'var(--color-error)',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                  }}>
+                  {passes ? 'Pass' : 'Fail'} ≥{row.minimum}:1
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {rows.map(row => (
+        <p
+          key={`${row.consumer}-semantics`}
+          style={{
+            margin: '6px 7px 0',
+            color: row.semanticsPass
+              ? 'var(--color-success)'
+              : 'var(--color-error)',
+            fontSize: 10,
+            lineHeight: 1.4,
+            fontWeight: 700,
+          }}>
+          {row.semantics}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function StatusDotContrastTable({
+  rows,
+}: {
+  rows: StatusIndicatorAudit['statusDots'];
+}) {
+  return (
+    <div style={{overflowX: 'auto', marginTop: 14}}>
+      <table
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          fontSize: 10,
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+        <thead>
+          <tr>
+            {['Variant', 'Plate / parent', 'Mark / plate', 'Standalone'].map(
+              label => (
+                <th
+                  key={label}
+                  style={{
+                    padding: '6px 7px',
+                    borderBottom: '1px solid var(--color-border)',
+                    textAlign:
+                      label === 'Plate / parent' || label === 'Mark / plate'
+                        ? 'right'
+                        : 'left',
+                  }}>
+                  {label}
+                </th>
+              ),
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(row => {
+            const passes = row.plateRatio != null && row.plateRatio >= 3;
+            return (
+              <tr key={row.variant}>
+                <td style={{padding: '7px'}}>{row.name}</td>
+                <td style={{padding: '7px', textAlign: 'right'}}>
+                  {row.plateRatio == null
+                    ? '—'
+                    : `${row.plateRatio.toFixed(2)}:1`}
+                </td>
+                <td style={{padding: '7px', textAlign: 'right'}}>
+                  {row.markRatio == null
+                    ? '—'
+                    : `${row.markRatio.toFixed(2)}:1`}
+                </td>
+                <td
+                  style={{
+                    padding: '7px',
+                    color: passes
+                      ? 'var(--color-success)'
+                      : 'var(--color-warning)',
+                    fontWeight: 700,
+                  }}>
+                  {passes ? 'Binary cue passes' : 'Needs label or mark'}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function StatusIndicatorSection({
   theme,
   mode,
@@ -954,6 +1105,11 @@ function StatusIndicatorSection({
   mode: Mode;
 }) {
   const audit = getStatusIndicatorContrast(theme, mode);
+  const consumersFor = (component: string) =>
+    audit.consumers.filter(
+      row =>
+        row.consumer === component || row.consumer.startsWith(`${component} `),
+    );
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Status indicators</h3>
@@ -1037,6 +1193,7 @@ function StatusIndicatorSection({
         }}>
         <div
           style={{
+            gridColumn: '1 / -1',
             padding: 16,
             border: '1px solid var(--color-border)',
             borderRadius: 10,
@@ -1053,6 +1210,18 @@ function StatusIndicatorSection({
               />
             ))}
           </HStack>
+          <StatusDotContrastTable rows={audit.statusDots} />
+          <p
+            style={{
+              margin: '8px 7px 0',
+              color: 'var(--color-text-secondary)',
+              fontSize: 10,
+              lineHeight: 1.45,
+            }}>
+            A plain standalone dot only passes as a binary present/absent cue
+            when its plate reaches 3:1 against the parent. Otherwise pair it
+            with visible status text or a distinct custom mark.
+          </p>
         </div>
 
         <div
@@ -1076,6 +1245,10 @@ function StatusIndicatorSection({
               </VStack>
             ))}
           </HStack>
+          <ComponentContrastTable
+            component="AvatarStatusDot"
+            rows={consumersFor('AvatarStatusDot')}
+          />
         </div>
 
         <div
@@ -1095,6 +1268,10 @@ function StatusIndicatorSection({
             <Step step={2} label="Blocked" status="error" />
             <Step step={3} label="Current" status="accent" />
           </Stepper>
+          <ComponentContrastTable
+            component="Stepper"
+            rows={consumersFor('Stepper')}
+          />
         </div>
 
         <div
@@ -1109,6 +1286,10 @@ function StatusIndicatorSection({
           }}>
           <div style={buttonRowLabelStyle}>Table row status</div>
           <StatusConsumerTable />
+          <ComponentContrastTable
+            component="Table row status"
+            rows={consumersFor('Table row status')}
+          />
         </div>
 
         <div
@@ -1129,6 +1310,10 @@ function StatusIndicatorSection({
               ),
             )}
           </div>
+          <ComponentContrastTable
+            component="ChatMessageMetadata"
+            rows={consumersFor('ChatMessageMetadata')}
+          />
         </div>
 
         <div
@@ -1156,6 +1341,10 @@ function StatusIndicatorSection({
                 errorMessage: 'Example failure state',
               },
             ]}
+          />
+          <ComponentContrastTable
+            component="ChatToolCalls"
+            rows={consumersFor('ChatToolCalls')}
           />
         </div>
       </div>
@@ -1294,194 +1483,6 @@ function StatusIndicatorSection({
         }}>
         In every example above, the status name is hidden from sighted users.
         Add visible status text or a distinct shape when the state matters.
-      </p>
-
-      <h4 style={{margin: '28px 0 6px', fontSize: 14}}>Contrast evaluation</h4>
-      <p
-        style={{
-          margin: '0 0 10px',
-          color: 'var(--color-text-secondary)',
-          fontSize: 10,
-          lineHeight: 1.5,
-        }}>
-        Measurements are listed separately from the rendered components so the
-        visual review and the WCAG decision do not compete for space.
-      </p>
-
-      <div style={{overflowX: 'auto'}}>
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            fontSize: 11,
-            fontVariantNumeric: 'tabular-nums',
-          }}>
-          <thead>
-            <tr>
-              {[
-                'StatusDot',
-                'Plate / parent',
-                'Custom mark / plate',
-                'Standalone use',
-              ].map(label => (
-                <th
-                  key={label}
-                  style={{
-                    padding: '7px 8px',
-                    borderBottom: '1px solid var(--color-border)',
-                    textAlign:
-                      label === 'Plate / parent' ||
-                      label === 'Custom mark / plate'
-                        ? 'right'
-                        : 'left',
-                  }}>
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {audit.statusDots.map(row => {
-              const standalonePasses =
-                row.plateRatio != null && row.plateRatio >= 3;
-              return (
-                <tr key={row.variant}>
-                  <td style={{padding: '8px'}}>{row.name}</td>
-                  <td style={{padding: '8px', textAlign: 'right'}}>
-                    {row.plateRatio == null
-                      ? '—'
-                      : `${row.plateRatio.toFixed(2)}:1`}
-                  </td>
-                  <td style={{padding: '8px', textAlign: 'right'}}>
-                    {row.markRatio == null
-                      ? '—'
-                      : `${row.markRatio.toFixed(2)}:1`}
-                  </td>
-                  <td
-                    style={{
-                      padding: '8px',
-                      color: standalonePasses
-                        ? 'var(--color-success)'
-                        : 'var(--color-warning)',
-                      fontWeight: 700,
-                    }}>
-                    {standalonePasses
-                      ? 'Passes as a binary cue'
-                      : 'Needs a label or custom mark'}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <p
-        style={{
-          margin: '8px 0 18px',
-          color: 'var(--color-text-secondary)',
-          fontSize: 10,
-          lineHeight: 1.5,
-        }}>
-        StatusDot does not add an icon by default. With adjacent visible text,
-        the plate is redundant and the text carries the status. The custom-icon
-        slot is audited separately by the “custom mark / plate” ratio. A plain
-        standalone dot is only sufficient for a binary present/absent cue and
-        then its plate must reach 3:1 against the parent; an accessible name
-        alone does not fix color-only meaning for sighted users.
-      </p>
-
-      <h4 style={{margin: '22px 0 6px', fontSize: 14}}>
-        Consumer requirements
-      </h4>
-      <div style={{overflowX: 'auto'}}>
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            fontSize: 11,
-            fontVariantNumeric: 'tabular-nums',
-          }}>
-          <thead>
-            <tr>
-              {[
-                'Consumer',
-                'Meaningful relationship',
-                'Worst ratio',
-                'Contrast',
-                'Semantics',
-              ].map(label => (
-                <th
-                  key={label}
-                  style={{
-                    padding: '7px 8px',
-                    borderBottom: '1px solid var(--color-border)',
-                    textAlign: label === 'Worst ratio' ? 'right' : 'left',
-                  }}>
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {audit.consumers.map(row => {
-              const passes = row.ratio != null && row.ratio >= row.minimum;
-              return (
-                <tr key={row.consumer}>
-                  <td style={{padding: '8px'}}>{row.consumer}</td>
-                  <td style={{padding: '8px'}}>{row.relationship}</td>
-                  <td style={{padding: '8px', textAlign: 'right'}}>
-                    {row.ratio == null ? '—' : `${row.ratio.toFixed(2)}:1`}
-                  </td>
-                  <td
-                    style={{
-                      padding: '8px',
-                      color: passes
-                        ? 'var(--color-success)'
-                        : 'var(--color-error)',
-                      fontWeight: 700,
-                    }}>
-                    {passes ? 'Pass' : 'Fail'} ≥{row.minimum}:1
-                  </td>
-                  <td
-                    style={{
-                      padding: '8px',
-                      color: row.semanticsPass
-                        ? 'var(--color-success)'
-                        : 'var(--color-error)',
-                      fontWeight: 700,
-                    }}>
-                    {row.semantics}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <p
-        style={{
-          margin: '8px 0 0',
-          color: 'var(--color-text-secondary)',
-          fontSize: 10,
-          lineHeight: 1.5,
-        }}>
-        AvatarStatusDot uses fill, ring, and minus shapes so status is not color
-        alone. Table row status should use distinct icons when several statuses
-        coexist; its required accessible label does not provide a visible
-        non-color cue. Stepper status glyphs are visually meaningful even though
-        hidden from assistive technology, which receives equivalent status text.
-        Chat metadata includes visible text, so its 4.5:1 text result is the
-        controlling requirement and the repeated icon is redundant.
-        ChatToolCalls currently exposes error detail, while pending, running,
-        and complete rely on their icon or generic Spinner name; those states
-        need an explicit accessible status in a separate component fix. When a
-        StatusDot or Badge is supplied through Button, Tab, SideNavHeading, or
-        TopNavHeading end content, remeasure it against every host background
-        and interaction state; slot ownership is not a contrast exception. The
-        table-row plugin exposes separate dot and icon theme targets: semantic
-        dots use the shared fill role, while backgroundless semantic icons use
-        the shared graphic role.
       </p>
     </div>
   );
