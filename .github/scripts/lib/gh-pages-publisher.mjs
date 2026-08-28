@@ -497,6 +497,7 @@ function checkoutPages({
   tempRoot,
   sparsePaths = [],
   noCheckout = false,
+  fullHistory = false,
   prefix = 'gh-pages-',
   remoteURL: configuredRemoteURL,
 }) {
@@ -504,12 +505,14 @@ function checkoutPages({
   const args = [
     'clone',
     '--quiet',
-    '--depth=1',
     '--filter=blob:none',
     '--single-branch',
     '--branch',
     PAGES_BRANCH,
   ];
+  if (!fullHistory) {
+    args.push('--depth=1');
+  }
   if (noCheckout) {
     args.push('--no-checkout');
   } else if (sparsePaths.length > 0) {
@@ -1533,6 +1536,536 @@ export async function publishManualVisualBaseline({
   refuse(`could not push the updated baseline after ${maxAttempts} attempts`);
 }
 
+function removeContents(destination) {
+  fs.rmSync(destination, {recursive: true, force: true});
+  fs.mkdirSync(destination, {recursive: true});
+}
+
+export async function publishPrPreview({
+  repository,
+  token,
+  tempRoot,
+  remoteURL,
+  pr,
+  storybook,
+  sandbox,
+  maxAttempts = 5,
+  beforePush,
+}) {
+  const prNumber = Number(pr);
+  if (!Number.isSafeInteger(prNumber) || prNumber <= 0) {
+    refuse('PR number is invalid');
+  }
+  const storybookDir = path.resolve(storybook);
+  const sandboxDir = path.resolve(sandbox);
+  for (const [name, dir] of [
+    ['--storybook', storybookDir],
+    ['--sandbox', sandboxDir],
+  ]) {
+    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+      refuse(`${name} must be a directory`);
+    }
+  }
+  const destinationRel = `pr/${prNumber}`;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const checkout = checkoutPages({
+      repository,
+      token,
+      tempRoot,
+      remoteURL,
+      sparsePaths: [destinationRel],
+      prefix: 'gh-pages-preview-',
+    });
+    try {
+      const destination = path.join(checkout, destinationRel);
+      removeContents(destination);
+      copyContents(storybookDir, destination);
+      fs.mkdirSync(path.join(destination, 'sandbox'), {recursive: true});
+      for (const entry of fs.readdirSync(sandboxDir, {withFileTypes: true})) {
+        if (entry.name === 'template-assets') continue;
+        fs.cpSync(
+          path.join(sandboxDir, entry.name),
+          path.join(destination, 'sandbox', entry.name),
+          {recursive: true, force: true},
+        );
+      }
+      const commit = commitIfNeeded(
+        checkout,
+        `Deploy PR #${prNumber} preview`,
+        ['-A', destinationRel],
+      );
+      if (commit === null) {
+        process.stdout.write('Nothing to publish.\n');
+        return {published: false};
+      }
+      await beforePush?.({attempt, checkout, commit});
+      const pushed = tryRun('git', [
+        '-C',
+        checkout,
+        'push',
+        'origin',
+        PAGES_BRANCH,
+      ]);
+      if (pushOrRetry(pushed)) {
+        process.stdout.write(`Deployed PR #${prNumber} preview.\n`);
+        return {published: true, commit};
+      }
+    } finally {
+      fs.rmSync(checkout, {recursive: true, force: true});
+    }
+    process.stdout.write(
+      `Push rejected; retrying PR preview publish (${attempt}/${maxAttempts}).\n`,
+    );
+    await sleep(attempt * 2000);
+  }
+  refuse(
+    `could not publish PR #${prNumber} preview after ${maxAttempts} attempts`,
+  );
+}
+
+function listOpenPRsFromGitHub(repository) {
+  const result = run('gh', [
+    'pr',
+    'list',
+    '--repo',
+    repository,
+    '--state',
+    'open',
+    '--limit',
+    '1000',
+    '--json',
+    'number',
+    '--jq',
+    '.[].number',
+  ]);
+  return new Set(
+    result
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(value => String(Number(value)))
+      .filter(value => value !== 'NaN'),
+  );
+}
+
+function isSevenHex(value) {
+  return /^[0-9a-f]{7}$/.test(value);
+}
+
+function reportScreenshotIsOld(
+  checkout,
+  screenshotsDir,
+  now = Number(process.env.ASTRYX_GH_PAGES_NOW_MS) || Date.now(),
+) {
+  const cutoffSeconds = Math.floor(now / 1000) - 30 * 24 * 60 * 60;
+  const result = tryRun('git', [
+    '-C',
+    checkout,
+    'log',
+    '-1',
+    '--format=%ct',
+    '--',
+    screenshotsDir,
+  ]);
+  if (result.status !== 0) return false;
+  const timestamp = Number(result.stdout.trim());
+  return (
+    Number.isFinite(timestamp) && timestamp > 0 && timestamp < cutoffSeconds
+  );
+}
+
+export async function cleanupPreviews({
+  repository,
+  token,
+  tempRoot,
+  remoteURL,
+  dryRun = false,
+  openPRs,
+  now,
+  maxAttempts = 5,
+  beforePush,
+}) {
+  const open =
+    openPRs instanceof Set ? openPRs : listOpenPRsFromGitHub(repository);
+  if (open.size === 0) {
+    process.stdout.write('No confirmed open PR list; skipping cleanup.\n');
+    return {deleted: 0, skipped: true};
+  }
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const checkout = checkoutPages({
+      repository,
+      token,
+      tempRoot,
+      remoteURL,
+      fullHistory: true,
+      prefix: 'gh-pages-cleanup-',
+    });
+    try {
+      const deleted = [];
+      for (const entry of fs.readdirSync(checkout, {withFileTypes: true})) {
+        if (entry.isDirectory() && isSevenHex(entry.name))
+          deleted.push(entry.name);
+      }
+      const prRoot = path.join(checkout, 'pr');
+      if (fs.existsSync(prRoot)) {
+        for (const entry of fs.readdirSync(prRoot, {withFileTypes: true})) {
+          if (!entry.isDirectory()) continue;
+          if (!open.has(entry.name))
+            deleted.push(path.posix.join('pr', entry.name));
+          const templateAssets = path.join(
+            prRoot,
+            entry.name,
+            'sandbox',
+            'template-assets',
+          );
+          if (fs.existsSync(templateAssets)) {
+            deleted.push(
+              path.posix.join('pr', entry.name, 'sandbox', 'template-assets'),
+            );
+          }
+        }
+      }
+      for (const item of [
+        'favicon.svg',
+        'iframe.html',
+        'index.json',
+        'project.json',
+        'nunito-sans-bold-italic.woff2',
+        'nunito-sans-bold.woff2',
+        'nunito-sans-italic.woff2',
+        'nunito-sans-regular.woff2',
+        'sb-addons',
+        'sb-common-assets',
+        'sb-manager',
+      ]) {
+        if (fs.existsSync(path.join(checkout, item))) deleted.push(item);
+      }
+      const reportsRoot = path.join(checkout, 'reports');
+      if (fs.existsSync(reportsRoot)) {
+        for (const report of fs.readdirSync(reportsRoot, {
+          withFileTypes: true,
+        })) {
+          if (!report.isDirectory()) continue;
+          const rel = path.posix.join('reports', report.name, 'screenshots');
+          if (
+            fs.existsSync(path.join(checkout, rel)) &&
+            reportScreenshotIsOld(checkout, rel, now)
+          ) {
+            deleted.push(rel);
+          }
+        }
+      }
+      const uniqueDeleted = [...new Set(deleted)].sort();
+      for (const rel of uniqueDeleted) process.stdout.write(`DELETE ${rel}\n`);
+      if (dryRun) return {deleted: uniqueDeleted.length, dryRun: true};
+      for (const rel of uniqueDeleted) {
+        fs.rmSync(path.join(checkout, rel), {recursive: true, force: true});
+      }
+      if (uniqueDeleted.length === 0) {
+        process.stdout.write('Nothing to clean up.\n');
+        return {deleted: 0};
+      }
+      const commit = commitIfNeeded(
+        checkout,
+        `chore: cleanup ${uniqueDeleted.length} stale deployments`,
+        ['-A'],
+      );
+      if (commit === null) return {deleted: 0};
+      await beforePush?.({attempt, checkout, commit});
+      const pushed = tryRun('git', [
+        '-C',
+        checkout,
+        'push',
+        'origin',
+        PAGES_BRANCH,
+      ]);
+      if (pushOrRetry(pushed)) return {deleted: uniqueDeleted.length, commit};
+    } finally {
+      fs.rmSync(checkout, {recursive: true, force: true});
+    }
+    process.stdout.write(
+      `Push rejected; retrying cleanup publish (${attempt}/${maxAttempts}).\n`,
+    );
+    await sleep(attempt * 2000);
+  }
+  refuse(`could not push cleanup after ${maxAttempts} attempts`);
+}
+
+export async function publishVibeReport({
+  repository,
+  token,
+  tempRoot,
+  remoteURL,
+  reportId,
+  source,
+  maxAttempts = 5,
+  beforePush,
+}) {
+  const report = safeRelativePath(String(reportId), '--report-id');
+  const sourceDir = path.resolve(source);
+  if (!fs.existsSync(sourceDir) || !fs.statSync(sourceDir).isDirectory()) {
+    refuse('--source must be a directory');
+  }
+  const destinationRel = `reports/${report}`;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const checkout = checkoutPages({
+      repository,
+      token,
+      tempRoot,
+      remoteURL,
+      sparsePaths: ['reports'],
+      prefix: 'gh-pages-vibe-report-',
+    });
+    const stageRoot = fs.mkdtempSync(path.join(tempRoot, 'vibe-report-stage-'));
+    try {
+      const destination = path.join(checkout, destinationRel);
+      const stage = path.join(stageRoot, report);
+      if (fs.existsSync(destination)) {
+        copyContents(destination, stage);
+      }
+      copyContents(sourceDir, stage);
+      fs.rmSync(destination, {recursive: true, force: true});
+      copyContents(stage, destination);
+      updateReportsIndex(path.join(checkout, 'reports'));
+      const commit = commitIfNeeded(checkout, `report: ${report}`, [
+        '-A',
+        'reports',
+      ]);
+      if (commit === null) return {published: false};
+      await beforePush?.({attempt, checkout, commit});
+      const pushed = tryRun('git', [
+        '-C',
+        checkout,
+        'push',
+        'origin',
+        PAGES_BRANCH,
+      ]);
+      if (pushOrRetry(pushed)) return {published: true, commit};
+    } finally {
+      fs.rmSync(stageRoot, {recursive: true, force: true});
+      fs.rmSync(checkout, {recursive: true, force: true});
+    }
+    process.stdout.write(
+      `Push rejected; retrying vibe report publish (${attempt}/${maxAttempts}).\n`,
+    );
+    await sleep(attempt * 2000);
+  }
+  refuse(`could not publish report ${report} after ${maxAttempts} attempts`);
+}
+
+function updateReportsIndex(reportsDir) {
+  fs.mkdirSync(reportsDir, {recursive: true});
+  const entries = fs
+    .readdirSync(reportsDir, {withFileTypes: true})
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name)
+    .sort()
+    .reverse();
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astryx Vibe Test Reports</title>
+</head>
+<body>
+  <h1>📊 Astryx Vibe Test Reports</h1>
+  <ul>
+    ${entries.map(name => `<li><a href="${name}/">${name}</a></li>`).join('\n    ')}
+  </ul>
+</body>
+</html>`;
+  fs.writeFileSync(path.join(reportsDir, 'index.html'), html);
+}
+
+export async function publishVibeScreenshots({
+  repository,
+  token,
+  tempRoot,
+  remoteURL,
+  reportId,
+  screenshots,
+  manifests,
+  maxAttempts = 5,
+  beforePush,
+}) {
+  const report = safeRelativePath(String(reportId), '--report-id');
+  const screenshotsDir = path.resolve(screenshots);
+  const manifestsDir = path.resolve(manifests);
+  if (
+    !fs.existsSync(screenshotsDir) ||
+    !fs.statSync(screenshotsDir).isDirectory()
+  ) {
+    refuse('--screenshots must be a directory');
+  }
+  const destinationRel = `reports/${report}/screenshots`;
+  const stageRoot = fs.mkdtempSync(
+    path.join(tempRoot, 'vibe-screenshots-stage-'),
+  );
+  try {
+    const stage = path.join(stageRoot, 'screenshots');
+    fs.mkdirSync(stage, {recursive: true});
+    for (const file of fileList(screenshotsDir)) {
+      if (file.endsWith('.png')) {
+        fs.copyFileSync(
+          path.join(screenshotsDir, file),
+          path.join(stage, path.basename(file)),
+        );
+      }
+    }
+    const merged = {};
+    if (fs.existsSync(manifestsDir)) {
+      for (const file of fileList(manifestsDir)) {
+        if (path.basename(file) === 'manifest.json') {
+          Object.assign(merged, readJSON(path.join(manifestsDir, file)) ?? {});
+        }
+      }
+    }
+    fs.writeFileSync(
+      path.join(stage, 'manifest.json'),
+      `${JSON.stringify(merged, null, 2)}\n`,
+    );
+    return await publishMutableSubtree({
+      repository,
+      token,
+      tempRoot,
+      remoteURL,
+      source: stage,
+      destination: destinationRel,
+      message: `screenshots: ${report} (${fileList(stage).filter(file => file.endsWith('.png')).length} images)`,
+      maxAttempts,
+      beforePush,
+    });
+  } finally {
+    fs.rmSync(stageRoot, {recursive: true, force: true});
+  }
+}
+
+export async function publishMutableSubtree({
+  repository,
+  token,
+  tempRoot,
+  remoteURL,
+  source,
+  destination,
+  message,
+  maxAttempts = 5,
+  beforePush,
+}) {
+  const sourceDir = path.resolve(source);
+  const destinationRel = safeRelativePath(destination, '--destination');
+  if (!fs.existsSync(sourceDir) || !fs.statSync(sourceDir).isDirectory()) {
+    refuse('--source must be a directory');
+  }
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const checkout = checkoutPages({
+      repository,
+      token,
+      tempRoot,
+      remoteURL,
+      sparsePaths: [destinationRel],
+      prefix: 'gh-pages-subtree-',
+    });
+    try {
+      const destinationDir = path.join(checkout, destinationRel);
+      fs.rmSync(destinationDir, {recursive: true, force: true});
+      copyContents(sourceDir, destinationDir);
+      const commit = commitIfNeeded(
+        checkout,
+        message ?? `publish ${destinationRel}`,
+        ['-A', destinationRel],
+      );
+      if (commit === null) return {published: false};
+      await beforePush?.({attempt, checkout, commit});
+      const pushed = tryRun('git', [
+        '-C',
+        checkout,
+        'push',
+        'origin',
+        PAGES_BRANCH,
+      ]);
+      if (pushOrRetry(pushed)) return {published: true, commit};
+    } finally {
+      fs.rmSync(checkout, {recursive: true, force: true});
+    }
+    process.stdout.write(
+      `Push rejected; retrying subtree publish (${attempt}/${maxAttempts}).\n`,
+    );
+    await sleep(attempt * 2000);
+  }
+  refuse(`could not publish ${destinationRel} after ${maxAttempts} attempts`);
+}
+
+export async function compactGhPages({
+  repository,
+  runId,
+  scope,
+  token,
+  tempRoot,
+  remoteURL,
+  clearQueueForRun = false,
+  maxAttempts = 5,
+  beforePush,
+}) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const checkout = checkoutPages({
+      repository,
+      token,
+      tempRoot,
+      remoteURL,
+      prefix: 'gh-pages-compact-',
+    });
+    try {
+      const oldHead = git(checkout, 'rev-parse', 'HEAD');
+      if (clearQueueForRun) {
+        fs.rmSync(path.join(checkout, QUEUE_REL, `${runId}.json`), {
+          force: true,
+        });
+        const holder = path.join(checkout, QUEUE_REL, HOLDER_NAME);
+        const held = readJSON(holder);
+        if (held?.runId === runId && held?.scope === scope) {
+          fs.rmSync(holder, {force: true});
+        }
+        fs.rmSync(path.join(checkout, LEGACY_BASELINE_QUEUE_REL), {
+          recursive: true,
+          force: true,
+        });
+        git(checkout, 'add', '-A', QUEUE_REL, LEGACY_BASELINE_QUEUE_REL);
+      }
+      const tree = git(checkout, 'write-tree');
+      const commit = run('git', [
+        '-C',
+        checkout,
+        'commit-tree',
+        tree,
+        '-m',
+        `chore: compact ${PAGES_BRANCH} history`,
+      ]);
+      await beforePush?.({attempt, checkout, commit, oldHead});
+      const pushed = tryRun('git', [
+        '-C',
+        checkout,
+        'push',
+        'origin',
+        `--force-with-lease=refs/heads/${PAGES_BRANCH}:${oldHead}`,
+        `${commit}:refs/heads/${PAGES_BRANCH}`,
+      ]);
+      if (pushOrRetry(pushed)) {
+        process.stdout.write(
+          `Compacted ${PAGES_BRANCH} to ${commit.slice(0, 7)}.\n`,
+        );
+        return {published: true, commit};
+      }
+    } finally {
+      fs.rmSync(checkout, {recursive: true, force: true});
+    }
+    process.stdout.write(
+      `Push rejected; retrying gh-pages compaction (${attempt}/${maxAttempts}).\n`,
+    );
+    await sleep(attempt * 2000);
+  }
+  refuse(`could not compact ${PAGES_BRANCH} after ${maxAttempts} attempts`);
+}
+
 export async function publishReleaseGateReport({
   repository,
   token,
@@ -1842,9 +2375,67 @@ export async function main(argv = process.argv.slice(2)) {
       actor: flag(argv, '--actor'),
       prune: flag(argv, '--prune', 'false') === 'true',
     });
+  } else if (command === 'pr-preview') {
+    const pr = flag(argv, '--pr');
+    await withPublicationTurn({
+      ...context,
+      scope: `pr-preview/${pr}`,
+      publish: () =>
+        publishPrPreview({
+          ...context,
+          pr,
+          storybook: flag(argv, '--storybook'),
+          sandbox: flag(argv, '--sandbox'),
+        }),
+    });
+  } else if (command === 'cleanup-previews') {
+    await withPublicationTurn({
+      ...context,
+      scope: 'cleanup/previews',
+      publish: () =>
+        cleanupPreviews({
+          ...context,
+          dryRun: flag(argv, '--dry-run', 'false') === 'true',
+        }),
+    });
+  } else if (command === 'vibe-report') {
+    const reportId = flag(argv, '--report-id');
+    await withPublicationTurn({
+      ...context,
+      scope: 'reports/vibe-report',
+      publish: () =>
+        publishVibeReport({
+          ...context,
+          reportId,
+          source: flag(argv, '--source'),
+        }),
+    });
+  } else if (command === 'vibe-screenshots') {
+    const reportId = flag(argv, '--report-id');
+    await withPublicationTurn({
+      ...context,
+      scope: 'reports/vibe-screenshots',
+      publish: () =>
+        publishVibeScreenshots({
+          ...context,
+          reportId,
+          screenshots: flag(argv, '--screenshots'),
+          manifests: flag(argv, '--manifests'),
+        }),
+    });
+  } else if (command === 'compact') {
+    const scope = 'whole-tree';
+    await enqueuePublication({...context, scope});
+    await waitForPublicationTurn({...context, scope});
+    try {
+      await compactGhPages({...context, scope, clearQueueForRun: true});
+    } catch (error) {
+      await releasePublication({...context, scope});
+      throw error;
+    }
   } else {
     refuse(
-      'usage: gh-pages-publisher.mjs <enqueue|wait|release|stable-site|release-gate|immutable-path|visual-acceptance-record|visual-baseline-accepted|visual-baseline-manual>',
+      'usage: gh-pages-publisher.mjs <enqueue|wait|release|stable-site|release-gate|immutable-path|visual-acceptance-record|visual-baseline-accepted|visual-baseline-manual|pr-preview|cleanup-previews|vibe-report|vibe-screenshots|compact>',
     );
   }
 }

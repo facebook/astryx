@@ -11,10 +11,15 @@ import {afterEach, describe, expect, it} from 'vitest';
 import {PNG} from 'pngjs';
 
 import {
+  cleanupPreviews,
+  compactGhPages,
   enqueuePublication,
   publishAcceptedVisualBaseline,
   publishImmutablePath,
+  publishPrPreview,
   publishReleaseGateReport,
+  publishVibeReport,
+  publishVibeScreenshots,
   publishVisualAcceptanceRecord,
   publishStableSite,
   releasePublication,
@@ -139,6 +144,12 @@ function fixture() {
   writeFile(path.join(seed, 'sandbox', 'old.html'), 'old sandbox');
   writeFile(path.join(seed, 'assets', 'old.css'), 'old asset');
   writeFile(path.join(seed, 'pr', '123', 'index.html'), 'preview');
+  writeFile(path.join(seed, 'pr', '124', 'index.html'), 'closed preview');
+  writeFile(
+    path.join(seed, 'pr', '123', 'sandbox', 'template-assets', 'old.txt'),
+    'old duplicate asset',
+  );
+  writeFile(path.join(seed, 'abcdef1', 'index.html'), 'legacy preview');
   writeFile(path.join(seed, 'reports', 'vibe', 'index.html'), 'vibe');
   const before = png(255);
   const after = png(0, 0, 255);
@@ -995,5 +1006,333 @@ describe('gh-pages publisher', () => {
       headSha: HEAD,
       mergeSha: MERGE,
     });
+  });
+
+  it('publishes PR previews without losing reports or visual state', async () => {
+    const fx = fixture();
+    const storybook = path.join(fx.root, 'preview-storybook');
+    const sandbox = path.join(fx.root, 'preview-sandbox');
+    writeFile(path.join(storybook, 'index.html'), 'new preview');
+    writeFile(path.join(sandbox, 'index.html'), 'new sandbox');
+    writeFile(
+      path.join(sandbox, 'template-assets', 'ignored.txt'),
+      'shared asset copy',
+    );
+
+    await queuedPublish(fx, 940, 'pr-preview/123', () =>
+      publishPrPreview({
+        ...context(fx, 940, 'pr-preview/123'),
+        pr: 123,
+        storybook,
+        sandbox,
+      }),
+    );
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.readFileSync(path.join(final, 'pr', '123', 'index.html'), 'utf8'),
+    ).toBe('new preview');
+    expect(
+      fs.readFileSync(
+        path.join(final, 'pr', '123', 'sandbox', 'index.html'),
+        'utf8',
+      ),
+    ).toBe('new sandbox');
+    expect(
+      fs.existsSync(
+        path.join(final, 'pr', '123', 'sandbox', 'template-assets'),
+      ),
+    ).toBe(false);
+    expect(
+      fs.readFileSync(
+        path.join(final, 'reports', 'vibe', 'index.html'),
+        'utf8',
+      ),
+    ).toBe('vibe');
+    expect(
+      fs.existsSync(
+        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(
+          final,
+          'pr',
+          '42',
+          'visual',
+          HEAD,
+          '123',
+          '1',
+          'evidence.json',
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('cleans stale previews without deleting visual evidence or live previews', async () => {
+    const fx = fixture();
+    await queuedPublish(fx, 941, 'cleanup/previews', () =>
+      cleanupPreviews({
+        ...context(fx, 941, 'cleanup/previews'),
+        openPRs: new Set(['123', '42']),
+      }),
+    );
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(fs.existsSync(path.join(final, 'abcdef1'))).toBe(false);
+    expect(fs.existsSync(path.join(final, 'pr', '124'))).toBe(false);
+    expect(fs.existsSync(path.join(final, 'pr', '123', 'index.html'))).toBe(
+      true,
+    );
+    expect(
+      fs.existsSync(
+        path.join(final, 'pr', '123', 'sandbox', 'template-assets'),
+      ),
+    ).toBe(false);
+    expect(
+      fs.existsSync(
+        path.join(
+          final,
+          'pr',
+          '42',
+          'visual',
+          HEAD,
+          '123',
+          '1',
+          'evidence.json',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+      ),
+    ).toBe(true);
+  });
+
+  it('publishes vibe screenshots without disturbing previews or baselines', async () => {
+    const fx = fixture();
+    const screenshots = path.join(fx.root, 'screenshots');
+    const manifests = path.join(fx.root, 'manifests');
+    writeFile(path.join(screenshots, 'iteration', 'one.png'), png(10));
+    writeJSON(path.join(manifests, 'iteration', 'manifest.json'), {
+      one: {ok: true},
+    });
+
+    await queuedPublish(fx, 942, 'reports/vibe-screenshots', () =>
+      publishVibeScreenshots({
+        ...context(fx, 942, 'reports/vibe-screenshots'),
+        reportId: 'vibe',
+        screenshots,
+        manifests,
+      }),
+    );
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.existsSync(
+        path.join(final, 'reports', 'vibe', 'screenshots', 'one.png'),
+      ),
+    ).toBe(true);
+    expect(
+      JSON.parse(
+        fs.readFileSync(
+          path.join(final, 'reports', 'vibe', 'screenshots', 'manifest.json'),
+          'utf8',
+        ),
+      ).one.ok,
+    ).toBe(true);
+    expect(fs.existsSync(path.join(final, 'pr', '123', 'index.html'))).toBe(
+      true,
+    );
+    expect(
+      fs.existsSync(
+        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+      ),
+    ).toBe(true);
+  });
+
+  it('removes 58-day-old report screenshots while keeping the report page', async () => {
+    const fx = fixture();
+    const writer = cloneRemote(fx.remote, fx.root, 'old-screenshots');
+    git(writer, 'config', 'user.name', 'Test');
+    git(writer, 'config', 'user.email', 'test@example.com');
+    writeFile(
+      path.join(writer, 'reports', 'vibe', 'screenshots', 'old.png'),
+      png(58),
+    );
+    writeJSON(
+      path.join(writer, 'reports', 'vibe', 'screenshots', 'manifest.json'),
+      {old: true},
+    );
+    git(writer, 'add', '.');
+    execFileSync('git', ['-C', writer, 'commit', '-qm', 'old screenshots'], {
+      env: {
+        ...process.env,
+        GIT_AUTHOR_DATE: '2026-07-01T00:00:00Z',
+        GIT_COMMITTER_DATE: '2026-07-01T00:00:00Z',
+      },
+    });
+    git(writer, 'push', '-q', 'origin', 'gh-pages');
+
+    await queuedPublish(fx, 944, 'cleanup/previews', () =>
+      cleanupPreviews({
+        ...context(fx, 944, 'cleanup/previews'),
+        openPRs: new Set(['123', '42']),
+        now: Date.parse('2026-08-28T00:00:00Z'),
+      }),
+    );
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.existsSync(path.join(final, 'reports', 'vibe', 'index.html')),
+    ).toBe(true);
+    expect(
+      fs.existsSync(path.join(final, 'reports', 'vibe', 'screenshots')),
+    ).toBe(false);
+  });
+
+  it('compaction drops terminal legacy migration state and preserves active shared queue', async () => {
+    const fx = fixture();
+    const writer = cloneRemote(fx.remote, fx.root, 'compact-queue-state');
+    git(writer, 'config', 'user.name', 'Test');
+    git(writer, 'config', 'user.email', 'test@example.com');
+    writeJSON(
+      path.join(writer, 'visual-gate', 'publication-queue', '899.json'),
+      {
+        version: 1,
+        repository: REPO,
+        runId: 899,
+      },
+    );
+    writeJSON(
+      path.join(writer, 'visual-gate', 'publication-queue', 'holder.json'),
+      {
+        version: 1,
+        repository: REPO,
+        runId: 899,
+      },
+    );
+    writeJSON(
+      path.join(writer, '.astryx-gh-pages', 'publication-queue', '950.json'),
+      {
+        version: 1,
+        repository: REPO,
+        runId: 950,
+        scope: 'pr-preview/950',
+      },
+    );
+    git(writer, 'add', '.');
+    git(writer, 'commit', '-qm', 'queue state');
+    git(writer, 'push', '-q', 'origin', 'gh-pages');
+
+    const turn = context(fx, 943, 'whole-tree');
+    await enqueuePublication(turn);
+    await waitForPublicationTurn(turn);
+    await compactGhPages({...turn, clearQueueForRun: true});
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.existsSync(path.join(final, 'visual-gate', 'publication-queue')),
+    ).toBe(false);
+    expect(
+      fs.existsSync(
+        path.join(final, '.astryx-gh-pages', 'publication-queue', '950.json'),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(final, '.astryx-gh-pages', 'publication-queue', '943.json'),
+      ),
+    ).toBe(false);
+  });
+
+  it('publishes a vibe report through the shared publisher while preserving screenshots', async () => {
+    const fx = fixture();
+    const writer = cloneRemote(fx.remote, fx.root, 'existing-report-shots');
+    git(writer, 'config', 'user.name', 'Test');
+    git(writer, 'config', 'user.email', 'test@example.com');
+    writeFile(
+      path.join(
+        writer,
+        'reports',
+        'vibe-report',
+        'screenshots',
+        'existing.png',
+      ),
+      png(1),
+    );
+    git(writer, 'add', '.');
+    git(writer, 'commit', '-qm', 'existing screenshots');
+    git(writer, 'push', '-q', 'origin', 'gh-pages');
+    const source = path.join(fx.root, 'vibe-report-source');
+    writeFile(path.join(source, 'index.html'), 'new report');
+    writeFile(path.join(source, 'previews', 'case.html'), 'preview');
+    writeFile(path.join(source, 'screenshots', 'same.png'), 'new bytes');
+
+    await queuedPublish(fx, 945, 'reports/vibe-report', () =>
+      publishVibeReport({
+        ...context(fx, 945, 'reports/vibe-report'),
+        reportId: 'vibe-report',
+        source,
+      }),
+    );
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(
+      fs.readFileSync(
+        path.join(final, 'reports', 'vibe-report', 'index.html'),
+        'utf8',
+      ),
+    ).toBe('new report');
+    expect(
+      fs.existsSync(
+        path.join(
+          final,
+          'reports',
+          'vibe-report',
+          'screenshots',
+          'existing.png',
+        ),
+      ),
+    ).toBe(true);
+    expect(fs.existsSync(path.join(final, 'reports', 'index.html'))).toBe(true);
+  });
+
+  it('compacts the whole gh-pages tree without dropping scoped content', async () => {
+    const fx = fixture();
+    const turn = context(fx, 943, 'whole-tree');
+    await enqueuePublication(turn);
+    await waitForPublicationTurn(turn);
+    await compactGhPages({...turn, clearQueueForRun: true});
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(git(final, 'rev-list', '--count', 'HEAD')).toBe('1');
+    expect(fs.existsSync(path.join(final, 'pr', '123', 'index.html'))).toBe(
+      true,
+    );
+    expect(
+      fs.existsSync(
+        path.join(
+          final,
+          'pr',
+          '42',
+          'visual',
+          HEAD,
+          '123',
+          '1',
+          'evidence.json',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(path.join(final, 'reports', 'vibe', 'index.html')),
+    ).toBe(true);
   });
 });
