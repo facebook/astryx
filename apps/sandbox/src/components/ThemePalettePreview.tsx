@@ -5,6 +5,7 @@
 import {useMemo, useReducer, type CSSProperties} from 'react';
 
 import {Banner, type BannerStatus} from '@astryxdesign/core/Banner';
+import {ChatComposer} from '@astryxdesign/core/Chat';
 import {Spinner} from '@astryxdesign/core/Spinner';
 import {
   ProgressBar,
@@ -1565,6 +1566,87 @@ function getInputContrast(theme: DefinedTheme, mode: Mode) {
       minimum: Number(minimum),
       note: String(note),
     }));
+  }
+}
+
+function getChatComposerContrast(theme: DefinedTheme, mode: Mode) {
+  try {
+    const parent = resolveToken(theme, '--color-background-body', mode);
+    const background = compositeColor(
+      resolveToken(theme, '--color-background-popover', mode),
+      parent,
+    );
+    const primary = resolveToken(theme, '--color-text-primary', mode);
+    const placeholder = resolveToken(theme, '--color-text-secondary', mode);
+    const warning = resolveToken(theme, '--color-warning', mode);
+    const error = resolveToken(theme, '--color-error', mode);
+    const warningBackground = compositeColor(
+      resolveToken(theme, '--color-warning-muted', mode),
+      parent,
+    );
+    const errorBackground = compositeColor(
+      resolveToken(theme, '--color-error-muted', mode),
+      parent,
+    );
+    const primaryButton = getButtonContrast(theme, mode).find(
+      row => row.name === 'Primary',
+    );
+
+    return [
+      {
+        key: 'composer-value',
+        relationship: 'Composer value text',
+        ratio: contrastRatio(primary, background),
+        minimum: 4.5,
+        note: 'Text',
+      },
+      {
+        key: 'composer-placeholder',
+        relationship: 'Composer placeholder',
+        ratio: contrastRatio(placeholder, background),
+        minimum: 4.5,
+        note: 'Text',
+      },
+      {
+        key: 'composer-send',
+        relationship: 'Composer enabled send icon',
+        ratio: primaryButton?.rest,
+        minimum: 3,
+        note: 'Icon-only control',
+      },
+      {
+        key: 'composer-warning',
+        relationship: 'Composer warning text and icon',
+        ratio: contrastRatio(warning, warningBackground),
+        minimum: 4.5,
+        note: 'Text is the stricter requirement',
+      },
+      {
+        key: 'composer-error',
+        relationship: 'Composer error text and icon',
+        ratio: contrastRatio(error, errorBackground),
+        minimum: 4.5,
+        note: 'Text is the stricter requirement',
+      },
+      {
+        key: 'composer-boundary',
+        relationship: 'Composer body against page',
+        ratio: contrastRatio(background, parent),
+        minimum: 0,
+        note: 'Decorative when visible content identifies the input',
+        exempt: true,
+      },
+      {
+        key: 'composer-focus',
+        relationship: 'Composer keyboard focus — elevated',
+        ratio: undefined,
+        minimum: 3,
+        note: 'Shadow-only change is not a reliable contrast indicator',
+        forceFail: true,
+      },
+    ];
+  } catch {
+    return [];
   }
 }
 
@@ -3966,7 +4048,10 @@ function FieldStatusSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
 }
 
 function InputSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
-  const audit = getInputContrast(theme, mode);
+  const audit = [
+    ...getInputContrast(theme, mode),
+    ...getChatComposerContrast(theme, mode),
+  ];
   const inputExampleStyle: React.CSSProperties = {minWidth: 0};
 
   return (
@@ -4059,6 +4144,24 @@ function InputSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
           statusVariant="tooltip"
         />
       </div>
+      <div style={{...buttonRowLabelStyle, marginTop: 18}}>Chat composer</div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 16,
+        }}>
+        <ChatComposer
+          value="Ready to send"
+          onChange={() => {}}
+          onSubmit={() => {}}
+          status={{type: 'warning', message: 'Approaching the token limit'}}
+        />
+        <ChatComposer
+          onSubmit={() => {}}
+          status={{type: 'error', message: 'Message could not be sent'}}
+        />
+      </div>
       <div style={{overflowX: 'auto', marginTop: 14}}>
         <table
           style={{
@@ -4093,8 +4196,13 @@ function InputSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
           </thead>
           <tbody>
             {audit.map(row => {
-              const measured = row.ratio != null;
-              const passes = measured && row.ratio >= row.minimum;
+              const ratio = row.ratio;
+              const measured = ratio != null;
+              const exempt = 'exempt' in row && row.exempt;
+              const forceFail = 'forceFail' in row && row.forceFail;
+              const passes =
+                !forceFail &&
+                (exempt || (ratio != null && ratio >= row.minimum));
               return (
                 <tr key={row.key}>
                   <td style={{padding: '8px'}}>{row.relationship}</td>
@@ -4102,7 +4210,7 @@ function InputSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
                     {row.ratio == null ? '—' : `${row.ratio.toFixed(2)}:1`}
                   </td>
                   <td style={{padding: '8px', textAlign: 'right'}}>
-                    {row.minimum}:1
+                    {exempt ? 'None' : `${row.minimum}:1`}
                   </td>
                   <td style={{padding: '8px'}}>{row.note}</td>
                   <td
@@ -4110,13 +4218,23 @@ function InputSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
                       padding: '8px',
                       textAlign: 'right',
                       color: !measured
-                        ? 'var(--color-text-secondary)'
+                        ? forceFail
+                          ? 'var(--color-error)'
+                          : 'var(--color-text-secondary)'
                         : passes
                           ? 'var(--color-success)'
                           : 'var(--color-error)',
                       fontWeight: 700,
                     }}>
-                    {!measured ? 'Not measured' : passes ? 'Pass' : 'Fail'}
+                    {exempt
+                      ? 'Exempt'
+                      : forceFail
+                        ? 'Needs fix'
+                        : !measured
+                          ? 'Not measured'
+                          : passes
+                            ? 'Pass'
+                            : 'Fail'}
                   </td>
                 </tr>
               );
@@ -4139,6 +4257,10 @@ function InputSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
         rule is WCAG 2.2 AAA, not AA. Spinner tracks and redundant status glyphs
         may be decorative. Disabled controls are exempt from WCAG contrast
         requirements; read-only controls are not and remain at full contrast.
+        The composer shell boundary is optional when its visible content
+        identifies the input. Its elevated keyboard-focus treatment still needs
+        an explicit 3:1 indicator; a shadow-depth change alone is not a reliable
+        AA focus cue.
       </p>
     </div>
   );

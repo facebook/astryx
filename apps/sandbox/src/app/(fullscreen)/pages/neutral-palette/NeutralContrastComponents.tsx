@@ -6,7 +6,6 @@ import {useCallback, type CSSProperties, type ReactNode} from 'react';
 
 import {AvatarStatusDot} from '@astryxdesign/core/Avatar';
 import {
-  ChatComposer,
   ChatMessage,
   ChatMessageBubble,
   ChatMessageMetadata,
@@ -182,16 +181,8 @@ export function NeutralContrastComponents() {
         </div>
       </Section>
 
-      <Section title="Chat status surfaces">
+      <Section title="Chat message status surfaces">
         <div style={{display: 'grid', gap: 14}}>
-          <ChatComposer
-            onSubmit={() => {}}
-            status={{type: 'warning', message: 'Approaching the token limit'}}
-          />
-          <ChatComposer
-            onSubmit={() => {}}
-            status={{type: 'error', message: 'Message could not be sent'}}
-          />
           <ChatMessage sender="user">
             <ChatMessageBubble
               metadata={<ChatMessageMetadata status="error" />}>
