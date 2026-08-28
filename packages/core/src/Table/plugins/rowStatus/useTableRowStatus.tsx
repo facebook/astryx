@@ -14,7 +14,7 @@
 
 import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Icon, type IconColor, type IconName} from '../../../Icon';
+import {Icon, type IconName} from '../../../Icon';
 import {Tooltip} from '../../../Tooltip';
 import {useTranslator} from '../../../i18n';
 import {VisuallyHidden} from '../../../VisuallyHidden';
@@ -49,20 +49,6 @@ const SEMANTIC_COLORS: Record<TableRowStatusColor, string> = {
   yellow: 'var(--color-icon-yellow)',
   blue: 'var(--color-icon-blue)',
   gray: 'var(--color-icon-gray)',
-};
-
-/** Icon colors that map cleanly from a semantic status color. */
-const ICON_COLOR_BY_STATUS: Record<TableRowStatusColor, IconColor> = {
-  accent: 'accent',
-  success: 'success',
-  error: 'error',
-  warning: 'warning',
-  red: 'red',
-  orange: 'warning',
-  green: 'green',
-  yellow: 'warning',
-  blue: 'blue',
-  gray: 'gray',
 };
 
 /**
@@ -118,6 +104,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  icon: (color: string) => ({color}),
   dot: (color: string) => ({
     width: '8px',
     height: '8px',
@@ -169,14 +156,7 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
               return null;
             }
             const signifier = status.icon ? (
-              <Icon
-                icon={status.icon}
-                size="xsm"
-                color={
-                  ICON_COLOR_BY_STATUS[status.color as TableRowStatusColor] ??
-                  'primary'
-                }
-              />
+              <Icon icon={status.icon} size="xsm" color="inherit" />
             ) : (
               <span {...stylex.props(styles.dot(resolveColor(status.color)))} />
             );
@@ -188,7 +168,10 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
                       color: status.color,
                       presentation: status.icon ? 'icon' : 'dot',
                     }),
-                    stylex.props(styles.wrap),
+                    stylex.props(
+                      styles.wrap,
+                      status.icon && styles.icon(resolveColor(status.color)),
+                    ),
                   )}
                   role="img"
                   aria-label={status.label}>

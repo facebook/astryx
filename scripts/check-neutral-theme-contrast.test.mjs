@@ -241,12 +241,18 @@ describe('neutral theme component-pair contrast', () => {
           ...(step?.base ?? {}),
           ...(step?.[`status:${status}`] ?? {}),
         };
+        const tableOverride =
+          table?.[`color:${status}+presentation:icon`] ?? {};
         const tableLocal = {
           ...(table?.base ?? {}),
-          ...(table?.[`color:${status}+presentation:icon`] ?? {}),
+          ...tableOverride,
         };
         const stepColor = resolve(`var(${token})`, index, stepLocal);
-        const tableColor = resolve(`var(${token})`, index, tableLocal);
+        const tableColor = resolve(
+          String(tableOverride.color ?? `var(${token})`),
+          index,
+          tableLocal,
+        );
 
         expect(tableColor, `${status} icon roles should match`).toBe(stepColor);
         for (const surface of surfaces) {

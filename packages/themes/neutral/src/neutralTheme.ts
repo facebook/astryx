@@ -1254,16 +1254,16 @@ export const neutralTheme = defineTheme({
         '--color-icon-red': STATUS_COLOR_ROLES.fill.error,
       },
       'color:accent+presentation:icon': {
-        '--color-accent': STATUS_COLOR_ROLES.graphic.info,
+        color: STATUS_COLOR_ROLES.graphic.info,
       },
       'color:success+presentation:icon': {
-        '--color-success': STATUS_COLOR_ROLES.graphic.success,
+        color: STATUS_COLOR_ROLES.graphic.success,
       },
       'color:warning+presentation:icon': {
-        '--color-warning': STATUS_COLOR_ROLES.graphic.warning,
+        color: STATUS_COLOR_ROLES.graphic.warning,
       },
       'color:error+presentation:icon': {
-        '--color-error': STATUS_COLOR_ROLES.graphic.error,
+        color: STATUS_COLOR_ROLES.graphic.error,
       },
     },
 

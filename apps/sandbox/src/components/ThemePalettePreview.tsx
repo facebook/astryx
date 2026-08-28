@@ -2028,17 +2028,24 @@ function getStatusIndicatorContrast(theme: DefinedTheme, mode: Mode) {
         ['gray', '--color-icon-gray'],
       ] as const
     ).map(([color, token]) => {
+      const override =
+        tableStatusBlock[`color:${color}+presentation:icon`] ?? {};
       const local = Object.fromEntries(
         Object.entries({
           ...(tableStatusBlock.base ?? {}),
-          ...(tableStatusBlock[`color:${color}+presentation:icon`] ?? {}),
+          ...override,
         }).filter(
           (entry): entry is [string, string] =>
             entry[0].startsWith('--') && typeof entry[1] === 'string',
         ),
       );
       return minimumAgainstParents(
-        resolveThemeColor(theme, `var(${token})`, mode, local),
+        resolveThemeColor(
+          theme,
+          String(override.color ?? `var(${token})`),
+          mode,
+          local,
+        ),
       );
     }),
   );
