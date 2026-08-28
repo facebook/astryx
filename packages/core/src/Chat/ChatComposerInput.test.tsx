@@ -385,6 +385,52 @@ describe('ChatComposerInput', () => {
       expect(textbox.textContent).toBe('second');
     });
 
+    it('does not clone draft contents while checking history boundaries', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'previous message');
+
+      textbox.textContent = 'pending draft';
+      fireEvent.input(textbox);
+      textbox.focus();
+      placeCaret(textbox.firstChild!, 0);
+      const cloneContents = vi.spyOn(Range.prototype, 'cloneContents');
+
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+      expect(cloneContents).toHaveBeenCalledTimes(0);
+      expect(prevented).toBe(true);
+      expect(textbox.textContent).toBe('previous message');
+      cloneContents.mockRestore();
+    });
+
+    it('does not clone draft contents while checking an ArrowDown boundary', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'previous message');
+
+      const draft = 'pending draft';
+      textbox.textContent = draft;
+      fireEvent.input(textbox);
+      textbox.focus();
+      placeCaret(textbox.firstChild!, 0);
+      fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+      // The prior ArrowUp selected a recalled message. Put the pending
+      // draft back in place, then navigate forward from its end.
+      textbox.textContent = draft;
+      fireEvent.input(textbox);
+      placeCaret(textbox.firstChild!, draft.length);
+      const cloneContents = vi.spyOn(Range.prototype, 'cloneContents');
+
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowDown'});
+
+      expect(cloneContents).toHaveBeenCalledTimes(0);
+      expect(prevented).toBe(true);
+      expect(textbox.textContent).toBe(draft);
+      cloneContents.mockRestore();
+    });
+
     it('does not recall on ArrowUp when the caret is mid-text', () => {
       render(<ChatComposerInput onSubmit={() => {}} />);
       const textbox = screen.getByRole('textbox');
