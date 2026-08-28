@@ -69,6 +69,7 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {isRenderable, mergeProps} from '../utils';
+import {rtlStyles} from '../utils/rtlStyles';
 import {themeProps} from '../utils/themeProps';
 import {PowerSearchTouchValueEditor} from './PowerSearchTouchValueEditor';
 import {PowerSearchToken} from './PowerSearchToken';
@@ -263,11 +264,65 @@ type SheetStep = 'fields' | 'operator' | 'value';
 
 interface FilterDraft {
   readonly mode: 'create' | 'edit';
-  /** Index in `filters` — edit mode only. */
+  /** Index in `filters` when edit mode opened. */
   readonly filterIndex?: number;
+  /** Original controlled filter identity, used to follow immutable reorders. */
+  readonly sourceFilter?: PowerSearchFilter;
+  /** Structural snapshot, used when controlled parents clone their values. */
+  readonly sourceSignature?: string;
   readonly field: string;
   readonly operator?: string;
   readonly value?: FilterValue;
+}
+
+function stableSerialize(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableSerialize).join(',')}]`;
+  }
+  if (value != null && typeof value === 'object') {
+    return `{${Object.entries(value)
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(([key, entry]) => `${JSON.stringify(key)}:${stableSerialize(entry)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'undefined';
+}
+
+function filterSignature(filter: PowerSearchFilter): string {
+  return stableSerialize({
+    field: filter.field,
+    operator: filter.operator,
+    value: filter.value,
+    isReadOnly: filter.isReadOnly ?? false,
+  });
+}
+
+function resolveDraftFilterIndex(
+  filters: ReadonlyArray<PowerSearchFilter>,
+  draft: FilterDraft,
+): number | null {
+  if (
+    draft.mode !== 'edit' ||
+    draft.filterIndex == null ||
+    draft.sourceFilter == null ||
+    draft.sourceSignature == null
+  ) {
+    return null;
+  }
+  if (
+    filters[draft.filterIndex] != null &&
+    filterSignature(filters[draft.filterIndex]) === draft.sourceSignature
+  ) {
+    return draft.filterIndex;
+  }
+  const movedIdentityIndex = filters.indexOf(draft.sourceFilter);
+  if (movedIdentityIndex >= 0) {
+    return movedIdentityIndex;
+  }
+  const matchingIndices = filters.flatMap((filter, index) =>
+    filterSignature(filter) === draft.sourceSignature ? [index] : [],
+  );
+  return matchingIndices.length === 1 ? matchingIndices[0] : null;
 }
 
 /** Operators the touch editor can render. */
@@ -297,6 +352,7 @@ function matchesQuery(field: PowerSearchField, query: string): boolean {
 // screen. It is the same threshold CheckboxList uses to send a long list to
 // MultiSelector.
 const SEARCHABLE_FIELD_COUNT = 8;
+const DEFAULT_MAX_SEARCH_RESULTS = 10;
 
 // =============================================================================
 // Component
@@ -318,6 +374,7 @@ export function PowerSearchTouchSurface({
   onChange,
   label: labelFromProps,
   isLabelHidden = true,
+  hasAutoFocus = false,
   hasClear = true,
   isReadOnly = false,
   isDisabled = false,
@@ -328,6 +385,8 @@ export function PowerSearchTouchSurface({
   status,
   statusVariant = 'attached',
   maxTokenLength = 40,
+  maxOperatorMenuItems,
+  maxSearchResults = DEFAULT_MAX_SEARCH_RESULTS,
   popoverSaveButtonLabel: saveButtonLabelFromProps,
   timezoneID,
   endContent,
@@ -354,6 +413,7 @@ export function PowerSearchTouchSurface({
   const labelId = useId();
   const statusMessageId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const shouldRestoreTriggerAfterCloseRef = useRef(false);
 
   const [step, setStep] = useState<SheetStep | null>(null);
   // The draft outlives a step change on purpose: the switcher keeps the
@@ -382,10 +442,14 @@ export function PowerSearchTouchSurface({
   );
 
   const normalizedQuery = fieldQuery.trim().toLowerCase();
-  const matchingFields = useMemo(
-    () => fields.filter(field => matchesQuery(field, normalizedQuery)),
-    [fields, normalizedQuery],
-  );
+  const matchingFields = useMemo(() => {
+    const matches = fields.filter(field =>
+      matchesQuery(field, normalizedQuery),
+    );
+    return normalizedQuery === ''
+      ? matches
+      : matches.slice(0, maxSearchResults);
+  }, [fields, maxSearchResults, normalizedQuery]);
 
   const groupedFields = useMemo(() => {
     const groups = new Map<string, PowerSearchField[]>();
@@ -430,26 +494,50 @@ export function PowerSearchTouchSurface({
     setStep('fields');
   }, [isInteractive]);
 
-  const commitFilter = useCallback(
-    (next: FilterDraft, value: FilterValue) => {
-      if (next.operator == null) {
+  const commitSavedFilter = useCallback(
+    (next: FilterDraft, filter: PowerSearchFilter) => {
+      if (!isInteractive) {
+        closeSheet();
         return;
       }
-      const filter: PowerSearchFilter = {
-        field: next.field,
-        operator: next.operator,
-        value,
-      };
-      if (next.mode === 'edit' && next.filterIndex != null) {
+      if (next.mode === 'edit') {
+        const filterIndex = resolveDraftFilterIndex(filters, next);
+        if (filterIndex == null) {
+          closeSheet();
+          return;
+        }
+        const currentFilter = filters[filterIndex];
+        if (currentFilter == null || currentFilter.isReadOnly) {
+          closeSheet();
+          return;
+        }
+        // Controlled parents may reorder after any edit, which remounts the
+        // index-keyed opener before the sheet can restore focus. Always provide
+        // the stable Add button as the post-close fallback.
+        shouldRestoreTriggerAfterCloseRef.current = true;
         const updated = [...filters];
-        updated[next.filterIndex] = filter;
-        onChange(updated, 'edit', next.filterIndex);
+        updated[filterIndex] = filter;
+        onChange(updated, 'edit', filterIndex);
       } else {
         onChange([...filters, filter], 'add', filters.length);
       }
       closeSheet();
     },
-    [filters, onChange, closeSheet],
+    [closeSheet, filters, isInteractive, onChange],
+  );
+
+  const commitFilter = useCallback(
+    (next: FilterDraft, value: FilterValue) => {
+      if (next.operator == null) {
+        return;
+      }
+      commitSavedFilter(next, {
+        field: next.field,
+        operator: next.operator,
+        value,
+      });
+    },
+    [commitSavedFilter],
   );
 
   // Choosing a field opens its editor. An `empty` operator (`is unassigned`)
@@ -492,6 +580,8 @@ export function PowerSearchTouchSurface({
       setDraft({
         mode: 'edit',
         filterIndex: index,
+        sourceFilter: filter,
+        sourceSignature: filterSignature(filter),
         field: filter.field,
         operator: filter.operator,
         value: filter.value,
@@ -502,14 +592,23 @@ export function PowerSearchTouchSurface({
   );
 
   const handleRemoveFilter = useCallback(
-    (index: number) => {
+    (index: number, restoreFocus = true) => {
+      const filter = filters[index];
+      if (!isInteractive || filter == null || filter.isReadOnly) {
+        return;
+      }
       onChange(
         filters.filter((_, i) => i !== index),
         'remove',
         index,
       );
+      if (restoreFocus) {
+        requestAnimationFrame(() =>
+          triggerRef.current?.focus({preventScroll: true}),
+        );
+      }
     },
-    [filters, onChange],
+    [filters, isInteractive, onChange],
   );
 
   const handleClearAll = useCallback(() => {
@@ -520,26 +619,35 @@ export function PowerSearchTouchSurface({
       return;
     }
     onChange(kept, 'remove', kept.length);
+    requestAnimationFrame(() =>
+      triggerRef.current?.focus({preventScroll: true}),
+    );
   }, [filters, onChange]);
 
-  const handleOperatorSelect = useCallback((operator: PowerSearchOperator) => {
-    setDraft(current => {
-      if (current == null) {
-        return current;
+  const handleOperatorSelect = useCallback(
+    (operator: PowerSearchOperator) => {
+      if (draft == null) {
+        return;
       }
       // A value only survives an operator change when the new operator reads
-      // the same value type; otherwise the editor would be handed a value it
+      // the same value type; otherwise the editor would receive a value it
       // cannot render.
       const keepsValue =
-        current.value != null && current.value.type === operator.value.type;
-      return {
-        ...current,
+        draft.value != null && draft.value.type === operator.value.type;
+      const next: FilterDraft = {
+        ...draft,
         operator: operator.key,
-        value: keepsValue ? current.value : undefined,
+        value: keepsValue ? draft.value : undefined,
       };
-    });
-    setStep('value');
-  }, []);
+      setDraft(next);
+      if (operator.value.type === 'empty') {
+        commitFilter(next, {type: 'empty'});
+        return;
+      }
+      setStep('value');
+    },
+    [commitFilter, draft],
+  );
 
   const handleDraftValueChange = useCallback((value: FilterValue) => {
     setDraft(current => (current == null ? current : {...current, value}));
@@ -564,12 +672,18 @@ export function PowerSearchTouchSurface({
   }, [draft, commitFilter]);
 
   const handleDelete = useCallback(() => {
-    if (draft?.mode !== 'edit' || draft.filterIndex == null) {
+    if (draft?.mode !== 'edit') {
       return;
     }
-    handleRemoveFilter(draft.filterIndex);
+    const filterIndex = resolveDraftFilterIndex(filters, draft);
+    if (filterIndex == null || filters[filterIndex]?.isReadOnly) {
+      closeSheet();
+      return;
+    }
+    shouldRestoreTriggerAfterCloseRef.current = true;
+    handleRemoveFilter(filterIndex, false);
     closeSheet();
-  }, [draft, handleRemoveFilter, closeSheet]);
+  }, [closeSheet, draft, filters, handleRemoveFilter]);
 
   const handleActiveSheetChange = useCallback((active: string | null) => {
     // The switcher only reports null, and only for a dismissal the active
@@ -578,6 +692,39 @@ export function PowerSearchTouchSurface({
       setStep(null);
     }
   }, []);
+
+  const handleSheetTransitionEnd = useCallback(() => {
+    if (step != null || !shouldRestoreTriggerAfterCloseRef.current) {
+      return;
+    }
+    shouldRestoreTriggerAfterCloseRef.current = false;
+    requestAnimationFrame(() =>
+      triggerRef.current?.focus({preventScroll: true}),
+    );
+  }, [step]);
+
+  const handleFocusWithin = useCallback(
+    (event: React.FocusEvent<HTMLDivElement>) => {
+      if (
+        !(event.relatedTarget instanceof Node) ||
+        !event.currentTarget.contains(event.relatedTarget)
+      ) {
+        onFocus?.(event);
+      }
+    },
+    [onFocus],
+  );
+  const handleBlurWithin = useCallback(
+    (event: React.FocusEvent<HTMLDivElement>) => {
+      if (
+        !(event.relatedTarget instanceof Node) ||
+        !event.currentTarget.contains(event.relatedTarget)
+      ) {
+        onBlur?.(event);
+      }
+    },
+    [onBlur],
+  );
 
   // ------------------------------------------------------------- imperative --
 
@@ -656,6 +803,7 @@ export function PowerSearchTouchSurface({
           field={field}
           operator={operator}
           maxLength={maxTokenLength}
+          size={size}
           onClick={onClick}
           onRemove={onRemove}
           isDisabled={isDisabled}
@@ -670,6 +818,7 @@ export function PowerSearchTouchSurface({
         field={field}
         operator={operator}
         maxLength={maxTokenLength}
+        size={size}
         onClick={onClick}
         onRemove={onRemove}
         isDisabled={isDisabled}
@@ -733,8 +882,8 @@ export function PowerSearchTouchSurface({
           ref={disabledMessageTooltip.ref}
           role="group"
           aria-labelledby={labelId}
-          onFocus={onFocus}
-          onBlur={onBlur}
+          onFocus={handleFocusWithin}
+          onBlur={handleBlurWithin}
           data-testid={testId}
           {...mergeProps(
             themeProps('power-search', {
@@ -768,6 +917,7 @@ export function PowerSearchTouchSurface({
             type="button"
             id={triggerId}
             ref={triggerRef}
+            autoFocus={hasAutoFocus}
             onClick={openFieldList}
             // A disabled button is unreachable, so the reason for it is too.
             // Keep it focusable and block the action instead, the way the
@@ -806,7 +956,8 @@ export function PowerSearchTouchSurface({
 
       <BottomSheetSwitcher
         activeSheet={step}
-        onActiveSheetChange={handleActiveSheetChange}>
+        onActiveSheetChange={handleActiveSheetChange}
+        onTransitionEnd={handleSheetTransitionEnd}>
         <BottomSheet sheetId="fields" label={addFilterLabel} height="tall">
           <div {...stylex.props(styles.sheet)}>
             <div {...stylex.props(styles.header)}>
@@ -875,7 +1026,13 @@ export function PowerSearchTouchSurface({
               <div {...stylex.props(styles.headerRow)}>
                 <Button
                   label={t('@astryx.powersearch.mobile.back')}
-                  icon={<Icon icon="chevronLeft" size="sm" />}
+                  icon={
+                    <Icon
+                      icon="chevronLeft"
+                      size="sm"
+                      xstyle={rtlStyles.mirror}
+                    />
+                  }
                   isIconOnly
                   variant="ghost"
                   size="sm"
@@ -926,7 +1083,13 @@ export function PowerSearchTouchSurface({
                 {draft?.mode === 'create' && (
                   <Button
                     label={t('@astryx.powersearch.mobile.back')}
-                    icon={<Icon icon="chevronLeft" size="sm" />}
+                    icon={
+                      <Icon
+                        icon="chevronLeft"
+                        size="sm"
+                        xstyle={rtlStyles.mirror}
+                      />
+                    }
                     isIconOnly
                     variant="ghost"
                     size="sm"
@@ -944,6 +1107,14 @@ export function PowerSearchTouchSurface({
                     </Text>
                   )}
                 </div>
+                {draft?.mode === 'edit' && (
+                  <Button
+                    label={t('@astryx.powersearch.editor.cancel')}
+                    variant="ghost"
+                    size="sm"
+                    onClick={closeSheet}
+                  />
+                )}
               </div>
             </div>
             {draft != null && draftField != null && draftOperator != null ? (
@@ -960,10 +1131,14 @@ export function PowerSearchTouchSurface({
                     mode={draft.mode}
                     onSave={saved => {
                       if (saved == null) {
-                        handleDelete();
-                      } else {
-                        commitFilter(draft, saved.value);
+                        if (draft.mode === 'edit') {
+                          handleDelete();
+                        } else {
+                          closeSheet();
+                        }
+                        return;
                       }
+                      commitSavedFilter(draft, saved);
                     }}
                     onCancel={closeSheet}
                     saveButtonLabel={saveButtonLabel}
@@ -987,6 +1162,7 @@ export function PowerSearchTouchSurface({
                               icon="chevronRight"
                               size="sm"
                               color="secondary"
+                              xstyle={rtlStyles.mirror}
                             />
                           }
                           isDisabled={isReadOnly}
@@ -1002,6 +1178,7 @@ export function PowerSearchTouchSurface({
                       onChange={handleDraftValueChange}
                       onCommit={handleDraftValueCommit}
                       isDisabled={isReadOnly}
+                      maxMenuItems={maxOperatorMenuItems}
                       timezoneID={timezoneID}
                     />
                   </div>
@@ -1061,7 +1238,14 @@ function FieldRow({
       label={field.label}
       description={field.description ?? operatorLabel}
       startContent={field.icon}
-      endContent={<Icon icon="chevronRight" size="sm" color="secondary" />}
+      endContent={
+        <Icon
+          icon="chevronRight"
+          size="sm"
+          color="secondary"
+          xstyle={rtlStyles.mirror}
+        />
+      }
       onClick={() => onSelect(field)}
     />
   );

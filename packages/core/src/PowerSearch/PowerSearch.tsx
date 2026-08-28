@@ -437,9 +437,8 @@ export interface PowerSearchProps extends Omit<
   /** Timezone ID for date formatting. */
   timezoneID?: string;
   /**
-   * Controls how tokens overflow when the container is too narrow.
-   * Forwarded to Tokenizer.
-   * @default 'none'
+   * Controls token overflow on fine-pointer surfaces. Configured overflow modes
+   * retain that surface on coarse pointers as well. @default 'none'
    */
   tokenOverflowBehavior?: TokenizerOverflowBehavior;
   /**
@@ -492,9 +491,11 @@ type PopoverState =
  * Structured filter bar where each token represents a filter (field + operator + value).
  *
  * On fine pointers, users select fields from a typeahead and configure them in
- * an edit popover. On coarse pointers, the same component renders an in-field
- * “Add filters…” button and uses a bottom-sheet flow for adding and editing.
- * Existing token remove buttons delete directly on either surface.
+ * an edit popover. On supported coarse-pointer configurations, the same
+ * component renders an in-field “Add filters…” button and uses a bottom-sheet
+ * flow for adding and editing. Content search, nested filters, and configured
+ * token overflow retain the typeahead surface so their capabilities stay
+ * available. Existing token remove buttons delete directly on either surface.
  *
  * @example
  * ```
@@ -555,10 +556,23 @@ type PopoverState =
  * };
  * ```
  */
+function canUseTouchSurface(props: PowerSearchProps): boolean {
+  const {config, tokenOverflowBehavior} = props;
+  if (
+    config.contentSearchFieldKey != null ||
+    (tokenOverflowBehavior != null && tokenOverflowBehavior !== 'none')
+  ) {
+    return false;
+  }
+  return !config.fields.some(field =>
+    field.operators.some(operator => operator.value.type === 'nested'),
+  );
+}
+
 export function PowerSearch(props: PowerSearchProps): ReactNode {
   const isTouch = useMediaQuery('(pointer: coarse)');
 
-  return isTouch ? (
+  return isTouch && canUseTouchSurface(props) ? (
     <PowerSearchTouchSurface {...props} />
   ) : (
     <PointerPowerSearch {...props} />
@@ -848,6 +862,7 @@ function PointerPowerSearch({
             field={field}
             operator={operator}
             maxLength={maxTokenLength}
+            size={size}
             onClick={handleClick}
             onRemove={handleRemove}
             isDisabled={isDisabled}

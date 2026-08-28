@@ -404,6 +404,8 @@ export interface PowerSearchTokenProps {
   readonly field: PowerSearchField;
   readonly operator: PowerSearchOperator;
   readonly maxLength: number;
+  /** Token size inherited from PowerSearch. */
+  readonly size?: 'sm' | 'md' | 'lg';
   readonly onClick?: () => void;
   readonly onRemove?: () => void;
   readonly isDisabled?: boolean;

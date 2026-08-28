@@ -253,7 +253,7 @@ export const docs = {
   },
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, an in-field “Add filters…” button and each existing token open a bottom-sheet editor; the token remove button still deletes directly. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, an in-field “Add filters…” button and each existing token open a bottom-sheet editor; the token remove button still deletes directly. Configurations that rely on free-text content search, nested filters, or configured token-overflow behavior retain the typeahead surface so those capabilities are not lost. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
@@ -451,7 +451,7 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, an in-field “Add filters…” button and each existing token open a bottom-sheet editor; the token remove button still deletes directly. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, an in-field “Add filters…” button and each existing token open a bottom-sheet editor; the token remove button still deletes directly. Configurations that rely on free-text content search, nested filters, or configured token-overflow behavior retain the typeahead surface so those capabilities are not lost. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
@@ -480,10 +480,10 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Structured filter bar where each token represents filter (field+operator+value). Uses a typeahead and edit popover on fine pointers, and an in-field Add filters button with a bottom-sheet editor on coarse pointers.',
+    'Structured filter bar where each token represents filter (field+operator+value). Uses a typeahead and edit popover on fine pointers, and an in-field Add filters button with a bottom-sheet editor on supported coarse-pointer configurations; content search, nested filters, and configured token overflow retain the typeahead surface.',
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, an in-field “Add filters…” button and each existing token open a bottom-sheet editor; the token remove button still deletes directly. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, an in-field “Add filters…” button and each existing token open a bottom-sheet editor; the token remove button still deletes directly. Configurations that rely on free-text content search, nested filters, or configured token-overflow behavior retain the typeahead surface so those capabilities are not lost. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
