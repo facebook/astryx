@@ -45,6 +45,18 @@ export type {
   StyleOverrides,
 } from './defineTheme';
 
+export {
+  defineTonalPalettes,
+  getTonalPaletteRamp,
+  TONAL_PALETTE_STEPS,
+} from './palettes';
+export type {
+  ThemePaletteFamily,
+  ThemePalettes,
+  TonalPaletteRamp,
+  TonalPaletteStep,
+} from './palettes';
+
 export type {
   SyntaxTokenName,
   DomainTokenName,

@@ -5,6 +5,11 @@ import type {IconRegistry} from '../Icon/globalIconRegistry';
 import type {DefinedTheme} from './defineTheme';
 import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
 import {resolveThemeToken} from './tokens';
+import {
+  defineTonalPalettes,
+  TONAL_PALETTE_STEPS,
+  type TonalPaletteRamp,
+} from './palettes';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -238,6 +243,18 @@ describe('defineTheme', () => {
   it('works with no tokens', () => {
     const theme = defineTheme({name: 'bare'});
     expect(Object.keys(theme.tokens)).toHaveLength(0);
+  });
+
+  it('preserves approved palette metadata without emitting palette tokens', () => {
+    const light = Object.fromEntries(
+      TONAL_PALETTE_STEPS.map(step => [step, '#123456']),
+    ) as unknown as TonalPaletteRamp;
+    const palettes = defineTonalPalettes({blue: {light}});
+    const theme = defineTheme({name: 'palette-theme', palettes});
+
+    expect(theme.palettes).toBe(palettes);
+    expect(theme.palettes?.blue.light[50]).toBe('#123456');
+    expect(theme.tokens).toEqual({});
   });
 });
 
@@ -1391,6 +1408,29 @@ describe('defineTheme extends', () => {
     const base = defineTheme({name: 'base', indicators: {check: indicator}});
     const child = defineTheme({name: 'child', extends: base});
     expect(child.indicators?.check).toBe(indicator);
+  });
+
+  it('inherits palette families and lets the child replace one family', () => {
+    const makeRamp = (color: string) =>
+      Object.fromEntries(
+        TONAL_PALETTE_STEPS.map(step => [step, color]),
+      ) as unknown as TonalPaletteRamp;
+    const base = defineTheme({
+      name: 'base',
+      palettes: defineTonalPalettes({
+        blue: {light: makeRamp('#0068cc')},
+        green: {light: makeRamp('#098123')},
+      }),
+    });
+    const replacementBlue = {light: makeRamp('#529fff')};
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      palettes: defineTonalPalettes({blue: replacementBlue}),
+    });
+
+    expect(child.palettes?.blue).toBe(replacementBlue);
+    expect(child.palettes?.green).toBe(base.palettes?.green);
   });
 
   it('inherits onDark token overrides from base theme', () => {

@@ -47,10 +47,7 @@ import {
   collectThemingTargets,
   targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
-import {
-  collectUnloadedFonts,
-  formatFontLoadingHelp,
-} from './font-warning.mjs';
+import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -343,7 +340,6 @@ function readComponentDeclarations(pascalName) {
   return contents;
 }
 
-
 /** @type {Map<string, Array<{moduleName: string, interfacePrefix: string}>>} */
 const _augmentationTargetCache = new Map();
 
@@ -402,7 +398,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+        if (entry.name === 'node_modules' || entry.name === '__tests__')
+          continue;
         await scan(full);
         continue;
       }
@@ -539,12 +536,13 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (values.size === 0) continue;
 
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (await resolveAugmentationTargetCandidates(component)).find(
-        candidate =>
-          componentHasAugmentableInterface(
-            candidate.moduleName,
-            `${candidate.interfacePrefix}${propPascal}Map`,
-          ),
+      const target = (
+        await resolveAugmentationTargetCandidates(component)
+      ).find(candidate =>
+        componentHasAugmentableInterface(
+          candidate.moduleName,
+          `${candidate.interfacePrefix}${propPascal}Map`,
+        ),
       );
 
       // Only augment interfaces that actually exist as an extension point in
@@ -844,6 +842,7 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
           .join('\n')},\n` +
         `  __localTokenLineage: ${JSON.stringify(themeDef.__localTokenLineage)},\n`
       : '') +
+    serializeField('palettes', themeDef.palettes) +
     serializeField('components', themeDef.components) +
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight);

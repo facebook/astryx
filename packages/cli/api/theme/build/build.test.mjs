@@ -209,6 +209,31 @@ describe('themeBuild() — receipt', () => {
     );
   });
 
+  it('preserves approved palette metadata in the built theme module', async () => {
+    const themeFile = path.join(tmpDir, 'palette-theme.mjs');
+    const tones = Object.fromEntries(
+      Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
+    );
+    fs.writeFileSync(
+      themeFile,
+      `export default ${JSON.stringify({
+        name: 'palette-theme',
+        tokens: {'--color-accent': '#123456'},
+        palettes: {blue: {semantic: 'info', light: tones}},
+      })};\n`,
+    );
+
+    await themeBuild('palette-theme.mjs', {}, {cwd: tmpDir});
+
+    const built = fs.readFileSync(
+      path.join(tmpDir, 'palette-theme.js'),
+      'utf8',
+    );
+    expect(built).toContain('palettes: {');
+    expect(built).toContain('"semantic": "info"');
+    expect(built).toContain('"50": "#123456"');
+  });
+
   it('is silent by default (noopLogger) — no console output for a scripted caller', async () => {
     const themeFile = path.join(tmpDir, 'quiet.mjs');
     fs.writeFileSync(

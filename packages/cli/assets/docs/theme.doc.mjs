@@ -12,7 +12,7 @@ export const docs = {
   sections: [
     {
       title: 'Quick Start',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'code',
@@ -63,7 +63,7 @@ function App() {
     },
     {
       title: 'Available Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -118,7 +118,7 @@ function App() {
     },
     {
       title: 'Theme Props',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'table',
@@ -138,7 +138,7 @@ function App() {
     },
     {
       title: 'Creating a Custom Theme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -158,7 +158,7 @@ function App() {
     },
     {
       title: 'defineTheme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -230,12 +230,54 @@ const myTheme = defineTheme({
       ],
     },
     {
-      title: 'Extending a Theme',
-  category: 'guide',
+      title: 'Approved Tonal Palettes',
+      category: 'guide',
       content: [
         {
           type: 'prose',
-          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, component overrides, icons, and fonts. Only specify what you want to change; everything else carries over from the base theme.',
+          text: 'Attach approved tonal palettes when agents, audit tools, custom components, or data visualization need colors beyond the semantic token surface. Components still use semantic tokens first. If no semantic token fits, select an exact palette stop and record its family, tone, purpose, and measured contrast; do not invent a nearby hex value.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Define and attach an approved palette',
+          code: `import {defineTheme, defineTonalPalettes} from '@astryxdesign/core/theme';
+
+export const brandPalettes = defineTonalPalettes({
+  blue: {
+    semantic: 'info',
+    light: {
+      0: '#000000', 5: '#001229', 10: '#001f3d', 15: '#002c52',
+      20: '#003967', 25: '#00477d', 30: '#005594', 35: '#0064ab',
+      40: '#0073c3', 45: '#1682d5', 50: '#3290e2', 55: '#499fee',
+      60: '#60adfa', 65: '#78bbff', 70: '#91c8ff', 75: '#aad5ff',
+      80: '#c2e2ff', 85: '#d8ecff', 90: '#e9f4ff', 95: '#f5faff',
+      100: '#ffffff',
+    },
+  },
+});
+
+export const brandTheme = defineTheme({
+  name: 'brand',
+  palettes: brandPalettes,
+  tokens: {
+    '--color-accent': brandPalettes.blue.light[45],
+  },
+});`,
+        },
+        {
+          type: 'prose',
+          text: 'Each family requires all 21 canonical tone steps from 0 through 100 in increments of 5. Add a dark ramp when the theme uses separately tuned dark-mode colors; otherwise dark mode intentionally falls back to the light ramp. Palette metadata is preserved in built theme modules but does not generate CSS variables.',
+        },
+      ],
+    },
+    {
+      title: 'Extending a Theme',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, approved palette families, component overrides, icons, and fonts. Only specify what you want to change; everything else carries over from the base theme.',
         },
         {
           type: 'code',
@@ -258,23 +300,45 @@ const brandTheme = defineTheme({
           type: 'table',
           headers: ['Field', 'Merge behavior'],
           rows: [
-            ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
-            ['components', 'Deep-merged: child component rules override matching keys from the base.'],
-            ['icons', 'Shallow-merged: child icons override matching names from the base.'],
-            ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
-            ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
-            ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
+            [
+              'tokens',
+              'Base tokens are copied first, then child tokens override on top.',
+            ],
+            [
+              'components',
+              'Deep-merged: child component rules override matching keys from the base.',
+            ],
+            [
+              'icons',
+              'Shallow-merged: child icons override matching names from the base.',
+            ],
+            [
+              'indicators',
+              'Shallow-merged: child indicators override matching names from the base.',
+            ],
+            [
+              'palettes',
+              'Shallow-merged by family: a child replaces a complete named family and inherits the others.',
+            ],
+            [
+              'onDark, onLight',
+              "Deep-merged per surface: the base's resolved surface first, then the child's overrides.",
+            ],
+            [
+              'typography, motion, radius, color',
+              'Child config replaces base entirely (these are scale inputs, not additive).',
+            ],
           ],
         },
         {
           type: 'prose',
-          text: 'Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme\'s CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.',
+          text: "Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme's CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.",
         },
       ],
     },
     {
       title: 'Component Style Overrides',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -307,7 +371,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
+          text: "Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component's theming targets, public CSS variables, and which standard CSS properties are supported.",
         },
         {
           type: 'list',
@@ -328,11 +392,11 @@ const brandTheme = defineTheme({
     },
     {
       title: 'Custom Variants',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Themes can add new prop values to any component. Any `prop:value` key where the value isn\'t a built-in gets treated as a new variant. Use `astryx theme build` to generate TypeScript augmentations for type safety.',
+          text: "Themes can add new prop values to any component. Any `prop:value` key where the value isn't a built-in gets treated as a new variant. Use `astryx theme build` to generate TypeScript augmentations for type safety.",
         },
         {
           type: 'code',
@@ -371,13 +435,13 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Custom variants only work when the theme that defines them is active. The component\'s variant map is extended via module augmentation, with no changes to the component source needed.',
+          text: "Custom variants only work when the theme that defines them is active. The component's variant map is extended via module augmentation, with no changes to the component source needed.",
         },
       ],
     },
     {
       title: 'Building Themes for Production',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -411,7 +475,7 @@ const brandTheme = defineTheme({
             ],
             [
               'ocean.variants.d.ts',
-              '(Optional) Module augmentations for custom component prop values found in the theme\'s component overrides',
+              "(Optional) Module augmentations for custom component prop values found in the theme's component overrides",
             ],
           ],
         },
@@ -432,13 +496,13 @@ import './themes/ocean.css';
         },
         {
           type: 'prose',
-          text: 'The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app\'s job. See `astryx docs typography` for the full recipe.',
+          text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See `astryx docs typography` for the full recipe.",
         },
       ],
     },
     {
       title: 'Runtime vs Built Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -450,13 +514,13 @@ import './themes/ocean.css';
           rows: [
             [
               'Import (published theme)',
-              "@astryxdesign/theme-{name}",
-              "@astryxdesign/theme-{name}/built + theme.css",
+              '@astryxdesign/theme-{name}',
+              '@astryxdesign/theme-{name}/built + theme.css',
             ],
             [
               'Import (custom theme)',
               'defineTheme() directly',
-              "Built .js + .css from `astryx theme build`",
+              'Built .js + .css from `astryx theme build`',
             ],
             [
               'How it works',
@@ -494,14 +558,14 @@ import './themes/ocean.css';
           style: 'dont',
           items: [
             'Use runtime themes in production SSR apps; component overrides will flash on hydration.',
-            'Import /built without the CSS file; component overrides won\'t apply.',
+            "Import /built without the CSS file; component overrides won't apply.",
           ],
         },
       ],
     },
     {
       title: 'Light/Dark Mode',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -530,7 +594,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Nesting Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -556,7 +620,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Token Utilities',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -599,7 +663,7 @@ const chartTheme = {
     },
     {
       title: 'useTheme Hook',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',

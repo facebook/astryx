@@ -1,0 +1,53 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {describe, expect, it} from 'vitest';
+import {
+  defineTonalPalettes,
+  getTonalPaletteRamp,
+  TONAL_PALETTE_STEPS,
+  type ThemePalettes,
+  type TonalPaletteRamp,
+} from './palettes';
+
+function ramp(color = '#123456'): TonalPaletteRamp {
+  return Object.fromEntries(
+    TONAL_PALETTE_STEPS.map(step => [step, color]),
+  ) as unknown as TonalPaletteRamp;
+}
+
+describe('defineTonalPalettes', () => {
+  it('preserves a complete approved palette with exact key inference', () => {
+    const palettes = defineTonalPalettes({
+      blue: {semantic: 'info', light: ramp('#0068cc'), dark: ramp('#529fff')},
+    });
+
+    expect(palettes.blue.light[45]).toBe('#0068cc');
+    expect(getTonalPaletteRamp(palettes.blue, 'dark')[45]).toBe('#529fff');
+  });
+
+  it('falls back to the light ramp when no separate dark ramp exists', () => {
+    const palettes = defineTonalPalettes({neutral: {light: ramp('#777777')}});
+
+    expect(getTonalPaletteRamp(palettes.neutral, 'dark')).toBe(
+      palettes.neutral.light,
+    );
+  });
+
+  it('rejects an incomplete ramp', () => {
+    const palettes = {
+      blue: {light: {0: '#000000', 100: '#ffffff'}},
+    } as unknown as ThemePalettes;
+
+    expect(() => defineTonalPalettes(palettes)).toThrow(
+      'Palette "blue" light tone 5 must be an opaque six-digit hex color',
+    );
+  });
+
+  it('rejects non-opaque or malformed colors', () => {
+    const invalid = {...ramp(), 50: '#12345680'} as TonalPaletteRamp;
+
+    expect(() => defineTonalPalettes({blue: {light: invalid}})).toThrow(
+      'must be an opaque six-digit hex color',
+    );
+  });
+});

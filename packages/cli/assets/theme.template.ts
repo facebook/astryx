@@ -90,9 +90,9 @@ export const myTheme = defineTheme({
 
   /**
    * Start from another theme instead of the defaults. Tokens are copied then
-   * overridden, `components` deep-merge, `icons` shallow-merge — but the scale
-   * configs below REPLACE the base's rather than merging, because they are
-   * inputs to a generator, not values.
+   * overridden, palette families and icons shallow-merge, and `components`
+   * deep-merge — but the scale configs below REPLACE the base's rather than
+   * merging, because they are inputs to a generator, not values.
    *
    * Reference: `astryx theme list` (themes you can install and extend).
    */
@@ -134,6 +134,21 @@ export const myTheme = defineTheme({
    * `astryx docs tokens` for every colour token and its light/dark default.
    */
   color: {accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard'},
+
+  /**
+   * Optional approved tonal palettes for agents, audit tools, custom
+   * components, and data visualization. Define these with
+   * `defineTonalPalettes()` in a separate palette module, then attach them to
+   * the theme. Every family needs the canonical 0–100 steps in increments of 5.
+   *
+   * Palettes are authoring metadata, not extra CSS variables. Components use
+   * semantic tokens first. When no semantic token fits, choose an exact palette
+   * stop and document the family, tone, role, and contrast relationship. Do not
+   * invent or approximate a hex value when an approved stop exists.
+   *
+   * Reference: `astryx docs theme` → Approved tonal palettes.
+   */
+  // palettes: approvedPalettes,
 
   /**
    * Type scale and the three font roles.
