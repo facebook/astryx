@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] The theme-showcase page no longer clips its own controls. In the store's product cards the quantity field and "Add to cart" button spilled out of both sides of the card; in the checkout card the card number truncated mid-number (`1234 1234 12`), the country selector ellipsized, and the pay button was left with only a few pixels of slack.
+[fix] The theme-showcase page no longer clips its own controls. In the store's product cards the quantity field and "Add to cart" button spilled out of both sides of the card; in the checkout card the card number truncated mid-number (`1234 1234 12`), the country selector ellipsized, and the pay button was left with only a few pixels of slack. (#5539)
 
 @rubyycheung
 

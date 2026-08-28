@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Text, Heading: a truncated label shows one tooltip, not two.
+[fix] Text, Heading: a truncated label shows one tooltip, not two. (#5559)
 
 When `maxLines` clipped the text, both components rendered Astryx's `Tooltip`
 **and** set the native `title` attribute to the same string. Hovering drew

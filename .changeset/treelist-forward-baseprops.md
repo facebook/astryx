@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] TreeList: forward `aria-label`/`aria-labelledby` to the `role="tree"` element so a tree can be named
+[fix] TreeList: forward `aria-label`/`aria-labelledby` to the `role="tree"` element so a tree can be named (#5493)
 
 `TreeList` destructured a fixed set of props with no rest spread, so every `BaseProps` attribute (`aria-*`, `role`, `tabIndex`, `id`, event handlers) was dropped and never reached the DOM. A tree without a visible header could not be named at all - a screen reader announced an unnamed tree with no way to know what it was.
 

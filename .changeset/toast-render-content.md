@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Toast: `renderContent` on the `showToast` options replaces the content of that toast's card with your own layout.
+[feat] Toast: `renderContent` on the `showToast` options replaces the content of that toast's card with your own layout. (#5428)
 
 ```tsx
 showToast({

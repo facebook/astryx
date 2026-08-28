@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Platform detection reads the client-hints `Unknown` sentinel as no answer, and lives in one place
+[fix] Platform detection reads the client-hints `Unknown` sentinel as no answer, and lives in one place (#5394)
 
 Follow-up to #5325, which taught `useHotkeys` and `Kbd` to fall through to
 `navigator.platform` when `userAgentData.platform` is blank. `Unknown` is the

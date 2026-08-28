@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Markdown and List forward the rest of `BaseProps`
+[fix] Markdown and List forward the rest of `BaseProps` (#5288)
 
 Both declare `BaseProps`, and `BaseProps` documents that `data-*`, `aria-*` and
 `role` reach the element — but each destructured a fixed set of props and

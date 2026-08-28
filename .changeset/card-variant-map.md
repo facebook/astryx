@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Card: make the `variant` axis theme-extensible through a `CardVariantMap` interface
+[feat] Card: make the `variant` axis theme-extensible through a `CardVariantMap` interface (#5551)
 
 `CardVariant` was a hand-written union backed by a closed style record, so a theme could not add a card variant: an unknown value neither type-checked nor rendered. It is now `keyof CardVariantMap`, an interface exported from `@astryxdesign/core/Card` that a theme build augments — the same shape Button, Badge, Section and the other extensible axes already ship.
 

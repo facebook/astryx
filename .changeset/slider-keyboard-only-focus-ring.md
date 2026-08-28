@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Slider: dragging the thumb with a mouse no longer draws the keyboard focus ring
+[fix] Slider: dragging the thumb with a mouse no longer draws the keyboard focus ring (#5463)
 
 The thumb is a `div[role="slider"]`, and the track's `pointerdown` handler
 calls `preventDefault()` and then focuses the thumb from script. Chromium

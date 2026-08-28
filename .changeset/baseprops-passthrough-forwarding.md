@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Seven components now forward the pass-through props promised by `BaseProps`
+[fix] Seven components now forward the pass-through props promised by `BaseProps` (#5563)
 
 `MetadataListItem`, `NavHeadingMenu`, `Timestamp`, `Token`, `TopNavMegaMenu`, `TopNavMenu`, and `TypeaheadItem` now forward neutral `aria-*`, `id`, `tabIndex`, event-handler, and `data-*` props to their rendered DOM element. Styling still merges through `mergeProps`, contract-owned attributes retain precedence, and owned handlers compose through `composeEventHandlers` with the caller first.
 

@@ -2,7 +2,7 @@
 '@astryxdesign/build': patch
 ---
 
-[fix] Vite build: Astryx and product styles are split into their own cascade layers, so a theme's component overrides apply in a production build
+[fix] Vite build: Astryx and product styles are split into their own cascade layers, so a theme's component overrides apply in a production build (#5410)
 @cixzhang
 
 StyleX emits every rule it collects into one top-level `@layer

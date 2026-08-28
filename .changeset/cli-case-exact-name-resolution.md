@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Component and hook names resolve case-exactly on macOS and Windows, matching Linux
+[fix] Component and hook names resolve case-exactly on macOS and Windows, matching Linux (#5478)
 
 `findComponentReadme`, `findComponentSource` and `findHookDoc` probed candidate
 paths with `fs.existsSync`, which answers through the filesystem's own case

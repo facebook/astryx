@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Badge: a long label no longer escapes its container.
+[fix] Badge: a long label no longer escapes its container. (#5558)
 
 `Badge` set `white-space: nowrap` with nothing to clip it — the one pairing
 that neither wraps nor truncates. A label wider than the space available

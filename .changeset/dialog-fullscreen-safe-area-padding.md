@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Dialog: fullscreen safe-area padding follows writing direction and defers to explicit padding
+[fix] Dialog: fullscreen safe-area padding follows writing direction and defers to explicit padding (#5367)
 
 Two corrections to the fullscreen safe-area padding that shipped in 0.5.0.
 

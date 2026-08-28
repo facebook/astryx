@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Selector: a caller-supplied `id` now drives the trigger's whole identity, not just its `id` attribute
+[fix] Selector: a caller-supplied `id` now drives the trigger's whole identity, not just its `id` attribute (#5561)
 
 `Selector` generated its trigger id with `useId()` and set it on the trigger button before spreading `...rest`, so a caller's `id` — accepted through `BaseProps` — replaced it on the button while the generated value stayed behind as the target of the listbox's `aria-labelledby` and of the `Field` label's `htmlFor`. Passing `id` therefore left the listbox with no accessible name and the field label pointing at an element that does not exist, silently and with a clean typecheck, lint and build.
 

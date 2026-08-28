@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] New `table-filter` page template: a table page built around a filter token list
+[feat] New `table-filter` page template: a table page built around a filter token list (#5448)
 
 Ports the feature set of the internal XDS table page pattern onto Astryx
 primitives. The filter row is a token list of quick-filter toggles and field
@@ -27,4 +27,4 @@ leaves it.
 Uses the `Table - Filtering` category, already reserved in the
 `TemplateCategory` union.
 
-@ernesttien
+@ernestt

@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Card: reflect `elevation` as a theme target so a theme can reach it, and correct the documented `padding` default
+[fix] Card: reflect `elevation` as a theme target so a theme can reach it, and correct the documented `padding` default (#5491)
 
 `elevation` picked a style object but never reached the DOM, so `astryx-card` exposed `data-variant` and nothing for elevation and a theme could not style the four shadow tiers. It now rides `themeProps` alongside `variant`.
 
