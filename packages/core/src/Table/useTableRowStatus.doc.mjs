@@ -17,6 +17,14 @@ export const docs = {
       required: true,
     },
   ],
+  theming: {
+    targets: [
+      {
+        className: 'astryx-table-row-status',
+        visualProps: ['color', 'presentation'],
+      },
+    ],
+  },
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */

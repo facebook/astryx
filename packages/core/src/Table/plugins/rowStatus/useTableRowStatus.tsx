@@ -18,6 +18,8 @@ import {Icon, type IconColor, type IconName} from '../../../Icon';
 import {Tooltip} from '../../../Tooltip';
 import {useTranslator} from '../../../i18n';
 import {VisuallyHidden} from '../../../VisuallyHidden';
+import {mergeProps} from '../../../utils';
+import {themeProps} from '../../../utils/themeProps';
 import type {TableColumn, TablePlugin} from '../../types';
 
 /**
@@ -181,7 +183,13 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
             return (
               <Tooltip content={status.label}>
                 <span
-                  {...stylex.props(styles.wrap)}
+                  {...mergeProps(
+                    themeProps('table-row-status', {
+                      color: status.color,
+                      presentation: status.icon ? 'icon' : 'dot',
+                    }),
+                    stylex.props(styles.wrap),
+                  )}
                   role="img"
                   aria-label={status.label}>
                   {signifier}

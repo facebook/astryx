@@ -69,6 +69,9 @@ describe('useTableRowStatus', () => {
     // Default (no icon) renders a plain colored dot: no svg in the indicator.
     const dot = screen.getByRole('img', {name: 'Error'});
     expect(dot.querySelector('svg')).toBeNull();
+    expect(dot).toHaveClass('astryx-table-row-status');
+    expect(dot).toHaveAttribute('data-color', 'red');
+    expect(dot).toHaveAttribute('data-presentation', 'dot');
   });
 
   it('renders no indicator for rows returning null', () => {
@@ -115,6 +118,9 @@ describe('useTableRowStatus', () => {
     // Icon-mode still exposes the accessible label via role=img.
     const indicator = screen.getByRole('img', {name: 'Error'});
     expect(indicator).toBeInTheDocument();
+    expect(indicator).toHaveClass('astryx-table-row-status');
+    expect(indicator).toHaveAttribute('data-color', 'red');
+    expect(indicator).toHaveAttribute('data-presentation', 'icon');
     // An SVG icon is rendered inside the indicator (dot mode has no svg).
     expect(indicator.querySelector('svg')).not.toBeNull();
   });

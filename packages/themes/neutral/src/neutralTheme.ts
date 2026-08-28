@@ -1200,6 +1200,34 @@ export const neutralTheme = defineTheme({
       },
     },
 
+    // Dots use filled-state colors; icons use foreground colors.
+    'table-row-status': {
+      'color:accent+presentation:dot': {
+        '--color-icon-accent': STATUS_COLOR_ROLES.fill.info,
+      },
+      'color:success+presentation:dot': {
+        '--color-icon-green': STATUS_COLOR_ROLES.fill.success,
+      },
+      'color:warning+presentation:dot': {
+        '--color-icon-orange': STATUS_COLOR_ROLES.fill.warning,
+      },
+      'color:error+presentation:dot': {
+        '--color-icon-red': STATUS_COLOR_ROLES.fill.error,
+      },
+      'color:accent+presentation:icon': {
+        '--color-accent': STATUS_COLOR_ROLES.foreground.info,
+      },
+      'color:success+presentation:icon': {
+        '--color-success': STATUS_COLOR_ROLES.foreground.success,
+      },
+      'color:warning+presentation:icon': {
+        '--color-warning': STATUS_COLOR_ROLES.foreground.warning,
+      },
+      'color:error+presentation:icon': {
+        '--color-error': STATUS_COLOR_ROLES.foreground.error,
+      },
+    },
+
     // The off Switch track is the control boundary.
     switch: {
       base: {

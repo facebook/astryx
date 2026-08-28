@@ -898,6 +898,425 @@ function TokenContrastSection({
   );
 }
 
+function StatusConsumerTable() {
+  const getStatus = useCallback(
+    (row: StatusAuditRow) => ({
+      color: row.color,
+      icon: row.icon,
+      label: row.label,
+    }),
+    [],
+  );
+  const rowStatus = useTableRowStatus<StatusAuditRow>({getStatus});
+  return (
+    <Table
+      data={STATUS_AUDIT_ROWS}
+      columns={STATUS_AUDIT_COLUMNS}
+      idKey="id"
+      density="compact"
+      plugins={{rowStatus}}
+    />
+  );
+}
+
+function StatusIndicatorSection({
+  theme,
+  mode,
+}: {
+  theme: DefinedTheme;
+  mode: Mode;
+}) {
+  const audit = getStatusIndicatorContrast(theme, mode);
+  return (
+    <div style={S.section}>
+      <h3 style={S.sectionTitle}>Status indicators</h3>
+      <p
+        style={{
+          margin: '0 0 20px',
+          color: 'var(--color-text-secondary)',
+          fontSize: 10,
+          lineHeight: 1.5,
+        }}>
+        The same semantic hue families appear as standalone dots, Avatar
+        presence, table-row signifiers, Stepper states, and chat delivery
+        metadata. Filled indicators use Badge fill colors; glyphs and text use
+        darker or lighter foreground stops chosen for their adjacent surface.
+      </p>
+
+      <h4 style={{margin: '0 0 10px', fontSize: 14}}>Semantic color roles</h4>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: 10,
+          marginBottom: 24,
+        }}>
+        {[
+          {
+            role: 'Fill',
+            consumers: 'Badge, StatusDot, filled AvatarStatusDot',
+            rule: 'The semantic color is the component’s solid plate.',
+          },
+          {
+            role: 'Foreground',
+            consumers: 'Banner, Stepper, Table icons, chat status',
+            rule: 'A darker or lighter semantic stop sits directly on a surface.',
+          },
+          {
+            role: 'Surface',
+            consumers: 'Banner and FieldStatus containers',
+            rule: 'A low-emphasis tint supports semantic foreground content.',
+          },
+        ].map(item => (
+          <div
+            key={item.role}
+            style={{
+              padding: 12,
+              border: '1px solid var(--color-border)',
+              borderRadius: 10,
+              background: 'var(--color-background-card)',
+            }}>
+            <div style={{fontSize: 12, fontWeight: 700, marginBottom: 4}}>
+              {item.role}
+            </div>
+            <div
+              style={{
+                color: 'var(--color-text-secondary)',
+                fontSize: 10,
+                lineHeight: 1.45,
+              }}>
+              {item.consumers}
+              <br />
+              {item.rule}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h4 style={{margin: '0 0 10px', fontSize: 14}}>Component previews</h4>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
+          gap: 12,
+          alignItems: 'start',
+        }}>
+        <div
+          style={{
+            padding: 16,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+            minWidth: 0,
+          }}>
+          <div style={buttonRowLabelStyle}>StatusDot — default</div>
+          <HStack gap={3} vAlign="center" wrap="wrap">
+            {audit.statusDots.map(row => (
+              <HStack key={row.variant} gap={1} vAlign="center">
+                <StatusDot variant={row.variant} label={row.name} />
+                <Text type="supporting">{row.name}</Text>
+              </HStack>
+            ))}
+          </HStack>
+        </div>
+
+        <div
+          style={{
+            padding: 16,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+            minWidth: 0,
+          }}>
+          <div style={buttonRowLabelStyle}>AvatarStatusDot</div>
+          <HStack gap={3} wrap="wrap">
+            {(['success', 'neutral', 'error'] as const).map(variant => (
+              <VStack key={variant} gap={1} hAlign="center">
+                <Avatar
+                  name={variant}
+                  size="lg"
+                  status={<AvatarStatusDot variant={variant} label={variant} />}
+                />
+                <Text type="supporting">{variant}</Text>
+              </VStack>
+            ))}
+          </HStack>
+        </div>
+
+        <div
+          style={{
+            gridColumn: '1 / -1',
+            padding: 16,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+            minWidth: 0,
+            overflowX: 'auto',
+          }}>
+          <div style={buttonRowLabelStyle}>Stepper status glyphs</div>
+          <Stepper activeStep={3} orientation="horizontal">
+            <Step step={0} label="Done" status="success" />
+            <Step step={1} label="Review" status="warning" />
+            <Step step={2} label="Blocked" status="error" />
+            <Step step={3} label="Current" status="accent" />
+          </Stepper>
+        </div>
+
+        <div
+          style={{
+            gridColumn: '1 / -1',
+            padding: 16,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+            minWidth: 0,
+            overflowX: 'auto',
+          }}>
+          <div style={buttonRowLabelStyle}>Table row status</div>
+          <StatusConsumerTable />
+        </div>
+
+        <div
+          style={{
+            padding: 16,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+            minWidth: 0,
+          }}>
+          <div style={buttonRowLabelStyle}>ChatMessageMetadata</div>
+          <div style={{display: 'flex', flexWrap: 'wrap', gap: 12}}>
+            {(['sending', 'sent', 'delivered', 'read', 'error'] as const).map(
+              status => (
+                <ChatMessage key={status} sender="assistant">
+                  <ChatMessageMetadata status={status} />
+                </ChatMessage>
+              ),
+            )}
+          </div>
+        </div>
+
+        <div
+          style={{
+            padding: 16,
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            background: 'var(--color-background-card)',
+            minWidth: 0,
+          }}>
+          <div style={buttonRowLabelStyle}>ChatToolCalls</div>
+          <ChatToolCalls
+            calls={[
+              {name: 'search', target: 'status consumers', status: 'pending'},
+              {name: 'audit', target: 'contrast pairs', status: 'running'},
+              {
+                name: 'test',
+                target: 'neutral theme',
+                status: 'complete',
+              },
+              {
+                name: 'publish',
+                target: 'preview',
+                status: 'error',
+                errorMessage: 'Example failure state',
+              },
+            ]}
+          />
+        </div>
+      </div>
+
+      <h4 style={{margin: '28px 0 6px', fontSize: 14}}>Contrast evaluation</h4>
+      <p
+        style={{
+          margin: '0 0 10px',
+          color: 'var(--color-text-secondary)',
+          fontSize: 10,
+          lineHeight: 1.5,
+        }}>
+        Measurements are listed separately from the rendered components so the
+        visual review and the WCAG decision do not compete for space.
+      </p>
+
+      <div style={{overflowX: 'auto'}}>
+        <table
+          style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: 11,
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+          <thead>
+            <tr>
+              {[
+                'StatusDot',
+                'Plate / parent',
+                'Custom mark / plate',
+                'Standalone use',
+              ].map(label => (
+                <th
+                  key={label}
+                  style={{
+                    padding: '7px 8px',
+                    borderBottom: '1px solid var(--color-border)',
+                    textAlign:
+                      label === 'Plate / parent' ||
+                      label === 'Custom mark / plate'
+                        ? 'right'
+                        : 'left',
+                  }}>
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {audit.statusDots.map(row => {
+              const standalonePasses =
+                row.plateRatio != null && row.plateRatio >= 3;
+              return (
+                <tr key={row.variant}>
+                  <td style={{padding: '8px'}}>{row.name}</td>
+                  <td style={{padding: '8px', textAlign: 'right'}}>
+                    {row.plateRatio == null
+                      ? '—'
+                      : `${row.plateRatio.toFixed(2)}:1`}
+                  </td>
+                  <td style={{padding: '8px', textAlign: 'right'}}>
+                    {row.markRatio == null
+                      ? '—'
+                      : `${row.markRatio.toFixed(2)}:1`}
+                  </td>
+                  <td
+                    style={{
+                      padding: '8px',
+                      color: standalonePasses
+                        ? 'var(--color-success)'
+                        : 'var(--color-warning)',
+                      fontWeight: 700,
+                    }}>
+                    {standalonePasses
+                      ? 'Passes as a binary cue'
+                      : 'Needs a label or custom mark'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <p
+        style={{
+          margin: '8px 0 18px',
+          color: 'var(--color-text-secondary)',
+          fontSize: 10,
+          lineHeight: 1.5,
+        }}>
+        StatusDot does not add an icon by default. With adjacent visible text,
+        the plate is redundant and the text carries the status. The custom-icon
+        slot is audited separately by the “custom mark / plate” ratio. A plain
+        standalone dot is only sufficient for a binary present/absent cue and
+        then its plate must reach 3:1 against the parent; an accessible name
+        alone does not fix color-only meaning for sighted users.
+      </p>
+
+      <h4 style={{margin: '22px 0 6px', fontSize: 14}}>
+        Consumer requirements
+      </h4>
+      <div style={{overflowX: 'auto'}}>
+        <table
+          style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: 11,
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+          <thead>
+            <tr>
+              {[
+                'Consumer',
+                'Meaningful relationship',
+                'Worst ratio',
+                'Contrast',
+                'Semantics',
+              ].map(label => (
+                <th
+                  key={label}
+                  style={{
+                    padding: '7px 8px',
+                    borderBottom: '1px solid var(--color-border)',
+                    textAlign: label === 'Worst ratio' ? 'right' : 'left',
+                  }}>
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {audit.consumers.map(row => {
+              const passes = row.ratio != null && row.ratio >= row.minimum;
+              return (
+                <tr key={row.consumer}>
+                  <td style={{padding: '8px'}}>{row.consumer}</td>
+                  <td style={{padding: '8px'}}>{row.relationship}</td>
+                  <td style={{padding: '8px', textAlign: 'right'}}>
+                    {row.ratio == null ? '—' : `${row.ratio.toFixed(2)}:1`}
+                  </td>
+                  <td
+                    style={{
+                      padding: '8px',
+                      color: passes
+                        ? 'var(--color-success)'
+                        : 'var(--color-error)',
+                      fontWeight: 700,
+                    }}>
+                    {passes ? 'Pass' : 'Fail'} ≥{row.minimum}:1
+                  </td>
+                  <td
+                    style={{
+                      padding: '8px',
+                      color: row.semanticsPass
+                        ? 'var(--color-success)'
+                        : 'var(--color-error)',
+                      fontWeight: 700,
+                    }}>
+                    {row.semantics}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p
+        style={{
+          margin: '8px 0 0',
+          color: 'var(--color-text-secondary)',
+          fontSize: 10,
+          lineHeight: 1.5,
+        }}>
+        AvatarStatusDot uses fill, ring, and minus shapes so status is not color
+        alone. Table row status should use distinct icons when several statuses
+        coexist; its required accessible label does not provide a visible
+        non-color cue. Stepper status glyphs are visually meaningful even though
+        hidden from assistive technology, which receives equivalent status text.
+        Chat metadata includes visible text, so its 4.5:1 text result is the
+        controlling requirement and the repeated icon is redundant.
+        ChatToolCalls currently exposes error detail, while pending, running,
+        and complete rely on their icon or generic Spinner name; those states
+        need an explicit accessible status in a separate component fix. When a
+        StatusDot or Badge is supplied through Button, Tab, SideNavHeading, or
+        TopNavHeading end content, remeasure it against every host background
+        and interaction state; slot ownership is not a contrast exception. The
+        table-row plugin exposes separate dot and icon theme targets: semantic
+        dots use the shared fill role, while semantic icons use the shared
+        foreground role.
+      </p>
+    </div>
+  );
+}
+
 const BUTTON_VARIANTS = [
   'primary',
   'secondary',
@@ -1269,6 +1688,302 @@ function getTokenContrast(theme: DefinedTheme, mode: Mode) {
       };
     }
   });
+}
+
+const STATUS_DOT_DEFAULTS = {
+  accent: {
+    backgroundColor: 'var(--color-accent)',
+    color: 'var(--color-on-accent)',
+  },
+  success: {
+    backgroundColor: 'var(--color-success)',
+    color: 'var(--color-on-success)',
+  },
+  warning: {
+    backgroundColor: 'var(--color-warning)',
+    color: 'var(--color-on-warning)',
+  },
+  error: {
+    backgroundColor: 'var(--color-error)',
+    color: 'var(--color-on-error)',
+  },
+  neutral: {
+    backgroundColor: 'var(--color-icon-secondary)',
+    color: 'var(--color-background-surface)',
+  },
+} as const;
+
+function getStatusIndicatorContrast(theme: DefinedTheme, mode: Mode) {
+  const parentTokens = [
+    '--color-background-body',
+    '--color-background-surface',
+    '--color-background-card',
+  ] as const;
+  const minimumAgainstParents = (foreground: string) =>
+    Math.min(
+      ...parentTokens.map(parentToken => {
+        const parent = resolveToken(theme, parentToken, mode);
+        return contrastRatio(compositeColor(foreground, parent), parent);
+      }),
+    );
+
+  const statusDots = STATUS_DOT_VARIANTS.map(variant => {
+    try {
+      const statusBlock = theme.components?.['status-dot'] ?? {};
+      const base = statusBlock.base ?? {};
+      const override = statusBlock[`variant:${variant}`] ?? {};
+      const local = Object.fromEntries(
+        Object.entries({...base, ...override}).filter(
+          (entry): entry is [string, string] =>
+            entry[0].startsWith('--') && typeof entry[1] === 'string',
+        ),
+      );
+      const plate = resolveThemeColor(
+        theme,
+        String(
+          override.backgroundColor ??
+            base.backgroundColor ??
+            STATUS_DOT_DEFAULTS[variant].backgroundColor,
+        ),
+        mode,
+        local,
+      );
+      const mark = resolveThemeColor(
+        theme,
+        String(
+          override.color ?? base.color ?? STATUS_DOT_DEFAULTS[variant].color,
+        ),
+        mode,
+        local,
+      );
+      const resolvedParent = resolveToken(
+        theme,
+        '--color-background-surface',
+        mode,
+      );
+      const resolvedPlate = compositeColor(plate, resolvedParent);
+      return {
+        variant,
+        name: variant[0].toUpperCase() + variant.slice(1),
+        plateRatio: minimumAgainstParents(plate),
+        markRatio: contrastRatio(
+          compositeColor(mark, resolvedPlate),
+          resolvedPlate,
+        ),
+      };
+    } catch {
+      return {
+        variant,
+        name: variant[0].toUpperCase() + variant.slice(1),
+        plateRatio: undefined,
+        markRatio: undefined,
+      };
+    }
+  });
+
+  const avatarVariants = [
+    {
+      variant: 'success',
+      backgroundColor: 'var(--color-success)',
+      color: 'var(--color-background-surface)',
+      relationship: 'filled plate / separator',
+    },
+    {
+      variant: 'neutral',
+      backgroundColor: 'var(--color-background-surface)',
+      color: 'var(--color-text-secondary)',
+      relationship: 'ring / plate',
+    },
+    {
+      variant: 'error',
+      backgroundColor: 'var(--color-error)',
+      color: 'var(--color-background-surface)',
+      relationship: 'plate / separator and minus / plate',
+    },
+  ] as const;
+  const avatarRatios = avatarVariants.map(item => {
+    const block = theme.components?.['avatar-status-dot'] ?? {};
+    const base = block.base ?? {};
+    const override = block[`variant:${item.variant}`] ?? {};
+    const local = Object.fromEntries(
+      Object.entries({...base, ...override}).filter(
+        (entry): entry is [string, string] =>
+          entry[0].startsWith('--') && typeof entry[1] === 'string',
+      ),
+    );
+    const plate = resolveThemeColor(
+      theme,
+      String(
+        override.backgroundColor ??
+          base.backgroundColor ??
+          item.backgroundColor,
+      ),
+      mode,
+      local,
+    );
+    const mark = resolveThemeColor(
+      theme,
+      String(override.color ?? base.color ?? item.color),
+      mode,
+      local,
+    );
+    const separator = resolveThemeColor(
+      theme,
+      String(
+        override.borderColor ??
+          base.borderColor ??
+          'var(--color-background-surface)',
+      ),
+      mode,
+      local,
+    );
+    const resolvedPlate = compositeColor(plate, separator);
+    const plateRatio = contrastRatio(resolvedPlate, separator);
+    const markRatio = contrastRatio(
+      compositeColor(mark, resolvedPlate),
+      resolvedPlate,
+    );
+    return item.variant === 'neutral'
+      ? markRatio
+      : item.variant === 'error'
+        ? Math.min(plateRatio, markRatio)
+        : plateRatio;
+  });
+
+  const stepIndicatorBlock = theme.components?.['step-indicator'] ?? {};
+  const stepIndicatorRatios = (
+    [
+      ['accent', '--color-accent'],
+      ['success', '--color-success'],
+      ['warning', '--color-warning'],
+      ['error', '--color-error'],
+    ] as const
+  ).map(([status, token]) => {
+    const local = Object.fromEntries(
+      Object.entries({
+        ...(stepIndicatorBlock.base ?? {}),
+        ...(stepIndicatorBlock[`status:${status}`] ?? {}),
+      }).filter(
+        (entry): entry is [string, string] =>
+          entry[0].startsWith('--') && typeof entry[1] === 'string',
+      ),
+    );
+    return minimumAgainstParents(
+      resolveThemeColor(theme, `var(${token})`, mode, local),
+    );
+  });
+  const stepperRatio = Math.min(...stepIndicatorRatios);
+
+  const tableStatusBlock = theme.components?.['table-row-status'] ?? {};
+  const tableStatusRatio = Math.min(
+    ...(
+      [
+        ['accent', '--color-accent'],
+        ['success', '--color-success'],
+        ['warning', '--color-warning'],
+        ['error', '--color-error'],
+        ['gray', '--color-icon-gray'],
+      ] as const
+    ).map(([color, token]) => {
+      const local = Object.fromEntries(
+        Object.entries({
+          ...(tableStatusBlock.base ?? {}),
+          ...(tableStatusBlock[`color:${color}+presentation:icon`] ?? {}),
+        }).filter(
+          (entry): entry is [string, string] =>
+            entry[0].startsWith('--') && typeof entry[1] === 'string',
+        ),
+      );
+      return minimumAgainstParents(
+        resolveThemeColor(theme, `var(${token})`, mode, local),
+      );
+    }),
+  );
+
+  const chatMetadataBlock = theme.components?.['chat-message-metadata'] ?? {};
+  const chatMetadataLocal = Object.fromEntries(
+    Object.entries(chatMetadataBlock.base ?? {}).filter(
+      (entry): entry is [string, string] =>
+        entry[0].startsWith('--') && typeof entry[1] === 'string',
+    ),
+  );
+  const chatRatio = Math.min(
+    minimumAgainstParents(resolveToken(theme, '--color-text-secondary', mode)),
+    minimumAgainstParents(
+      resolveThemeColor(theme, 'var(--color-error)', mode, chatMetadataLocal),
+    ),
+  );
+
+  const chatToolBlock = theme.components?.['chat-tool-calls'] ?? {};
+  const chatToolLocal = Object.fromEntries(
+    Object.entries(chatToolBlock.base ?? {}).filter(
+      (entry): entry is [string, string] =>
+        entry[0].startsWith('--') && typeof entry[1] === 'string',
+    ),
+  );
+  const toolStatusRatio = Math.min(
+    minimumAgainstParents(resolveToken(theme, '--color-text-secondary', mode)),
+    ...(['--color-success', '--color-error'] as const).flatMap(token => {
+      const foreground = resolveThemeColor(
+        theme,
+        `var(${token})`,
+        mode,
+        chatToolLocal,
+      );
+      const channels = parseColor(foreground).rgb.join(', ');
+      return parentTokens.map(parentToken => {
+        const parent = resolveToken(theme, parentToken, mode);
+        const plate = compositeColor(`rgba(${channels}, 0.15)`, parent);
+        return contrastRatio(foreground, plate);
+      });
+    }),
+  );
+
+  return {
+    statusDots,
+    consumers: [
+      {
+        consumer: 'AvatarStatusDot',
+        relationship: 'built-in fill, ring, or minus against its plate',
+        ratio: Math.min(...avatarRatios),
+        minimum: 3,
+        semantics: 'Pass when label is supplied',
+        semanticsPass: true,
+      },
+      {
+        consumer: 'Stepper',
+        relationship: 'semantic status glyph against parent surface',
+        ratio: stepperRatio,
+        minimum: 3,
+        semantics: 'Pass: shape + hidden status text',
+        semanticsPass: true,
+      },
+      {
+        consumer: 'Table row status',
+        relationship: 'semantic status icon against row surface',
+        ratio: tableStatusRatio,
+        minimum: 3,
+        semantics: 'Pass here with icon + label',
+        semanticsPass: true,
+      },
+      {
+        consumer: 'ChatMessageMetadata',
+        relationship: 'visible status label against message parent',
+        ratio: chatRatio,
+        minimum: 4.5,
+        semantics: 'Pass: visible + accessible label',
+        semanticsPass: true,
+      },
+      {
+        consumer: 'ChatToolCalls',
+        relationship: 'status icon / tinted plate or spinner / row surface',
+        ratio: toolStatusRatio,
+        minimum: 3,
+        semantics: 'Gap: non-error status is not named',
+        semanticsPass: false,
+      },
+    ],
+  };
 }
 
 const BANNER_DEFAULTS = {
