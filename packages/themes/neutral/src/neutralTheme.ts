@@ -1219,14 +1219,10 @@ export const neutralTheme = defineTheme({
       'status:error': {'--color-error': STATUS_COLOR_ROLES.graphic.error},
     },
 
-    // Chat status labels are foreground text. The failed metadata icon is a
-    // separately targetable backgroundless graphic, so it can use the brighter
-    // 3:1 role without weakening the adjacent label's 4.5:1 contrast.
+    // Chat status labels and their repeated icons use the same text-safe
+    // foreground so the pair reads as one visual status treatment.
     'chat-message-metadata': {
       base: {'--color-error': STATUS_COLOR_ROLES.foreground.error},
-    },
-    'chat-message-metadata-status-icon': {
-      'status:error': {'--color-error': STATUS_COLOR_ROLES.graphic.error},
     },
 
     // ChatToolCalls uses foreground colors because its semantic icon sits on a

@@ -2095,7 +2095,10 @@ function getStatusIndicatorContrast(theme: DefinedTheme, mode: Mode) {
   const chatMetadataIconBlock =
     theme.components?.['chat-message-metadata-status-icon'] ?? {};
   const chatMetadataIconLocal = Object.fromEntries(
-    Object.entries(chatMetadataIconBlock['status:error'] ?? {}).filter(
+    Object.entries({
+      ...chatMetadataLocal,
+      ...(chatMetadataIconBlock['status:error'] ?? {}),
+    }).filter(
       (entry): entry is [string, string] =>
         entry[0].startsWith('--') && typeof entry[1] === 'string',
     ),
