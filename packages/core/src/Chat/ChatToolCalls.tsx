@@ -336,16 +336,16 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   colorRunning: {
-    backgroundColor: colorVars['--color-accent-muted'],
-    color: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-accent'],
+    color: colorVars['--color-on-accent'],
   },
   colorComplete: {
-    backgroundColor: colorVars['--color-success-muted'],
-    color: colorVars['--color-success'],
+    backgroundColor: colorVars['--color-success'],
+    color: colorVars['--color-on-success'],
   },
   colorError: {
-    backgroundColor: colorVars['--color-error-muted'],
-    color: colorVars['--color-error'],
+    backgroundColor: colorVars['--color-error'],
+    color: colorVars['--color-on-error'],
   },
 });
 

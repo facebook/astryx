@@ -200,6 +200,36 @@ describe('ChatToolCalls', () => {
     expect(screen.queryByText(/Error:/)).not.toBeInTheDocument();
   });
 
+  it('uses on-colors for filled semantic status plates', () => {
+    render(
+      <ChatToolCalls
+        defaultIsExpanded
+        calls={[
+          {name: 'running', status: 'running'},
+          {name: 'complete', status: 'complete'},
+          {name: 'error', status: 'error'},
+        ]}
+      />,
+    );
+
+    let css = '';
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        for (const rule of Array.from(sheet.cssRules)) {
+          css += `${rule.cssText}\n`;
+        }
+      } catch {
+        // Ignore cross-origin stylesheets.
+      }
+    }
+    css += Array.from(document.querySelectorAll('style'))
+      .map(style => style.textContent ?? '')
+      .join('\n');
+    expect(css).toContain('var(--color-on-accent)');
+    expect(css).toContain('var(--color-on-success)');
+    expect(css).toContain('var(--color-on-error)');
+  });
+
   it('points the group header aria-controls at the content region', () => {
     render(
       <ChatToolCalls

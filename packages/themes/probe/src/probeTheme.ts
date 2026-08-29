@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme has six visual inputs and this covers all six:
-//   components  271 targets, 877 selectors (generated from the docs)
+//   components  274 targets, 880 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -1088,6 +1088,14 @@ export const probeTheme = defineTheme({
         outlineColor: 'hsl(358.6 90% 25%)',
       },
     },
+    'chat-message-metadata-status-icon': {
+      base: {
+        backgroundColor: 'hsl(214.4 85% 52%)',
+        color: 'hsl(176.3 86% 12%)',
+        borderColor: 'hsl(95.6 92% 25%)',
+        outlineColor: 'hsl(86.0 86% 25%)',
+      },
+    },
     'chat-send-button': {
       base: {
         backgroundColor: 'hsl(318.4 77% 61%)',
@@ -1110,6 +1118,14 @@ export const probeTheme = defineTheme({
         color: 'hsl(95.6 86% 12%)',
         borderColor: 'hsl(342.9 72% 25%)',
         outlineColor: 'hsl(151.5 81% 25%)',
+      },
+    },
+    'chat-tool-call-status': {
+      base: {
+        backgroundColor: 'hsl(289.9 90% 50%)',
+        color: 'hsl(352.3 83% 12%)',
+        borderColor: 'hsl(137.5 81% 25%)',
+        outlineColor: 'hsl(37.0 83% 25%)',
       },
     },
     'chat-tool-calls': {
@@ -4813,6 +4829,14 @@ export const probeTheme = defineTheme({
         color: 'hsl(44.1 70% 12%)',
         borderColor: 'hsl(110.6 83% 25%)',
         outlineColor: 'hsl(28.5 70% 25%)',
+      },
+    },
+    'table-row-status': {
+      base: {
+        backgroundColor: 'hsl(222.5 86% 46%)',
+        color: 'hsl(104.2 79% 12%)',
+        borderColor: 'hsl(182.1 83% 25%)',
+        outlineColor: 'hsl(82.3 81% 25%)',
       },
     },
     'table-scroll-wrapper': {
