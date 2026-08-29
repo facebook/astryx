@@ -309,8 +309,9 @@ export interface DefineThemeInput {
    * semantic tokens first. Use a palette stop only when no semantic token fits,
    * and document the selected family, mode, numeric tone, and contrast
    * relationship. For example, `palettes.blue.light[45]` means blue, the
-   * light-mode ramp, tone 45. Tone 0 is black and tone 100 is white in either
-   * mode; dark ramps are not numbered in reverse.
+   * light-mode ramp, numbered tone 45. Lower labels identify darker stops and
+   * higher labels identify lighter stops in either mode; they do not promise
+   * that a hex value measures at that exact color-space coordinate.
    *
    * Every family contains a complete light ramp and may provide a separate
    * dark ramp. `defineTheme` validates the canonical 0–100 steps and preserves
@@ -729,9 +730,10 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
   // Palette families are authoring metadata, not CSS token generators. Merge
   // by family name so an extending theme can replace one complete ramp while
   // retaining the rest of its base theme's approved palette vocabulary.
-  const inputPalettes = input.palettes
-    ? defineTonalPalettes(input.palettes)
-    : undefined;
+  const inputPalettes =
+    input.palettes !== undefined
+      ? defineTonalPalettes(input.palettes)
+      : undefined;
   const palettes =
     inputPalettes && base?.palettes
       ? {...base.palettes, ...inputPalettes}

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** Canonical HCT tone values used as numeric Astryx palette keys. */
+/** Canonical numeric tone labels used as Astryx palette keys. */
 export const TONAL_PALETTE_TONES = [
   0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
   100,
@@ -9,9 +9,11 @@ export const TONAL_PALETTE_TONES = [
 export type TonalPaletteTone = (typeof TONAL_PALETTE_TONES)[number];
 
 /**
- * One complete, opaque tonal ramp. Keys are HCT tone values: 0 is black and
- * 100 is white in both light- and dark-mode ramps. Optional hue/chroma metadata
- * is available to palette editors and audit tools but is not emitted as CSS.
+ * One complete, opaque tonal ramp. Keys are nominal tone labels ordered from
+ * dark to light in both light- and dark-mode ramps. Validation guarantees the
+ * complete key set and hex shape; it does not measure each color's lightness.
+ * Optional hue/chroma metadata is available to palette editors and audit tools
+ * but is not emitted as CSS.
  */
 export type TonalPaletteRamp = Readonly<
   Record<TonalPaletteTone, string> & {
@@ -98,7 +100,7 @@ export function defineTonalPalettes<const T extends ThemePalettes>(
       throw new Error(`Palette "${name}" must define a light tonal ramp.`);
     }
     validateRamp(name, 'light', family.light);
-    if ('dark' in family && family.dark == null) {
+    if (family.dark === null) {
       throw new Error(
         `Palette "${name}" dark must be a tonal ramp when provided.`,
       );

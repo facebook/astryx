@@ -665,6 +665,122 @@ function isThemeObject(value) {
 }
 
 /**
+ * Replace comments and string/template literal contents with spaces so feature
+ * detection below only considers executable source. Newlines are preserved to
+ * keep the result easy to inspect while debugging.
+ * @param {string} source
+ * @returns {string}
+ */
+function maskCommentsAndLiterals(source) {
+  let result = '';
+  let index = 0;
+  let state = 'code';
+
+  while (index < source.length) {
+    const char = source[index];
+    const next = source[index + 1];
+
+    if (state === 'code') {
+      if (char === '/' && next === '/') {
+        result += '  ';
+        index += 2;
+        state = 'line-comment';
+        continue;
+      }
+      if (char === '/' && next === '*') {
+        result += '  ';
+        index += 2;
+        state = 'block-comment';
+        continue;
+      }
+      if (char === "'" || char === '"' || char === '`') {
+        result += ' ';
+        index += 1;
+        state = char === "'" ? 'single' : char === '"' ? 'double' : 'template';
+        continue;
+      }
+      result += char;
+      index += 1;
+      continue;
+    }
+
+    if (state === 'line-comment') {
+      result += char === '\n' ? '\n' : ' ';
+      index += 1;
+      if (char === '\n') state = 'code';
+      continue;
+    }
+
+    if (state === 'block-comment') {
+      if (char === '*' && next === '/') {
+        result += '  ';
+        index += 2;
+        state = 'code';
+        continue;
+      }
+      result += char === '\n' ? '\n' : ' ';
+      index += 1;
+      continue;
+    }
+
+    const quote = state === 'single' ? "'" : state === 'double' ? '"' : '`';
+    if (char === '\\') {
+      result += ' ';
+      if (next !== undefined) {
+        result += next === '\n' ? '\n' : ' ';
+      }
+      index += 2;
+      continue;
+    }
+    result += char === '\n' ? '\n' : ' ';
+    index += 1;
+    if (char === quote) state = 'code';
+  }
+
+  return result;
+}
+
+/**
+ * Detect palette authoring before importing the theme. Older core versions can
+ * otherwise fail while evaluating defineTonalPalettes(), or resolve
+ * defineTheme({palettes}) after silently discarding that unknown field.
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function sourceUsesTonalPalettes(filePath) {
+  const source = maskCommentsAndLiterals(fs.readFileSync(filePath, 'utf8'));
+  if (/\bdefineTonalPalettes\b/.test(source)) return true;
+
+  const defineThemeCall = /\bdefineTheme\s*\(/g;
+  let match;
+  while ((match = defineThemeCall.exec(source)) !== null) {
+    const open = source.indexOf('(', match.index);
+    let depth = 1;
+    let cursor = open + 1;
+    while (cursor < source.length && depth > 0) {
+      if (source[cursor] === '(') depth += 1;
+      if (source[cursor] === ')') depth -= 1;
+      cursor += 1;
+    }
+    const args = source.slice(open + 1, cursor - 1);
+    if (/\bpalettes\s*(?::|,|})/.test(args)) return true;
+    defineThemeCall.lastIndex = cursor;
+  }
+
+  return /\bexport\s+default\s*{[\s\S]*?\bpalettes\s*:/.test(source);
+}
+
+function unsupportedTonalPalettesError() {
+  return new AstryxError(
+    'This theme defines `palettes`, but the installed @astryxdesign/core/theme ' +
+      'does not export defineTonalPalettes. Upgrade @astryxdesign/core or ' +
+      'remove the palette metadata before building.',
+    undefined,
+    ERROR_CODES.ERR_CORE_NOT_FOUND,
+  );
+}
+
+/**
  * Extract the theme definition from a JS/TS file.
  * Tries jiti first (full TS support), falls back to regex+eval.
  * @param {string} filePath
@@ -1063,6 +1179,10 @@ export async function themeBuild(
     );
   }
 
+  if (!_defineTonalPalettes && sourceUsesTonalPalettes(filePath)) {
+    throw unsupportedTonalPalettesError();
+  }
+
   logger.log(`\nBuilding theme from ${path.relative(cwd, filePath)}...`);
 
   // Extract theme definition
@@ -1168,13 +1288,7 @@ export async function themeBuild(
     }
     if ('palettes' in themeDef && themeDef.palettes !== undefined) {
       if (!_defineTonalPalettes) {
-        throw new AstryxError(
-          'This theme defines `palettes`, but the installed @astryxdesign/core/theme ' +
-            'does not export defineTonalPalettes. Upgrade @astryxdesign/core or ' +
-            'remove the palette metadata before building.',
-          undefined,
-          ERROR_CODES.ERR_CORE_NOT_FOUND,
-        );
+        throw unsupportedTonalPalettesError();
       }
       _defineTonalPalettes(themeDef.palettes);
     }

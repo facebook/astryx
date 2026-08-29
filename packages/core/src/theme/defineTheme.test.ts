@@ -1433,6 +1433,12 @@ describe('defineTheme extends', () => {
     expect(child.palettes?.green).toBe(base.palettes?.green);
   });
 
+  it('validates a present but malformed palette container', () => {
+    expect(() =>
+      defineTheme({name: 'invalid-palettes', palettes: null as never}),
+    ).toThrow('Theme palettes must be a named palette map.');
+  });
+
   it('inherits onDark token overrides from base theme', () => {
     const base = defineTheme({
       name: 'base',

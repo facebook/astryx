@@ -241,7 +241,11 @@ const myTheme = defineTheme({
           type: 'code',
           lang: 'tsx',
           label: 'Define and attach an approved palette',
-          code: `import {defineTheme, defineTonalPalettes} from '@astryxdesign/core/theme';
+          code: `import {
+  defineTheme,
+  defineTonalPalettes,
+  getTonalPaletteRamp,
+} from '@astryxdesign/core/theme';
 
 export const brandPalettes = defineTonalPalettes({
   blue: {
@@ -257,20 +261,25 @@ export const brandPalettes = defineTonalPalettes({
   },
 });
 
+const blueLight = getTonalPaletteRamp(brandPalettes.blue, 'light');
+// No separate dark ramp is defined above, so this currently falls back to the
+// light ramp. Adding an approved dark ramp later updates this selection.
+const blueDark = getTonalPaletteRamp(brandPalettes.blue, 'dark');
+
 export const brandTheme = defineTheme({
   name: 'brand',
   palettes: brandPalettes,
   tokens: {
-    // Pair blue, light-mode tone 40 with its audited foreground at tone 100.
-    // Do not change one side independently: primary Button labels need 4.5:1.
-    '--color-accent': brandPalettes.blue.light[40],
-    '--color-on-accent': brandPalettes.blue.light[100],
+    // Select and audit both modes as a pair. Do not change one side
+    // independently: primary Button labels need 4.5:1 in each mode.
+    '--color-accent': [blueLight[40], blueDark[60]],
+    '--color-on-accent': [blueLight[100], blueDark[10]],
   },
 });`,
         },
         {
           type: 'prose',
-          text: 'Each family requires all 21 numeric tone keys from 0 through 100 in increments of 5. Read `blue.light[40]` as “blue, light-mode ramp, tone 40.” Tone is the HCT lightness coordinate: 0 is black and 100 is white in both modes, so dark ramps are not numbered in reverse. Add a dark ramp when the theme uses separately tuned dark-mode colors; otherwise dark mode intentionally falls back to the light ramp. Palette metadata is preserved in built theme modules but does not generate CSS variables.',
+          text: 'Each family requires all 21 numeric tone labels from 0 through 100 in increments of 5. Read `blue.light[40]` as “blue, light-mode ramp, numbered tone 40.” Lower labels identify darker stops and higher labels lighter stops in both modes. These labels identify approved palette stops; validation does not promise that a hex value measures at that exact HCT coordinate. Add a dark ramp when the theme uses separately tuned dark-mode colors; otherwise `getTonalPaletteRamp(family, "dark")` intentionally falls back to the light ramp. Palette metadata is preserved in built theme modules but does not generate CSS variables.',
         },
       ],
     },

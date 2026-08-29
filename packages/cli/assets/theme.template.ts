@@ -139,9 +139,10 @@ export const myTheme = defineTheme({
    * Optional approved tonal palettes for agents, audit tools, custom
    * components, and data visualization. Define these with
    * `defineTonalPalettes()` in a separate palette module, then attach them to
-   * the theme. Every family needs numeric tone keys from 0 through 100 in
-   * increments of 5. Tone 0 is black and tone 100 is white in both light- and
-   * dark-mode ramps; dark ramps are not numbered in reverse.
+   * the theme. Every family needs numeric tone labels from 0 through 100 in
+   * increments of 5. Lower labels identify darker stops and higher labels
+   * lighter stops in both modes. Labels identify approved palette stops; they
+   * do not promise an exact measured color-space coordinate.
    *
    * Palettes are authoring metadata, not extra CSS variables. Components use
    * semantic tokens first. When no semantic token fits, choose an exact palette

@@ -16,7 +16,7 @@ function ramp(color = '#123456'): TonalPaletteRamp {
 }
 
 describe('defineTonalPalettes', () => {
-  it('uses numeric HCT tone keys from black through white', () => {
+  it('uses canonical numeric tone labels from 0 through 100', () => {
     expect(TONAL_PALETTE_TONES).toEqual([
       0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
       95, 100,
@@ -34,6 +34,16 @@ describe('defineTonalPalettes', () => {
 
   it('falls back to the light ramp when no separate dark ramp exists', () => {
     const palettes = defineTonalPalettes({neutral: {light: ramp('#777777')}});
+
+    expect(getTonalPaletteRamp(palettes.neutral, 'dark')).toBe(
+      palettes.neutral.light,
+    );
+  });
+
+  it('treats an explicitly undefined dark ramp as omitted', () => {
+    const palettes = defineTonalPalettes({
+      neutral: {light: ramp('#777777'), dark: undefined},
+    });
 
     expect(getTonalPaletteRamp(palettes.neutral, 'dark')).toBe(
       palettes.neutral.light,
