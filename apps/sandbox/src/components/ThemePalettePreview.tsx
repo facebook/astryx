@@ -201,9 +201,9 @@ function tonalPalette(hue: number, chroma: number): Record<number, string> {
  * Two transforms vs the canonical light ramp:
  *
  *   1. Tone lift: every stop shifts up by +5 tone units so mid-tones land
- *      brighter against the dark canvas. The lift tapers off between T80
- *      and T95 and is zero at T95+ so the top of the ramp doesn't collapse
- *      into pure white.
+ *      brighter against the dark canvas. The lift tapers off between tone 80
+ *      and tone 95 and is zero at tone 95+ so the top of the ramp does not
+ *      collapse into pure white.
  *
  *   2. Chroma reduction: chroma multiplied by 0.85 across the whole ramp
  *      so saturated stops don't vibrate against the dark body — full
@@ -3690,7 +3690,7 @@ function SurfacesSection({mode}: {mode: Mode}) {
  * with the components that consume that level — keeps the elevation
  * vocabulary visible alongside the visual treatment.
  *
- * Dark mode swaps the elevated card to `--color-background-surface` (T15)
+ * Dark mode swaps the elevated card to `--color-background-surface` (tone 15)
  * so the inset rim used by the figma-style shadow tokens has a slightly
  * lighter base to catch; light mode keeps a white card.
  */
@@ -4393,20 +4393,21 @@ function TonalSection({
           margin: 0,
           marginBottom: 20,
         }}>
-        Full HCT tonal ramps: 21 perceptually uniform steps from black (T0) to
-        white (T100).
+        Full HCT tonal ramps: 21 perceptually uniform tones from black (tone 0)
+        to white (tone 100). The number keeps the same lightness meaning in both
+        modes.
         {isDark && (
           <>
             {' '}
             Dark mode applies the audit&apos;s &sect;4 transform (
-            <strong>+5 brightness</strong> with taper above T80,{' '}
+            <strong>+5 brightness</strong> with taper above tone 80,{' '}
             <strong>×0.85 chroma</strong>) so saturated stops don&apos;t vibrate
             against the dark canvas.
           </>
         )}{' '}
         {usage
-          ? 'Markers ● show tone steps consumed by theme tokens (open the audit drawer for the full report).'
-          : 'Badge tokens use T90/T30 (light) and T70/T15 (dark).'}
+          ? 'Markers ● show numbered tones consumed by theme tokens (open the audit drawer for the full report).'
+          : 'The default preview marks the light- and dark-mode tones used by Badge tokens.'}
       </p>
       {colors.map(
         ({name, sourceHex, semantic, note, tones: overrideTones, dark}) => {
@@ -4450,7 +4451,7 @@ function TonalSection({
                   // Title summarises which tokens snap to this step (max 4
                   // listed to keep the native tooltip readable on dense ramps).
                   const titleLines = [
-                    `${name} T${t}: ${hex}`,
+                    `${name}, ${mode}-mode tone ${t}: ${hex}`,
                     ...usages
                       .slice(0, 4)
                       .map(u => `· ${u.name} (\u0394E ${u.deltaE.toFixed(1)})`),
@@ -4503,8 +4504,8 @@ function TonalSection({
           fontFamily: MONO,
         }}>
         {usage
-          ? '● = tone step consumed by a theme token. Number = count when multiple tokens share the same step. Hover any cell for details.'
-          : '● = token in use (T15 dark bg · T25 light text · T80 dark text · T90 light bg)'}
+          ? '● = numbered tone consumed by a theme token. Number = count when multiple tokens share the same tone. Hover any cell for details.'
+          : '● = token in use (dark background tone 15 · light text tone 25 · dark text tone 80 · light background tone 90)'}
       </p>
     </div>
   );

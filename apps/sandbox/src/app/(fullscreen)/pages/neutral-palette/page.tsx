@@ -47,28 +47,28 @@ const darkNeutral = palettes.neutral.dark ?? palettes.neutral.light;
 const CORE = [
   {
     hex: palettes.neutral.light[100],
-    name: 'Surface (T100)',
-    dark: {hex: darkNeutral[10], name: 'Surface (T10)'},
+    name: 'Surface · tone 100',
+    dark: {hex: darkNeutral[10], name: 'Surface · tone 10'},
   },
   {
     hex: palettes.neutral.light[95],
-    name: 'Body (T95)',
-    dark: {hex: darkNeutral[5], name: 'Body (T5)'},
+    name: 'Body · tone 95',
+    dark: {hex: darkNeutral[5], name: 'Body · tone 5'},
   },
   {
     hex: palettes.neutral.light[90],
-    name: 'Neutral T90',
-    dark: {hex: darkNeutral[30], name: 'Neutral T30'},
+    name: 'Neutral · tone 90',
+    dark: {hex: darkNeutral[30], name: 'Neutral · tone 30'},
   },
   {
     hex: palettes.neutral.light[50],
-    name: 'Neutral T50',
-    dark: {hex: darkNeutral[45], name: 'Neutral T45'},
+    name: 'Neutral · tone 50',
+    dark: {hex: darkNeutral[45], name: 'Neutral · tone 45'},
   },
   {
     hex: palettes.neutral.light[15],
-    name: 'Accent (T15)',
-    dark: {hex: darkNeutral[90], name: 'Accent (T90)'},
+    name: 'Accent · tone 15',
+    dark: {hex: darkNeutral[90], name: 'Accent · tone 90'},
   },
 ];
 
