@@ -1,19 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** Canonical tone stops used by Astryx tonal palettes. */
-export const TONAL_PALETTE_STEPS = [
+/** Canonical HCT tone values used as numeric Astryx palette keys. */
+export const TONAL_PALETTE_TONES = [
   0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
   100,
 ] as const;
 
-export type TonalPaletteStep = (typeof TONAL_PALETTE_STEPS)[number];
+export type TonalPaletteTone = (typeof TONAL_PALETTE_TONES)[number];
 
 /**
- * One complete, opaque tonal ramp. Optional hue/chroma metadata is available
- * to palette editors and audit tools but is not emitted as CSS.
+ * One complete, opaque tonal ramp. Keys are HCT tone values: 0 is black and
+ * 100 is white in both light- and dark-mode ramps. Optional hue/chroma metadata
+ * is available to palette editors and audit tools but is not emitted as CSS.
  */
 export type TonalPaletteRamp = Readonly<
-  Record<TonalPaletteStep, string> & {
+  Record<TonalPaletteTone, string> & {
     hue?: number;
     chroma?: number;
   }
@@ -37,7 +38,7 @@ export type ThemePalettes = Readonly<Record<string, ThemePaletteFamily>>;
 
 const OPAQUE_HEX = /^#[0-9a-f]{6}$/i;
 const TONAL_PALETTE_KEYS = new Set<string>([
-  ...TONAL_PALETTE_STEPS.map(String),
+  ...TONAL_PALETTE_TONES.map(String),
   'hue',
   'chroma',
 ]);
@@ -59,11 +60,11 @@ function validateRamp(
     }
   }
 
-  for (const step of TONAL_PALETTE_STEPS) {
-    const value = ramp[step];
+  for (const tone of TONAL_PALETTE_TONES) {
+    const value = ramp[tone];
     if (typeof value !== 'string' || !OPAQUE_HEX.test(value)) {
       throw new Error(
-        `Palette "${name}" ${mode} tone ${step} must be an opaque six-digit hex color.`,
+        `Palette "${name}" ${mode} tone ${tone} must be an opaque six-digit hex color.`,
       );
     }
   }

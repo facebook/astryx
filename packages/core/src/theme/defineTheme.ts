@@ -307,7 +307,10 @@ export interface DefineThemeInput {
    *
    * Palettes are metadata rather than CSS variables: components should use
    * semantic tokens first. Use a palette stop only when no semantic token fits,
-   * and document the selected family, tone, and contrast relationship.
+   * and document the selected family, mode, numeric tone, and contrast
+   * relationship. For example, `palettes.blue.light[45]` means blue, the
+   * light-mode ramp, tone 45. Tone 0 is black and tone 100 is white in either
+   * mode; dark ramps are not numbered in reverse.
    *
    * Every family contains a complete light ramp and may provide a separate
    * dark ramp. `defineTheme` validates the canonical 0–100 steps and preserves

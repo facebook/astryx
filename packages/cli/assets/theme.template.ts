@@ -139,12 +139,16 @@ export const myTheme = defineTheme({
    * Optional approved tonal palettes for agents, audit tools, custom
    * components, and data visualization. Define these with
    * `defineTonalPalettes()` in a separate palette module, then attach them to
-   * the theme. Every family needs the canonical 0–100 steps in increments of 5.
+   * the theme. Every family needs numeric tone keys from 0 through 100 in
+   * increments of 5. Tone 0 is black and tone 100 is white in both light- and
+   * dark-mode ramps; dark ramps are not numbered in reverse.
    *
    * Palettes are authoring metadata, not extra CSS variables. Components use
    * semantic tokens first. When no semantic token fits, choose an exact palette
-   * stop and document the family, tone, role, and contrast relationship. Do not
-   * invent or approximate a hex value when an approved stop exists.
+   * tone and document the family, mode, tone, role, and contrast relationship.
+   * For example, `palettes.blue.light[45]` means blue, the light-mode ramp,
+   * tone 45. Do not invent or approximate a hex value when an approved tone
+   * exists.
    *
    * Reference: `astryx docs theme` → Approved tonal palettes.
    */

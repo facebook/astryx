@@ -4,18 +4,25 @@ import {describe, expect, it} from 'vitest';
 import {
   defineTonalPalettes,
   getTonalPaletteRamp,
-  TONAL_PALETTE_STEPS,
+  TONAL_PALETTE_TONES,
   type ThemePalettes,
   type TonalPaletteRamp,
 } from './palettes';
 
 function ramp(color = '#123456'): TonalPaletteRamp {
   return Object.fromEntries(
-    TONAL_PALETTE_STEPS.map(step => [step, color]),
+    TONAL_PALETTE_TONES.map(tone => [tone, color]),
   ) as unknown as TonalPaletteRamp;
 }
 
 describe('defineTonalPalettes', () => {
+  it('uses numeric HCT tone keys from black through white', () => {
+    expect(TONAL_PALETTE_TONES).toEqual([
+      0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
+      95, 100,
+    ]);
+  });
+
   it('preserves a complete approved palette with exact key inference', () => {
     const palettes = defineTonalPalettes({
       blue: {semantic: 'info', light: ramp('#0068cc'), dark: ramp('#529fff')},

@@ -235,7 +235,7 @@ const myTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'Attach approved tonal palettes when agents, audit tools, custom components, or data visualization need colors beyond the semantic token surface. Components still use semantic tokens first. If no semantic token fits, select an exact palette stop and record its family, tone, purpose, and measured contrast; do not invent a nearby hex value.',
+          text: 'Attach approved tonal palettes when agents, audit tools, custom components, or data visualization need colors beyond the semantic token surface. Components still use semantic tokens first. If no semantic token fits, select an exact numbered tone and record its family, mode, tone, purpose, and measured contrast; do not invent a nearby hex value.',
         },
         {
           type: 'code',
@@ -261,8 +261,8 @@ export const brandTheme = defineTheme({
   name: 'brand',
   palettes: brandPalettes,
   tokens: {
-    // Pair the approved background stop with its audited foreground. Do not
-    // change one side independently: primary Button labels need 4.5:1.
+    // Pair blue, light-mode tone 40 with its audited foreground at tone 100.
+    // Do not change one side independently: primary Button labels need 4.5:1.
     '--color-accent': brandPalettes.blue.light[40],
     '--color-on-accent': brandPalettes.blue.light[100],
   },
@@ -270,7 +270,7 @@ export const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Each family requires all 21 canonical tone steps from 0 through 100 in increments of 5. Add a dark ramp when the theme uses separately tuned dark-mode colors; otherwise dark mode intentionally falls back to the light ramp. Palette metadata is preserved in built theme modules but does not generate CSS variables.',
+          text: 'Each family requires all 21 numeric tone keys from 0 through 100 in increments of 5. Read `blue.light[40]` as “blue, light-mode ramp, tone 40.” Tone is the HCT lightness coordinate: 0 is black and 100 is white in both modes, so dark ramps are not numbered in reverse. Add a dark ramp when the theme uses separately tuned dark-mode colors; otherwise dark mode intentionally falls back to the light ramp. Palette metadata is preserved in built theme modules but does not generate CSS variables.',
         },
       ],
     },
