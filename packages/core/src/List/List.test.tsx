@@ -316,6 +316,46 @@ describe('List', () => {
     expect(ul.parentElement?.className).not.toContain('fullBleed');
   });
 
+  it('clamps each inline edge against its own container padding var', () => {
+    // Regression for asymmetric container padding (16px start / 4px end):
+    // clamping BOTH margins against --container-padding-inline-start
+    // over-cancels the end edge by the difference, and the selected row
+    // paints past the outer border (RTL mirrors the spill). Each edge must
+    // clamp against its matching var; logical properties keep RTL correct.
+    // jsdom does no real layout, so assert on the injected StyleX CSS
+    // (runtimeInjection is on in the test config).
+    const {container} = render(
+      <List isFullBleed>
+        <ListItem label="Item" />
+      </List>,
+    );
+    expect(container.querySelector('li')!.className).toContain('fullBleed');
+    let out = '';
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        for (const rule of Array.from(sheet.cssRules)) {
+          out += rule.cssText + '\n';
+        }
+      } catch {
+        // ignore cross-origin sheets
+      }
+    }
+    out += Array.from(document.querySelectorAll('style'))
+      .map(s => s.textContent || '')
+      .join('\n');
+    const css = out.replace(/\s+/g, '');
+    expect(css).toContain(
+      'margin-inline-start:calc(-1*min(var(--_item-inset-inline),var(--container-padding-inline-start,0px)))',
+    );
+    expect(css).toContain(
+      'margin-inline-end:calc(-1*min(var(--_item-inset-inline),var(--container-padding-inline-end,0px)))',
+    );
+    // The end edge must not clamp against the start var (the over-cancel).
+    expect(css).not.toContain(
+      'margin-inline-end:calc(-1*min(var(--_item-inset-inline),var(--container-padding-inline-start,0px)))',
+    );
+  });
+
   it('does not apply the cancelling margin to a ListItem outside a List', () => {
     const {container} = render(<ListItem label="Standalone" />);
     expect(container.querySelector('li')!.className).not.toContain('fullBleed');
