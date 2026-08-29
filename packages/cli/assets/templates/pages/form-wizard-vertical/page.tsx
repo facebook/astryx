@@ -51,9 +51,11 @@
  */
 
 import {useId, useMemo, useRef, useState, type CSSProperties} from 'react';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {Banner} from '@astryxdesign/core/Banner';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
+import {Center} from '@astryxdesign/core/Center';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {CheckboxList, CheckboxListItem} from '@astryxdesign/core/CheckboxList';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
@@ -284,7 +286,7 @@ const AGREEMENTS = [
 
 // Cover art from the committed template-assets set; the CLI swaps it for an
 // inline placeholder when the template is scaffolded into a project.
-const COVER_SRC = '/template-assets/illustrative-vertical-2.png';
+const COVER_SRC = '/template-assets/illustrative-vertical-1.png';
 
 const CHAPTERS = [
   {title: 'Prologue — The Last Train', duration: '11:04'},
@@ -311,15 +313,6 @@ const COVER_HEIGHT = COVER_WIDTH * 1.5; // the 2:3 portrait below
 const CONTROL_ROW = 28; // one row of size="sm" buttons
 const COLUMN_GAP = 12; // the column's gap={3}
 
-// Portrait cover preview. Fixed width keeps the two columns stable while the
-// dropzone beside it flexes.
-const coverPreview: CSSProperties = {
-  width: COVER_WIDTH,
-  aspectRatio: '2 / 3',
-  objectFit: 'cover',
-  borderRadius: 'var(--radius-element)',
-  border: 'var(--border-width) solid var(--color-border)',
-};
 // The dropzone column next to the thumbnail. flexBasis:0 lets it shrink below
 // its intrinsic width instead of pushing the row wider than the form measure.
 // StackItem already resets min-width, so that half of the job is done for us.
@@ -331,14 +324,23 @@ const coverColumn: CSSProperties = {flexBasis: 0};
 const dropzoneFill: CSSProperties = {
   height: COVER_HEIGHT - CONTROL_ROW - COLUMN_GAP,
 };
-// The form and the footer buttons share one 640px measure. Both side panels are
+// The form and the footer buttons share one measure, each centred by its own
+// Center, so the buttons sit under the fields they submit. Both side panels are
 // the same width, so centring on the page centres inside the content column
 // too — which lets the header and footer dividers run the full width of the
 // page while their contents still line up with the fields.
-const measure: CSSProperties = {
-  width: '100%',
-  maxWidth: 640,
-  marginInline: 'auto',
+const MEASURE = 640;
+const PANEL_WIDTH = 300;
+const LAYOUT_INSET = 16; // the Layout's padding={4}, which every slot applies
+// The footer spans the page, but its buttons belong under the fields they
+// submit. With both panels up — or both down — the content column is already
+// centred on the page and nothing is needed. The middle tier is the odd one:
+// the rail is up without the guidance panel, so the column sits to the right of
+// centre and the footer has to lean the same way to stay under it. The lean is
+// a rail short of its own width because the footer adds the layout inset back
+// on its own, while the rail's box already contains it.
+const footerLean: CSSProperties = {
+  marginInlineStart: PANEL_WIDTH - LAYOUT_INSET,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -717,12 +719,14 @@ export default function FormWizardVerticalPage() {
         </LayoutHeader>
       }
       start={
-        hasRail ? <LayoutPanel width={300}>{rail}</LayoutPanel> : undefined
+        hasRail ? (
+          <LayoutPanel width={PANEL_WIDTH}>{rail}</LayoutPanel>
+        ) : undefined
       }
       end={
         !hasGuidance ? undefined : (
           <LayoutPanel
-            width={300}
+            width={PANEL_WIDTH}
             // complementary, not just a label: the role is what makes this a
             // landmark a screen reader can jump to, which is the whole reason
             // the panel does not announce itself on every focus move.
@@ -734,90 +738,92 @@ export default function FormWizardVerticalPage() {
       }
       content={
         <LayoutContent>
-          <VStack
-            gap={6}
-            style={measure}
-            onFocusCapture={onFormFocus}
-            onBlurCapture={onFormBlur}>
-            <VStack gap={1}>
-              <Heading level={1}>{STEPS[step].label}</Heading>
-              <Text type="body" color="secondary">
-                {STEPS[step].description}
-              </Text>
-              <Text type="supporting" color="secondary">
-                Fields marked required must be filled before you can continue.
-              </Text>
-            </VStack>
+          <Center axis="horizontal">
+            <VStack
+              gap={6}
+              width="100%"
+              maxWidth={MEASURE}
+              onFocusCapture={onFormFocus}
+              onBlurCapture={onFormBlur}>
+              <VStack gap={1}>
+                <Heading level={1}>{STEPS[step].label}</Heading>
+                <Text type="body" color="secondary">
+                  {STEPS[step].description}
+                </Text>
+                <Text type="supporting" color="secondary">
+                  Fields marked required must be filled before you can continue.
+                </Text>
+              </VStack>
 
-            {step === 0 && (
-              // Every step is a FormLayout under the same
-              // `defaultOptionality`, which is what makes the note above
-              // ("fields marked required…") true. Mark some fields Required
-              // and others Optional and a reader has to work out what an
-              // unmarked field means; here, unmarked means optional, on
-              // all five steps.
-              <FormLayout defaultOptionality="optional">
-                <TextInput
-                  ref={fieldRefs.authorName}
-                  label="Display name"
-                  isRequired
-                  value={authorName}
-                  onChange={setAuthorName}
-                  description="The name shown on the book page and in search results."
-                  status={
-                    currentErrors.authorName
-                      ? {type: 'error', message: currentErrors.authorName}
-                      : undefined
-                  }
-                />
-                <TextInput
-                  ref={fieldRefs.penName}
-                  label="Pen name"
-                  value={penName}
-                  onChange={setPenName}
-                  placeholder="Used instead of your display name on this book"
-                />
-                <TextArea
-                  ref={fieldRefs.bio}
-                  label="Author bio"
-                  isRequired
-                  rows={4}
-                  maxLength={600}
-                  value={bio}
-                  onChange={setBio}
-                  description="Shown on your author page. Two or three sentences is plenty."
-                  status={
-                    currentErrors.bio
-                      ? {type: 'error', message: currentErrors.bio}
-                      : undefined
-                  }
-                />
-                <TextInput
-                  label="Website"
-                  value={authorSite}
-                  onChange={setAuthorSite}
-                  placeholder="example.com"
-                />
-              </FormLayout>
-            )}
+              {step === 0 && (
+                // Every step is a FormLayout under the same
+                // `defaultOptionality`, which is what makes the note above
+                // ("fields marked required…") true. Mark some fields Required
+                // and others Optional and a reader has to work out what an
+                // unmarked field means; here, unmarked means optional, on
+                // all five steps.
+                <FormLayout defaultOptionality="optional">
+                  <TextInput
+                    ref={fieldRefs.authorName}
+                    label="Display name"
+                    isRequired
+                    value={authorName}
+                    onChange={setAuthorName}
+                    description="The name shown on the book page and in search results."
+                    status={
+                      currentErrors.authorName
+                        ? {type: 'error', message: currentErrors.authorName}
+                        : undefined
+                    }
+                  />
+                  <TextInput
+                    ref={fieldRefs.penName}
+                    label="Pen name"
+                    value={penName}
+                    onChange={setPenName}
+                    placeholder="Used instead of your display name on this book"
+                  />
+                  <TextArea
+                    ref={fieldRefs.bio}
+                    label="Author bio"
+                    isRequired
+                    rows={4}
+                    maxLength={600}
+                    value={bio}
+                    onChange={setBio}
+                    description="Shown on your author page. Two or three sentences is plenty."
+                    status={
+                      currentErrors.bio
+                        ? {type: 'error', message: currentErrors.bio}
+                        : undefined
+                    }
+                  />
+                  <TextInput
+                    label="Website"
+                    value={authorSite}
+                    onChange={setAuthorSite}
+                    placeholder="example.com"
+                  />
+                </FormLayout>
+              )}
 
-            {step === 1 && (
-              <FormLayout defaultOptionality="optional">
-                <TextInput
-                  ref={fieldRefs.title}
-                  label="Book title"
-                  isRequired
-                  value={title}
-                  onChange={setTitle}
-                  description="Enter the title exactly as it should appear in the store."
-                  status={
-                    currentErrors.title
-                      ? {type: 'error', message: currentErrors.title}
-                      : undefined
-                  }
-                />
+              {step === 1 && (
+                <FormLayout defaultOptionality="optional">
+                  <TextInput
+                    ref={fieldRefs.title}
+                    label="Book title"
+                    isRequired
+                    value={title}
+                    onChange={setTitle}
+                    description="Enter the title exactly as it should appear in the store."
+                    status={
+                      currentErrors.title
+                        ? {type: 'error', message: currentErrors.title}
+                        : undefined
+                    }
+                  />
 
-                {/* The preview sits beside the input rather than replacing
+                  {/* The preview sits beside the input rather than replacing
                       it, so the current cover and the control that changes it
                       are never in different places.
 
@@ -832,509 +838,513 @@ export default function FormWizardVerticalPage() {
                       would demand a fresh upload from someone whose cover is
                       right there on screen. Removing it is what makes the rule
                       bite. */}
-                <Field
-                  label="Cover image"
-                  inputID={coverID}
-                  // A group label, because the Field wraps a thumbnail, a
-                  // dropzone and three buttons rather than one control —
-                  // there is nothing for a `for` to point at. The dropzone
-                  // keeps its own hidden label for screen readers.
-                  isGroupLabel
-                  isRequired
-                  description="1200 × 1800 px or larger, JPG or PNG, under 5 MB."
-                  statusVariant="detached"
-                  status={
-                    currentErrors.cover
-                      ? {type: 'error', message: currentErrors.cover}
-                      : undefined
-                  }>
-                  <HStack gap={4} vAlign="start" wrap="wrap">
-                    {hasCover && (
-                      <img
-                        src={COVER_SRC}
-                        alt={`Current cover art for ${title.trim() || 'this book'}`}
-                        style={coverPreview}
-                      />
-                    )}
-                    <StackItem size="fill" style={coverColumn}>
-                      <VStack gap={3}>
-                        <FileInput
-                          ref={fieldRefs.cover}
-                          label="Cover image"
-                          isLabelHidden
-                          style={hasCover ? dropzoneFill : undefined}
-                          mode="dropzone"
-                          accept="image/png,image/jpeg"
-                          maxSize={5 * 1024 * 1024}
-                          value={coverFile}
-                          onChange={file => {
-                            setCoverFile(file);
-                            if (file != null) {
-                              setHasCover(true);
+                  <Field
+                    label="Cover image"
+                    inputID={coverID}
+                    // A group label, because the Field wraps a thumbnail, a
+                    // dropzone and three buttons rather than one control —
+                    // there is nothing for a `for` to point at. The dropzone
+                    // keeps its own hidden label for screen readers.
+                    isGroupLabel
+                    isRequired
+                    description="1200 × 1800 px or larger, JPG or PNG, under 5 MB."
+                    statusVariant="detached"
+                    status={
+                      currentErrors.cover
+                        ? {type: 'error', message: currentErrors.cover}
+                        : undefined
+                    }>
+                    <HStack gap={4} vAlign="start" wrap="wrap">
+                      {hasCover && (
+                        <Card width={COVER_WIDTH} padding={0}>
+                          <AspectRatio ratio={2 / 3} fit="cover">
+                            <img
+                              src={COVER_SRC}
+                              alt={`Current cover art for ${title.trim() || 'this book'}`}
+                            />
+                          </AspectRatio>
+                        </Card>
+                      )}
+                      <StackItem size="fill" style={coverColumn}>
+                        <VStack gap={3}>
+                          <FileInput
+                            ref={fieldRefs.cover}
+                            label="Cover image"
+                            isLabelHidden
+                            style={hasCover ? dropzoneFill : undefined}
+                            mode="dropzone"
+                            accept="image/png,image/jpeg"
+                            maxSize={5 * 1024 * 1024}
+                            value={coverFile}
+                            onChange={file => {
+                              setCoverFile(file);
+                              if (file != null) {
+                                setHasCover(true);
+                              }
+                            }}
+                            placeholder={
+                              hasCover
+                                ? 'Drop a new cover, or click to browse'
+                                : 'Drop a cover here, or click to browse'
                             }
-                          }}
-                          placeholder={
-                            hasCover
-                              ? 'Drop a new cover, or click to browse'
-                              : 'Drop a cover here, or click to browse'
-                          }
-                        />
-                        <HStack gap={2} wrap="wrap">
-                          <Button
-                            label="Crop image"
-                            variant="secondary"
-                            size="sm"
-                            isDisabled={!hasCover}
-                            onClick={() => {}}
                           />
-                          <Button
-                            label="Preview on device"
-                            variant="ghost"
-                            size="sm"
-                            isDisabled={!hasCover}
-                            onClick={() => {}}
-                          />
-                          {hasCover && (
+                          <HStack gap={2} wrap="wrap">
                             <Button
-                              label="Remove cover"
+                              label="Crop image"
+                              variant="secondary"
+                              size="sm"
+                              isDisabled={!hasCover}
+                              onClick={() => {}}
+                            />
+                            <Button
+                              label="Preview on device"
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setHasCover(false);
-                                setCoverFile(null);
-                              }}
+                              isDisabled={!hasCover}
+                              onClick={() => {}}
                             />
-                          )}
-                        </HStack>
-                      </VStack>
-                    </StackItem>
-                  </HStack>
-                </Field>
+                            {hasCover && (
+                              <Button
+                                label="Remove cover"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setHasCover(false);
+                                  setCoverFile(null);
+                                }}
+                              />
+                            )}
+                          </HStack>
+                        </VStack>
+                      </StackItem>
+                    </HStack>
+                  </Field>
 
-                <TextInput
-                  ref={fieldRefs.subtitle}
-                  label="Subtitle"
-                  value={subtitle}
-                  onChange={setSubtitle}
-                  description="A short line that complements the title."
-                />
-                {/* A horizontal FormLayout, not a Grid: these are paired
+                  <TextInput
+                    ref={fieldRefs.subtitle}
+                    label="Subtitle"
+                    value={subtitle}
+                    onChange={setSubtitle}
+                    description="A short line that complements the title."
+                  />
+                  {/* A horizontal FormLayout, not a Grid: these are paired
                       fields, and nesting is the shape the form system already
                       has for them. `defaultOptionality` is repeated because a
                       nested FormLayout shadows the outer one rather than
                       inheriting from it. */}
-                <FormLayout
-                  direction={isNarrow ? 'vertical' : 'horizontal'}
-                  defaultOptionality="optional">
-                  <TextInput
-                    ref={fieldRefs.edition}
-                    label="Edition"
-                    value={edition}
-                    onChange={setEdition}
-                    placeholder="Second edition"
-                  />
-                  <Selector
-                    // No ref to match on, so it reports itself.
-                    onFocusCapture={() => setHelpKey('language')}
-                    label="Language"
-                    options={LANGUAGES}
-                    value={language}
-                    onChange={setLanguage}
-                  />
-                </FormLayout>
-                {/* Both cells carry a description, so the two inputs share a
+                  <FormLayout
+                    direction={isNarrow ? 'vertical' : 'horizontal'}
+                    defaultOptionality="optional">
+                    <TextInput
+                      ref={fieldRefs.edition}
+                      label="Edition"
+                      value={edition}
+                      onChange={setEdition}
+                      placeholder="Second edition"
+                    />
+                    <Selector
+                      // No ref to match on, so it reports itself.
+                      onFocusCapture={() => setHelpKey('language')}
+                      label="Language"
+                      options={LANGUAGES}
+                      value={language}
+                      onChange={setLanguage}
+                    />
+                  </FormLayout>
+                  {/* Both cells carry a description, so the two inputs share a
                       baseline. A description on one side of a pair and not the
                       other leaves the controls visibly staggered. */}
-                <FormLayout
-                  direction={isNarrow ? 'vertical' : 'horizontal'}
-                  defaultOptionality="optional">
-                  <TextInput
-                    ref={fieldRefs.series}
-                    label="Series"
-                    value={series}
-                    onChange={setSeries}
-                    description="We create the series if it does not exist yet."
-                  />
-                  <NumberInput
-                    ref={fieldRefs.seriesNumber}
-                    label="Number in series"
-                    value={seriesNumber}
-                    onChange={setSeriesNumber}
-                    min={1}
-                    max={99}
-                    isIntegerOnly
-                    isDisabled={!series.trim()}
-                    description="Where this book falls in the reading order."
-                    disabledMessage="Name a series first."
-                    status={
-                      currentErrors.seriesNumber
-                        ? {
-                            type: 'error',
-                            message: currentErrors.seriesNumber,
-                          }
-                        : undefined
-                    }
-                  />
-                </FormLayout>
-                <TextArea
-                  ref={fieldRefs.blurb}
-                  label="Description"
-                  isRequired
-                  rows={5}
-                  maxLength={2000}
-                  value={blurb}
-                  onChange={setBlurb}
-                  description="The blurb readers see. Lead with the hook, not the genre."
-                  status={
-                    currentErrors.blurb
-                      ? {type: 'error', message: currentErrors.blurb}
-                      : undefined
-                  }
-                />
-                <MultiSelector
-                  label="Categories"
-                  isRequired
-                  options={CATEGORIES}
-                  value={categories}
-                  onChange={setCategories}
-                  hasSearch
-                  triggerDisplay="badges"
-                  description={`Choose up to ${MAX_CATEGORIES}. The first one decides which charts the book appears in.`}
-                  status={
-                    currentErrors.categories
-                      ? {type: 'error', message: currentErrors.categories}
-                      : undefined
-                  }
-                />
-              </FormLayout>
-            )}
-
-            {step === 2 && (
-              <FormLayout defaultOptionality="optional">
-                <RadioList
-                  label="Where the book is sold"
-                  value={scope}
-                  onChange={setScope}>
-                  <RadioListItem
-                    value="worldwide"
-                    label="Worldwide"
-                    description="Available everywhere the store operates."
-                  />
-                  <RadioListItem
-                    value="selected"
-                    label="Selected territories"
-                    description="Useful when print or audio rights are already licensed elsewhere."
-                  />
-                  <RadioListItem
-                    value="exclusive"
-                    label="Exclusive to this store"
-                    description="Higher revenue share, but the book cannot be sold elsewhere for 12 months."
-                  />
-                </RadioList>
-                {scope === 'selected' && (
-                  <MultiSelector
-                    label="Territories"
-                    options={TERRITORIES}
-                    value={territories}
-                    onChange={setTerritories}
-                    hasSelectAll
-                    triggerDisplay="badges"
-                    status={
-                      currentErrors.territories
-                        ? {
-                            type: 'error',
-                            message: currentErrors.territories,
-                          }
-                        : undefined
-                    }
-                  />
-                )}
-                <FormLayout
-                  direction={isNarrow ? 'vertical' : 'horizontal'}
-                  defaultOptionality="optional">
-                  <DateInput
-                    ref={fieldRefs.releaseDate}
-                    label="Release date"
+                  <FormLayout
+                    direction={isNarrow ? 'vertical' : 'horizontal'}
+                    defaultOptionality="optional">
+                    <TextInput
+                      ref={fieldRefs.series}
+                      label="Series"
+                      value={series}
+                      onChange={setSeries}
+                      description="We create the series if it does not exist yet."
+                    />
+                    <NumberInput
+                      ref={fieldRefs.seriesNumber}
+                      label="Number in series"
+                      value={seriesNumber}
+                      onChange={setSeriesNumber}
+                      min={1}
+                      max={99}
+                      isIntegerOnly
+                      isDisabled={!series.trim()}
+                      description="Where this book falls in the reading order."
+                      disabledMessage="Name a series first."
+                      status={
+                        currentErrors.seriesNumber
+                          ? {
+                              type: 'error',
+                              message: currentErrors.seriesNumber,
+                            }
+                          : undefined
+                      }
+                    />
+                  </FormLayout>
+                  <TextArea
+                    ref={fieldRefs.blurb}
+                    label="Description"
                     isRequired
-                    value={releaseDate}
-                    onChange={setReleaseDate}
-                    min="2026-09-01"
-                    description="Review takes up to 5 business days."
+                    rows={5}
+                    maxLength={2000}
+                    value={blurb}
+                    onChange={setBlurb}
+                    description="The blurb readers see. Lead with the hook, not the genre."
                     status={
-                      currentErrors.releaseDate
-                        ? {
-                            type: 'error',
-                            message: currentErrors.releaseDate,
-                          }
+                      currentErrors.blurb
+                        ? {type: 'error', message: currentErrors.blurb}
                         : undefined
                     }
                   />
-                  <NumberInput
-                    ref={fieldRefs.price}
-                    label="List price"
-                    value={price}
-                    onChange={setPrice}
-                    min={0.99}
-                    max={99}
-                    step={1}
-                    formatValue={usd}
-                    description="Before local tax and store adjustments."
+                  <MultiSelector
+                    label="Categories"
+                    isRequired
+                    options={CATEGORIES}
+                    value={categories}
+                    onChange={setCategories}
+                    hasSearch
+                    triggerDisplay="badges"
+                    description={`Choose up to ${MAX_CATEGORIES}. The first one decides which charts the book appears in.`}
                     status={
-                      currentErrors.price
-                        ? {type: 'error', message: currentErrors.price}
+                      currentErrors.categories
+                        ? {type: 'error', message: currentErrors.categories}
                         : undefined
                     }
                   />
                 </FormLayout>
-                {/* SegmentedControl's own label is aria-only. Field gives it
+              )}
+
+              {step === 2 && (
+                <FormLayout defaultOptionality="optional">
+                  <RadioList
+                    label="Where the book is sold"
+                    value={scope}
+                    onChange={setScope}>
+                    <RadioListItem
+                      value="worldwide"
+                      label="Worldwide"
+                      description="Available everywhere the store operates."
+                    />
+                    <RadioListItem
+                      value="selected"
+                      label="Selected territories"
+                      description="Useful when print or audio rights are already licensed elsewhere."
+                    />
+                    <RadioListItem
+                      value="exclusive"
+                      label="Exclusive to this store"
+                      description="Higher revenue share, but the book cannot be sold elsewhere for 12 months."
+                    />
+                  </RadioList>
+                  {scope === 'selected' && (
+                    <MultiSelector
+                      label="Territories"
+                      options={TERRITORIES}
+                      value={territories}
+                      onChange={setTerritories}
+                      hasSelectAll
+                      triggerDisplay="badges"
+                      status={
+                        currentErrors.territories
+                          ? {
+                              type: 'error',
+                              message: currentErrors.territories,
+                            }
+                          : undefined
+                      }
+                    />
+                  )}
+                  <FormLayout
+                    direction={isNarrow ? 'vertical' : 'horizontal'}
+                    defaultOptionality="optional">
+                    <DateInput
+                      ref={fieldRefs.releaseDate}
+                      label="Release date"
+                      isRequired
+                      value={releaseDate}
+                      onChange={setReleaseDate}
+                      min="2026-09-01"
+                      description="Review takes up to 5 business days."
+                      status={
+                        currentErrors.releaseDate
+                          ? {
+                              type: 'error',
+                              message: currentErrors.releaseDate,
+                            }
+                          : undefined
+                      }
+                    />
+                    <NumberInput
+                      ref={fieldRefs.price}
+                      label="List price"
+                      value={price}
+                      onChange={setPrice}
+                      min={0.99}
+                      max={99}
+                      step={1}
+                      formatValue={usd}
+                      description="Before local tax and store adjustments."
+                      status={
+                        currentErrors.price
+                          ? {type: 'error', message: currentErrors.price}
+                          : undefined
+                      }
+                    />
+                  </FormLayout>
+                  {/* SegmentedControl's own label is aria-only. Field gives it
                       a visible one on the content line, and `isGroupLabel`
                       renders that label as a span — a radiogroup cannot be the
                       target of a `for`. */}
-                <Field
-                  label="Sales model"
-                  inputID={salesModelID}
-                  isGroupLabel
-                  description={
-                    salesModel === 'purchase'
-                      ? 'Readers buy the book outright at your list price.'
-                      : salesModel === 'subscription'
-                        ? 'Included in the subscription catalog; you earn per minute listened.'
-                        : 'Available to buy and included in the subscription catalog.'
-                  }>
-                  <SegmentedControl
+                  <Field
                     label="Sales model"
-                    value={salesModel}
-                    onChange={setSalesModel}
-                    layout="fill">
-                    <SegmentedControlItem value="purchase" label="Purchase" />
-                    <SegmentedControlItem
-                      value="subscription"
-                      label="Subscription"
-                    />
-                    <SegmentedControlItem value="both" label="Both" />
-                  </SegmentedControl>
-                </Field>
-                <Divider />
-                <Switch
-                  label="Contains explicit content"
-                  description="Adds an advisory label and excludes the book from all-ages recommendations."
-                  value={isExplicit}
-                  onChange={setIsExplicit}
-                  labelPosition="start"
-                  labelSpacing="spread"
-                />
-                <Switch
-                  label="Allow library lending"
-                  description="Libraries can license the audiobook for time-limited loans."
-                  value={allowsLending}
-                  onChange={setAllowsLending}
-                  labelPosition="start"
-                  labelSpacing="spread"
-                />
-              </FormLayout>
-            )}
+                    inputID={salesModelID}
+                    isGroupLabel
+                    description={
+                      salesModel === 'purchase'
+                        ? 'Readers buy the book outright at your list price.'
+                        : salesModel === 'subscription'
+                          ? 'Included in the subscription catalog; you earn per minute listened.'
+                          : 'Available to buy and included in the subscription catalog.'
+                    }>
+                    <SegmentedControl
+                      label="Sales model"
+                      value={salesModel}
+                      onChange={setSalesModel}
+                      layout="fill">
+                      <SegmentedControlItem value="purchase" label="Purchase" />
+                      <SegmentedControlItem
+                        value="subscription"
+                        label="Subscription"
+                      />
+                      <SegmentedControlItem value="both" label="Both" />
+                    </SegmentedControl>
+                  </Field>
+                  <Divider />
+                  <Switch
+                    label="Contains explicit content"
+                    description="Adds an advisory label and excludes the book from all-ages recommendations."
+                    value={isExplicit}
+                    onChange={setIsExplicit}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                  <Switch
+                    label="Allow library lending"
+                    description="Libraries can license the audiobook for time-limited loans."
+                    value={allowsLending}
+                    onChange={setAllowsLending}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                </FormLayout>
+              )}
 
-            {step === 3 && (
-              <FormLayout defaultOptionality="optional">
-                {/* The one Card in the flow, and it earns it: a linked
+              {step === 3 && (
+                <FormLayout defaultOptionality="optional">
+                  {/* The one Card in the flow, and it earns it: a linked
                       external account is a self-contained object with its own
                       action, not a field on this form. */}
-                <Card padding={4}>
-                  <HStack gap={3} vAlign="center" wrap="wrap">
-                    <StackItem size="fill">
-                      <VStack gap={1}>
-                        <HStack gap={2} vAlign="center">
-                          <Text type="label">Stripe account</Text>
-                          <StatusDot
-                            variant={isStripeLinked ? 'success' : 'warning'}
-                            label={isStripeLinked ? 'Linked' : 'Not linked'}
-                          />
-                        </HStack>
-                        <Text type="supporting" color="secondary">
-                          {isStripeLinked
-                            ? 'Payouts go to Imogen Hale · **** 4417, on the 15th of each month.'
-                            : 'Royalties are held until an account is linked. Linking takes about two minutes.'}
-                        </Text>
-                      </VStack>
-                    </StackItem>
-                    <Button
-                      ref={fieldRefs.stripe}
-                      label={isStripeLinked ? 'Manage' : 'Connect Stripe'}
-                      variant={isStripeLinked ? 'secondary' : 'primary'}
-                      onClick={() => setIsStripeLinked(v => !v)}
+                  <Card padding={4}>
+                    <HStack gap={3} vAlign="center" wrap="wrap">
+                      <StackItem size="fill">
+                        <VStack gap={1}>
+                          <HStack gap={2} vAlign="center">
+                            <Text type="label">Stripe account</Text>
+                            <StatusDot
+                              variant={isStripeLinked ? 'success' : 'warning'}
+                              label={isStripeLinked ? 'Linked' : 'Not linked'}
+                            />
+                          </HStack>
+                          <Text type="supporting" color="secondary">
+                            {isStripeLinked
+                              ? 'Payouts go to Imogen Hale · **** 4417, on the 15th of each month.'
+                              : 'Royalties are held until an account is linked. Linking takes about two minutes.'}
+                          </Text>
+                        </VStack>
+                      </StackItem>
+                      <Button
+                        ref={fieldRefs.stripe}
+                        label={isStripeLinked ? 'Manage' : 'Connect Stripe'}
+                        variant={isStripeLinked ? 'secondary' : 'primary'}
+                        onClick={() => setIsStripeLinked(v => !v)}
+                      />
+                    </HStack>
+                  </Card>
+                  {currentErrors.stripe && (
+                    <FieldStatus
+                      type="error"
+                      variant="detached"
+                      message={currentErrors.stripe}
                     />
-                  </HStack>
-                </Card>
-                {currentErrors.stripe && (
-                  <FieldStatus
-                    type="error"
-                    variant="detached"
-                    message={currentErrors.stripe}
+                  )}
+                  <Selector
+                    label="Payout currency"
+                    options={CURRENCIES}
+                    value={currency}
+                    onChange={setCurrency}
+                    description="Conversion happens at the rate on the payout date."
                   />
-                )}
-                <Selector
-                  label="Payout currency"
-                  options={CURRENCIES}
-                  value={currency}
-                  onChange={setCurrency}
-                  description="Conversion happens at the rate on the payout date."
-                />
-                <Divider />
-                <CheckboxList
-                  label="Agreements"
-                  description="All three are required before a book can be submitted."
-                  value={accepted}
-                  onChange={setAccepted}
-                  status={
-                    currentErrors.agreements
-                      ? {type: 'error', message: currentErrors.agreements}
-                      : undefined
-                  }>
-                  {AGREEMENTS.map(a => (
-                    <CheckboxListItem
-                      key={a.value}
-                      value={a.value}
-                      label={a.label}
-                      description={a.description}
-                    />
-                  ))}
-                </CheckboxList>
-              </FormLayout>
-            )}
+                  <Divider />
+                  <CheckboxList
+                    label="Agreements"
+                    description="All three are required before a book can be submitted."
+                    value={accepted}
+                    onChange={setAccepted}
+                    status={
+                      currentErrors.agreements
+                        ? {type: 'error', message: currentErrors.agreements}
+                        : undefined
+                    }>
+                    {AGREEMENTS.map(a => (
+                      <CheckboxListItem
+                        key={a.value}
+                        value={a.value}
+                        label={a.label}
+                        description={a.description}
+                      />
+                    ))}
+                  </CheckboxList>
+                </FormLayout>
+              )}
 
-            {step === 4 && (
-              <VStack gap={5}>
-                <Banner
-                  status="info"
-                  title="Review takes up to 5 business days"
-                  icon={<Icon icon={CheckBadgeIcon} size="sm" />}
-                  description="You can keep editing metadata while the book is in review. Replacing the audio restarts it."
-                />
+              {step === 4 && (
+                <VStack gap={5}>
+                  <Banner
+                    status="info"
+                    title="Review takes up to 5 business days"
+                    icon={<Icon icon={CheckBadgeIcon} size="sm" />}
+                    description="You can keep editing metadata while the book is in review. Replacing the audio restarts it."
+                  />
 
-                {/* No container: the weakest thing that reads as a group
+                  {/* No container: the weakest thing that reads as a group
                       wins, and a label, a bar and a divider already do it.
                       A Card would fence off work that belongs to this step,
                       and a Section bleeds to the edges of the content
                       region — which here means past the right edge of a form
                       column capped at 640 and flush against the rail. */}
-                <VStack gap={3}>
-                  <HStack gap={3} vAlign="center" hAlign="between">
-                    <Text type="label">Audio processing</Text>
-                    <Text type="supporting" color="secondary">
-                      {CHAPTERS.length} chapters · {TOTAL_RUNTIME}
-                    </Text>
-                  </HStack>
-                  <ProgressBar
-                    label="Audio processing"
-                    isLabelHidden
-                    value={100}
-                    variant="success"
-                    hasValueLabel
-                  />
-                  <Divider />
-                  <VStack gap={2}>
-                    {CHAPTERS.map(chapter => (
-                      <HStack
-                        key={chapter.title}
-                        gap={3}
-                        vAlign="center"
-                        hAlign="between">
-                        <Text type="body">{chapter.title}</Text>
-                        <Text type="supporting" color="secondary">
-                          {chapter.duration}
-                        </Text>
-                      </HStack>
-                    ))}
+                  <VStack gap={3}>
+                    <HStack gap={3} vAlign="center" hAlign="between">
+                      <Text type="label">Audio processing</Text>
+                      <Text type="supporting" color="secondary">
+                        {CHAPTERS.length} chapters · {TOTAL_RUNTIME}
+                      </Text>
+                    </HStack>
+                    <ProgressBar
+                      label="Audio processing"
+                      isLabelHidden
+                      value={100}
+                      variant="success"
+                      hasValueLabel
+                    />
+                    <Divider />
+                    <VStack gap={2}>
+                      {CHAPTERS.map(chapter => (
+                        <HStack
+                          key={chapter.title}
+                          gap={3}
+                          vAlign="center"
+                          hAlign="between">
+                          <Text type="body">{chapter.title}</Text>
+                          <Text type="supporting" color="secondary">
+                            {chapter.duration}
+                          </Text>
+                        </HStack>
+                      ))}
+                    </VStack>
                   </VStack>
-                </VStack>
 
-                {/* Two run-on lists of label/value rows read as one long
+                  {/* Two run-on lists of label/value rows read as one long
                       list without something between them. */}
-                <Divider />
+                  <Divider />
 
-                <MetadataList columns="multi">
-                  <MetadataListItem
-                    label="Title"
-                    icon={<Icon icon={BookOpenIcon} size="sm" />}>
-                    {title.trim() || '—'}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label="Author"
-                    icon={<Icon icon={UserIcon} size="sm" />}>
-                    {penName.trim() || authorName.trim() || '—'}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label="Series"
-                    icon={<Icon icon={RectangleStackIcon} size="sm" />}>
-                    {series.trim()
-                      ? `${series.trim()}, book ${seriesNumber}`
-                      : 'Standalone'}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label="Language"
-                    icon={<Icon icon={LanguageIcon} size="sm" />}>
-                    {LANGUAGES.find(l => l.value === language)?.label ??
-                      language}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label="Categories"
-                    icon={<Icon icon={TagIcon} size="sm" />}>
-                    {categories.length === 0
-                      ? '—'
-                      : CATEGORIES.filter(c => categories.includes(c.value))
-                          .map(c => c.label)
-                          .join(', ')}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label="Availability"
-                    icon={<Icon icon={GlobeAltIcon} size="sm" />}>
-                    {scope === 'worldwide'
-                      ? 'Worldwide'
-                      : scope === 'exclusive'
-                        ? 'Exclusive, 12 months'
-                        : `${territories.length} territories`}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label="Release date"
-                    icon={<Icon icon={CalendarIcon} size="sm" />}>
-                    {releaseDate ?? '—'}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label="List price"
-                    icon={<Icon icon={CurrencyDollarIcon} size="sm" />}>
-                    {usd(price)}{' '}
-                    {CURRENCIES.find(c => c.value === currency)
-                      ?.label.split(' — ')[0]
-                      .toLowerCase() ?? ''}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label="Advisory"
-                    icon={<Icon icon={ExclamationTriangleIcon} size="sm" />}>
-                    {isExplicit ? 'Explicit content' : 'None'}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label="Library lending"
-                    icon={<Icon icon={BuildingLibraryIcon} size="sm" />}>
-                    {allowsLending ? 'Allowed' : 'Not allowed'}
-                  </MetadataListItem>
-                </MetadataList>
+                  <MetadataList columns="multi">
+                    <MetadataListItem
+                      label="Title"
+                      icon={<Icon icon={BookOpenIcon} size="sm" />}>
+                      {title.trim() || '—'}
+                    </MetadataListItem>
+                    <MetadataListItem
+                      label="Author"
+                      icon={<Icon icon={UserIcon} size="sm" />}>
+                      {penName.trim() || authorName.trim() || '—'}
+                    </MetadataListItem>
+                    <MetadataListItem
+                      label="Series"
+                      icon={<Icon icon={RectangleStackIcon} size="sm" />}>
+                      {series.trim()
+                        ? `${series.trim()}, book ${seriesNumber}`
+                        : 'Standalone'}
+                    </MetadataListItem>
+                    <MetadataListItem
+                      label="Language"
+                      icon={<Icon icon={LanguageIcon} size="sm" />}>
+                      {LANGUAGES.find(l => l.value === language)?.label ??
+                        language}
+                    </MetadataListItem>
+                    <MetadataListItem
+                      label="Categories"
+                      icon={<Icon icon={TagIcon} size="sm" />}>
+                      {categories.length === 0
+                        ? '—'
+                        : CATEGORIES.filter(c => categories.includes(c.value))
+                            .map(c => c.label)
+                            .join(', ')}
+                    </MetadataListItem>
+                    <MetadataListItem
+                      label="Availability"
+                      icon={<Icon icon={GlobeAltIcon} size="sm" />}>
+                      {scope === 'worldwide'
+                        ? 'Worldwide'
+                        : scope === 'exclusive'
+                          ? 'Exclusive, 12 months'
+                          : `${territories.length} territories`}
+                    </MetadataListItem>
+                    <MetadataListItem
+                      label="Release date"
+                      icon={<Icon icon={CalendarIcon} size="sm" />}>
+                      {releaseDate ?? '—'}
+                    </MetadataListItem>
+                    <MetadataListItem
+                      label="List price"
+                      icon={<Icon icon={CurrencyDollarIcon} size="sm" />}>
+                      {usd(price)}{' '}
+                      {CURRENCIES.find(c => c.value === currency)
+                        ?.label.split(' — ')[0]
+                        .toLowerCase() ?? ''}
+                    </MetadataListItem>
+                    <MetadataListItem
+                      label="Advisory"
+                      icon={<Icon icon={ExclamationTriangleIcon} size="sm" />}>
+                      {isExplicit ? 'Explicit content' : 'None'}
+                    </MetadataListItem>
+                    <MetadataListItem
+                      label="Library lending"
+                      icon={<Icon icon={BuildingLibraryIcon} size="sm" />}>
+                      {allowsLending ? 'Allowed' : 'Not allowed'}
+                    </MetadataListItem>
+                  </MetadataList>
 
-                <Divider />
+                  <Divider />
 
-                <CheckboxInput
-                  ref={fieldRefs.confirm}
-                  label="This is the final audio. I understand replacing it restarts review."
-                  value={isConfirmed}
-                  onChange={setIsConfirmed}
-                  status={
-                    currentErrors.confirm
-                      ? {type: 'error', message: currentErrors.confirm}
-                      : undefined
-                  }
-                />
-              </VStack>
-            )}
-          </VStack>
+                  <CheckboxInput
+                    ref={fieldRefs.confirm}
+                    label="This is the final audio. I understand replacing it restarts review."
+                    value={isConfirmed}
+                    onChange={setIsConfirmed}
+                    status={
+                      currentErrors.confirm
+                        ? {type: 'error', message: currentErrors.confirm}
+                        : undefined
+                    }
+                  />
+                </VStack>
+              )}
+            </VStack>
+          </Center>
         </LayoutContent>
       }
       footer={
@@ -1346,20 +1356,24 @@ export default function FormWizardVerticalPage() {
               and the header stepper states it at narrow ones, so a third
               reading of it in the footer would only be one more thing to keep
               in sync. */}
-          <HStack gap={3} vAlign="center" style={measure}>
-            <Button
-              label="Back"
-              variant="secondary"
-              isDisabled={step === 0}
-              onClick={() => setStep(s => Math.max(0, s - 1))}
-            />
-            <StackItem size="fill" />
-            <Button
-              label={isLastStep ? 'Submit for review' : 'Continue'}
-              variant="primary"
-              onClick={goNext}
-            />
-          </HStack>
+          <Center
+            axis="horizontal"
+            style={hasRail && !hasGuidance ? footerLean : undefined}>
+            <HStack gap={3} vAlign="center" width="100%" maxWidth={MEASURE}>
+              <Button
+                label="Back"
+                variant="secondary"
+                isDisabled={step === 0}
+                onClick={() => setStep(s => Math.max(0, s - 1))}
+              />
+              <StackItem size="fill" />
+              <Button
+                label={isLastStep ? 'Submit for review' : 'Continue'}
+                variant="primary"
+                onClick={goNext}
+              />
+            </HStack>
+          </Center>
         </LayoutFooter>
       }
     />
