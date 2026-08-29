@@ -4393,9 +4393,9 @@ function TonalSection({
           margin: 0,
           marginBottom: 20,
         }}>
-        Full HCT tonal ramps: 21 perceptually uniform tones from black (tone 0)
-        to white (tone 100). The number keeps the same lightness meaning in both
-        modes.
+        Full tonal ramps: 21 numbered stops ordered from dark (tone 0) to light
+        (tone 100). The number is a stable palette label in both modes, not a
+        promise of identical measured lightness.
         {isDark && (
           <>
             {' '}
