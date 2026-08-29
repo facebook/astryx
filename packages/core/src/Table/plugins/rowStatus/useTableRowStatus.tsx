@@ -54,11 +54,12 @@ const SEMANTIC_COLORS: Record<TableRowStatusColor, string> = {
 /**
  * A row's status indicator. `color` accepts a semantic status color
  * (mapped to a theme token) or any raw CSS color string as an escape hatch.
- * By default the plugin renders a colored status dot. Provide `icon` to signal
- * status by shape as well as color, which is more accessible when several
- * statuses coexist. `label` is required so the status is never conveyed by
- * color alone — it names the indicator for assistive technology and shows on
- * hover. Return `null` for rows with no status.
+ * By default the plugin renders a colored status dot, except semantic warning,
+ * which uses the warning glyph so it remains contrast-safe and visibly
+ * distinct. Provide `icon` to signal other statuses by shape as well as color
+ * when several statuses coexist. `label` is required so the status is never
+ * conveyed by color alone — it names the indicator for assistive technology
+ * and shows on hover. Return `null` for rows with no status.
  */
 export interface TableRowStatus {
   /** Semantic status color (preferred) or a raw CSS color string. */
@@ -155,8 +156,15 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
             if (!status) {
               return null;
             }
-            const signifier = status.icon ? (
-              <Icon icon={status.icon} size="xsm" color="inherit" />
+            // The warning fill is intentionally light and cannot provide a
+            // sufficient standalone dot on common row surfaces. Give the
+            // semantic warning role its contrast-safe glyph by default, which
+            // also supplies a persistent non-color distinction.
+            const icon =
+              status.icon ??
+              (status.color === 'warning' ? 'warning' : undefined);
+            const signifier = icon ? (
+              <Icon icon={icon} size="xsm" color="inherit" />
             ) : (
               <span {...stylex.props(styles.dot(resolveColor(status.color)))} />
             );
@@ -166,11 +174,11 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
                   {...mergeProps(
                     themeProps('table-row-status', {
                       color: status.color,
-                      presentation: status.icon ? 'icon' : 'dot',
+                      presentation: icon ? 'icon' : 'dot',
                     }),
                     stylex.props(
                       styles.wrap,
-                      status.icon && styles.icon(resolveColor(status.color)),
+                      icon && styles.icon(resolveColor(status.color)),
                     ),
                   )}
                   role="img"

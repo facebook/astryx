@@ -125,6 +125,23 @@ describe('useTableRowStatus', () => {
     expect(indicator.querySelector('svg')).not.toBeNull();
   });
 
+  it('uses the warning glyph for a semantic warning without a custom icon', () => {
+    render(
+      <Harness
+        statusFn={item =>
+          item.state === 'warning'
+            ? {color: 'warning', label: 'Needs review'}
+            : null
+        }
+      />,
+    );
+
+    const indicator = screen.getByRole('img', {name: 'Needs review'});
+    expect(indicator).toHaveAttribute('data-color', 'warning');
+    expect(indicator).toHaveAttribute('data-presentation', 'icon');
+    expect(indicator.querySelector('svg')).not.toBeNull();
+  });
+
   it('exposes the required label as the accessible name in dot mode', () => {
     render(
       <Harness
