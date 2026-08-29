@@ -51,6 +51,23 @@ describe('defineTonalPalettes', () => {
     );
   });
 
+  it('rejects unknown ramp keys', () => {
+    const invalid = {...ramp(), 42: '#123456'} as TonalPaletteRamp;
+
+    expect(() => defineTonalPalettes({blue: {light: invalid}})).toThrow(
+      'Palette "blue" light contains unknown tone or metadata key "42".',
+    );
+  });
+
+  it('rejects malformed palette containers', () => {
+    expect(() => defineTonalPalettes(null as unknown as ThemePalettes)).toThrow(
+      'Theme palettes must be a named palette map.',
+    );
+    expect(() => defineTonalPalettes([] as unknown as ThemePalettes)).toThrow(
+      'Theme palettes must be a named palette map.',
+    );
+  });
+
   it('rejects invalid family metadata', () => {
     expect(() =>
       defineTonalPalettes({

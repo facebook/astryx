@@ -36,12 +36,29 @@ export interface ThemePaletteFamily {
 export type ThemePalettes = Readonly<Record<string, ThemePaletteFamily>>;
 
 const OPAQUE_HEX = /^#[0-9a-f]{6}$/i;
+const TONAL_PALETTE_KEYS = new Set<string>([
+  ...TONAL_PALETTE_STEPS.map(String),
+  'hue',
+  'chroma',
+]);
 
 function validateRamp(
   name: string,
   mode: 'light' | 'dark',
   ramp: TonalPaletteRamp,
 ) {
+  if (!ramp || typeof ramp !== 'object' || Array.isArray(ramp)) {
+    throw new Error(`Palette "${name}" ${mode} must be a tonal ramp.`);
+  }
+
+  for (const key of Object.keys(ramp)) {
+    if (!TONAL_PALETTE_KEYS.has(key)) {
+      throw new Error(
+        `Palette "${name}" ${mode} contains unknown tone or metadata key "${key}".`,
+      );
+    }
+  }
+
   for (const step of TONAL_PALETTE_STEPS) {
     const value = ramp[step];
     if (typeof value !== 'string' || !OPAQUE_HEX.test(value)) {
@@ -71,6 +88,10 @@ function validateRamp(
 export function defineTonalPalettes<const T extends ThemePalettes>(
   palettes: T,
 ): T {
+  if (!palettes || typeof palettes !== 'object' || Array.isArray(palettes)) {
+    throw new Error('Theme palettes must be a named palette map.');
+  }
+
   for (const [name, family] of Object.entries(palettes)) {
     if (!family || typeof family !== 'object' || !family.light) {
       throw new Error(`Palette "${name}" must define a light tonal ramp.`);

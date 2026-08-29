@@ -1125,7 +1125,7 @@ export async function themeBuild(
   // `astryx theme build` and the `<Theme>` runtime MUST emit identical CSS, so
   // there is exactly one generation path: @astryxdesign/core/theme. If core could not
   // be imported, fail hard rather than silently producing divergent output.
-  if (!_defineTheme || !_defineTonalPalettes || !_generateThemeRulesSplit) {
+  if (!_defineTheme || !_generateThemeRulesSplit) {
     throw new AstryxError(
       'Could not load @astryxdesign/core/theme — `astryx theme build` requires a ' +
         'built, resolvable @astryxdesign/core so it emits the same CSS as the ' +
@@ -1166,7 +1166,16 @@ export async function themeBuild(
     } else {
       resolvedTheme = themeDef;
     }
-    if (themeDef.palettes) {
+    if ('palettes' in themeDef && themeDef.palettes !== undefined) {
+      if (!_defineTonalPalettes) {
+        throw new AstryxError(
+          'This theme defines `palettes`, but the installed @astryxdesign/core/theme ' +
+            'does not export defineTonalPalettes. Upgrade @astryxdesign/core or ' +
+            'remove the palette metadata before building.',
+          undefined,
+          ERROR_CODES.ERR_CORE_NOT_FOUND,
+        );
+      }
       _defineTonalPalettes(themeDef.palettes);
     }
     const scopeSelector = themeScopeStart(themeDef.name);

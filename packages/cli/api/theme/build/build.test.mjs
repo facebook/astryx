@@ -259,6 +259,29 @@ describe('themeBuild() — receipt', () => {
   it('rejects invalid palette family metadata from plain-object themes', async () => {
     const cases = [
       {
+        file: 'invalid-palette-container-null.mjs',
+        palettes: null,
+        message: 'Theme palettes must be a named palette map.',
+      },
+      {
+        file: 'invalid-palette-container-array.mjs',
+        palettes: [],
+        message: 'Theme palettes must be a named palette map.',
+      },
+      {
+        file: 'invalid-palette-tone.mjs',
+        family: {
+          light: {
+            ...Object.fromEntries(
+              Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
+            ),
+            42: '#123456',
+          },
+        },
+        message:
+          'Palette "blue" light contains unknown tone or metadata key "42".',
+      },
+      {
         file: 'invalid-palette-semantic.mjs',
         family: {
           light: Object.fromEntries(
@@ -290,13 +313,16 @@ describe('themeBuild() — receipt', () => {
       },
     ];
 
-    for (const {file, family, message} of cases) {
+    for (const testCase of cases) {
+      const {file, family, palettes, message} = testCase;
       fs.writeFileSync(
         path.join(tmpDir, file),
         `export default ${JSON.stringify({
           name: file.replace('.mjs', ''),
           tokens: {'--color-accent': '#123456'},
-          palettes: {blue: family},
+          palettes: Object.hasOwn(testCase, 'palettes')
+            ? palettes
+            : {blue: family},
         })};\n`,
       );
 
