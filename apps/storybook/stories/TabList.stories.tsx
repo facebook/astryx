@@ -39,16 +39,23 @@ export const Default: Story = {
 };
 
 const FULL_BLEED_FIXTURE_PADDING = 16;
-const fullBleedFixtureStyle: CSSProperties & {
+// The clamp's far side: container padding below a stop's own 12px inline
+// padding, where the strip's pad-back clamps to zero and the stop's own inset
+// is preserved instead of shrunk.
+const CLAMP_FIXTURE_PADDING = 8;
+
+function fullBleedFixtureStyle(padding: number): CSSProperties & {
   '--container-padding-inline-start': string;
   '--container-padding-inline-end': string;
-} = {
-  boxSizing: 'border-box',
-  width: 480,
-  paddingInline: FULL_BLEED_FIXTURE_PADDING,
-  '--container-padding-inline-start': `${FULL_BLEED_FIXTURE_PADDING}px`,
-  '--container-padding-inline-end': `${FULL_BLEED_FIXTURE_PADDING}px`,
-};
+} {
+  return {
+    boxSizing: 'border-box',
+    width: 480,
+    paddingInline: padding,
+    '--container-padding-inline-start': `${padding}px`,
+    '--container-padding-inline-end': `${padding}px`,
+  };
+}
 
 function assertGeometry(label: string, actual: number, expected: number) {
   if (Math.abs(actual - expected) > 0.5) {
@@ -62,14 +69,22 @@ function assertGeometry(label: string, actual: number, expected: number) {
  * Browser geometry guard for `isFullBleed`. The strip must escape the
  * wrapper's padding while the first label returns to the content inset. The
  * strip-pad assertion also pins TabList's restated stop-padding token to the
- * padding the real Tab paints; changing either side breaks this story.
+ * padding the real Tab paints; changing either side breaks this story. The
+ * clamp and no-op fixtures cover the accepted far side: container padding
+ * below a stop's own inset preserves that inset, and outside a padded
+ * container the prop changes nothing.
+ *
+ * Enforced by `.github/scripts/story-play-guard.js` in the `pr-a11y` job —
+ * the play assertions below fail required CI, not just a local canvas.
  */
 export const FullBleedGeometry: Story = {
   render: () => {
     const [value, setValue] = useState('home');
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
-        <div data-full-bleed-fixture="hug" style={fullBleedFixtureStyle}>
+        <div
+          data-full-bleed-fixture="hug"
+          style={fullBleedFixtureStyle(FULL_BLEED_FIXTURE_PADDING)}>
           <TabList
             value={value}
             onChange={setValue}
@@ -79,7 +94,9 @@ export const FullBleedGeometry: Story = {
             <Tab value="projects" label="Projects" />
           </TabList>
         </div>
-        <div data-full-bleed-fixture="fill" style={fullBleedFixtureStyle}>
+        <div
+          data-full-bleed-fixture="fill"
+          style={fullBleedFixtureStyle(FULL_BLEED_FIXTURE_PADDING)}>
           <TabList
             value={value}
             onChange={setValue}
@@ -95,6 +112,41 @@ export const FullBleedGeometry: Story = {
                 {value: 'billing', label: 'Billing'},
               ]}
             />
+          </TabList>
+        </div>
+        <div
+          data-full-bleed-fixture="clamp"
+          style={fullBleedFixtureStyle(CLAMP_FIXTURE_PADDING)}>
+          <TabList
+            value={value}
+            onChange={setValue}
+            aria-label="Clamp full-bleed geometry"
+            isFullBleed>
+            <Tab value="home" label="Home" />
+            <Tab value="projects" label="Projects" />
+          </TabList>
+        </div>
+        <div
+          data-full-bleed-fixture="noop"
+          style={{boxSizing: 'border-box', width: 480}}>
+          <TabList
+            value={value}
+            onChange={setValue}
+            aria-label="No-op full-bleed geometry"
+            isFullBleed>
+            <Tab value="home" label="Home" />
+            <Tab value="projects" label="Projects" />
+          </TabList>
+        </div>
+        <div
+          data-full-bleed-fixture="noop-control"
+          style={{boxSizing: 'border-box', width: 480}}>
+          <TabList
+            value={value}
+            onChange={setValue}
+            aria-label="No-op control geometry">
+            <Tab value="home" label="Home" />
+            <Tab value="projects" label="Projects" />
           </TabList>
         </div>
       </div>
@@ -120,6 +172,22 @@ export const FullBleedGeometry: Story = {
     const fillStrip =
       fillWrapper?.querySelector<HTMLElement>('.astryx-tab-strip');
     const lastStop = fillStrip?.querySelector<HTMLElement>('[data-tab-menu]');
+    const clampWrapper = canvasElement.querySelector<HTMLElement>(
+      '[data-full-bleed-fixture="clamp"]',
+    );
+    const clampStrip =
+      clampWrapper?.querySelector<HTMLElement>('.astryx-tab-strip');
+    const clampFirstStop = clampStrip?.querySelector<HTMLElement>(
+      '[data-tab-value="home"]',
+    );
+    const clampFirstLabel =
+      clampFirstStop?.querySelector<HTMLElement>('span span');
+    const noopStrip = canvasElement.querySelector<HTMLElement>(
+      '[data-full-bleed-fixture="noop"] .astryx-tab-strip',
+    );
+    const noopControlStrip = canvasElement.querySelector<HTMLElement>(
+      '[data-full-bleed-fixture="noop-control"] .astryx-tab-strip',
+    );
 
     if (
       !wrapper ||
@@ -128,7 +196,13 @@ export const FullBleedGeometry: Story = {
       !firstLabel ||
       !fillWrapper ||
       !fillStrip ||
-      !lastStop
+      !lastStop ||
+      !clampWrapper ||
+      !clampStrip ||
+      !clampFirstStop ||
+      !clampFirstLabel ||
+      !noopStrip ||
+      !noopControlStrip
     ) {
       throw new Error('Full-bleed geometry fixture did not render as expected');
     }
@@ -175,6 +249,57 @@ export const FullBleedGeometry: Story = {
       'last stop content end',
       lastStopRect.right - lastStopPadding,
       contentEnd,
+    );
+
+    // Far side of the clamp: at 8px container padding the strip still bleeds
+    // to the wrapper edge, but the pad-back clamps to zero — the stop's own
+    // 12px inset is preserved, never shrunk, so the label sits 4px inside the
+    // content inset (matching main's behaviour with hand-written margins).
+    const clampWrapperRect = clampWrapper.getBoundingClientRect();
+    const clampStripRect = clampStrip.getBoundingClientRect();
+    const clampLabelRect = clampFirstLabel.getBoundingClientRect();
+    const clampStopPadding = Number.parseFloat(
+      getComputedStyle(clampFirstStop).paddingInlineStart,
+    );
+    const clampStripPadding = Number.parseFloat(
+      getComputedStyle(clampStrip).paddingInlineStart,
+    );
+
+    assertGeometry(
+      'clamp strip box start',
+      clampStripRect.left,
+      clampWrapperRect.left,
+    );
+    assertGeometry('clamp strip pad-back', clampStripPadding, 0);
+    assertGeometry(
+      'clamp preserves stop inset',
+      clampLabelRect.left,
+      clampWrapperRect.left + clampStopPadding,
+    );
+    if (clampStopPadding <= CLAMP_FIXTURE_PADDING) {
+      throw new Error(
+        `clamp fixture is not on the far side: stop padding ${clampStopPadding}px must exceed the ${CLAMP_FIXTURE_PADDING}px container padding`,
+      );
+    }
+
+    // Outside a padded container the custom properties are unset and the prop
+    // is a no-op: the strip's box and padding match a plain TabList exactly.
+    const noopStripRect = noopStrip.getBoundingClientRect();
+    const noopControlRect = noopControlStrip.getBoundingClientRect();
+    assertGeometry(
+      'no-op strip start',
+      noopStripRect.left,
+      noopControlRect.left,
+    );
+    assertGeometry(
+      'no-op strip end',
+      noopStripRect.right,
+      noopControlRect.right,
+    );
+    assertGeometry(
+      'no-op strip padding',
+      Number.parseFloat(getComputedStyle(noopStrip).paddingInlineStart),
+      Number.parseFloat(getComputedStyle(noopControlStrip).paddingInlineStart),
     );
   },
 };
