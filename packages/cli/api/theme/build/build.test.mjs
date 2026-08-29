@@ -243,7 +243,6 @@ describe('themeBuild() — receipt', () => {
         tokens: {'--color-accent': '#123456'},
         palettes: {
           blue: {
-            semantic: 42,
             light: {0: '#000000', 5: 'not-a-color'},
           },
         },
@@ -253,8 +252,58 @@ describe('themeBuild() — receipt', () => {
     await expect(
       themeBuild('invalid-palette-theme.mjs', {}, {cwd: tmpDir}),
     ).rejects.toThrow(
-      'Palette "blue" light tone 5 must be an opaque six-digit hex color, got not-a-color.',
+      'Palette "blue" light tone 5 must be an opaque six-digit hex color.',
     );
+  });
+
+  it('rejects invalid palette family metadata from plain-object themes', async () => {
+    const cases = [
+      {
+        file: 'invalid-palette-semantic.mjs',
+        family: {
+          light: Object.fromEntries(
+            Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
+          ),
+          semantic: 42,
+        },
+        message: 'Palette "blue" semantic must be a string, got 42.',
+      },
+      {
+        file: 'invalid-palette-description.mjs',
+        family: {
+          light: Object.fromEntries(
+            Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
+          ),
+          description: false,
+        },
+        message: 'Palette "blue" description must be a string, got false.',
+      },
+      {
+        file: 'invalid-palette-dark.mjs',
+        family: {
+          light: Object.fromEntries(
+            Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
+          ),
+          dark: null,
+        },
+        message: 'Palette "blue" dark must be a tonal ramp when provided.',
+      },
+    ];
+
+    for (const {file, family, message} of cases) {
+      fs.writeFileSync(
+        path.join(tmpDir, file),
+        `export default ${JSON.stringify({
+          name: file.replace('.mjs', ''),
+          tokens: {'--color-accent': '#123456'},
+          palettes: {blue: family},
+        })};\n`,
+      );
+
+      await expect(themeBuild(file, {}, {cwd: tmpDir})).rejects.toThrow(
+        message,
+      );
+    }
   });
 
   it('is silent by default (noopLogger) — no console output for a scripted caller', async () => {

@@ -76,8 +76,26 @@ export function defineTonalPalettes<const T extends ThemePalettes>(
       throw new Error(`Palette "${name}" must define a light tonal ramp.`);
     }
     validateRamp(name, 'light', family.light);
-    if (family.dark) {
+    if ('dark' in family && family.dark == null) {
+      throw new Error(
+        `Palette "${name}" dark must be a tonal ramp when provided.`,
+      );
+    }
+    if (family.dark !== undefined) {
       validateRamp(name, 'dark', family.dark);
+    }
+    if (family.semantic !== undefined && typeof family.semantic !== 'string') {
+      throw new Error(
+        `Palette "${name}" semantic must be a string, got ${String(family.semantic)}.`,
+      );
+    }
+    if (
+      family.description !== undefined &&
+      typeof family.description !== 'string'
+    ) {
+      throw new Error(
+        `Palette "${name}" description must be a string, got ${String(family.description)}.`,
+      );
     }
   }
   return palettes;

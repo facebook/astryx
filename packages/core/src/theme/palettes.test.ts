@@ -50,4 +50,26 @@ describe('defineTonalPalettes', () => {
       'must be an opaque six-digit hex color',
     );
   });
+
+  it('rejects invalid family metadata', () => {
+    expect(() =>
+      defineTonalPalettes({
+        blue: {light: ramp(), semantic: 42},
+      } as unknown as ThemePalettes),
+    ).toThrow('Palette "blue" semantic must be a string, got 42.');
+
+    expect(() =>
+      defineTonalPalettes({
+        blue: {light: ramp(), description: false},
+      } as unknown as ThemePalettes),
+    ).toThrow('Palette "blue" description must be a string, got false.');
+  });
+
+  it('rejects a present but null dark ramp', () => {
+    expect(() =>
+      defineTonalPalettes({
+        blue: {light: ramp(), dark: null},
+      } as unknown as ThemePalettes),
+    ).toThrow('Palette "blue" dark must be a tonal ramp when provided.');
+  });
 });
