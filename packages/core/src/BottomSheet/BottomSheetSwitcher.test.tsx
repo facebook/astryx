@@ -47,7 +47,16 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
+
+// jsdom performs no layout, so the scroll body only earns its keyboard tab
+// stop (which requires real overflow) when the metrics are mocked. Prototype
+// getters take effect before the panel's first layout-effect read.
+function mockOverflowingScrollMetrics() {
+  vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(400);
+  vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockReturnValue(800);
+}
 
 function Flow() {
   const [activeSheet, setActiveSheet] = useState<string | null>(null);
@@ -583,6 +592,7 @@ describe('BottomSheetSwitcher', () => {
   });
 
   it('keeps focus on the scroll body in a modal sheet with read-only content', () => {
+    mockOverflowingScrollMetrics();
     render(
       <>
         <button type="button">Background action</button>

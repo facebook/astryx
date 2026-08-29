@@ -2,8 +2,8 @@
 
 /**
  * @file focusableSelector.ts
- * @input Uses DOM visibility and descendant queries
- * @output Exports the canonical focusable selector and query helper
+ * @input Uses DOM visibility, tab-order, and descendant queries
+ * @output Exports the canonical focusable selector and query helpers
  * @position Internal utility; shared by focus-management hooks and components
  *   so their focusable-element model stays aligned. Not exported from the
  *   public barrel — internal implementation detail.
@@ -23,7 +23,41 @@
 export const FOCUSABLE_SELECTOR =
   'button:not([disabled]), a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), [contenteditable]:not([contenteditable="false"]), audio[controls], video[controls], iframe, details > summary:first-child';
 
-function isVisiblyFocusable(element: HTMLElement): boolean {
+/**
+ * Whether an element opts out of sequential focus with an explicit negative
+ * tabindex. The selector alone cannot express this: its `[tabindex]` clause
+ * excludes `tabindex="-1"`, but natively focusable elements (button, a[href],
+ * input, ...) match their own clause, so `<button tabindex="-1">` slips
+ * through and must be filtered here. Parsed rather than string-matched so
+ * `tabindex=" -1"` and other negative values are also caught.
+ */
+function hasNegativeTabIndex(element: HTMLElement): boolean {
+  const explicit = element.getAttribute('tabindex');
+  if (explicit == null) {
+    return false;
+  }
+  const parsed = Number.parseInt(explicit, 10);
+  return !Number.isNaN(parsed) && parsed < 0;
+}
+
+/**
+ * Whether an element is a visible sequential-focus stop — one the browser
+ * offers to a Tab press. Excludes:
+ *
+ * - explicit `tabindex="-1"`, which is focusable only programmatically;
+ * - `inert`/`hidden` subtrees, which keyboard navigation skips;
+ * - `aria-hidden="true"` subtrees, which sighted keyboard users must not
+ *   reach while assistive technology cannot perceive them (WCAG 4.1.2);
+ * - CSS-hidden elements. `display: none` does not inherit, so a hidden
+ *   ancestor never shows up in the descendant's own computed style — the
+ *   ancestor chain is walked explicitly. `visibility` does inherit (and a
+ *   visible descendant of a hidden ancestor genuinely is focusable), so the
+ *   element's own computed value is already the whole answer there.
+ */
+function isVisibleSequentialFocusStop(element: HTMLElement): boolean {
+  if (hasNegativeTabIndex(element)) {
+    return false;
+  }
   if (element.hasAttribute('inert') || element.closest('[inert]')) {
     return false;
   }
@@ -36,30 +70,40 @@ function isVisiblyFocusable(element: HTMLElement): boolean {
   }
   if (typeof window !== 'undefined' && window.getComputedStyle) {
     const style = window.getComputedStyle(element);
-    if (style.visibility === 'hidden' || style.display === 'none') {
+    if (style.visibility === 'hidden' || style.visibility === 'collapse') {
       return false;
+    }
+    for (
+      let node: HTMLElement | null = element;
+      node != null;
+      node = node.parentElement
+    ) {
+      if (window.getComputedStyle(node).display === 'none') {
+        return false;
+      }
     }
   }
   return true;
 }
 
 /**
- * Get the currently perceivable focusable descendants of a container.
+ * Get the visible, sequentially focusable descendants of a container.
  *
- * Selector matches alone are insufficient: hidden elements and descendants of
- * `inert` or `hidden` subtrees stay in the DOM but are skipped by keyboard
- * navigation. Descendants of `aria-hidden="true"` are also excluded because
- * sighted keyboard users must not reach controls that assistive technology
- * cannot perceive (WCAG 4.1.2).
+ * Selector matches alone are insufficient: CSS-hidden elements, descendants
+ * of `inert` or `hidden` subtrees, and natives carrying `tabindex="-1"` stay
+ * in the DOM but are skipped by sequential keyboard navigation. Descendants
+ * of `aria-hidden="true"` are also excluded because sighted keyboard users
+ * must not reach controls that assistive technology cannot perceive
+ * (WCAG 4.1.2).
  */
 export function getFocusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(
     container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter(isVisiblyFocusable);
+  ).filter(isVisibleSequentialFocusStop);
 }
 
 /**
- * Whether a container has any perceivable focusable descendant.
+ * Whether a container has any visible sequential-focus descendant.
  *
  * This intentionally stops at the first match. Consumers that only need a
  * boolean can run after subtree mutations without repeatedly computing styles
@@ -69,7 +113,7 @@ export function hasFocusableDescendant(container: HTMLElement): boolean {
   const candidates =
     container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
   for (const candidate of candidates) {
-    if (isVisiblyFocusable(candidate)) {
+    if (isVisibleSequentialFocusStop(candidate)) {
       return true;
     }
   }

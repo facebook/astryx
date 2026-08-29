@@ -508,10 +508,15 @@ export function BottomSheetPanel({
   });
 
   // The body is the only element that can scroll, so it needs a tab stop when
-  // its content offers no other keyboard route. Start in the accessible state
-  // for server rendering, then remove the extra stop before paint when the DOM
-  // contains a focusable descendant. Observe the subtree because a lazy child
-  // can add, remove, enable, or reveal a control without rerendering this panel.
+  // it actually overflows and its content offers no other keyboard route. A
+  // sheet that fits its content must not gain a dead Tab stop, and one whose
+  // only controls are CSS-hidden or tabindex="-1" must keep the explicit stop
+  // for engines that never focus scroll containers on their own. Overflow is
+  // unknowable during server rendering, so start in the accessible state and
+  // reconcile before first paint. Observe the subtree because a lazy child can
+  // add, remove, enable, or reveal a control without rerendering this panel,
+  // and observe box sizes because overflow can change with no DOM mutation at
+  // all (a snap drag, an image decoding, a viewport resize).
   const [bodyNeedsTabIndex, setBodyNeedsTabIndex] = useState(true);
   useLayoutEffect(() => {
     const body = bodyElementRef.current;
@@ -519,16 +524,41 @@ export function BottomSheetPanel({
       return;
     }
     const syncTabIndex = () => {
-      const needsTabIndex = !hasFocusableDescendant(body);
+      // Overflow first: a constant-time read that skips the descendant scan
+      // entirely for the common short sheet.
+      const needsTabIndex =
+        body.scrollHeight > body.clientHeight && !hasFocusableDescendant(body);
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- synchronizes focusability with rendered descendants
       setBodyNeedsTabIndex(current =>
         current === needsTabIndex ? current : needsTabIndex,
       );
     };
+    // The body's box decides clientHeight; a direct child's box decides
+    // scrollHeight (a grandchild cannot change the scroll range without its
+    // parent's box changing too). Re-registered only from mutation callbacks,
+    // never from the resize callback itself — observe() replays an initial
+    // notification, which would loop.
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(syncTabIndex);
+    const observeSizes = () => {
+      if (resizeObserver == null) {
+        return;
+      }
+      resizeObserver.disconnect();
+      resizeObserver.observe(body);
+      for (const child of body.children) {
+        resizeObserver.observe(child);
+      }
+    };
 
     syncTabIndex();
+    observeSizes();
     if (typeof MutationObserver === 'undefined') {
-      return;
+      return () => {
+        resizeObserver?.disconnect();
+      };
     }
     const observer = new MutationObserver(records => {
       // React owns the body's tabIndex. Ignore the attribute write caused by
@@ -543,16 +573,21 @@ export function BottomSheetPanel({
       ) {
         return;
       }
+      if (records.some(record => record.type === 'childList')) {
+        observeSizes();
+      }
       syncTabIndex();
     });
     observer.observe(body, {
       attributes: true,
       attributeFilter: [...FOCUSABILITY_ATTRIBUTES],
+      characterData: true,
       childList: true,
       subtree: true,
     });
     return () => {
       observer.disconnect();
+      resizeObserver?.disconnect();
     };
   }, [bodyElementRef]);
 

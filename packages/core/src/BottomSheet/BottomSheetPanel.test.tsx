@@ -40,7 +40,62 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
+
+interface ScrollMetrics {
+  clientHeight: number;
+  scrollHeight: number;
+}
+
+// jsdom performs no layout, so scroll metrics are always 0 and overflow must
+// be mocked. Prototype getters (rather than instance properties) take effect
+// before the panel's first layout-effect read during render. Returns the
+// mutable metrics object so a test can change the reported sizes later.
+function mockScrollMetrics(initial: ScrollMetrics): ScrollMetrics {
+  const metrics = {...initial};
+  vi.spyOn(Element.prototype, 'clientHeight', 'get').mockImplementation(
+    () => metrics.clientHeight,
+  );
+  vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockImplementation(
+    () => metrics.scrollHeight,
+  );
+  return metrics;
+}
+
+const OVERFLOWING: ScrollMetrics = {clientHeight: 400, scrollHeight: 800};
+
+interface ResizeObserverRecord {
+  callback: ResizeObserverCallback;
+  observed: Set<Element>;
+}
+
+function mockResizeObserverInstances(): ResizeObserverRecord[] {
+  const observers: ResizeObserverRecord[] = [];
+  class ResizeObserverMock {
+    callback: ResizeObserverCallback;
+    observed = new Set<Element>();
+
+    constructor(callback: ResizeObserverCallback) {
+      this.callback = callback;
+      observers.push(this);
+    }
+
+    observe(target: Element) {
+      this.observed.add(target);
+    }
+
+    unobserve(target: Element) {
+      this.observed.delete(target);
+    }
+
+    disconnect() {
+      this.observed.clear();
+    }
+  }
+  vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+  return observers;
+}
 
 function renderPanel(
   state: BottomSheetPanelState,
@@ -247,10 +302,18 @@ describe('BottomSheetPanel', () => {
     expect(panelRef).toHaveBeenCalledTimes(2);
   });
 
-  it('makes a text-only scrolling body keyboard-focusable', () => {
+  it('makes an overflowing text-only body keyboard-focusable', () => {
+    mockScrollMetrics(OVERFLOWING);
     renderPanel({kind: 'open', entering: false});
 
     expect(getBody()).toHaveAttribute('tabindex', '0');
+  });
+
+  it('does not leave a dead tab stop on a short sheet that cannot scroll', () => {
+    // No metrics mock: scrollHeight equals clientHeight, so nothing to scroll.
+    renderPanel({kind: 'open', entering: false});
+
+    expect(getBody()).not.toHaveAttribute('tabindex');
   });
 
   it('server-renders the body with a conservative keyboard tab stop', () => {
@@ -273,6 +336,7 @@ describe('BottomSheetPanel', () => {
   });
 
   it('does not add an extra tab stop when the body has a focusable control', () => {
+    mockScrollMetrics(OVERFLOWING);
     render(
       <BottomSheetPanel
         state={{kind: 'open', entering: false}}
@@ -287,6 +351,7 @@ describe('BottomSheetPanel', () => {
   });
 
   it('tracks focusable controls added and removed by a nested child', async () => {
+    mockScrollMetrics(OVERFLOWING);
     const panel = (content: React.ReactNode) => (
       <BottomSheetPanel
         state={{kind: 'open', entering: false}}
@@ -307,6 +372,7 @@ describe('BottomSheetPanel', () => {
   });
 
   it('keeps the body focusable when its only control is hidden', () => {
+    mockScrollMetrics(OVERFLOWING);
     render(
       <BottomSheetPanel
         state={{kind: 'open', entering: false}}
@@ -320,6 +386,75 @@ describe('BottomSheetPanel', () => {
     );
 
     expect(getBody()).toHaveAttribute('tabindex', '0');
+  });
+
+  it('keeps the body focusable when its only control is inside display:none', () => {
+    mockScrollMetrics(OVERFLOWING);
+    render(
+      <BottomSheetPanel
+        state={{kind: 'open', entering: false}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        <div style={{display: 'none'}}>
+          <button type="button">CSS-hidden action</button>
+        </div>
+      </BottomSheetPanel>,
+    );
+
+    expect(getBody()).toHaveAttribute('tabindex', '0');
+  });
+
+  it('keeps the body focusable when its only control has tabindex="-1"', () => {
+    mockScrollMetrics(OVERFLOWING);
+    render(
+      <BottomSheetPanel
+        state={{kind: 'open', entering: false}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        <button type="button" tabIndex={-1}>
+          Programmatic-only action
+        </button>
+      </BottomSheetPanel>,
+    );
+
+    expect(getBody()).toHaveAttribute('tabindex', '0');
+  });
+
+  it('follows overflow changes reported by the resize observer', () => {
+    const observers = mockResizeObserverInstances();
+    const metrics = mockScrollMetrics({clientHeight: 400, scrollHeight: 400});
+    renderPanel({kind: 'open', entering: false});
+    const body = getBody();
+    expect(body).not.toHaveAttribute('tabindex');
+
+    // More than one sheet-internal observer may watch the body (the mobile
+    // keyboard machinery observes it too), so notify every one of them the
+    // way a real engine would.
+    const bodyObservers = observers.filter(instance =>
+      instance.observed.has(body),
+    );
+    if (bodyObservers.length === 0) {
+      throw new Error('scroll body is not size-observed');
+    }
+    const notifyBodyResize = () => {
+      act(() => {
+        for (const instance of bodyObservers) {
+          instance.callback([], instance as unknown as ResizeObserver);
+        }
+      });
+    };
+
+    // Content grows past the sheet's height without any DOM mutation.
+    metrics.scrollHeight = 800;
+    notifyBodyResize();
+    expect(body).toHaveAttribute('tabindex', '0');
+
+    // And shrinks back, so the stop must not go dead.
+    metrics.scrollHeight = 400;
+    notifyBodyResize();
+    expect(body).not.toHaveAttribute('tabindex');
   });
 
   it('floats the handle bar over content that starts at the sheet top edge', () => {

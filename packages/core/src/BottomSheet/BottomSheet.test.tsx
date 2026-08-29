@@ -1757,10 +1757,17 @@ describe('BottomSheet', () => {
       expect(body.scrollTop).toBe(248);
 
       layoutShift = 200;
-      const observer = observers.find(instance => instance.observed.has(input));
-      expect(observer).toBeDefined();
+      // The keyboard reveal machinery and the panel's overflow tracker both
+      // size-observe the input, so notify every observer the way a real
+      // engine would.
+      const inputObservers = observers.filter(instance =>
+        instance.observed.has(input),
+      );
+      expect(inputObservers.length).toBeGreaterThan(0);
       act(() => {
-        observer?.callback([], observer as unknown as ResizeObserver);
+        for (const instance of inputObservers) {
+          instance.callback([], instance as unknown as ResizeObserver);
+        }
       });
 
       expect(body.scrollTop).toBe(448);
