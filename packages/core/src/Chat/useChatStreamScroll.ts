@@ -21,7 +21,9 @@
  * Uses scroll direction (lastScrollTop comparison) to detect user
  * intent — works for wheel, touch, scrollbar drag, keyboard, everything.
  * Tracks scrollHeight/offsetHeight changes to ignore Chrome synthetic
- * scroll events caused by content resize.
+ * scroll events caused by content resize; a wheel or touch gesture
+ * vouches for the scroll it produces, so the reader's own scroll is
+ * still read as intent while content is arriving.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -143,6 +145,13 @@ export function useChatStreamScroll({
   const velocityRef = useRef(0);
   const animatingRef = useRef(false);
   const lastTickRef = useRef<number | undefined>(undefined);
+  // Bumped whenever a jump or a fresh spring supersedes the running loop. A
+  // tick from a superseded generation returns before touching any shared
+  // state, so cancelling an in-flight spring is real rather than advisory.
+  const generationRef = useRef(0);
+  // Set by a reader gesture to vouch for the scroll it produces — see the
+  // synthetic-resize guard in onScroll.
+  const gestureRef = useRef(false);
 
   // For scroll direction detection
   const lastScrollTopRef = useRef(0);
@@ -152,46 +161,55 @@ export function useChatStreamScroll({
 
   // --- Spring animation ---
 
-  const animate = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el || !lockedRef.current) {
-      animatingRef.current = false;
-      lastTickRef.current = undefined;
-      velocityRef.current = 0;
-      return;
-    }
+  const animate = useCallback(
+    (generation: number) => {
+      // A superseded loop stops here, before the shared refs below, so it
+      // cannot reset bookkeeping that now belongs to the live one.
+      if (generation !== generationRef.current) {
+        return;
+      }
 
-    if (el.scrollHeight <= el.clientHeight) {
-      animatingRef.current = false;
-      lastTickRef.current = undefined;
-      velocityRef.current = 0;
-      return;
-    }
+      const el = scrollRef.current;
+      if (!el || !lockedRef.current) {
+        animatingRef.current = false;
+        lastTickRef.current = undefined;
+        velocityRef.current = 0;
+        return;
+      }
 
-    const target = el.scrollHeight - el.clientHeight;
-    const diff = target - el.scrollTop;
+      if (el.scrollHeight <= el.clientHeight) {
+        animatingRef.current = false;
+        lastTickRef.current = undefined;
+        velocityRef.current = 0;
+        return;
+      }
 
-    if (Math.abs(diff) < 0.5 && Math.abs(velocityRef.current) < 0.1) {
-      // eslint-disable-next-line react-compiler/react-compiler -- imperative DOM: scrollTop assignment
-      el.scrollTop = target;
-      animatingRef.current = false;
-      lastTickRef.current = undefined;
-      velocityRef.current = 0;
-      return;
-    }
+      const target = el.scrollHeight - el.clientHeight;
+      const diff = target - el.scrollTop;
 
-    const now = performance.now();
-    const tickDelta = lastTickRef.current
-      ? (now - lastTickRef.current) / SIXTY_FPS_MS
-      : 1;
-    lastTickRef.current = now;
+      if (Math.abs(diff) < 0.5 && Math.abs(velocityRef.current) < 0.1) {
+        // eslint-disable-next-line react-compiler/react-compiler -- imperative DOM: scrollTop assignment
+        el.scrollTop = target;
+        animatingRef.current = false;
+        lastTickRef.current = undefined;
+        velocityRef.current = 0;
+        return;
+      }
 
-    velocityRef.current =
-      (damping * velocityRef.current + stiffness * diff) / mass;
-    el.scrollTop += velocityRef.current * tickDelta;
+      const now = performance.now();
+      const tickDelta = lastTickRef.current
+        ? (now - lastTickRef.current) / SIXTY_FPS_MS
+        : 1;
+      lastTickRef.current = now;
 
-    requestAnimationFrame(animate);
-  }, [scrollRef, damping, stiffness, mass]);
+      velocityRef.current =
+        (damping * velocityRef.current + stiffness * diff) / mass;
+      el.scrollTop += velocityRef.current * tickDelta;
+
+      requestAnimationFrame(() => animate(generation));
+    },
+    [scrollRef, damping, stiffness, mass],
+  );
 
   // Jump to the bottom in a single frame — cancels any in-flight spring so
   // a later animation tick can't fight the assignment.
@@ -201,6 +219,7 @@ export function useChatStreamScroll({
       return;
     }
     animatingRef.current = false;
+    generationRef.current += 1;
     velocityRef.current = 0;
     lastTickRef.current = undefined;
     el.scrollTop = el.scrollHeight - el.clientHeight;
@@ -224,7 +243,9 @@ export function useChatStreamScroll({
     if (!animatingRef.current) {
       animatingRef.current = true;
       lastTickRef.current = undefined;
-      requestAnimationFrame(animate);
+      generationRef.current += 1;
+      const generation = generationRef.current;
+      requestAnimationFrame(() => animate(generation));
     }
   }, [animate, jumpToBottom, prefersReducedMotion]);
 
@@ -336,8 +357,11 @@ export function useChatStreamScroll({
       lastScrollHeightRef.current = scrollHeight;
       lastOffsetHeightRef.current = offsetHeight;
 
-      if (scrollHeightChanged || offsetHeightChanged) {
-        // Synthetic scroll from resize — don't change lock state
+      if ((scrollHeightChanged || offsetHeightChanged) && !gestureRef.current) {
+        // Synthetic scroll from resize — don't change lock state. A gesture
+        // waives this: while content is arriving the geometry changes on
+        // nearly every event, which is exactly when the reader's own scroll
+        // must still be read as intent.
         lastScrollTopRef.current = scrollTop;
         return;
       }
@@ -361,30 +385,43 @@ export function useChatStreamScroll({
       }
     };
 
-    // Wheel up while animating — interrupt immediately.
-    // onScroll direction detection covers most cases, but wheel fires
-    // before the scroll position updates so we can react faster.
+    // Wheel up vouches for the scroll it is about to produce. The gesture
+    // itself never unlocks: one this scroller does not consume — a wheel over
+    // a nested scrollable child, an overscroll at the bottom — produces no
+    // scroll event at all and must leave following alone.
     const onWheel = (e: WheelEvent) => {
-      if (e.deltaY < 0 && animatingRef.current) {
-        lockedRef.current = false;
-        animatingRef.current = false;
-        setIsLocked(false);
+      if (e.deltaY >= 0) {
+        return;
       }
+      gestureRef.current = true;
+      // Scroll events are dispatched in the frame's scroll steps, which run
+      // before its animation frame callbacks, so a nested frame expires the
+      // waiver after this frame's scroll steps and the next one's — the room
+      // a compositor-thread scroll needs to reach the main thread — and no
+      // later, so a resize clamp cannot inherit it.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          gestureRef.current = false;
+        });
+      });
     };
 
-    // Touch move — user is dragging, take control
-    const onTouchMove = () => {
-      if (animatingRef.current) {
-        lockedRef.current = false;
-        animatingRef.current = false;
-        setIsLocked(false);
-      }
+    // A drag vouches for its whole gesture: unlike a wheel notch, the scroll
+    // it produces can land many frames after it starts.
+    const onTouchStart = () => {
+      gestureRef.current = true;
+    };
+
+    const onTouchEnd = () => {
+      gestureRef.current = false;
     };
 
     el.addEventListener('scroll', onScroll, {passive: true});
     el.addEventListener('scrollend', onScrollEnd);
     el.addEventListener('wheel', onWheel, {passive: true});
-    el.addEventListener('touchmove', onTouchMove, {passive: true});
+    el.addEventListener('touchstart', onTouchStart, {passive: true});
+    el.addEventListener('touchend', onTouchEnd, {passive: true});
+    el.addEventListener('touchcancel', onTouchEnd, {passive: true});
 
     // Initial scroll to bottom — content already present at mount.
     requestAnimationFrame(() => {
@@ -399,7 +436,9 @@ export function useChatStreamScroll({
       el.removeEventListener('scroll', onScroll);
       el.removeEventListener('scrollend', onScrollEnd);
       el.removeEventListener('wheel', onWheel);
-      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchcancel', onTouchEnd);
     };
   }, [scrollRef, enabled, lockThreshold, buttonThreshold]);
 

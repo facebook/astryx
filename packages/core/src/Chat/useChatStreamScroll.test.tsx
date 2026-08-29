@@ -215,3 +215,141 @@ describe('useChatStreamScroll — prefers-reduced-motion', () => {
     expect(api.current!.isLocked).toBe(true);
   });
 });
+
+describe('useChatStreamScroll — reader gestures', () => {
+  // Mount with content present: the initial jump lands at the bottom, and one
+  // scroll event syncs the tracked geometry so later events are judged
+  // against it rather than against the empty container.
+  function settleAtBottom(el: HTMLElement) {
+    setGeometry(el, {scrollHeight: 1000, clientHeight: 400});
+    flushRaf();
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+  }
+
+  function wheelUp(el: HTMLElement) {
+    act(() => {
+      el.dispatchEvent(new WheelEvent('wheel', {deltaY: -120}));
+    });
+  }
+
+  // The reader's scroll arrives in the same event that carries new content —
+  // the shape every scroll event has while a turn is streaming.
+  function scrollUpDuringGrowth(el: HTMLElement) {
+    setGeometry(el, {scrollHeight: 1400, clientHeight: 400});
+    el.scrollTop = 300;
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+  }
+
+  it('releases follow when a wheel vouched for the scroll', () => {
+    const {api, el} = renderHook();
+    settleAtBottom(el);
+    expect(api.current!.isLocked).toBe(true);
+
+    wheelUp(el);
+    scrollUpDuringGrowth(el);
+
+    expect(api.current!.isLocked).toBe(false);
+  });
+
+  it('releases follow under prefers-reduced-motion too', () => {
+    stubReducedMotion();
+    const {api, el} = renderHook();
+    settleAtBottom(el);
+
+    wheelUp(el);
+    scrollUpDuringGrowth(el);
+
+    expect(api.current!.isLocked).toBe(false);
+  });
+
+  it('keeps following when the gesture produced no scroll of its own', () => {
+    // A wheel a nested scrollable child consumed still reaches this handler;
+    // the only scroll that follows is the content growing.
+    const {api, el} = renderHook();
+    settleAtBottom(el);
+
+    wheelUp(el);
+    setGeometry(el, {scrollHeight: 1400, clientHeight: 400});
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+
+    expect(api.current!.isLocked).toBe(true);
+  });
+
+  it('expires the waiver, so a later resize clamp cannot release follow', () => {
+    const {api, el} = renderHook();
+    settleAtBottom(el);
+
+    wheelUp(el);
+    flushRaf();
+    flushRaf();
+
+    // Content shrinks — a collapsed tool call — and the browser clamps the
+    // position up. Without the expiry this reads as the reader scrolling.
+    setGeometry(el, {scrollHeight: 800, clientHeight: 400});
+    el.scrollTop = 400;
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+
+    expect(api.current!.isLocked).toBe(true);
+  });
+
+  it('a drag vouches for the whole gesture, not just its first frames', () => {
+    const {api, el} = renderHook();
+    settleAtBottom(el);
+
+    act(() => {
+      el.dispatchEvent(new Event('touchstart'));
+    });
+    flushRaf();
+    flushRaf();
+    scrollUpDuringGrowth(el);
+
+    expect(api.current!.isLocked).toBe(false);
+  });
+
+  it('stops vouching once the drag ends', () => {
+    const {api, el} = renderHook();
+    settleAtBottom(el);
+
+    act(() => {
+      el.dispatchEvent(new Event('touchstart'));
+    });
+    act(() => {
+      el.dispatchEvent(new Event('touchend'));
+    });
+    scrollUpDuringGrowth(el);
+
+    expect(api.current!.isLocked).toBe(true);
+  });
+});
+
+describe('useChatStreamScroll — spring cancellation', () => {
+  it('an instant jump leaves at most one live animation loop', () => {
+    const {api, el} = renderHook();
+    setGeometry(el, {scrollHeight: 1000, clientHeight: 400});
+    flushRaf();
+
+    // Streaming growth starts a spring.
+    setGeometry(el, {scrollHeight: 1400, clientHeight: 400});
+    act(() => api.current!.scrollIfLocked());
+    flushRaf();
+    expect(rafQueue).toHaveLength(1);
+
+    // A programmatic jump lands mid-spring, and content grows again before
+    // the superseded loop's next tick — so startAnimation opens a second one.
+    act(() => api.current!.scrollToBottom({behavior: 'instant'}));
+    setGeometry(el, {scrollHeight: 1800, clientHeight: 400});
+    act(() => api.current!.scrollIfLocked());
+    flushRaf();
+
+    // Only the live loop rescheduled itself.
+    expect(rafQueue).toHaveLength(1);
+  });
+});
