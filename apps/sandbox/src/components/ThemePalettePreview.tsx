@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useMemo, useReducer, type CSSProperties} from 'react';
+import {useCallback, useMemo, useReducer, type CSSProperties} from "react";
 
 import {Banner, type BannerStatus} from '@astryxdesign/core/Banner';
 import {ChatComposer} from '@astryxdesign/core/Chat';
@@ -2707,32 +2707,22 @@ function ProgressBarSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
   const standaloneTrack =
     progressOptionRows.find(row => row.variant === 'accent')?.currentTrack ??
     subtleTrack;
-  const supplementalTrack = mode === 'light' ? '#e2e2e2' : standaloneTrack;
-  const supplementalWarningFill = mode === 'light' ? '#f6d168' : '#f1d27c';
+  const supplementalTrack = standaloneTrack;
+  const supplementalWarningFill =
+    progressOptionRows.find(row => row.variant === 'warning')?.fill ??
+    resolveToken(theme, '--color-warning', mode);
   const audit = getProgressContrast(theme, mode, {
     track: supplementalTrack,
     fills: {warning: supplementalWarningFill},
   });
-  const getSupplementalStyle = (
-    variant: (typeof PROGRESS_VARIANTS)[number],
-  ): CSSProperties => ({
-    '--color-background-muted': supplementalTrack,
-    ...(variant === 'warning'
-      ? {
-          '--color-warning': supplementalWarningFill,
-        }
-      : {}),
-  });
-
   const trackOptions = [
     {
       name: 'Standalone',
       precedent: 'Default · the graphic carries the progress information',
       description:
-        'Every variant uses the same neutral track and a 3:1 endpoint marker. Light-mode warning moves to the closest darker yellow palette stop that clears 3:1.',
+        'Uses this theme’s resolved ProgressBar fill and track colors. The reported ratios show whether a standalone graphic needs additional treatment.',
       getTrack: (_row: (typeof progressOptionRows)[number]) => standaloneTrack,
-      getFill: (row: (typeof progressOptionRows)[number]) =>
-        row.variant === 'warning' && mode === 'light' ? '#927300' : row.fill,
+      getFill: (row: (typeof progressOptionRows)[number]) => row.fill,
       showValue: false,
       hasEndpointGap: false,
       hasEndMarker: true,
@@ -2741,7 +2731,7 @@ function ProgressBarSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
       name: 'Supplemental',
       precedent: 'Explicit opt-in · an equivalent visible value is nearby',
       description:
-        'Every fill retains its semantic Badge color. Light mode uses the quieter muted track; dark mode keeps the original neutral track. The nearby value carries the precise progress information.',
+        'Uses this theme’s resolved semantic fills and neutral track. The nearby value carries the precise progress information.',
       getTrack: (_row: (typeof progressOptionRows)[number]) =>
         supplementalTrack,
       getFill: (row: (typeof progressOptionRows)[number]) =>
@@ -2764,14 +2754,12 @@ function ProgressBarSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
             variant={variant}
             hasValueLabel
             marks={marks}
-            style={getSupplementalStyle(variant)}
           />
         ))}
         <ProgressBar
           isIndeterminate
           label="Indeterminate progress"
           variant="accent"
-          style={getSupplementalStyle('accent')}
         />
         <ProgressBar
           value={60}
@@ -2779,7 +2767,6 @@ function ProgressBarSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
           variant="neutral"
           hasValueLabel
           isDisabled
-          style={getSupplementalStyle('neutral')}
         />
       </VStack>
       <div style={{...buttonRowLabelStyle, marginTop: 18}}>
@@ -2881,7 +2868,8 @@ function ProgressBarSection({theme, mode}: {theme: DefinedTheme; mode: Mode}) {
                     <div
                       style={{
                         marginTop: 3,
-                        color: 'var(--color-text-tertiary)',
+                        color:
+                          'var(--color-text-tertiary, var(--color-text-secondary))',
                         fontSize: 9,
                         fontVariantNumeric: 'tabular-nums',
                       }}>
