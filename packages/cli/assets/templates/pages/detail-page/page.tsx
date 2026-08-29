@@ -43,20 +43,9 @@ import {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 import type {CSSProperties} from 'react';
 
-// The only custom CSS in this template is small optical-alignment negative
-// margins: the tab row's block dock has no prop (see tabsRow) and List has no
-// "bleed to container edge" prop (#2626). Everything else uses props. Plain
-// inline styles — no StyleX compiler required.
-
-// Dock the tab bar on the header's bottom edge so the active-tab underline
-// meets the header divider. TabList's `isFullBleed` handles the inline bleed;
-// the block-end dock is still hand-tuned because the tab row sits inside
-// nested flex wrappers (StackItem > HStack), where no component prop can
-// reach the header's padding edge (a LayoutHeader docking slot would).
-const tabsRow: CSSProperties = {
-  marginBottom: -16,
-  marginTop: 12,
-};
+// The only custom CSS in this template is a small optical-alignment negative
+// margin: List has no "bleed to container edge" prop (#2626). Everything else
+// uses props. Plain inline styles — no StyleX compiler required.
 // Pull the list items' inner padding back so their content optically aligns
 // with the section heading above (ListItem insets content by ~8px). No
 // edge/inset prop on List (#2626).
@@ -178,7 +167,7 @@ function PageHeader({
   isNarrow: boolean;
 }) {
   return (
-    <LayoutHeader hasDivider padding={4}>
+    <LayoutHeader hasDivider padding={4} paddingBlockEnd={0}>
       <VStack gap={3}>
         <HStack gap={4} vAlign="start">
           <StackItem size="fill">
@@ -260,7 +249,7 @@ function PageHeader({
           </HStack>
         )}
 
-        <HStack vAlign="center" style={tabsRow}>
+        <HStack vAlign="center">
           <StackItem size="fill">
             <TabList
               value={activeTab}
