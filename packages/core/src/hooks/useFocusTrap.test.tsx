@@ -411,4 +411,52 @@ describe('useFocusTrap focus restoration', () => {
     rerender(<RestoreFixture isActive={true} showTrap={false} />);
     expect(prev).toHaveFocus();
   });
+
+  it('does not restore focus when focus never entered the trap', () => {
+    // Reproduces the Typeahead/PowerSearch scenario from #5651: a popup that
+    // opens with role="none" and hasAutoFocus={false} keeps DOM focus on its
+    // anchor input. The trap is active but focus never enters the container.
+    const {rerender} = render(<RestoreFixture isActive={false} />);
+    const prev = screen.getByTestId('prev');
+    prev.focus();
+    expect(prev).toHaveFocus();
+
+    // Activate the trap — focus stays on prev (outside the container).
+    rerender(<RestoreFixture isActive={true} />);
+
+    // Simulate an outside click: the browser blurs the input and focus falls
+    // to <body> before the layer's light dismiss hides it.
+    (document.activeElement as HTMLElement).blur();
+    expect(document.body).toHaveFocus();
+
+    // Deactivating should NOT restore focus to prev — focus never entered the
+    // trap, so restoring would cancel the blur the user asked for.
+    rerender(<RestoreFixture isActive={false} />);
+    expect(prev).not.toHaveFocus();
+    expect(document.body).toHaveFocus();
+  });
+
+  it('still restores focus when focus entered the trap and was then lost', () => {
+    // Complement to the test above: focus DID enter the trap (Dialog,
+    // DropdownMenu, a Typeahead option click), then the element was blurred
+    // so activeElement falls to <body>. The restore should still fire.
+    const {rerender} = render(<RestoreFixture isActive={false} />);
+    const prev = screen.getByTestId('prev');
+    prev.focus();
+
+    rerender(<RestoreFixture isActive={true} />);
+    // Focus enters the trap, as auto-focus or a keyboard user would.
+    screen.getByTestId('inside').focus();
+    expect(screen.getByTestId('inside')).toHaveFocus();
+
+    // Focus is lost from inside the trap — e.g. the trap content was removed
+    // or the user tabbed away — so activeElement falls to <body>.
+    (document.activeElement as HTMLElement).blur();
+    expect(document.body).toHaveFocus();
+
+    // Because focus was inside the trap at some point, the restore fires and
+    // returns focus to the element that was focused before activation.
+    rerender(<RestoreFixture isActive={false} />);
+    expect(prev).toHaveFocus();
+  });
 });
