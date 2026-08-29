@@ -1587,7 +1587,7 @@ type IncrementalWork = {
   readonly boundaryLines: number;
   /** Characters visited while collecting document-global definitions. */
   readonly definitionCharacters: number;
-  /** Entries replaced in the stable result array. */
+  /** Block nodes parsed anew this call (settled delta + unsettled tail). */
   readonly renderedBlocks: number;
 };
 
@@ -1601,9 +1601,6 @@ type IncrementalCache = {
   /** The effective document-global definitions used by slice parses. */
   linkDefs: ReadonlyMap<string, string>;
   linkDefsKey: string;
-  /** Stable array handed back on every call; only its mutable suffix changes. */
-  result: BlockNode[];
-  renderedSettledBlocks: number;
   work: IncrementalWork;
 };
 
@@ -1617,8 +1614,6 @@ function makeIncrementalCache(state: IncrementalState): IncrementalCache {
     tailLinkDefs: new Map(),
     linkDefs: defs,
     linkDefsKey: linkDefsSignature(defs),
-    result: [...state.settledBlocks],
-    renderedSettledBlocks: state.settledBlocks.length,
     work: {
       splitCharacters: 0,
       boundaryLines: 0,
@@ -2052,8 +2047,6 @@ function resetIncrementalCache(
   cache.tailLinkDefs = new Map();
   cache.linkDefs = new Map();
   cache.linkDefsKey = '';
-  cache.result.length = 0;
-  cache.renderedSettledBlocks = 0;
   cache.work = {
     splitCharacters: 0,
     boundaryLines: 0,
@@ -2065,11 +2058,13 @@ function resetIncrementalCache(
 /**
  * Parse one cumulative snapshot of a streaming Markdown document.
  *
- * A state belongs to one stream: callers may rewrite its unsettled tail, but
- * must create a new state before changing text that has already settled. The
- * returned array is likewise owned by that state and updated in place on the
- * next call so work stays proportional to the mutable tail; copy it if a
- * historical snapshot must be retained.
+ * Every call returns a fresh array, and later calls never mutate a
+ * previously returned array or the block nodes inside it, so results are
+ * stable snapshots. Settled block objects are shared across calls by
+ * reference, which is safe because they are replaced — never edited in
+ * place — when adjacent content changes them. When the input no longer
+ * starts with the settled prefix (a replacement rather than an append),
+ * the cache is discarded and the whole document is re-parsed.
  */
 export function parseMarkdownIncremental(
   input: string,
@@ -2103,22 +2098,28 @@ export function parseMarkdownIncremental(
   }
   if (input === '') {
     resetIncrementalCache(state, cache);
-    return cache.result;
+    return [];
   }
 
-  // A state owns one stream. The mutable tail may be rewritten (for example
-  // by trimStreamingArtifacts), but text that has crossed a blank-line
-  // boundary is immutable. A shorter input cannot contain that prefix, so
-  // start a new stream. Callers making an arbitrary document edit likewise
-  // create a fresh state.
-  if (input.length < cache.settledEnd) {
+  // The settled prefix is only reusable while the input still contains it
+  // verbatim. Lengths alone cannot tell: a same-length or longer replacement
+  // (new args after reusing a state) disagrees with the prefix without ever
+  // being shorter, so compare content. `startsWith` is a memcmp-speed scan
+  // with no allocation and is the one whole-prefix operation retained per
+  // call — the contract that a replaced document renders the new content
+  // cannot be honored without looking at the prefix. A shorter input can
+  // never contain the prefix and fails the same check.
+  if (
+    state.settledText.length !== cache.settledEnd ||
+    !input.startsWith(state.settledText)
+  ) {
     resetIncrementalCache(state, cache);
     state.autolink = opts.autolink;
     state.sourceRanges = opts.sourceRanges;
   }
 
-  // All four recurring costs are confined to the mutable suffix: splitting,
-  // fence/boundary detection, definition collection, and result replacement.
+  // The recurring parse costs are confined to the mutable suffix: splitting,
+  // fence/boundary detection, definition collection, and block construction.
   // An open fence simply keeps the suffix growing until its closing marker.
   const oldSettledEnd = cache.settledEnd;
   const tailRaw = input.slice(oldSettledEnd);
@@ -2184,15 +2185,19 @@ export function parseMarkdownIncremental(
     ? unsettledRaw
     : trimUnsettledStructural(unsettledRaw);
 
+  let parsedSettledBlocks = 0;
   if (reparseSettled) {
     state.settledBlocks = state.settledText
       ? parseMarkdownImpl(state.settledText, parseOpts)
       : [];
+    parsedSettledBlocks = state.settledBlocks.length;
   } else if (settledDelta !== '') {
-    appendSettledBlocks(
-      state.settledBlocks,
-      parseMarkdownImpl(settledDelta, atOffset(parseOpts, oldSettledEnd)),
+    const deltaBlocks = parseMarkdownImpl(
+      settledDelta,
+      atOffset(parseOpts, oldSettledEnd),
     );
+    appendSettledBlocks(state.settledBlocks, deltaBlocks);
+    parsedSettledBlocks = deltaBlocks.length;
   }
 
   // The unsettled tail is trimmed before parsing, so its offset in the
@@ -2215,26 +2220,18 @@ export function parseMarkdownIncremental(
 
   state.prevInput = input;
 
-  // Keep the returned array itself stable. At most the previous last settled
-  // block is revisited because it may merge with a same-style list in the
-  // mutable tail; every earlier entry is an immutable prefix.
-  const replaceFrom = reparseSettled
-    ? 0
-    : Math.max(0, cache.renderedSettledBlocks - 1);
-  cache.result.length = replaceFrom;
-  const renderedSuffix = mergeSettledBlocks(
-    state.settledBlocks.slice(replaceFrom),
-    unsettledBlocks,
-  );
-  cache.result.push(...renderedSuffix);
-  cache.renderedSettledBlocks = state.settledBlocks.length;
+  // Snapshot semantics: hand back a fresh array so later calls never mutate
+  // an earlier return. The settled block objects inside it are reused by
+  // reference — they are immutable, so sharing them is what keeps this cheap:
+  // assembling the result copies one pointer per settled block and never
+  // re-visits the settled characters.
   cache.work = {
     splitCharacters: tailRaw.length,
     boundaryLines: tailLines.length,
     definitionCharacters: settledDelta.length + unsettledInput.length,
-    renderedBlocks: renderedSuffix.length,
+    renderedBlocks: parsedSettledBlocks + unsettledBlocks.length,
   };
-  return cache.result;
+  return mergeSettledBlocks(state.settledBlocks, unsettledBlocks);
 }
 
 // ---------------------------------------------------------------------------

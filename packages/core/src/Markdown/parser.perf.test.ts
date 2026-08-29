@@ -287,7 +287,12 @@ describe('parseMarkdownIncremental cache', () => {
       `  worst tail work (20/200 sections): ${JSON.stringify(short)} / ${JSON.stringify(long)}`,
     );
     // Ten times the document length does not change splitting, boundary
-    // scanning, definition collection, or result-array replacement work.
+    // scanning, definition collection, or per-chunk block construction.
+    // Two whole-prefix operations are deliberately outside these counters
+    // because the public contract requires them and neither parses nor
+    // allocates per settled character: the memcmp-speed prefix comparison
+    // that detects a replaced document, and the pointer-per-block copy that
+    // keeps every returned array a stable snapshot.
     expect(long).toEqual(short);
   });
 

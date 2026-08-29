@@ -209,24 +209,52 @@ describe('parseMarkdownIncremental', () => {
     expect(state.settledBlocks).toBe(cachedBlocks);
   });
 
-  it('updates one result array while preserving its immutable block prefix', () => {
+  it('returns a fresh array and leaves earlier snapshots untouched', () => {
     const state = createIncrementalState();
     const first = parseMarkdownIncremental(
       '# Stable\n\nFirst paragraph\n\nTail',
       state,
     );
     const stableHeading = first[0];
+    const snapshot = structuredClone(first);
 
     const second = parseMarkdownIncremental(
       '# Stable\n\nFirst paragraph\n\nTail grows',
       state,
     );
 
-    expect(second).toBe(first);
+    // Call 1's return is a stable snapshot: a later call neither replaces it
+    // in place nor edits the block nodes it holds.
+    expect(second).not.toBe(first);
+    expect(first).toEqual(snapshot);
+    // Settled block objects are reused across calls by reference.
     expect(second[0]).toBe(stableHeading);
     expect(second).toEqual(
       parseMarkdown('# Stable\n\nFirst paragraph\n\nTail grows'),
     );
+  });
+
+  it('re-parses when settled text is replaced at the same length', () => {
+    const state = createIncrementalState();
+    const before = '# Alpha\n\nOld body copy';
+    const after = '# Bravo\n\nNew body copy';
+    expect(after).toHaveLength(before.length);
+
+    parseMarkdownIncremental(before, state);
+    const blocks = parseMarkdownIncremental(after, state);
+
+    expect(blocks).toEqual(parseMarkdown(after));
+  });
+
+  it('re-parses when settled text is replaced by longer content', () => {
+    const state = createIncrementalState();
+    parseMarkdownIncremental('# Alpha\n\nOld body copy', state);
+
+    const after =
+      '# Bravo heading\n\nNew body copy, longer than before\n\nTail';
+    const blocks = parseMarkdownIncremental(after, state);
+
+    expect(blocks).toEqual(parseMarkdown(after));
   });
 
   it('keeps the prefix settled while a long fence streams and closes', () => {
