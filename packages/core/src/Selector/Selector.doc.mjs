@@ -195,6 +195,13 @@ export const docs = {
       default: "'end'",
     },
     {
+      name: 'presentation',
+      type: "'popover' | 'bottom-sheet' | 'adaptive'",
+      description:
+        'How the option list is presented. adaptive uses a bottom sheet on compact touch screens and an anchored popover otherwise.',
+      default: "'popover'",
+    },
+    {
       name: 'width',
       type: 'SizeValue',
       description:
@@ -252,6 +259,11 @@ export const docs = {
         guidance: true,
         description:
           'Use variant="ghost" when a selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use presentation="adaptive" when the selector should become a bottom sheet on compact touch screens.',
       },
       {
         guidance: false,

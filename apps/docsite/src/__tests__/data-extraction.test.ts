@@ -1052,6 +1052,40 @@ describe('DropdownMenu adaptive-presentation example', () => {
   });
 });
 
+describe('Selector bottom-sheet examples', () => {
+  it.each(['Selector', 'MultiSelector'])(
+    'documents the %s presentation choice',
+    componentName => {
+      const component = Object.values(components)
+        .flat()
+        .find(entry => entry.name === componentName);
+      const presentation = component?.props.find(
+        prop => prop.name === 'presentation',
+      );
+
+      expect(presentation?.type).toBe(
+        "'popover' | 'bottom-sheet' | 'adaptive'",
+      );
+      expect(presentation?.default).toBe("'popover'");
+    },
+  );
+
+  it.each(['Selector', 'MultiSelector'])(
+    'registers the %s BottomSheet example',
+    componentName => {
+      const examples = exampleRegistry[componentName] ?? [];
+      const bottomSheetExample = examples.find(example =>
+        /Bottom Sheet/i.test(example.name),
+      );
+
+      expect(bottomSheetExample).toBeDefined();
+      expect(bottomSheetExample!.source).toContain(
+        'presentation="bottom-sheet"',
+      );
+    },
+  );
+});
+
 // ── Vertical ToggleButtonGroup example (#2707) ─────────────────────────────
 // ToggleButtonGroup supports orientation="vertical", but no docsite example
 // demonstrated it — the prop was undiscoverable without reading the API
