@@ -5,7 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import {afterEach, describe, expect, it} from 'vitest';
 import {
+  parseAnatomyThemingBlock,
   parseKnowledgeDocument,
+  validateAnatomyThemingMap,
   validateKnowledgeRoot,
   validateSchemaEvolution,
 } from './check-knowledge.mjs';
@@ -98,6 +100,36 @@ function componentRecord(overrides = {}) {
   return `---\n${frontmatter}\n---\n\n# Button component contract\n\n${sections}\n`;
 }
 
+function anatomyThemingBlock(mapping) {
+  return `### Theming anatomy\n\n<!-- anatomy-theming:v1 -->\n\`\`\`json\n${JSON.stringify(mapping, null, 2)}\n\`\`\``;
+}
+
+function withAnatomyTheming(record, mapping) {
+  return record.replace(
+    '## Design relationships\n\nBody.',
+    `## Design relationships\n\nBody.\n\n${anatomyThemingBlock(mapping)}`,
+  );
+}
+
+function writeButtonDoc(directory) {
+  const content = `export const docs = {
+  name: 'Button',
+  usage: {
+    anatomy: [
+      {name: 'Root', required: true, description: 'Painted surface.'},
+      {name: 'Label', required: true, description: 'Visible label.'},
+      {name: 'Icon', required: false, description: 'Shared icon.'},
+      {name: 'Content', required: false, description: 'Consumer content.'},
+    ],
+  },
+  theming: {
+    targets: [{className: 'astryx-button'}],
+  },
+};\n`;
+  fs.writeFileSync(path.join(directory, 'Button.doc.mjs'), content);
+  return content;
+}
+
 afterEach(() => {
   for (const root of roots.splice(0))
     fs.rmSync(root, {recursive: true, force: true});
@@ -126,6 +158,118 @@ describe('schema evolution', () => {
         new Map([['docs/schemas/knowledge/v1.json', 'changed']]),
       ).join('\n'),
     ).toMatch(/immutable.*append-only/s);
+  });
+});
+
+describe('component theming anatomy metadata', () => {
+  const contract = {
+    anatomy: ['Root', 'Label', 'Icon', 'Content'],
+    targets: ['button'],
+  };
+  const valid = {
+    Root: {target: 'button'},
+    Label: {inherits: 'button'},
+    Icon: {delegatesTo: {owner: 'component:Icon', target: 'icon'}},
+    Content: {none: {reason: 'The consumer owns this content.'}},
+  };
+
+  it('parses the optional versioned JSON block under Design relationships', () => {
+    expect(
+      parseAnatomyThemingBlock(
+        `## Design relationships\n\n${anatomyThemingBlock(valid)}`,
+      ).mapping,
+    ).toEqual(valid);
+    expect(parseAnatomyThemingBlock('## Design relationships\n').mapping).toBe(
+      null,
+    );
+  });
+
+  it('rejects the structured block outside its existing level-two section', () => {
+    expect(
+      parseAnatomyThemingBlock(
+        `## Public concepts\n\n${anatomyThemingBlock(valid)}`,
+      ).problems.join('\n'),
+    ).toMatch(/subsection of "Design relationships"/);
+  });
+
+  it('accepts exactly one complete disposition per documented anatomy part', () => {
+    expect(validateAnatomyThemingMap(valid, contract)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'multiple dispositions',
+      {...valid, Root: {target: 'button', inherits: 'button'}},
+      /exactly one/,
+    ],
+    [
+      'missing delegated owner',
+      {...valid, Icon: {delegatesTo: {target: 'icon'}}},
+      /requires exactly owner and target/,
+    ],
+    [
+      'missing delegated target',
+      {...valid, Icon: {delegatesTo: {owner: 'component:Icon'}}},
+      /requires exactly owner and target/,
+    ],
+    [
+      'missing none reason',
+      {...valid, Content: {none: {}}},
+      /requires a non-empty reason/,
+    ],
+    [
+      'prefixed target',
+      {...valid, Root: {target: 'astryx-button'}},
+      /omit the "astryx-" prefix/,
+    ],
+    [
+      'non-kebab target',
+      {...valid, Root: {target: 'Button_Root'}},
+      /use kebab-case/,
+    ],
+  ])('rejects %s', (_name, mapping, expected) => {
+    expect(validateAnatomyThemingMap(mapping, contract).join('\n')).toMatch(
+      expected,
+    );
+  });
+
+  it('requires exact anatomy names and coverage of current local targets', () => {
+    const result = validateAnatomyThemingMap(
+      {
+        Label: {inherits: 'button'},
+        Icon: {delegatesTo: {owner: 'component:Icon', target: 'icon'}},
+        Content: {none: {reason: 'Consumer owned.'}},
+        Unknown: {none: {reason: 'Not real.'}},
+      },
+      contract,
+    ).join('\n');
+    expect(result).toMatch(/missing Root/);
+    expect(result).toMatch(/unknown Unknown/);
+    expect(result).toMatch(/current target "button" has no anatomy entry/);
+  });
+
+  it('validates an opted-in spec without changing consumer doc bytes', () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Button');
+    fs.mkdirSync(directory);
+    const consumerDoc = writeButtonDoc(directory);
+    fs.writeFileSync(
+      path.join(directory, 'Button.spec.md'),
+      withAnatomyTheming(componentRecord(), valid),
+    );
+
+    expect(validateKnowledgeRoot(root)).toEqual([]);
+    expect(
+      fs.readFileSync(path.join(directory, 'Button.doc.mjs'), 'utf8'),
+    ).toBe(consumerDoc);
+  });
+
+  it('keeps the block optional while existing specs migrate', () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Button');
+    fs.mkdirSync(directory);
+    fs.writeFileSync(path.join(directory, 'Button.spec.md'), componentRecord());
+    expect(validateKnowledgeRoot(root)).toEqual([]);
   });
 });
 

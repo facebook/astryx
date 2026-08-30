@@ -147,6 +147,244 @@ export function discoverKnowledgeRecords(root = DEFAULT_ROOT) {
   return records.sort();
 }
 
+export function parseAnatomyThemingBlock(
+  content,
+  filePath = '<component spec>',
+) {
+  const heading = /^### Theming anatomy\s*$/gm;
+  const headings = [...content.matchAll(heading)];
+  if (headings.length === 0) return {mapping: null, problems: []};
+  if (headings.length > 1) {
+    return {
+      mapping: null,
+      problems: [`${filePath}: duplicate "Theming anatomy" subsection.`],
+    };
+  }
+
+  const precedingSections = [
+    ...content.slice(0, headings[0].index).matchAll(/^## (.+?)\s*$/gm),
+  ];
+  if (precedingSections.at(-1)?.[1] !== 'Design relationships') {
+    return {
+      mapping: null,
+      problems: [
+        `${filePath}: "Theming anatomy" must be a level-three subsection of "Design relationships".`,
+      ],
+    };
+  }
+
+  const start = headings[0].index + headings[0][0].length;
+  const remainder = content.slice(start);
+  const nextHeading = /^#{2,3} .+$/m.exec(remainder);
+  const section =
+    nextHeading == null ? remainder : remainder.slice(0, nextHeading.index);
+  const blocks = [
+    ...section.matchAll(
+      /<!--\s*anatomy-theming:v1\s*-->\s*```json\s*\n([\s\S]*?)\n```/g,
+    ),
+  ];
+  if (blocks.length !== 1) {
+    return {
+      mapping: null,
+      problems: [
+        `${filePath}: "Theming anatomy" must contain exactly one <!-- anatomy-theming:v1 --> JSON block.`,
+      ],
+    };
+  }
+
+  try {
+    return {mapping: JSON.parse(blocks[0][1]), problems: []};
+  } catch (error) {
+    return {
+      mapping: null,
+      problems: [
+        `${filePath}: anatomy-theming:v1 is not valid JSON (${error.message}).`,
+      ],
+    };
+  }
+}
+
+const THEME_TARGET_NAME = /^(?!astryx-)[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+const THEMING_DISPOSITIONS = ['target', 'inherits', 'delegatesTo', 'none'];
+
+function exactObjectKeys(value, expected) {
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.keys(value).sort().join('\0') === [...expected].sort().join('\0')
+  );
+}
+
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function validateTargetName(target, where, problems) {
+  if (!isNonEmptyString(target)) {
+    problems.push(`${where}: target is required.`);
+  } else if (!THEME_TARGET_NAME.test(target)) {
+    problems.push(
+      `${where}: target must omit the "astryx-" prefix and use kebab-case.`,
+    );
+  }
+}
+
+/**
+ * Validate one parsed anatomy-theming:v1 map against the component's public
+ * anatomy and target inventory.
+ */
+export function validateAnatomyThemingMap(
+  mapping,
+  contract,
+  filePath = '<component spec>',
+) {
+  const problems = [];
+  if (
+    mapping == null ||
+    typeof mapping !== 'object' ||
+    Array.isArray(mapping)
+  ) {
+    return [`${filePath}: anatomy-theming:v1 must be a JSON object.`];
+  }
+
+  const declaredParts = Object.keys(mapping).sort();
+  const anatomyParts = [...contract.anatomy].sort();
+  const missing = anatomyParts.filter(part => !declaredParts.includes(part));
+  const extra = declaredParts.filter(part => !anatomyParts.includes(part));
+  if (missing.length > 0) {
+    problems.push(
+      `${filePath}: theming anatomy is missing ${missing.join(', ')}.`,
+    );
+  }
+  if (extra.length > 0) {
+    problems.push(
+      `${filePath}: theming anatomy has unknown ${extra.join(', ')}.`,
+    );
+  }
+
+  const ownedTargets = new Set();
+  for (const [part, disposition] of Object.entries(mapping)) {
+    const where = `${filePath}: theming anatomy ${JSON.stringify(part)}`;
+    if (
+      disposition == null ||
+      typeof disposition !== 'object' ||
+      Array.isArray(disposition)
+    ) {
+      problems.push(`${where} must be an object.`);
+      continue;
+    }
+
+    const keys = Object.keys(disposition);
+    const selected = THEMING_DISPOSITIONS.filter(key => key in disposition);
+    if (selected.length !== 1 || keys.length !== 1) {
+      problems.push(
+        `${where} must declare exactly one of target, inherits, delegatesTo, or none.`,
+      );
+      continue;
+    }
+
+    const kind = selected[0];
+    if (kind === 'target' || kind === 'inherits') {
+      const target = disposition[kind];
+      validateTargetName(target, `${where}.${kind}`, problems);
+      if (
+        isNonEmptyString(target) &&
+        THEME_TARGET_NAME.test(target) &&
+        !contract.targets.includes(target)
+      ) {
+        problems.push(
+          `${where}.${kind}: ${JSON.stringify(target)} is not a current target in the component doc.`,
+        );
+      }
+      if (kind === 'target') ownedTargets.add(target);
+      continue;
+    }
+
+    if (kind === 'delegatesTo') {
+      const delegation = disposition.delegatesTo;
+      if (!exactObjectKeys(delegation, ['owner', 'target'])) {
+        problems.push(
+          `${where}.delegatesTo requires exactly owner and target.`,
+        );
+        continue;
+      }
+      if (
+        !isNonEmptyString(delegation.owner) ||
+        !/^(component:[A-Z][A-Za-z0-9]*|family:[a-z0-9]+(?:-[a-z0-9]+)*)$/.test(
+          delegation.owner,
+        )
+      ) {
+        problems.push(
+          `${where}.delegatesTo.owner must be component:<Name> or family:<id>.`,
+        );
+      }
+      validateTargetName(
+        delegation.target,
+        `${where}.delegatesTo.target`,
+        problems,
+      );
+      continue;
+    }
+
+    const none = disposition.none;
+    if (!exactObjectKeys(none, ['reason']) || !isNonEmptyString(none.reason)) {
+      problems.push(`${where}.none requires a non-empty reason.`);
+    }
+  }
+
+  for (const target of contract.targets) {
+    if (!ownedTargets.has(target)) {
+      problems.push(
+        `${filePath}: current target ${JSON.stringify(target)} has no anatomy entry with a target disposition.`,
+      );
+    }
+  }
+
+  return problems;
+}
+
+function loadComponentContract(root, specPath, componentName) {
+  const directory = path.dirname(specPath);
+  for (const docPath of matchingFiles(directory, name =>
+    name.endsWith('.doc.mjs'),
+  )) {
+    let mod;
+    try {
+      mod = require(docPath);
+    } catch (error) {
+      return {
+        problem: `${path.relative(root, docPath)}: could not load component doc (${error.message}).`,
+      };
+    }
+    const doc = mod.docs ?? mod.default;
+    if (!doc) continue;
+    const candidates = [doc, ...(doc.components ?? [])];
+    const candidate = candidates.find(
+      entry => entry?.name?.replace(/^XDS/, '') === componentName,
+    );
+    if (!candidate) continue;
+    const anatomy = candidate.usage?.anatomy ?? doc.usage?.anatomy;
+    if (!Array.isArray(anatomy)) {
+      return {
+        problem: `${path.relative(root, docPath)}: ${componentName} has no canonical English usage.anatomy.`,
+      };
+    }
+    const targets = (candidate.theming?.targets ?? doc.theming?.targets ?? [])
+      .filter(target => target.deprecatedFor == null)
+      .map(target => target.className.replace(/^astryx-/, ''));
+    return {
+      contract: {
+        anatomy: anatomy.map(part => part.name),
+        targets,
+      },
+    };
+  }
+  return {
+    problem: `${path.relative(root, specPath)}: no component doc for ${componentName}.`,
+  };
+}
+
 function validateAgainstSchema(
   document,
   schema,
@@ -424,10 +662,8 @@ export function validateKnowledgeRoot(root = DEFAULT_ROOT) {
 
   for (const absolutePath of discoverKnowledgeRecords(root)) {
     const filePath = path.relative(root, absolutePath);
-    const document = parseKnowledgeDocument(
-      fs.readFileSync(absolutePath, 'utf8'),
-      filePath,
-    );
+    const content = fs.readFileSync(absolutePath, 'utf8');
+    const document = parseKnowledgeDocument(content, filePath);
     const recordVersion = document.frontmatter.get('schema_version');
     const versionedSchema = schemas.get(recordVersion);
     if (!versionedSchema) {
@@ -456,6 +692,27 @@ export function validateKnowledgeRoot(root = DEFAULT_ROOT) {
       problems.push(
         `${filePath}: active records must use latest schema_version ${latestVersion}.`,
       );
+    }
+    if (document.frontmatter.get('kind') === 'component') {
+      const parsed = parseAnatomyThemingBlock(content, filePath);
+      problems.push(...parsed.problems);
+      if (parsed.mapping != null) {
+        const componentName = String(document.frontmatter.get('id') ?? '')
+          .replace(/^component:/, '')
+          .replace(/\/.*$/, '');
+        const loaded = loadComponentContract(root, absolutePath, componentName);
+        if (loaded.problem) {
+          problems.push(loaded.problem);
+        } else {
+          problems.push(
+            ...validateAnatomyThemingMap(
+              parsed.mapping,
+              loaded.contract,
+              filePath,
+            ),
+          );
+        }
+      }
     }
     const id = document.frontmatter.get('id');
     if (id) {

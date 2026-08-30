@@ -19,9 +19,12 @@ applies_to:
     packages/core/src/theme/themingTargets.test.ts,
     packages/core/src/theme/extensibleAxes.test.ts,
     packages/core/src/theme/derivedVarRegistry.test.ts,
+    docs/templates/knowledge/component-spec.md,
+    scripts/check-knowledge.mjs,
   ]
 verified_by:
   [
+    scripts/check-knowledge.mjs,
     packages/core/src/theme/themingTargets.test.ts,
     packages/core/src/theme/extensibleAxes.test.ts,
     packages/core/src/theme/derivedVarRegistry.test.ts,
@@ -64,8 +67,9 @@ and explain only non-obvious rationale or exceptions.
 
 Visual props, states, and public CSS properties are capabilities of a target.
 They are not separate anatomy parts or separate targets. Runtime `themeProps()`
-reflection, `.doc.mjs` metadata, generated types, and CLI validation describe one
-public surface.
+reflection, public `.doc.mjs` theming metadata, and checked component-spec
+metadata describe one public surface without exposing maintainer dispositions to
+consumers.
 
 ## Boundaries and invariants
 
@@ -120,15 +124,18 @@ how themes become output, or the design rationale for a component's appearance.
 
 ## Owning code
 
-- Component `.doc.mjs` `usage.anatomy[]` owns consumer-facing parts.
+- Component `.doc.mjs` `usage.anatomy[]` owns the consumer-facing semantic part
+  inventory and contains no theming disposition or maintainer rationale.
 - Component `.doc.mjs` `theming.targets[]` owns discoverable public targets and
   their public properties/states.
-- Colocated component `.spec.md` files own the exact anatomy-to-target map and
-  any non-obvious rationale. CI validates that map against both consumer doc
-  sections. The map is excluded from generated consumer docs.
+- A colocated component `.spec.md` `### Theming anatomy` block owns the exact,
+  machine-readable anatomy-to-target dispositions. It is optional during
+  migration and excluded from generated consumer docs. Nearby prose records only
+  non-obvious rationale, exceptions, and links—not the exact mapping.
 - Runtime `themeProps()` calls emit the target and state contract.
-- `themingTargets.test.ts`, `extensibleAxes.test.ts`, and
-  `derivedVarRegistry.test.ts` enforce the source/metadata/generated relationship.
+- `scripts/check-knowledge.mjs`, `themingTargets.test.ts`,
+  `extensibleAxes.test.ts`, and `derivedVarRegistry.test.ts` enforce the
+  source/metadata/generated relationship.
 - Family contracts own shared target semantics when multiple components adopt
   one part contract.
 
@@ -142,7 +149,7 @@ scope were selected by the system owner.
 | Invariant  | Evidence                                              | Failure signal                                                                                       |
 | ---------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | INV1       | Cross-package target/documentation inventory          | An exported target in a participating package is invisible to metadata or CLI validation             |
-| INV2, INV3 | Bidirectional anatomy-disposition/target check        | A current target has no semantic part owner, or anatomy mechanically creates unnecessary targets     |
+| INV2, INV3 | `scripts/check-knowledge.mjs`                         | A current target has no semantic part owner, or anatomy mechanically creates unnecessary targets     |
 | INV4, INV5 | Component review plus rendered DOM inspection         | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics |
 | INV6       | `themingTargets.test.ts` and `extensibleAxes.test.ts` | State/variant is invisible to the owner target or becomes an unnecessary parallel target             |
 | INV7       | Metadata plus compiler registry tests                 | A public property lacks semantics or private expansion is duplicated in component prose/code         |

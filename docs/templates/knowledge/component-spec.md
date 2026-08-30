@@ -95,6 +95,29 @@ The component implements design requirements without copying their rationale.
 An `unsettled` representation remains a human decision; principles do not let an
 agent invent the answer.
 
+### Theming anatomy
+
+<!--
+Optional during migration. When present, this block must map every exact English
+anatomy name from <Name>.doc.mjs to one disposition. It is maintainer metadata:
+do not copy it into ComponentDoc, generated docsite data, CLI/MCP output, or
+consumer prose. Target names omit the `astryx-` prefix. Put only non-obvious
+rationale or exceptions in prose below the block.
+-->
+
+<!-- anatomy-theming:v1 -->
+
+```json
+{
+  "<root part>": {"target": "<target>"},
+  "<inherited part>": {"inherits": "<parent-or-root-target>"},
+  "<delegated part>": {
+    "delegatesTo": {"owner": "component:<Owner>", "target": "<target>"}
+  },
+  "<unthemed part>": {"none": {"reason": "<required reason>"}}
+}
+```
+
 ## Family and system relationships
 
 Frontmatter lists only `current` family, design, architecture, and system
