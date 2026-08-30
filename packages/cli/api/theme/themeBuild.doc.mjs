@@ -19,7 +19,9 @@ export const doc = {
     "via @astryxdesign/core's shared generator (the single source of truth, so the build " +
     'emits the exact CSS the <Theme> runtime does), writes a scoped CSS file, a JS module ' +
     'that re-exports the built theme, and a .d.ts (plus an optional .variants.d.ts when the ' +
-    'theme adds custom prop values). When another build step emits the icon registry, ' +
+    'theme adds custom prop values). Approved palettes are excluded from that runtime ' +
+    'module and emitted as opt-in .palette.js, .palette.json, and .palette.d.ts artifacts. ' +
+    'When another build step emits the icon registry, ' +
     '{iconsSpecifier} declares the fully specified module path for the generated JS import. ' +
     'With {check: true} it writes nothing and instead compares ' +
     'each output against disk, returning the drift: the CI guard for committed, generated theme CSS.',
@@ -73,7 +75,7 @@ export const doc = {
     {
       type: 'theme.build',
       description:
-        'Build receipt: theme name, token- and component-override counts, output size in KB, the written outputs {css, js, dts, and variantsDts when custom prop values were augmented}, and any validation warnings. Resolves to null instead when the theme produced no CSS (nothing to build).',
+        'Build receipt: theme name, token- and component-override counts, output size in KB, the written outputs {css, js, dts, optional variantsDts, and optional paletteJs/paletteJson/paletteDts}, and any validation warnings. Resolves to null instead when the theme produced no CSS (nothing to build).',
     },
     {
       type: 'theme.build.check',

@@ -19,6 +19,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import {gzipSync} from 'node:zlib';
 import {
   generateThemeRulesSplit as mockGenerateThemeRulesSplit,
   generateOnMediaCSS as mockGenerateOnMediaCSS,
@@ -209,7 +210,7 @@ describe('themeBuild() — receipt', () => {
     );
   });
 
-  it('preserves approved palette metadata in the built theme module', async () => {
+  it('emits approved palettes separately from the built runtime theme', async () => {
     const themeFile = path.join(tmpDir, 'palette-theme.mjs');
     const tones = Object.fromEntries(
       Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
@@ -223,15 +224,97 @@ describe('themeBuild() — receipt', () => {
       })};\n`,
     );
 
-    await themeBuild('palette-theme.mjs', {}, {cwd: tmpDir});
+    const result = await themeBuild('palette-theme.mjs', {}, {cwd: tmpDir});
 
     const built = fs.readFileSync(
       path.join(tmpDir, 'palette-theme.js'),
       'utf8',
     );
-    expect(built).toContain('palettes: {');
-    expect(built).toContain('"semantic": "info"');
-    expect(built).toContain('"50": "#123456"');
+    const paletteModule = fs.readFileSync(
+      path.join(tmpDir, 'palette-theme.palette.js'),
+      'utf8',
+    );
+    const paletteJson = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'palette-theme.palette.json'), 'utf8'),
+    );
+    const paletteTypes = fs.readFileSync(
+      path.join(tmpDir, 'palette-theme.palette.d.ts'),
+      'utf8',
+    );
+
+    expect(built).not.toContain('palettes: {');
+    expect(built).not.toContain('"semantic": "info"');
+    expect(paletteModule).toContain('export const paletteThemePalettes');
+    expect(paletteModule).toContain('"50": "#123456"');
+    expect(paletteJson.blue.semantic).toBe('info');
+    expect(paletteJson.blue.light['50']).toBe('#123456');
+    expect(paletteTypes).toContain('ThemePalettes');
+    expect(result?.data.outputs).toMatchObject({
+      paletteJs: 'palette-theme.palette.js',
+      paletteJson: 'palette-theme.palette.json',
+      paletteDts: 'palette-theme.palette.d.ts',
+    });
+
+    const check = await themeBuild(
+      'palette-theme.mjs',
+      {check: true},
+      {cwd: tmpDir},
+    );
+    expect(check?.data.checked).toEqual(
+      expect.arrayContaining([
+        'palette-theme.palette.js',
+        'palette-theme.palette.json',
+        'palette-theme.palette.d.ts',
+      ]),
+    );
+    expect(check?.data.upToDate).toBe(true);
+  });
+
+  it('keeps palette metadata out of the default runtime bundle', async () => {
+    const tones = Object.fromEntries(
+      Array.from({length: 21}, (_, index) => [index * 5, '#123456']),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'with-palette.mjs'),
+      `export default ${JSON.stringify({
+        name: 'same-runtime',
+        tokens: {'--color-accent': '#123456'},
+        palettes: {blue: {semantic: 'info', light: tones}},
+      })};\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'without-palette.mjs'),
+      `export default ${JSON.stringify({
+        name: 'same-runtime',
+        tokens: {'--color-accent': '#123456'},
+      })};\n`,
+    );
+
+    await themeBuild(
+      'with-palette.mjs',
+      {out: 'with/theme.css'},
+      {cwd: tmpDir},
+    );
+    await themeBuild(
+      'without-palette.mjs',
+      {out: 'without/theme.css'},
+      {cwd: tmpDir},
+    );
+
+    const withPalette = fs.readFileSync(
+      path.join(tmpDir, 'with/same-runtime.js'),
+    );
+    const withoutPalette = fs.readFileSync(
+      path.join(tmpDir, 'without/same-runtime.js'),
+    );
+    const runtimeBody = content =>
+      content.subarray(content.indexOf('export const'));
+    expect(runtimeBody(withPalette).toString()).toBe(
+      runtimeBody(withoutPalette).toString(),
+    );
+    expect(gzipSync(runtimeBody(withPalette)).byteLength).toBe(
+      gzipSync(runtimeBody(withoutPalette)).byteLength,
+    );
   });
 
   it('validates approved palette metadata from plain-object themes', async () => {

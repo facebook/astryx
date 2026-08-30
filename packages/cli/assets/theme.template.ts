@@ -138,6 +138,9 @@ export const myTheme = defineTheme({
   /**
    * Optional approved palette metadata. Define complete ramps with
    * `defineTonalPalettes()` and continue using semantic tokens in components.
+   * `astryx theme build` keeps this out of the default runtime module and emits
+   * separate `.palette.js`, `.palette.json`, and `.palette.d.ts` artifacts for
+   * agents, audits, and other explicit consumers.
    *
    * Reference: `astryx docs theme` → Approved tonal palettes.
    */

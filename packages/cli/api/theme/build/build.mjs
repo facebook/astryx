@@ -10,6 +10,8 @@
  * - A CSS file with token overrides and component styles
  * - A JS module that re-exports the built theme (+ icon registry)
  * - A .d.ts (plus an optional .variants.d.ts for custom prop values)
+ * - Separate .palette.js/.palette.json/.palette.d.ts artifacts when the source
+ *   theme carries approved tonal palettes
  *
  * It performs the writes and returns a `theme.build` receipt — its `warnings`
  * carry override problems and any fonts the theme names but does not load
@@ -779,7 +781,8 @@ function extractIconInfo(filePath) {
  * all of that — but a built theme is a legitimate base for `extends` (the
  * shipped themes expose one as their `./built` subpath), and a base that
  * carries only tokens makes its children silently lose every component
- * override it had.
+ * override it had. Palette metadata is deliberately excluded: it is authoring
+ * data, not rendering data, and is emitted as separate opt-in artifacts below.
  *
  * The icon registry is imported rather than inlined because it holds React
  * elements, which cannot be serialized. `extractIconInfo` lifts the specifier
@@ -854,7 +857,6 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
           .join('\n')},\n` +
         `  __localTokenLineage: ${JSON.stringify(themeDef.__localTokenLineage)},\n`
       : '') +
-    serializeField('palettes', themeDef.palettes) +
     serializeField('components', themeDef.components) +
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight);
@@ -899,6 +901,27 @@ export declare const ${iconInfo.exportName}: IconRegistry;
   return `${variantsRef}import type { DefinedTheme } from '@astryxdesign/core/theme';
 ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedTheme;
 `;
+}
+
+/**
+ * Generate the opt-in ESM palette artifact. Keeping this separate from the
+ * built theme prevents authoring metadata from entering every application
+ * bundle while preserving an exact import for audits and visualizations.
+ * @param {any} themeDef
+ * @returns {string}
+ */
+function generatePaletteModule(themeDef) {
+  const exportName = `${toIdentifier(themeDef.name)}Palettes`;
+  return `export const ${exportName} = ${JSON.stringify(themeDef.palettes, null, 2)};\n\nexport default ${exportName};\n`;
+}
+
+/**
+ * @param {any} themeDef
+ * @returns {string}
+ */
+function generatePaletteTypes(themeDef) {
+  const exportName = `${toIdentifier(themeDef.name)}Palettes`;
+  return `import type { ThemePalettes } from '@astryxdesign/core/theme/palettes';\n\nexport declare const ${exportName}: ThemePalettes;\nexport default ${exportName};\n`;
 }
 
 // =============================================================================
@@ -1291,6 +1314,18 @@ export async function themeBuild(
   const outDir = path.dirname(outPath);
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
+  const hasPalettes = Boolean(
+    resolvedTheme?.palettes && Object.keys(resolvedTheme.palettes).length > 0,
+  );
+  const paletteJsPath = hasPalettes
+    ? path.join(outDir, `${baseName}.palette.js`)
+    : null;
+  const paletteJsonPath = hasPalettes
+    ? path.join(outDir, `${baseName}.palette.json`)
+    : null;
+  const paletteDtsPath = hasPalettes
+    ? path.join(outDir, `${baseName}.palette.d.ts`)
+    : null;
 
   const iconInfo = extractIconInfo(filePath);
 
@@ -1324,6 +1359,17 @@ export async function themeBuild(
   const dtsContent =
     generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
     generateBuiltTypes(themeDef, iconInfo, variantsFileName);
+  const paletteJsContent = hasPalettes
+    ? generatedHeader(sourceRelative, 'js', buildCommand, versions) +
+      generatePaletteModule(resolvedTheme)
+    : null;
+  const paletteJsonContent = hasPalettes
+    ? JSON.stringify(resolvedTheme.palettes, null, 2) + '\n'
+    : null;
+  const paletteDtsContent = hasPalettes
+    ? generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
+      generatePaletteTypes(resolvedTheme)
+    : null;
 
   // Atomic-ish write: stage every file as `<dest>.tmp`, then rename
   // each into place. If any stage step fails we clean up partials and
@@ -1336,6 +1382,20 @@ export async function themeBuild(
   ];
   if (variantDtsPath && variantContent) {
     writes.push({dest: variantDtsPath, content: variantContent});
+  }
+  if (
+    paletteJsPath &&
+    paletteJsonPath &&
+    paletteDtsPath &&
+    paletteJsContent &&
+    paletteJsonContent &&
+    paletteDtsContent
+  ) {
+    writes.push(
+      {dest: paletteJsPath, content: paletteJsContent},
+      {dest: paletteJsonPath, content: paletteJsonContent},
+      {dest: paletteDtsPath, content: paletteDtsContent},
+    );
   }
 
   // Check mode: compare generated content against what's on disk instead of
@@ -1413,6 +1473,13 @@ export async function themeBuild(
   logger.log(`  ${size} KB`);
   logger.log(`✓ ${path.relative(cwd, jsPath)}`);
   logger.log(`✓ ${path.relative(cwd, dtsPath)}`);
+  if (paletteJsPath && paletteJsonPath && paletteDtsPath) {
+    logger.log(`✓ ${path.relative(cwd, paletteJsPath)} (opt-in palette)`);
+    logger.log(
+      `✓ ${path.relative(cwd, paletteJsonPath)} (agent-readable palette)`,
+    );
+    logger.log(`✓ ${path.relative(cwd, paletteDtsPath)}`);
+  }
   if (variantDtsPath && variantDecl) {
     const augCount = (variantDecl.match(/': true;/g) || []).length;
     logger.log(
@@ -1425,6 +1492,8 @@ export async function themeBuild(
   const jsImport = importSpecifier(relOutDir, baseName);
   const cssImport = importSpecifier(relOutDir, cssBase) + '.css';
   const exportName = `${toIdentifier(baseName)}Theme`;
+  const paletteImport = importSpecifier(relOutDir, `${baseName}.palette`);
+  const paletteExportName = `${toIdentifier(baseName)}Palettes`;
   logger.log(`
 Install in your app (paths are relative to a file in src/ — adjust if yours lives elsewhere):
 
@@ -1443,7 +1512,15 @@ Or with a <link> tag:
   <Theme theme={${exportName}}>
     <App />
   </Theme>
-`);
+${
+  hasPalettes
+    ? `
+Palette metadata is opt-in and is not part of the runtime theme module:
+
+  import { ${paletteExportName} } from '${paletteImport}';
+`
+    : ''
+}`);
 
   // Fonts the theme names but nothing loads (#5015). Resolved tokens and
   // component overrides carry the final font-family values on both load
@@ -1478,6 +1555,13 @@ Or with a <link> tag:
         dts: path.relative(cwd, dtsPath),
         ...(variantDecl && variantDtsPath
           ? {variantsDts: path.relative(cwd, variantDtsPath)}
+          : {}),
+        ...(paletteJsPath && paletteJsonPath && paletteDtsPath
+          ? {
+              paletteJs: path.relative(cwd, paletteJsPath),
+              paletteJson: path.relative(cwd, paletteJsonPath),
+              paletteDts: path.relative(cwd, paletteDtsPath),
+            }
           : {}),
       },
       warnings: warningMessages,

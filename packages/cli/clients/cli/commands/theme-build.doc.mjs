@@ -17,7 +17,8 @@ export const doc = {
   summary: 'Compile one or more defineTheme files to CSS + JS',
   description:
     'Compiles a file that calls defineTheme() into a scoped CSS file, a JS module, and ' +
-    'type declarations: the exact CSS the <Theme> runtime emits. Takes any number of theme ' +
+    'type declarations: the exact CSS the <Theme> runtime emits. Approved palettes are ' +
+    'written as separate opt-in artifacts instead of inflating the runtime JS. Takes any number of theme ' +
     'files and compiles them in one process, in argument order, stopping at the first ' +
     'failure; an app with several themes does not need a shell loop. With --check it writes ' +
     'nothing and instead reports whether the committed outputs have drifted from source. ' +
@@ -26,7 +27,11 @@ export const doc = {
   fn: 'themeBuild',
   args: [{name: 'files', param: 'file', required: true, variadic: true}],
   options: [
-    {flag: '-o, --out <path>', param: 'options.out', description: 'Output CSS file path (single theme only)'},
+    {
+      flag: '-o, --out <path>',
+      param: 'options.out',
+      description: 'Output CSS file path (single theme only)',
+    },
     {
       flag: '--icons-specifier <specifier>',
       param: 'options.iconsSpecifier',
@@ -35,7 +40,8 @@ export const doc = {
     },
     {
       flag: '-w, --watch',
-      description: 'Rebuild automatically when a theme file changes (Ctrl-C to stop)',
+      description:
+        'Rebuild automatically when a theme file changes (Ctrl-C to stop)',
     },
     {
       flag: '-c, --check',

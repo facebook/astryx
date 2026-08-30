@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title description">
+  <title id="title">Proposed Astryx theme palette architecture</title>
+  <desc id="description">The default runtime theme remains small while complete tonal palettes are emitted as separate opt-in JavaScript, JSON, and type artifacts.</desc>
+  <style>
+    .bg { fill: #f7f7f7; }
+    .surface { fill: #ffffff; stroke: #c7c7c7; stroke-width: 2; }
+    .source { fill: #1759b8; }
+    .accent-soft { fill: #e7f0ff; stroke: #1769e0; stroke-width: 2; }
+    .warning-soft { fill: #fff1dc; stroke: #a45c00; stroke-width: 2; }
+    .text { fill: #181818; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .muted { fill: #595959; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .white { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .title { font-size: 38px; font-weight: 700; }
+    .subtitle { font-size: 20px; }
+    .heading { font-size: 24px; font-weight: 700; }
+    .label { font-size: 18px; font-weight: 600; }
+    .body { font-size: 17px; }
+    .metric { font-size: 34px; font-weight: 700; }
+    .small { font-size: 15px; }
+    .arrow { fill: none; stroke: #595959; stroke-width: 3; marker-end: url(#arrowhead); }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#595959" />
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1400" height="860" />
+  <text class="text title" x="70" y="78">Theme palette architecture</text>
+  <text class="muted subtitle" x="70" y="112">Keep the default application bundle small; load complete color ramps only when explicitly requested.</text>
+
+  <rect class="warning-soft" x="70" y="155" width="590" height="150" rx="16" />
+  <text class="text heading" x="100" y="198">Before: palette embedded in runtime</text>
+  <text class="muted body" x="100" y="233">Every consumer receives theme rendering data</text>
+  <text class="muted body" x="100" y="258">plus the complete authoring palette.</text>
+  <text class="text metric" x="100" y="292">5.7 KB gzipped</text>
+
+  <rect class="accent-soft" x="740" y="155" width="590" height="150" rx="16" />
+  <text class="text heading" x="770" y="198">After: default runtime stays lean</text>
+  <text class="muted body" x="770" y="233">Normal component consumers receive only</text>
+  <text class="muted body" x="770" y="258">the data required to render the theme.</text>
+  <text class="text metric" x="770" y="292">3.3 KB gzipped</text>
+
+  <rect class="source" x="445" y="372" width="510" height="108" rx="16" />
+  <text class="white heading" x="700" y="414" text-anchor="middle">Canonical approved palette</text>
+  <text class="white body" x="700" y="447" text-anchor="middle">Validated once with defineTonalPalettes()</text>
+
+  <path class="arrow" d="M570 480 C500 530, 390 535, 330 580" />
+  <path class="arrow" d="M830 480 C900 530, 1010 535, 1070 580" />
+
+  <rect class="surface" x="70" y="585" width="550" height="198" rx="16" />
+  <text class="text heading" x="100" y="630">Default production output</text>
+  <text class="text label" x="100" y="672">theme.js + theme.css</text>
+  <text class="muted body" x="100" y="707">Semantic tokens, component overrides, icons,</text>
+  <text class="muted body" x="100" y="734">and other rendering data.</text>
+  <text class="muted small" x="100" y="764">Imported by every application using the theme.</text>
+
+  <rect class="surface" x="780" y="585" width="550" height="198" rx="16" />
+  <text class="text heading" x="810" y="630">Opt-in palette output</text>
+  <text class="text label" x="810" y="672">.palette.js + .palette.json + .d.ts</text>
+  <text class="muted body" x="810" y="707">Complete light and dark ramps with metadata.</text>
+  <text class="text metric" x="810" y="751">2.4 KB gzipped</text>
+  <text class="muted small" x="810" y="777">Loaded only by agents, audits, and advanced tools.</text>
+
+  <text class="muted small" x="70" y="828">Measured using the Neutral theme from PR #5628. Current production reference: 3.1 KB gzipped.</text>
+</svg>

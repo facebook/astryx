@@ -609,6 +609,11 @@
       "types": "./dist/theme/index.d.ts",
       "default": "./dist/theme/index.js"
     },
+    "./theme/palettes": {
+      "source": "./src/theme/palettes.ts",
+      "types": "./dist/theme/palettes.d.ts",
+      "default": "./dist/theme/palettes.js"
+    },
     "./utils": {
       "source": "./src/utils/index.ts",
       "types": "./dist/utils/index.d.ts",
