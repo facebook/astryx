@@ -54,12 +54,9 @@ const SEMANTIC_COLORS: Record<TableRowStatusColor, string> = {
 /**
  * A row's status indicator. `color` accepts a semantic status color
  * (mapped to a theme token) or any raw CSS color string as an escape hatch.
- * By default the plugin renders a colored status dot, except semantic warning,
- * which uses the warning glyph so it remains contrast-safe and visibly
- * distinct. Provide `icon` to signal other statuses by shape as well as color
- * when several statuses coexist. `label` is required so the status is never
- * conveyed by color alone — it names the indicator for assistive technology
- * and shows on hover. Return `null` for rows with no status.
+ * Semantic warning uses a warning glyph because its fill is too light for a
+ * standalone dot. `label` names every indicator for assistive technology and
+ * appears on hover. Return `null` for rows with no status.
  */
 export interface TableRowStatus {
   /** Semantic status color (preferred) or a raw CSS color string. */
@@ -156,10 +153,7 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
             if (!status) {
               return null;
             }
-            // The warning fill is intentionally light and cannot provide a
-            // sufficient standalone dot on common row surfaces. Give the
-            // semantic warning role its contrast-safe glyph by default, which
-            // also supplies a persistent non-color distinction.
+            // Warning needs a contrast-safe shape instead of a standalone dot.
             const icon =
               status.icon ??
               (status.color === 'warning' ? 'warning' : undefined);
