@@ -5,4 +5,4 @@
 
 [component] Add popover, bottom-sheet, and adaptive presentation options to Selector and MultiSelector, with docsite examples for both bottom-sheet variants.
 
-@rubycheung
+@rubyycheung

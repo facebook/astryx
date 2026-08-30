@@ -1609,9 +1609,6 @@ export function Selector<T extends SelectorOptionType>(
           ? getItemId(highlightedIndex)
           : undefined
       }
-      data-autofocus={
-        surface.activePresentation === 'bottom-sheet' ? true : undefined
-      }
       tabIndex={surface.activePresentation === 'bottom-sheet' ? 0 : undefined}
       onKeyDown={
         surface.activePresentation === 'bottom-sheet'
@@ -1637,6 +1634,7 @@ export function Selector<T extends SelectorOptionType>(
         isOpen={surface.isSheetOpen}
         onOpenChange={surface.onSheetOpenChange}
         finalFocusRef={triggerRef}
+        initialFocusRef={hasSearch ? searchRef : listboxRef}
         label={label}>
         {panelContent}
       </SelectorBottomSheet>

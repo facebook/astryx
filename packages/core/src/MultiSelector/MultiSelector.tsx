@@ -798,6 +798,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const searchId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const listboxRef = useRef<HTMLDivElement>(null);
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -1636,6 +1637,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       <Divider />
       <div {...stylex.props(styles.dropdown)}>
         <div
+          ref={listboxRef}
           id={listboxId}
           role="listbox"
           aria-multiselectable="true"
@@ -1648,6 +1650,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   ) : (
     <div {...stylex.props(styles.dropdown)}>
       <div
+        ref={listboxRef}
         id={listboxId}
         role="listbox"
         aria-multiselectable="true"
@@ -1656,9 +1659,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           surface.isOpen && highlightedIndex >= 0
             ? getItemId(highlightedIndex)
             : undefined
-        }
-        data-autofocus={
-          surface.activePresentation === 'bottom-sheet' ? true : undefined
         }
         tabIndex={surface.activePresentation === 'bottom-sheet' ? 0 : undefined}
         onKeyDown={
@@ -1676,6 +1676,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         isOpen={surface.isSheetOpen}
         onOpenChange={surface.onSheetOpenChange}
         finalFocusRef={triggerRef}
+        initialFocusRef={hasSearch ? searchRef : listboxRef}
         label={label}>
         {panelContent}
       </SelectorBottomSheet>
