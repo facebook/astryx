@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useCallback, useMemo, useReducer, type CSSProperties} from "react";
+import {useCallback, useMemo, useReducer, type CSSProperties} from 'react';
 
 import {Banner, type BannerStatus} from '@astryxdesign/core/Banner';
 import {ChatComposer} from '@astryxdesign/core/Chat';
@@ -263,7 +263,7 @@ export interface TonalColor {
   semantic?: string;
   note?: string;
   /**
-   * Optional pre-computed canonical ramp keyed by tone (0-100).
+   * Optional pre-computed canonical ramp keyed by palette stop (0-100).
    *
    * Two purposes, both served by the same field:
    *
@@ -280,7 +280,7 @@ export interface TonalColor {
    *      snap-to-ramp matching so tokens whose values come from the
    *      canonical ramp don't show up as "off-ramp".
    *
-   * Numeric keys are interpreted as tone steps; non-numeric keys
+   * Numeric keys are interpreted as palette stop labels; non-numeric keys
    * (e.g. `hue`, `chroma`) are ignored. This permissive shape matches
    * theme palette exports like `stonePalettes.red` (which carry both).
    *
@@ -526,7 +526,7 @@ const S = {
     lineHeight: 1,
   }),
   // Pill shows the token count when more than one token snaps to the same
-  // tone step. Stays inside the marker dot so the strip layout is unchanged.
+  // palette stop. Stays inside the marker dot so the strip layout is unchanged.
   markerCount: (tone: number): React.CSSProperties => ({
     fontSize: 7.5,
     fontWeight: 700,
@@ -4357,7 +4357,7 @@ function TonalSection({
 }: {
   colors: TonalColor[];
   mode?: Mode;
-  /** Audit-derived map of which tone steps are consumed by which tokens. */
+  /** Audit-derived map of which palette stops are consumed by which tokens. */
   usage?: TonalUsageMap;
 }) {
   const isDark = mode === 'dark';
@@ -4381,21 +4381,21 @@ function TonalSection({
           margin: 0,
           marginBottom: 20,
         }}>
-        Full tonal ramps: 21 numbered stops ordered from dark (tone 0) to light
-        (tone 100). The number is a stable palette label in both modes, not a
+        Full tonal ramps: 21 numbered stops ordered from dark (stop 0) to light
+        (stop 100). The number is a stable palette label in both modes, not a
         promise of identical measured lightness.
         {isDark && (
           <>
             {' '}
             Dark mode applies the audit&apos;s &sect;4 transform (
-            <strong>+5 brightness</strong> with taper above tone 80,{' '}
+            <strong>+5 brightness</strong> with taper above palette stop 80,{' '}
             <strong>×0.85 chroma</strong>) so saturated stops don&apos;t vibrate
             against the dark canvas.
           </>
         )}{' '}
         {usage
-          ? 'Markers ● show numbered tones consumed by theme tokens (open the audit drawer for the full report).'
-          : 'The default preview marks the light- and dark-mode tones used by Badge tokens.'}
+          ? 'Markers ● show numbered stops consumed by theme tokens (open the audit drawer for the full report).'
+          : 'The default preview marks the light- and dark-mode stops used by Badge tokens.'}
       </p>
       {colors.map(
         ({name, sourceHex, semantic, note, tones: overrideTones, dark}) => {
@@ -4439,7 +4439,7 @@ function TonalSection({
                   // Title summarises which tokens snap to this step (max 4
                   // listed to keep the native tooltip readable on dense ramps).
                   const titleLines = [
-                    `${name}, ${mode}-mode tone ${t}: ${hex}`,
+                    `${name}, ${mode}-mode stop ${t}: ${hex}`,
                     ...usages
                       .slice(0, 4)
                       .map(u => `· ${u.name} (\u0394E ${u.deltaE.toFixed(1)})`),
@@ -4492,8 +4492,8 @@ function TonalSection({
           fontFamily: MONO,
         }}>
         {usage
-          ? '● = numbered tone consumed by a theme token. Number = count when multiple tokens share the same tone. Hover any cell for details.'
-          : '● = token in use (dark background tone 15 · light text tone 25 · dark text tone 80 · light background tone 90)'}
+          ? '● = numbered stop consumed by a theme token. Number = count when multiple tokens share the same stop. Hover any cell for details.'
+          : '● = token in use (dark background stop 15 · light text stop 25 · dark text stop 80 · light background stop 90)'}
       </p>
     </div>
   );
@@ -4651,7 +4651,7 @@ export function ThemePalettePreview({
   }, [overrideCount, overrideVars, theme]);
 
   // Tonal markers respect pending overrides — every reassignment shows
-  // up as a new marker on the chosen ramp+tone the moment the user
+  // up as a new marker on the chosen ramp+stop the moment the user
   // changes a dropdown. Auto-detected matches still drive markers for
   // tokens that haven't been edited yet.
   const effectiveUsage = useMemo(
