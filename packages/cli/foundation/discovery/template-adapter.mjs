@@ -192,6 +192,8 @@ function toPosixPath(p) {
   return p.replace(/\\/g, '/');
 }
 
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp']);
+
 /**
  * Replace demo asset references with a placeholder so scaffolded pages
  * render with zero setup. Images get a self-contained data URI; videos
@@ -203,9 +205,17 @@ function toPosixPath(p) {
  * @returns {string} Source with demo asset references replaced.
  */
 export function stripTemplateAssetRefs(source) {
-  return source.replace(DEMO_ASSET_PATTERN, (match, extension) =>
-    VIDEO_EXTENSIONS.has(extension.toLowerCase()) ? '' : PLACEHOLDER_IMAGE,
-  );
+  return source.replace(DEMO_ASSET_PATTERN, (match, extension) => {
+    const ext = extension.toLowerCase();
+    if (VIDEO_EXTENSIONS.has(ext)) {
+      return '';
+    }
+    if (IMAGE_EXTENSIONS.has(ext)) {
+      return PLACEHOLDER_IMAGE;
+    }
+    console.warn(`Warning: Unrecognized template-asset extension '.${extension}' in ${match}. Falling back to placeholder.`);
+    return PLACEHOLDER_IMAGE;
+  });
 }
 /**
  * Load a template-spec module and return its metadata object. Supports both
