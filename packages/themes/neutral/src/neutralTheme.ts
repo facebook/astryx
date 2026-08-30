@@ -1080,24 +1080,24 @@ export const neutralTheme = defineTheme({
     badge: {
       // Semantic badges use shared fills with contrast-safe label colors.
       'variant:info': {
-        backgroundColor: FILLED_STATE_COLORS.info,
-        color: FILLED_STATE_TEXT.standard,
+        backgroundColor: STATUS_COLOR_ROLES.fill.info,
+        color: STATUS_COLOR_ROLES.onFill.standard,
       },
       'variant:neutral': {
         backgroundColor: 'var(--color-background-gray)',
         color: 'var(--color-text-gray)',
       },
       'variant:success': {
-        backgroundColor: FILLED_STATE_COLORS.success,
-        color: FILLED_STATE_TEXT.standard,
+        backgroundColor: STATUS_COLOR_ROLES.fill.success,
+        color: STATUS_COLOR_ROLES.onFill.standard,
       },
       'variant:warning': {
-        backgroundColor: FILLED_STATE_COLORS.warning,
-        color: FILLED_STATE_TEXT.onBright,
+        backgroundColor: STATUS_COLOR_ROLES.fill.warning,
+        color: STATUS_COLOR_ROLES.onFill.onBright,
       },
       'variant:error': {
-        backgroundColor: FILLED_STATE_COLORS.error,
-        color: FILLED_STATE_TEXT.standard,
+        backgroundColor: STATUS_COLOR_ROLES.fill.error,
+        color: STATUS_COLOR_ROLES.onFill.standard,
       },
 
       'variant:red': {
@@ -1153,15 +1153,15 @@ export const neutralTheme = defineTheme({
     // Status dots share semantic Badge fills; neutral keeps its visible
     // mid-gray component default.
     'status-dot': {
-      'variant:success': {backgroundColor: FILLED_STATE_COLORS.success},
-      'variant:warning': {backgroundColor: FILLED_STATE_COLORS.warning},
-      'variant:error': {backgroundColor: FILLED_STATE_COLORS.error},
-      'variant:accent': {backgroundColor: FILLED_STATE_COLORS.info},
+      'variant:success': {backgroundColor: STATUS_COLOR_ROLES.fill.success},
+      'variant:warning': {backgroundColor: STATUS_COLOR_ROLES.fill.warning},
+      'variant:error': {backgroundColor: STATUS_COLOR_ROLES.fill.error},
+      'variant:accent': {backgroundColor: STATUS_COLOR_ROLES.fill.info},
     },
 
     'avatar-status-dot': {
-      'variant:success': {backgroundColor: FILLED_STATE_COLORS.success},
-      'variant:error': {backgroundColor: FILLED_STATE_COLORS.error},
+      'variant:success': {backgroundColor: STATUS_COLOR_ROLES.fill.success},
+      'variant:error': {backgroundColor: STATUS_COLOR_ROLES.fill.error},
     },
 
     // Rebind Banner's semantic tokens so its surface, text, icons, and actions
@@ -1290,16 +1290,16 @@ export const neutralTheme = defineTheme({
       },
       // Warning uses a darker light-mode stop to contrast with the track.
       'variant:accent': {
-        '--color-accent': FILLED_STATE_COLORS.info,
+        '--color-accent': STATUS_COLOR_ROLES.fill.info,
       },
       'variant:success': {
-        '--color-success': FILLED_STATE_COLORS.success,
+        '--color-success': STATUS_COLOR_ROLES.fill.success,
       },
       'variant:warning': {
         '--color-warning': PROGRESS_WARNING_FILL,
       },
       'variant:error': {
-        '--color-error': FILLED_STATE_COLORS.error,
+        '--color-error': STATUS_COLOR_ROLES.fill.error,
       },
     },
     // Keep the live neutral fill aligned with the primary Button.
