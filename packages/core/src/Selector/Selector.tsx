@@ -354,12 +354,21 @@ const styles = stylex.create({
   // would indent (or truncate) its chosen row differently from the rest.
   // `minWidth` rather than `width`: a theme can replace `check` with a larger
   // indicator (a radio is 20px at `sm`), and the column has to grow with it.
+  //
+  // `:empty` collapses the column when the indicator returns nothing (the
+  // default check draws null when unchecked). Without it, the column's
+  // min-width reserves ~24 px of dead space on unselected rows, pushing the
+  // option content away from the row's trailing edge. A replacement indicator
+  // that renders in both states (a radio) is unaffected — it is never empty.
   itemMarkColumn: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
     minWidth: '1rem',
+    ':empty': {
+      display: 'none',
+    },
   },
   itemCheckmark: {
     flexShrink: 0,
@@ -1731,9 +1740,12 @@ export function Selector<T extends SelectorOptionType>(
               id={listboxId}
               role="listbox"
               aria-labelledby={triggerId}
-              {...stylex.props(
-                styles.dropdown,
-                variant !== 'ghost' && styles.dropdownInput,
+              {...mergeProps(
+                themeProps('selector-list'),
+                stylex.props(
+                  styles.dropdown,
+                  variant !== 'ghost' && styles.dropdownInput,
+                ),
               )}>
               {renderOptions()}
             </div>
@@ -1744,10 +1756,13 @@ export function Selector<T extends SelectorOptionType>(
             id={listboxId}
             role="listbox"
             aria-labelledby={triggerId}
-            {...stylex.props(
-              styles.dropdown,
-              variant !== 'ghost' && styles.dropdownInput,
-              !isPositioned && styles.dropdownHidden,
+            {...mergeProps(
+              themeProps('selector-list'),
+              stylex.props(
+                styles.dropdown,
+                variant !== 'ghost' && styles.dropdownInput,
+                !isPositioned && styles.dropdownHidden,
+              ),
             )}>
             {renderOptions()}
           </div>

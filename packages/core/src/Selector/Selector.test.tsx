@@ -3242,6 +3242,31 @@ describe('Selector indicatorPosition', () => {
     }
   });
 
+  it('mark column is empty on unselected rows so :empty collapses it', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        indicatorPosition="end"
+        isDefaultOpen
+      />,
+    );
+    for (const row of openRows()) {
+      const isSelected = row.getAttribute('aria-selected') === 'true';
+      // The mark column is the last child when indicatorPosition="end"
+      const markColumn = row.lastElementChild!;
+      if (isSelected) {
+        // Selected row: indicator renders its check icon
+        expect(markColumn.children.length).toBeGreaterThan(0);
+      } else {
+        // Unselected row: CheckIndicator returns null, column is empty
+        expect(markColumn.children).toHaveLength(0);
+      }
+    }
+  });
+
   it('positions a themed replacement indicator the same way', () => {
     const theme = defineTheme({
       name: 'selector-start-radio-mark-test',
@@ -3303,6 +3328,33 @@ describe('Selector popup theme target', () => {
       expect(popup).not.toBeNull();
       expect(popup).toHaveClass('astryx-popover-surface');
       expect(popup?.querySelector('[role="listbox"]')).not.toBeNull();
+    },
+  );
+
+  it.each([
+    ['without search', false],
+    ['with search', true],
+  ])(
+    'puts astryx-selector-list on the scrolling listbox, %s',
+    async (_label, hasSearch) => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={['Apple', 'Banana']}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch={hasSearch}
+        />,
+      );
+      await user.click(
+        screen.queryByRole('combobox') ??
+          screen.getByRole('button', {name: /Fruit/}),
+      );
+
+      const listbox = document.querySelector('[role="listbox"]');
+      expect(listbox).not.toBeNull();
+      expect(listbox).toHaveClass('astryx-selector-list');
     },
   );
 
