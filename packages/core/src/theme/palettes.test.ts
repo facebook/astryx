@@ -68,6 +68,18 @@ describe('defineTonalPalettes', () => {
     );
   });
 
+  it('rejects ramps whose luminance decreases as tone labels increase', () => {
+    const invalid = {
+      ...ramp('#123456'),
+      0: '#ffffff',
+      5: '#000000',
+    } as TonalPaletteRamp;
+
+    expect(() => defineTonalPalettes({blue: {light: invalid}})).toThrow(
+      'tones must be ordered from darker to lighter',
+    );
+  });
+
   it('rejects unknown ramp keys', () => {
     const invalid = {...ramp(), 42: '#123456'} as TonalPaletteRamp;
 
@@ -97,6 +109,20 @@ describe('defineTonalPalettes', () => {
         blue: {light: ramp(), description: false},
       } as unknown as ThemePalettes),
     ).toThrow('Palette "blue" description must be a string, got false.');
+  });
+
+  it('rejects hue and chroma values outside their valid ranges', () => {
+    expect(() =>
+      defineTonalPalettes({
+        blue: {light: {...ramp(), hue: 360}},
+      }),
+    ).toThrow('hue must be a finite number from 0 up to but not including 360');
+
+    expect(() =>
+      defineTonalPalettes({
+        blue: {light: {...ramp(), chroma: -0.1}},
+      }),
+    ).toThrow('chroma must be a finite non-negative number');
   });
 
   it('rejects a present but null dark ramp', () => {

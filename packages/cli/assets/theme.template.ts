@@ -136,20 +136,8 @@ export const myTheme = defineTheme({
   color: {accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard'},
 
   /**
-   * Optional approved tonal palettes for agents, audit tools, custom
-   * components, and data visualization. Define these with
-   * `defineTonalPalettes()` in a separate palette module, then attach them to
-   * the theme. Every family needs numeric tone labels from 0 through 100 in
-   * increments of 5. Lower labels identify darker stops and higher labels
-   * lighter stops in both modes. Labels identify approved palette stops; they
-   * do not promise an exact measured color-space coordinate.
-   *
-   * Palettes are authoring metadata, not extra CSS variables. Components use
-   * semantic tokens first. When no semantic token fits, choose an exact palette
-   * tone and document the family, mode, tone, role, and contrast relationship.
-   * For example, `palettes.blue.light[45]` means blue, the light-mode ramp,
-   * tone 45. Do not invent or approximate a hex value when an approved tone
-   * exists.
+   * Optional approved palette metadata. Define complete ramps with
+   * `defineTonalPalettes()` and continue using semantic tokens in components.
    *
    * Reference: `astryx docs theme` → Approved tonal palettes.
    */

@@ -9,15 +9,14 @@ export const TONAL_PALETTE_TONES = [
 export type TonalPaletteTone = (typeof TONAL_PALETTE_TONES)[number];
 
 /**
- * One complete, opaque tonal ramp. Keys are nominal tone labels ordered from
- * dark to light in both light- and dark-mode ramps. Validation guarantees the
- * complete key set and hex shape; it does not measure each color's lightness.
- * Optional hue/chroma metadata is available to palette editors and audit tools
- * but is not emitted as CSS.
+ * One complete, opaque ramp ordered from dark to light. Numbered labels identify
+ * approved stops rather than exact measured HCT coordinates.
  */
 export type TonalPaletteRamp = Readonly<
   Record<TonalPaletteTone, string> & {
+    /** Hue angle from 0 (inclusive) to 360 (exclusive). */
     hue?: number;
+    /** Non-negative chroma value. */
     chroma?: number;
   }
 >;
@@ -45,6 +44,16 @@ const TONAL_PALETTE_KEYS = new Set<string>([
   'chroma',
 ]);
 
+function relativeLuminance(hex: string): number {
+  const channels = [1, 3, 5].map(index => {
+    const channel = Number.parseInt(hex.slice(index, index + 2), 16) / 255;
+    return channel <= 0.04045
+      ? channel / 12.92
+      : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
 function validateRamp(
   name: string,
   mode: 'light' | 'dark',
@@ -62,6 +71,7 @@ function validateRamp(
     }
   }
 
+  let previousLuminance = -1;
   for (const tone of TONAL_PALETTE_TONES) {
     const value = ramp[tone];
     if (typeof value !== 'string' || !OPAQUE_HEX.test(value)) {
@@ -69,25 +79,34 @@ function validateRamp(
         `Palette "${name}" ${mode} tone ${tone} must be an opaque six-digit hex color.`,
       );
     }
-  }
-
-  for (const key of ['hue', 'chroma'] as const) {
-    const value = ramp[key];
-    if (value !== undefined && !Number.isFinite(value)) {
+    const luminance = relativeLuminance(value);
+    if (luminance < previousLuminance) {
       throw new Error(
-        `Palette "${name}" ${mode} ${key} must be a finite number, got ${String(value)}.`,
+        `Palette "${name}" ${mode} tones must be ordered from darker to lighter; tone ${tone} is darker than the previous stop.`,
       );
     }
+    previousLuminance = luminance;
+  }
+
+  if (
+    ramp.hue !== undefined &&
+    (!Number.isFinite(ramp.hue) || ramp.hue < 0 || ramp.hue >= 360)
+  ) {
+    throw new Error(
+      `Palette "${name}" ${mode} hue must be a finite number from 0 up to but not including 360, got ${String(ramp.hue)}.`,
+    );
+  }
+  if (
+    ramp.chroma !== undefined &&
+    (!Number.isFinite(ramp.chroma) || ramp.chroma < 0)
+  ) {
+    throw new Error(
+      `Palette "${name}" ${mode} chroma must be a finite non-negative number, got ${String(ramp.chroma)}.`,
+    );
   }
 }
 
-/**
- * Validate and preserve an exact palette map with full type inference.
- *
- * Palette values are authoring metadata: they are available to agents,
- * previews, and custom visualization code, but they do not create CSS tokens.
- * Components should continue to use semantic tokens first.
- */
+/** Validate approved palette metadata without generating CSS tokens. */
 export function defineTonalPalettes<const T extends ThemePalettes>(
   palettes: T,
 ): T {

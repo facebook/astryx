@@ -5,9 +5,9 @@
 
 [feat] add approved tonal-palette metadata to the theme contract
 
-Themes can now attach complete light and dark tonal ramps with
-`defineTonalPalettes()` and `defineTheme({palettes})`. Numeric keys are nominal
-tone labels from 0 through 100, ordered from darker to lighter stops in both
+Themes can now attach a complete light tonal ramp and an optional complete dark
+ramp with `defineTonalPalettes()` and `defineTheme({palettes})`. Numeric keys
+are nominal tone labels from 0 through 100, ordered from darker to lighter stops in both
 light- and dark-mode ramps. They identify approved palette entries rather than
 guaranteeing exact measured HCT coordinates. Palette metadata survives
 theme extension and production theme builds without generating additional CSS

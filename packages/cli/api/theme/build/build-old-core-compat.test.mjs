@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe('themeBuild() — older core compatibility', () => {
-  it('builds palette-free themes without defineTonalPalettes', async () => {
+  it('requires a Core version that supports the palette contract', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'legacy-theme.mjs'),
       `export default {name: 'legacy-theme', tokens: {'--color-accent': '#123456'}};\n`,
@@ -30,35 +30,10 @@ describe('themeBuild() — older core compatibility', () => {
 
     await expect(
       themeBuild('legacy-theme.mjs', {}, {cwd: tmpDir}),
-    ).resolves.toMatchObject({type: 'theme.build'});
+    ).rejects.toThrow('does not support approved tonal palettes');
   });
 
-  it('ignores palette API names that only appear in comments', async () => {
-    fs.writeFileSync(
-      path.join(tmpDir, 'commented-palette-theme.mjs'),
-      `// defineTonalPalettes() would be used by newer cores.
-/* palettes: approvedPalettes */
-export default {name: 'commented-palette-theme', tokens: {'--color-accent': '#123456'}};
-`,
-    );
-
-    await expect(
-      themeBuild('commented-palette-theme.mjs', {}, {cwd: tmpDir}),
-    ).resolves.toMatchObject({type: 'theme.build'});
-  });
-
-  it('requires a newer core only when palette metadata is present', async () => {
-    fs.writeFileSync(
-      path.join(tmpDir, 'palette-theme.mjs'),
-      `export default {name: 'palette-theme', palettes: {blue: {light: {}}}};\n`,
-    );
-
-    await expect(
-      themeBuild('palette-theme.mjs', {}, {cwd: tmpDir}),
-    ).rejects.toThrow('does not export defineTonalPalettes');
-  });
-
-  it('reports the compatibility error before evaluating the palette helper', async () => {
+  it('reports the compatibility error before evaluating a theme module', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'palette-helper-theme.mjs'),
       `import {defineTheme, defineTonalPalettes} from '@astryxdesign/core/theme';
@@ -69,22 +44,6 @@ export default defineTheme({name: 'palette-helper-theme', palettes});
 
     await expect(
       themeBuild('palette-helper-theme.mjs', {}, {cwd: tmpDir}),
-    ).rejects.toThrow('does not export defineTonalPalettes');
-  });
-
-  it('reports the compatibility error before older defineTheme can drop palettes', async () => {
-    fs.writeFileSync(
-      path.join(tmpDir, 'inline-palette-theme.mjs'),
-      `import {defineTheme} from '@astryxdesign/core/theme';
-export default defineTheme({
-  name: 'inline-palette-theme',
-  palettes: {blue: {light: {}}},
-});
-`,
-    );
-
-    await expect(
-      themeBuild('inline-palette-theme.mjs', {}, {cwd: tmpDir}),
-    ).rejects.toThrow('does not export defineTonalPalettes');
+    ).rejects.toThrow('does not support approved tonal palettes');
   });
 });

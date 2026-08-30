@@ -302,21 +302,9 @@ export interface DefineThemeInput {
    */
   color?: ColorScaleConfig;
   /**
-   * Approved tonal palettes for theme authors, agents, audit tools, custom
-   * components, and data visualization.
-   *
-   * Palettes are metadata rather than CSS variables: components should use
-   * semantic tokens first. Use a palette stop only when no semantic token fits,
-   * and document the selected family, mode, numeric tone, and contrast
-   * relationship. For example, `palettes.blue.light[45]` means blue, the
-   * light-mode ramp, numbered tone 45. Lower labels identify darker stops and
-   * higher labels identify lighter stops in either mode; they do not promise
-   * that a hex value measures at that exact color-space coordinate.
-   *
-   * Every family contains a complete light ramp and may provide a separate
-   * dark ramp. `defineTheme` validates the canonical 0–100 steps and preserves
-   * this metadata in built themes. Child themes inherit families by name and
-   * can replace a complete family.
+   * Approved palette metadata. Every family has a complete light ramp and may
+   * provide a dark ramp. Child themes inherit families by name and replace a
+   * complete family when overriding it.
    */
   palettes?: ThemePalettes;
   /** Token overrides — flat map of CSS custom property names to values.
@@ -727,9 +715,7 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
       ? {...base.indicators, ...input.indicators}
       : (input.indicators ?? base?.indicators);
 
-  // Palette families are authoring metadata, not CSS token generators. Merge
-  // by family name so an extending theme can replace one complete ramp while
-  // retaining the rest of its base theme's approved palette vocabulary.
+  // Merge by family name so a child replaces one family and inherits the rest.
   const inputPalettes =
     input.palettes !== undefined
       ? defineTonalPalettes(input.palettes)
