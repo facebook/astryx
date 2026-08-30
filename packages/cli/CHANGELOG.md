@@ -1,5 +1,19 @@
 # @xds/cli
 
+# 0.5.2
+
+#### Fixes
+
+- Rename the Data Input component category to Form Controls (#5686)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
 # 0.5.1
 
 #### New Features
