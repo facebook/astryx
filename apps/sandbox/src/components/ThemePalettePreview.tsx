@@ -1197,8 +1197,7 @@ function getBadgeContrast(
         ratio: weakest.ratio,
       };
     } catch {
-      // Keep experimental themes renderable when they use CSS color syntax
-      // that this lightweight audit cannot flatten to an sRGB pair.
+      // Keep unsupported color syntax renderable without reporting a ratio.
       return {
         variant,
         name: variant[0].toUpperCase() + variant.slice(1),
@@ -2356,9 +2355,7 @@ function getButtonContrast(theme: DefinedTheme, mode: Mode) {
         }),
       );
     } catch {
-      // Diagnostic themes may intentionally use CSS color functions this
-      // lightweight audit cannot resolve. Keep the preview visible without
-      // claiming a numeric badge result.
+      // Keep unsupported color syntax renderable without reporting a ratio.
       badge = undefined;
     }
 
@@ -3684,16 +3681,7 @@ function SurfacesSection({mode}: {mode: Mode}) {
   );
 }
 
-/**
- * Three shadow levels (low / med / high) rendered as cards over body so
- * the cast shadows have a surface to read against. Each sample is annotated
- * with the components that consume that level — keeps the elevation
- * vocabulary visible alongside the visual treatment.
- *
- * Dark mode swaps the elevated card to `--color-background-surface` (tone 15)
- * so the inset rim used by the figma-style shadow tokens has a slightly
- * lighter base to catch; light mode keeps a white card.
- */
+/** Render each elevation level on the active theme surface. */
 const DEFAULT_SHADOW_DESCRIPTION =
   'Three shadow levels mapped to the components that use them.';
 
