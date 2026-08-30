@@ -23,6 +23,7 @@ import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {eagerShowcases} from '../components/eagerShowcases';
 import {exampleRegistry} from '../generated/exampleRegistry';
+import {normalizeComponentCategory} from '../lib/componentCategories';
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -1068,7 +1069,9 @@ describe('galleryEagerShowcases', () => {
   /** Gallery render order: categories in display order, then registry order. */
   const galleryOrder = categories.flatMap(cat =>
     (components['@astryxdesign/core'] ?? []).filter(
-      c => c.category === cat && isGalleryComponent(c),
+      c =>
+        normalizeComponentCategory(c.category ?? '') === cat &&
+        isGalleryComponent(c),
     ),
   );
 
@@ -1084,7 +1087,7 @@ describe('galleryEagerShowcases', () => {
     const declared = new Set(
       (components['@astryxdesign/core'] ?? [])
         .filter(isGalleryComponent)
-        .map(c => c.category),
+        .map(c => normalizeComponentCategory(c.category ?? '')),
     );
     for (const cat of declared) {
       expect(
