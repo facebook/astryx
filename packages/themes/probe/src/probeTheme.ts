@@ -12,8 +12,6 @@
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
 //   fonts       a family name nothing else could produce
 //   syntax      one unmistakable colour per code token
-// Palette metadata emits no CSS; its contract is covered by theme unit and
-// production-build tests rather than this visual fixture.
 //
 // Only `components` is generated; the rest are fixed values that live in
 // probeConfig.ts, because they are a contract to assert against rather than a

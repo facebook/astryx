@@ -34,7 +34,7 @@ export interface ThemePaletteFamily {
   readonly description?: string;
 }
 
-/** Approved, named color families attached to a theme. */
+/** Approved, named color families. */
 export type ThemePalettes = Readonly<Record<string, ThemePaletteFamily>>;
 
 const OPAQUE_HEX = /^#[0-9a-f]{6}$/i;

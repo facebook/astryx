@@ -56,8 +56,7 @@ import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 // path: core's generator. There is no in-CLI fallback implementation — if this
 // import fails, the build fails (see the ERR_CORE_NOT_FOUND guard in the theme
 // action). A built, resolvable `@astryxdesign/core` is a hard requirement.
-// A built, resolvable `@astryxdesign/core` is a hard requirement. These are
-// populated from a dynamic import (a runtime boundary), so `any` is intentional.
+// These are populated from a dynamic import, so `any` is intentional.
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _defineTonalPalettes = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
@@ -781,8 +780,8 @@ function extractIconInfo(filePath) {
  * all of that — but a built theme is a legitimate base for `extends` (the
  * shipped themes expose one as their `./built` subpath), and a base that
  * carries only tokens makes its children silently lose every component
- * override it had. Palette metadata is deliberately excluded: it is authoring
- * data, not rendering data, and is emitted as separate opt-in artifacts below.
+ * override it had. Palette metadata is emitted separately because it is not
+ * required for rendering.
  *
  * The icon registry is imported rather than inlined because it holds React
  * elements, which cannot be serialized. `extractIconInfo` lifts the specifier
@@ -904,9 +903,7 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
 }
 
 /**
- * Generate the opt-in ESM palette artifact. Keeping this separate from the
- * built theme prevents authoring metadata from entering every application
- * bundle while preserving an exact import for audits and visualizations.
+ * Generate the opt-in ESM palette artifact.
  * @param {any} themeDef
  * @returns {string}
  */
@@ -1096,7 +1093,6 @@ export async function themeBuild(
     );
   }
 
-  // Require the matching Core capability so palette metadata cannot be lost.
   if (!_defineTonalPalettes) {
     throw unsupportedTonalPalettesError();
   }
