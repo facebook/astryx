@@ -516,19 +516,18 @@ function DropdownMenuBottomSheet({
   const [submenuPath, setSubmenuPath] = useState<DropdownMenuItemData[]>([]);
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+  const [previousIsOpen, setPreviousIsOpen] = useState(isOpen);
+  if (previousIsOpen !== isOpen) {
+    setPreviousIsOpen(isOpen);
+    if (!isOpen && submenuPath.length > 0) {
+      setSubmenuPath([]);
+    }
+  }
   const currentSubmenu = submenuPath.at(-1);
   const currentItems = currentSubmenu?.items ?? items;
   const currentTitle = currentSubmenu?.label ?? button.label;
   const sheetLabel =
     typeof currentTitle === 'string' ? currentTitle : button.label;
-
-  useEffect(() => {
-    if (isOpen || submenuPath.length === 0) {
-      return;
-    }
-    // eslint-disable-next-line @eslint-react/set-state-in-effect -- external controlled closes must reset sheet-local navigation before the next open
-    setSubmenuPath([]);
-  }, [isOpen, submenuPath.length]);
 
   const setOpen = useCallback(
     (nextIsOpen: boolean) => {
