@@ -647,10 +647,6 @@
     "defaultMessage": "בחירת תאריך",
     "description": "Grey placeholder inside an empty DateTimeInput field. Note: the English says only \"date\" though the field is date+time — do not add \"and time\" unless natural."
   },
-  "@astryx.dateTimeInput.dialogLabel": {
-    "defaultMessage": "בחירת תאריך",
-    "description": "Screen-reader-only accessible name for the DateTimeInput picker dialog. Same English-only \"date\" phrasing as the placeholder — don't add \"and time\" unless natural."
-  },
   "@astryx.link.newTab": {
     "defaultMessage": "(נפתח בכרטיסייה חדשה)",
     "description": "Visually-hidden (screen-reader-only) suffix appended to a Link's accessible name when it opens in a new tab. Example: `Documentation (opens in new tab)`."

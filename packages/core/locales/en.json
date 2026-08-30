@@ -955,6 +955,22 @@
     "defaultMessage": "Error: {message}",
     "description": "Screen-reader text for a tool call that failed. {message} is the error detail."
   },
+  "@astryx.chatToolCalls.status.pending": {
+    "defaultMessage": "Pending",
+    "description": "Screen-reader-only status label for a tool call that is waiting to begin."
+  },
+  "@astryx.chatToolCalls.status.running": {
+    "defaultMessage": "Running",
+    "description": "Screen-reader-only status label for a tool call that is currently running."
+  },
+  "@astryx.chatToolCalls.status.complete": {
+    "defaultMessage": "Complete",
+    "description": "Screen-reader-only status label for a tool call that completed successfully."
+  },
+  "@astryx.chatToolCalls.status.error": {
+    "defaultMessage": "Failed",
+    "description": "Screen-reader-only status label for a failed tool call when no error detail is supplied."
+  },
   "@astryx.chatToolCalls.groupLabel": {
     "defaultMessage": "{count} tool calls",
     "description": "Summary label shown in the group header when multiple tool calls are expanded. {count} is the number of calls."

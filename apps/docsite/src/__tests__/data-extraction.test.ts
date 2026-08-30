@@ -23,6 +23,7 @@ import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {eagerShowcases} from '../components/eagerShowcases';
 import {exampleRegistry} from '../generated/exampleRegistry';
+import {normalizeComponentCategory} from '../lib/componentCategories';
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -1186,13 +1187,17 @@ describe('galleryEagerShowcases', () => {
   /** Gallery render order: categories in display order, then registry order. */
   const galleryOrder = categories.flatMap(cat =>
     (components['@astryxdesign/core'] ?? []).filter(
-      c => c.category === cat && isGalleryComponent(c),
+      c =>
+        normalizeComponentCategory(c.category ?? '') === cat &&
+        isGalleryComponent(c),
     ),
   );
 
   it('reads the gallery category order out of the page', () => {
     expect(categories.length).toBeGreaterThan(5);
     expect(categories).toContain('Action');
+    expect(categories).toContain('Form Controls');
+    expect(categories).not.toContain('Data Input');
     expect(galleryOrder.length).toBeGreaterThan(50);
   });
 
@@ -1200,7 +1205,7 @@ describe('galleryEagerShowcases', () => {
     const declared = new Set(
       (components['@astryxdesign/core'] ?? [])
         .filter(isGalleryComponent)
-        .map(c => c.category),
+        .map(c => normalizeComponentCategory(c.category ?? '')),
     );
     for (const cat of declared) {
       expect(

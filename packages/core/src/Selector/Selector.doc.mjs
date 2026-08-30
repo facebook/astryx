@@ -6,7 +6,7 @@ export const docs = {
   name: 'Selector',
   displayName: 'Selector',
   group: 'Selector',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'selector',
     'select',

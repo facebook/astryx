@@ -1,5 +1,24 @@
 # @xds/core
 
+# 0.5.2
+
+#### Fixes
+
+- Rename the Data Input component category to Form Controls (#5686)
+
+#### Performance
+
+- Improve frequent translation lookups by pre-building locale maps (#4696)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @ngolin
+- @rubyycheung
+
+---
+
 # 0.5.1
 
 #### New Features

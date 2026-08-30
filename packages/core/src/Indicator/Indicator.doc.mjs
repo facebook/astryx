@@ -6,7 +6,7 @@ export const docs = {
   name: 'Indicator',
   displayName: 'Indicator',
   group: 'Indicator',
-  category: 'Data Input',
+  category: 'Form Controls',
   isHiddenFromOverview: true,
   keywords: [
     'indicator',

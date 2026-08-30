@@ -6,7 +6,7 @@ export const docs = {
   name: 'ListInput',
   displayName: 'List Input',
   group: 'ListInput',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'listinput',
     'list input',

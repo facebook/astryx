@@ -6,7 +6,7 @@ export const docs = {
   name: 'MultiSelector',
   displayName: 'Multi Selector',
   group: 'Selector',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'multiselect',
     'checkbox',

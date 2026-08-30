@@ -66,9 +66,9 @@ export const doc = {
     },
     {
       name: 'category',
-      type: "'Action' | 'Chat' | 'Container' | 'Content' | 'Data Input' | 'Data Visualization' | 'Feedback & Status' | 'Layout' | 'Navigation' | 'Overlay' | 'Table & List' | 'Utility'",
+      type: "'Action' | 'Chat' | 'Container' | 'Content' | 'Form Controls' | 'Data Input' | 'Data Visualization' | 'Feedback & Status' | 'Layout' | 'Navigation' | 'Overlay' | 'Table & List' | 'Utility'",
       description:
-        "Overview-gallery category representing the component's functional role. Independent of `group` (which is for the sidebar).",
+        "Overview-gallery category representing the component's functional role. Independent of `group` (which is for the sidebar). `Data Input` is a deprecated compatibility alias for `Form Controls`.",
     },
     {
       name: 'isHiddenFromOverview',
@@ -186,7 +186,7 @@ export const doc = {
 export const docs = {
   name: 'Switch',
   displayName: 'Switch',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ['toggle', 'switch', 'on off'],
   usage: {
     description:

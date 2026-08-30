@@ -793,6 +793,11 @@ describe('Toast swipe dismissal', () => {
     expect(visualToast.style.getPropertyValue('--_toast-swipe-exit-y')).toBe(
       '120%',
     );
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
+      '',
+    );
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-scale')).toBe('');
     expect(getComputedStyle(visualToast).transform).not.toContain('translateX');
   });
 
@@ -1147,11 +1152,9 @@ describe('Toast swipe dismissal', () => {
 
     expect(onHide).toHaveBeenCalledWith('manual');
     expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
-      '0.700',
+      '',
     );
-    expect(visualToast.style.getPropertyValue('--_toast-swipe-scale')).toBe(
-      '0.985',
-    );
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-scale')).toBe('');
     expect(visualToast.style.getPropertyValue('--_toast-swipe-exit-y')).toBe(
       'calc(-1 * 120%)',
     );
@@ -1246,6 +1249,117 @@ describe('Toast swipe dismissal', () => {
     expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
       '',
     );
+  });
+
+  it('abandons a one-finger swipe when a second touch starts', () => {
+    const {visualToast, onHide} = renderSwipeToast();
+    const dispatchTouch = (
+      type: 'touchstart' | 'touchmove',
+      touches: {identifier: number; clientX: number; clientY: number}[],
+      changedTouches = touches,
+    ) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperty(event, 'touches', {value: touches});
+      Object.defineProperty(event, 'changedTouches', {value: changedTouches});
+      visualToast.dispatchEvent(event);
+      return event;
+    };
+    const first = {identifier: 51, clientX: 10, clientY: 0};
+    const second = {identifier: 52, clientX: 30, clientY: 40};
+
+    act(() => {
+      dispatchTouch('touchstart', [first]);
+      dispatchTouch('touchmove', [{...first, clientY: 40}]);
+    });
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('40px');
+
+    act(() => {
+      dispatchTouch('touchstart', [first, second], [second]);
+    });
+    const multitouchMove = dispatchTouch('touchmove', [first, second]);
+
+    expect(multitouchMove.defaultPrevented).toBe(false);
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
+      '',
+    );
+    expect(onHide).not.toHaveBeenCalled();
+  });
+
+  it('does not dismiss when another touch remains outside the Toast', () => {
+    const {visualToast, onHide} = renderSwipeToast();
+    const first = {identifier: 61, clientX: 10, clientY: 0};
+    const second = {identifier: 62, clientX: 200, clientY: 200};
+    const dispatchTouch = (
+      type: 'touchstart' | 'touchmove' | 'touchend',
+      touches: (typeof first)[],
+      changedTouches: (typeof first)[],
+    ) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperty(event, 'touches', {value: touches});
+      Object.defineProperty(event, 'changedTouches', {value: changedTouches});
+      visualToast.dispatchEvent(event);
+      return event;
+    };
+
+    act(() => {
+      dispatchTouch('touchstart', [first], [first]);
+      dispatchTouch(
+        'touchmove',
+        [{...first, clientY: 60}],
+        [{...first, clientY: 60}],
+      );
+    });
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('60px');
+
+    // The second contact began outside the Toast, so its touchstart did not
+    // reach the Toast listener. Ending the tracked finger must still cancel
+    // while that other contact remains active.
+    act(() => {
+      dispatchTouch('touchend', [second], [{...first, clientY: 60}]);
+    });
+
+    expect(onHide).not.toHaveBeenCalled();
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-opacity')).toBe(
+      '',
+    );
+  });
+
+  it('does not let a pen event with the same numeric ID control a touch gesture', () => {
+    const {visualToast, onHide} = renderSwipeToast();
+    const touch = {identifier: 7, clientX: 10, clientY: 0};
+    const touchStart = new Event('touchstart', {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(touchStart, 'touches', {value: [touch]});
+    Object.defineProperty(touchStart, 'changedTouches', {value: [touch]});
+
+    act(() => {
+      visualToast.dispatchEvent(touchStart);
+      fireEvent.pointerMove(visualToast, {
+        pointerId: 7,
+        pointerType: 'pen',
+        clientX: 10,
+        clientY: 60,
+      });
+      fireEvent.pointerUp(visualToast, {
+        pointerId: 7,
+        pointerType: 'pen',
+        clientX: 10,
+        clientY: 60,
+      });
+    });
+
+    expect(onHide).not.toHaveBeenCalled();
+    expect(visualToast.style.getPropertyValue('--_toast-swipe-y')).toBe('');
+
+    act(() => {
+      visualToast.dispatchEvent(
+        new Event('touchcancel', {bubbles: true, cancelable: true}),
+      );
+    });
   });
 
   it('removes native touch listeners when a Toast unmounts', () => {

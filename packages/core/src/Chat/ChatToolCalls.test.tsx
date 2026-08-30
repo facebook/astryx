@@ -46,6 +46,50 @@ describe('ChatToolCalls', () => {
     expect(screen.queryByText('1.2s')).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['pending', 'Pending'],
+    ['running', 'Running'],
+    ['complete', 'Complete'],
+    ['error', 'Failed'],
+  ] as const)(
+    'names the %s status for assistive technology',
+    (status, label) => {
+      render(<ChatToolCalls calls={[{name: 'bash', status}]} />);
+      expect(screen.getByText(label)).toBeInTheDocument();
+    },
+  );
+
+  it('includes the status in an expandable row accessible name', () => {
+    render(
+      <ChatToolCalls
+        calls={[
+          {
+            name: 'readFile',
+            status: 'running',
+            resultDetail: <div>file contents</div>,
+          },
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', {name: /Running.*readFile/}),
+    ).toBeInTheDocument();
+  });
+
+  it('includes the latest status in a collapsed group accessible name', () => {
+    render(
+      <ChatToolCalls
+        calls={[
+          {name: 'searchCode', status: 'complete'},
+          {name: 'editFile', status: 'running'},
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', {name: /Running.*editFile/}),
+    ).toBeInTheDocument();
+  });
+
   it('defaults to collapsed', () => {
     render(
       <ChatToolCalls

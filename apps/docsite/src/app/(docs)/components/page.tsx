@@ -22,6 +22,7 @@ import {CodeExampleBlock} from '../../../components/CodeExampleBlock';
 import {components as componentRegistry} from '../../../generated/componentRegistry';
 import {showcaseRegistry} from '../../../generated/showcaseRegistry';
 import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
+import {normalizeComponentCategory} from '../../../lib/componentCategories';
 import {layout} from '../../../layout.stylex';
 
 const FIGMA_LIBRARY_URL =
@@ -36,9 +37,9 @@ const CATEGORIES = [
   'Chat',
   'Container',
   'Content',
-  'Data Input',
   'Data Visualization',
   'Feedback & Status',
+  'Form Controls',
   'Layout',
   'Navigation',
   'Overlay',
@@ -113,7 +114,7 @@ export default function ComponentsGalleryPage() {
         displayName: comp.displayName,
         description: comp.description,
         href: `/components/${comp.name}`,
-        category: comp.category,
+        category: normalizeComponentCategory(comp.category),
         hasShowcase: SHOWCASE_NAMES.has(comp.name),
       });
     }
