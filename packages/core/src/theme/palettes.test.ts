@@ -56,7 +56,7 @@ describe('defineTonalPalettes', () => {
     } as unknown as ThemePalettes;
 
     expect(() => defineTonalPalettes(palettes)).toThrow(
-      'Palette "blue" light tone 5 must be an opaque six-digit hex color',
+      'Palette "blue" light stop 5 must be an opaque six-digit hex color',
     );
   });
 
@@ -76,7 +76,7 @@ describe('defineTonalPalettes', () => {
     } as TonalPaletteRamp;
 
     expect(() => defineTonalPalettes({blue: {light: invalid}})).toThrow(
-      'tones must be ordered from darker to lighter',
+      'stops must be ordered from darker to lighter',
     );
   });
 
@@ -84,7 +84,7 @@ describe('defineTonalPalettes', () => {
     const invalid = {...ramp(), 42: '#123456'} as TonalPaletteRamp;
 
     expect(() => defineTonalPalettes({blue: {light: invalid}})).toThrow(
-      'Palette "blue" light contains unknown tone or metadata key "42".',
+      'Palette "blue" light contains unknown stop or metadata key "42".',
     );
   });
 

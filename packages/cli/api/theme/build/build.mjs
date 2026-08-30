@@ -918,7 +918,24 @@ function generatePaletteModule(themeDef) {
  */
 function generatePaletteTypes(themeDef) {
   const exportName = `${toIdentifier(themeDef.name)}Palettes`;
-  return `import type { ThemePalettes } from '@astryxdesign/core/theme/palettes';\n\nexport declare const ${exportName}: ThemePalettes;\nexport default ${exportName};\n`;
+  const families = Object.entries(themeDef.palettes)
+    .map(([name, family]) => {
+      const fields = ['    readonly light: TonalPaletteRamp;'];
+      if (family.dark !== undefined) {
+        fields.push('    readonly dark: TonalPaletteRamp;');
+      }
+      if (family.semantic !== undefined) {
+        fields.push(
+          `    readonly semantic: ${JSON.stringify(family.semantic)};`,
+        );
+      }
+      if (family.description !== undefined) {
+        fields.push('    readonly description: string;');
+      }
+      return `  readonly ${JSON.stringify(name)}: Readonly<{\n${fields.join('\n')}\n  }>;`;
+    })
+    .join('\n');
+  return `import type { TonalPaletteRamp } from '@astryxdesign/core/theme/palettes';\n\nexport declare const ${exportName}: Readonly<{\n${families}\n}>;\nexport default ${exportName};\n`;
 }
 
 // =============================================================================

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** Canonical numeric tone labels used as Astryx palette keys. */
+/** Canonical numeric stop labels used as Astryx palette keys. */
 export const TONAL_PALETTE_TONES = [
   0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
   100,
@@ -9,7 +9,7 @@ export const TONAL_PALETTE_TONES = [
 export type TonalPaletteTone = (typeof TONAL_PALETTE_TONES)[number];
 
 /**
- * One complete, opaque ramp ordered from dark to light. Numbered labels identify
+ * One complete, opaque ramp ordered from dark to light. Numbered keys identify
  * approved stops rather than exact measured HCT coordinates.
  */
 export type TonalPaletteRamp = Readonly<
@@ -66,23 +66,23 @@ function validateRamp(
   for (const key of Object.keys(ramp)) {
     if (!TONAL_PALETTE_KEYS.has(key)) {
       throw new Error(
-        `Palette "${name}" ${mode} contains unknown tone or metadata key "${key}".`,
+        `Palette "${name}" ${mode} contains unknown stop or metadata key "${key}".`,
       );
     }
   }
 
   let previousLuminance = -1;
-  for (const tone of TONAL_PALETTE_TONES) {
-    const value = ramp[tone];
+  for (const stop of TONAL_PALETTE_TONES) {
+    const value = ramp[stop];
     if (typeof value !== 'string' || !OPAQUE_HEX.test(value)) {
       throw new Error(
-        `Palette "${name}" ${mode} tone ${tone} must be an opaque six-digit hex color.`,
+        `Palette "${name}" ${mode} stop ${stop} must be an opaque six-digit hex color.`,
       );
     }
     const luminance = relativeLuminance(value);
     if (luminance < previousLuminance) {
       throw new Error(
-        `Palette "${name}" ${mode} tones must be ordered from darker to lighter; tone ${tone} is darker than the previous stop.`,
+        `Palette "${name}" ${mode} stops must be ordered from darker to lighter; stop ${stop} is darker than the previous stop.`,
       );
     }
     previousLuminance = luminance;

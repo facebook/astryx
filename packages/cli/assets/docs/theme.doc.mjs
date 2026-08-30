@@ -235,7 +235,7 @@ const myTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'Define approved tonal palettes when agents, audit tools, custom components, or data visualization need colors beyond the semantic token surface. Components still use semantic tokens first. If no semantic token fits, select an exact numbered tone and record its family, mode, tone, purpose, and measured contrast; do not invent a nearby hex value. Production theme builds keep this metadata out of the default runtime module and emit separate opt-in palette artifacts.',
+          text: 'Define approved tonal palettes when agents, audit tools, custom components, or data visualization need colors beyond the semantic token surface. Components still use semantic tokens first. If no semantic token fits, select an exact numbered stop and record its family, mode, stop, purpose, and measured contrast; do not invent a nearby hex value. Production theme builds keep this metadata out of the default runtime module and emit separate opt-in palette artifacts.',
         },
         {
           type: 'code',
@@ -279,7 +279,7 @@ export const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Each family requires all 21 numeric tone labels from 0 through 100 in increments of 5. Read `blue.light[40]` as “blue, light-mode ramp, numbered tone 40.” Lower labels identify darker stops and higher labels lighter stops in both modes. These labels identify approved palette stops; validation does not promise that a hex value measures at the exact corresponding HCT coordinate. Add a dark ramp when the theme uses separately tuned dark-mode colors; otherwise `getTonalPaletteRamp(family, "dark")` intentionally falls back to the light ramp. `astryx theme build` validates attached metadata, excludes it from the runtime theme module, and emits `<name>.palette.js`, `<name>.palette.json`, and `<name>.palette.d.ts` for explicit use by tools and agents.',
+          text: 'Each family requires all 21 numeric stop labels from 0 through 100 in increments of 5. Read `blue.light[40]` as “blue, light-mode ramp, stop 40.” Lower labels identify darker stops and higher labels lighter stops in both modes. These labels identify approved palette stops; validation does not promise that a hex value measures at the exact corresponding HCT coordinate. Add a dark ramp when the theme uses separately tuned dark-mode colors; otherwise `getTonalPaletteRamp(family, "dark")` intentionally falls back to the light ramp. `astryx theme build` validates attached metadata, excludes it from the runtime theme module, and emits `<name>.palette.js`, `<name>.palette.json`, and `<name>.palette.d.ts` for explicit use by tools and agents.',
         },
       ],
     },

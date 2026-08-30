@@ -248,7 +248,10 @@ describe('themeBuild() — receipt', () => {
     expect(paletteModule).toContain('"50": "#123456"');
     expect(paletteJson.blue.semantic).toBe('info');
     expect(paletteJson.blue.light['50']).toBe('#123456');
-    expect(paletteTypes).toContain('ThemePalettes');
+    expect(paletteTypes).toContain('readonly "blue"');
+    expect(paletteTypes).toContain('readonly light: TonalPaletteRamp');
+    expect(paletteTypes).toContain('readonly semantic: "info"');
+    expect(paletteTypes).not.toContain('readonly dark: TonalPaletteRamp');
     expect(result?.data.outputs).toMatchObject({
       paletteJs: 'palette-theme.palette.js',
       paletteJson: 'palette-theme.palette.json',
