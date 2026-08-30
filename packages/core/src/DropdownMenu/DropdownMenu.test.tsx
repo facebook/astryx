@@ -185,6 +185,56 @@ describe('DropdownMenu', () => {
     await waitFor(() => expect(rootHeading).toHaveFocus());
   });
 
+  it('resets bottom-sheet drill-in state after a controlled close', async () => {
+    const user = userEvent.setup();
+    const items = [
+      {
+        label: 'Move to project',
+        items: [{label: 'Apollo launch'}],
+      },
+    ];
+    const {rerender} = render(
+      <DropdownMenu
+        button={{label: 'Project actions'}}
+        presentation="bottom-sheet"
+        items={items}
+        isMenuOpen
+        onOpenChange={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Move to project'}));
+    expect(
+      screen.getByRole('heading', {name: 'Move to project'}),
+    ).toBeInTheDocument();
+
+    rerender(
+      <DropdownMenu
+        button={{label: 'Project actions'}}
+        presentation="bottom-sheet"
+        items={items}
+        isMenuOpen={false}
+        onOpenChange={() => {}}
+      />,
+    );
+    rerender(
+      <DropdownMenu
+        button={{label: 'Project actions'}}
+        presentation="bottom-sheet"
+        items={items}
+        isMenuOpen
+        onOpenChange={() => {}}
+      />,
+    );
+
+    expect(
+      screen.getByRole('heading', {name: 'Project actions'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', {name: 'Move to project'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('mirrors bottom-sheet drill-in affordances under RTL', async () => {
     const user = userEvent.setup();
     const {className: mirrorClassName} = stylex.props(rtlStyles.mirror);

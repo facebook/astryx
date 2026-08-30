@@ -484,6 +484,13 @@ function DropdownMenuBottomSheet({
   const [submenuPath, setSubmenuPath] = useState<DropdownMenuItemData[]>([]);
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+  const [previousIsOpen, setPreviousIsOpen] = useState(isOpen);
+  if (previousIsOpen !== isOpen) {
+    setPreviousIsOpen(isOpen);
+    if (!isOpen && submenuPath.length > 0) {
+      setSubmenuPath([]);
+    }
+  }
   const currentSubmenu = submenuPath.at(-1);
   const currentItems = currentSubmenu?.items ?? items;
   const currentTitle = currentSubmenu?.label ?? button.label;
