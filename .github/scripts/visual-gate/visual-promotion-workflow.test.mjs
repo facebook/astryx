@@ -22,6 +22,13 @@ const SCRIPT = path.join(
   'visual-acceptance.mjs',
 );
 const GATE = path.join(ROOT, '.github', 'scripts', 'visual-gate', 'gate.mjs');
+const PUBLISHER = path.join(
+  ROOT,
+  '.github',
+  'scripts',
+  'lib',
+  'gh-pages-publisher.mjs',
+);
 const WORKFLOW = path.join(
   ROOT,
   '.github',
@@ -92,14 +99,23 @@ function workflowStep(name) {
 
 function workflowStepScript(name) {
   const step = workflowStep(name);
-  const runMarker = '        run: |\n';
-  const runStart = step.indexOf(runMarker);
-  expect(runStart).toBeGreaterThan(-1);
-  return step
-    .slice(runStart + runMarker.length)
-    .split('\n')
-    .map(line => (line.startsWith('          ') ? line.slice(10) : line))
-    .join('\n');
+  for (const [marker, fold] of [
+    ['        run: |\n', false],
+    ['        run: >\n', true],
+  ]) {
+    const runStart = step.indexOf(marker);
+    if (runStart === -1) continue;
+    const lines = step
+      .slice(runStart + marker.length)
+      .split('\n')
+      .map(line => (line.startsWith('          ') ? line.slice(10) : line));
+    if (!fold) return lines.join('\n');
+    return `${lines
+      .map(line => line.trim())
+      .filter(Boolean)
+      .join(' ')}\n`;
+  }
+  throw new Error(`Step ${name} has no runnable script`);
 }
 
 function writeCommandShims(root) {
@@ -233,11 +249,14 @@ function makeFixture(mutate) {
     RECORD_REL,
   );
   const sandbox = path.join(root, 'sandbox');
-  fs.mkdirSync(path.join(sandbox, '.github', 'scripts'), {recursive: true});
-  fs.symlinkSync(
-    path.join(ROOT, '.github', 'scripts', 'visual-gate'),
-    path.join(sandbox, '.github', 'scripts', 'visual-gate'),
-  );
+  const sandboxScripts = path.join(sandbox, '.github', 'scripts');
+  fs.mkdirSync(sandboxScripts, {recursive: true});
+  for (const entry of ['visual-gate', 'lib', 'gh-pages-publisher.mjs']) {
+    fs.symlinkSync(
+      path.join(ROOT, '.github', 'scripts', entry),
+      path.join(sandboxScripts, entry),
+    );
+  }
   const plan = path.join(sandbox, 'accepted-plan.json');
   runAcceptance('plan', {acceptance, output: plan});
 
@@ -255,6 +274,37 @@ function makeFixture(mutate) {
   });
 
   mutate?.({acceptance, baselineShot, capture, pages});
+  writeJSON(
+    path.join(pages, '.astryx-gh-pages', 'publication-queue', '900.json'),
+    {
+      version: 1,
+      repository: 'facebook/astryx',
+      runId: 900,
+      scope: 'visual-gate/baseline',
+    },
+  );
+  writeJSON(
+    path.join(pages, '.astryx-gh-pages', 'publication-queue', 'holder.json'),
+    {
+      version: 1,
+      repository: 'facebook/astryx',
+      runId: 900,
+      scope: 'visual-gate/baseline',
+    },
+  );
+  writeJSON(path.join(pages, 'visual-gate', 'publication-queue', '900.json'), {
+    version: 1,
+    repository: 'facebook/astryx',
+    runId: 900,
+  });
+  writeJSON(
+    path.join(pages, 'visual-gate', 'publication-queue', 'holder.json'),
+    {
+      version: 1,
+      repository: 'facebook/astryx',
+      runId: 900,
+    },
+  );
   git(pages, 'add', '.');
   git(pages, 'commit', '-qm', 'record acceptance');
 
@@ -270,6 +320,8 @@ function runPromotion({
   race = false,
 }) {
   const marker = path.join(fixture.root, 'race-injected');
+  const runnerTemp = path.join(fixture.root, 'runner');
+  fs.mkdirSync(runnerTemp, {recursive: true});
   const result = spawnSync(
     '/bin/bash',
     ['-c', workflowStepScript('Verify and promote the baseline')],
@@ -281,11 +333,12 @@ function runPromotion({
         PATH: `${fixture.bin}:${process.env.PATH}`,
         GH_TOKEN: 'test-token',
         GITHUB_REPOSITORY: 'facebook/astryx',
+        GITHUB_RUN_ID: '900',
         PR_NUMBER: '42',
         HEAD_SHA: HEAD,
         MERGE_SHA: MERGE,
         RECORD_REL,
-        RUNNER_TEMP: path.join(fixture.root, 'runner'),
+        RUNNER_TEMP: runnerTemp,
         GITHUB_OUTPUT: path.join(fixture.root, 'github-output'),
         GH_RUNS_JSON: JSON.stringify({
           workflow_runs: [{name: 'CI', ...latest}],
@@ -365,6 +418,35 @@ describe('visual acceptance promotion workflow', () => {
     );
     expect(checkout).toContain('ref: ${{ needs.resolve.outputs.merge_sha }}');
     expect(checkout).toContain('allow-unsafe-pr-checkout: true');
+  });
+
+  it('executes the migrated publisher from the workflow sandbox root', () => {
+    const fixture = makeFixture();
+    const script = workflowStepScript('Verify and promote the baseline');
+    expect(script).toContain('gh-pages-publisher.mjs visual-baseline-accepted');
+    expect(
+      fs.existsSync(
+        path.join(
+          fixture.sandbox,
+          '.github',
+          'scripts',
+          'gh-pages-publisher.mjs',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(
+          fixture.sandbox,
+          '.github',
+          'scripts',
+          'lib',
+          'gh-pages-publisher.mjs',
+        ),
+      ),
+    ).toBe(true);
+    const result = runPromotion({fixture});
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   });
 
   it('retries from the immutable record after cleanup wins the first push race', () => {
@@ -511,10 +593,19 @@ describe('visual acceptance promotion workflow', () => {
 
   it('does not consult ephemeral PR evidence during promotion', () => {
     const script = workflowStepScript('Verify and promote the baseline');
-    expect(script).toContain('promotion-identity.mjs resolve-acceptance');
+    const publisher = fs.readFileSync(PUBLISHER, 'utf8');
+    const promotion = publisher.slice(
+      publisher.indexOf('export async function publishAcceptedVisualBaseline'),
+      publisher.indexOf('export async function publishManualVisualBaseline'),
+    );
+
+    expect(script).toContain('gh-pages-publisher.mjs visual-baseline-accepted');
     expect(script).toContain('--expected-record-rel "$RECORD_REL"');
-    expect(script).toContain('visual-acceptance.mjs promote');
-    expect(script).not.toContain('visual-acceptance.mjs state');
-    expect(script).not.toContain('/pr/');
+    expect(promotion).toContain('promotion-identity.mjs');
+    expect(promotion).toContain('resolve-acceptance');
+    expect(promotion).toContain('visual-acceptance.mjs');
+    expect(promotion).toContain('promote');
+    expect(promotion).not.toContain('visual-acceptance.mjs state');
+    expect(promotion).not.toContain("'pr'");
   });
 });

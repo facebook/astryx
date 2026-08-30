@@ -1,0 +1,48 @@
+{
+  "name": "setup",
+  "description": "Can an executor add Astryx to an established Tailwind app without damaging the host UI? Astryx is absent from every canonical fixture. The fixture, condition, prompt, repetition, and executor bundle are explicit matrix dimensions.",
+  "base": {
+    "fixtures": [
+      "tailwind-v4-control",
+      "shadcn-tailwind-v4-established",
+      "enterprise-scoped-synthetic"
+    ],
+    "notes": "Every run starts from a validated copy of a canonical fixture. The committed fixture is never modified."
+  },
+  "conditions": [
+    {
+      "id": "floor",
+      "label": "Task only (floor)",
+      "role": "floor",
+      "patches": [],
+      "hypothesis": "Without an added discovery cue, setup depends on what the executor finds from the package and project alone."
+    },
+    {
+      "id": "current",
+      "label": "Current public guidance",
+      "role": "current-control",
+      "patches": ["patch:pointer"],
+      "hypothesis": "A pointer makes the current public setup guidance discoverable but does not change its instructions."
+    },
+    {
+      "id": "candidate",
+      "label": "Candidate existing-app guidance",
+      "role": "candidate",
+      "patches": ["patch:pointer", "patch:existing-app"],
+      "hypothesis": "Existing-app guidance preserves the host Tailwind entry, cascade order, color mode, and app-owned tokens."
+    },
+    {
+      "id": "direct",
+      "label": "Directed setup control",
+      "role": "direct-control",
+      "patches": ["patch:pointer", "patch:existing-app", "patch:directed"],
+      "hypothesis": "Precise setup instructions remove discovery ambiguity. Any remaining visible host damage is a product gap and blocks instruction shipping."
+    }
+  ],
+  "measurement": {
+    "reference": "A pristine copied fixture, measured by the same code before setup.",
+    "schemes": ["light", "dark"],
+    "notes": "Both preferred color schemes are measured even when the fixture has its own explicit mode control.",
+    "emittedCss": "Cascade order is read from the built CSS rather than inferred from source order."
+  }
+}

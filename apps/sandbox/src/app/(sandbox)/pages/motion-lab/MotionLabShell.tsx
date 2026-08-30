@@ -55,6 +55,19 @@ const sx = stylex.create({
   },
 });
 
+/**
+ * Hrefs here are written WITHOUT the deployed basePath, and must stay that way.
+ *
+ * The sandbox deploys under a prefix (`/astryx/pr/<n>/sandbox` on a preview),
+ * and `next/link` prepends it exactly once. LinkProvider in layout.tsx routes
+ * every Astryx `Link` and `ListItem` in this section through `next/link`, so
+ * the prefix is already handled — applying it here as well produces a
+ * double-prefixed URL that 404s, which is how this was found.
+ *
+ * `usePathname()` also returns the path without the prefix, so the
+ * current-page comparison below matches these hrefs directly.
+ */
+
 /** The export sets `trailingSlash: true`, so normalise before comparing. */
 function isCurrent(pathname: string, href: string): boolean {
   const a = pathname.endsWith('/') ? pathname : `${pathname}/`;

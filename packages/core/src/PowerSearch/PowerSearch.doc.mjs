@@ -5,7 +5,7 @@
 export const docs = {
   name: 'PowerSearch',
   displayName: 'Power Search',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'powersearch',
     'search',

@@ -632,8 +632,7 @@ export function BottomSheetSwitcher({
           ? {role: 'alertdialog'}
           : undefined)}>
         {children}
-        {/* A modal flow's ::backdrop already answers Safari's edge sampler. */}
-        {hasScrim ? null : <BottomSheetEdgeTint />}
+        <BottomSheetEdgeTint />
       </dialog>
     </BottomSheetSwitcherContext>
   );

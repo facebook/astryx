@@ -1,13 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {PNG} from 'pngjs';
 
-import {analyzeTargeting, buildVerdict, compareCaptures} from './compare.mjs';
+import {analyzeTargeting, buildVerdict, compareCaptures, compareReleaseCaptures} from './compare.mjs';
+import {createReleasePlan} from './plan.mjs';
 
 /** A solid rectangle, so a change is unambiguous. */
 function png(width, height, [r, g, b]) {
@@ -40,7 +43,7 @@ function manifest(shots) {
     shots: Object.fromEntries(
       Object.entries(shots).map(([key, value]) => [
         key,
-        {sha256: value.sha256, width: 10, height: 10, theme: 'neutral', mode: 'light', reasons: ['surface'], ...value},
+        {sha256: value.sha256, width: 10, height: 10, storyId: key, packageName: '@astryxdesign/core', packageNames: ['@astryxdesign/core'], stableVisual: true, theme: 'neutral', themePackageName: '@astryxdesign/theme-neutral', stableThemeVisual: true, mode: 'light', reasons: ['surface'], ...value},
       ]),
     ),
   };
@@ -87,10 +90,103 @@ describe('compareCaptures', () => {
     expect(result).toMatchObject({added: ['new'], changes: []});
   });
 
-  it('reports a baseline shot whose story is gone as removed', async () => {
-    write('baseline', 'gone', png(10, 10, [0, 255, 0]));
+  it('never reports removals from an ordinary comparison', async () => {
     const result = await compare(manifest({gone: {sha256: 'x'}}), manifest({}));
+    expect(result.removed).toEqual([]);
+  });
+
+  it('reports a true removal only from an exact canonical release capture', async () => {
+    const baseline = manifest({kept: {sha256: 'same'}, gone: {sha256: 'old'}});
+    const current = manifest({kept: {sha256: 'same'}});
+    current.context = {releasePlan: createReleasePlan([{key: 'kept'}])};
+    const result = await compareReleaseCaptures({
+      baselineDir: path.join(root, 'baseline'),
+      currentDir: path.join(root, 'current'),
+      baselineManifest: baseline,
+      currentManifest: current,
+      diffDir: path.join(root, 'diff'),
+      threshold: 0.1,
+      maxDiffPixels: 0,
+      failures: [],
+    });
     expect(result.removed).toEqual(['gone']);
+  });
+
+  it.each([
+    ['subset', ['a']],
+    ['superset', ['a', 'b', 'c']],
+  ])('rejects a canonical %s that differs from captured keys', async (_name, keys) => {
+    const current = manifest({a: {sha256: 'a'}, b: {sha256: 'b'}});
+    current.context = {releasePlan: createReleasePlan(keys.map(key => ({key})))};
+    await expect(compareReleaseCaptures({
+      baselineDir: path.join(root, 'baseline'),
+      currentDir: path.join(root, 'current'),
+      baselineManifest: manifest({}),
+      currentManifest: current,
+      diffDir: path.join(root, 'diff'),
+      threshold: 0.1,
+      maxDiffPixels: 0,
+      failures: [],
+    })).rejects.toThrow(/exactly cover/);
+  });
+
+  it('returns an incomplete comparison for capture failures without removals', async () => {
+    const current = manifest({a: {sha256: 'a'}});
+    current.context = {releasePlan: createReleasePlan([{key: 'a'}])};
+    const failures = [{key: 'a', error: 'capture failed'}];
+    const comparison = await compareReleaseCaptures({
+      baselineDir: path.join(root, 'baseline'),
+      currentDir: path.join(root, 'current'),
+      baselineManifest: manifest({gone: {sha256: 'old'}}),
+      currentManifest: current,
+      diffDir: path.join(root, 'diff'),
+      threshold: 0.1,
+      maxDiffPixels: 0,
+      failures,
+    });
+    expect(comparison.removed).toEqual([]);
+    expect(
+      buildVerdict({
+        comparison,
+        currentManifest: current,
+        baselineManifest: manifest({}),
+        targeting: {},
+        failures,
+        context: current.context,
+      }).status,
+    ).toBe('failed');
+  });
+
+  it('prunes only enumerated reviewed removal keys', () => {
+    const gate = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../gate.mjs');
+    const baselineDir = path.join(root, 'accepted-baseline');
+    const captureDir = path.join(root, 'release-capture');
+    fs.mkdirSync(path.join(baselineDir, 'shots'), {recursive: true});
+    fs.mkdirSync(path.join(captureDir, 'shots'), {recursive: true});
+    fs.writeFileSync(path.join(baselineDir, 'shots/b.png'), png(1, 1, [1, 1, 1]));
+    fs.writeFileSync(path.join(baselineDir, 'shots/c.png'), png(1, 1, [2, 2, 2]));
+    fs.writeFileSync(path.join(baselineDir, 'manifest.json'), JSON.stringify(manifest({b: {sha256: 'b'}, c: {sha256: 'c'}})));
+    const current = manifest({a: {sha256: 'a'}});
+    current.context = {releasePlan: createReleasePlan([{key: 'a'}])};
+    fs.writeFileSync(path.join(captureDir, 'manifest.json'), JSON.stringify(current));
+    fs.writeFileSync(path.join(captureDir, 'verdict.json'), JSON.stringify({
+      status: 'changed',
+      removed: ['b', 'c'],
+      context: current.context,
+    }));
+    execFileSync(process.execPath, [gate, 'accept', '--baseline', baselineDir, '--out', captureDir, '--keys', 'b', '--prune', '--reason', 'Reviewed deletion'], {encoding: 'utf8'});
+    const accepted = JSON.parse(fs.readFileSync(path.join(baselineDir, 'manifest.json'), 'utf8'));
+    expect(accepted.shots.b).toBeUndefined();
+    expect(accepted.shots.c).toBeDefined();
+    expect(accepted.context?.releasePlan).toBeUndefined();
+    expect(fs.existsSync(path.join(baselineDir, 'shots/c.png'))).toBe(true);
+  });
+
+  it('rejects caller-controlled canonical release scope', () => {
+    const gate = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../gate.mjs');
+    expect(() =>
+      execFileSync(process.execPath, [gate, 'release', '--tiers', 'surface'], {encoding: 'utf8'}),
+    ).toThrow(/stable release plan is internal/);
   });
 
   it('ranks the biggest change first', async () => {

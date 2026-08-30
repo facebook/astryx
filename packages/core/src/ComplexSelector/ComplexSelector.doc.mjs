@@ -15,7 +15,7 @@ export const docs = {
   name: 'ComplexSelector',
   displayName: 'Complex Selector',
   group: 'Selector',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'selector',
     'picker',
@@ -214,7 +214,7 @@ export const docsDense = {
   name: 'ComplexSelector',
   displayName: 'Complex Selector',
   group: 'Selector',
-  category: 'Data Input',
+  category: 'Form Controls',
   description:
     'Input/ghost trigger + dialog-popover shell for rich custom selectors. Content gets value/onChange/close/state; content owns semantics. Use focus hooks and evaluate custom content against WCAG 2.2.',
   usage: {

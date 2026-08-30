@@ -108,4 +108,19 @@ describe('the reported symptom', () => {
     const merged = zh.props.find(p => p.name === 'variant');
     expect(merged.description).toBe(translated.description);
   });
+
+  it('keeps base accessibility guidance when a translation does not replace it', async () => {
+    const docPath = path.join(
+      import.meta.dirname,
+      '__fixtures__',
+      'component-accessibility-overlay.doc.mjs',
+    );
+    const english = await loadDocs(docPath);
+    const dense = await loadDocs(docPath, {dense: true});
+
+    expect(english.usage.accessibility.length).toBeGreaterThan(0);
+    expect(dense.usage.accessibility).toEqual(english.usage.accessibility);
+    expect(dense.usage.bestPractices).toBeUndefined();
+    expect(dense.usage.anatomy).toBeUndefined();
+  });
 });

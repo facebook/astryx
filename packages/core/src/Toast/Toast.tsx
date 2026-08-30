@@ -4,9 +4,9 @@
 
 /**
  * @file Toast.tsx
- * @input Uses React timers, Toast options, Button/Icon, MediaTheme, tokens, and
- *   placement-derived motion variables inherited from ToastViewport
- * @output Exports the rendered Toast surface and its pause/dismiss behavior
+ * @input Uses React timers, touch/pen gesture events, Toast options, Button/Icon,
+ *   MediaTheme, tokens, and placement motion inherited from ToastViewport
+ * @output Exports the rendered Toast surface and its pause/swipe/dismiss behavior
  * @position Core implementation; rendered by ToastViewport and documented by Toast.doc.mjs
  *
  * SYNC: When Toast layout, timer pause, media theme, or dismissal behavior changes,
@@ -17,7 +17,7 @@
  * - /packages/cli/assets/templates/blocks/components/Toast/ (showcase blocks)
  */
 
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
@@ -33,6 +33,7 @@ import {
   typeScaleDefaults,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {useTheme} from '../theme';
 import {MediaTheme} from '../theme/MediaTheme';
 import type {
@@ -42,14 +43,30 @@ import type {
 } from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {devWarn} from '../utils/devWarning';
-import {DismissButton, ToastDismissSlotProvider} from './ToastDismissSlot';
+import {useToastGesture, type ToastGestureDirection} from './useToastGesture';
+
+const SWIPE_INTERACTIVE_TARGET_SELECTOR = `${INTERACTIVE_SELECTORS},[tabindex],[contenteditable]:not([contenteditable="false"])`;
+
+function isInteractiveTarget(
+  target: EventTarget | null,
+  root: HTMLElement,
+): boolean {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  let current: Element | null = target;
+  while (current != null && current !== root && current !== document.body) {
+    if (current.matches(SWIPE_INTERACTIVE_TARGET_SELECTOR)) {
+      return true;
+    }
+    current = current.parentElement;
+  }
+  return false;
+}
 
 const TOAST_EDGE_DRIFT = spacingVars['--spacing-2'];
 const styles = stylex.create({
   root: {
-    // Containing block for the fallback close below.
-    position: 'relative',
     paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-4'],
     borderRadius: radiusVars['--radius-container'],
@@ -57,11 +74,12 @@ const styles = stylex.create({
     width: 400,
     maxWidth: '100%',
     boxShadow: shadowVars['--shadow-med'],
-    opacity: 1,
+    opacity: 'var(--_toast-swipe-opacity, 1)',
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleDefaults['--text-body-size'],
     lineHeight: typeScaleDefaults['--text-body-leading'],
-    transform: 'translateY(0)',
+    transform:
+      'translateY(var(--_toast-swipe-y, 0px)) scale(var(--_toast-swipe-scale, 1))',
     transitionProperty: 'opacity, transform',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -94,7 +112,7 @@ const styles = stylex.create({
   },
   exiting: {
     opacity: 0,
-    transform: `translateY(var(--_toast-slide-y, ${TOAST_EDGE_DRIFT}))`,
+    transform: `translateY(var(--_toast-swipe-exit-y, var(--_toast-swipe-y, var(--_toast-slide-y, ${TOAST_EDGE_DRIFT})))) scale(var(--_toast-swipe-scale, 1))`,
   },
   endContent: {
     flexShrink: 0,
@@ -107,14 +125,6 @@ const styles = stylex.create({
     // the wrappers above let it break rather than widen the Toast.
     blockSize: `calc(${typeScaleDefaults['--text-body-size']} * ${typeScaleDefaults['--text-body-leading']})`,
     marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
-  },
-  // Where the close goes when a `renderContent` layout did not place it: the
-  // same corner the default layout puts it in. Positioned rather than
-  // appended so it cannot reflow a layout that was not expecting it.
-  fallbackDismiss: {
-    position: 'absolute',
-    insetBlockStart: spacingVars['--spacing-3'],
-    insetInlineEnd: spacingVars['--spacing-3'],
   },
 });
 
@@ -134,59 +144,8 @@ export interface ToastProps {
   renderContent?: ToastContentRenderFn;
 }
 
-interface ToastCustomContentProps {
-  children: ReactNode;
-  dismissButton: ReactNode;
-}
-
-/**
- * Owns the dismiss slot only for a custom layout. Keeping this state outside
- * `Toast` matters twice: an ordinary toast pays no registration render at all,
- * and a nested custom component can mount/unmount `DismissButton` from its own
- * state without needing `Toast` itself to rerender.
- */
-function ToastCustomContent({
-  children,
-  dismissButton,
-}: ToastCustomContentProps) {
-  const [dismissCount, setDismissCount] = useState(0);
-  const registerDismiss = useCallback(() => {
-    let isRegistered = true;
-    setDismissCount(count => count + 1);
-    return () => {
-      if (!isRegistered) {
-        return;
-      }
-      isRegistered = false;
-      setDismissCount(count => Math.max(0, count - 1));
-    };
-  }, []);
-  const slot = useMemo(
-    () => ({button: dismissButton, register: registerDismiss}),
-    [dismissButton, registerDismiss],
-  );
-
-  useEffect(() => {
-    if (dismissCount > 1) {
-      devWarn(
-        'Toast',
-        `renderContent rendered DismissButton ${dismissCount} times — this ` +
-          'toast has that many close buttons. Render it once.',
-      );
-    }
-  }, [dismissCount]);
-
-  return (
-    <ToastDismissSlotProvider value={slot}>
-      {children}
-      {/* Start with the safe default. A placed DismissButton registers in a
-          layout effect and removes this before paint; if a nested layout later
-          unmounts it, cleanup restores this in the same commit. */}
-      {dismissCount === 0 && (
-        <div {...stylex.props(styles.fallbackDismiss)}>{dismissButton}</div>
-      )}
-    </ToastDismissSlotProvider>
-  );
+interface ToastSurfaceProps extends ToastProps {
+  gestureDirection: ToastGestureDirection;
 }
 
 /**
@@ -209,7 +168,11 @@ function ToastCustomContent({
  * />
  * ```
  */
-export function Toast({
+export function Toast(props: ToastProps) {
+  return <ToastSurface {...props} gestureDirection={1} />;
+}
+
+export function ToastSurface({
   type,
   body,
   endContent,
@@ -218,7 +181,8 @@ export function Toast({
   isExiting = false,
   onDismiss,
   renderContent,
-}: ToastProps) {
+  gestureDirection,
+}: ToastSurfaceProps) {
   const t = useTranslator();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPausedRef = useRef(false);
@@ -294,27 +258,24 @@ export function Toast({
     };
   }, [isAutoHide, pauseTimer, resumeTimer]);
 
+  const isTimerPaused = useCallback(() => isPausedRef.current, []);
+  const dismissFromGesture = useCallback(() => {
+    onDismissRef.current('manual');
+  }, []);
+  const {rootRef, bindings: gestureBindings} = useToastGesture({
+    direction: gestureDirection,
+    enabled: !isExiting,
+    canPauseTimer: isAutoHide,
+    isTimerPaused,
+    pauseTimer,
+    resumeTimer,
+    dismiss: dismissFromGesture,
+    shouldIgnoreTarget: isInteractiveTarget,
+  });
+
   const handleDismiss = useCallback(() => {
     onDismiss('manual');
   }, [onDismiss]);
-
-  // Built here rather than inside the default layout so a `renderContent`
-  // layout places the very same control: Astryx's close, with its translated
-  // label and its `astryx-button` theming, instead of one the layout has to
-  // rebuild and get those right itself.
-  const dismissButton = useMemo(
-    () => (
-      <Button
-        variant="ghost"
-        size="sm"
-        icon={<Icon icon="close" size="sm" color="inherit" />}
-        label={t('@astryx.toast.dismiss')}
-        onClick={handleDismiss}
-        isIconOnly
-      />
-    ),
-    [t, handleDismiss],
-  );
 
   const isError = type === 'error';
   // The surface is *usually* dark in light mode and light in dark mode, but a
@@ -325,6 +286,7 @@ export function Toast({
 
   return (
     <div
+      ref={rootRef}
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
       aria-atomic="true"
@@ -332,6 +294,7 @@ export function Toast({
       onMouseLeave={resumeTimer}
       onFocusCapture={pauseTimer}
       onBlurCapture={resumeTimer}
+      {...gestureBindings}
       {...mergeProps(
         themeProps('toast', {type}),
         stylex.props(
@@ -342,24 +305,28 @@ export function Toast({
       )}>
       <MediaTheme mode="auto" fallback={fallbackMediaMode}>
         {renderContent ? (
-          <ToastCustomContent dismissButton={dismissButton}>
-            {renderContent({
-              body,
-              endContent,
-              DismissButton,
-              type,
-              isAutoHide,
-              autoHideDuration,
-              dismiss: handleDismiss,
-            })}
-          </ToastCustomContent>
+          renderContent({
+            body,
+            endContent,
+            type,
+            isAutoHide,
+            autoHideDuration,
+            dismiss: handleDismiss,
+          })
         ) : (
           <div {...stylex.props(styles.inner)}>
             <div {...stylex.props(styles.content)}>{body}</div>
 
             <div {...stylex.props(styles.endContent)}>
               {endContent}
-              {dismissButton}
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<Icon icon="close" size="sm" color="inherit" />}
+                label={t('@astryx.toast.dismiss')}
+                onClick={handleDismiss}
+                isIconOnly
+              />
             </div>
           </div>
         )}
@@ -369,3 +336,4 @@ export function Toast({
 }
 
 Toast.displayName = 'Toast';
+ToastSurface.displayName = 'ToastSurface';

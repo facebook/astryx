@@ -6,7 +6,7 @@ export const docs = {
   name: 'Typeahead',
   displayName: 'Typeahead',
   group: 'Typeahead',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'typeahead',
     'autocomplete',

@@ -5,7 +5,7 @@
 export const docs = {
   name: 'NumberInput',
   displayName: 'Number Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'numberinput',
     'numberfield',

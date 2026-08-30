@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Executive Summary Dashoard',
   displayName: 'Executive Summary Dashboard',
-  description:
-    'Executive weekly/quarterly business review: a headline KPI scorecard with WoW/MoM/QoQ deltas and RAG status, OKR goal-attainment progress bars, a 2x2 period-over-period trend grid (line + area charts), and an auto-generated "what changed & why" narrative in a right-hand rail that folds into the main column on narrow screens.',
+  description: 'Report-shaped analytics with a prose rail beside the charts: a scorecard of headline numbers with period deltas and status coloring, goal-attainment bars, a trend grid, and a written commentary column that folds beneath the content when narrow. Executive summary, business review, readout, or reporting.',
   isReady: true,
   category: 'Dashboard - Executive Summary',
   isHiddenFromOverview: true,

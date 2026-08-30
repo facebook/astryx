@@ -71,6 +71,11 @@ const meta: Meta<typeof Selector> = {
       description:
         'Explicit menu placement. Leave unset for selected-item overlay behavior.',
     },
+    presentation: {
+      control: 'radio',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+      description: 'Popover, bottom sheet, or responsive presentation.',
+    },
     isDisabled: {
       control: 'boolean',
       description: 'Whether the selector is disabled',
@@ -129,6 +134,21 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Select a fruit...',
+  },
+};
+
+export const BottomSheetPresentation: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>();
+    return (
+      <Selector
+        label="Team"
+        options={['Design', 'Engineering', 'Marketing', 'Operations']}
+        value={value}
+        onChange={setValue}
+        presentation="bottom-sheet"
+      />
+    );
   },
 };
 

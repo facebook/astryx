@@ -67,6 +67,7 @@ export type {
   ComponentPropDoc,
   ComponentExampleDoc,
   ComponentAnatomyElement,
+  ComponentAccessibilityRequirement,
   ComponentBestPractice,
   ComponentSlotElement,
   ComponentPlaygroundConfig,

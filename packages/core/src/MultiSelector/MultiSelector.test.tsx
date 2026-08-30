@@ -19,12 +19,15 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {MultiSelector} from './MultiSelector';
 import {Icon} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -40,6 +43,28 @@ function politeRegion(): HTMLElement | null {
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
+  __resetInteractionModalityForTest();
+  HTMLDialogElement.prototype.showModal = vi.fn(function (
+    this: HTMLDialogElement,
+  ) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  });
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     this.setAttribute('popover-open', '');
     const event = new Event('toggle', {bubbles: false});
@@ -74,6 +99,108 @@ const h = {hidden: true} as const;
 
 describe('MultiSelector', () => {
   const defaultOptions = ['Apple', 'Banana', 'Orange'];
+
+  it('uses a bottom sheet and stays open while toggling options', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={onChange}
+        presentation="bottom-sheet"
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+
+    expect(
+      await screen.findByRole('dialog', {name: 'Fruit'}),
+    ).toBeInTheDocument();
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('option', {name: 'Banana'}));
+    expect(onChange).toHaveBeenCalledWith(['Banana']);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('uses a bottom sheet for adaptive presentation on compact touch', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        presentation="adaptive"
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    expect(
+      await screen.findByRole('dialog', {name: 'Fruit'}),
+    ).toBeInTheDocument();
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  it('moves keyboard focus into a bottom-sheet listbox', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        presentation="bottom-sheet"
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(screen.getByRole('listbox')).toHaveFocus());
+  });
+
+  it('restores touch focus without painting a trigger focus ring', async () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        presentation="bottom-sheet"
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+    fireEvent.click(trigger, {detail: 1});
+    const dialog = await screen.findByRole('dialog', {name: 'Fruit'});
+    fireEvent.pointerDown(dialog, {pointerType: 'touch'});
+    fireEvent.click(dialog, {detail: 1});
+
+    trigger.focus();
+    expect(trigger).toHaveFocus();
+    expect(trigger.parentElement).toHaveClass(
+      stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
+    );
+  });
 
   it('renders with label', () => {
     render(

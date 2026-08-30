@@ -2319,6 +2319,35 @@ describe('BottomSheet', () => {
 
       expect(document.activeElement).toBe(opener);
     });
+
+    it('prefers an explicit final focus target', () => {
+      const finalFocusRef = createRef<HTMLButtonElement>();
+      function ExplicitFocusHarness() {
+        const [isOpen, setIsOpen] = useState(true);
+        return (
+          <>
+            <button ref={finalFocusRef} type="button">
+              Adaptive trigger
+            </button>
+            <BottomSheet
+              isOpen={isOpen}
+              onOpenChange={setIsOpen}
+              finalFocusRef={finalFocusRef}
+              label="Filters">
+              <button type="button" onClick={() => setIsOpen(false)}>
+                Done
+              </button>
+            </BottomSheet>
+          </>
+        );
+      }
+
+      render(<ExplicitFocusHarness />);
+      fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+      finishSheetExit();
+
+      expect(document.activeElement).toBe(finalFocusRef.current);
+    });
   });
 
   describe('initial focus', () => {

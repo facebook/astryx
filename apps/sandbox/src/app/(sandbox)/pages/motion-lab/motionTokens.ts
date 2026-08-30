@@ -138,7 +138,7 @@ export const SEMANTIC_DURATIONS: ReadonlyArray<SemanticDuration> = [
     primitive: '--duration-fast',
     job: 'Dismissal.',
     budget: [100, 250],
-    note: 'Deliberately shorter than enter, because old content should leave faster than new content arrives.',
+    note: 'Shorter than enter, which beUI states plainly — old content should leave faster than new arrives. Treat it as a default rather than a law: Emil scopes asymmetric timing to system responses versus deliberate actions, and a dismissal the user chose and is watching may want the full enter duration. Nothing cited supports the ratio as a universal rule.',
   },
   {
     name: '--duration-reveal',
