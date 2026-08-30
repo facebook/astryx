@@ -69,9 +69,16 @@ describe('usePopover public return type', () => {
     const hasInternalToggle: 'toggleWithOptions' extends keyof UsePopoverReturn
       ? true
       : false = false;
+    type PublicShowOptions = NonNullable<
+      Parameters<UsePopoverReturn['show']>[0]
+    >;
+    const hasInternalFocusTarget: 'focusTarget' extends keyof PublicShowOptions
+      ? true
+      : false = false;
     expect(hasKeepOpenProps).toBe(false);
     expect(hasDismissalGuard).toBe(false);
     expect(hasInternalToggle).toBe(false);
+    expect(hasInternalFocusTarget).toBe(false);
   });
 });
 

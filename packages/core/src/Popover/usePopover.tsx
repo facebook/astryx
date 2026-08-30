@@ -276,13 +276,8 @@ export interface UsePopoverReturn {
    * Show the popover.
    * @param options.skipAutoFocus - If true, don't auto-focus the first element.
    *   Useful when triggered by mouse click on an input that should retain focus.
-   * @param options.focusTarget - Choose the first content control (default) or
-   *   the dialog container as the initial focus target.
    */
-  show: (options?: {
-    skipAutoFocus?: boolean;
-    focusTarget?: 'first' | 'container';
-  }) => void;
+  show: (options?: {skipAutoFocus?: boolean}) => void;
 
   /**
    * Hide the popover
