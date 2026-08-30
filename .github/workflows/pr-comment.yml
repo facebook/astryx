@@ -39,12 +39,19 @@ jobs:
     if: github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-slim
     permissions:
+      contents: read
       pull-requests: read
     outputs:
       valid: ${{ steps.identity.outputs.valid }}
       pr_number: ${{ steps.identity.outputs.pr_number }}
       head_sha: ${{ steps.identity.outputs.head_sha }}
+      spec_only: ${{ steps.identity.outputs.spec_only }}
     steps:
+      - name: Checkout trusted classifier
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
       - name: Resolve trusted PR identity
         id: identity
         uses: actions/github-script@v9
@@ -75,15 +82,28 @@ jobs:
               core.setFailed(`Run head ${run.head_sha} is stale; PR head is ${pr.head.sha}`);
               return;
             }
+            const path = require('node:path');
+            const {classifyChanges} = require(path.join(
+              process.env.GITHUB_WORKSPACE,
+              '.github/scripts/change-scope.cjs',
+            ));
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number: pr.number, per_page: 100,
+            });
             core.setOutput('valid', 'true');
             core.setOutput('pr_number', String(pr.number));
             core.setOutput('head_sha', pr.head.sha);
+            core.setOutput(
+              'spec_only',
+              String(classifyChanges(files, {expectedCount: pr.changed_files}).specOnly),
+            );
 
   invalidate:
     needs: resolve
     if: >-
       (github.event.action == 'requested' || github.event.action == 'in_progress') &&
-      needs.resolve.outputs.valid == 'true'
+      needs.resolve.outputs.valid == 'true' &&
+      needs.resolve.outputs.spec_only != 'true'
     runs-on: ubuntu-slim
     permissions:
       pull-requests: write
@@ -114,12 +134,37 @@ jobs:
               if (error.status !== 404) throw error;
             }
 
+  spec-only-visual:
+    needs: resolve
+    if: >-
+      github.event.action == 'completed' &&
+      needs.resolve.outputs.valid == 'true' &&
+      needs.resolve.outputs.spec_only == 'true'
+    runs-on: ubuntu-slim
+    permissions:
+      statuses: write
+    steps:
+      - name: Mark spec-only visual scope complete
+        uses: actions/github-script@v9
+        env:
+          HEAD_SHA: ${{ needs.resolve.outputs.head_sha }}
+        with:
+          retries: 3
+          script: |
+            const {owner, repo} = context.repo;
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: process.env.HEAD_SHA,
+              context: 'visual-acceptance', state: 'success',
+              description: 'Spec-only change — no visual scope.',
+            });
+
   comment:
     needs: resolve
     # Only for completed CI runs whose PR identity was resolved above.
     if: >-
       github.event.action == 'completed' &&
-      needs.resolve.outputs.valid == 'true'
+      needs.resolve.outputs.valid == 'true' &&
+      needs.resolve.outputs.spec_only != 'true'
     runs-on: 2-core-ubuntu-arm
     permissions:
       pull-requests: write
@@ -199,6 +244,12 @@ jobs:
             const files = await github.paginate(github.rest.pulls.listFiles, {
               owner, repo, pull_number: pullNumber, per_page: 100,
             });
+            if (files.length !== pr.changed_files) {
+              core.setFailed(
+                `GitHub returned ${files.length} of ${pr.changed_files} changed files; refusing visual-scope classification.`,
+              );
+              return;
+            }
             const manifestPaths = new Set();
             for (const {filename} of files) {
               const theme = filename.match(/^packages\/themes\/([^/]+)\//);
