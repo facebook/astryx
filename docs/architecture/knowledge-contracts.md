@@ -118,6 +118,36 @@ the repository must support this flow:
 6. Audit freshness is computed from the same code and test relationship, so a
    relevant code change cannot leave an audit looking current.
 
+### Recording a new human decision
+
+1. A contributor explains the intended behavior in normal pull-request language
+   and responds to review. They do not need to know the repository's spec system.
+2. A reviewer or agent identifies any `novel-human` question. The contributor
+   does not invent the answer.
+3. An authorized owner answers in the pull-request review.
+4. A maintainer or agent records that ruling in the canonical owning record.
+   - Prefer a commit in the same pull request when maintainers can update the
+     branch.
+   - If they cannot update the contributor branch, open a small linked spec pull
+     request below it and rebase the implementation after that decision lands.
+   - If the direction is accepted, the contributor updates the code when needed.
+   - If the direction is rejected, the rejected implementation is removed or
+     changed. Record the rejected alternative only when the boundary is
+     consequential and likely to come up again.
+5. The final commits invalidate prior approval. The owner approves the exact
+   heads after the record and implementation agree.
+
+If no implementation direction is accepted, close the contributor pull request.
+The maintainer-owned spec pull request remains only when the ruling is useful
+independently.
+
+Review comments are evidence of the conversation; the checked-in record is the
+canonical decision.
+
+Use a separate lower spec pull request only when the ruling changes a shared
+contract beyond the contributor change and should land or be reused
+independently. The implementation pull request then rebases onto that decision.
+
 Examples:
 
 - NumberInput changes its stepping math. Its current contract says the final
@@ -163,6 +193,24 @@ it.
 
 Rejected: silently choosing the newest or most specific record, because that
 turns documentation order into unreviewed system policy.
+
+### DEC-2 — New rulings normally stay in the contributor pull request
+
+**Reference:** `architecture:knowledge-contracts/DEC-2`
+**Decider:** `cixzhang`, `2026-08-30`
+
+A human ruling is normally discussed in the pull request that exposed the gap.
+The contributor is responsible for explaining intent and changing their code;
+maintainers and review agents are responsible for the spec system. They record
+the ruling in the same branch when possible, or in a small linked lower spec PR
+when the contributor branch cannot be updated. Rejected implementation is
+removed or changed; a rejected alternative is recorded only when it protects a
+consequential boundary from being debated again. Final exact-head approval
+attests that the decision and implementation agree.
+
+Rejected: requiring the owner to open a second pull request for every ruling,
+because it separates the answer from the change and adds unnecessary review
+work.
 
 ## Verification
 
