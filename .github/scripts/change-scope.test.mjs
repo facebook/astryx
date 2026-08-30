@@ -36,6 +36,51 @@ describe('spec-only change scope', () => {
     expect(result.specOnly).toBe(false);
   });
 
+  it('rejects Changesets attached only to spec records', () => {
+    const result = classifyChanges([
+      {filename: 'docs/families/input-fields.md'},
+      {filename: '.changeset/input-fields-docs.md'},
+    ]);
+    expect(result.specOnly).toBe(false);
+    expect(result.specChangesetConflict).toBe(true);
+  });
+
+  it('does not let an unrelated file hide a spec-only Changeset', () => {
+    const result = classifyChanges([
+      {filename: 'docs/families/input-fields.md'},
+      {filename: '.changeset/input-fields-docs.md'},
+      {filename: 'docs/README.md'},
+    ]);
+    expect(result.specChangesetConflict).toBe(true);
+  });
+
+  it.each([
+    'packages/core/src/Selector/Selector.test.tsx',
+    'packages/core/src/Selector/Selector.audit.json',
+    'packages/core/test/selector-fixture.ts',
+    'packages/core/src/Selector/__fixtures__/options.ts',
+    'packages/core/src/__tests__/TestIcon.tsx',
+  ])(
+    'does not let non-release package file %s hide a spec-only Changeset',
+    filename => {
+      const result = classifyChanges([
+        {filename: 'docs/families/input-fields.md'},
+        {filename: '.changeset/input-fields-docs.md'},
+        {filename},
+      ]);
+      expect(result.specChangesetConflict).toBe(true);
+    },
+  );
+
+  it('allows a Changeset when a package release surface also changes', () => {
+    const result = classifyChanges([
+      {filename: 'docs/families/input-fields.md'},
+      {filename: 'packages/core/src/Selector/Selector.tsx'},
+      {filename: '.changeset/selector-behavior.md'},
+    ]);
+    expect(result.specChangesetConflict).toBe(false);
+  });
+
   it.each([
     'packages/core/src/Selector/Selector.tsx',
     'packages/core/src/Selector/Selector.audit.json',

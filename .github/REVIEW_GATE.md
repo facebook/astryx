@@ -38,6 +38,8 @@ A PR changes only spec records when every changed path is one of:
 - a colocated Core/Lab `<Name>.spec.md`.
 
 Draft-only spec records can merge after validation without owner approval.
+Pure spec-record PRs do not add Changesets because they do not release packages;
+CI rejects a PR containing only spec records and `.changeset` entries.
 That classification fails closed on an empty or truncated file list and checks
 both sides of a rename. Pure spec-record PRs run knowledge validation, skip
 runtime/build/visual work with successful required-status acknowledgements, and

@@ -53,7 +53,8 @@ aligned. They are intentionally separate:
   schema change therefore includes an active-record migration. Archived records
   may retain an older schema that remains checked in.
 
-Run `pnpm check:knowledge` to validate templates and records.
+Run `pnpm check:knowledge` to validate templates and records. Pure spec-record
+pull requests do not add Changesets because they do not publish package changes.
 
 ## Visibility
 
