@@ -123,6 +123,14 @@ export const docs = {
       { guidance: false, description: "Use a progress bar for instant actions; it's meant for operations that take noticeable time." },
       { guidance: false, description: 'Use multiple progress bars stacked together for the same operation; use one bar with a value label instead.' },
     ],
+    accessibility: [
+      {name: 'Accessible name and value', description: 'Always provide `label`. Determinate progress must expose its current value and maximum; indeterminate progress omits a numeric value.'},
+      {name: 'Visible text', description: 'Visible labels and value text need 4.5:1 contrast. A visually hidden label still supplies the accessible name but does not provide a visible progress cue.'},
+      {name: 'Graphic contrast', description: 'When the bar alone communicates progress, its filled amount and total range need a 3:1 non-text cue. If nearby visible text communicates equivalent progress, the remaining track may be decorative.'},
+      {name: 'Semantic variants', description: 'Do not rely on fill color alone to communicate success, warning, or error. Include a visible label, value, or nearby status message.'},
+      {name: 'Marks', description: 'Meaningful target marks need 3:1 against whichever fill or track they overlap and require a label available to keyboard and assistive-technology users.'},
+      {name: 'Disabled and indeterminate', description: 'Disabled progress is contrast-exempt. For indeterminate progress, the animated fill is the meaningful loading indicator and needs 3:1 against the track it moves across; nearby text does not replace that moving visual distinction.'},
+    ],
   },
 };
 

@@ -200,6 +200,13 @@ export const docs = {
           'Wrap a disabled switch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
       },
     ],
+    accessibility: [
+      {name: 'Accessible label', description: 'Always provide `label`. Visually hiding it must preserve the switch accessible name and leave sufficient surrounding context.'},
+      {name: 'Control and state contrast', description: 'The track and thumb together identify the switch and its on/off state. Required boundaries and state indicators need 3:1 against their adjacent colors.'},
+      {name: 'State meaning', description: 'Do not rely on color alone to distinguish on from off; thumb position and the programmatic checked state must carry the same information.'},
+      {name: 'Focus and text', description: 'The focus indicator needs 3:1 on every supported surface. Label, description, disabled explanation, and validation text need their applicable text contrast.'},
+      {name: 'Loading and disabled', description: 'Loading blocks conflicting activation but its spinner remains meaningful and needs 3:1. A genuinely disabled switch is contrast-exempt and must not remain operable.'},
+    ],
   },
 };
 

@@ -54,6 +54,12 @@ export const docs = {
       {guidance: false, description: 'Repeat the same badge in every row of a table or list. If the same value appears in most rows, it\'s not adding information; use plain text for common states and reserve badges for the exceptional ones.'},
       {guidance: false, description: 'Make badges clickable; they are read-only indicators. Use a button or link if the user needs to take action.'},
     ],
+    accessibility: [
+      {name: 'Label contrast', description: 'Badge text must meet 4.5:1 against the rendered badge background in every color variant.'},
+      {name: 'Icons', description: 'A label-redundant icon is decorative. If removing the icon changes the understood status or category, the icon needs 3:1 contrast against the badge background.'},
+      {name: 'Color meaning', description: 'Do not communicate status or category through color alone. Keep a visible text label or another non-color identifier.'},
+      {name: 'Read-only role', description: 'Badge is non-interactive. Use a Button or Link when the element must receive focus or trigger an action.'},
+    ],
     anatomy: [
       {name: 'Icon', required: false, description: 'An optional leading icon that helps identify the badge type at a glance.'},
       {name: 'Label', required: true, description: 'The text or number shown inside the badge.'},

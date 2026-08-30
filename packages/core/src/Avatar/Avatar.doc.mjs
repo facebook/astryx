@@ -21,6 +21,11 @@ export const docs = {
       {guidance: false, description: 'Use Avatar for logos, product images, or anything that isn\'t a person or team. Use an image or icon instead.'},
       {guidance: false, description: 'Use xstyle or className to override shape. Use the shape prop instead so themes can control it globally.'},
     ],
+    accessibility: [
+      {name: 'Identity', description: 'Provide `name` or meaningful `alt`, especially when the Avatar is interactive. A status label supplements the person or team name and must not replace it.'},
+      {name: 'Status slot', description: 'Prefer AvatarStatusDot so its label is composed into the Avatar accessible name and its built-in shapes avoid color-only meaning. Custom status content must provide equivalent naming, a visible non-color cue, and 3:1 contrast for every meaningful mark against its rendered adjacent colors.'},
+      {name: 'Image adjacency', description: 'AvatarStatusDot uses a separating border so its meaningful fill or glyph is measured against a stable plate rather than arbitrary photo pixels. Themes must preserve that separator and the internal 3:1 relationship.'},
+    ],
     anatomy: [
       {name: 'Photo', required: false, description: 'The profile image, loaded from the src URL. Shown when available.'},
       {name: 'Initials', required: false, description: 'One or two letters extracted from the name. Shown when no photo is available.'},

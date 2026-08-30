@@ -103,6 +103,14 @@ export const docs = {
       {guidance: false, description: 'Don\'t hide the label unless the icon alone is universally understood. A color dot without text is ambiguous.'},
       {guidance: false, description: 'Don\'t mix too many colors in one token group. Stick to two or three meaningful colors so the palette stays scannable.'},
     ],
+    accessibility: [
+      {name: 'Label contrast', description: 'Token text and meaningful count text must meet 4.5:1 against the rendered token background in every color variant.'},
+      {name: 'Meaningful content', description: 'Icons, status dots, and other end content need 3:1 when they add information not already present in the label. Label-redundant visuals may be decorative.'},
+      {name: 'Nested badges', description: 'A Badge in `endContent` keeps its own surface. Measure its text and icons against the Badge background, not the Token background, and evaluate any meaningful Badge boundary against the Token surface.'},
+      {name: 'Remove control', description: 'When `onRemove` is provided, the remove button must remain keyboard operable, visibly focused at 3:1, and named by the token label.'},
+      {name: 'Hidden labels', description: 'Use `isLabelHidden` only when the remaining visible symbol is unambiguous and the accessible label still identifies the token.'},
+      {name: 'Disabled state', description: 'A genuinely disabled token is contrast-exempt, but its disabled state must be exposed programmatically and its remove action must not remain operable.'},
+    ],
     anatomy: [
       {name: 'Icon', required: false, description: 'A leading icon that identifies the token type, like a user avatar or category symbol.'},
       {name: 'Label', required: true, description: 'The visible text. Also used as the accessible name when isLabelHidden is true.'},

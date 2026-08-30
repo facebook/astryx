@@ -732,12 +732,17 @@ export interface AnatomyElement {
   description: string;
 }
 
+export interface AccessibilityRequirement {
+  name: string;
+  description: string;
+}
+
 export interface UsageDoc {
   description: string;
   bestPractices?: BestPractice[];
   anatomy?: AnatomyElement[];
   features?: string[];
-  accessibility?: string[];
+  accessibility?: AccessibilityRequirement[];
   keyboard?: string;
   notes?: string[];
 }

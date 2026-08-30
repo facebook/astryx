@@ -66,6 +66,12 @@ export const docs = {
       { guidance: false, description: 'Rely on color alone to communicate status; StatusDot is not fully accessible in isolation, so the builder must make the status distinguishable in context via a label, an icon, or an accessible alternative.' },
       { guidance: false, description: 'Use the pulse animation for purely decorative purposes; reserve it for states that require immediate attention.' },
     ],
+    accessibility: [
+      {name: 'Accessible name', description: 'Provide `label` even when visible text appears nearby so assistive technology can identify the status dot.'},
+      {name: 'Color meaning', description: 'Never rely on the dot color alone. Pair it with visible status text, a distinct meaningful icon, or an equivalent cue elsewhere.'},
+      {name: 'Visual contrast', description: 'With adjacent visible status text, the dot is redundant and may be decorative. With a distinct icon, measure the mark against the dot plate at 3:1. A plain standalone dot is only sufficient for a binary present/absent cue and then its plate needs 3:1 against every adjacent surface.'},
+      {name: 'Motion', description: 'Pulse only for meaningful changing states and preserve the component\'s reduced-motion behavior.'},
+    ],
   },
 };
 

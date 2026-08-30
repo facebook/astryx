@@ -7,6 +7,16 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Message Metadata',
   description: 'Composable metadata row for chat messages. Renders timestamp, footer content, and delivery status in a single row. Direction reverses for user sender. Renders nothing if all props are empty.',
+  usage: {
+    description:
+      'Use ChatMessageMetadata beneath a message for its timestamp, supporting footer content, and visible delivery status.',
+    accessibility: [
+      {name: 'Visible status text', description: 'Delivery status includes a visible localized label, so measure that label against the actual message parent at 4.5:1 for every status. The repeated icon is redundant when the label remains visible.'},
+      {name: 'Accessible status', description: 'Keep the localized status in the metadata accessible name; the icon alone must not be the only programmatic status cue.'},
+      {name: 'Message surfaces', description: 'Measure user and assistant compositions separately because metadata can inherit different parent backgrounds and foreground overrides.'},
+      {name: 'Sending motion', description: 'The sending pulse is supplemental. The visible label and icon must remain understandable with reduced motion enabled.'},
+    ],
+  },
   props: [
     {
       name: 'timestamp',

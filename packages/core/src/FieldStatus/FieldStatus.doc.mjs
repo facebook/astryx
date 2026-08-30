@@ -61,6 +61,13 @@ export const docs = {
           'Use FieldStatus for general alerts or page-level notices; use Banner or Toast instead.',
       },
     ],
+    accessibility: [
+      {name: 'Message association', description: 'Connect the FieldStatus `id` to its control with `aria-describedby` so the visible feedback is announced with the field.'},
+      {name: 'Text contrast', description: 'The validation message must meet 4.5:1 against its rendered status background.'},
+      {name: 'Icon and boundary', description: 'A label-redundant status icon may be decorative. Meaningful icons and any required control or status boundary need 3:1 against adjacent colors.'},
+      {name: 'Announcement', description: 'Errors use assertive announcement and warning or success uses polite announcement. Keep the visible message specific enough to explain how to resolve the issue.'},
+      {name: 'Color meaning', description: 'Do not rely on status color alone; the message must identify the error, warning, or success in text.'},
+    ],
   },
 };
 

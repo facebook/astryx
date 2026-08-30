@@ -146,6 +146,13 @@ export const docs = {
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately; use a toggle switch or button instead.' },
       { guidance: false, description: 'Wrap a disabled checkbox in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
+    accessibility: [
+      {name: 'Accessible label', description: 'Always provide `label`. `isLabelHidden` may hide it visually but must preserve the checkbox accessible name.'},
+      {name: 'Control and state contrast', description: 'The checkbox boundary and its checked or indeterminate mark are meaningful control information and need 3:1 against their adjacent colors.'},
+      {name: 'Text and status', description: 'Label, description, and validation-message text need 4.5:1. Validation must include text rather than relying on border or icon color alone.'},
+      {name: 'Focus', description: 'Keep a visible 3:1 focus indicator around the operable checkbox in every state and on every supported surface.'},
+      {name: 'Loading and disabled', description: 'Loading blocks interaction but its spinner remains meaningful and needs 3:1. A genuinely disabled checkbox is contrast-exempt and must not remain operable.'},
+    ],
     anatomy: [
       { name: 'Checkbox', required: true, description: 'The check box itself: unchecked, checked, or indeterminate.' },
       { name: 'Label', required: true, description: 'Text describing what the checkbox controls. Always present for accessibility.' },

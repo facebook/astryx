@@ -59,6 +59,14 @@ export const docs = {
       {guidance: false, description: 'Use for content areas with known dimensions; use Skeleton to preserve layout instead.'},
       {guidance: false, description: 'Stack multiple spinners in the same view; use one to represent the overall loading state.'},
     ],
+    accessibility: [
+      {name: 'Accessible name', description: 'A string `label` names the status through `aria-labelledby`. A ReactNode label does not name it automatically, so also provide `aria-label`. Avoid leaving every spinner announced only as “Loading”.'},
+      {name: 'Visible label contrast', description: 'Any visible label content, including a custom ReactNode, is text and needs its applicable text contrast against the rendered background.'},
+      {name: 'Arc contrast', description: 'The moving arc communicates that work is in progress and needs 3:1 contrast against its immediate background.'},
+      {name: 'Track', description: 'The faint circular track is decorative when the arc alone clearly identifies loading, so the track does not independently require 3:1.'},
+      {name: 'Background shade', description: 'Choose a shade that keeps the arc distinguishable on its actual surface, including media and colored backgrounds.'},
+      {name: 'Motion', description: 'Preserve reduced-motion behavior and avoid using multiple simultaneous spinners that make the page difficult to track.'},
+    ],
   },
 };
 

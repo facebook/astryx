@@ -23,6 +23,13 @@ export const docs = {
       {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions like deleting data.'},
       {guidance: false, description: 'Use a button for navigation. If it only takes the user to another page, use a link instead. Buttons are for actions like saving, deleting, or submitting.'},
     ],
+    accessibility: [
+      {name: 'Accessible name', description: 'Always provide `label`. It is visible by default and becomes the accessible name when the button is icon-only.'},
+      {name: 'Meaningful icons and end content', description: 'An icon, status dot, or other end content is meaningful when removing it changes the understood action or state. Meaningful non-text content needs 3:1 contrast; a label-redundant icon is decorative.'},
+      {name: 'Text contrast', description: 'Normal-size labels and badge/count text need 4.5:1 contrast against their actual composited backgrounds in every variant and interaction state.'},
+      {name: 'Loading', description: 'Loading exposes and announces `aria-busy`, and blocks duplicate activation unless `isInterruptible` gives re-activation defined behavior. The spinner arc is meaningful and needs 3:1 contrast against the button; its faint track may be decorative.'},
+      {name: 'Disabled and focus', description: 'Explicitly disabled controls are contrast-exempt, but a loading indicator is not disabled decoration. Keep the focus indicator visible at 3:1 against adjacent colors in every theme.'},
+    ],
     anatomy: [
       {name: 'Icon', required: false, description: 'A leading icon that reinforces the label, like a trash icon on a Delete button.'},
       {name: 'Label', required: true, description: 'The visible text describing the action. Also used as the accessible name.'},

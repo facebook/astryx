@@ -16,6 +16,7 @@ import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {ShowcasePreview} from './ShowcasePreview';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {Anatomy} from './Anatomy';
+import {Accessibility} from './Accessibility';
 import {BestPractices} from './BestPractices';
 import {Theming} from './Theming';
 import {HookSignature} from './HookSignature';
@@ -170,13 +171,15 @@ function ComponentDetailInner({
   // themeable targets or CSS variables — never an empty tab.
   const hasThemingTab =
     CURRENT_TARGET === 'canary' && hasThemingContent(comp.theming);
-  const hasTabs = hasPlayground || hasThemingTab;
+  const hasAccessibilityTab = (comp.usage?.accessibility?.length ?? 0) > 0;
+  const hasTabs = hasPlayground || hasAccessibilityTab || hasThemingTab;
 
   const requestedTab = searchParams.get('tab') ?? 'overview';
   // Clamp to a tab that actually exists for this component so a stale or
   // hand-edited `?tab=` never lands on a blank panel.
   const tab =
     (requestedTab === 'properties' && hasPlayground) ||
+    (requestedTab === 'accessibility' && hasAccessibilityTab) ||
     (requestedTab === 'theming' && hasThemingTab)
       ? requestedTab
       : 'overview';
@@ -222,6 +225,9 @@ function ComponentDetailInner({
           <>
             <TabList value={tab} onChange={setTab} hasDivider>
               <Tab value="overview" label="Overview" />
+              {hasAccessibilityTab && (
+                <Tab value="accessibility" label="Accessibility" />
+              )}
               {hasPlayground && <Tab value="properties" label="Properties" />}
               {hasThemingTab && <Tab value="theming" label="Theming" />}
             </TabList>
@@ -269,6 +275,10 @@ function ComponentDetailInner({
                   </Section>
                 )}
               </VStack>
+            )}
+
+            {tab === 'accessibility' && comp.usage?.accessibility && (
+              <Accessibility requirements={comp.usage.accessibility} />
             )}
 
             {tab === 'theming' && comp.theming && (

@@ -143,6 +143,13 @@ export const docs = {
       { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
       { guidance: false, description: 'Wrap a disabled RadioList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
+    accessibility: [
+      {name: 'Group and item names', description: 'Provide a group label and a unique visible label for every RadioListItem. Descriptions supplement labels but do not replace them.'},
+      {name: 'Control and state contrast', description: 'Each radio boundary and selected mark are meaningful control information and need 3:1 against adjacent colors.'},
+      {name: 'Keyboard behavior', description: 'Keep the group in one radio tab stop and preserve arrow-key navigation and selection between enabled items.'},
+      {name: 'Content slots', description: 'Meaningful start or end icons and status content need 3:1 and an equivalent accessible meaning; label-redundant visuals may be decorative.'},
+      {name: 'Focus, status, and disabled', description: 'Focus needs 3:1 against adjacent colors. Validation needs a text message. Disabled groups or items are contrast-exempt and must not remain selectable.'},
+    ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
       {name: 'Children', required: true, description: 'The radio list items rendered as selectable options.'},

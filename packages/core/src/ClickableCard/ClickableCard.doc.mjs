@@ -14,6 +14,12 @@ export const docs = {
       {guidance: true, description: 'Nest buttons or links freely inside; they handle their own events.'},
       {guidance: false, description: 'Use for toggling selection; use SelectableCard for that.'},
     ],
+    accessibility: [
+      {name: 'Accessible identity', description: 'Provide a concise `label` that names the card action or destination. Visible content may reinforce it but must not conflict with it.'},
+      {name: 'Background, border, and elevation', description: 'Use the removal test in every state. The resting surface treatment needs 3:1 only when removing it makes the whole Card cease to read as an interactive target. Clear linked content may identify the target instead; hover and pressed styling remain supplemental and do not replace persistent identification.'},
+      {name: 'Focus and content', description: 'Measure the focus indicator separately at 3:1 against every adjacent color. Measure text and meaningful icons against the fully rendered Card background after resolving alpha, overlays, and the actual parent surface; text uses its applicable threshold and meaningful graphics need 3:1.'},
+      {name: 'Nested controls and disabled', description: 'Nested controls retain their own accessible names, contrast, focus, and activation behavior. A genuinely disabled ClickableCard is contrast-exempt, but its inactive state must not be confused with loading or read-only content.'},
+    ],
     anatomy: [
       {name: 'Container', required: true, description: 'Interactive div with hover/focus/active states.'},
       {name: 'Content', required: true, description: 'Children, which may include nested interactive elements.'},

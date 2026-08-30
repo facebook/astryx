@@ -129,4 +129,36 @@ describe('component detail wiring', () => {
       }
     }
   });
+
+  it('carries structured accessibility data for components that author it', () => {
+    const withAccessibility = Object.values(components)
+      .flat()
+      .filter(entry => (entry.usage?.accessibility?.length ?? 0) > 0);
+
+    expect(withAccessibility.length).toBeGreaterThan(0);
+
+    for (const entry of withAccessibility) {
+      for (const requirement of entry.usage!.accessibility!) {
+        expect(typeof requirement.name).toBe('string');
+        expect(requirement.name.length).toBeGreaterThan(0);
+        expect(typeof requirement.description).toBe('string');
+        expect(requirement.description.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('renders accessibility guidance in a conditional tab', () => {
+    const source = fs.readFileSync(
+      path.join(DETAIL_DIR, 'ComponentDetailClient.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('(comp.usage?.accessibility?.length ?? 0) > 0');
+    expect(source).toMatch(
+      /<Tab value="accessibility" label="Accessibility" \/>/,
+    );
+    expect(source).toMatch(
+      /tab === 'accessibility' && comp\.usage\?\.accessibility && \(/,
+    );
+  });
 });

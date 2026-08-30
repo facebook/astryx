@@ -22,8 +22,14 @@ export const docs = {
       {guidance: false, description: "Don't display tool calls outside a chat message context; they are designed to sit inside an assistant message, not as standalone UI."},
       {guidance: false, description: "Don't use custom wrappers around individual calls; the component handles single vs. grouped layout automatically based on the array length."},
     ],
+    accessibility: [
+      {name: 'Status semantics', description: 'The current component does not expose pending, running, or complete as visible or accessible status text. Complete and error icons are decorative, and only an error with `errorMessage` adds hidden status detail. Do not rely on the visual indicator alone when users must know the tool state; include equivalent visible status text in the surrounding message.'},
+      {name: 'Status indicator contrast', description: 'Pending and running use the same Spinner treatment, so it communicates activity rather than distinguishing those states. Its moving arc needs 3:1 against the row surface. Complete and error glyphs should also remain visible at 3:1 even though they do not currently provide the accessible status name.'},
+      {name: 'Color meaning', description: 'Pending and running are not visually distinguishable, and the status glyphs are not separate accessibility stops. Keep any required state meaning in visible text rather than relying on icon shape or color.'},
+      {name: 'Expanded content', description: 'Tool labels, targets, durations, error text, badges, and focus indicators retain their own contrast requirements in both collapsed and expanded presentations.'},
+    ],
     anatomy: [
-      {name: 'Status icon', required: true, description: 'A colored circle with a check, cross, or spinner indicating whether the call is pending, running, complete, or errored.'},
+      {name: 'Status icon', required: true, description: 'A spinner for pending or running calls, or a decorative check or cross for complete or errored calls. It does not independently expose the status name.'},
       {name: 'Tool name', required: true, description: 'The function or tool name displayed in monospace: bash, edit, read, web_search, etc.'},
       {name: 'Node badge', required: false, description: 'A neutral pill badge showing which sandbox or environment ran the tool, like cli:remote-server or workspace.'},
       {name: 'Target label', required: false, description: 'The target of the action (a file path, command, or search query) shown after the tool name.'},

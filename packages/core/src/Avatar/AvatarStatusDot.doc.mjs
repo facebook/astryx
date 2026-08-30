@@ -9,6 +9,16 @@ export const docs = {
   isHiddenFromOverview: true,
   description:
     'Size-aware status indicator dot that reads avatar size from context and scales proportionally. Each variant pairs a colour with a distinct built-in shape (filled, ring, minus) so status is never conveyed by colour alone (WCAG 1.4.1).',
+  usage: {
+    description:
+      'Use AvatarStatusDot inside an Avatar to communicate availability or error status with a distinct shape and an accessible label.',
+    accessibility: [
+      {name: 'Accessible name', description: 'Provide `label`. Inside Avatar it is composed into the Avatar accessible name because descendants of the Avatar image role are not separate accessibility stops.'},
+      {name: 'Non-color shape', description: 'The built-in success fill, neutral ring, and error minus make the variants visibly different without color. A custom icon replaces that shape, so use a distinct icon for each status.'},
+      {name: 'Contrast relationships', description: 'Measure the success fill against its separating border, the neutral ring against its plate, and both the error plate and minus mark against their adjacent colors at 3:1. Resolve theme overrides and the actual rendered plate before measuring.'},
+      {name: 'Small sizes', description: 'Custom icons are hidden at the smallest Avatar sizes, where the built-in shapes return. Verify those small shapes remain visible rather than assuming the larger custom icon result applies.'},
+    ],
+  },
   props: [
     {
       name: 'variant',

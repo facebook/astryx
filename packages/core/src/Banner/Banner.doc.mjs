@@ -21,6 +21,13 @@ export const docs = {
       {guidance: true, description: 'Error and warning banners render as role="alert"; info and success render as role="status". Mount an alert banner in response to an event rather than on first paint, so assistive tech has a change to report.'},
       {guidance: false, description: 'Rely on the status color or icon alone to carry meaning; say which status it is in the title text, because the icon is decorative to a screen reader.'},
     ],
+    accessibility: [
+      {name: 'Text contrast', description: 'Title, description, and action text must meet 4.5:1 against the actual banner background, including composited or translucent colors.'},
+      {name: 'Status icon', description: 'The icon wrapper is always `aria-hidden`, including for a custom icon. Treat the icon as decorative and repeat all required meaning in the title or description. If a custom icon adds visible meaning, it still needs 3:1 against the banner background, but it cannot be the only programmatic cue.'},
+      {name: 'Status announcement', description: 'Error and warning use an alert; info and success use a status. Mount dynamic alerts in response to an event so assistive technology announces them.'},
+      {name: 'Actions and dismissal', description: 'Action, collapse, and dismiss controls keep their own accessible names, 3:1 focus indicators, and interaction-state contrast requirements.'},
+      {name: 'Color meaning', description: 'The title or description must identify the status; background color cannot be the only error, warning, success, or information cue.'},
+    ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
       {name: 'Title', required: true, description: 'The main message. Always required.'},

@@ -11,6 +11,16 @@ export const docs = {
   isHiddenFromOverview: true,
   description:
     'Individual step within a Stepper. Renders a progress-bar segment, an indicator, and a label with optional description. Progress (completed/active/not-started) is derived from the parent Stepper\'s activeStep and this step\'s step index.',
+  usage: {
+    description:
+      'Use Step inside Stepper to present one stage of a sequence with its label, progress state, optional description, and optional content.',
+    accessibility: [
+      {name: 'Status semantics', description: 'The visible status glyph is aria-hidden, so the component must continue exposing equivalent localized status text and current-step semantics to assistive technology.'},
+      {name: 'Status indicator contrast', description: 'Success, warning, error, current, and completed glyphs are meaningful state indicators and need 3:1 against every surface on which the Stepper is supported. Measure custom indicators independently.'},
+      {name: 'Label and description', description: 'Visible label and description text keep their applicable text contrast in every progress and status state; a passing icon does not excuse dim supporting text.'},
+      {name: 'Disabled state', description: 'A genuinely disabled Step may use the inactive-control contrast exception. Current, completed, warning, and error states are not disabled merely because the Step is not clickable.'},
+    ],
+  },
   props: [
     {
       name: 'step',
@@ -41,7 +51,7 @@ export const docs = {
       name: 'status',
       type: "'accent' | 'success' | 'warning' | 'error'",
       description:
-        'Semantic color for the step. Controls color only and maps to the global Astryx semantic tokens. Leave unset for the progress-derived default coloring.',
+        'Semantic status for the step. With the default auto indicator, success, warning, and error render distinct status glyphs plus localized assistive text; accent uses the progress-derived current/completed shape. Custom or number indicators must preserve an equivalent non-color cue. Leave unset for progress-derived styling.',
     },
     {
       name: 'indicator',
