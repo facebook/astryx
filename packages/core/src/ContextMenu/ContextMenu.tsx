@@ -43,7 +43,11 @@ import React, {
 } from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {Button} from '../Button';
+import {Heading} from '../Heading';
+import {Icon} from '../Icon';
 import {useLayer} from '../Layer/useLayer';
+import {MenuBottomSheetActionList} from '../DropdownMenu/MenuBottomSheetActionList';
 import {renderDropdownItems} from '../DropdownMenu/renderDropdownItems';
 import {
   DropdownMenuContext,
@@ -66,7 +70,7 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, isImeKeyEvent} from '../utils';
+import {mergeProps, isImeKeyEvent, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
@@ -149,6 +153,19 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     outline: 'none',
     userSelect: 'none',
+  },
+  sheetHeader: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    marginBottom: spacingVars['--spacing-2'],
+  },
+  sheetRootHeading: {
+    marginInlineStart: spacingVars['--spacing-3'],
+  },
+  sheetViewHeading: {
+    outline: 'none',
   },
 });
 
@@ -264,6 +281,7 @@ export function ContextMenu({
 }: ContextMenuProps) {
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.contextMenu.label');
+  const backLabel = t('@astryx.dropdownMenu.back');
   const resolvedPresentation = useAdaptivePresentation(presentation);
   const usesBottomSheet = resolvedPresentation === 'bottom-sheet';
   // Separate content props (union discriminant) from DOM pass-through attrs.
@@ -291,11 +309,20 @@ export function ContextMenu({
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
+  const sheetHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const [isOpen, setIsOpen] = useState(false);
+  const [submenuPath, setSubmenuPath] = useState<ContextMenuItemData[]>([]);
+  const currentSubmenu = submenuPath.at(-1);
+  const currentItems = currentSubmenu?.items ?? items;
+  const currentTitle = currentSubmenu?.label ?? label;
+  const sheetLabel = typeof currentTitle === 'string' ? currentTitle : label;
 
   const updateOpenState = useCallback(
     (nextIsOpen: boolean) => {
+      if (!nextIsOpen) {
+        setSubmenuPath([]);
+      }
       setIsOpen(nextIsOpen);
       onOpenChange?.(nextIsOpen);
     },
@@ -328,6 +355,29 @@ export function ContextMenu({
       layer.hide();
     }
   }, [layer, updateOpenState, usesBottomSheet]);
+
+  const handleBottomSheetSelect = useCallback(
+    (item: ContextMenuItemData) => {
+      if (item.isDisabled) {
+        return;
+      }
+      item.onClick?.();
+      if (item.hasCloseOnSelect !== false) {
+        closeMenu();
+      }
+    },
+    [closeMenu],
+  );
+
+  useEffect(() => {
+    if (!isOpen || submenuPath.length === 0) {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      sheetHeadingRef.current?.focus({preventScroll: true});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, submenuPath.length]);
 
   const {
     listRef,
@@ -544,6 +594,52 @@ export function ContextMenu({
     </div>
   );
 
+  const renderedBottomSheetContent =
+    itemsProp !== undefined ? (
+      <div
+        ref={listRef}
+        data-autofocus=""
+        tabIndex={0}
+        {...mergeProps(
+          themeProps('context-menu'),
+          stylex.props(styles.sheetMenu, xstyle),
+          className,
+          style,
+        )}>
+        <div {...stylex.props(styles.sheetHeader)}>
+          {submenuPath.length > 0 && (
+            <Button
+              label={backLabel}
+              variant="ghost"
+              size="sm"
+              icon={
+                <Icon icon="chevronLeft" size="sm" xstyle={rtlStyles.mirror} />
+              }
+              isIconOnly
+              onClick={() => setSubmenuPath(path => path.slice(0, -1))}
+            />
+          )}
+          <Heading
+            ref={sheetHeadingRef}
+            level={3}
+            tabIndex={-1}
+            xstyle={[
+              styles.sheetViewHeading,
+              submenuPath.length === 0 && styles.sheetRootHeading,
+            ]}>
+            {currentTitle}
+          </Heading>
+        </div>
+        <MenuBottomSheetActionList
+          items={currentItems}
+          onSelect={handleBottomSheetSelect}
+          onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
+        />
+      </div>
+    ) : (
+      renderedMenu
+    );
+
   return (
     <>
       <div
@@ -578,8 +674,8 @@ export function ContextMenu({
           <LazyMenuBottomSheet
             isOpen={isOpen}
             onOpenChange={updateOpenState}
-            label={label}>
-            {renderedMenu}
+            label={sheetLabel}>
+            {renderedBottomSheetContent}
           </LazyMenuBottomSheet>
         </Suspense>
       ) : (

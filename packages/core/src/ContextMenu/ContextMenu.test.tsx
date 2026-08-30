@@ -162,16 +162,47 @@ describe('ContextMenu', () => {
     await waitFor(() =>
       expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce(),
     );
-    const menu = screen.getByRole('menu', {
-      name: 'Row actions',
-      hidden: true,
-    });
-    expect(menu).toHaveAttribute('data-autofocus');
-    await waitFor(() => expect(menu).toHaveFocus());
-    expect(
-      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
-    ).not.toHaveFocus();
+    const dialog = screen.getByRole('dialog', {name: 'Row actions'});
+    const actionList = dialog.querySelector('[data-autofocus]');
+    expect(actionList).not.toBeNull();
+    await waitFor(() => expect(actionList).toHaveFocus());
+    expect(screen.getByRole('button', {name: 'Edit'})).not.toHaveFocus();
     expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  it('drills into nested data items inside the BottomSheet', async () => {
+    const user = userEvent.setup();
+    const onMove = vi.fn();
+
+    render(
+      <ContextMenu
+        presentation="bottom-sheet"
+        label="Row actions"
+        items={[
+          {
+            label: 'Move to project',
+            items: [{label: 'Apollo launch', onClick: onMove}],
+          },
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(screen.getByRole('button', {name: 'Move to project'}));
+
+    const submenuHeading = screen.getByRole('heading', {
+      name: 'Move to project',
+    });
+    expect(submenuHeading).toBeInTheDocument();
+    await waitFor(() => expect(submenuHeading).toHaveFocus());
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', {name: 'Apollo launch'}));
+    expect(onMove).toHaveBeenCalledOnce();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
   });
 
   it('keeps only the top content padding in a menu BottomSheet', () => {

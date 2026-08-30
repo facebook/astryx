@@ -41,10 +41,8 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import {usePopoverInternal} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
-import {Divider} from '../Divider';
 import {Heading} from '../Heading';
-import {Icon, renderIconSlot} from '../Icon';
-import {List, ListItem} from '../List';
+import {Icon} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
 import type {DropdownMenuItemProps} from './DropdownMenuItem';
@@ -67,6 +65,7 @@ import {
   type AdaptivePresentation,
 } from '../hooks/useAdaptivePresentation';
 import {MenuBottomSheet} from './MenuBottomSheet';
+import {MenuBottomSheetActionList} from './MenuBottomSheetActionList';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
@@ -212,22 +211,6 @@ const bottomSheetStyles = stylex.create({
   },
   viewHeading: {
     outline: 'none',
-  },
-  destructiveAction: {
-    '--_item-label-color': colorVars['--color-error'],
-    '--_item-description-color': colorVars['--color-error'],
-    color: colorVars['--color-error'],
-  },
-  structuralItem: {
-    listStyleType: 'none',
-  },
-  divider: {
-    marginBlock: spacingVars['--spacing-1'],
-  },
-  section: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-1'],
   },
 });
 
@@ -379,107 +362,6 @@ export type DropdownMenuProps =
 // at render time so it respects the active InternationalizationProvider
 // locale.
 const DEFAULT_BUTTON_I18N_KEY = '@astryx.dropdownMenu.label' as const;
-
-function getBottomSheetItemKey(
-  item: DropdownMenuItemData,
-  index: number,
-): string {
-  return `item-${item.id ?? index}`;
-}
-
-function BottomSheetActionList({
-  items,
-  onSelect,
-  onOpenSubmenu,
-}: {
-  items: DropdownMenuOption[];
-  onSelect: (item: DropdownMenuItemData) => void;
-  onOpenSubmenu: (item: DropdownMenuItemData) => void;
-}) {
-  const renderItem = (item: DropdownMenuItemData, index: number) => {
-    const isSubmenu = item.items != null && item.items.length > 0;
-    const isDestructive = item.variant === 'destructive';
-
-    return (
-      <ListItem
-        key={getBottomSheetItemKey(item, index)}
-        label={item.label}
-        description={item.description}
-        startContent={
-          item.icon
-            ? renderIconSlot(item.icon, {
-                size: 'sm',
-                color: isDestructive ? 'error' : 'secondary',
-              })
-            : undefined
-        }
-        endContent={
-          isSubmenu ? (
-            <Icon
-              icon="chevronRight"
-              size="sm"
-              color="secondary"
-              xstyle={rtlStyles.mirror}
-            />
-          ) : (
-            item.endContent
-          )
-        }
-        isDisabled={item.isDisabled}
-        onClick={event => {
-          // A touch selection can satisfy :focus-visible in Safari. Clear the
-          // row before the sheet closes so it never appears keyboard-focused.
-          if (getInteractionModality() === 'pointer') {
-            (event.currentTarget as HTMLElement).blur();
-          }
-          if (isSubmenu) {
-            onOpenSubmenu(item);
-          } else {
-            onSelect(item);
-          }
-        }}
-        xstyle={isDestructive && bottomSheetStyles.destructiveAction}
-      />
-    );
-  };
-
-  return (
-    <List density="spacious">
-      {items.map((option, index) => {
-        if ('type' in option && option.type === 'divider') {
-          return (
-            <li
-              // eslint-disable-next-line @eslint-react/no-array-index-key
-              key={`divider-${index}`}
-              role="presentation"
-              {...stylex.props(bottomSheetStyles.structuralItem)}>
-              <Divider xstyle={bottomSheetStyles.divider} />
-            </li>
-          );
-        }
-
-        if ('type' in option && option.type === 'section') {
-          return (
-            <li
-              key={`section-${option.id ?? index}`}
-              role="presentation"
-              {...stylex.props(bottomSheetStyles.structuralItem)}>
-              <div
-                role="group"
-                aria-label={option.title}
-                {...stylex.props(bottomSheetStyles.section)}>
-                {option.title && <Heading level={4}>{option.title}</Heading>}
-                <List density="spacious">{option.items.map(renderItem)}</List>
-              </div>
-            </li>
-          );
-        }
-
-        return renderItem(option, index);
-      })}
-    </List>
-  );
-}
 
 function DropdownMenuBottomSheet({
   button: buttonFromProps,
@@ -673,7 +555,7 @@ function DropdownMenuBottomSheet({
               {currentTitle}
             </Heading>
           </div>
-          <BottomSheetActionList
+          <MenuBottomSheetActionList
             items={currentItems}
             onSelect={handleSelect}
             onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
