@@ -72,7 +72,7 @@ export const docs = {
     ],
   },
   description:
-    'Action menu with a trigger button and a caller-selected popover or bottom-sheet presentation.',
+    'Action menu with a trigger button and anchored, bottom-sheet, or adaptive presentation.',
   props: [
     {
       name: 'button',
@@ -90,9 +90,9 @@ export const docs = {
     },
     {
       name: 'presentation',
-      type: "'popover' | 'bottom-sheet'",
+      type: "'popover' | 'bottom-sheet' | 'adaptive'",
       description:
-        "Presentation surface for data-driven items. 'popover' keeps the menu anchored to its trigger. 'bottom-sheet' renders the same actions in a modal BottomSheet. Choose the value in product code, including with useMediaQuery when the policy depends on viewport and input capabilities. Compound children currently support popover only.",
+        "Presentation surface for data-driven items. 'popover' stays anchored, 'bottom-sheet' always renders the actions in a modal BottomSheet, and 'adaptive' uses a BottomSheet on compact coarse-pointer layouts while remaining anchored elsewhere. Compound children currently support popover only.",
       default: "'popover'",
     },
     {
@@ -167,6 +167,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Use presentation="adaptive" when the same short action set should remain anchored on pointer layouts and become a BottomSheet on compact coarse-pointer layouts.',
+      },
+      {
+        guidance: true,
+        description:
           'For a hierarchy that cannot fit as adjacent flyouts on a compact touch surface, a product may explicitly use a drill-in interaction with a Back action.',
       },
       {
@@ -213,6 +218,11 @@ export const docsZh = {
         guidance: true,
         description:
           'For a short, flat action set, use presentation="bottom-sheet" when product policy calls for a modal touch surface.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use presentation="adaptive" when the same short action set should remain anchored on pointer layouts and become a BottomSheet on compact coarse-pointer layouts.',
       },
       {
         guidance: true,
@@ -264,6 +274,11 @@ export const docsDense = {
         guidance: true,
         description:
           'For a short, flat action set, use presentation="bottom-sheet" when product policy calls for a modal touch surface.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use presentation="adaptive" when the same short action set should remain anchored on pointer layouts and become a BottomSheet on compact coarse-pointer layouts.',
       },
       {
         guidance: true,

@@ -72,6 +72,12 @@ export const docs = {
         'For a standalone sheet, called when it requests an open-state change. Automatic calls follow purpose: info dismisses on Escape, scrim click, or swipe; form dismisses on Escape only; required never dismisses implicitly. Omit inside BottomSheetSwitcher.',
     },
     {
+      name: 'finalFocusRef',
+      type: 'RefObject<HTMLElement | null>',
+      description:
+        'Optional explicit focus-return target for a standalone sheet. Use when the opener can remount or the active element is not a reliable trigger, such as an adaptive presentation switch. Omit inside BottomSheetSwitcher.',
+    },
+    {
       name: 'purpose',
       type: "'required' | 'form' | 'info'",
       description:

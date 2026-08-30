@@ -1,5 +1,20 @@
 # @xds/theme-stone
 
+# 0.5.1
+
+#### Fixes
+
+- Stone theme: move `--color-text-secondary` to the canonical T40/T70 pair so normal secondary text meets WCAG AA across the theme's light and dark consumer surfaces (#5505) (#5509)
+- Theme packages no longer ship an unused CommonJS `icons.js` artifact. Their root entry keeps its advertised CommonJS and ESM outputs, while the standalone icon companion used by `/built` is emitted only as `icons.mjs`. (#5512)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @jiunshinn
+
+---
+
 # 0.5.0
 
 ---

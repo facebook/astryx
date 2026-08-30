@@ -12,9 +12,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSubMenu,
-  type DropdownMenuPresentation,
 } from '@astryxdesign/core/DropdownMenu';
-import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   PencilIcon,
@@ -97,40 +95,27 @@ const readinessStyles = stylex.create({
 });
 
 const PROJECT_ACTIONS = [
-  'Edit project',
-  'Duplicate project',
-  'Share project',
-  'Archive project',
+  {
+    label: 'Edit project',
+    description: 'Update the project details.',
+    icon: PencilIcon,
+  },
+  {
+    label: 'Duplicate project',
+    description: 'Create a copy of this project.',
+    icon: DocumentDuplicateIcon,
+  },
+  {
+    label: 'Share project',
+    description: 'Invite people to collaborate.',
+    icon: ShareIcon,
+  },
+  {
+    label: 'Archive project',
+    description: 'Move this project out of active work.',
+    icon: ArchiveBoxIcon,
+  },
 ] as const;
-
-type ProjectAction = (typeof PROJECT_ACTIONS)[number];
-const COMPACT_TOUCH_QUERY =
-  '(max-width: 639px) and (pointer: coarse) and (hover: none)';
-
-function ProjectActionPresentation({
-  forcePresentation,
-}: {
-  forcePresentation?: DropdownMenuPresentation;
-}) {
-  const isCompactTouchSurface = useMediaQuery(COMPACT_TOUCH_QUERY);
-  const presentation =
-    forcePresentation ?? (isCompactTouchSurface ? 'bottom-sheet' : 'popover');
-
-  const selectAction = (action: ProjectAction) => {
-    console.log(`${action} selected`);
-  };
-
-  return (
-    <DropdownMenu
-      button={{label: 'Project actions'}}
-      presentation={presentation}
-      items={PROJECT_ACTIONS.map(action => ({
-        label: action,
-        onClick: () => selectAction(action),
-      }))}
-    />
-  );
-}
 
 function CompactDrillInActionSheet() {
   return (
@@ -138,15 +123,17 @@ function CompactDrillInActionSheet() {
       button={{label: 'Project actions'}}
       presentation="bottom-sheet"
       items={[
-        {label: 'Rename project'},
+        {label: 'Rename project', icon: PencilIcon},
         {
           label: 'Move to project',
+          icon: FolderPlusIcon,
           items: PROJECT_DESTINATIONS.slice(0, 4).map(([label, team]) => ({
             label,
             description: team,
+            icon: FolderPlusIcon,
           })),
         },
-        {label: 'Archive project'},
+        {label: 'Archive project', icon: ArchiveBoxIcon},
       ]}
     />
   );
@@ -985,7 +972,14 @@ export const ActionSheetPresentation: Story = {
   globals: {viewport: {value: 'mobile1', isRotated: false}},
   render: () => (
     <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
-      <ProjectActionPresentation forcePresentation="bottom-sheet" />
+      <DropdownMenu
+        presentation="bottom-sheet"
+        button={{label: 'Project actions'}}
+        items={PROJECT_ACTIONS.map(action => ({
+          ...action,
+          onClick: () => console.log(`${action.label} selected`),
+        }))}
+      />
     </div>
   ),
   play: async ({canvasElement}) => {
@@ -1004,14 +998,21 @@ export const AdaptiveActionPresentation: Story = {
       story: {inline: false, height: '560px'},
       description: {
         story:
-          'Passes a product-owned media-query decision into DropdownMenu’s presentation prop. This example chooses the bottom sheet only when the real environment is compact, coarse-pointer, and hover-free; it is not a universal breakpoint rule.',
+          'Uses DropdownMenu’s adaptive presentation: a BottomSheet on compact coarse-pointer layouts and an anchored popover elsewhere.',
       },
     },
   },
   globals: {viewport: {value: 'mobile1', isRotated: false}},
   render: () => (
     <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
-      <ProjectActionPresentation />
+      <DropdownMenu
+        presentation="adaptive"
+        button={{label: 'Project actions'}}
+        items={PROJECT_ACTIONS.map(action => ({
+          ...action,
+          onClick: () => console.log(`${action.label} selected`),
+        }))}
+      />
     </div>
   ),
   play: async ({canvasElement}) => {

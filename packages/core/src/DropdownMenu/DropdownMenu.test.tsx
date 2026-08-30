@@ -10,6 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {readFileSync} from 'node:fs';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
@@ -20,6 +21,7 @@ import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -32,6 +34,19 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
     this.removeAttribute('open');
   });
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     this.setAttribute('popover-open', '');
     const event = new Event('toggle', {bubbles: false});
@@ -116,7 +131,14 @@ describe('DropdownMenu', () => {
     expect(
       screen.getByRole('dialog', {name: 'Project actions'}),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Edit project'}));
+    const editAction = screen.getByRole('button', {name: 'Edit project'});
+    await waitFor(() =>
+      expect(
+        screen.getByRole('dialog', {name: 'Project actions'}),
+      ).toContainElement(document.activeElement as HTMLElement),
+    );
+    expect(editAction).not.toHaveFocus();
+    await user.click(editAction);
 
     expect(onEdit).toHaveBeenCalledTimes(1);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -185,53 +207,49 @@ describe('DropdownMenu', () => {
     await waitFor(() => expect(rootHeading).toHaveFocus());
   });
 
-  it('resets bottom-sheet drill-in state after a controlled close', async () => {
+  it('returns to the root after a controlled bottom sheet closes externally', async () => {
     const user = userEvent.setup();
-    const items = [
-      {
-        label: 'Move to project',
-        items: [{label: 'Apollo launch'}],
-      },
-    ];
-    const {rerender} = render(
-      <DropdownMenu
-        button={{label: 'Project actions'}}
-        presentation="bottom-sheet"
-        items={items}
-        isMenuOpen
-        onOpenChange={() => {}}
-      />,
-    );
 
+    function ControlledDropdownMenu() {
+      const [isOpen, setIsOpen] = useState(false);
+
+      return (
+        <>
+          <button type="button" onClick={() => setIsOpen(false)}>
+            Close externally
+          </button>
+          <DropdownMenu
+            button={{label: 'Project actions'}}
+            presentation="bottom-sheet"
+            isMenuOpen={isOpen}
+            onOpenChange={setIsOpen}
+            items={[
+              {
+                label: 'Move to project',
+                items: [{label: 'Apollo launch'}],
+              },
+            ]}
+          />
+        </>
+      );
+    }
+
+    render(<ControlledDropdownMenu />);
+
+    await user.click(screen.getByRole('button', {name: /Project actions/}));
     await user.click(screen.getByRole('button', {name: 'Move to project'}));
     expect(
       screen.getByRole('heading', {name: 'Move to project'}),
     ).toBeInTheDocument();
 
-    rerender(
-      <DropdownMenu
-        button={{label: 'Project actions'}}
-        presentation="bottom-sheet"
-        items={items}
-        isMenuOpen={false}
-        onOpenChange={() => {}}
-      />,
-    );
-    rerender(
-      <DropdownMenu
-        button={{label: 'Project actions'}}
-        presentation="bottom-sheet"
-        items={items}
-        isMenuOpen
-        onOpenChange={() => {}}
-      />,
-    );
+    await user.click(screen.getByRole('button', {name: 'Close externally'}));
+    await user.click(screen.getByRole('button', {name: /Project actions/}));
 
     expect(
       screen.getByRole('heading', {name: 'Project actions'}),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('heading', {name: 'Move to project'}),
+      screen.queryByRole('button', {name: 'Apollo launch'}),
     ).not.toBeInTheDocument();
   });
 
@@ -275,6 +293,149 @@ describe('DropdownMenu', () => {
     for (const className of mirrorClasses) {
       expect(backIcon).toHaveClass(className);
     }
+  });
+
+  it('uses the BottomSheet for adaptive presentation on compact touch', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        presentation="adaptive"
+        items={[{label: 'Edit'}]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    expect(screen.getByRole('dialog', {name: 'Actions'})).toBeInTheDocument();
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  it('uses the shared menu BottomSheet frame', () => {
+    const source = readFileSync(
+      'packages/core/src/DropdownMenu/DropdownMenu.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('<MenuBottomSheet');
+    expect(source).not.toContain("import {BottomSheet} from '../BottomSheet'");
+    expect(source).not.toContain("import {Section} from '../Section'");
+  });
+
+  it('keeps adaptive presentation anchored without compact touch', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        presentation="adaptive"
+        items={[{label: 'Edit'}]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+    expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+  });
+
+  it('preserves uncontrolled open state when adaptive presentation changes', async () => {
+    let matches = false;
+    const listeners = new Set<() => void>();
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        get matches() {
+          return matches;
+        },
+        media: query,
+        onchange: null,
+        addEventListener: (_type: string, listener: () => void) =>
+          listeners.add(listener),
+        removeEventListener: (_type: string, listener: () => void) =>
+          listeners.delete(listener),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        presentation="adaptive"
+        items={[{label: 'Edit'}]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+
+    matches = true;
+    act(() => listeners.forEach(listener => listener()));
+
+    expect(screen.getByRole('dialog', {name: 'Actions'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /Actions/})).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
+  it('focuses the first action when a bottom sheet opens from the keyboard', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        presentation="bottom-sheet"
+        items={[{label: 'Edit'}, {label: 'Delete'}]}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: /Actions/});
+    trigger.focus();
+    await user.keyboard('{Enter}');
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Edit'})).toHaveFocus(),
+    );
+  });
+
+  it('restores touch focus without painting a trigger focus ring', async () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        presentation="bottom-sheet"
+        items={[{label: 'Edit'}]}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: /Actions/});
+    fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+    fireEvent.click(trigger, {detail: 1});
+
+    const action = screen.getByRole('button', {name: 'Edit'});
+    action.focus();
+    fireEvent.pointerDown(action, {pointerType: 'touch'});
+    fireEvent.click(action, {detail: 1});
+
+    expect(action).not.toHaveFocus();
+    trigger.focus();
+    expect(trigger).toHaveFocus();
+    await waitFor(() =>
+      expect(trigger).toHaveClass(
+        stylex.props(focusOutlineStyles.suppressed).className!,
+      ),
+    );
   });
 
   it('defaults menu placement below', () => {

@@ -4,7 +4,7 @@
 
 /**
  * @file DropdownMenu.tsx
- * @input Uses React, StyleX, usePopover, BottomSheet, Button, List,
+ * @input Uses React, StyleX, usePopover, MenuBottomSheet, Button, List,
  *   useListFocus, and the shared viewport-safe menu-width resolver
  * @output Exports DropdownMenu with caller-selected popover or bottom-sheet
  *   presentation
@@ -39,14 +39,10 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {BottomSheet} from '../BottomSheet';
 import {usePopoverInternal} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
-import {Divider} from '../Divider';
 import {Heading} from '../Heading';
-import {Icon, renderIconSlot} from '../Icon';
-import {List, ListItem} from '../List';
-import {Section} from '../Section';
+import {Icon} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
 import type {DropdownMenuItemProps} from './DropdownMenuItem';
@@ -61,8 +57,15 @@ import {
 } from './DropdownMenuContext';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
+import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {useMenuOverflow} from './useMenuOverflow';
 import {resolveMenuWidth} from './menuWidth';
+import {
+  useAdaptivePresentation,
+  type AdaptivePresentation,
+} from '../hooks/useAdaptivePresentation';
+import {MenuBottomSheet} from './MenuBottomSheet';
+import {MenuBottomSheetActionList} from './MenuBottomSheetActionList';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
@@ -80,6 +83,7 @@ import {
   trackInteractionModality,
 } from '../utils/interactionModality';
 import {useTranslator} from '../i18n';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 
 const MENU_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
 const MENU_MAX_INLINE_SIZE = `calc(100vi - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
@@ -89,8 +93,12 @@ const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${MENU_VIEWPORT_GU
 const MENU_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
 const MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${MENU_VIEWPORT_GUTTER})`;
 const MENU_INLINE_EDGE_GUTTER = `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))`;
+const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
 const styles = stylex.create({
+  triggerOpen: {
+    backgroundImage: MENU_TRIGGER_OPEN_BACKGROUND,
+  },
   dropdown: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -201,21 +209,8 @@ const bottomSheetStyles = stylex.create({
     // their icon here; rows without an icon place their label here.
     marginInlineStart: spacingVars['--spacing-3'],
   },
-  destructiveAction: {
-    '--_item-label-color': colorVars['--color-error'],
-    '--_item-description-color': colorVars['--color-error'],
-    color: colorVars['--color-error'],
-  },
-  structuralItem: {
-    listStyleType: 'none',
-  },
-  divider: {
-    marginBlock: spacingVars['--spacing-1'],
-  },
-  section: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-1'],
+  viewHeading: {
+    outline: 'none',
   },
 });
 
@@ -284,7 +279,7 @@ export type DropdownMenuOption =
 
 export type DropdownMenuButtonProps = Omit<ButtonProps, 'onClick'>;
 
-export type DropdownMenuPresentation = 'popover' | 'bottom-sheet';
+export type DropdownMenuPresentation = AdaptivePresentation;
 
 interface DropdownMenuBaseProps extends BaseProps {
   button?: DropdownMenuButtonProps;
@@ -368,96 +363,6 @@ export type DropdownMenuProps =
 // locale.
 const DEFAULT_BUTTON_I18N_KEY = '@astryx.dropdownMenu.label' as const;
 
-function getBottomSheetItemKey(
-  item: DropdownMenuItemData,
-  index: number,
-): string {
-  return `item-${item.id ?? index}`;
-}
-
-function BottomSheetActionList({
-  items,
-  onSelect,
-  onOpenSubmenu,
-}: {
-  items: DropdownMenuOption[];
-  onSelect: (item: DropdownMenuItemData) => void;
-  onOpenSubmenu: (item: DropdownMenuItemData) => void;
-}) {
-  const renderItem = (item: DropdownMenuItemData, index: number) => {
-    const isSubmenu = item.items != null && item.items.length > 0;
-    const isDestructive = item.variant === 'destructive';
-
-    return (
-      <ListItem
-        key={getBottomSheetItemKey(item, index)}
-        label={item.label}
-        description={item.description}
-        startContent={
-          item.icon
-            ? renderIconSlot(item.icon, {
-                size: 'sm',
-                color: isDestructive ? 'error' : 'secondary',
-              })
-            : undefined
-        }
-        endContent={
-          isSubmenu ? (
-            <Icon
-              icon="chevronRight"
-              size="sm"
-              color="secondary"
-              xstyle={rtlStyles.mirror}
-            />
-          ) : (
-            item.endContent
-          )
-        }
-        isDisabled={item.isDisabled}
-        onClick={() => (isSubmenu ? onOpenSubmenu(item) : onSelect(item))}
-        xstyle={isDestructive && bottomSheetStyles.destructiveAction}
-      />
-    );
-  };
-
-  return (
-    <List density="spacious">
-      {items.map((option, index) => {
-        if ('type' in option && option.type === 'divider') {
-          return (
-            <li
-              // eslint-disable-next-line @eslint-react/no-array-index-key
-              key={`divider-${index}`}
-              role="presentation"
-              {...stylex.props(bottomSheetStyles.structuralItem)}>
-              <Divider xstyle={bottomSheetStyles.divider} />
-            </li>
-          );
-        }
-
-        if ('type' in option && option.type === 'section') {
-          return (
-            <li
-              key={`section-${option.id ?? index}`}
-              role="presentation"
-              {...stylex.props(bottomSheetStyles.structuralItem)}>
-              <div
-                role="group"
-                aria-label={option.title}
-                {...stylex.props(bottomSheetStyles.section)}>
-                {option.title && <Heading level={4}>{option.title}</Heading>}
-                <List density="spacious">{option.items.map(renderItem)}</List>
-              </div>
-            </li>
-          );
-        }
-
-        return renderItem(option, index);
-      })}
-    </List>
-  );
-}
-
 function DropdownMenuBottomSheet({
   button: buttonFromProps,
   isMenuOpen: controlledIsOpen,
@@ -478,6 +383,15 @@ function DropdownMenuBottomSheet({
   const t = useTranslator();
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
   const backLabel = t('@astryx.dropdownMenu.back');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const actionListRef = useRef<HTMLDivElement>(null);
+  const openModalityRef = useRef<'keyboard' | 'pointer'>('pointer');
+  const {
+    isFocusRingSuppressed,
+    onFocusReturnTargetFocus,
+    prepareFocusReturn,
+    resetFocusReturn,
+  } = useFocusReturnVisibility();
   const viewHeadingRef = useRef<HTMLHeadingElement>(null);
   const previousSubmenuDepthRef = useRef(0);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
@@ -501,13 +415,16 @@ function DropdownMenuBottomSheet({
     (nextIsOpen: boolean) => {
       if (!nextIsOpen) {
         setSubmenuPath([]);
+        prepareFocusReturn();
+      } else {
+        resetFocusReturn();
       }
       onOpenChange?.(nextIsOpen);
       if (!isControlled) {
         setInternalIsOpen(nextIsOpen);
       }
     },
-    [isControlled, onOpenChange],
+    [isControlled, onOpenChange, prepareFocusReturn, resetFocusReturn],
   );
 
   const handleSelect = useCallback(
@@ -531,6 +448,18 @@ function DropdownMenuBottomSheet({
     ) : undefined);
 
   useEffect(() => {
+    if (!isOpen || openModalityRef.current !== 'keyboard') {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      actionListRef.current
+        ?.querySelector<HTMLElement>('button:not(:disabled), a[href]')
+        ?.focus({preventScroll: true});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [currentItems, isOpen]);
+
+  useEffect(() => {
     if (!isOpen) {
       previousSubmenuDepthRef.current = 0;
       return;
@@ -549,8 +478,32 @@ function DropdownMenuBottomSheet({
     <>
       <Button
         {...button}
+        ref={buttonRef}
+        xstyle={[
+          isOpen && styles.triggerOpen,
+          button.xstyle,
+          isFocusRingSuppressed && focusOutlineStyles.suppressed,
+        ]}
         tooltip={isOpen ? undefined : button.tooltip}
         endContent={resolvedEndContent}
+        onPointerDown={event => {
+          button.onPointerDown?.(event);
+          openModalityRef.current = 'pointer';
+        }}
+        onKeyDown={event => {
+          button.onKeyDown?.(event);
+          if (
+            event.key === 'ArrowDown' ||
+            event.key === 'Enter' ||
+            event.key === ' '
+          ) {
+            openModalityRef.current = 'keyboard';
+          }
+        }}
+        onFocus={event => {
+          button.onFocus?.(event);
+          onFocusReturnTargetFocus();
+        }}
         onClick={() => {
           onClick?.();
           setOpen(!isOpen);
@@ -560,55 +513,55 @@ function DropdownMenuBottomSheet({
         data-testid={testId}
       />
 
-      <BottomSheet
+      <MenuBottomSheet
         isOpen={isOpen}
         onOpenChange={setOpen}
-        label={sheetLabel}
-        height="hug">
-        <Section paddingBlock={4} paddingInline={1}>
-          <div
-            {...rest}
-            {...mergeProps(
-              themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
-              stylex.props(bottomSheetStyles.content, xstyle),
-              className,
-              style,
-            )}>
-            <div {...stylex.props(bottomSheetStyles.header)}>
-              {submenuPath.length > 0 && (
-                <Button
-                  label={backLabel}
-                  variant="ghost"
-                  size="sm"
-                  icon={
-                    <Icon
-                      icon="chevronLeft"
-                      size="sm"
-                      xstyle={rtlStyles.mirror}
-                    />
-                  }
-                  isIconOnly
-                  onClick={() => setSubmenuPath(path => path.slice(0, -1))}
-                />
-              )}
-              <Heading
-                ref={viewHeadingRef}
-                level={3}
-                tabIndex={-1}
-                xstyle={
-                  submenuPath.length === 0 && bottomSheetStyles.rootHeading
-                }>
-                {currentTitle}
-              </Heading>
-            </div>
-            <BottomSheetActionList
-              items={currentItems}
-              onSelect={handleSelect}
-              onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
-            />
+        finalFocusRef={buttonRef}
+        label={sheetLabel}>
+        <div
+          ref={actionListRef}
+          {...rest}
+          {...mergeProps(
+            themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
+            stylex.props(bottomSheetStyles.content, xstyle),
+            className,
+            style,
+          )}>
+          <div {...stylex.props(bottomSheetStyles.header)}>
+            {submenuPath.length > 0 && (
+              <Button
+                label={backLabel}
+                variant="ghost"
+                size="sm"
+                icon={
+                  <Icon
+                    icon="chevronLeft"
+                    size="sm"
+                    xstyle={rtlStyles.mirror}
+                  />
+                }
+                isIconOnly
+                onClick={() => setSubmenuPath(path => path.slice(0, -1))}
+              />
+            )}
+            <Heading
+              ref={viewHeadingRef}
+              level={3}
+              tabIndex={-1}
+              xstyle={[
+                bottomSheetStyles.viewHeading,
+                submenuPath.length === 0 && bottomSheetStyles.rootHeading,
+              ]}>
+              {currentTitle}
+            </Heading>
           </div>
-        </Section>
-      </BottomSheet>
+          <MenuBottomSheetActionList
+            items={currentItems}
+            onSelect={handleSelect}
+            onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
+          />
+        </div>
+      </MenuBottomSheet>
     </>
   );
 }
@@ -914,6 +867,7 @@ function DropdownMenuPopover({
             /* eslint-enable react-compiler/react-compiler */
           }
         }}
+        xstyle={[isOpen && styles.triggerOpen, button.xstyle]}
         tooltip={isOpen ? undefined : button.tooltip}
         endContent={resolvedEndContent}
         onClick={handleButtonClick}
@@ -984,15 +938,42 @@ function DropdownMenuPopover({
 }
 
 export function DropdownMenu(props: DropdownMenuProps) {
+  const {onOpenChange} = props;
+  const requestedPresentation =
+    'items' in props ? (props.presentation ?? 'popover') : 'popover';
+  const resolvedPresentation = useAdaptivePresentation(requestedPresentation);
+  const isControlled = props.isMenuOpen !== undefined;
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = isControlled ? props.isMenuOpen : internalIsOpen;
+  const handleOpenChange = useCallback(
+    (nextIsOpen: boolean) => {
+      onOpenChange?.(nextIsOpen);
+      if (!isControlled) {
+        setInternalIsOpen(nextIsOpen);
+      }
+    },
+    [isControlled, onOpenChange],
+  );
+  const sharedProps = {
+    ...props,
+    isMenuOpen: isOpen,
+    onOpenChange: handleOpenChange,
+  };
+
   if (
-    props.presentation === 'bottom-sheet' &&
+    resolvedPresentation === 'bottom-sheet' &&
     'items' in props &&
     props.items !== undefined
   ) {
-    return <DropdownMenuBottomSheet {...props} presentation="bottom-sheet" />;
+    return (
+      <DropdownMenuBottomSheet
+        {...(sharedProps as DropdownMenuDataProps)}
+        presentation="bottom-sheet"
+      />
+    );
   }
 
-  return <DropdownMenuPopover {...props} />;
+  return <DropdownMenuPopover {...sharedProps} presentation="popover" />;
 }
 
 DropdownMenu.displayName = 'DropdownMenu';

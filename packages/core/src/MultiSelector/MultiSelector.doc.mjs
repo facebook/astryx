@@ -225,6 +225,13 @@ export const docs = {
           default: "'start'",
         },
         {
+          name: 'presentation',
+          type: "'popover' | 'bottom-sheet' | 'adaptive'",
+          description:
+            'How the option list is presented. adaptive uses a bottom sheet on compact touch screens and an anchored popover otherwise.',
+          default: "'popover'",
+        },
+        {
           name: 'width',
           type: 'SizeValue',
           description:
@@ -291,6 +298,11 @@ export const docs = {
           'Use variant="ghost" when a multi-selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
       },
       {
+        guidance: true,
+        description:
+          'Use presentation="adaptive" when the multi-selector should become a bottom sheet on compact touch screens.',
+      },
+      {
         guidance: false,
         description: 'Use for single-value selection; use Selector instead.',
       },
@@ -349,6 +361,8 @@ export const docsZh = {
           '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
+        presentation:
+          '选项列表的呈现方式：锚定弹出框、底部抽屉，或根据紧凑触控屏自适应。',
         xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
       },
     },
@@ -487,6 +501,8 @@ export const docsDense = {
           'status message placement; ghost detaches attached by default; use tooltip for compact toolbars.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
+        presentation:
+          'popover, bottom-sheet, or compact-touch adaptive presentation',
         xstyle: 'StyleX layout styles; stylex.create() only',
       },
     },

@@ -977,7 +977,7 @@ describe('DropdownMenu adaptive-presentation example', () => {
       prop => prop.name === 'presentation',
     );
 
-    expect(presentation?.type).toBe("'popover' | 'bottom-sheet'");
+    expect(presentation?.type).toBe("'popover' | 'bottom-sheet' | 'adaptive'");
     expect(presentation?.default).toBe("'popover'");
 
     const defaults = dropdownMenu?.playground?.defaults as
@@ -1013,6 +1013,77 @@ describe('DropdownMenu adaptive-presentation example', () => {
       ),
     ).toBe(true);
   });
+
+  it('registers the ContextMenu BottomSheet example', () => {
+    const contextMenuExamples = exampleRegistry['ContextMenu'] ?? [];
+    const bottomSheetExample = contextMenuExamples.find(example =>
+      /Bottom Sheet/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('presentation="bottom-sheet"');
+    expect(bottomSheetExample!.source).toContain(
+      'Long-press on touch or right-click',
+    );
+    expect(bottomSheetExample!.source).not.toContain("type: 'divider'");
+  });
+
+  it('uses adaptive presentation in the primary ContextMenu example', () => {
+    const contextMenuExamples = exampleRegistry['ContextMenu'] ?? [];
+    const basicExample = contextMenuExamples.find(example =>
+      /Basic/i.test(example.name),
+    );
+
+    expect(basicExample).toBeDefined();
+    expect(basicExample!.source).toContain('presentation="adaptive"');
+    expect(basicExample!.source).toContain('Long-press or right-click');
+  });
+
+  it('registers the MoreMenu BottomSheet example', () => {
+    const moreMenuExamples = exampleRegistry['MoreMenu'] ?? [];
+    const bottomSheetExample = moreMenuExamples.find(example =>
+      /Bottom Sheet/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('presentation="bottom-sheet"');
+    expect(bottomSheetExample!.source).toContain('label="Project actions"');
+    expect(bottomSheetExample!.source).not.toContain("type: 'divider'");
+  });
+});
+
+describe('Selector bottom-sheet examples', () => {
+  it.each(['Selector', 'MultiSelector'])(
+    'documents the %s presentation choice',
+    componentName => {
+      const component = Object.values(components)
+        .flat()
+        .find(entry => entry.name === componentName);
+      const presentation = component?.props.find(
+        prop => prop.name === 'presentation',
+      );
+
+      expect(presentation?.type).toBe(
+        "'popover' | 'bottom-sheet' | 'adaptive'",
+      );
+      expect(presentation?.default).toBe("'popover'");
+    },
+  );
+
+  it.each(['Selector', 'MultiSelector'])(
+    'registers the %s BottomSheet example',
+    componentName => {
+      const examples = exampleRegistry[componentName] ?? [];
+      const bottomSheetExample = examples.find(example =>
+        /Bottom Sheet/i.test(example.name),
+      );
+
+      expect(bottomSheetExample).toBeDefined();
+      expect(bottomSheetExample!.source).toContain(
+        'presentation="bottom-sheet"',
+      );
+    },
+  );
 });
 
 // ── Vertical ToggleButtonGroup example (#2707) ─────────────────────────────

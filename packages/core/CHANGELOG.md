@@ -1,5 +1,227 @@
 # @xds/core
 
+# 0.5.1
+
+#### New Features
+
+- add shape prop ('circle' | 'rounded' | 'square') to Avatar for non-circular form factors (#4205) (#4327)
+- Card: make the `variant` axis theme-extensible through a `CardVariantMap` interface (#5551)
+  `CardVariant` was a hand-written union backed by a closed style record, so a theme could not add a card variant: an unknown value neither type-checked nor rendered. It is now `keyof CardVariantMap`, an interface exported from `@astryxdesign/core/Card` that a theme build augments — the same shape Button, Badge, Section and the other extensible axes already ship.
+
+  `keyof CardVariantMap` resolves to exactly the thirteen values `CardVariant` had, so no existing call site changes. A variant a theme adds falls through to base styles and the theme's own `card['variant:<name>']` rule paints it.
+
+  On SelectableCard that variant's selection ring is drawn in `--selectable-card-ring-color`, defaulting to the accent. No token the component could pick is guaranteed to contrast with a fill the component cannot know, so a theme rule that adds a variant sets the ring colour in the same rule as its `backgroundColor`.
+
+- CheckboxInput and Switch now name their own label as a theme target: `astryx-checkbox-label` and `astryx-switch-label`, alongside the `astryx-field-label` every label already carries. A theme could previously only reach one `astryx-field-label` target, so styling a checkbox's label — which shares a row with its control — meant styling every form field's label above its input too. The control passes the target down, so the name says what the thing is rather than encoding how it is arranged, and nothing can set it untruthfully. (#5183)
+- The checkbox indicator now exposes stable theme targets for its two marks — `astryx-checkbox-indicator-check` (the checkmark) and `astryx-checkbox-indicator-dash` (the indeterminate bar) — mirroring the existing `astryx-radio-indicator-dot`. Both reflect `size`. A theme restyling the mark itself (stroke weight, colour, the dash's proportions) previously had to reach it with `.astryx-checkbox-indicator > svg` and `> span`, which are element-and-order selectors that break silently on any restructure. Purely additive; no visual change. (#5426)
+- ComplexSelector: `onOpenChange` reports every open and close of the popup — the trigger, the keyboard, a light dismiss, Escape, content calling `close()`, or the imperative handle. Paired with the existing `handleRef`, a consumer can drive and observe the surface without reading the shell's DOM. (#5211)
+- DateInput uses the platform date picker on touch, with `nativePicker` to choose the native or Astryx surface; focused desktop-style native fields reveal their editable segments, the Astryx touch sheet keeps Reset in its header and Save alone in its footer, and both closed surfaces match standard input height (#5261, #5456, #5502, #5534)
+  `nativePicker="touch"` is the default, `"always"` uses `<input type="date">` wherever supported, and `"never"` keeps Astryx's sheet or popover. Formatting still returns on blur, and `min`/`max` continue to validate native selections.
+- Add a coarse-pointer DateTimeInput bottom-sheet picker with separate closed Date/Time segments, direct section opening, and a two-step Save date → Save flow. (#5582)
+- Icon APIs and themes accept namespaced extension keys, and NumberInput steppers use `numberInput:stepperDown` without widening the required `IconRegistry` keys (#5466)
+  `<Icon icon>`, `useIcon`, and `defineTheme({icons})` accept keys such as `numberInput:stepperDown` and `richtext:bold`; misspelled built-in names remain type errors. NumberInput keeps a compact centered Core fallback, while themes can override its steppers independently from the shared `chevronDown` semantic.
+- `OverflowList` can now hand its collapsed items to a menu you already render, via `onOverflowChange(overflowItems)`. `overflowRenderer` only describes an indicator the list mounts itself, and only while items overflow — so a row that already carries a standing "…" menu had no way to collect the collapsed items into it, and adding an indicator gave the user two menus side by side. Watching from the outside was not reachable either: a reporter component placed inside `overflowRenderer` mounts twice (the hidden measurement copy always receives _every_ item, so it cannot tell you what is actually collapsed), and nothing fires when the row widens back out and the set empties. The new callback reports the collapsed set whenever its membership or order changes, and leaves the anchor entirely to the caller. It fires once measurement has collapsed something, fires again with an empty array once the row widens back out and everything fits, and is silent while nothing overflows — including on mount, so a list that fits from the start never calls it. It never reports the pre-measurement state, which is an empty set whether or not the row actually overflows; hold the collapsed set in state initialised to `[]` and it is correct at every moment. Reports run from a layout effect after measurement, so the menu updates in the same frame as the collapse. The measurement container is now observed for size changes, so child-size changes refresh every OverflowList and direct `useOverflow` consumer even when the available container width does not change. Keyed membership and order changes are re-measured before `onOverflowChange` reports them. Stable React keys distinguish same-count membership and order changes, while unrelated re-renders and callback identity changes do not re-fire it. Both APIs may be used together; using `onOverflowChange` alone adds nothing to the row. (#5199)
+- Selector and MultiSelector: configurable panel empty states via `emptyText` and `emptySearchText`, announced to screen readers as well as shown; a panel with no options now says so instead of rendering blank, and says nothing while `isLoading` (#5462)
+- SideNavItem: new `actions` slot for row-level secondary controls (icon buttons, menus). Content renders as a sibling of the primary link/button — after the expand/collapse toggle, before nested children in DOM and focus order — so interactive controls never nest inside the primary element and every row control is reachable before focus enters the subtree. Passive content (badges, counts) stays in `endContent`; `actions` is hidden while the rail is collapsed, and stays interactive on disabled items since each supplied control owns its own disabled state. An actions row draws its focus ring as a full-row pill for the primary link or button, while the expand/collapse toggle and each supplied action keep their own — adds `focusOutlineProps.focusWithinFirstChild` and `focusOutlineProps.suppressed` for that pairing. Supplied controls inherit the row's control size through `SizeContext`, the way `SideNav` already cascades one size to its footer icons, so an unsized icon button comes out the same box as the built-in toggle; an explicit `size` still wins. (#4988) (#5005)
+- Spinner: the ring's geometry and its two colors are now themeable. The `size` and `shade` props keep their fixed enums; what each named value _resolves to_ is now a theme's to set, through four public custom properties on the `spinner` target — `--spinner-diameter` and `--spinner-stroke-width` under a size variant, `--spinner-color` and `--spinner-track-color` under a shade variant (or on the base target for all of them at once): (#5214)
+
+  ```ts
+  spinner: {
+    'size:xl': {'--spinner-diameter': '2.5rem', '--spinner-stroke-width': '0.375rem'},
+    'shade:subtle': {'--spinner-track-color': 'transparent'},
+  }
+  ```
+
+  Any length and any color notation works — `rem`, `em` and `calc()` are resolved by the cascade into the radius and stroke the ring is drawn with, and colors accept `var()`, `color-mix()` and `currentColor`. A stroke width of `0` is honoured as a zero-width stroke — it paints nothing, rather than being read as "unset" and silently drawing the default. The drawn ring and the box around it come from the same values, so they stay in step, including when a media query or a root font-size change moves them after mount.
+
+  The two private vars the ring resolves into are registered as `<length>` when the module is imported, not when a spinner first mounts. Registering an inherited property with an `initial-value` invalidates style for the whole document, and a spinner is the loading indicator — it arrives on a page that has already rendered, so paying that there is paying it on the full tree: 29 ms against 12 ms for the same mount on an 11k-element page. A build that never imports `Spinner` drops the module and the registration with it.
+
+  Output is unchanged for every size and shade unless a theme overrides something, and so is every precedence around the box: it is still sized by an inline `width`/`height` written after the caller's `style`, as it has always been, with the composed value in place of the number.
+
+- TextArea: the two painted elements inside the wrapper now carry stable theme targets — `astryx-text-area-control` (the `<textarea>` itself) and `astryx-text-area-counter` (the character counter). Only the wrapper was themeable before, so a theme restyling the control's own typography, placeholder or resize affordance, or the counter's supporting text, had to reach in with structural selectors like `.astryx-text-area > textarea`. Purely additive: no existing class, data attribute, or style changes. (#5418)
+  Neither carries a `size` axis. `size` moves only the control's block padding (`sm` and `md` are empty; `lg` sets `paddingBlock`), and that is the axis a `padding` translation for this component takes over — so an axis here would be a second way to say the same thing, and the one that stops being true once the translation lands.
+
+  The start-icon and end-slot overlays are deliberately not targets. They paint nothing — each is `position: absolute; pointer-events: none; display: flex` — and they are placed off the wrapper's `--_textarea-inline-padding`, so a theme that moves the control's inset needs them to move with it rather than to be re-placed one at a time. That inset belongs in a `padding` translation for the component, which is tracked separately.
+
+- Toast: `renderContent` on the `showToast` options replaces the content of that toast's card with your own layout. (#5428)
+
+  ```tsx
+  showToast({
+    body: 'Your changes have been saved.',
+    renderContent: ({body, endContent, dismiss}) => (
+      <MyRow>
+        <MyTitle>{body}</MyTitle>
+        {endContent}
+        <Button label="Dismiss notification" onClick={dismiss} />
+      </MyRow>
+    ),
+  });
+  ```
+
+  Astryx keeps the card, its `astryx-toast` theme target, live-region role and auto-hide behavior. The renderer receives the message, `endContent`, resolved toast settings and a `dismiss` callback.
+
+  Custom content owns its complete layout and every control in it. Call `dismiss` from the control that should close the toast; it may be passed through nested components. Astryx does not register an injected component or add a fallback close behind a custom layout.
+
+  The API is per-toast. An app can share one layout by wrapping `useToast()` and passing `renderContent` on each call, while other toasts continue to use the ordinary Astryx layout and its translated, themeable dismiss `Button`.
+
+  New exported types: `ToastContentRenderProps`, `ToastContentRenderFn`.
+
+- Toast now supports touch and pen swipe dismissal toward its configured viewport edge. The vertical axis matches each Toast's top/bottom placement and entrance/exit motion, so the dismissal follows the same spatial model instead of introducing a separate side exit. Native touch scrolling is preserved until movement resolves to the dismiss direction, interactive controls do not start a swipe, and swipe continues to report the existing manual dismissal reason. Pen is included as direct-contact input; mouse drag is excluded because desktop users already have the visible close control and dragging can conflict with text selection. (#5375)
+- Typeahead + Tokenizer: minQueryLength holds the search and the menu until the query is long enough (#5385)
+  Also fixes a stranded loading state that predates the prop: abandoning an in-flight search — by emptying the field, by falling below the threshold, or by selecting an item while the next search is still out — bumps the search generation, which makes that search's own `finally` decline to clear the loading flag. The field kept reporting "Loading" to assistive technology until another search settled.
+
+  `hasCreate` is not gated by it. The "Create ..." entry is derived from the typed text rather than fetched for it, so it now reaches the menu through a separate internal path and is offered whatever the threshold says — the threshold exists to avoid a fetch too broad to be worth making, and creating costs no fetch. With `minQueryLength={3}`, typing `QA` offers `Create "QA"` and Enter commits it, while the search source is still never called.
+
+  One consequence worth naming: the Create entry is appended after the results are cut to `maxMenuItems`, so with `hasCreate` a full menu now shows one option more than the cap — 11 where it used to show 10. The cap bounds how many _results_ a menu shows; creating is a separate capability and is not crowded out by them.
+
+#### Fixes
+
+- AlertDialog lets Dialog preserve and clamp its preferred width, lets whole actions move to another row when needed, and stacks full-width destructive and Cancel actions at 640px and below while preserving standard single-line Button sizing and labels regardless of pointer type. (#5343)
+- Badge: a long label no longer escapes its container. (#5558)
+  `Badge` set `white-space: nowrap` with nothing to clip it — the one pairing that neither wraps nor truncates. A label wider than the space available rendered _outside_ the badge's container and over whatever sat beside it.
+
+  ```tsx
+  <div style={{width: 100}}>
+    <Badge variant="pink" label="Awaiting security review" />
+  </div>
+  ```
+
+  Measured in Chromium: that badge came out **163px** wide in a 100px column, spilling 63px past it; in a fixed-layout table cell it painted 64px over the text in the next cell. The badge now clamps to the width it is given and cuts the label with an ellipsis.
+
+  A badge that already fits is untouched — same width, same height, same DOM. Measured before and after, a badge with room to spare is 53px either way; only the cases that were already overflowing change. `Badge` uses no hooks and stays server-renderable.
+
+  The ellipsis sits on an inner label span rather than the badge itself, because `text-overflow` needs a block container and taking the root off `inline-flex` to get one would cost the icon its centring. With an icon, the icon holds its place and the label gives way.
+
+  So that a clipped tail is not simply lost, a string or number label is also carried in the badge's `title` — the same shape `BaseTable` already uses for a truncated header cell. That costs no measurement and no hook, so `Badge` still renders the same on the server and stays usable in a server component. A rich `label` is left alone rather than flattened to a guess.
+
+  Two gaps remain, both needing runtime measurement, and both tracked in #5585: the `title` is set whether or not the label actually fits, and a native `title` is a pointer affordance — it answers hover, not keyboard focus, and not touch at all. The refinement is a tooltip shown only when the text is really cut, reachable by hover and by focus, which makes `Badge` a client component and is its own trade-off to weigh.
+
+- Banner names each dismiss control after its string title, so stacked banners no longer expose identical "Dismiss" buttons to screen readers. Rich titles retain the generic translated name unless the consumer supplies an already-translated `dismissLabel`; that override also labels the tooltip. (#5113)
+- Seven components now forward the pass-through props promised by `BaseProps` (#5563)
+  `MetadataListItem`, `NavHeadingMenu`, `Timestamp`, `Token`, `TopNavMegaMenu`, `TopNavMenu`, and `TypeaheadItem` now forward neutral `aria-*`, `id`, `tabIndex`, event-handler, and `data-*` props to their rendered DOM element. Styling still merges through `mergeProps`, contract-owned attributes retain precedence, and owned handlers compose through `composeEventHandlers` with the caller first.
+
+  `MetadataListItem` targets its wrapper `<div>` when stacked and its `<dt>` when inline. A `TypeaheadItem` backed by caller-supplied `item.element` remains unchanged and does not receive forwarded props because that value may not be a cloneable element.
+
+  This completes [#5254](https://github.com/facebook/astryx/issues/5254) after [#5288](https://github.com/facebook/astryx/pull/5288) by @lexs landed `List` and `Markdown` first, followed by [#5493](https://github.com/facebook/astryx/pull/5493) by @gonzoblasco for `TreeList`.
+
+- `Button` now reflects `elevation` as a theme target. The prop selected between four StyleX style objects but was missing from the sibling `themeProps('button')` call, so `data-elevation` never reached the DOM and no theme could style the axis — the same defect fixed on `Card` in #5491, and one `ButtonGroup` already had right. A button inside a `ButtonGroup` reports `none`, because the group owns the surface's elevation and the member paints flat. Every wrapper that forwards `ButtonProps` through to `Button` — `IconButton` — picks the reflection up with it. (`ToggleButton` does not: its props extend `BaseProps`, not `ButtonProps`, so it has no `elevation` to forward and keeps reporting `none`.) Nothing about the rendered button changes: 60 of 64 captured frames are byte-identical, and the four that differ do so only inside the loading spinner's own box. (#5552)
+- Calendar: announce a cleared range in the provider locale, wrap the two-month layout instead of overflowing a narrow viewport, keep the selected date visible under forced colors (#5453)
+- Card: reflect `elevation` as a theme target so a theme can reach it, and correct the documented `padding` default (#5491)
+  `elevation` picked a style object but never reached the DOM, so `astryx-card` exposed `data-variant` and nothing for elevation and a theme could not style the four shadow tiers. It now rides `themeProps` alongside `variant`.
+
+  The `padding` prop documented `4` as its default. With the prop omitted the card reads the theme's card padding, and most shipped themes set that to a different step, so writing the documented default explicitly changed the card's size. The prop docs, the JSDoc and the playground default now say that omitting the prop takes the theme's padding and passing a step overrides it. The four `effectivePadding !== 4` style branches that encoded the same wrong default in code are gone: `container()` already sets every variable they set, verified identical across all eleven padding steps on both a bordered and a borderless card.
+
+- Carousel no longer drops keyboard focus to the document body when reaching a scroll edge disables the nav button in use. Focus moves to the opposite arrow instead, on the state transition that disables the button rather than on a prediction from the press, so it holds under reduced motion, under scroll-snap, and on browsers without `scrollend`. The scroll container is also now a documented theme target, `astryx-carousel-scroller`, carrying the gap, padding, snap and edge-fade props it styles, so a theme can reach the spacing and the fade it could not see before. (#5601)
+- The 56 `--color-data-*` defaults now reach runtime CSS and built themes from the same source, while dashboard template fallbacks match those defaults (#5562, #5566)
+  The defaults live once at `:root` in `@layer astryx-base`, so nested themes inherit parent overrides and `astryx theme build` matches `<Theme>` while `generateThemeCSS` keeps its existing return shape.
+
+  **Visual change.** A chart or template that previously painted nothing or used a mismatched hex fallback now paints the data token's default. Pin an explicit color to preserve a previous fallback.
+
+- DateRangeInput: allow a same-day range when `minRangeSpan` is 1 (#5581)
+  A repeated click on the range start now commits a one-day range when the configured minimum permits it, including when a maximum span is also set. Longer minimum spans keep the existing cancel behaviour so the user can move the start date.
+- Dialog: fullscreen safe-area padding follows writing direction and defers to explicit padding (#5367)
+  Two corrections to the fullscreen safe-area padding that shipped in 0.5.0.
+
+  **The insets were mapped to the wrong edges in RTL.** `env(safe-area-inset-left)` and `env(safe-area-inset-right)` are physical, but they were assigned straight to `padding-inline-start` and `padding-inline-end`, which are logical. That holds in LTR and inverts in RTL, where inline-start is the right edge — so a device notch on the physical left padded the edge away from it and left the notched edge unprotected. Each physical inset now feeds the logical edge that actually faces it, in both directions.
+
+  **Safe-area protection overrode explicit padding.** The `max()` was applied to the fullscreen surface unconditionally, so it beat both a `padding` prop and a theme's `dialog: {padding: 0}`, and a deliberately full-bleed fullscreen dialog could not be expressed. It now sits in the innermost fallback of the same `--astryx-dialog-padding*` chain `container` already resolves, so it applies only when no padding is set anywhere. An explicit value, `0` included, is honored as written.
+
+- Date formatting now defaults to Gregorian calendar semantics across core, charts, and Schedule while still following the selected locale for language, numbering, and field order. (#5303)
+  The low-level public `plainDateFormat` helper continues to honor an explicitly supplied `calendar` option for compatibility; Astryx components do not expose that display-only exception and remain Gregorian. The deterministic English fallback also prevents server and browser locale differences from producing hydration mismatches when no provider locale is available. Locale-aware parsing only selects day-first or month-first order for ambiguous ASCII numeric dates; it does not parse localized month names, non-ASCII digits, or arbitrary locale-specific strings.
+
+  Fixes #5074.
+
+- Labelled HoverCard triggers expose a dialog-popup relationship without flattening rich content into a description, and only roles that support `aria-expanded` receive that state (#5419, #5501)
+  The trigger now uses `aria-haspopup="dialog"`, `aria-controls`, and a role-gated `aria-expanded`; `useHoverCard` exposes the layer `id` and open state, while `describedBy` remains as a deprecated alias for compatibility. Unlabelled group cards keep their description relationship.
+- Popup triggers no longer fight the browser's own light dismiss: pressing the button of an open Selector, MultiSelector, ComplexSelector, DropdownMenu, or Popover closes it once instead of closing and reopening. MultiSelector's clear and status buttons also keep its popup open when pressed. (#5018)
+- Markdown now applies the same URL safety rule to every image path it parses: reference-style images (`![alt][label]` and the shortcut form) and standalone block images pass through the check inline images and links already used, and the render-side guard normalizes control characters before testing so both layers see a URL the way a browser will. (#5522)
+- Markdown and List forward the rest of `BaseProps` (#5288)
+  Both declare `BaseProps`, and `BaseProps` documents that `data-*`, `aria-*` and `role` reach the element — but each destructured a fixed set of props and forwarded only `data-testid`, so an `aria-label` a consumer passed silently disappeared. `<Markdown aria-label="Release notes">` named nothing, and a list could not be labelled by a heading it did not render itself.
+
+  Consumer props spread first, so what a component sets for itself still wins: the block root stays `role="document"`, the list keeps the explicit `role="list"` that restores Safari/VoiceOver announcements, and a list rendering its own header keeps that association rather than one pointed elsewhere. The `aria-labelledby` for that header is only written when the header exists — writing `undefined` unconditionally would erase a consumer's own label.
+
+- NumberInput parses locale-formatted paste safely and commits one complete draft: grouped numbers and machine decimal points work, arbitrary repeated punctuation is refused, out-of-range values clamp to the nearest bound, and fractional stepping cannot cross a rounded bound (#5152, #5450, #5459, #5510, #5546)
+  Invalid typed or pasted input preserves the prior value instead of committing a valid prefix. Pagination inherits the complete-draft and bound behavior, while inline Table filtering and PowerSearch keep their existing live and Enter-to-save behavior.
+- Popover: theming `popover.borderRadius` now changes the rendered radius. The `astryx-popover` target moves onto the popup surface — the box that paints background, radius and elevation — and `usePopover` reads the registered `--_popover-radius` there instead of hardcoding `--radius-container`. Content padding moves with it, so a themed `padding` still replaces the default instead of nesting inside it. (#5162)
+- Ensure pressed overlays override hover across interactive surfaces (#5451) (#5516)
+- Stack DateTimeInput's date and time fields when its container is narrower than 400px. (#5609)
+- Selector: a caller-supplied `id` now drives the trigger's whole identity, not just its `id` attribute (#5561)
+  `Selector` generated its trigger id with `useId()` and set it on the trigger button before spreading `...rest`, so a caller's `id` — accepted through `BaseProps` — replaced it on the button while the generated value stayed behind as the target of the listbox's `aria-labelledby` and of the `Field` label's `htmlFor`. Passing `id` therefore left the listbox with no accessible name and the field label pointing at an element that does not exist, silently and with a clean typecheck, lint and build.
+
+  The internal identity is now derived from the caller's `id` when there is one, so the button, the listbox's `aria-labelledby` (both the plain and the `hasSearch` panel) and `Field`'s `inputID` all name the same element. The trigger's own `id` attribute is unchanged in every case; what changes is that references which used to dangle now resolve — including the field label, which consequently regains its native click-to-focus behaviour. With no `id` supplied the rendered output is identical to before.
+
+- Selector raw source now compiles when consumer Babel presets lower arrow functions before StyleX extraction (#5508)
+- Platform detection reads the client-hints `Unknown` sentinel as no answer, and lives in one place (#5394)
+  Follow-up to #5325, which taught `useHotkeys` and `Kbd` to fall through to `navigator.platform` when `userAgentData.platform` is blank. `Unknown` is the User-Agent Client Hints spec's own value for "cannot say", and it names a platform no more than `''` does, yet it still committed to the client-hints branch and answered "not Apple". It now falls through the same way.
+
+  The two detections were independent copies kept aligned by a docstring. They are now one internal util that both import, so the next change to this logic cannot land on one surface and miss the other. The util is deliberately not named in `utils/index.ts`, which would publish it as API.
+
+- SideNavItem: the standalone expand/collapse toggle on a `collapsible` item with an `href` or `onClick` now carries the box of a `size="sm"` icon button. It had no box of its own, so it shrank to the 24px chevron inside it and painted a smaller hover pill than any icon button sitting beside it in the same row. (#4988) (#5005)
+- SideNav: `collapsible` and `resizable` no longer keep two independently initialized copies of the collapse state. Both props are normalized into one internal collapse config with a single owner — the resize hook when `resizable` is in play, SideNav's own state otherwise — so the hook can no longer restore itself collapsed while SideNav renders the expanded layout at width 0, which is what made a persisted-collapsed nav come back invisible and unrecoverable (#4790) — that the second independently-initialized boolean is the defect, rather than the restore clamp, is @HelloOjasMutreja's diagnosis from #4853. Passing both props stays supported and every configuration that works today resolves to the same collapse state it does now; when the two props genuinely address the same state (`defaultIsCollapsed` on both, or a controlled `collapsible` alongside collapse state on `resizable`) `resizable` wins and a dev warning names the conflicting keys. `useResizable` gains the standard controlled/uncontrolled pair, `defaultIsCollapsed` and `isCollapsed`, alongside the existing `onCollapseChange`: uncontrolled it owns collapse as before, controlled the prop wins and `collapse()`, `expand()` and a drag past the threshold report through the callback instead of mutating. Persisted entries now store `{size, isCollapsed}` where `size` is the _expanded_ size — the encoding is @AKnassa's from #4824 — so a reload restores the collapsed rail and expanding returns to the width the user had rather than `defaultWidth`; legacy entries still load, with a plain number read as a width whose collapse state is unknown and a plain `0` (written by the old collapse path) read as collapsed, so anyone already stuck with an invisible nav recovers without clearing localStorage. `resizable` can now also carry collapse state on its own. Two notification changes ride along: with a single owner, `collapsible.onCollapsedChange` fires once per toggle on a resizable nav instead of twice; and the hook's collapse callbacks now read the live collapse state rather than the value captured at their last render, so one drag past the threshold reports one collapse instead of one per pointer move, dragging back above the threshold re-expands mid-gesture, and `resize()` out of the collapsed state reports the implicit expand. That last fix is @AKnassa's, from #5118. (#5075)
+- Slider: dragging the thumb with a mouse no longer draws the keyboard focus ring (#5463)
+  The thumb is a `div[role="slider"]`, and the track's `pointerdown` handler calls `preventDefault()` and then focuses the thumb from script. Chromium treats that script focus as focus-visible, so `:focus-visible` matched on mouse-down and every drag came with a 2px accent ring — measured in Chromium, not inferred.
+
+  `:focus-visible` stays the CSS condition; it is now narrowed by the existing `interactionModality` utility, the same way PanelSearchInput and Selector narrow theirs. Keyboard focus rings exactly as before, and a mouse grab of a thumb that already had the ring drops it.
+
+  One deliberate difference from the text-input cases: a keypress after a mouse drag brings the ring back. A text field has a caret to show where input is going, and a slider thumb has nothing else.
+
+- Keep useResizable callbacks stable when snap points are omitted. (#5276)
+- Keep useLayer trigger refs and return objects stable when their inputs are unchanged. (#5272)
+- Keep useTheme token resolvers and return values stable when the resolved theme is unchanged. (#5274)
+- Table sticky columns: the pinned-column shadow now reads the theme's `--color-shadow` token instead of a hardcoded `light-dark()` tint, so a theme can retint it. (#5445)
+  The tint was `light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.32))` written in the component, chosen because `--color-shadow` (10%/30% alpha) read as slightly too faint. A literal in a component is the one place a theme cannot reach: every theme got this exact black regardless of its own shadow colour, and the two-point alpha difference bought nothing for it — rendered, the token version differs by at most 5/255 on any channel in light mode and 1/255 in dark, over the ~0.4% of the frame the two shadow strips occupy.
+
+  Reading the token instead means the seven bundled themes each tint this shadow with the value they already declare for every other shadow (`chocolate` `#4a35201A`, `stone` `#25252a1a`, and so on), and a custom theme gets the same reach.
+
+- Syntax-highlighted punctuation (brackets, commas, semicolons, operators) now meets WCAG 2.1 AA contrast (4.5:1) against the code surface in every bundled theme. (#5414)
+  `--color-syntax-punctuation` borrowed `--color-text-disabled`, a token WCAG deliberately exempts from the normal-text contrast requirement because it marks an inactive control. Punctuation in a code sample is always-active, normal text, and measured well under 4.5:1 in three themes: neutral (2.42:1 light, 2.53:1 dark), chocolate (3.06:1 light, 2.56:1 dark), and matcha (3.83:1 light, 2.73:1 dark). The other four themes (butter, gothic, stone, y2k) already defined their own passing punctuation colour and are untouched.
+
+  The shared default now points at `--color-text-secondary` instead (used for `--color-syntax-comment` too, and already verified to clear AA). Neutral, chocolate and matcha each get a dedicated punctuation colour in their own syntax palette, since they define one rather than inheriting the shared default: neutral `#6e6e6e`/`#a0a0a0` (4.89:1/7.57:1), chocolate `#9e622e`/`#cb884d` (4.84:1/6.12:1), matcha `#566a39`/`#92af6a` (5.19:1/7.02:1).
+
+  Adds `scripts/check-syntax-punctuation-contrast.test.mjs`, resolving each theme's `--color-syntax-punctuation`/`--color-syntax-background` pair through `light-dark()`/`var()` indirection (the pattern from #4446's badge contrast guard) and holding every theme, both colour schemes, to AA — so a regression here fails the build instead of shipping.
+
+- Table keeps grouped headings and selected-row washes visible across frozen columns while scrolling sideways (#5454)
+  `useTableGroupedRows` pins its default heading and collapse control to the table's start edge. `useTableSelection` now publishes and withdraws the selected-row overlay with the row background, so the wash continues under sticky cells.
+- Text, Heading: a truncated label shows one tooltip, not two. (#5559)
+  When `maxLines` clipped the text, both components rendered Astryx's `Tooltip` **and** set the native `title` attribute to the same string. Hovering drew both: the styled tooltip first, then the browser's own unstyled one on top of it a moment later, saying exactly the same thing.
+
+  The `title` goes. `Tooltip` already wires `aria-describedby` onto the anchor, and the full text is in the DOM either way — CSS clips it visually, so a screen reader was never reading the truncated version. Nothing is lost but the duplicate.
+
+  Measured on hover, same story, before and after: `2` tooltips shown to the user, then `1`.
+
+- Seven theme target roots that ran a compound component name together are deprecated onto the `<component-kebab>-<part>` spelling the component's name implies: `codeblock` → `code-block` (with `-copy-button`, `-header`, `-title`), `progressbar` → `progress-bar` (with `-fill`, `-mark`, `-track`), `hovercard` → `hover-card`, `statusdot` → `status-dot`, `textarea` → `text-area`, `navicon` → `nav-icon`, and Table's second root `base-table` → `table` (both named the same `<table>` element). A `defineTheme` key that matches no target fails silently — no error, no warning, the rule never emits — so someone who read `ProgressBar` and wrote `'progress-bar'` got nothing and no explanation. Nothing breaks: every component renders both classes and both keys resolve, including the derived vars a renamed key expands into. The old spellings drop in the next major. (#5449)
+- Toast fits narrow and safe-area viewports, aligns wrapped actions and dismissal, uses edge-directed entrance and exit motion, exposes the Notifications landmark only while populated, and keeps exactly the viewport gutter below the final toast (#5353, #5460)
+  Inter-toast spacing is 8px, while the visual bottom no longer adds a trailing toast gap on top of viewport padding. Placement, visible-stack limits, auto-hide defaults, announcement semantics, and dismissal reasons are unchanged.
+- TreeList: forward `aria-label`/`aria-labelledby` to the `role="tree"` element so a tree can be named (#5493)
+  `TreeList` destructured a fixed set of props with no rest spread, so every `BaseProps` attribute (`aria-*`, `role`, `tabIndex`, `id`, event handlers) was dropped and never reached the DOM. A tree without a visible header could not be named at all - a screen reader announced an unnamed tree with no way to know what it was.
+
+  The component now spreads the remaining props onto the root element and routes `aria-label`/`aria-labelledby` onto the `<ul role="tree">` itself, so `<TreeList aria-label="File tree">` names the tree. When a visible `header` is rendered, it keeps naming the tree (AT hears the same name the user sees); a consumer-supplied `aria-labelledby` only applies on the headerless path. The contract `role="tree"` is written after the rest spread so a consumer cannot displace it.
+
+#### Documentation
+
+- `useAnnounce`, `useTypeahead`, `useInteractiveRole`, `useLongPress`, `useInputStatusIcon`, `useDevWarning` and `useIndicatorFocusRing` are now discoverable. The CLI's hook index is built from the `.doc.mjs` files next to each hook, and these seven shipped without one; so `astryx hook <name>` answered "No hook named", `astryx hook` omitted them and `astryx search` never returned them, while the package exported them with full TSDoc. Agents following the documented discovery workflow concluded the primitives did not exist and hand-rolled replacements; for `useAnnounce` that means a hand-built `aria-live` region, which usually does not announce at all. A test now fails when a hook is exported from the barrel without a doc, so the index cannot silently go stale again. (#5109)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @Astro-Han
+- @bhamodi
+- @cixzhang
+- @ernestt
+- @freddymeta
+- @gonzoblasco
+- @HelloOjasMutreja
+- @imdreamrunner
+- @jiunshinn
+- @josephfarina
+- @lexs
+- @nynexman4464
+- @rubyycheung
+
+---
+
 # 0.5.0
 
 #### Breaking Changes
