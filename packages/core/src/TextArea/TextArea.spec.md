@@ -17,7 +17,7 @@ verified_by:
     scripts/check-knowledge.mjs,
   ]
 modules: []
-families: []
+families: [family:input-fields]
 design_specs: []
 architecture: [architecture:component-theming-surface]
 contributing: []
