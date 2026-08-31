@@ -272,6 +272,7 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--button-focus-offset',
   '--button-icon-only-aspect',
   '--_avatar-group-overlap',
+  '--_field-status-overlap',
   '--_codeblock-gutter-width',
   '--_tab-indicator-bottom',
   // Hit-area outset on a ::after overlay, and whether that overlay is
