@@ -66,7 +66,7 @@ export const MOTION_SECTIONS: ReadonlyArray<MotionSection> = [
     title: 'The exit gap',
     group: 'Presence',
     decides:
-      'Whether presence surfaces should animate out at all, and what enter and exit cost.',
+      'Which surfaces earn an animated exit, and what enter and exit cost on the ones that do.',
   },
   {
     href: '/pages/motion-lab/bugs/',

@@ -1,7 +1,44 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {formatBrief, formatFull} from './component-format.mjs';
+import {formatBrief, formatCompact, formatFull} from './component-format.mjs';
+
+describe('component accessibility guidance', () => {
+  const docs = {
+    name: 'Button',
+    description: 'An action.',
+    usage: {
+      accessibility: [
+        {name: 'Loading', description: 'Expose aria-busy and block duplicate activation.'},
+      ],
+    },
+    props: [],
+  };
+
+  it('renders a dedicated section in full output', () => {
+    const out = formatFull(docs);
+    expect(out).toContain('## Accessibility');
+    expect(out).toContain('- **Loading:** Expose aria-busy and block duplicate activation.');
+  });
+
+  it('keeps accessibility guidance in compact agent output', () => {
+    const out = formatCompact(docs, 'Button');
+    expect(out).toContain('## Accessibility');
+    expect(out).toContain('Expose aria-busy and block duplicate activation.');
+  });
+
+  it('omits the section when a component has no authored requirements', () => {
+    expect(formatFull({...docs, usage: {}})).not.toContain('## Accessibility');
+  });
+
+  it('ignores legacy non-array accessibility content', () => {
+    const legacyDocs = {...docs, usage: {accessibility: 'Follow WCAG guidance.'}};
+
+    expect(() => formatFull(legacyDocs)).not.toThrow();
+    expect(formatFull(legacyDocs)).not.toContain('## Accessibility');
+    expect(formatCompact(legacyDocs, 'Button')).not.toContain('## Accessibility');
+  });
+});
 
 describe('formatFull sub-component rendering', () => {
   // Regression guard: sub-components are sometimes declared as a bare

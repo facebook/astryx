@@ -415,6 +415,10 @@
     "defaultMessage": "Menu",
     "description": "Screen-reader-only fallback name for a dropdown menu popover. Very generic; consumers usually override. Noun (\"a menu\"), not the imperative."
   },
+  "@astryx.dropdownMenu.back": {
+    "defaultMessage": "Back",
+    "description": "Button label that returns from a nested action list to its parent inside a DropdownMenu bottom sheet. Imperative navigation action."
+  },
   "@astryx.lightbox.close": {
     "defaultMessage": "Close",
     "description": "\"Close\" = shut/dismiss (not \"nearby\"). Screen-reader-only label on the X button that dismisses a Lightbox."
@@ -780,8 +784,52 @@
     "description": "Grey placeholder inside an empty DateTimeInput field. Note: the English says only \"date\" though the field is date+time — do not add \"and time\" unless natural."
   },
   "@astryx.dateTimeInput.dialogLabel": {
-    "defaultMessage": "Choose date",
-    "description": "Screen-reader-only accessible name for the DateTimeInput picker dialog. Same English-only \"date\" phrasing as the placeholder — don't add \"and time\" unless natural."
+    "defaultMessage": "Choose date and time",
+    "description": "Screen-reader-only accessible name for the DateTimeInput picker dialog. On desktop this labels the date calendar popover inside the date+time field; on touch devices it labels the full Date/Time bottom sheet."
+  },
+  "@astryx.dateTimeInput.pickerMode": {
+    "defaultMessage": "Date/time section",
+    "description": "Screen-reader-only label for the segmented Date/Time switch at the top of the mobile DateTimeInput bottom sheet."
+  },
+  "@astryx.dateTimeInput.dateTab": {
+    "defaultMessage": "Date",
+    "description": "Visible label for the Date segment in the mobile DateTimeInput bottom sheet."
+  },
+  "@astryx.dateTimeInput.timeTab": {
+    "defaultMessage": "Time",
+    "description": "Visible label for the Time segment in the mobile DateTimeInput bottom sheet."
+  },
+  "@astryx.dateTimeInput.openTimePicker": {
+    "defaultMessage": "Open {label}",
+    "description": "Aria label for the clock button in the mobile DateTimeInput closed time segment. `{label}` is the accessible name of the time input, for example `Meeting time`."
+  },
+  "@astryx.dateTimeInput.saveDatePicking": {
+    "defaultMessage": "Save date",
+    "description": "Primary button at the bottom of the Date panel in the mobile DateTimeInput bottom sheet. It does not close the sheet; it accepts the date step and moves to the Time panel. Use sentence case in English and title case only when appropriate for the locale."
+  },
+  "@astryx.dateTimeInput.hourWheel": {
+    "defaultMessage": "Hour",
+    "description": "Accessible name for the hour wheel in the mobile DateTimeInput bottom sheet."
+  },
+  "@astryx.dateTimeInput.minuteWheel": {
+    "defaultMessage": "Minute",
+    "description": "Accessible name for the minute wheel in the mobile DateTimeInput bottom sheet."
+  },
+  "@astryx.dateTimeInput.secondWheel": {
+    "defaultMessage": "Second",
+    "description": "Accessible name for the optional seconds wheel in the mobile DateTimeInput bottom sheet."
+  },
+  "@astryx.dateTimeInput.meridiemWheel": {
+    "defaultMessage": "AM/PM",
+    "description": "Accessible name for the AM/PM wheel in the mobile DateTimeInput bottom sheet when using 12-hour time."
+  },
+  "@astryx.dateTimeInput.meridiemAM": {
+    "defaultMessage": "AM",
+    "description": "Label for the morning half of the AM/PM wheel in the mobile DateTimeInput bottom sheet. Use the locale's concise ante-meridiem marker."
+  },
+  "@astryx.dateTimeInput.meridiemPM": {
+    "defaultMessage": "PM",
+    "description": "Label for the afternoon/evening half of the AM/PM wheel in the mobile DateTimeInput bottom sheet. Use the locale's concise post-meridiem marker."
   },
   "@astryx.link.newTab": {
     "defaultMessage": "(opens in new tab)",
@@ -906,6 +954,22 @@
   "@astryx.chatToolCalls.error": {
     "defaultMessage": "Error: {message}",
     "description": "Screen-reader text for a tool call that failed. {message} is the error detail."
+  },
+  "@astryx.chatToolCalls.status.pending": {
+    "defaultMessage": "Pending",
+    "description": "Screen-reader-only status label for a tool call that is waiting to begin."
+  },
+  "@astryx.chatToolCalls.status.running": {
+    "defaultMessage": "Running",
+    "description": "Screen-reader-only status label for a tool call that is currently running."
+  },
+  "@astryx.chatToolCalls.status.complete": {
+    "defaultMessage": "Complete",
+    "description": "Screen-reader-only status label for a tool call that completed successfully."
+  },
+  "@astryx.chatToolCalls.status.error": {
+    "defaultMessage": "Failed",
+    "description": "Screen-reader-only status label for a failed tool call when no error detail is supplied."
   },
   "@astryx.chatToolCalls.groupLabel": {
     "defaultMessage": "{count} tool calls",

@@ -13,12 +13,14 @@
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 import {incomparable} from './lib/baseline.mjs';
 import {canonicalizePng} from './lib/canonical-png.mjs';
 import {buildVerdict, compareCaptures} from './lib/compare.mjs';
-import {shotKey} from './lib/plan.mjs';
+import {readThemeCatalog, shotKey} from './lib/plan.mjs';
 import {renderReport} from './lib/report.mjs';
+import {loadConfig} from './lib/sources.mjs';
 
 const args = process.argv.slice(2);
 const flag = name => {
@@ -34,18 +36,21 @@ const pr = Number(flag('pr'));
 const headSha = flag('head-sha') ?? '';
 const runId = flag('run-id') ?? '';
 const runAttempt = flag('run-attempt') ?? '';
-const config = JSON.parse(
-  fs.readFileSync(
-    new URL('./visual-gate.config.json', import.meta.url),
-    'utf8',
-  ),
+const REPO_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../..',
 );
+const config = loadConfig(REPO_ROOT);
+const themeCatalog = readThemeCatalog(REPO_ROOT);
 
 const KEY = /^[A-Za-z0-9._-]{1,240}$/;
 const NAME = /^[A-Za-z0-9._-]{1,120}$/;
+const PACKAGE_NAME = /^@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
 const SHA = /^[0-9a-f]{40}$/;
 const MAX_PNG_BYTES = 12 * 1024 * 1024;
-const MAX_EDGE = 5000;
+const MAX_PNG_WIDTH = 5000;
+const MAX_PNG_HEIGHT = 10000;
+const MAX_PNG_PIXELS = 25_000_000;
 const MAX_SHOTS = 5000;
 
 function fail(message) {
@@ -64,6 +69,29 @@ function shaFile(file) {
   return createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 }
 
+function pngDimensions(bytes, label) {
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (
+    bytes.length < 24 ||
+    !bytes.subarray(0, 8).equals(signature) ||
+    bytes.toString('ascii', 12, 16) !== 'IHDR'
+  ) {
+    fail(`${label} is not a valid PNG: invalid header`);
+  }
+  const width = bytes.readUInt32BE(16);
+  const height = bytes.readUInt32BE(20);
+  if (
+    width <= 0 ||
+    height <= 0 ||
+    width > MAX_PNG_WIDTH ||
+    height > MAX_PNG_HEIGHT ||
+    width * height > MAX_PNG_PIXELS
+  ) {
+    fail(`${label} has invalid dimensions ${width}x${height}`);
+  }
+  return {width, height};
+}
+
 function copyPng(source, target, label) {
   if (!fs.existsSync(source)) fail(`${label} is missing`);
   const stat = fs.lstatSync(source);
@@ -71,19 +99,16 @@ function copyPng(source, target, label) {
     fail(`${label} is not a regular file`);
   if (stat.size <= 0 || stat.size > MAX_PNG_BYTES)
     fail(`${label} has invalid size`);
+  const bytes = fs.readFileSync(source);
+  const dimensions = pngDimensions(bytes, label);
   let image;
   try {
-    image = canonicalizePng(fs.readFileSync(source));
+    image = canonicalizePng(bytes);
   } catch (error) {
     fail(`${label} is not a valid PNG: ${error.message}`);
   }
-  if (
-    image.width <= 0 ||
-    image.height <= 0 ||
-    image.width > MAX_EDGE ||
-    image.height > MAX_EDGE
-  ) {
-    fail(`${label} has invalid dimensions ${image.width}x${image.height}`);
+  if (image.width !== dimensions.width || image.height !== dimensions.height) {
+    fail(`${label} dimensions changed while decoding`);
   }
   fs.mkdirSync(path.dirname(target), {recursive: true});
   fs.writeFileSync(target, image.bytes);
@@ -137,7 +162,16 @@ if (
   fail('trusted capture identity mismatch');
 }
 
-const baselineManifest = readJSON(path.join(baseline, 'manifest.json'));
+const rawBaselineManifest = readJSON(path.join(baseline, 'manifest.json'));
+const capturedKeys = new Set(Object.keys(manifest.shots));
+const baselineManifest = {
+  ...rawBaselineManifest,
+  shots: Object.fromEntries(
+    Object.entries(rawBaselineManifest.shots ?? {}).filter(([key]) =>
+      capturedKeys.has(key),
+    ),
+  ),
+};
 const blocker = incomparable(baselineManifest, manifest);
 if (blocker) fail(`baseline is not comparable: ${blocker}`);
 
@@ -145,6 +179,7 @@ const entries = Object.entries(manifest.shots);
 if (entries.length > MAX_SHOTS)
   fail(`trusted capture exceeds ${MAX_SHOTS} shots`);
 for (const [key, shot] of entries) {
+  const themeMetadata = themeCatalog[shot?.theme];
   if (
     !KEY.test(key) ||
     !shot ||
@@ -152,6 +187,12 @@ for (const [key, shot] of entries) {
     !shot.storyId ||
     typeof shot.theme !== 'string' ||
     !NAME.test(shot.theme) ||
+    !PACKAGE_NAME.test(shot.packageName ?? '') ||
+    shot.stableVisual !== true ||
+    !PACKAGE_NAME.test(shot.themePackageName ?? '') ||
+    shot.stableThemeVisual !== true ||
+    themeMetadata?.packageName !== shot.themePackageName ||
+    themeMetadata?.stableVisual !== true ||
     !['light', 'dark'].includes(shot.mode) ||
     !Array.isArray(shot.reasons) ||
     shotKey(shot) !== key
@@ -201,17 +242,7 @@ for (const [key, shot] of entries) {
   };
 }
 
-const baselineEntries = Object.entries(baselineManifest.shots ?? {});
-const expected = scope.broadStableVisual
-  ? baselineEntries.map(([key]) => key)
-  : baselineEntries
-      .filter(
-        ([, shot]) =>
-          scope.stableComponents.includes(shot.component) ||
-          scope.stableThemes.includes(shot.theme),
-      )
-      .map(([key]) => key);
-if (entries.length === 0 && expected.length === 0) {
+if (entries.length === 0) {
   fail('stable visual scope produced no trusted shots');
 }
 
@@ -223,9 +254,7 @@ const comparison = await compareCaptures({
   diffDir: path.join(output, 'diff'),
   threshold: config.threshold,
   maxDiffPixels: config.maxDiffPixels,
-  scoped: true,
 });
-comparison.removed = expected.filter(key => !trustedManifest.shots[key]);
 
 const verdict = buildVerdict({
   comparison,

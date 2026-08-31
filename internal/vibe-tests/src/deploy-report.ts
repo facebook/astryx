@@ -73,6 +73,10 @@ function runSilent(cmd: string, opts?: {cwd?: string}): string {
   return run(cmd, {...opts, silent: true}).trim();
 }
 
+function shellQuote(value: string): string {
+  return "'" + value.replace(/'/g, "'\\''") + "'";
+}
+
 async function main() {
   const {iteration, baseline, html, astryxTailwind, dryRun, skipPreviews} =
     parseArgs();
@@ -154,8 +158,8 @@ async function main() {
     return;
   }
 
-  // Step 3: Deploy to gh-pages
-  console.log('🚀 Step 3: Deploying to gh-pages...');
+  // Step 3: Deploy through the shared gh-pages publisher.
+  console.log('🚀 Step 3: Publishing through the shared gh-pages queue...');
 
   const tmpDir = path.join(REPO_ROOT, '.deploy-tmp');
   if (fs.existsSync(tmpDir)) {
@@ -164,44 +168,18 @@ async function main() {
   fs.mkdirSync(tmpDir, {recursive: true});
 
   try {
-    const remoteUrl = runSilent('git remote get-url origin', {cwd: REPO_ROOT});
+    fs.copyFileSync(reportHtml, path.join(tmpDir, 'index.html'));
 
-    run(
-      `git clone --depth 1 --branch gh-pages --single-branch ${remoteUrl} ${tmpDir}`,
-      {cwd: REPO_ROOT},
-    );
-
-    const targetDir = path.join(tmpDir, deployPath);
-    fs.mkdirSync(targetDir, {recursive: true});
-    fs.copyFileSync(reportHtml, path.join(targetDir, 'index.html'));
-
-    // Deploy previews if they exist
     const previewsDir = path.join(VIBE_DIR, 'results', iteration, 'previews');
     if (fs.existsSync(previewsDir)) {
-      const targetPreviewsDir = path.join(targetDir, 'previews');
+      const targetPreviewsDir = path.join(tmpDir, 'previews');
       copyDirRecursive(previewsDir, targetPreviewsDir);
       const previewCount = countFiles(targetPreviewsDir, '.html');
       console.log(`   ✓ ${previewCount} preview pages copied`);
     }
 
-    // Deploy screenshots if they exist locally (from GHA artifact download)
-    // Also check if screenshots were already deployed to gh-pages by the
-    // vibe-screenshots workflow's deploy-screenshots job.
-    const targetScreenshotsDir = path.join(targetDir, 'screenshots');
+    const targetScreenshotsDir = path.join(tmpDir, 'screenshots');
     let totalScreenshots = 0;
-
-    // First: check if gh-pages already has screenshots (from GHA deploy-screenshots job)
-    if (
-      fs.existsSync(targetScreenshotsDir) &&
-      countFiles(targetScreenshotsDir, '.png') > 0
-    ) {
-      totalScreenshots = countFiles(targetScreenshotsDir, '.png');
-      console.log(
-        `   ✓ ${totalScreenshots} screenshots found on gh-pages (from GHA)`,
-      );
-    }
-
-    // Second: copy any local screenshots (may add to or overwrite gh-pages ones)
     for (const id of [iteration, baseline, html, astryxTailwind].filter(
       Boolean,
     ) as string[]) {
@@ -214,38 +192,23 @@ async function main() {
       }
     }
 
-    // If screenshots exist (from either source), inject manifest into report HTML
-    // so the report app can render them. The report HTML may have been built
-    // without screenshot data if screenshots weren't available locally during build.
     if (
       totalScreenshots > 0 &&
-      fs.existsSync(path.join(targetDir, 'index.html'))
+      fs.existsSync(path.join(tmpDir, 'index.html'))
     ) {
       const manifestPath = path.join(targetScreenshotsDir, 'manifest.json');
       if (fs.existsSync(manifestPath)) {
         injectScreenshotsIntoReport(
-          path.join(targetDir, 'index.html'),
+          path.join(tmpDir, 'index.html'),
           manifestPath,
         );
       }
     }
 
-    updateReportsIndex(tmpDir);
-
-    run('git add .', {cwd: tmpDir});
-
-    const status = runSilent('git status --porcelain', {cwd: tmpDir});
-    if (!status) {
-      console.log('   ℹ️  No changes to deploy (report already exists)');
-      return;
-    }
-
-    const commitMsg = baseline
-      ? `report: ${iteration} (vs ${baseline})`
-      : `report: ${iteration}`;
-
-    run(`git commit -m "${commitMsg}"`, {cwd: tmpDir});
-    run('git push origin gh-pages', {cwd: tmpDir});
+    run(
+      `node .github/scripts/gh-pages-publisher.mjs vibe-report --report-id ${shellQuote(iteration)} --source ${shellQuote(tmpDir)}`,
+      {cwd: REPO_ROOT},
+    );
 
     const repoUrl = getRepoUrl();
     const reportUrl = repoUrl
@@ -350,60 +313,6 @@ function countFiles(dir: string, ext: string): number {
     }
   }
   return count;
-}
-
-function updateReportsIndex(ghPagesDir: string): void {
-  const reportsDir = path.join(ghPagesDir, 'reports');
-  if (!fs.existsSync(reportsDir)) {
-    return;
-  }
-
-  const entries = fs
-    .readdirSync(reportsDir, {withFileTypes: true})
-    .filter(e => e.isDirectory())
-    .map(e => e.name)
-    .sort()
-    .reverse();
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Astryx Vibe Test Reports</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 0 20px;
-      color: #1a1a1a;
-    }
-    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-    p { color: #666; margin-bottom: 2rem; }
-    ul { list-style: none; padding: 0; }
-    li { margin-bottom: 0.5rem; }
-    a {
-      color: #0969da;
-      text-decoration: none;
-      padding: 8px 12px;
-      display: inline-block;
-      border-radius: 6px;
-      transition: background 0.15s;
-    }
-    a:hover { background: #f0f4f8; }
-  </style>
-</head>
-<body>
-  <h1>📊 Astryx Vibe Test Reports</h1>
-  <p>Evaluation reports comparing Astryx, baseline, and raw HTML targets.</p>
-  <ul>
-    ${entries.map(name => `<li><a href="${name}/">${name}</a></li>`).join('\n    ')}
-  </ul>
-</body>
-</html>`;
-
-  fs.writeFileSync(path.join(reportsDir, 'index.html'), html);
 }
 
 function getRepoUrl(): string | null {

@@ -17,6 +17,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/TouchDateField.tsx
+ * - /packages/core/src/DateTimeInput/TouchDateTimeField.tsx
  * - /packages/core/src/DateInput/DateInput.doc.mjs
  * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */

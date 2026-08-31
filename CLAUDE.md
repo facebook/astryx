@@ -48,6 +48,8 @@ Probes at turns 0, 6, 8, 10 to measure quality degradation. Results show a line 
 }
 ```
 
+Runners may also write an optional `<promptId>.provenance.json` sidecar beside the result metadata. The versioned, executor-neutral contract and fallback behavior are documented in `internal/vibe-tests/docs/execution-provenance.md`.
+
 ## AI Context
 
 For architectural context, decisions, and research, see the **[GitHub Wiki](https://github.com/facebook/astryx/wiki)**:
