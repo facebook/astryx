@@ -108,12 +108,10 @@ A new prop is admitted only when it passes both gates:
 - The proposed PowerSearch editor-popover maximum width is the motivating case
   for the need gate: its width is an internal resolved design choice rather than
   a caller-owned distinction, so a new public tuning prop does not pass.
-- The proposed ProgressBar `presentation` prop is the motivating case for the
-  contract gate. External visible text is caller-owned context, so the need is
-  real. But the enum only switches rendering. It carries no value or relationship
-  and cannot verify or improve the external content. It therefore cannot support
-  the accessibility claim used to justify it. Its endpoint marker also does not
-  solve the base contrast problem.
+- A styling switch cannot be justified by accessibility, association, validation,
+  or other behavior its mechanism cannot perform. Solve the component behavior
+  first; consider API only when a clear, enforceable caller-owned distinction
+  remains.
 
 ## Verification
 
@@ -151,11 +149,10 @@ A non-derivable caller distinction passes only the need gate. The proposed prop
 must also name an understandable concept, produce a dependable observable result,
 and use a mechanism capable of fulfilling the promise used to justify it.
 
-Rejected: `ProgressBar presentation`, because its enum only switches rendering.
-It does not carry, associate, verify, or improve the external visible value used
-in its accessibility argument. Its endpoint marker also does not solve the base
-contrast problem. Solve the component behavior first; reconsider API only if two
-independently correct presentations remain.
+Rejected: admitting a styling switch because review text gives it accessibility,
+association, or validation meaning its mechanism cannot provide. Solve the base
+component behavior first; consider public API only when a clear, enforceable
+caller-owned distinction remains.
 
 ## Open questions
 
