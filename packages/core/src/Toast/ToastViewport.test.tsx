@@ -702,6 +702,155 @@ describe('Toast native motion contract', () => {
     ).toBe('visible');
   });
 
+  it('drops settled state when a toast is evicted and later resurfaces', () => {
+    // A toast beyond `maxVisible` unmounts without ever being dismissed, so
+    // neither removeToast nor handleExited runs for it. When the stack drains
+    // and it resurfaces, it mounts a fresh row that has to run its own entry
+    // transition from `@starting-style` — a settled id left over from its
+    // previous life would release the clip immediately, painting the card's
+    // shadow (and taking pointer input) outside the row that is still opening.
+    render(
+      <ToastViewport isTopLayer={false} position="bottomEnd" maxVisible={1}>
+        <ShowToastButton
+          options={{body: 'First', isAutoHide: false}}
+          triggerLabel="Show first"
+        />
+        <ShowToastButton
+          options={{body: 'Second', isAutoHide: false}}
+          triggerLabel="Show second"
+        />
+      </ToastViewport>,
+    );
+
+    act(() => {
+      fireEvent.click(screen.getByText('Show first'));
+    });
+    const first = getToastWrapperByText('First');
+    act(() => {
+      fireEvent.transitionEnd(first, {propertyName: 'grid-template-rows'});
+    });
+    expect(
+      getComputedStyle(first.firstElementChild as HTMLElement).overflow,
+    ).toBe('visible');
+
+    // Evicted: still in the list, no longer rendered.
+    act(() => {
+      fireEvent.click(screen.getByText('Show second'));
+    });
+    expect(screen.queryByText('First')).not.toBeInTheDocument();
+
+    // Drain the stack so it comes back.
+    const second = getToastWrapperByText('Second');
+    act(() => {
+      fireEvent.transitionEnd(second, {propertyName: 'grid-template-rows'});
+      fireEvent.click(
+        within(second).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    act(() => {
+      fireEvent.transitionEnd(second, {propertyName: 'grid-template-rows'});
+    });
+
+    const resurfaced = getToastWrapperByText('First');
+    expect(
+      getComputedStyle(resurfaced.firstElementChild as HTMLElement).overflow,
+    ).toBe('hidden');
+
+    // And it settles again on its own transition, rather than being stuck.
+    act(() => {
+      fireEvent.transitionEnd(resurfaced, {propertyName: 'grid-template-rows'});
+    });
+    expect(
+      getComputedStyle(resurfaced.firstElementChild as HTMLElement).overflow,
+    ).toBe('visible');
+  });
+
+  it('ignores a grid-template-rows transition bubbling from a descendant', () => {
+    // `grid-template-rows` is not private to the wrapper: any descendant may
+    // animate its own grid, and transitionend bubbles. Reading a descendant's
+    // event as the row's own releases the clip before the row has opened, and
+    // during exit it unmounts the toast mid-collapse.
+    const {wrapper} = renderMotionToast('bottomEnd', 'Bubbled transition');
+    const inner = wrapper.firstElementChild as HTMLElement;
+    expect(getComputedStyle(inner).overflow).toBe('hidden');
+
+    act(() => {
+      fireEvent.transitionEnd(inner, {propertyName: 'grid-template-rows'});
+    });
+    expect(getComputedStyle(inner).overflow).toBe('hidden');
+
+    // The wrapper's own transition still settles it.
+    act(() => {
+      fireEvent.transitionEnd(wrapper, {propertyName: 'grid-template-rows'});
+    });
+    expect(getComputedStyle(inner).overflow).toBe('visible');
+
+    // Same guard on the exit path: a descendant's event must not cut the
+    // collapse short and unmount the toast early.
+    act(() => {
+      fireEvent.click(
+        within(wrapper).getByRole('button', {name: 'Dismiss notification'}),
+      );
+    });
+    act(() => {
+      fireEvent.transitionEnd(inner, {propertyName: 'grid-template-rows'});
+    });
+    expect(screen.getByText('Bubbled transition')).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.transitionEnd(wrapper, {propertyName: 'grid-template-rows'});
+    });
+    expect(screen.queryByText('Bubbled transition')).not.toBeInTheDocument();
+  });
+
+  it('settles and exits without a transitionend when the row has no transition', () => {
+    // Reduced motion keeps a 0.01ms transition precisely so the event still
+    // fires, but that is not the only supported no-transition path: a host
+    // stylesheet, a print or forced-colors context, or a test environment can
+    // resolve the wrapper to `transition-duration: 0s`, and then transitionend
+    // never fires at all. Without a fallback the clip is never released (the
+    // shadow bug this PR fixes returns) and a dismissed toast never unmounts.
+    const realGetComputedStyle = window.getComputedStyle.bind(window);
+    const spy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        const style = realGetComputedStyle(el, pseudo ?? undefined);
+        if (!(el instanceof HTMLElement) || !el.hasAttribute('data-toast-id')) {
+          return style;
+        }
+        return new Proxy(style, {
+          // eslint-disable-next-line @typescript-eslint/promise-function-async -- a Proxy get trap, not an async boundary
+          get(target, prop): unknown {
+            if (prop === 'transitionDuration' || prop === 'transitionDelay') {
+              return '0s';
+            }
+            const value: unknown = Reflect.get(target, prop);
+            if (typeof value === 'function') {
+              return (value as (...args: unknown[]) => unknown).bind(target);
+            }
+            return value;
+          },
+        });
+      });
+
+    try {
+      const {wrapper} = renderMotionToast('bottomEnd', 'No transition');
+      const inner = wrapper.firstElementChild as HTMLElement;
+
+      // No transitionend is ever fired in this test.
+      expect(realGetComputedStyle(inner).overflow).toBe('visible');
+
+      act(() => {
+        fireEvent.click(
+          within(wrapper).getByRole('button', {name: 'Dismiss notification'}),
+        );
+      });
+      expect(screen.queryByText('No transition')).not.toBeInTheDocument();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('keeps reduced motion transitions eventful for exit cleanup', () => {
     const toastSource = readFileSync(
       'packages/core/src/Toast/Toast.tsx',

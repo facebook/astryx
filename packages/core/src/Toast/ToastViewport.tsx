@@ -194,6 +194,135 @@ const withoutId =
   };
 
 /**
+ * A row with no transition never emits `transitionend`, so the event-driven
+ * settle and exit paths would both stall on it. Treated as transitionless only
+ * when every declared duration resolves to zero: an unresolved value — a
+ * custom property an engine or test environment does not compute — reads as
+ * animated, leaving the normal event path in charge.
+ */
+function isTransitionless(el: HTMLElement): boolean {
+  const {transitionDuration} = getComputedStyle(el);
+  if (!transitionDuration) {
+    return false;
+  }
+  return transitionDuration.split(',').every(part => {
+    const seconds = parseFloat(part);
+    return Number.isFinite(seconds) && seconds === 0;
+  });
+}
+
+interface ToastRowProps {
+  entry: ToastEntry;
+  isExiting: boolean;
+  /** Top-anchored stacks grow downward and flip the row's drift and gap. */
+  isReversed: boolean;
+  onExited: (id: string) => void;
+  onDismiss: (id: string, reason: ToastDismissReason) => void;
+}
+
+/**
+ * One row of the stack: the grid wrapper that opens and collapses, and the
+ * clip that releases once it is open so the card's elevation can paint.
+ *
+ * Settled state lives here, on the mounted row, rather than in a Set of ids on
+ * the viewport. A row leaves the DOM by more paths than dismissal — `maxVisible`
+ * evicts the oldest when a newer toast arrives, and a uniqueID overwrite swaps
+ * a new entry into a replaced toast's place — and on those paths nothing on the
+ * dismissal path runs to prune it. Holding the flag on the row makes every one
+ * of them the same event: the row unmounts, the flag goes with it, and a toast
+ * that resurfaces when the stack drains mounts clipped and runs its own entry
+ * transition. Re-clipping on dismissal is the same rule read forward, since the
+ * clip is released only while the row is settled *and* not exiting.
+ */
+function ToastRow({
+  entry,
+  isExiting,
+  isReversed,
+  onExited,
+  onDismiss,
+}: ToastRowProps) {
+  const o = entry.options;
+  const type = o.type ?? 'info';
+  const isAutoHide = o.isAutoHide ?? (type === 'error' ? false : true);
+  const dur = o.autoHideDuration ?? 5000;
+  const [isSettled, setIsSettled] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  // transitionend drives both halves of the row's lifecycle, and it does not
+  // fire when the row resolves to no transition at all. Reduced motion keeps
+  // 0.01ms precisely so the event still arrives, but that is not the only
+  // supported path to a still row: a host stylesheet, a print or forced-colors
+  // context, or a test environment can resolve the wrapper to
+  // `transition-duration: 0s`. Without this an entering row would never release
+  // its clip — the shadow stays cut, which is the whole point of the release —
+  // and a dismissed row would never unmount.
+  useLayoutEffect(() => {
+    const row = rowRef.current;
+    if (!row || !isTransitionless(row)) {
+      return;
+    }
+    if (isExiting) {
+      onExited(entry.id);
+      return;
+    }
+    // Whether the row transitions at all is only readable from the committed
+    // DOM, so this fallback cannot run any earlier than a layout effect.
+    // eslint-disable-next-line @eslint-react/set-state-in-effect
+    setIsSettled(true);
+  }, [entry.id, isExiting, onExited]);
+
+  return (
+    <div
+      ref={rowRef}
+      data-toast-id={entry.id}
+      {...stylex.props(
+        styles.toastWrapper,
+        isReversed ? styles.toastWrapperFromTop : styles.toastWrapperFromBottom,
+        isReversed ? styles.toastWrapperGapReversed : styles.toastWrapperGap,
+        isExiting && styles.toastWrapperExiting,
+      )}
+      onTransitionEnd={(e: React.TransitionEvent) => {
+        // `grid-template-rows` is not private to this wrapper — any descendant
+        // may animate its own grid, and transitionend bubbles. Only the row's
+        // own transition says the row has finished opening or collapsing.
+        if (e.target !== e.currentTarget) {
+          return;
+        }
+        if (e.propertyName !== 'grid-template-rows') {
+          return;
+        }
+        if (isExiting) {
+          onExited(entry.id);
+          return;
+        }
+        // The row is fully open now. Release only the paint clip; the wrapper
+        // still owns pointer events and restores the clip synchronously when
+        // dismissal starts.
+        setIsSettled(true);
+      }}>
+      <div
+        {...stylex.props(
+          styles.toastWrapperInner,
+          isSettled && !isExiting && styles.toastWrapperInnerSettled,
+        )}>
+        <ToastSurface
+          type={type}
+          body={o.body}
+          endContent={o.endContent}
+          isAutoHide={isAutoHide}
+          autoHideDuration={dur}
+          isExiting={isExiting}
+          gestureDirection={isReversed ? -1 : 1}
+          onDismiss={reason => onDismiss(entry.id, reason)}
+          renderContent={o.renderContent}
+        />
+      </div>
+    </div>
+  );
+}
+ToastRow.displayName = 'ToastRow';
+
+/**
  * Container that renders and manages toast notifications. Place at the root
  * of your app to enable useToast(). Toasts stack with enter/exit
  * animations and auto-promote to the CSS top layer.
@@ -215,11 +344,6 @@ export function ToastViewport({
   const t = useTranslator();
   const [toasts, setToasts] = useState<ToastEntry[]>([]);
   const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
-  // Entry rows stay clipped until their grid transition completes; settled
-  // rows release the clip so the card's elevation can paint in every engine.
-  // Dismissal removes the id immediately, restoring the old clip boundary for
-  // the whole exit transition.
-  const [settledIds, setSettledIds] = useState<Set<string>>(new Set());
   const toastsRef = useRef(toasts);
   toastsRef.current = toasts;
 
@@ -304,22 +428,9 @@ export function ToastViewport({
         announce(text, entry.options.type === 'error' ? 'assertive' : 'polite');
       }
       // An overwrite swaps a new entry, with a new id, into the replaced
-      // toast's place. The old row unmounts without ever being dismissed, so
-      // neither removeToast nor handleExited runs for it and its id would sit
-      // in `settledIds` for the life of the viewport — one dead id per update
-      // for the very pattern uniqueID exists to serve ("Saving…" overwritten
-      // by "Saved", a progress toast rewritten per chunk). Resolved against
-      // the committed list rather than inside the `setToasts` updater below,
-      // which React may run more than once; the `ignore` check above reads it
-      // the same way.
-      if (uniqueID) {
-        const replaced = toastsRef.current.find(
-          t => t.options.uniqueID === uniqueID,
-        );
-        if (replaced) {
-          setSettledIds(withoutId(replaced.id));
-        }
-      }
+      // toast's place, so the old row leaves the DOM without ever being
+      // dismissed. Its settled id is dropped by the prune below, which covers
+      // every silent exit with one rule rather than one branch per path.
       setToasts(prev => {
         if (uniqueID) {
           const existing = prev.find(t => t.options.uniqueID === uniqueID);
@@ -373,7 +484,6 @@ export function ToastViewport({
         pendingFocusRef.current = 'restore';
       }
     }
-    setSettledIds(withoutId(id));
     setExitingIds(prev => {
       if (prev.has(id)) {
         return prev;
@@ -513,12 +623,6 @@ export function ToastViewport({
           ? styles.bottomStart
           : styles.bottomEnd;
   const isReversed = position === 'topEnd' || position === 'topStart';
-  const toastWrapperPositionStyle = isReversed
-    ? styles.toastWrapperFromTop
-    : styles.toastWrapperFromBottom;
-  const gapStyle = isReversed
-    ? styles.toastWrapperGapReversed
-    : styles.toastWrapperGap;
 
   return (
     <ToastContext value={contextValue}>
@@ -537,62 +641,16 @@ export function ToastViewport({
             style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
           },
         )}>
-        {visibleToasts.map(entry => {
-          const o = entry.options;
-          const type = o.type ?? 'info';
-          const isAutoHide = o.isAutoHide ?? (type === 'error' ? false : true);
-          const dur = o.autoHideDuration ?? 5000;
-          const isExiting = exitingIds.has(entry.id);
-          return (
-            <div
-              key={entry.id}
-              data-toast-id={entry.id}
-              {...stylex.props(
-                styles.toastWrapper,
-                toastWrapperPositionStyle,
-                gapStyle,
-                isExiting && styles.toastWrapperExiting,
-              )}
-              onTransitionEnd={(e: React.TransitionEvent) => {
-                if (e.propertyName !== 'grid-template-rows') {
-                  return;
-                }
-                if (isExiting) {
-                  handleExited(entry.id);
-                  return;
-                }
-                // The row is fully open now. Release only the paint clip; the
-                // wrapper still owns pointer events and will restore the clip
-                // synchronously when dismissal starts.
-                setSettledIds(prev => {
-                  if (prev.has(entry.id)) {
-                    return prev;
-                  }
-                  return new Set(prev).add(entry.id);
-                });
-              }}>
-              <div
-                {...stylex.props(
-                  styles.toastWrapperInner,
-                  settledIds.has(entry.id) &&
-                    !isExiting &&
-                    styles.toastWrapperInnerSettled,
-                )}>
-                <ToastSurface
-                  type={type}
-                  body={o.body}
-                  endContent={o.endContent}
-                  isAutoHide={isAutoHide}
-                  autoHideDuration={dur}
-                  isExiting={isExiting}
-                  gestureDirection={isReversed ? -1 : 1}
-                  onDismiss={reason => removeToast(entry.id, reason)}
-                  renderContent={o.renderContent}
-                />
-              </div>
-            </div>
-          );
-        })}
+        {visibleToasts.map(entry => (
+          <ToastRow
+            key={entry.id}
+            entry={entry}
+            isExiting={exitingIds.has(entry.id)}
+            isReversed={isReversed}
+            onExited={handleExited}
+            onDismiss={removeToast}
+          />
+        ))}
       </div>
     </ToastContext>
   );

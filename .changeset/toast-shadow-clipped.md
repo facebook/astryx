@@ -21,6 +21,24 @@ underneath.
 This avoids `overflow-clip-margin`, which WebKit 26.5 does not support, while
 preserving the exact paint boundary the exit shipped with before this fix.
 
+Settled state is held on the mounted row rather than in a set of toast ids on
+the viewport, so it cannot outlive the row it describes. A row leaves the DOM
+by more paths than dismissal — `maxVisible` evicts the oldest when a newer
+toast arrives, and a `uniqueID` overwrite swaps a new entry into a replaced
+toast's place — and on neither path does anything on the dismissal path run.
+An evicted toast that resurfaces once the stack drains therefore mounts clipped
+and runs its own entry transition, instead of releasing the clip over a row
+that is still opening.
+
+Two further lifecycle guards: only the row's own transition is read, since
+`grid-template-rows` is not private to the wrapper and `transitionend` bubbles
+from any descendant animating its own grid; and a row that resolves to no
+transition at all settles and exits without waiting for an event that will
+never arrive. Reduced motion keeps a 0.01ms transition so the event still
+fires, but a host stylesheet, a print or forced-colors context can resolve the
+wrapper to `transition-duration: 0s`, and without the fallback the clip would
+never be released and a dismissed toast would never unmount.
+
 Below a settled stock toast on a white page, per pixel row: `255,255,255` at
 every offset before; `237 → 245 → 250 → 254` over the shadow's 14px reach
 after. During exit the row clips again, so anything outside the shrinking row
