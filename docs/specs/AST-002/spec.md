@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-30
+approved_at: 2026-08-31
 phase: accepted
 owners: [cixzhang, imdreamrunner]
 affects_architecture: []
@@ -16,19 +16,19 @@ affects_contributing: [contributing:api-conventions]
 affects_consumer_docs: []
 ---
 
-# Public component prop admission
+# Public API admission and operation shape
 
 ## Intent
 
-Keep Astryx public APIs intentional. A prop should represent a distinction the
-caller owns, not expose a choice the component can make correctly by itself.
+Keep Astryx public APIs intentional. A public API should represent a distinction
+the caller owns, not expose a choice the component can make correctly by itself.
 That need is only the first gate. The proposed API must also have clear meaning,
 dependable behavior, and promises the component can keep.
 
-Every public prop becomes a permanent concept that consumers, documentation,
-tests, themes, migrations, and reviewers must understand. The burden is to show
-why the caller must provide information, not merely that a prop can solve the
-immediate example.
+Every public prop, hook, utility, and operation becomes a permanent concept that
+consumers, documentation, tests, themes, migrations, and reviewers must
+understand. The burden is to show why the caller must provide information, not
+merely that an API can solve the immediate example.
 
 ## Non-goals
 
@@ -36,11 +36,11 @@ immediate example.
 - Preventing utility components from exposing the fine-grained controls that are
   their purpose.
 - Replacing existing styling escape hatches with component-specific layout props.
-- Rejecting a prop only because its implementation is difficult.
+- Rejecting an API only because its implementation is difficult.
 
 ## Requirements
 
-A new prop is admitted only when it passes both gates:
+A public API proposal is admitted only when it passes both gates:
 
 1. **Need:** the caller owns information the component cannot derive.
 2. **Contract:** the API clearly describes a dependable result the component can
@@ -82,29 +82,90 @@ A new prop is admitted only when it passes both gates:
   behavior, and required visual communication do not become valid only when an
   unverified external condition is assumed. Solve the base component problem
   before adding API to select between incomplete solutions.
+- **FR11 — One semantic action has one canonical operation.** Within one
+  component module, any public or package-internal operations that implement the
+  same caller-owned action use one canonical operation name. The public contract
+  may expose a narrower option set while the package-internal implementation
+  accepts wider semantic options under that same operation. Add another operation
+  only for genuinely distinct caller-owned intent with a different contract.
+- **FR12 — Mechanical screening does not outrun contract coverage.** Every API
+  addition or semantic change is rejected now when the pull request lacks a
+  readable semantic delta or fails to update or add the canonical owning record.
+  Component-local semantics belong in the component spec; family-, architecture-,
+  or system-owned semantics update that owner instead. A draft record is valid
+  review context but not policy. Mechanical review also rejects derivable choices
+  and duplicate operations now. Only rejection because the canonical owner lacks
+  `current` authority is deferred until a current policy explicitly activates
+  coverage enforcement for the affected scope.
+- **FR13 — Surviving changes make the semantic delta explicit.** Owner review
+  receives a link to the canonical owner, one sentence stating the semantic
+  before → after, the applicable review classification, and representative syntax
+  only when public syntax changes.
+- **FR14 — Contract restorations are preserves.** A fix that restores a current
+  contract or standard is classified `preserves` and supplies regression evidence.
+  It does not create a new API decision or semantic spec delta unless consumer
+  usage or a documented promise also changes.
+- **FR15 — Invalid states are prevented where practical.** Public APIs prevent
+  bad results when doing so does not make the API harder to understand. Make
+  statically knowable invalid combinations unrepresentable where practical;
+  otherwise validate or warn, or choose a safe documented fallback. Do not
+  silently render a broken state or over-constrain legitimate composition.
 
 ### Platform support
 
-- Supported feature/engine floor: the rule applies to every exported component
-  API on every supported renderer.
+- Supported feature/engine floor: the rule applies to every exported component,
+  hook, and utility API on every supported renderer.
 - Unsupported behavior: a browser or renderer implementation limitation is not
-  itself evidence that callers should receive a permanent prop.
+  itself evidence that callers should receive a permanent API.
 - Browser evidence: layout-based derivability claims are verified in real
-  supported browsers before concluding that a prop is necessary.
+  supported browsers before concluding that public API is necessary.
 
 ## Current-state impact
 
 - API review guidance must require both the caller-need argument and the
-  dependable-contract argument before new props are accepted.
-- Before this rule is used as an automated or routine blocking gate, a blinded
-  historical benchmark must measure both correct pauses and false blocks. A
-  pattern of pausing clearly justified APIs means the rule needs refinement.
-- Component-spec public concepts should record caller ownership, why the
-  distinction is not derivable, the observable result, and how the component can
-  keep the promise.
-- Existing props are not removed automatically. They are evaluated when touched,
-  when an adjacent prop is proposed, or when they cause a concrete maintenance or
-  consistency problem.
+  dependable-contract argument before new public API is accepted.
+- Before broad rejection for missing `current` authority on a canonical owning
+  record is activated, a blinded historical benchmark must measure both correct
+  pauses and false blocks. A pattern of pausing clearly justified APIs means the
+  gate needs refinement.
+- Component specs own component-local semantic API contracts, including public
+  hooks and utilities they explicitly co-own. Family, architecture, and system
+  records own their respective shared semantics. The component's `.doc.mjs`
+  remains the consumer syntax and reference authority.
+- Component specs inherit current family contracts and record only local public
+  concepts, additions, and explicit exceptions; they do not copy shared rules.
+
+### Staged contract coverage
+
+Semantic contract coverage is incomplete. During the staged rollout:
+
+1. The pull request states the semantic before → after, identifies the canonical
+   owner by scope, and updates or adds that record. Component-local semantics use
+   the component spec; shared family, architecture, or system semantics use that
+   owner. A draft record is acceptable review context and names its intended
+   owner, but it is not policy.
+2. Review applies only current component, family, architecture, and system rules.
+   A draft routes an unresolved `novel-human` delta to the owner; it cannot clear
+   the gate or be cited as `settled`.
+3. The owner decides in the pull request. Exact-head owner approval settles only
+   that change. An accepted contract and its evidence remain in the canonical
+   owning record; rejected direction is removed unless it protects a durable
+   boundary.
+4. An owning record becomes `current` only after its local requirements,
+   verification, relationships, approval, and every applicable acceptance
+   prerequisite in current architecture are complete. For component specs, this
+   includes the historical benchmark and pull-request enforcement required by the
+   current knowledge contract. Only then can later reviews reuse it as policy.
+
+Missing `current` authority on a canonical owning record becomes a mechanical
+rejection only after a current policy change explicitly activates enforcement for
+a named scope, that scope has current contract coverage, and the historical
+benchmark has passed. Until then, missing current authority uses the staged owner
+path rather than rejecting the API.
+
+- Existing props and operations are not removed automatically. They are evaluated
+  when touched, when adjacent API is proposed, or when they cause a concrete
+  maintenance or consistency problem.
 - The proposed PowerSearch editor-popover maximum width is the motivating case
   for the need gate: its width is an internal resolved design choice rather than
   a caller-owned distinction, so a new public tuning prop does not pass.
@@ -112,17 +173,27 @@ A new prop is admitted only when it passes both gates:
   or other behavior its mechanism cannot perform. Solve the component behavior
   first; consider API only when a clear, enforceable caller-owned distinction
   remains.
+- [PR #5373](https://github.com/facebook/astryx/pull/5373) is evidence that
+  parallel public and package-internal operations for one semantic action create
+  avoidable surface area. Its particular operation names and options are not
+  policy.
+- Implementing the mechanical API gate and its benchmark is follow-up work. This
+  policy and template change does not add gate implementation code.
 
 ## Verification
 
-| Contract  | Verification                                                                | Representative states                                                 | Mutation or failure expectation                                                           |
-| --------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| FR1, FR5  | Blinded historical API review benchmark                                     | recent utility, mid-range, and composition API additions              | Reviewer accepts a prop without identifying caller-owned semantic variation               |
-| FR2, FR3  | Component tests and real-browser layout evidence                            | content, container, viewport, parent context, and platform variation  | Public API exposes a value the component can derive reliably                              |
-| FR4, FR6  | API surface review for utility, mid-range, and composition components       | existing slot, theme, style, layout, and behavior seams               | High-level component accumulates one-off tuning props instead of using its owning layer   |
-| FR7, FR8  | Consumer examples and behavior tests                                        | default, each public value, composed use, and unsupported use         | Meaning depends on implementation knowledge or tests assert only classes/data attributes  |
-| FR9, FR10 | Component ownership and accessibility review                                | owned content, external sibling content, missing or incorrect context | A state is correct only when the caller fulfills a promise the component cannot verify    |
-| Burden    | Benchmark classification: allow, correct pause, false block, not applicable | recent accepted and rejected API changes                              | Clearly justified APIs are repeatedly paused or blocked without surfacing a real decision |
+| Contract   | Verification                                                                       | Representative states                                                   | Mutation or failure expectation                                                                                                       |
+| ---------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR5   | Blinded historical API review benchmark                                            | recent utility, mid-range, and composition API additions                | Reviewer accepts a prop without identifying caller-owned semantic variation                                                           |
+| FR2, FR3   | Component tests and real-browser layout evidence                                   | content, container, viewport, parent context, and platform variation    | Public API exposes a value the component can derive reliably                                                                          |
+| FR4, FR6   | API surface review for utility, mid-range, and composition components              | existing slot, theme, style, layout, and behavior seams                 | High-level component accumulates one-off tuning props instead of using its owning layer                                               |
+| FR7, FR8   | Consumer examples and behavior tests                                               | default, each public value, composed use, and unsupported use           | Meaning depends on implementation knowledge or tests assert only classes/data attributes                                              |
+| FR9, FR10  | Component ownership and accessibility review                                       | owned content, external sibling content, missing or incorrect context   | A state is correct only when the caller fulfills a promise the component cannot verify                                                |
+| FR11       | Public and package-internal operation inventory; PR #5373                          | one component module and one semantic action                            | One semantic action gains parallel operation names distinguished only by implementation needs                                         |
+| FR12, FR13 | PR delta/canonical-owner update check, staged owner routing, and blinded benchmark | missing delta/update, draft or current authority, and owner-ready delta | Missing delta/owner update passes, missing current authority dead-ends rollout, draft becomes policy, or automation decides semantics |
+| FR14       | Focused regression tests against the current contract or standard                  | defect state and representative unchanged states                        | A restoration invents a new decision or lacks evidence that the regression stays fixed                                                |
+| FR15       | Type-level constraints plus runtime validation and behavior tests                  | invalid values, unsupported combinations, and legitimate composition    | The API silently renders a broken state or prevents a valid composition                                                               |
+| Burden     | Benchmark classification: allow, correct pause, false block, not applicable        | recent accepted and rejected API changes                                | Clearly justified APIs are repeatedly paused or blocked without surfacing a real decision                                             |
 
 ## Decision log
 
@@ -153,6 +224,65 @@ Rejected: admitting a styling switch because review text gives it accessibility,
 association, or validation meaning its mechanism cannot provide. Solve the base
 component behavior first; consider public API only when a clear, enforceable
 caller-owned distinction remains.
+
+### DEC-3 — One semantic action uses one canonical operation name
+
+**Reference:** `spec:AST-002/DEC-3`
+**Decider:** `cixzhang`, `2026-08-31`
+
+A component module uses one canonical operation name for one semantic action across
+its public and package-internal forms. The public contract may expose a narrower
+option set while the package-internal implementation accepts wider semantic
+options under that same name. A second operation is admitted only for genuinely
+distinct caller-owned intent and contract.
+
+Rejected: creating a parallel operation because one internal call path needs
+additional control. That choice exposes internal call-path differences and leaves
+maintainers or consumers to distinguish two names for one action.
+
+### DEC-4 — API review separates objective rejection from owner judgment
+
+**Reference:** `spec:AST-002/DEC-4`
+**Decider:** `cixzhang`, `2026-08-31`
+
+The API gate rejects a missing PR-readable semantic delta, a missing canonical-
+owner-record update, a derivable implementation choice, or duplicate operation
+names for one semantic action now. Component-local semantics update the component
+spec; shared semantics update their family, architecture, or system owner. During
+rollout, that canonical record may be draft context routed to its owner; draft
+context never becomes policy. Only rejection because the canonical owner lacks
+`current` authority waits for a later current policy that activates enforcement
+for a covered, benchmarked scope. A surviving proposal is presented as an
+explicit semantic delta for the human owner to accept, reject, or refine.
+Automation does not make that judgment.
+
+Rejected: asking owners to discover both mechanical defects and the intended
+semantic change from implementation code, or rejecting all API work until every
+component contract is current. Either path wastes human judgment or dead-ends the
+coverage rollout.
+
+### DEC-5 — Semantic contracts apply now; broad coverage rejection activates later
+
+**Reference:** `spec:AST-002/DEC-5`
+**Decider:** `cixzhang`, `2026-08-31`
+
+Semantic API contracts apply now at their canonical owner, and the one-canonical-
+operation rule applies now to public and package-internal forms of the same
+semantic action. API changes that lack a PR-readable semantic delta or fail to
+update or add the canonical owning record are rejected now. Component-local
+semantics use the component spec; family-, architecture-, or system-owned
+semantics use that record. The canonical record may remain draft context routed
+to its owner.
+
+Broad mechanical rejection because that canonical owner lacks `current`
+authority is not active. It requires a later current policy decision that names
+the enforced scope after that scope has current contract coverage and the
+historical benchmark shows the gate can block changes without unacceptable false
+rejections.
+
+Rejected: delaying semantic contract ownership until every owning record is
+current, or treating this decision as immediate authorization to reject every API
+change whose canonical owner is draft or missing.
 
 ## Open questions
 
