@@ -46,6 +46,8 @@ const statusIconMap: Record<InputStatusType, IconName> = {
   success: 'success',
 };
 
+const ATTACHED_OVERLAP = `var(--_field-status-overlap, ${spacingVars['--spacing-1-5']})`;
+
 const styles = stylex.create({
   base: {
     fontFamily: typographyVars['--font-family-body'],
@@ -53,8 +55,8 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   attached: {
-    marginTop: `calc(-1 * ${spacingVars['--spacing-1-5']})`,
-    paddingBlockStart: `calc(${spacingVars['--spacing-1-5']} + ${spacingVars['--spacing-2']})`,
+    marginTop: `calc(-1 * ${ATTACHED_OVERLAP})`,
+    paddingBlockStart: `calc(${ATTACHED_OVERLAP} + ${spacingVars['--spacing-2']})`,
     paddingBlockEnd: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     borderEndStartRadius: radiusVars['--radius-element'],

@@ -27,6 +27,27 @@ afterEach(() => {
 });
 
 describe('Field', () => {
+  it.each(['sm', 'md', 'lg'] as const)(
+    'provides a half-height overlap for an attached %s control',
+    size => {
+      render(
+        <Field
+          label="Username"
+          inputID="username"
+          status={{type: 'warning', message: 'This username may be taken'}}>
+          <div data-size={size}>Control</div>
+        </Field>,
+      );
+
+      const status = screen.getByText('This username may be taken');
+      expect(
+        getComputedStyle(status.parentElement!).getPropertyValue(
+          '--_field-status-overlap',
+        ),
+      ).toBe(`calc(var(--size-element-${size}) / 2)`);
+    },
+  );
+
   it('renders with label', () => {
     render(
       <Field label="Email" inputID="email-input">
