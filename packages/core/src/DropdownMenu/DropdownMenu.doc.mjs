@@ -1,5 +1,107 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Trigger button',
+    required: true,
+    description: 'Button that opens and closes the selected menu presentation.',
+  },
+  {
+    name: 'Trigger indicator icon',
+    required: false,
+    description:
+      'Optional trailing chevron shown by a labeled trigger when hasChevron is enabled.',
+  },
+  {
+    name: 'Pointer menu surface',
+    required: false,
+    description:
+      'Anchored top-level or nested menu panel used by the pointer presentation.',
+  },
+  {
+    name: 'Pointer action row',
+    required: false,
+    description:
+      'Action, selectable option, or submenu trigger row in an anchored menu.',
+  },
+  {
+    name: 'Icon-rendered item icon',
+    required: false,
+    description:
+      'Optional semantic or component icon rendered through Icon at the start of an action row.',
+  },
+  {
+    name: 'Caller-rendered item start content',
+    required: false,
+    description:
+      'Optional arbitrary React content rendered directly at the start of an action row.',
+  },
+  {
+    name: 'Checkbox indicator',
+    required: false,
+    description:
+      'Decorative shared checkbox indicator for a checkbox action row.',
+  },
+  {
+    name: 'Radio indicator',
+    required: false,
+    description:
+      'Decorative shared radio indicator with an additional menu-owned target.',
+  },
+  {
+    name: 'Pointer section heading',
+    required: false,
+    description:
+      'Heading that labels a data-driven section in an anchored menu.',
+  },
+  {
+    name: 'Pointer divider',
+    required: false,
+    description: 'Divider between groups in an anchored menu.',
+  },
+  {
+    name: 'Pointer submenu indicator icon',
+    required: false,
+    description:
+      'Trailing chevron that identifies an action row as a nested flyout trigger.',
+  },
+  {
+    name: 'Touch sheet frame',
+    required: false,
+    description:
+      'BottomSheet panel, content area, handle, and optional scrim that host touch actions.',
+  },
+  {
+    name: 'Touch menu surface',
+    required: false,
+    description:
+      'Menu-owned content panel rendered inside the touch sheet frame.',
+  },
+  {
+    name: 'Touch heading',
+    required: false,
+    description:
+      'Current action-sheet title, updated when a nested action view is opened.',
+  },
+  {
+    name: 'Touch action list',
+    required: false,
+    description: 'Spacious List that groups actions in the touch presentation.',
+  },
+  {
+    name: 'Touch action row',
+    required: false,
+    description:
+      'ListItem button used for an action or drill-in entry in the touch presentation.',
+  },
+  {
+    name: 'Touch divider',
+    required: false,
+    description: 'Divider between action groups in the touch presentation.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -146,6 +248,7 @@ export const docs = {
   ],
   components: [{name: 'DropdownMenuItem'}],
   usage: {
+    anatomy,
     description:
       'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface.',
     bestPractices: [
@@ -257,6 +360,7 @@ export const docsZh = {
 export const docsDense = {
   description: 'dropdown menu for actionable items in popup',
   usage: {
+    anatomy,
     description:
       'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface.',
     bestPractices: [
