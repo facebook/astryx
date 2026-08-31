@@ -52,7 +52,8 @@ export const docs = {
     {
       name: 'menuWidth',
       type: 'number | string',
-      description: 'Fixed flyout width. Defaults to sizing to its content (min 160px).',
+      description:
+        'Minimum flyout width. The flyout may grow for its content, but it is capped to the available viewport space. Defaults to intrinsic sizing (min 160px).',
     },
     {
       name: 'onOpenChange',
@@ -81,7 +82,8 @@ export const docsDense = {
     children: 'flyout menu items (same components as top level)',
     isDisabled: 'renders trigger but never opens',
     hasSpinner: 'spinner instead of caret for async children',
-    menuWidth: 'fixed flyout width (default: content, min 160px)',
+    menuWidth:
+      'minimum flyout width, capped to the viewport (default: content, min 160px)',
     onOpenChange: 'called when flyout opens/closes',
     xstyle: 'StyleX styles for the trigger row',
   },

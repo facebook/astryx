@@ -29,7 +29,12 @@ const SHOT = {
   title: 'Core/Button',
   name: 'Default',
   component: 'Button',
+  packageName: '@astryxdesign/core',
+  packageNames: ['@astryxdesign/core'],
+  stableVisual: true,
   theme: 'neutral',
+  themePackageName: '@astryxdesign/theme-neutral',
+  stableThemeVisual: true,
   mode: 'light',
   reasons: ['component:Button'],
 };
@@ -498,6 +503,7 @@ describe('visual acceptance', () => {
           id: 'core-button--default',
           title: 'Core/Button',
           name: 'Default',
+          componentPath: '../../packages/core/src/Button/index.ts',
           tags: [],
         },
       },
@@ -533,7 +539,7 @@ describe('visual acceptance', () => {
       hasStableVisual: true,
       broadStableVisual: false,
       stableComponents: [],
-      stableThemes: ['new-theme'],
+      stableThemes: ['y2k'],
     });
     const output = path.join(root, 'trusted-theme-plan.json');
     run('trusted-plan', {
@@ -545,8 +551,8 @@ describe('visual acceptance', () => {
     expect(
       JSON.parse(fs.readFileSync(output, 'utf8')).map(shot => shot.key),
     ).toEqual([
-      'core-button--default__new-theme-light',
-      'core-button--default__new-theme-dark',
+      'core-button--default__y2k-light',
+      'core-button--default__y2k-dark',
     ]);
   });
 
@@ -861,34 +867,13 @@ describe('visual acceptance', () => {
     },
   );
 
-  it('promotes a removed shot without an AFTER hash or recaptured file', () => {
+  it('rejects removed PR evidence and preserves the baseline', () => {
     writeEvidence({kind: 'removed', run: 125});
-    run('accept', acceptanceFlags({'run-id': 125}));
-    const capture = path.join(root, 'capture-removed');
-    fs.mkdirSync(capture);
-    writeJSON(path.join(capture, 'manifest.json'), {
-      version: 1,
-      platform: 'linux-arm64',
-      browser: 'chromium-140.0',
-      viewport: {width: 1280, height: 900},
-      capturedAt: '2026-08-26T22:00:00.000Z',
-      context: {sha: MERGE},
-      shots: {},
-    });
-
-    expect(
-      run('promote', {
-        pages,
-        acceptance: acceptanceFile(125),
-        capture,
-        'merge-sha': MERGE,
-      }),
-    ).toContain('Promoted accepted visual bundle');
-    expect(
-      fs.existsSync(
-        path.join(pages, 'visual-gate', 'baseline', 'shots', `${KEY}.png`),
-      ),
-    ).toBe(false);
+    expect(fail('accept', acceptanceFlags({'run-id': 125}))).toMatch(
+      /scoped PR acceptance cannot authorize baseline removals/,
+    );
+    expect(fs.existsSync(acceptanceFile(125))).toBe(false);
+    expect(fs.existsSync(path.join(pages, 'visual-gate', 'baseline', 'shots', `${KEY}.png`))).toBe(true);
   });
 
   it('rejects a merged recapture whose canonical pixels changed', () => {
@@ -980,29 +965,19 @@ describe('visual acceptance', () => {
     ).toMatch(/baseline conflict/);
   });
 
-  it('records added and removed shots without inventing missing images', () => {
+  it('records added shots but rejects removed evidence', () => {
     const added = 'core-new--default__neutral-light';
     writeEvidence({kind: 'added', key: added, run: 124});
     run('accept', acceptanceFlags({'run-id': 124}));
-    let record = JSON.parse(fs.readFileSync(acceptanceFile(124), 'utf8'));
-    expect(record.keys[0]).toMatchObject({
+    expect(JSON.parse(fs.readFileSync(acceptanceFile(124), 'utf8')).keys[0]).toMatchObject({
       key: added,
       kind: 'added',
       beforeSha256: null,
     });
-
-    fs.rmSync(path.join(pages, 'visual-gate', 'acceptances'), {
-      recursive: true,
-      force: true,
-    });
+    fs.rmSync(path.join(pages, 'visual-gate', 'acceptances'), {recursive: true, force: true});
     writeEvidence({kind: 'removed', run: 125});
-    run('accept', acceptanceFlags({'comment-id': 1235, 'run-id': 125}));
-    record = JSON.parse(fs.readFileSync(acceptanceFile(125), 'utf8'));
-    expect(record.keys[0]).toMatchObject({
-      key: KEY,
-      kind: 'removed',
-      afterSha256: null,
-      shot: null,
-    });
+    expect(fail('accept', acceptanceFlags({'comment-id': 1235, 'run-id': 125}))).toMatch(
+      /scoped PR acceptance cannot authorize baseline removals/,
+    );
   });
 });

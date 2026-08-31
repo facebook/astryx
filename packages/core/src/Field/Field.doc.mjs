@@ -6,7 +6,7 @@ export const docs = {
   name: 'Field',
   displayName: 'Field',
   group: 'Field',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["field","formfield","formgroup","formcontrol","label","input","required","optional","helpertext","hint"],
   playground: {
     defaults: {

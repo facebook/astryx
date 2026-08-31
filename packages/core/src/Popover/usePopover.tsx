@@ -28,12 +28,36 @@ import {
   shadowVars,
 } from '../theme/tokens.stylex';
 import {Button} from '../Button';
+import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {rtlStyles} from '../utils';
 import {useTranslator} from '../i18n';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {mergeProps} from '../utils/mergeProps';
 import {themeProps} from '../utils/themeProps';
 import {stableClassName} from '../naming';
+
+const FALLBACK_CLOSE_SELECTOR = '[data-astryx-popover-fallback-close]';
+
+function attemptFocus(element: HTMLElement): boolean {
+  try {
+    element.focus();
+  } catch {
+    // Ignore non-focusable elements; the caller will try the next target.
+  }
+  return document.activeElement === element;
+}
+
+function focusFirstContentControl(container: HTMLElement): boolean {
+  const focusable = Array.from(
+    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter(element => element.closest(FALLBACK_CLOSE_SELECTOR) == null);
+  for (const element of focusable) {
+    if (attemptFocus(element)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 const styles = stylex.create({
   // Default popover surface — background, radius, shadow.
@@ -48,6 +72,11 @@ const styles = stylex.create({
   // Focus trap container
   contentWrapper: {
     position: 'relative',
+    // Pointer-open dialog popovers park focus on this wrapper so the first
+    // action does not look selected. The wrapper itself is not an action and
+    // should not receive the browser's default focus ring; interactive
+    // descendants retain their normal focus-visible treatment.
+    outline: 'none',
   },
   // Hidden close button wrapper - sr-only until focused, then positioned below
   // popover. Inline-axis centering (+ the translateY(100%) that drops it below
@@ -296,6 +325,10 @@ export interface UsePopoverReturn {
 
 interface InternalUsePopoverReturn extends UsePopoverReturn {
   wasJustDismissed: () => boolean;
+  toggleWithOptions: (options?: {
+    skipAutoFocus?: boolean;
+    focusTarget?: 'first' | 'container';
+  }) => void;
 }
 
 /**
@@ -368,6 +401,7 @@ function usePopoverImplementation(
 
   // Track whether to skip auto-focus for the current open event
   const skipAutoFocusRef = useRef(false);
+  const focusTargetRef = useRef<'first' | 'container'>('first');
 
   // Core layer for popover positioning
   const layer = useLayerInternal({
@@ -385,19 +419,44 @@ function usePopoverImplementation(
     onEscape: hasEscapeDismiss || hasLightDismiss ? layer.hide : undefined,
   });
 
+  const focusInitialTarget = useCallback(() => {
+    const container = contentRef.current;
+    if (!container) {
+      return;
+    }
+    if (focusFirstContentControl(container)) {
+      return;
+    }
+    if (role === 'dialog') {
+      attemptFocus(container);
+      return;
+    }
+    focusFirst();
+  }, [contentRef, focusFirst, role]);
+
   // Auto-focus first element when popover opens (unless skipped)
   useEffect(() => {
     if (layer.isOpen && hasAutoFocus && !skipAutoFocusRef.current) {
       // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
-        focusFirst();
+        const container = contentRef.current;
+        if (
+          focusTargetRef.current === 'container' &&
+          role === 'dialog' &&
+          container
+        ) {
+          attemptFocus(container);
+        } else {
+          focusInitialTarget();
+        }
       });
     }
-    // Reset the skip flag after the effect runs
+    // Reset per-open focus preferences after the popover closes.
     if (!layer.isOpen) {
       skipAutoFocusRef.current = false;
+      focusTargetRef.current = 'first';
     }
-  }, [layer.isOpen, hasAutoFocus, focusFirst]);
+  }, [contentRef, layer.isOpen, hasAutoFocus, focusInitialTarget, role]);
 
   // Combined ref for trigger element (layer anchor + our ref)
   const triggerRef = useCallback(
@@ -410,24 +469,35 @@ function usePopoverImplementation(
 
   // Show function with optional skipAutoFocus
   const show = useCallback(
-    (showOptions?: {skipAutoFocus?: boolean}) => {
+    (showOptions?: {
+      skipAutoFocus?: boolean;
+      focusTarget?: 'first' | 'container';
+    }) => {
       skipAutoFocusRef.current = showOptions?.skipAutoFocus ?? false;
+      focusTargetRef.current = showOptions?.focusTarget ?? 'first';
       layer.show();
     },
     [layer],
   );
 
   // Toggle function
-  const toggle = useCallback(() => {
-    if (layer.wasJustDismissed()) {
-      return;
-    }
-    if (layer.isOpen) {
-      layer.hide();
-    } else {
-      show();
-    }
-  }, [layer, show]);
+  const toggleWithOptions = useCallback(
+    (showOptions?: {
+      skipAutoFocus?: boolean;
+      focusTarget?: 'first' | 'container';
+    }) => {
+      if (layer.wasJustDismissed()) {
+        return;
+      }
+      if (layer.isOpen) {
+        layer.hide();
+      } else {
+        show(showOptions);
+      }
+    },
+    [layer, show],
+  );
+  const toggle = useCallback(() => toggleWithOptions(), [toggleWithOptions]);
 
   // ARIA attributes for the trigger
   const triggerProps = {
@@ -465,6 +535,7 @@ function usePopoverImplementation(
             role={role === 'dialog' ? 'dialog' : undefined}
             aria-modal={role === 'dialog' && isModal ? true : undefined}
             aria-label={role === 'dialog' ? dialogLabel : undefined}
+            tabIndex={role === 'dialog' ? -1 : undefined}
             {...mergeProps(
               {...surfaceProps, className: surfaceClassName},
               stylex.props(
@@ -478,6 +549,7 @@ function usePopoverImplementation(
             {children}
             {hasCloseButton && (
               <div
+                data-astryx-popover-fallback-close=""
                 {...stylex.props(
                   styles.closeButtonWrapper,
                   rtlStyles.centerInline('100%'),
@@ -517,6 +589,7 @@ function usePopoverImplementation(
     show,
     hide: layer.hide,
     toggle,
+    toggleWithOptions,
     wasJustDismissed: layer.wasJustDismissed,
     isOpen: layer.isOpen,
     id: layer.id,
@@ -526,7 +599,11 @@ function usePopoverImplementation(
 }
 
 export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
-  const {wasJustDismissed: _, ...popover} = usePopoverImplementation(options);
+  const {
+    wasJustDismissed: _,
+    toggleWithOptions: __,
+    ...popover
+  } = usePopoverImplementation(options);
   return popover;
 }
 

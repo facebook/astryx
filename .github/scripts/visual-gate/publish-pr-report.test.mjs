@@ -28,7 +28,12 @@ const SHOT = {
   title: 'Core/Button',
   name: 'Default',
   component: 'Button',
+  packageName: '@astryxdesign/core',
+  packageNames: ['@astryxdesign/core'],
+  stableVisual: true,
   theme: 'neutral',
+  themePackageName: '@astryxdesign/theme-neutral',
+  stableThemeVisual: true,
   mode: 'light',
   reasons: ['trusted:pr-scope'],
 };
@@ -39,8 +44,8 @@ let output;
 let baseline;
 let scope;
 
-function png(red = 255, green = 0, blue = 0) {
-  const image = new PNG({width: 2, height: 2});
+function pngWithSize(width, height, red = 255, green = 0, blue = 0) {
+  const image = new PNG({width, height});
   for (let i = 0; i < image.data.length; i += 4) {
     image.data[i] = red;
     image.data[i + 1] = green;
@@ -48,6 +53,10 @@ function png(red = 255, green = 0, blue = 0) {
     image.data[i + 3] = 255;
   }
   return PNG.sync.write(image);
+}
+
+function png(red = 255, green = 0, blue = 0) {
+  return pngWithSize(2, 2, red, green, blue);
 }
 
 function writeJSON(file, value) {
@@ -314,14 +323,20 @@ describe('trusted PR visual publisher', () => {
     expect(fs.existsSync(path.join(output, 'after', `${key}.png`))).toBe(true);
   });
 
-  it('derives a removed baseline shot when trusted capture omits expected scope', () => {
-    writeCapture({});
+  it('does not derive removals from a scoped PR capture', () => {
+    const other = 'core-card--default__neutral-light';
+    writeBaseline({
+      [KEY]: {shot: SHOT, bytes: png()},
+      [other]: {
+        shot: {...SHOT, storyId: 'core-card--default', component: 'Card'},
+        bytes: png(),
+      },
+    });
     run();
     const verdict = JSON.parse(
       fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'),
     );
-    expect(verdict).toMatchObject({status: 'changed', removed: [KEY]});
-    expect(fs.existsSync(path.join(output, 'before', `${KEY}.png`))).toBe(true);
+    expect(verdict.removed).toEqual([]);
   });
 
   it('rejects a trusted capture that claims another run', () => {
@@ -343,6 +358,27 @@ describe('trusted PR visual publisher', () => {
   it('rejects capture bytes that are not a PNG', () => {
     fs.writeFileSync(path.join(input, 'shots', `${KEY}.png`), 'not png');
     expect(() => run()).toThrow(/not a valid PNG/);
+  });
+
+  it('accepts tall sheets that stay within the existing pixel budget', () => {
+    const tall = pngWithSize(2, 7673, 0, 0, 255);
+    writeCapture({[KEY]: {shot: SHOT, bytes: tall}});
+
+    run();
+
+    const evidence = JSON.parse(
+      fs.readFileSync(path.join(output, 'evidence.json'), 'utf8'),
+    );
+    expect(evidence.deltas[0].shot).toMatchObject({width: 2, height: 7673});
+  });
+
+  it('rejects PNG headers above the pixel budget before decoding', () => {
+    const oversized = Buffer.from(png());
+    oversized.writeUInt32BE(5000, 16);
+    oversized.writeUInt32BE(5001, 20);
+    fs.writeFileSync(path.join(input, 'shots', `${KEY}.png`), oversized);
+
+    expect(() => run()).toThrow(/invalid dimensions 5000x5001/);
   });
 
   it('rejects an empty capture for an unbaselined stable scope', () => {

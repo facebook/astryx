@@ -43,6 +43,52 @@ describe('visual acceptance workflow concurrency', () => {
     );
   });
 
+  it('uses the shared metadata validator for exact and legacy PR artifacts', () => {
+    const value = workflow('pr-comment.yml');
+    const crossCheck = value.slice(
+      value.indexOf('      - name: Cross-check artifact identity'),
+      value.indexOf('      - name: Fetch the trusted visual baseline'),
+    );
+
+    expect(crossCheck).toContain('import {validateAnalysisMetadata}');
+    expect(crossCheck).toContain('validateAnalysisMetadata(metadata, {');
+    expect(crossCheck).not.toContain('meta.headSha !==');
+  });
+
+  it('orders trusted preview publication before comment reconciliation', () => {
+    const publisher = workflow('deploy-preview.yml');
+    const comment = workflow('pr-comment.yml');
+
+    expect(publisher).toContain('workflow_call:');
+    expect(publisher).toContain('source_run_attempt:');
+    expect(publisher).toContain('--result preview-deployment.json');
+    expect(comment).toContain('uses: ./.github/workflows/deploy-preview.yml');
+    expect(comment).toContain('needs: [resolve, deploy-preview]');
+    expect(comment).toContain(
+      "if: always() && steps.identity.outputs.valid == 'true'",
+    );
+    expect(comment).toContain('reconcilePrComment');
+    expect(comment).not.toContain('const previewAvailable');
+  });
+
+  it('keeps spec-only checks lightweight while removing stale links', () => {
+    const value = workflow('pr-comment.yml');
+    const reconcile = value.slice(
+      value.indexOf('  spec-only-reconcile:'),
+      value.indexOf('  deploy-preview:'),
+    );
+    const deploy = value.slice(
+      value.indexOf('  deploy-preview:'),
+      value.indexOf('  comment:'),
+    );
+
+    expect(value).toContain("needs.resolve.outputs.spec_only == 'true'");
+    expect(reconcile).toContain('reconcilePrComment');
+    expect(reconcile).toContain('createIfMissing: false');
+    expect(reconcile).not.toContain('Setup Node and pnpm');
+    expect(deploy).toContain("needs.resolve.outputs.spec_only != 'true'");
+  });
+
   it('keeps comment authorization read-only until the shared lock is held', () => {
     const value = workflow('visual-acceptance.yml');
     const authorize = value.slice(
@@ -187,7 +233,7 @@ describe('visual acceptance workflow concurrency', () => {
     expect(accept.indexOf('uses: ./.github/actions/setup')).toBeGreaterThan(-1);
     expect(accept.indexOf('uses: ./.github/actions/setup')).toBeLessThan(
       accept.indexOf(
-        'node .github/scripts/visual-gate/visual-acceptance.mjs accept',
+        'node .github/scripts/gh-pages-publisher.mjs visual-acceptance-record',
       ),
     );
   });
@@ -195,8 +241,7 @@ describe('visual acceptance workflow concurrency', () => {
   it('serializes normal, recovery, and manual publication without Actions cancellation', () => {
     const value = workflow('visual-acceptance-promote.yml');
     const manual = workflow('visual-baseline.yml');
-    const helper =
-      'node .github/scripts/visual-gate/lib/baseline-publication-lock.mjs';
+    const helper = 'node .github/scripts/gh-pages-publisher.mjs';
 
     expect(value).toContain('workflow_dispatch:');
     expect(value).toContain("context.ref !== 'refs/heads/main'");
@@ -208,11 +253,15 @@ describe('visual acceptance workflow concurrency', () => {
     );
     expect(value).toContain('ref: main');
     for (const command of ['enqueue', 'wait', 'release']) {
-      expect(value.match(new RegExp(`${helper} ${command}`, 'g'))).toHaveLength(
-        1,
-      );
       expect(
-        manual.match(new RegExp(`${helper} ${command}`, 'g')),
+        value.match(
+          new RegExp(`${helper} ${command} --scope visual-gate/baseline`, 'g'),
+        ),
+      ).toHaveLength(1);
+      expect(
+        manual.match(
+          new RegExp(`${helper} ${command} --scope visual-gate/baseline`, 'g'),
+        ),
       ).toHaveLength(1);
     }
     expect(value).not.toContain('group: visual-baseline');
@@ -223,19 +272,237 @@ describe('visual acceptance workflow concurrency', () => {
     expect(
       value.indexOf('Wait for the baseline publication turn'),
     ).toBeLessThan(value.indexOf('Verify and promote the baseline'));
+    expect(value).toContain('visual-baseline-accepted');
     expect(value).toContain('--expected-record-rel "$RECORD_REL"');
     expect(workflow('pr-comment.yml')).toContain(
       'Post-merge promotion does not join this cancellation group',
     );
     expect(
       manual.indexOf('Wait for the baseline publication turn'),
-    ).toBeLessThan(manual.indexOf('Fetch the current baseline'));
+    ).toBeLessThan(manual.indexOf('Promote and publish the baseline'));
     expect(workflow('release-gate.yml')).toContain(
-      "grep -Ev '/(baseline|latest|publication-queue)/$'",
+      'node .github/scripts/gh-pages-publisher.mjs release-gate --source report',
     );
     expect(value).toContain(
       "context.eventName === 'workflow_dispatch' ? 'true' : 'false'",
     );
+  });
+
+  it('publishes the stable site and release gate through the shared gh-pages publisher', () => {
+    const deploy = workflow('deploy.yml');
+    const releaseGate = workflow('release-gate.yml');
+
+    expect(deploy).toContain('Checkout publisher');
+    expect(deploy).toContain(
+      'node .github/scripts/gh-pages-publisher.mjs stable-site --source staged',
+    );
+    expect(deploy).not.toContain('/tmp/ghp');
+    expect(releaseGate).toContain('Checkout publisher');
+    expect(releaseGate).toContain(
+      'node .github/scripts/gh-pages-publisher.mjs release-gate --source report',
+    );
+    const releasePublisher = releaseGate.slice(
+      releaseGate.indexOf('  publish:'),
+    );
+    expect(releasePublisher).not.toContain('release-gate-publish');
+    expect(releasePublisher).not.toContain('/tmp/gh-pages');
+  });
+
+  it('grants queued gh-pages publishers read access to overlapping workflow runs', () => {
+    const deploy = workflow('deploy.yml');
+    const deployJob = deploy.slice(
+      deploy.indexOf('  deploy:'),
+      deploy.indexOf('      - name: Checkout publisher'),
+    );
+    const releaseGate = workflow('release-gate.yml');
+    const publishJob = releaseGate.slice(
+      releaseGate.indexOf('  publish:'),
+      releaseGate.indexOf('      - name: Checkout publisher'),
+    );
+
+    expect(deployJob).toContain('actions: read');
+    expect(deployJob).toContain('contents: write');
+    expect(deploy).toContain('gh-pages-publisher.mjs stable-site');
+    expect(publishJob).toContain('actions: read');
+    expect(publishJob).toContain('contents: write');
+    expect(releaseGate).toContain('gh-pages-publisher.mjs release-gate');
+  });
+
+  it('moves high-conflict visual gh-pages writers behind the shared publisher', () => {
+    const comment = workflow('pr-comment.yml');
+    const acceptance = workflow('visual-acceptance.yml');
+    const promote = workflow('visual-acceptance-promote.yml');
+    const manual = workflow('visual-baseline.yml');
+
+    expect(comment).toContain('gh-pages-publisher.mjs immutable-path');
+    expect(comment).toContain('--scope pr-visual/evidence');
+    expect(comment).not.toContain('Immutable evidence already published');
+    expect(acceptance).toContain(
+      'gh-pages-publisher.mjs visual-acceptance-record',
+    );
+    expect(acceptance).not.toContain('DEST="visual-gate/acceptances');
+    expect(promote).toContain(
+      'gh-pages-publisher.mjs visual-baseline-accepted',
+    );
+    expect(promote).not.toContain('baseline-publication-lock.mjs');
+    expect(manual).toContain('gh-pages-publisher.mjs visual-baseline-manual');
+    expect(manual).not.toContain('baseline-publication-lock.mjs');
+    expect(manual).not.toContain('git rebase origin/gh-pages');
+  });
+
+  it('grants visual publisher jobs read access to overlapping workflow runs', () => {
+    const comment = workflow('pr-comment.yml');
+    const commentStart = comment.indexOf('  comment:');
+    const commentJob = comment.slice(
+      commentStart,
+      comment.indexOf(
+        '      - name: Checkout trusted default-branch code',
+        commentStart,
+      ),
+    );
+    const acceptance = workflow('visual-acceptance.yml');
+    const acceptJob = acceptance.slice(
+      acceptance.indexOf('  accept:'),
+      acceptance.indexOf(
+        '      - name: Reject an invalid visual acceptance request',
+      ),
+    );
+    const promote = workflow('visual-acceptance-promote.yml');
+    const promoteJob = promote.slice(
+      promote.indexOf('  promote:'),
+      promote.indexOf(
+        '      - name: Checkout trusted current main',
+        promote.indexOf('  promote:'),
+      ),
+    );
+    const manual = workflow('visual-baseline.yml');
+    const manualJob = manual.slice(
+      manual.indexOf('  promote:'),
+      manual.indexOf('      - name: Checkout'),
+    );
+
+    for (const job of [commentJob, acceptJob, manualJob]) {
+      expect(job).toContain('actions: read');
+      expect(job).toContain('contents: write');
+    }
+    expect(promoteJob).toContain('actions: write');
+    expect(promoteJob).toContain('contents: write');
+  });
+
+  it('verifies exact source identity before checking preview artifacts', () => {
+    const value = workflow('deploy-preview.yml');
+    const resolve = value.indexOf(
+      'Confirm trusted source and preview identity',
+    );
+    const metadata = value.indexOf(
+      'Download PR metadata from the exact CI run',
+    );
+    const crossCheck = value.indexOf('Cross-check artifact identity');
+
+    expect(value).toContain('workflow_call:');
+    expect(value).toContain('confirmSourceRunIdentity');
+    expect(value).toContain('head_repository_id:');
+    expect(value).toContain('base_repository:');
+    expect(value).toContain('source_run_attempt:');
+    expect(value).not.toContain('listPullRequestsAssociatedWithCommit');
+    expect(resolve).toBeGreaterThan(-1);
+    expect(resolve).toBeLessThan(metadata);
+    expect(metadata).toBeLessThan(crossCheck);
+    expect(value).toContain('validateAnalysisMetadata');
+    expect(value).toContain('steps.artifact.outputs.ready');
+  });
+
+  it('rechecks independent target readiness immediately before publishing', () => {
+    const value = workflow('deploy-preview.yml');
+    const detect = value.indexOf(
+      'Detect independently available preview targets',
+    );
+    const final = value.indexOf(
+      'Confirm preview target immediately before publication',
+    );
+    const publish = value.indexOf('Publish trusted preview result');
+    const finalBlock = value.slice(final, publish);
+    const publishBlock = value.slice(publish);
+
+    expect(final).toBeGreaterThan(detect);
+    expect(final).toBeLessThan(publish);
+    expect(finalBlock).toContain('confirmSourceRunIdentity');
+    expect(finalBlock).toContain('identity.draft');
+    expect(finalBlock).toContain("'storybook',");
+    expect(finalBlock).toContain("'sandbox',");
+    expect(publishBlock).toContain(
+      "if: always() && steps.final.outputs.ready == 'true'",
+    );
+    expect(publishBlock).toContain('--result preview-deployment.json');
+  });
+
+  it('keeps every remaining gh-pages writer behind the shared publisher', () => {
+    const files = [
+      '.github/workflows/deploy-preview.yml',
+      '.github/workflows/redeploy-preview.yml',
+      '.github/workflows/cleanup-previews.yml',
+      '.github/workflows/compact-gh-pages.yml',
+      '.github/workflows/vibe-screenshots.yml',
+      'internal/vibe-tests/src/deploy-report.ts',
+    ];
+    const combined = files
+      .map(file => fs.readFileSync(path.join(ROOT, file), 'utf8'))
+      .join('\n');
+    expect(combined).toContain('gh-pages-publisher.mjs');
+    expect(combined).not.toContain('git push origin gh-pages');
+    expect(combined).not.toContain('ref: gh-pages');
+    expect(combined).not.toContain('git clone --depth 1 --branch gh-pages');
+  });
+
+  it('grants remaining publisher jobs read access to overlapping workflow runs', () => {
+    const jobs = [
+      [workflow('cleanup-previews.yml'), '  cleanup:'],
+      [workflow('compact-gh-pages.yml'), '  compact:'],
+      [workflow('vibe-screenshots.yml'), '  deploy-screenshots:'],
+    ];
+    for (const [value, jobName] of jobs) {
+      const job = value.slice(
+        value.indexOf(jobName),
+        value.indexOf('    steps:', value.indexOf(jobName)),
+      );
+      expect(job).toContain('actions: read');
+      expect(job).toContain('contents: write');
+    }
+  });
+
+  it('routes previews, cleanup, compaction, and vibe screenshots through the shared publisher', () => {
+    const deployPreview = workflow('deploy-preview.yml');
+    const redeployPreview = workflow('redeploy-preview.yml');
+    const cleanup = workflow('cleanup-previews.yml');
+    const compact = workflow('compact-gh-pages.yml');
+    const vibe = workflow('vibe-screenshots.yml');
+
+    expect(deployPreview).toContain(
+      'node .github/scripts/gh-pages-publisher.mjs "${args[@]}"',
+    );
+    expect(deployPreview).toContain('--result preview-deployment.json');
+    expect(redeployPreview).toContain(
+      'node .github/scripts/gh-pages-publisher.mjs "${args[@]}"',
+    );
+    expect(redeployPreview).toContain('--result preview-deployment.json');
+    expect(redeployPreview).toContain('Checkout trusted publisher');
+    expect(redeployPreview).toContain('ref: main');
+    expect(redeployPreview.indexOf('Checkout trusted publisher')).toBeLessThan(
+      redeployPreview.indexOf('--result preview-deployment.json'),
+    );
+    expect(cleanup).toContain('gh-pages-publisher.mjs cleanup-previews');
+    expect(compact).toContain('gh-pages-publisher.mjs compact');
+    expect(vibe).toContain('gh-pages-publisher.mjs vibe-screenshots');
+    for (const value of [
+      deployPreview,
+      redeployPreview,
+      cleanup,
+      compact,
+      vibe,
+    ]) {
+      expect(value).not.toContain('git push origin gh-pages');
+      expect(value).not.toContain('ref: gh-pages');
+    }
   });
 
   it('projects every known validation or publication failure from an always-running job', () => {
@@ -309,7 +576,8 @@ describe('visual acceptance workflow concurrency', () => {
       value.indexOf('  project-status:'),
     );
 
-    expect(value).toContain('publication_confirmed=true');
+    expect(value).toContain("publication_confirmed == 'true'");
+    expect(value).toContain('visual-baseline-accepted');
     expect(gate).toContain(
       "steps.promote.outputs.publication_confirmed == 'true'",
     );

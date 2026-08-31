@@ -280,9 +280,13 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--_thumbnail-hit-inset',
   '--_input-clear-hit-inset',
   '--_input-clear-hit-content',
-  // Placement-driven motion is private Toast behavior. A theme author controls
-  // the surface transform as a whole, not this one offset within it.
+  // Placement and swipe lifecycle values are private Toast behavior. A theme
+  // author controls the surface transform/opacity as a whole, not these values.
   '--_toast-slide-y',
+  '--_toast-swipe-y',
+  '--_toast-swipe-exit-y',
+  '--_toast-swipe-opacity',
+  '--_toast-swipe-scale',
   // Indentation and row-spacing metrics: --tree-list-indent is the authorable
   // step, --_tree-indent the per-row distance TreeListItem computes from it.
   // --tree-list-row-gap is applied as half a padding-block on each row wrapper,

@@ -23,6 +23,7 @@ import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {eagerShowcases} from '../components/eagerShowcases';
 import {exampleRegistry} from '../generated/exampleRegistry';
+import {normalizeComponentCategory} from '../lib/componentCategories';
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -968,6 +969,124 @@ describe('Card playground defaults', () => {
   });
 });
 
+describe('DropdownMenu adaptive-presentation example', () => {
+  it('documents the presentation choice for the Properties tab', () => {
+    const dropdownMenu = Object.values(components)
+      .flat()
+      .find(component => component.name === 'DropdownMenu');
+    const presentation = dropdownMenu?.props.find(
+      prop => prop.name === 'presentation',
+    );
+
+    expect(presentation?.type).toBe("'popover' | 'bottom-sheet' | 'adaptive'");
+    expect(presentation?.default).toBe("'popover'");
+
+    const defaults = dropdownMenu?.playground?.defaults as
+      Record<string, unknown> | undefined;
+    const items = defaults?.items as
+      Array<{label?: unknown; icon?: unknown}> | undefined;
+    expect(items).toHaveLength(4);
+    expect(items?.every(item => typeof item.icon === 'string')).toBe(true);
+  });
+
+  it('registers the responsive presentation example on the related component pages', () => {
+    const dropdownExamples = exampleRegistry['DropdownMenu'] ?? [];
+    const bottomSheetExample = dropdownExamples.find(example =>
+      /Adaptive presentation/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('useMediaQuery');
+    expect(bottomSheetExample!.source).toContain("'bottom-sheet' : 'popover'");
+    expect(bottomSheetExample!.source).toContain('<DropdownMenu');
+
+    const bottomSheetExamples = exampleRegistry['BottomSheet'] ?? [];
+    expect(
+      bottomSheetExamples.some(
+        example => example.source === bottomSheetExample!.source,
+      ),
+    ).toBe(true);
+
+    const mediaQueryExamples = exampleRegistry['useMediaQuery'] ?? [];
+    expect(
+      mediaQueryExamples.some(
+        example => example.source === bottomSheetExample!.source,
+      ),
+    ).toBe(true);
+  });
+
+  it('registers the ContextMenu BottomSheet example', () => {
+    const contextMenuExamples = exampleRegistry['ContextMenu'] ?? [];
+    const bottomSheetExample = contextMenuExamples.find(example =>
+      /Bottom Sheet/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('presentation="bottom-sheet"');
+    expect(bottomSheetExample!.source).toContain(
+      'Long-press on touch or right-click',
+    );
+    expect(bottomSheetExample!.source).not.toContain("type: 'divider'");
+  });
+
+  it('uses adaptive presentation in the primary ContextMenu example', () => {
+    const contextMenuExamples = exampleRegistry['ContextMenu'] ?? [];
+    const basicExample = contextMenuExamples.find(example =>
+      /Basic/i.test(example.name),
+    );
+
+    expect(basicExample).toBeDefined();
+    expect(basicExample!.source).toContain('presentation="adaptive"');
+    expect(basicExample!.source).toContain('Long-press or right-click');
+  });
+
+  it('registers the MoreMenu BottomSheet example', () => {
+    const moreMenuExamples = exampleRegistry['MoreMenu'] ?? [];
+    const bottomSheetExample = moreMenuExamples.find(example =>
+      /Bottom Sheet/i.test(example.name),
+    );
+
+    expect(bottomSheetExample).toBeDefined();
+    expect(bottomSheetExample!.source).toContain('presentation="bottom-sheet"');
+    expect(bottomSheetExample!.source).toContain('label="Project actions"');
+    expect(bottomSheetExample!.source).not.toContain("type: 'divider'");
+  });
+});
+
+describe('Selector bottom-sheet examples', () => {
+  it.each(['Selector', 'MultiSelector'])(
+    'documents the %s presentation choice',
+    componentName => {
+      const component = Object.values(components)
+        .flat()
+        .find(entry => entry.name === componentName);
+      const presentation = component?.props.find(
+        prop => prop.name === 'presentation',
+      );
+
+      expect(presentation?.type).toBe(
+        "'popover' | 'bottom-sheet' | 'adaptive'",
+      );
+      expect(presentation?.default).toBe("'popover'");
+    },
+  );
+
+  it.each(['Selector', 'MultiSelector'])(
+    'registers the %s BottomSheet example',
+    componentName => {
+      const examples = exampleRegistry[componentName] ?? [];
+      const bottomSheetExample = examples.find(example =>
+        /Bottom Sheet/i.test(example.name),
+      );
+
+      expect(bottomSheetExample).toBeDefined();
+      expect(bottomSheetExample!.source).toContain(
+        'presentation="bottom-sheet"',
+      );
+    },
+  );
+});
+
 // ── Vertical ToggleButtonGroup example (#2707) ─────────────────────────────
 // ToggleButtonGroup supports orientation="vertical", but no docsite example
 // demonstrated it — the prop was undiscoverable without reading the API
@@ -1068,13 +1187,17 @@ describe('galleryEagerShowcases', () => {
   /** Gallery render order: categories in display order, then registry order. */
   const galleryOrder = categories.flatMap(cat =>
     (components['@astryxdesign/core'] ?? []).filter(
-      c => c.category === cat && isGalleryComponent(c),
+      c =>
+        normalizeComponentCategory(c.category ?? '') === cat &&
+        isGalleryComponent(c),
     ),
   );
 
   it('reads the gallery category order out of the page', () => {
     expect(categories.length).toBeGreaterThan(5);
     expect(categories).toContain('Action');
+    expect(categories).toContain('Form Controls');
+    expect(categories).not.toContain('Data Input');
     expect(galleryOrder.length).toBeGreaterThan(50);
   });
 
@@ -1082,7 +1205,7 @@ describe('galleryEagerShowcases', () => {
     const declared = new Set(
       (components['@astryxdesign/core'] ?? [])
         .filter(isGalleryComponent)
-        .map(c => c.category),
+        .map(c => normalizeComponentCategory(c.category ?? '')),
     );
     for (const cat of declared) {
       expect(

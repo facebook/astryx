@@ -47,6 +47,7 @@ e2e/playwright/.cache/
 
 # Vibe tests (large generated files)
 internal/vibe-tests/results/
+internal/vibe-tests/.fixture-runs/
 
 # Astryx agent docs (generated)
 .astryx-docs/

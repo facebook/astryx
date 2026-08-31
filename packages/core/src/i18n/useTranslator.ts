@@ -19,9 +19,8 @@
  * - /packages/core/src/i18n/t.client.ts
  */
 
-import {use, useCallback} from 'react';
+import {use} from 'react';
 import {InternationalizationContext} from './InternationalizationContext';
-import {resolve} from './resolve';
 
 export type TranslatorFn = (
   key: string,
@@ -42,9 +41,5 @@ export type TranslatorFn = (
  */
 export function useTranslator(): TranslatorFn {
   const ctx = use(InternationalizationContext);
-  return useCallback(
-    (key: string, values?: Record<string, unknown>) =>
-      resolve(key, values, ctx.locale, ctx.messages, ctx.overrides),
-    [ctx.locale, ctx.messages, ctx.overrides],
-  );
+  return ctx.translate;
 }

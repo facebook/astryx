@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Data Dashboard',
   displayName: 'Data Dashboard',
-  description:
-    'User-analytics dashboard with a filter bar, overview KPI cards with sparklines and d/d, w/w, m/m, y/y deltas, an active-users-by-device trend, and audience demographics and acquisition channels.',
+  description: 'Comparison-heavy analytics behind a persistent filter bar: tiles that each carry an inline sparkline and several period-over-period deltas, then segmented breakdowns underneath. Every number is shown against another number. Dashboard, metrics, stats, analytics, trends, or reporting.',
   isReady: false,
   category: 'Dashboard - Analytics',
   isHiddenFromOverview: true,
