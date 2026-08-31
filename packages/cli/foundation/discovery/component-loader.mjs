@@ -51,7 +51,7 @@ export async function loadComponentDoc(
   /** @type {any} */
   const translation = mod[translationKey];
   if (translation.props || translation.components?.some((/** @type {any} */ c) => c.props)) {
-    return translation;
+    return overlayComponentDoc(docs, translation);
   }
   return mergeTranslation(docs, translation);
 }
