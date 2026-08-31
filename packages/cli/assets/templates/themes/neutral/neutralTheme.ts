@@ -1,65 +1,614 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * Neutral Theme
- *
- * A pure grayscale spine with a from-scratch OKLCH-derived categorical
- * palette. Hues are placed at evenly-spaced positions on the OKLCH wheel,
- * chosen to keep each color recognizable at every tone (no red drift for
- * orange, no blue drift for purple) and well-separated from its neighbors.
- *
- * Core neutral palette: #fafafa, #f5f5f5, #e5e5e5, #737373, #262626, #0a0a0a
- *
- * Categorical hues (OKLCH; chroma = max-in-gamut at the saturated stop):
- *   Red H=25    Orange H=65    Yellow H=90    Green H=145
- *   Teal H=180  Cyan H=215     Blue H=250     Purple H=320  Pink H=355
- *
- * Saturated badge stops:
- *   • Cool/medium hues sit at OKLCH L=0.48–0.50 with white text (AA+)
- *   • Bright warm hues (orange L=0.68, yellow L=0.80) use dark text
- *
- * Token tonal stops:
- *   bg     = T90 (light) / T20 (dark)
- *   border = T80         / T30
- *   icon   = T30         / T80
- *   text   = T30         / T80
- *
- * All 9 saturated badge values pass WCAG AA against their label (>= 4.5:1);
- * `scripts/check-badge-contrast.test.mjs` holds every theme to that.
- *
- * Only overrides tokens that differ from the defaults.
- */
+/** Neutral theme with a grayscale foundation and approved OKLCH color ramps. */
 
 import {
   defineTheme,
   defineSyntaxTheme,
+  defineTonalPalettes,
+  type TonalPaletteTone,
   type TokenValue,
 } from '@astryxdesign/core/theme';
 import {neutralIconRegistry} from './icons';
 
-/**
- * Neutral syntax palette — pulled from the OKLCH T30 (light) / T80 (dark)
- * stops of the categorical ramps. Same colors used by --color-icon-* tokens.
- */
+/** Approved tonal palette. Prefer semantic tokens before selecting a stop. */
+export const neutralPalettes = defineTonalPalettes({
+  neutral: {
+    light: {
+      0: '#000000',
+      5: '#111111',
+      10: '#1b1b1b',
+      15: '#262626',
+      20: '#303030',
+      25: '#3b3b3b',
+      30: '#474747',
+      35: '#525252',
+      40: '#5e5e5e',
+      45: '#6a6a6a',
+      50: '#777777',
+      55: '#848484',
+      60: '#919191',
+      65: '#9e9e9e',
+      70: '#ababab',
+      75: '#b9b9b9',
+      80: '#c6c6c6',
+      85: '#d4d4d4',
+      90: '#e2e2e2',
+      95: '#f1f1f1',
+      100: '#ffffff',
+    },
+    dark: {
+      0: '#111111',
+      5: '#1b1b1b',
+      10: '#262626',
+      15: '#303030',
+      20: '#3b3b3b',
+      25: '#474747',
+      30: '#525252',
+      35: '#5e5e5e',
+      40: '#6a6a6a',
+      45: '#777777',
+      50: '#848484',
+      55: '#919191',
+      60: '#9e9e9e',
+      65: '#ababab',
+      70: '#b9b9b9',
+      75: '#c6c6c6',
+      80: '#d4d4d4',
+      85: '#dedede',
+      90: '#e7e7e7',
+      95: '#f1f1f1',
+      100: '#ffffff',
+    },
+    description:
+      'Pure grayscale foundation for surfaces, text, borders, and neutral states.',
+  },
+  red: {
+    light: {
+      0: '#000000',
+      5: '#2c0000',
+      10: '#3e0002',
+      15: '#500004',
+      20: '#620008',
+      25: '#76000c',
+      30: '#8a0011',
+      35: '#9e0017',
+      40: '#b3001b',
+      45: '#c71024',
+      50: '#d62830',
+      55: '#e53c3e',
+      60: '#f44c4b',
+      65: '#ff635e',
+      70: '#ff7e78',
+      75: '#ff9790',
+      80: '#ffaea7',
+      85: '#ffc4be',
+      90: '#ffd8d3',
+      95: '#feecea',
+      100: '#ffffff',
+      hue: 25,
+      chroma: 0.0767,
+    },
+    dark: {
+      0: '#2c0000',
+      5: '#3e0002',
+      10: '#500004',
+      15: '#620008',
+      20: '#76000c',
+      25: '#890012',
+      30: '#9b0e1a',
+      35: '#ab2126',
+      40: '#ba3132',
+      45: '#ca3f3e',
+      50: '#d94e4a',
+      55: '#e85c57',
+      60: '#f76a65',
+      65: '#f7847d',
+      70: '#f99c94',
+      75: '#fab1aa',
+      80: '#fac5c0',
+      85: '#fbd3cf',
+      90: '#fce0dc',
+      95: '#fcedeb',
+      100: '#ffffff',
+      hue: 25,
+      chroma: 0.0767,
+    },
+    semantic: 'error',
+    description: 'Error, destructive, and red categorical states.',
+  },
+  orange: {
+    light: {
+      0: '#000000',
+      5: '#200b00',
+      10: '#2d1500',
+      15: '#3b1e00',
+      20: '#492700',
+      25: '#583100',
+      30: '#673a00',
+      35: '#774500',
+      40: '#884f00',
+      45: '#985900',
+      50: '#aa6400',
+      55: '#bb6f00',
+      60: '#cd7a00',
+      65: '#df8600',
+      70: '#f19100',
+      75: '#f6a44b',
+      80: '#f7b87a',
+      85: '#f8cba0',
+      90: '#faddc2',
+      95: '#fbeee3',
+      100: '#ffffff',
+      hue: 65,
+      chroma: 0.0826,
+    },
+    dark: {
+      0: '#200b00',
+      5: '#2d1500',
+      10: '#3b1e00',
+      15: '#492700',
+      20: '#583100',
+      25: '#673a00',
+      30: '#774500',
+      35: '#884f00',
+      40: '#985900',
+      45: '#aa6400',
+      50: '#bb6f00',
+      55: '#cd7a00',
+      60: '#df8600',
+      65: '#eb952c',
+      70: '#eea75f',
+      75: '#f2ba85',
+      80: '#f4cca7',
+      85: '#f6d8bc',
+      90: '#f8e3d1',
+      95: '#faefe5',
+      100: '#ffffff',
+      hue: 65,
+      chroma: 0.0826,
+    },
+    description: 'Orange categorical states.',
+  },
+  yellow: {
+    light: {
+      0: '#000000',
+      5: '#190f00',
+      10: '#251a00',
+      15: '#312400',
+      20: '#3d2e00',
+      25: '#4b3900',
+      30: '#584400',
+      35: '#664f00',
+      40: '#745b00',
+      45: '#836700',
+      50: '#927300',
+      55: '#a17f00',
+      60: '#b18c00',
+      65: '#c09800',
+      70: '#d0a500',
+      75: '#e1b300',
+      80: '#f1c000',
+      85: '#f9d05b',
+      90: '#f9e19e',
+      95: '#fbf0d3',
+      100: '#ffffff',
+      hue: 90,
+      chroma: 0.1534,
+    },
+    dark: {
+      0: '#190f00',
+      5: '#251a00',
+      10: '#312400',
+      15: '#3d2e00',
+      20: '#4b3900',
+      25: '#584400',
+      30: '#664f00',
+      35: '#745b00',
+      40: '#836700',
+      45: '#927300',
+      50: '#a17f00',
+      55: '#b18c00',
+      60: '#c09800',
+      65: '#d0a500',
+      70: '#e1b300',
+      75: '#f1c000',
+      80: '#f4d170',
+      85: '#f6dc97',
+      90: '#f7e6b8',
+      95: '#f9f0d7',
+      100: '#ffffff',
+      hue: 90,
+      chroma: 0.1534,
+    },
+    semantic: 'warning',
+    description: 'Warning and yellow categorical states.',
+  },
+  green: {
+    light: {
+      0: '#000000',
+      5: '#001800',
+      10: '#002401',
+      15: '#003004',
+      20: '#003d08',
+      25: '#004a0c',
+      30: '#005711',
+      35: '#006516',
+      40: '#00731b',
+      45: '#008120',
+      50: '#009026',
+      55: '#079f2b',
+      60: '#27ad3c',
+      65: '#3dba4b',
+      70: '#67c46d',
+      75: '#85cd88',
+      80: '#a1d7a1',
+      85: '#bbe1bb',
+      90: '#d2ead2',
+      95: '#eaf4ea',
+      100: '#ffffff',
+      hue: 145,
+      chroma: 0.0708,
+    },
+    dark: {
+      0: '#001800',
+      5: '#002401',
+      10: '#003004',
+      15: '#003d08',
+      20: '#004a0c',
+      25: '#005711',
+      30: '#006518',
+      35: '#00731c',
+      40: '#0c8124',
+      45: '#228e31',
+      50: '#339c3f',
+      55: '#43a94c',
+      60: '#53b75a',
+      65: '#74c177',
+      70: '#8ecb8f',
+      75: '#a6d5a6',
+      80: '#bedfbe',
+      85: '#cee6cd',
+      90: '#dcecdb',
+      95: '#ebf4eb',
+      100: '#ffffff',
+      hue: 145,
+      chroma: 0.0708,
+    },
+    semantic: 'success',
+    description: 'Success and green categorical states.',
+  },
+  teal: {
+    light: {
+      0: '#000000',
+      5: '#001612',
+      10: '#00221c',
+      15: '#002e27',
+      20: '#003a31',
+      25: '#00463d',
+      30: '#005348',
+      35: '#006154',
+      40: '#006e60',
+      45: '#007c6d',
+      50: '#008b79',
+      55: '#009986',
+      60: '#00a893',
+      65: '#00b7a1',
+      70: '#00c6ae',
+      75: '#34d4bc',
+      80: '#76dcc9',
+      85: '#a2e4d6',
+      90: '#c3ede3',
+      95: '#e4f5f1',
+      100: '#ffffff',
+      hue: 180,
+      chroma: 0.0767,
+    },
+    dark: {
+      0: '#001612',
+      5: '#00221c',
+      10: '#002e27',
+      15: '#003a31',
+      20: '#00463d',
+      25: '#005348',
+      30: '#006154',
+      35: '#006e60',
+      40: '#007c6d',
+      45: '#008b79',
+      50: '#009986',
+      55: '#00a893',
+      60: '#00b7a1',
+      65: '#00c6ae',
+      70: '#55d1bb',
+      75: '#84dac8',
+      80: '#a8e2d6',
+      85: '#bee9df',
+      90: '#d2eee8',
+      95: '#e6f5f1',
+      100: '#ffffff',
+      hue: 180,
+      chroma: 0.0767,
+    },
+    description: 'Teal categorical states.',
+  },
+  cyan: {
+    light: {
+      0: '#000000',
+      5: '#00151b',
+      10: '#002028',
+      15: '#002c35',
+      20: '#003742',
+      25: '#004350',
+      30: '#00505f',
+      35: '#005d6d',
+      40: '#006a7d',
+      45: '#00788c',
+      50: '#00869c',
+      55: '#0094ac',
+      60: '#00a2bd',
+      65: '#00b1ce',
+      70: '#00bfdf',
+      75: '#29ceed',
+      80: '#71d7ef',
+      85: '#9ee1f1',
+      90: '#c2eaf5',
+      95: '#e3f4f9',
+      100: '#ffffff',
+      hue: 215,
+      chroma: 0.0767,
+    },
+    dark: {
+      0: '#00151b',
+      5: '#002028',
+      10: '#002c35',
+      15: '#003742',
+      20: '#004350',
+      25: '#00505f',
+      30: '#005d6d',
+      35: '#006a7d',
+      40: '#00788c',
+      45: '#00869c',
+      50: '#0094ac',
+      55: '#00a2bd',
+      60: '#00b1ce',
+      65: '#00bfdf',
+      70: '#50cbe7',
+      75: '#80d6ea',
+      80: '#a7dfed',
+      85: '#bce7f1',
+      90: '#d1edf5',
+      95: '#e5f4f8',
+      100: '#ffffff',
+      hue: 215,
+      chroma: 0.0767,
+    },
+    description: 'Cyan categorical states.',
+  },
+  blue: {
+    light: {
+      0: '#000000',
+      5: '#000f30',
+      10: '#001a41',
+      15: '#002452',
+      20: '#002f64',
+      25: '#003a78',
+      30: '#00458c',
+      35: '#0050a1',
+      40: '#005cb6',
+      45: '#0068cc',
+      50: '#0074e2',
+      55: '#0081f9',
+      60: '#2f90ff',
+      65: '#529fff',
+      70: '#6eaeff',
+      75: '#87bcff',
+      80: '#a0caff',
+      85: '#b8d7ff',
+      90: '#d0e5ff',
+      95: '#e8f2ff',
+      100: '#ffffff',
+      hue: 255,
+      chroma: 0.1003,
+    },
+    dark: {
+      0: '#000f30',
+      5: '#001a41',
+      10: '#002452',
+      15: '#002f64',
+      20: '#003a78',
+      25: '#00458c',
+      30: '#0050a1',
+      35: '#005cb6',
+      40: '#0068cc',
+      45: '#0074e2',
+      50: '#0080f9',
+      55: '#2f90ff',
+      60: '#529fff',
+      65: '#6eaeff',
+      70: '#87bcff',
+      75: '#a0caff',
+      80: '#b8d7ff',
+      85: '#c8e0ff',
+      90: '#d8e9ff',
+      95: '#e8f2ff',
+      100: '#ffffff',
+      hue: 255,
+      chroma: 0.1003,
+    },
+    semantic: 'info',
+    description: 'Information, accent, and blue categorical states.',
+  },
+  purple: {
+    light: {
+      0: '#000000',
+      5: '#22002a',
+      10: '#31003b',
+      15: '#40004c',
+      20: '#4f005e',
+      25: '#5f0070',
+      30: '#6f0782',
+      35: '#7c1a90',
+      40: '#8b2a9f',
+      45: '#9838ad',
+      50: '#a746bb',
+      55: '#b455c9',
+      60: '#c263d7',
+      65: '#cf71e6',
+      70: '#d58ae6',
+      75: '#dc9fe9',
+      80: '#e1b3ed',
+      85: '#e8c7ef',
+      90: '#f0dbf4',
+      95: '#f6edf8',
+      100: '#ffffff',
+      hue: 320,
+      chroma: 0.0708,
+    },
+    dark: {
+      0: '#22002a',
+      5: '#31003b',
+      10: '#40004c',
+      15: '#4f005d',
+      20: '#5c116b',
+      25: '#6a1e78',
+      30: '#762b87',
+      35: '#843895',
+      40: '#9244a3',
+      45: '#a051b1',
+      50: '#ae5fc0',
+      55: '#bb6cce',
+      60: '#c979dc',
+      65: '#d090de',
+      70: '#d7a3e3',
+      75: '#dfb6e8',
+      80: '#e6c9ec',
+      85: '#ebd5ef',
+      90: '#f0e2f4',
+      95: '#f6eef7',
+      100: '#ffffff',
+      hue: 320,
+      chroma: 0.0708,
+    },
+    description: 'Purple categorical states.',
+  },
+  pink: {
+    light: {
+      0: '#000000',
+      5: '#290013',
+      10: '#3b001e',
+      15: '#4b0028',
+      20: '#5d0034',
+      25: '#70003f',
+      30: '#82004b',
+      35: '#960058',
+      40: '#a81064',
+      45: '#b72470',
+      50: '#c6357d',
+      55: '#d5458a',
+      60: '#e45397',
+      65: '#f363a4',
+      70: '#f47fb0',
+      75: '#f697bc',
+      80: '#f7adc9',
+      85: '#f9c4d6',
+      90: '#fad7e4',
+      95: '#fbecf1',
+      100: '#ffffff',
+      hue: 355,
+      chroma: 0.0708,
+    },
+    dark: {
+      0: '#290013',
+      5: '#3b001e',
+      10: '#4b0028',
+      15: '#5d0034',
+      20: '#6f003f',
+      25: '#800a4a',
+      30: '#8f1b56',
+      35: '#9e2b63',
+      40: '#ad3870',
+      45: '#bc467c',
+      50: '#cb5389',
+      55: '#d96196',
+      60: '#e86ea3',
+      65: '#eb87b0',
+      70: '#ee9cbd',
+      75: '#f1b1c9',
+      80: '#f4c6d6',
+      85: '#f6d3df',
+      90: '#f8e0e8',
+      95: '#faedf1',
+      100: '#ffffff',
+      hue: 355,
+      chroma: 0.0708,
+    },
+    description: 'Pink categorical states.',
+  },
+});
+
+function getPaletteStop(
+  family: keyof typeof neutralPalettes,
+  stop: TonalPaletteTone,
+  mode: 'light' | 'dark' = 'light',
+): string {
+  return neutralPalettes[family][mode][stop];
+}
+
+function lightDark(light: string, dark: string): string {
+  return `light-dark(${light}, ${dark})`;
+}
+
+function withAlpha(
+  color: string,
+  alpha: '0D' | '0F' | '14' | '1A' | '33' | '3D' | '4D' | '80' | 'CC',
+): string {
+  return `${color}${alpha}`;
+}
+
+/** Syntax colors use the same palette stops as categorical icons. */
 const neutralSyntax = defineSyntaxTheme({
   name: 'astryx-neutral',
   tokens: {
-    keyword: ['#700084', '#efa8ff'], // purple T30/T80
-    string: ['#005600', '#a6d2a2'], // green (sat T30 / pastel T80)
-    comment: ['#737373', '#a3a3a3'], // neutral
-    number: ['#6e3500', '#ffb37f'], // orange
-    function: ['#00458c', '#a0caff'], // blue T30/T80 H=255
-    type: ['#700084', '#efa8ff'], // purple
-    variable: ['#171717', '#e5e5e5'], // near-black / near-white
-    operator: ['#737373', '#a3a3a3'], // neutral
-    constant: ['#6e3500', '#ffb37f'], // orange
-    tag: ['#89001a', '#ffaeaa'], // red
-    attribute: ['#584400', '#eec12f'], // yellow
-    property: ['#005348', '#83dac9'], // teal
-    // #a3a3a3/#525252 (this pair's own disabled-text tone) failed WCAG AA
+    keyword: [
+      getPaletteStop('purple', 30),
+      getPaletteStop('purple', 80, 'dark'),
+    ],
+    string: [getPaletteStop('green', 30), getPaletteStop('green', 80, 'dark')],
+    comment: [
+      getPaletteStop('neutral', 50),
+      getPaletteStop('neutral', 65, 'light'),
+    ],
+    number: [
+      getPaletteStop('orange', 30),
+      getPaletteStop('orange', 80, 'dark'),
+    ],
+    function: [getPaletteStop('blue', 30), getPaletteStop('blue', 80, 'dark')],
+    type: [getPaletteStop('purple', 30), getPaletteStop('purple', 80, 'dark')],
+    variable: [
+      getPaletteStop('neutral', 10),
+      getPaletteStop('neutral', 90, 'light'),
+    ],
+    operator: [
+      getPaletteStop('neutral', 50),
+      getPaletteStop('neutral', 65, 'light'),
+    ],
+    constant: [
+      getPaletteStop('orange', 30),
+      getPaletteStop('orange', 80, 'dark'),
+    ],
+    tag: [getPaletteStop('red', 30), getPaletteStop('red', 80, 'dark')],
+    attribute: [
+      getPaletteStop('yellow', 30),
+      getPaletteStop('yellow', 80, 'dark'),
+    ],
+    property: [getPaletteStop('teal', 30), getPaletteStop('teal', 80, 'dark')],
+    // #a3a3a3/#525252 (this pair's own disabled-text stop) failed WCAG AA
     // against the syntax background: 2.42:1 light, 2.53:1 dark. #5386.
     punctuation: ['#6e6e6e', '#a0a0a0'], // neutral, 4.89:1 / 7.57:1
-    background: ['#fafafa', '#0a0a0a'],
+    background: [
+      getPaletteStop('neutral', 95, 'light'),
+      getPaletteStop('neutral', 0),
+    ],
   },
 });
 
@@ -89,6 +638,7 @@ const statusFill = {
 export const neutralTheme = defineTheme({
   name: 'neutral',
   localTokens: neutralLocalTokens,
+  palettes: neutralPalettes,
 
   // Typography: Figtree across body, heading, and display sizes (display
   // size tokens inherit from heading.family). Monospace stays as the
@@ -121,236 +671,342 @@ export const neutralTheme = defineTheme({
 
   syntax: neutralSyntax,
 
+  // Core and categorical tokens use exact numbered palette stops. Theme-local
+  // component status fills remain independently approved semantic colors.
   tokens: {
     // =========================================================================
-    // Core — pure grayscale spine (Tailwind neutral)
-    // 50:#fafafa 100:#f5f5f5 200:#e5e5e5 300:#d4d4d4 400:#a3a3a3
-    // 500:#737373 600:#525252 700:#404040 800:#262626 900:#171717 950:#0a0a0a
+    // Core — exact numbered stops from neutralPalettes.neutral.
     // =========================================================================
 
-    // =========================================================================
-    // Backgrounds — Figma-style flat with a single lifted surface.
-    //
-    // Dark mode collapses card / popover / muted to body T10. Cards and
-    // popovers lift purely via shadow + inset highlight (see --shadow-*
-    // below) — they don't need a distinct tone.
-    //
-    // Surface is the exception: it's tonally LIGHTER than body (T15) so
-    // interactive components that sit on top of body have a clear,
-    // differentiated foreground. Real consumers of --color-background-surface
-    // are: switches, radios, checkboxes, multi-selectors, dialogs, app
-    // shells, sections — all things that need to lift above the canvas.
-    //
-    //   surface  T15 #262626  — interactive surfaces lifted above body
-    //   body     T10 #1b1b1b  — main canvas
-    //   card     T10 #1b1b1b  — same as body, lifts via --shadow-low
-    //   popover  T10 #1b1b1b  — same as body, lifts via --shadow-med
-    //   muted    T10 #1b1b1b  — same as body
-    //
-    // Light mode keeps the standard ladder (white surfaces float on tinted
-    // body; shadows do most of the lifting):
-    //   surface  T100 #ffffff
-    //   body     T95  #f1f1f1
-    //   card     T100 #ffffff
-    //   popover  T100 #ffffff
-    //   muted    T95  #f1f1f1
-    //
-    // All values use the OKLCH Neutral tonal palette (chroma=0).
-    // =========================================================================
-    '--color-background-surface': ['#ffffff', '#262626'],
-    '--color-background-body': ['#f1f1f1', '#1b1b1b'],
-    '--color-background-card': ['#ffffff', '#1b1b1b'],
-    '--color-background-popover': ['#ffffff', '#1b1b1b'],
-    '--color-background-muted': ['#f1f1f1', '#1b1b1b'],
+    // Dark cards and popovers match the body and rely on elevation; interactive
+    // surfaces use the next lighter neutral stop.
+    '--color-background-surface': [
+      getPaletteStop('neutral', 100),
+      getPaletteStop('neutral', 10, 'dark'),
+    ],
+    '--color-background-body': [
+      getPaletteStop('neutral', 95),
+      getPaletteStop('neutral', 5, 'dark'),
+    ],
+    '--color-background-card': [
+      getPaletteStop('neutral', 100),
+      getPaletteStop('neutral', 5, 'dark'),
+    ],
+    '--color-background-popover': [
+      getPaletteStop('neutral', 100),
+      getPaletteStop('neutral', 5, 'dark'),
+    ],
+    '--color-background-muted': [
+      getPaletteStop('neutral', 95),
+      getPaletteStop('neutral', 5, 'dark'),
+    ],
 
     // Accent + neutral surface tints (sit alongside backgrounds)
-    '--color-accent': ['#262626', '#ebebeb'],
-    '--color-accent-muted': ['#f1f1f1', '#262626'],
-    '--color-neutral': ['#0000000F', '#FFFFFF1A'],
+    '--color-accent': [
+      getPaletteStop('neutral', 15),
+      getPaletteStop('neutral', 90, 'dark'),
+    ],
+    '--color-accent-muted': [
+      getPaletteStop('neutral', 95),
+      getPaletteStop('neutral', 10, 'dark'),
+    ],
+    '--color-neutral': [
+      withAlpha(getPaletteStop('neutral', 0), '0F'),
+      withAlpha(getPaletteStop('neutral', 100), '1A'),
+    ],
 
     // Overlays (modal scrims, hover/pressed tints)
-    '--color-overlay': ['#00000080', '#000000CC'],
-    '--color-overlay-hover': ['#0000000D', '#FFFFFF0D'],
-    '--color-overlay-pressed': ['#0000001A', '#FFFFFF1A'],
+    '--color-overlay': [
+      withAlpha(getPaletteStop('neutral', 0), '80'),
+      withAlpha(getPaletteStop('neutral', 0), 'CC'),
+    ],
+    '--color-overlay-hover': [
+      withAlpha(getPaletteStop('neutral', 0), '0D'),
+      withAlpha(getPaletteStop('neutral', 100), '0D'),
+    ],
+    '--color-overlay-pressed': [
+      withAlpha(getPaletteStop('neutral', 0), '1A'),
+      withAlpha(getPaletteStop('neutral', 100), '1A'),
+    ],
 
     // Text
-    '--color-text-primary': ['#171717', '#fafafa'],
-    // Light secondary is neutral-600 (#525252), not 500 (#737373): 500 only
-    // reaches 4.19:1 on the T95 body (#f1f1f1), just under WCAG AA 4.5:1.
+    '--color-text-primary': [
+      getPaletteStop('neutral', 10),
+      getPaletteStop('neutral', 95),
+    ],
+    // Light secondary is stop 35 (#525252), not stop 50 (#777777): stop 50 only
+    // reaches 4.19:1 on the stop 95 body (#f1f1f1), just under WCAG AA 4.5:1.
     // 600 clears it (6.9:1 on body, 7.8:1 on card). Dark stays neutral-400.
-    '--color-text-secondary': ['#525252', '#a3a3a3'],
-    '--color-text-disabled': ['#a3a3a3', '#525252'],
-    '--color-text-accent': ['#262626', '#ebebeb'],
-    '--color-on-dark': '#ffffff',
-    '--color-on-light': '#171717',
+    '--color-text-secondary': [
+      getPaletteStop('neutral', 35),
+      getPaletteStop('neutral', 65),
+    ],
+    '--color-text-disabled': [
+      getPaletteStop('neutral', 65),
+      getPaletteStop('neutral', 35),
+    ],
+    '--color-text-accent': [
+      getPaletteStop('neutral', 15),
+      getPaletteStop('neutral', 90, 'dark'),
+    ],
+    '--color-on-dark': getPaletteStop('neutral', 100),
+    '--color-on-light': getPaletteStop('neutral', 10),
     // Contrast: neutral accent is near-black (L) / near-white (D)
-    '--color-on-accent': ['#ffffff', '#171717'],
-    '--color-on-success': ['#ffffff', '#171717'],
-    '--color-on-error': ['#ffffff', '#171717'],
-    '--color-on-warning': '#171717',
+    '--color-on-accent': [
+      getPaletteStop('neutral', 100),
+      getPaletteStop('neutral', 10),
+    ],
+    '--color-on-success': [
+      getPaletteStop('neutral', 100),
+      getPaletteStop('neutral', 10),
+    ],
+    '--color-on-error': [
+      getPaletteStop('neutral', 100),
+      getPaletteStop('neutral', 10),
+    ],
+    '--color-on-warning': getPaletteStop('neutral', 10),
 
     // Icon
-    '--color-icon-accent': ['#262626', '#ebebeb'],
-    '--color-icon-primary': ['#171717', '#fafafa'],
-    '--color-icon-secondary': ['#737373', '#a3a3a3'],
-    '--color-icon-disabled': ['#a3a3a3', '#525252'],
+    '--color-icon-accent': [
+      getPaletteStop('neutral', 15),
+      getPaletteStop('neutral', 90, 'dark'),
+    ],
+    '--color-icon-primary': [
+      getPaletteStop('neutral', 10),
+      getPaletteStop('neutral', 95),
+    ],
+    '--color-icon-secondary': [
+      getPaletteStop('neutral', 50),
+      getPaletteStop('neutral', 65),
+    ],
+    '--color-icon-disabled': [
+      getPaletteStop('neutral', 65),
+      getPaletteStop('neutral', 35),
+    ],
 
-    // Status / Sentiment — dark mode follows the issue #2150 rubric:
-    //
-    //   Light mode: pastel T90 banner bg + dark T30/T40 text/icon. Locked
-    //               light values for cards/banners/inputs/destructive btn.
-    //   Dark mode : tinted-dark T20 bg + light pastel T80 text. INVERTED
-    //               from light. Avoids the §5 "pastel-in-both-modes"
-    //               anti-pattern (locked pastels glow against a dark body).
-    //
-    //   --color-X         = "saturated text/icon stop":
-    //                         light = T40 dark colored (sits on light pastel)
-    //                         dark  = T80 light pastel  (sits on dark tinted bg)
-    //                       Used by destructive button text, input border/icon
-    //                       (in light), banner-status-* text overrides.
-    //   --color-X-muted   = "muted bg stop":
-    //                         light = T90 light pastel
-    //                         dark  = hue-tinted alpha overlay (T70 stop @ 24%)
-    //                       Used by banner bg, status-input message bg,
-    //                       destructive button bg. Dark mode uses an alpha
-    //                       overlay rather than a solid T20 tinted bg so
-    //                       the surface composes onto whatever sits behind
-    //                       it (body, card, popover) rather than reading
-    //                       as a hard colored panel.
-    //
-    //   24% alpha = '3D' suffix. Hue values match --color-icon-{X} dark
-    //   slots (palette T70). Composited onto body #1b1b1b, the effective
-    //   bg luminance hits ~1.65-1.70:1 vs body — visible colored surface
-    //   without the heaviness of a solid T20 panel.
-    '--color-success': ['#007004', '#9fe59b'],
-    '--color-error': ['#a50c25', '#ffc6c1'],
-    '--color-warning': ['#745b00', '#fdcf4f'],
-    '--color-success-muted': ['#c5e5c0', '#84c9803D'],
-    '--color-error-muted': ['#facecb', '#ff9e973D'],
-    '--color-warning-muted': ['#f8da9d', '#deb4333D'],
+    // Status colors pair dark foregrounds with pastel surfaces in light mode,
+    // and light foregrounds with translucent hue surfaces in dark mode.
+    '--color-success': [
+      getPaletteStop('green', 30),
+      getPaletteStop('green', 80, 'dark'),
+    ],
+    // Error uses stronger stops to preserve contrast through pressed overlays.
+    '--color-error': [
+      getPaletteStop('red', 25),
+      getPaletteStop('red', 85, 'dark'),
+    ],
+    '--color-warning': [
+      getPaletteStop('yellow', 30),
+      getPaletteStop('yellow', 80, 'dark'),
+    ],
+    '--color-success-muted': [
+      getPaletteStop('green', 85),
+      withAlpha(getPaletteStop('green', 70, 'dark'), '3D'),
+    ],
+    '--color-error-muted': [
+      getPaletteStop('red', 85),
+      withAlpha(getPaletteStop('red', 70, 'dark'), '3D'),
+    ],
+    '--color-warning-muted': [
+      getPaletteStop('yellow', 90),
+      withAlpha(getPaletteStop('yellow', 70, 'dark'), '3D'),
+    ],
 
-    // Border
-    '--color-border': ['#00000014', '#FFFFFF1A'],
-    '--color-border-emphasized': ['#d4d4d4', '#525252'],
+    // Borders retain the released Neutral appearance while referencing exact
+    // approved stops. Components that require a 3:1 identifying boundary
+    // should provide that treatment through a component-specific mapping.
+    '--color-border': [
+      withAlpha(getPaletteStop('neutral', 0), '14'),
+      withAlpha(getPaletteStop('neutral', 100), '1A'),
+    ],
+    '--color-border-emphasized': [
+      getPaletteStop('neutral', 85),
+      getPaletteStop('neutral', 30, 'dark'),
+    ],
 
     // Effects
-    '--color-skeleton': ['#ebebeb', '#525252'],
-    '--color-shadow': ['#0000001A', '#0000004D'],
+    '--color-skeleton': [
+      getPaletteStop('neutral', 90),
+      getPaletteStop('neutral', 30, 'dark'),
+    ],
+    '--color-shadow': [
+      withAlpha(getPaletteStop('neutral', 0), '1A'),
+      withAlpha(getPaletteStop('neutral', 0), '4D'),
+    ],
     '--color-tint-hover': ['black', 'white'],
 
-    // =========================================================================
-    // Categorical — light mode uses pastel surfaces + dark colored text;
-    //               dark mode INVERTS to a hue-tinted alpha overlay surface +
-    //               light pastel text (per #2150 rubric §3 — pick the tone
-    //               that satisfies required contrast against every surface
-    //               the token touches).
-    //
-    // Per-token tone choice (CIELab L*):
-    //   bg     light=T87-T90 pastel       dark=T70 hue @ 24% alpha overlay
-    //                                       (composites onto body to ~1.65:1
-    //                                        vs body — colored surface that
-    //                                        feels lighter than a solid T20
-    //                                        panel; same hue as --color-icon-X
-    //                                        dark slot, just at lower opacity)
-    //   border light=T80 pastel           dark=T60 mid-bright (>=5.8:1 vs body)
-    //   icon   light=T30 dark colored     dark=T70 light pastel
-    //   text   light=T30 dark colored     dark=T80 light pastel (>=7:1 on bg)
-    //
-    // Light pastels still use the per-hue chroma table (red/blue C=0.05,
-    // orange/green/purple/pink C=0.06, teal/cyan C=0.07, yellow H=85 C=0.10)
-    // for equal PERCEIVED saturation. Dark stops (T60/T70/T80) come from
-    // the dark-mode tonal palette (chroma×0.85, +5 tone lift tapering 80-95).
-    // =========================================================================
+    // Categorical roles use pastel surfaces and dark text in light mode, then
+    // translucent hue surfaces and light text in dark mode.
+    '--color-background-red': [
+      getPaletteStop('red', 85),
+      withAlpha(getPaletteStop('red', 70, 'dark'), '3D'),
+    ],
+    '--color-border-red': [
+      getPaletteStop('red', 80),
+      getPaletteStop('red', 60, 'dark'),
+    ],
+    '--color-icon-red': [
+      getPaletteStop('red', 30),
+      getPaletteStop('red', 70, 'dark'),
+    ],
+    '--color-text-red': [
+      getPaletteStop('red', 25),
+      getPaletteStop('red', 85, 'dark'),
+    ],
 
-    // Each row's dark slots are HCT-derived from the source hex listed in
-    // apps/sandbox/src/app/(fullscreen)/pages/neutral-palette/page.tsx via
-    // the canonical dark-ramp transform (chroma×0.85, +5 tone-lift taper)
-    // — same algorithm the Tonal Palettes preview renders. Border=T60,
-    // icon=T70, text=T80. Background uses the T70 hue at 24% alpha so the
-    // overlay surface composites onto body to ~1.65:1 luminance.
+    '--color-background-orange': [
+      getPaletteStop('orange', 85),
+      withAlpha(getPaletteStop('orange', 70, 'dark'), '3D'),
+    ],
+    '--color-border-orange': [
+      getPaletteStop('orange', 80),
+      getPaletteStop('orange', 60, 'dark'),
+    ],
+    '--color-icon-orange': [
+      getPaletteStop('orange', 30),
+      getPaletteStop('orange', 70, 'dark'),
+    ],
+    '--color-text-orange': [
+      getPaletteStop('orange', 30),
+      getPaletteStop('orange', 80, 'dark'),
+    ],
 
-    // Red  H=22 — source #eb183a
-    '--color-background-red': ['#facecb', '#ff9e973D'],
-    '--color-border-red': ['#e6bab8', '#ff6f6c'],
-    '--color-icon-red': ['#89001a', '#ff9e97'],
-    '--color-text-red': ['#89001a', '#ffc6c1'],
+    '--color-background-yellow': [
+      getPaletteStop('yellow', 90),
+      withAlpha(getPaletteStop('yellow', 70, 'dark'), '3D'),
+    ],
+    '--color-border-yellow': [
+      getPaletteStop('yellow', 80),
+      getPaletteStop('yellow', 60, 'dark'),
+    ],
+    '--color-icon-yellow': [
+      getPaletteStop('yellow', 30),
+      getPaletteStop('yellow', 70, 'dark'),
+    ],
+    '--color-text-yellow': [
+      getPaletteStop('yellow', 30),
+      getPaletteStop('yellow', 80, 'dark'),
+    ],
 
-    // Orange  H=55 — source #d57113
-    '--color-background-orange': ['#fad0b5', '#ffa2583D'],
-    '--color-border-orange': ['#e6bda2', '#e2883e'],
-    '--color-icon-orange': ['#6e3500', '#ffa258'],
-    '--color-text-orange': ['#6e3500', '#ffc9a2'],
+    '--color-background-green': [
+      getPaletteStop('green', 85),
+      withAlpha(getPaletteStop('green', 70, 'dark'), '3D'),
+    ],
+    '--color-border-green': [
+      getPaletteStop('green', 80),
+      getPaletteStop('green', 60, 'dark'),
+    ],
+    '--color-icon-green': [
+      getPaletteStop('green', 30),
+      getPaletteStop('green', 70, 'dark'),
+    ],
+    '--color-text-green': [
+      getPaletteStop('green', 30),
+      getPaletteStop('green', 80, 'dark'),
+    ],
 
-    // Yellow  H=90 — source #f8c723
-    // Light-mode butter-yellow pastel at H=85 C=0.085 L=0.90 — yellow
-    // sits at the green-cyan luminance peak so it feels louder than the
-    // other status hues at the same canonical L. Picker decision: pull
-    // L down one step (0.91→0.90) and C down to its identity floor
-    // (0.10→0.085, just above the bronze threshold) so it sits closer
-    // to red/blue's perceived brightness without losing yellow identity.
-    // Dark-mode comes from the canonical H=90 ramp for tonal-palette
-    // consistency.
-    '--color-background-yellow': ['#f8da9d', '#deb4333D'],
-    '--color-border-yellow': ['#e4c279', '#c0990e'],
-    '--color-icon-yellow': ['#584400', '#deb433'],
-    '--color-text-yellow': ['#584400', '#fdcf4f'],
+    '--color-background-teal': [
+      getPaletteStop('teal', 85),
+      withAlpha(getPaletteStop('teal', 70, 'dark'), '3D'),
+    ],
+    '--color-border-teal': [
+      getPaletteStop('teal', 80),
+      getPaletteStop('teal', 60, 'dark'),
+    ],
+    '--color-icon-teal': [
+      getPaletteStop('teal', 30),
+      getPaletteStop('teal', 70, 'dark'),
+    ],
+    '--color-text-teal': [
+      getPaletteStop('teal', 30),
+      getPaletteStop('teal', 80, 'dark'),
+    ],
 
-    // Green  H=144 — source #358a3a
-    '--color-background-green': ['#c5e5c0', '#84c9803D'],
-    '--color-border-green': ['#b2d1ac', '#69ad67'],
-    '--color-icon-green': ['#0c5700', '#84c980'],
-    '--color-text-green': ['#0c5700', '#9fe59b'],
+    '--color-background-cyan': [
+      getPaletteStop('cyan', 85),
+      withAlpha(getPaletteStop('cyan', 70, 'dark'), '3D'),
+    ],
+    '--color-border-cyan': [
+      getPaletteStop('cyan', 80),
+      getPaletteStop('cyan', 60, 'dark'),
+    ],
+    '--color-icon-cyan': [
+      getPaletteStop('cyan', 30),
+      getPaletteStop('cyan', 70, 'dark'),
+    ],
+    '--color-text-cyan': [
+      getPaletteStop('cyan', 30),
+      getPaletteStop('cyan', 80, 'dark'),
+    ],
 
-    // Teal  H=180 — source #0c7365
-    // Light pastel uses L=0.87 C=0.065 (a step darker + less chroma than
-    // the L=0.888 C=0.07 used by other hues) to compensate for the
-    // green-cyan luminance overshoot — at the same OKLCH L, teal/cyan read
-    // ~5% brighter than red/blue because the eye's luminance response
-    // peaks in this band. Dropping L+C brings perceived brightness in
-    // line with the rest of the palette without losing hue identity.
-    '--color-background-teal': ['#a5e3d6', '#7ec6b83D'],
-    '--color-border-teal': ['#94d6c8', '#63ab9d'],
-    '--color-icon-teal': ['#005348', '#7ec6b8'],
-    '--color-text-teal': ['#005348', '#99e2d3'],
+    '--color-background-blue': [
+      getPaletteStop('blue', 85),
+      withAlpha(getPaletteStop('blue', 70, 'dark'), '3D'),
+    ],
+    '--color-border-blue': [
+      getPaletteStop('blue', 80),
+      getPaletteStop('blue', 60, 'dark'),
+    ],
+    '--color-icon-blue': [
+      getPaletteStop('blue', 30),
+      getPaletteStop('blue', 70, 'dark'),
+    ],
+    '--color-text-blue': [
+      getPaletteStop('blue', 30),
+      getPaletteStop('blue', 80, 'dark'),
+    ],
 
-    // Cyan  H=215 — source #0c6f82
-    // Same L=0.87 C=0.065 pastel as teal (luminance overshoot compensation).
-    '--color-background-cyan': ['#a3e0ef', '#83c2d43D'],
-    '--color-border-cyan': ['#91d3e3', '#67a7b8'],
-    '--color-icon-cyan': ['#00505f', '#83c2d4'],
-    '--color-text-cyan': ['#00505f', '#9edef0'],
+    '--color-background-purple': [
+      getPaletteStop('purple', 85),
+      withAlpha(getPaletteStop('purple', 70, 'dark'), '3D'),
+    ],
+    '--color-border-purple': [
+      getPaletteStop('purple', 80),
+      getPaletteStop('purple', 60, 'dark'),
+    ],
+    '--color-icon-purple': [
+      getPaletteStop('purple', 30),
+      getPaletteStop('purple', 70, 'dark'),
+    ],
+    '--color-text-purple': [
+      getPaletteStop('purple', 30),
+      getPaletteStop('purple', 80, 'dark'),
+    ],
 
-    // Blue  H=255 — source #0074e2
-    //   T50 #0074e2 reserved for filled Info badge / progressbar / inset hover.
-    '--color-background-blue': ['#c4ddfb', '#9eb7ff3D'],
-    '--color-border-blue': ['#b1c9e7', '#6d9cfe'],
-    '--color-icon-blue': ['#00458c', '#9eb7ff'],
-    '--color-text-blue': ['#00458c', '#c7d3ff'],
+    '--color-background-pink': [
+      getPaletteStop('pink', 85),
+      withAlpha(getPaletteStop('pink', 70, 'dark'), '3D'),
+    ],
+    '--color-border-pink': [
+      getPaletteStop('pink', 80),
+      getPaletteStop('pink', 60, 'dark'),
+    ],
+    '--color-icon-pink': [
+      getPaletteStop('pink', 30),
+      getPaletteStop('pink', 70, 'dark'),
+    ],
+    '--color-text-pink': [
+      getPaletteStop('pink', 30),
+      getPaletteStop('pink', 80, 'dark'),
+    ],
 
-    // Purple  H=320 — source #980fb2
-    '--color-background-purple': ['#eccef3', '#f297ff3D'],
-    '--color-border-purple': ['#d8bbdf', '#dd74f0'],
-    '--color-icon-purple': ['#700084', '#f297ff'],
-    '--color-text-purple': ['#700084', '#fac1ff'],
-
-    // Pink  H=355 — source #b10e69
-    '--color-background-pink': ['#fccadc', '#ff99c33D'],
-    '--color-border-pink': ['#e7b7c8', '#f273aa'],
-    '--color-icon-pink': ['#83004b', '#ff99c3'],
-    '--color-text-pink': ['#83004b', '#ffc3da'],
-
-    // Gray (categorical neutral, chroma 0)
-    //   Light: #e5e5e5 (Neutral 200) so it's visibly distinct from the
-    //          lighter body / muted surface (both #f5f5f5).
-    //   Dark : var(--color-neutral) — semi-transparent white wash
-    //          (#FFFFFF1A, 10%). Matches the same treatment the gray
-    //          badge uses; clearly distinct from the body T10 #1b1b1b
-    //          while staying chroma-0 neutral. Solid T15 #1c1c1c was
-    //          indistinguishable from --color-background-muted.
-    '--color-background-gray': ['#e5e5e5', 'var(--color-neutral)'],
-    '--color-border-gray': ['#d4d4d4', '#262626'],
-    '--color-icon-gray': ['#525252', '#a3a3a3'],
-    '--color-text-gray': ['#262626', '#e5e5e5'],
+    // Gray uses the neutral categorical surface rather than a chromatic ramp.
+    '--color-background-gray': [
+      getPaletteStop('neutral', 90),
+      'var(--color-neutral)',
+    ],
+    '--color-border-gray': [
+      getPaletteStop('neutral', 85),
+      getPaletteStop('neutral', 10, 'dark'),
+    ],
+    '--color-icon-gray': [
+      getPaletteStop('neutral', 35),
+      getPaletteStop('neutral', 65),
+    ],
+    '--color-text-gray': [
+      getPaletteStop('neutral', 15),
+      getPaletteStop('neutral', 90, 'dark'),
+    ],
 
     // =========================================================================
     // Radius — slightly larger than default (kept as-is)
@@ -395,11 +1051,11 @@ export const neutralTheme = defineTheme({
       '0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 50%)), ' +
       '0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 70%)), ' +
       'inset 0 0 0 1px light-dark(transparent, oklch(1 0 0 / 15%))',
-    '--shadow-inset-hover': 'inset 0px 0px 0px 2px #0074e24D',
-    '--shadow-inset-selected': 'inset 0px 0px 0px 2px #0074e280',
-    '--shadow-inset-success': 'inset 0px 0px 0px 2px #1981004D',
-    '--shadow-inset-warning': 'inset 0px 0px 0px 2px #ffce2f4D',
-    '--shadow-inset-error': 'inset 0px 0px 0px 2px #e33f4a4D',
+    '--shadow-inset-hover': `inset 0px 0px 0px 2px ${withAlpha(getPaletteStop('blue', 45), '4D')}`,
+    '--shadow-inset-selected': `inset 0px 0px 0px 2px ${withAlpha(getPaletteStop('blue', 45), '80')}`,
+    '--shadow-inset-success': `inset 0px 0px 0px 2px ${withAlpha(getPaletteStop('green', 45), '4D')}`,
+    '--shadow-inset-warning': `inset 0px 0px 0px 2px ${withAlpha(getPaletteStop('yellow', 85), '4D')}`,
+    '--shadow-inset-error': `inset 0px 0px 0px 2px ${withAlpha(getPaletteStop('red', 50), '4D')}`,
   },
 
   components: {
