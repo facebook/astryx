@@ -221,13 +221,14 @@ function createHarness({
   return {github, core, state};
 }
 
-async function run(harness, runContext) {
+async function run(harness, runContext, options = {}) {
   await reconcileSpecOwnerGate({
     github: harness.github,
     context: runContext,
     core: harness.core,
     workspace,
     env,
+    ...options,
   });
 }
 
@@ -404,6 +405,17 @@ describe('spec owner workflow reconciliation', () => {
     expect(
       harness.state.calls.some(call => call.includes('yielded to newer run')),
     ).toBe(true);
+  });
+
+  it('accepts a pull number resolved by a trusted workflow-run companion', async () => {
+    const harness = createHarness({author: 'contributor'});
+    const relayContext = context({runId: 100n, eventName: 'workflow_run'});
+    delete relayContext.payload.pull_request;
+
+    await run(harness, relayContext, {pullNumber: 17});
+
+    expect(harness.state.pullGets).toBeGreaterThan(0);
+    expect(latestGateStatus(harness.state).state).toBe('pending');
   });
 
   it('rejects valid-shaped non-owner commands before API work', async () => {

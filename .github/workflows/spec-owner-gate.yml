@@ -41,12 +41,15 @@ env:
 
 jobs:
   reconcile:
-    # Keep ordinary PR discussion outside the privileged pull_request_target path.
+    # Raw review events on fork PRs always receive a read-only token. Leave
+    # those to the no-permission anchor below and the trusted workflow_run
+    # companion; all other events continue to reconcile here.
     if: >-
-      github.event_name != 'issue_comment' ||
-      (github.event.issue.pull_request != null &&
-       (startsWith(github.event.comment.body, '/approve-spec ') ||
-        startsWith(github.event.comment.body, '/revoke-spec ')))
+      github.event_name != 'pull_request_review' &&
+      (github.event_name != 'issue_comment' ||
+       (github.event.issue.pull_request != null &&
+        (startsWith(github.event.comment.body, '/approve-spec ') ||
+         startsWith(github.event.comment.body, '/revoke-spec '))))
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -71,3 +74,12 @@ jobs:
               '.github/scripts/spec-owner-reconcile.cjs',
             ));
             await reconcileSpecOwnerGate({github, context, core});
+
+  review-anchor:
+    if: github.event_name == 'pull_request_review'
+    name: Queue trusted review reconcile
+    runs-on: ubuntu-slim
+    permissions: {}
+    steps:
+      - name: Record review event
+        run: echo "Review event received; the trusted companion will reconcile it."

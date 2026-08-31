@@ -96,6 +96,27 @@ describe('spec-only workflow contract', () => {
     expect(workflow).toContain(
       "startsWith(github.event.comment.body, '/revoke-spec ')",
     );
+    expect(workflow).toContain("github.event_name != 'pull_request_review'");
+    expect(workflow).toContain('review-anchor:');
+    expect(workflow).toContain('permissions: {}');
+
+    const reviewWorkflow = read(
+      '.github/workflows/spec-owner-review-reconcile.yml',
+    );
+    expect(reviewWorkflow).toContain("workflows: ['Spec owner gate']");
+    expect(reviewWorkflow).toContain(
+      "github.event.workflow_run.event == 'pull_request_review'",
+    );
+    expect(reviewWorkflow).toContain(
+      "github.event.workflow_run.conclusion == 'success'",
+    );
+    expect(reviewWorkflow).toContain(
+      'ref: ${{ github.event.repository.default_branch }}',
+    );
+    expect(reviewWorkflow).toContain('pull.head.sha === run.head_sha');
+    expect(reviewWorkflow).toContain('pull.head.ref === run.head_branch');
+    expect(reviewWorkflow).toContain('matches.length !== 1');
+    expect(reviewWorkflow).toContain('pullNumber: matches[0].number');
     expect(reconciler).toContain('expectedCount: after.changed_files');
     expect(reconciler).toContain('scope.touchesKnowledgeRecords');
     expect(reconciler).toContain('scope.touchesDesignAssets');

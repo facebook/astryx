@@ -49,6 +49,7 @@ async function reconcileSpecOwnerGate({
   github,
   context,
   core,
+  pullNumber: requestedPullNumber,
   workspace = process.env.GITHUB_WORKSPACE,
   env = process.env,
 }) {
@@ -67,7 +68,8 @@ async function reconcileSpecOwnerGate({
   const {owner, repo} = context.repo;
   const repository = `${owner}/${repo}`;
   const pullNumber = Number(
-    context.payload.pull_request?.number ??
+    requestedPullNumber ??
+      context.payload.pull_request?.number ??
       context.payload.issue?.number ??
       context.payload.inputs?.pr,
   );

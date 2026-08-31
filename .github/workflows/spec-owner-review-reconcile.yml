@@ -1,0 +1,69 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# pull_request_review receives a read-only token for fork PRs, even when this
+# repository requests write permissions. The source workflow records the event
+# without permissions; this trusted default-branch companion resolves the exact
+# open PR and performs the status reconciliation without running PR code.
+name: Spec owner review reconcile
+
+on:
+  workflow_run:
+    workflows: ['Spec owner gate']
+    types: [completed]
+
+permissions: {}
+
+env:
+  SPEC_OWNERS: cixzhang,imdreamrunner
+  REVIEW_LABEL: needs:spec-owner-review
+  AUTO_MERGE_LABEL: spec-auto-merge
+
+jobs:
+  reconcile:
+    if: >-
+      github.event.workflow_run.event == 'pull_request_review' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Reconcile owner gate
+        uses: actions/github-script@v9
+        with:
+          retries: 3
+          script: |
+            const path = require('node:path');
+            const {reconcileSpecOwnerGate} = require(path.join(
+              process.env.GITHUB_WORKSPACE,
+              '.github/scripts/spec-owner-reconcile.cjs',
+            ));
+            const run = context.payload.workflow_run;
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              ...context.repo,
+              state: 'open',
+              base: context.payload.repository.default_branch,
+              per_page: 100,
+            });
+            const matches = pulls.filter(pull =>
+              pull.head.sha === run.head_sha &&
+              pull.head.ref === run.head_branch &&
+              pull.base.repo.full_name === `${context.repo.owner}/${context.repo.repo}`
+            );
+            if (matches.length !== 1) {
+              throw new Error(
+                `Expected one open PR for review run ${run.id}; found ${matches.length}.`,
+              );
+            }
+            await reconcileSpecOwnerGate({
+              github,
+              context,
+              core,
+              pullNumber: matches[0].number,
+            });
