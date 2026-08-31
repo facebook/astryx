@@ -78,6 +78,14 @@ describe('useTableRowStatus', () => {
     expect(screen.getByRole('img', {name: 'Error'})).toContainElement(
       screen.getByTestId('themed-error'),
     );
+    expect(screen.getByRole('img', {name: 'Error'})).toHaveAttribute(
+      'data-color',
+      'error',
+    );
+    expect(screen.getByRole('img', {name: 'Error'})).toHaveAttribute(
+      'data-presentation',
+      'icon',
+    );
     expect(screen.getByRole('img', {name: 'Warning'})).toContainElement(
       screen.getByTestId('themed-warning'),
     );
@@ -93,6 +101,9 @@ describe('useTableRowStatus', () => {
     );
     const indicator = screen.getByRole('img', {name: 'Red'});
     expect(indicator.querySelector('svg')).toBeNull();
+    expect(indicator).toHaveClass('astryx-table-row-status');
+    expect(indicator).toHaveAttribute('data-color', 'red');
+    expect(indicator).toHaveAttribute('data-presentation', 'dot');
     expect(indicator.querySelector('span')?.getAttribute('style')).toContain(
       '--color-icon-red',
     );
@@ -133,6 +144,9 @@ describe('useTableRowStatus', () => {
     // Icon-mode still exposes the accessible label via role=img.
     const indicator = screen.getByRole('img', {name: 'Error'});
     expect(indicator).toBeInTheDocument();
+    expect(indicator).toHaveClass('astryx-table-row-status');
+    expect(indicator).toHaveAttribute('data-color', 'red');
+    expect(indicator).toHaveAttribute('data-presentation', 'icon');
     // An SVG icon is rendered inside the indicator (dot mode has no svg).
     expect(indicator.querySelector('svg')).not.toBeNull();
   });

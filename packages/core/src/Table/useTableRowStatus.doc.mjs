@@ -8,6 +8,14 @@ export const docs = {
   displayName: 'useTableRowStatus',
   description:
     'Hook that returns a TablePlugin which prepends a narrow column signaling per-row status. Semantic status colors (success, warning, error) use the matching themed semantic icon by default; palette colors and raw CSS values use a colored dot because they do not establish an outcome glyph. getStatus may override either default with an explicit icon and must provide an accessible label (shown in a tooltip on hover and announced to assistive technology, so status is never color-only); return null for no indicator. The column header is visually blank but carries a screen-reader-only localized name ("Row status", i18n key @astryx.table.rowStatus.columnHeader). Memoize getStatus with useCallback for a stable plugin identity.',
+  theming: {
+    targets: [
+      {
+        className: 'astryx-table-row-status',
+        visualProps: ['color', 'presentation'],
+      },
+    ],
+  },
   props: [
     {
       name: 'getStatus',

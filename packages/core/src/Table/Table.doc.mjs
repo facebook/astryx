@@ -129,6 +129,7 @@ export const docs = {
       {className: 'astryx-table-body'},
       {className: 'astryx-table-footer'},
       {className: 'astryx-table-row'},
+      {className: 'astryx-table-row-status', visualProps: ['color', 'presentation']},
       {className: 'astryx-table-cell', visualProps: ['density']},
       {className: 'astryx-table-header-cell', visualProps: ['density']},
       // Still emitted beside the names above, so themes written against

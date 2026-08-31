@@ -14,10 +14,12 @@
 
 import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Icon, type IconColor, type IconName} from '../../../Icon';
+import {Icon, type IconName} from '../../../Icon';
 import {Tooltip} from '../../../Tooltip';
 import {useTranslator} from '../../../i18n';
 import {VisuallyHidden} from '../../../VisuallyHidden';
+import {mergeProps} from '../../../utils';
+import {themeProps} from '../../../utils/themeProps';
 import type {TableColumn, TablePlugin} from '../../types';
 
 /**
@@ -49,18 +51,17 @@ const SEMANTIC_COLORS: Record<TableRowStatusColor, string> = {
   gray: 'var(--color-icon-gray)',
 };
 
-/** Icon colors that map cleanly from a semantic status color. */
-const ICON_COLOR_BY_STATUS: Record<TableRowStatusColor, IconColor> = {
-  accent: 'accent',
-  success: 'success',
-  error: 'error',
-  warning: 'warning',
-  red: 'red',
-  orange: 'warning',
-  green: 'green',
-  yellow: 'warning',
-  blue: 'blue',
-  gray: 'gray',
+const THEMEABLE_ICON_COLORS: Record<TableRowStatusColor, string> = {
+  accent: 'var(--color-accent)',
+  success: 'var(--color-success)',
+  error: 'var(--color-error)',
+  warning: 'var(--color-warning)',
+  red: 'var(--color-icon-red)',
+  orange: 'var(--color-warning)',
+  green: 'var(--color-icon-green)',
+  yellow: 'var(--color-warning)',
+  blue: 'var(--color-icon-blue)',
+  gray: 'var(--color-icon-gray)',
 };
 
 /**
@@ -124,6 +125,17 @@ function resolveColor(color: string): string {
   return (SEMANTIC_COLORS as Record<string, string>)[color] ?? color;
 }
 
+function resolveIconColor(color: string): string {
+  return (
+    (THEMEABLE_ICON_COLORS as Record<string, string>)[color] ??
+    'var(--color-icon-primary)'
+  );
+}
+
+function isTableRowStatusColor(color: string): color is TableRowStatusColor {
+  return color in SEMANTIC_COLORS;
+}
+
 const styles = stylex.create({
   // Centers the dot or icon within the narrow status column.
   wrap: {
@@ -131,6 +143,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  icon: (color: string) => ({color}),
   dot: (color: string) => ({
     width: '8px',
     height: '8px',
@@ -184,22 +197,28 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
             const icon =
               status.icon ??
               DEFAULT_ICON_BY_STATUS[status.color as TableRowStatusColor];
+            const presentation = icon ? 'icon' : 'dot';
+            const themeColor = isTableRowStatusColor(status.color)
+              ? status.color
+              : undefined;
             const signifier = icon ? (
-              <Icon
-                icon={icon}
-                size="xsm"
-                color={
-                  ICON_COLOR_BY_STATUS[status.color as TableRowStatusColor] ??
-                  'primary'
-                }
-              />
+              <Icon icon={icon} size="xsm" color="inherit" />
             ) : (
               <span {...stylex.props(styles.dot(resolveColor(status.color)))} />
             );
             return (
               <Tooltip content={status.label}>
                 <span
-                  {...stylex.props(styles.wrap)}
+                  {...mergeProps(
+                    themeProps('table-row-status', {
+                      color: themeColor,
+                      presentation,
+                    }),
+                    stylex.props(
+                      styles.wrap,
+                      icon && styles.icon(resolveIconColor(status.color)),
+                    ),
+                  )}
                   role="img"
                   aria-label={status.label}>
                   {signifier}
