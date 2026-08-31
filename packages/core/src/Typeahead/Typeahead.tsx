@@ -192,6 +192,25 @@ const styles = stylex.create({
     // -(8px - 3px) = -5px positions token equidistant from left edge as top.
     margin: `calc(-1 * (${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px))`,
   },
+  // The busy indicator and the clear button, at the field's inline end.
+  //
+  // In flow, as a flex child — an in-flow box takes up room, so the input
+  // cannot run underneath it and nothing has to be measured. That is
+  // TextInput's arrangement for the same two controls.
+  //
+  // The `auto` margin is what TextInput does not need. Its input is always
+  // present and `flex: 1`, so it absorbs the free space and pushes these to
+  // the end on its own. This field collapses its input to nothing while a
+  // token shows (`inputHidden`), which leaves no flexible item in the row —
+  // so without the margin the controls sit against the token, mid-field,
+  // instead of in the corner where they belong. `auto` gives the free space
+  // to the margin instead of to a sibling, which needs no sibling to exist.
+  endLane: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    marginInlineStart: 'auto',
+  },
   inputHidden: {
     width: 0,
     minWidth: 0,
@@ -497,17 +516,21 @@ export function Typeahead<T extends SearchableItem>({
           inputTabIndex={showToken ? -1 : undefined}
           size={size}
         />
-        {isLoading && (
-          <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
-        )}
-        {hasClear && value && !isDisabled && (
-          <InputClearButton
-            label={t('@astryx.typeahead.clearSelection')}
-            onClick={e => {
-              e.stopPropagation();
-              handleClear();
-            }}
-          />
+        {(isLoading || (hasClear && value && !isDisabled)) && (
+          <div {...stylex.props(styles.endLane)}>
+            {isLoading && (
+              <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
+            )}
+            {hasClear && value && !isDisabled && (
+              <InputClearButton
+                label={t('@astryx.typeahead.clearSelection')}
+                onClick={e => {
+                  e.stopPropagation();
+                  handleClear();
+                }}
+              />
+            )}
+          </div>
         )}
       </div>
       {showsDisabledMessage &&

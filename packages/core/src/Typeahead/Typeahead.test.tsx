@@ -1601,9 +1601,12 @@ describe('end controls stay in flow', () => {
     const field = container.querySelector('.astryx-typeahead');
     const clear = screen.getByRole('button', {name: /clear/i});
     expect(field).toContainElement(clear);
-    // A direct flex child of the field, not a box positioned over it.
-    expect(clear.parentElement).toBe(field);
-    expect(getComputedStyle(clear).position).not.toBe('absolute');
+    // The controls sit in a lane that is itself an ordinary in-flow child of
+    // the field — not a box positioned over it, which is what reserved no
+    // room and put the input underneath.
+    const lane = clear.parentElement as HTMLElement;
+    expect(lane.parentElement).toBe(field);
+    expect(getComputedStyle(lane).position).not.toBe('absolute');
   });
 
   it('never reserves room with a measured width', () => {
@@ -1622,6 +1625,25 @@ describe('end controls stay in flow', () => {
     expect(
       container.querySelector('[style*="--_astryx-end-lane-width"]'),
     ).toBeNull();
+  });
+
+  it('holds the controls at the inline end when a token collapses the input', () => {
+    // The field pushes its end controls over with an `auto` margin rather
+    // than by leaning on the input to absorb the free space, because it
+    // collapses that input to nothing while a token shows. Without it the
+    // clear button sat against the token in mid-field instead of in the
+    // corner (measured: x=39 in a 300px field, against TextInput's 281).
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    const clear = screen.getByRole('button', {name: /clear/i});
+    const lane = clear.parentElement as HTMLElement;
+    expect(getComputedStyle(lane).marginInlineStart).toBe('auto');
   });
 
   it('keeps the field on one row so the controls cannot be pushed off it', () => {

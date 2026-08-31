@@ -7,14 +7,19 @@
  * @input Uses React and the shared ResizeObserver
  * @output Exports useEndLaneReserve, which keeps a field's input clear of the
  *   absolutely-positioned lane at its inline end
- * @position Shared field internal. Used by Tokenizer, which parks its clear
- *   button, end content and busy indicator in one absolutely-positioned lane
- *   at the field's inline end.
+ * @position Tokenizer internal. Tokenizer parks its clear button, end content
+ *   and busy indicator in one absolutely-positioned lane at the field's
+ *   inline end, and this keeps the input's text and caret clear of it.
  *
- *   Typeahead does NOT use this: its wrapper holds at most one token, so its
- *   end controls sit in flow as flex siblings the way TextInput's do, and an
- *   in-flow box needs no reserve. Tokenizer cannot — its lane stays pinned to
- *   the field's first row while tokens wrap below it.
+ *   It lives here, beside its one caller, rather than in `Field/` with the
+ *   shared field internals — deliberately. A measured reserve is Tokenizer's
+ *   workaround for a constraint only Tokenizer has: its lane must stay pinned
+ *   to the field's first row while tokens wrap below it, so it cannot be in
+ *   flow, and an out-of-flow box reserves nothing. Every other field, this
+ *   one's own Typeahead included, puts its end controls in flow as flex
+ *   siblings the way TextInput does, which needs no measuring at all. Filed
+ *   under `Field/` this read as shared infrastructure and invited the next
+ *   field to reach for it; that is the wrong default.
  *
  * SYNC: When modified, update this header and the caller:
  * - /packages/core/src/Tokenizer/Tokenizer.tsx

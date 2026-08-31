@@ -41,7 +41,7 @@ import {
 } from '../Field';
 import {Token} from '../Token';
 import {Spinner} from '../Spinner';
-import {useEndLaneReserve} from '../Field/useEndLaneReserve';
+import {useEndLaneReserve} from './useEndLaneReserve';
 import {renderIconSlot, type IconType} from '../Icon';
 import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
