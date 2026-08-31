@@ -30,6 +30,7 @@ function context({
   actor = 'cixzhang',
   author = 'cixzhang',
   headSha = head,
+  headRepository = repository,
   comment,
   review,
 }) {
@@ -51,7 +52,10 @@ function context({
               number: 17,
               updated_at: '2026-08-30T10:00:00Z',
               user: {login: author},
-              head: {sha: headSha},
+              head: {
+                sha: headSha,
+                repo: {full_name: headRepository},
+              },
             },
     },
   };
@@ -78,6 +82,7 @@ function trustedStatus({
 
 function createHarness({
   author = 'cixzhang',
+  headRepository = repository,
   statuses = [],
   comments = [],
   reviews = [],
@@ -100,7 +105,7 @@ function createHarness({
       number: 17,
       node_id: 'PR_node',
       user: {login: author},
-      head: {sha: head, repo: {full_name: repository}},
+      head: {sha: head, repo: {full_name: headRepository}},
       base: {
         sha: '2222222222222222222222222222222222222222',
         repo: {full_name: repository},
@@ -404,6 +409,92 @@ describe('spec owner workflow reconciliation', () => {
     expect(
       harness.state.calls.some(call => call.includes('yielded to newer run')),
     ).toBe(true);
+  });
+
+  it('skips fork owner reviews before any GitHub API work', async () => {
+    const review = {
+      user: {login: 'cixzhang'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const messages = [];
+    const github = new Proxy(
+      {},
+      {
+        get() {
+          throw new Error('GitHub API accessed');
+        },
+      },
+    );
+
+    await reconcileSpecOwnerGate({
+      github,
+      context: context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        headRepository: 'contributor/astryx',
+        review,
+      }),
+      core: {info: message => messages.push(message)},
+      workspace,
+      env,
+    });
+
+    expect(messages).toEqual([
+      'Skipping fork pull request review; use an exact-head owner command to reconcile.',
+    ]);
+  });
+
+  it('reconciles same-repository owner reviews automatically', async () => {
+    const review = {
+      user: {login: 'cixzhang'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({reviews: [review]});
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        review,
+      }),
+    );
+
+    expect(harness.state.pullGets).toBeGreaterThan(0);
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('reconciles an exact-head owner command for a fork current-spec PR', async () => {
+    const comment = {
+      user: {login: 'cixzhang'},
+      body: `/approve-spec ${head}`,
+      created_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({
+      headRepository: 'contributor/astryx',
+      comments: [comment],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment,
+      }),
+    );
+
+    expect(harness.state.pullGets).toBeGreaterThan(0);
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    expect(harness.state.calls).toContain('enable-auto-merge');
   });
 
   it('rejects valid-shaped non-owner commands before API work', async () => {

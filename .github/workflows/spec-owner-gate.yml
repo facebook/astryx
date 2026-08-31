@@ -41,12 +41,15 @@ env:
 
 jobs:
   reconcile:
-    # Keep ordinary PR discussion outside the privileged pull_request_target path.
+    # Fork review events have read-only tokens. Same-repo reviews reconcile
+    # automatically; fork approvals use the trusted issue_comment command path.
     if: >-
-      github.event_name != 'issue_comment' ||
-      (github.event.issue.pull_request != null &&
-       (startsWith(github.event.comment.body, '/approve-spec ') ||
-        startsWith(github.event.comment.body, '/revoke-spec ')))
+      (github.event_name != 'pull_request_review' ||
+       github.event.pull_request.head.repo.full_name == github.repository) &&
+      (github.event_name != 'issue_comment' ||
+       (github.event.issue.pull_request != null &&
+        (startsWith(github.event.comment.body, '/approve-spec ') ||
+         startsWith(github.event.comment.body, '/revoke-spec '))))
     runs-on: ubuntu-slim
     permissions:
       contents: read

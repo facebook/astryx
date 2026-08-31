@@ -52,6 +52,18 @@ async function reconcileSpecOwnerGate({
   workspace = process.env.GITHUB_WORKSPACE,
   env = process.env,
 }) {
+  const {owner, repo} = context.repo;
+  const repository = `${owner}/${repo}`;
+  if (
+    context.eventName === 'pull_request_review' &&
+    context.payload.pull_request?.head?.repo?.full_name !== repository
+  ) {
+    core.info(
+      'Skipping fork pull request review; use an exact-head owner command to reconcile.',
+    );
+    return;
+  }
+
   const specOwners = env.SPEC_OWNERS.split(',').map(ownerName =>
     ownerName.toLowerCase(),
   );
@@ -64,8 +76,6 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
-  const {owner, repo} = context.repo;
-  const repository = `${owner}/${repo}`;
   const pullNumber = Number(
     context.payload.pull_request?.number ??
       context.payload.issue?.number ??

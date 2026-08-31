@@ -90,6 +90,21 @@ describe('spec-only workflow contract', () => {
       'reconcileSpecOwnerGate({github, context, core})',
     );
     expect(workflow).not.toContain('concurrency:');
+    const reconcileCondition = workflow
+      .slice(
+        workflow.indexOf('    if: >-', workflow.indexOf('  reconcile:')),
+        workflow.indexOf('    runs-on:', workflow.indexOf('  reconcile:')),
+      )
+      .replace(/^    if: >-\s*/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    expect(reconcileCondition).toBe(
+      "(github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'issue_comment' || (github.event.issue.pull_request != null && (startsWith(github.event.comment.body, '/approve-spec ') || startsWith(github.event.comment.body, '/revoke-spec '))))",
+    );
+    expect(workflow).toContain('pull_request_review:');
+    expect(workflow).toContain('issue_comment:');
+    expect(workflow).toContain('permissions: {}');
+    expect(workflow).not.toContain('pull_request_review_target');
     expect(workflow).toContain(
       "startsWith(github.event.comment.body, '/approve-spec ')",
     );

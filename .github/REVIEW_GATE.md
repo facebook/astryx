@@ -27,9 +27,11 @@ family, design, or system spec waits on `spec-owner-approval` for its exact
 current head. `cixzhang` or `imdreamrunner` can approve every record kind.
 Current design records and normative design assets may also be approved by any
 handle in `.github/DESIGNOWNERS`. Mixed PRs still require `cixzhang` or
-`imdreamrunner` for non-design current records. When an approver is also the
-author, the explicit equivalent is a comment containing
-`/approve-spec <full-head-sha>`; a new commit invalidates it.
+`imdreamrunner` for non-design current records. Same-repository owner reviews
+update the exact-head approval automatically. Fork review events cannot write
+with their read-only token, so an approver uses an issue comment containing
+`/approve-spec <full-head-sha>` instead; that command runs from the trusted
+default branch and a new commit invalidates it.
 
 A PR changes only spec records when every changed path is one of:
 
