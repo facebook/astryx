@@ -239,7 +239,9 @@ aggregate ownership.
   target mapping, delegation, inheritance, factual `none` classifications, and
   the rule that deprecated aliases do not count as anatomy.
 - `architecture:container-padding` owns the inherited inset protocol consumed by
-  the Scroll region and Cell edge compensation.
+  the Scroll region and Cell edge compensation. This container-system
+  participation does not make Table a structural member of
+  `family:layout-regions`.
 - `architecture:interaction-modality` owns shared keyboard and pointer modality;
   Table and its plugins retain their current local interactions.
 - `architecture:public-component-api` owns the stable props, components, hooks,
