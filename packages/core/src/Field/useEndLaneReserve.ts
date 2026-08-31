@@ -7,12 +7,16 @@
  * @input Uses React and the shared ResizeObserver
  * @output Exports useEndLaneReserve, which keeps a field's input clear of the
  *   absolutely-positioned lane at its inline end
- * @position Shared field internal. Used by Typeahead and Tokenizer, both of
- *   which park their clear button, end content and busy indicator in one
- *   absolutely-positioned lane at the field's inline end.
+ * @position Shared field internal. Used by Tokenizer, which parks its clear
+ *   button, end content and busy indicator in one absolutely-positioned lane
+ *   at the field's inline end.
  *
- * SYNC: When modified, update this header and the two callers:
- * - /packages/core/src/Typeahead/Typeahead.tsx
+ *   Typeahead does NOT use this: its wrapper holds at most one token, so its
+ *   end controls sit in flow as flex siblings the way TextInput's do, and an
+ *   in-flow box needs no reserve. Tokenizer cannot — its lane stays pinned to
+ *   the field's first row while tokens wrap below it.
+ *
+ * SYNC: When modified, update this header and the caller:
  * - /packages/core/src/Tokenizer/Tokenizer.tsx
  */
 
@@ -55,9 +59,9 @@ const reserveStyles = stylex.create({
  * measured, and the input spends the measurement as padding.
  *
  * What the lane holds is not a fixed set: a clear button that comes and goes
- * with the value, a busy indicator that comes and goes with the search, and,
- * in Tokenizer, arbitrary `endContent`. Measuring covers all of it, including
- * the combinations, and needs no constant kept in step with what renders.
+ * with the value, a busy indicator that comes and goes with the search, and
+ * arbitrary `endContent`. Measuring covers all of it, including the
+ * combinations, and needs no constant kept in step with what renders.
  *
  * **The measurement never enters React state.** It is written to a custom
  * property on the field wrapper and inherited by the input. Held in state, it
@@ -84,14 +88,21 @@ export function useEndLaneReserve(
     const host = node.parentElement;
 
     observeResize(node, () => {
-      // Border box: the lane's own padding and border are part of what the
-      // input has to clear. Rounded up, because a fractional width left as-is
-      // reserves a hair too little and the glyph's last subpixel column still
-      // lands on the caret.
-      host?.style.setProperty(
-        LANE_WIDTH_VAR,
-        `${Math.ceil(node.getBoundingClientRect().width)}px`,
-      );
+      // `offsetWidth`, not `getBoundingClientRect().width`. The rect is in
+      // VIEWPORT space — it carries every CSS transform between this element
+      // and the root — while the padding it feeds is in the element's own
+      // LOCAL space. Under `scale(.5)` the rect reads half the lane's real
+      // width and the input reserves half of what it needs, so the query runs
+      // under the controls again; under `scale(2)` it reads double and the
+      // caret sits in a gap twice the lane's width. Measured in Chromium:
+      // 22.83px of overlap and 202.69px of excess gap on a 98px lane.
+      // `offsetWidth` is the untransformed border-box width, so it reports 98
+      // at every scale — the number this padding is actually denominated in.
+      //
+      // It is already an integer, which is the rounding the old `Math.ceil`
+      // was there for: a fractional width left as-is reserves a hair too
+      // little and the glyph's last subpixel column lands on the caret.
+      host?.style.setProperty(LANE_WIDTH_VAR, `${node.offsetWidth}px`);
     });
 
     // React 19 runs a ref callback's return value as its cleanup, so the

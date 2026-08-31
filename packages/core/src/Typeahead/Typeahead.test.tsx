@@ -17,10 +17,8 @@ import {
   beforeAll,
   afterAll,
   beforeEach,
-  afterEach,
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
-import {Profiler} from 'react';
 import userEvent from '@testing-library/user-event';
 import {Typeahead} from './Typeahead';
 import {BaseTypeahead} from './BaseTypeahead';
@@ -1584,188 +1582,61 @@ describe('busy indicator ownership', () => {
   });
 });
 
-describe('Typeahead end-lane reserve — render cost', () => {
-  // jsdom has no ResizeObserver and reports every width as 0, so the cost
-  // this guards is invisible without one: a reserve held in React state only
-  // re-renders when the measurement is non-zero. This stub is the smallest
-  // thing that makes the regression reproducible in CI — it reports a width
-  // the moment an element is observed, exactly as a browser would when the
-  // spinner mounts into the lane and again when it leaves.
-  class StubResizeObserver {
-    static instances = 0;
-    private readonly cb: ResizeObserverCallback;
-    constructor(cb: ResizeObserverCallback) {
-      this.cb = cb;
-      StubResizeObserver.instances++;
-    }
-    observe(target: Element) {
-      const entry = {
-        target,
-        borderBoxSize: [{inlineSize: 24, blockSize: 20}],
-        contentRect: {width: 24, height: 20},
-      } as unknown as ResizeObserverEntry;
-      this.cb([entry], this);
-    }
-    unobserve() {}
-    disconnect() {}
-  }
-
-  let originalRO: typeof ResizeObserver | undefined;
-  beforeEach(() => {
-    originalRO = globalThis.ResizeObserver;
-    StubResizeObserver.instances = 0;
-    globalThis.ResizeObserver =
-      StubResizeObserver;
-    // A real width, so a state-held reserve would have something to store.
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
-      width: 24,
-      height: 20,
-      top: 0,
-      left: 0,
-      right: 24,
-      bottom: 20,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    });
-  });
-  afterEach(() => {
-    globalThis.ResizeObserver = originalRO as typeof ResizeObserver;
-    vi.restoreAllMocks();
-  });
-
-  const pendingSource = () => {
-    let settle: (items: SearchableItem[]) => void = () => {};
-    return {
-      source: {
-        search: async () =>
-          new Promise<SearchableItem[]>(resolve => {
-            settle = resolve;
-          }),
-        bootstrap: () => [],
-      },
-      settle: (items: SearchableItem[] = []) => settle(items),
-    };
-  };
-
-  it('costs no commit of its own across a whole search', async () => {
-    // The lane's width reaches CSS as a custom property written to the DOM,
-    // never as state, so measuring it cannot re-render the field. The two
-    // commits below are the ones the search itself owes: the spinner
-    // arriving, and the spinner leaving. Held in state, the measurement
-    // doubled that — a second commit for each, carrying a number no
-    // JavaScript reads.
-    const {source, settle} = pendingSource();
-    const commits: string[] = [];
-    render(
-      <Profiler id="field" onRender={(_id, phase) => commits.push(phase)}>
-        <Typeahead
-          label="Fruit"
-          searchSource={source}
-          value={null}
-          onChange={() => {}}
-          debounceMs={0}
-        />
-      </Profiler>,
-    );
-
-    const input = screen.getByRole('combobox');
-    commits.length = 0;
-
-    // Drive the whole cycle without waiting on any DOM signal, so the count
-    // is of the field's commits and nothing else — and so this reads the
-    // same against any implementation of the reserve.
-    await act(async () => {
-      fireEvent.change(input, {target: {value: 'App'}});
-    });
-    const afterStart = commits.length;
-
-    await act(async () => {
-      settle([]);
-      await Promise.resolve();
-    });
-
-    // One commit for the spinner arriving, one for it leaving. A reserve
-    // held in state adds a second to each, because the lane changes size
-    // exactly when it appears and disappears.
-    expect(afterStart).toBe(1);
-    expect(commits.length).toBe(2);
-  });
-
-  it('shares one observer across every field on the page', () => {
-    // One observer per lane is the other half of the cost: browsers batch per
-    // observer instance, so N fields meant N callback dispatches a frame.
-    render(
-      <>
-        <Typeahead
-          label="One"
-          searchSource={fruitSource}
-          value={fruits[0]}
-          onChange={() => {}}
-        />
-        <Typeahead
-          label="Two"
-          searchSource={fruitSource}
-          value={fruits[1]}
-          onChange={() => {}}
-        />
-        <Typeahead
-          label="Three"
-          searchSource={fruitSource}
-          value={fruits[2]}
-          onChange={() => {}}
-        />
-      </>,
-    );
-    // Three lanes (each field has a value, so each renders a clear button),
-    // one observer.
-    expect(StubResizeObserver.instances).toBeLessThanOrEqual(1);
-  });
-
-  it('publishes the measured width for CSS, and takes it back with the lane', async () => {
-    // The mechanism the two tests above are protecting: the number reaches
-    // the input as an inherited custom property, so the padding follows the
-    // lane without React seeing the value at all.
-    const {source, settle} = pendingSource();
+describe('end controls stay in flow', () => {
+  // The fix for the transform bug, expressed as a rule rather than a
+  // measurement: these controls are ordinary flex siblings of the input, so
+  // they take up room and nothing has to reserve it for them. jsdom performs
+  // no layout, so what is asserted is the absence of the two things that
+  // stopped that being true — an out-of-flow lane, and a padding reserve fed
+  // by a measured width. The geometry itself is browser-verified in the PR.
+  it('renders the clear button without taking it out of flow', () => {
     const {container} = render(
       <Typeahead
         label="Fruit"
-        searchSource={source}
-        value={null}
+        searchSource={fruitSource}
+        value={fruits[0]}
         onChange={() => {}}
-        debounceMs={0}
       />,
     );
-    const input = screen.getByRole('combobox');
+    const field = container.querySelector('.astryx-typeahead');
+    const clear = screen.getByRole('button', {name: /clear/i});
+    expect(field).toContainElement(clear);
+    // A direct flex child of the field, not a box positioned over it.
+    expect(clear.parentElement).toBe(field);
+    expect(getComputedStyle(clear).position).not.toBe('absolute');
+  });
 
-    await act(async () => {
-      fireEvent.change(input, {target: {value: 'App'}});
-    });
-    await waitFor(() => {
-      expect(
-        container.querySelector('[style*="--_astryx-end-lane-width"]'),
-      ).not.toBeNull();
-    });
-
-    const host = container.querySelector<HTMLElement>(
-      '[style*="--_astryx-end-lane-width"]',
+  it('never reserves room with a measured width', () => {
+    // The custom property is Tokenizer's mechanism and must not reappear
+    // here: a width measured in viewport space and spent as local padding is
+    // wrong under any CSS transform (scale(.5) overlapped the query by
+    // 22.83px, scale(2) left a 202.69px gap).
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
     );
-    expect(host?.style.getPropertyValue('--_astryx-end-lane-width')).toBe(
-      '24px',
-    );
-
-    await act(async () => {
-      settle([]);
-      await Promise.resolve();
-    });
-    // Lane gone, property gone — the input takes the room back.
-    await waitFor(() => {
-      expect(
-        container.querySelector('[style*="--_astryx-end-lane-width"]'),
-      ).toBeNull();
-    });
     expect(
       container.querySelector('[style*="--_astryx-end-lane-width"]'),
     ).toBeNull();
+  });
+
+  it('keeps the field on one row so the controls cannot be pushed off it', () => {
+    // `flex-wrap` moves an item to a new line rather than shrinking it, so a
+    // wrapping field put the controls on a row of their own once the token
+    // got long. The shared field base does not wrap; this must not either.
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    const field = container.querySelector('.astryx-typeahead') as HTMLElement;
+    expect(getComputedStyle(field).flexWrap).not.toBe('wrap');
   });
 });

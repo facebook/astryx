@@ -43,7 +43,6 @@ import {useTooltip} from '../Tooltip';
 import {renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {Spinner} from '../Spinner';
-import {useEndLaneReserve} from '../Field/useEndLaneReserve';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -169,18 +168,15 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
 // Styles
 // =============================================================================
 
-// How far the end lane sits from the field's inline-end border. Also what the
-// input has to clear, so it is named rather than repeated: the reserve below
-// is derived from the same expression that positions the lane.
-const LANE_INSET = {
-  md: `calc((${sizeVars['--size-element-md']} - 20px) / 2 - 1px)`,
-  sm: `calc((${sizeVars['--size-element-sm']} - 20px) / 2 - 1px)`,
-} as const;
-
 const styles = stylex.create({
   wrapper: {
     position: 'relative',
-    flexWrap: 'wrap',
+    // No `flexWrap`. The shared field base does not wrap and neither does
+    // TextInput; this field only ever holds one token, so there is no second
+    // row to wrap to. It also cannot wrap and keep its end controls in flow:
+    // flex moves an item to a new line rather than shrinking it, so a long
+    // value put the clear button and spinner on a row of their own (a 280px
+    // field grew to 46px tall). Unwrapped, the token ellipsizes instead.
     gap: spacingVars['--spacing-1'],
     // Standard padding minus border width to prevent height jump
     // when a token (28px) is added inside the input
@@ -195,25 +191,6 @@ const styles = stylex.create({
     // accounting for 1px border). Default inline padding is 8px, so
     // -(8px - 3px) = -5px positions token equidistant from left edge as top.
     margin: `calc(-1 * (${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px))`,
-  },
-  // One lane for everything that sits at the field's inline end. It is
-  // absolute rather than in-flow because the wrapper wraps: a selected token
-  // can push a later in-flow sibling onto a second row, and this has to stay
-  // on the field's first row. Anything added here is a flex child, so the
-  // busy indicator and the clear button sit beside each other instead of
-  // both landing in the same corner.
-  endLane: {
-    position: 'absolute',
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-    top: LANE_INSET.md,
-    insetInlineEnd: LANE_INSET.md,
-    height: '20px',
-  },
-  endLaneSm: {
-    top: LANE_INSET.sm,
-    insetInlineEnd: LANE_INSET.sm,
   },
   inputHidden: {
     width: 0,
@@ -321,14 +298,6 @@ export function Typeahead<T extends SearchableItem>({
   // Reported by BaseTypeahead so the indicator can live in this field's own
   // end lane, beside the clear button, rather than in the engine's row.
   const [isLoading, setIsLoading] = useState(false);
-  // The lane holds a spinner, a clear button, or both, so what the input has
-  // to clear changes while the field is in use. Measured rather than assumed.
-  const [laneRef, laneReserve] = useEndLaneReserve(
-    size === 'sm' ? LANE_INSET.sm : LANE_INSET.md,
-  );
-  // Whether a lane renders at all — known from props and state, without
-  // measuring anything, which is why the reserve costs no extra commit.
-  const hasEndLane = Boolean(isLoading || (hasClear && value && !isDisabled));
   const [isEditing, setIsEditing] = useState(false);
   const [editingValue, setEditingValue] = useState<T | null>(null);
 
@@ -519,13 +488,7 @@ export function Typeahead<T extends SearchableItem>({
           debounceMs={debounceMs}
           anchorRef={wrapperRef}
           onKeyDown={handleKeyDown}
-          inputXStyle={
-            showToken
-              ? styles.inputHidden
-              : hasEndLane
-                ? laneReserve
-                : undefined
-          }
+          inputXStyle={showToken ? styles.inputHidden : undefined}
           // While the token is shown the input is collapsed (width 0 /
           // opacity 0) — take it out of the Tab order so keyboard users
           // don't hit an invisible stop (WCAG 2.4.3 / 2.4.7). It stays
@@ -534,26 +497,17 @@ export function Typeahead<T extends SearchableItem>({
           inputTabIndex={showToken ? -1 : undefined}
           size={size}
         />
-        {hasEndLane && (
-          <div
-            ref={laneRef}
-            {...stylex.props(
-              styles.endLane,
-              size === 'sm' && styles.endLaneSm,
-            )}>
-            {isLoading && (
-              <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
-            )}
-            {hasClear && value && !isDisabled && (
-              <InputClearButton
-                label={t('@astryx.typeahead.clearSelection')}
-                onClick={e => {
-                  e.stopPropagation();
-                  handleClear();
-                }}
-              />
-            )}
-          </div>
+        {isLoading && (
+          <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
+        )}
+        {hasClear && value && !isDisabled && (
+          <InputClearButton
+            label={t('@astryx.typeahead.clearSelection')}
+            onClick={e => {
+              e.stopPropagation();
+              handleClear();
+            }}
+          />
         )}
       </div>
       {showsDisabledMessage &&
