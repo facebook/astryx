@@ -164,6 +164,82 @@ No current design spec is linked.
 The approved but unimplemented replacement for the first row is owned by
 `spec:AST-004/DEC-1`.
 
+### Theming anatomy
+
+<!-- anatomy-theming:v1 -->
+
+```json
+{
+  "Field": {"delegatesTo": {"owner": "component:Field", "target": "field"}},
+  "Trigger": {"target": "selector"},
+  "Icon-rendered start icon": {
+    "delegatesTo": {"owner": "component:Icon", "target": "icon"}
+  },
+  "Caller-rendered start content": {
+    "none": {
+      "reason": "intentional: Arbitrary ReactNode content is caller-owned and receives no Selector target."
+    }
+  },
+  "Trigger clear button": {
+    "delegatesTo": {
+      "owner": "component:Field",
+      "target": "input-clear-button"
+    }
+  },
+  "Status icon": {
+    "delegatesTo": {"owner": "component:Icon", "target": "icon"}
+  },
+  "Indicator icon": {"target": "selector-indicator-icon"},
+  "Search row": {"target": "selector-search"},
+  "Search icon": {
+    "delegatesTo": {"owner": "component:Icon", "target": "icon"}
+  },
+  "Search clear button": {
+    "delegatesTo": {
+      "owner": "component:Field",
+      "target": "input-clear-button"
+    }
+  },
+  "Option row": {"target": "selector-option-row"},
+  "SelectorOption-rendered content": {"target": "selector-option"},
+  "Bare caller-rendered option content": {
+    "none": {
+      "reason": "intentional: Bare custom renderOption content is caller-owned and does not receive the SelectorOption target."
+    }
+  },
+  "Option selection indicator": {"target": "selector-check"},
+  "Option divider": {
+    "delegatesTo": {"owner": "component:Divider", "target": "divider"}
+  },
+  "Section heading": {"target": "selector-section-heading"},
+  "Empty state": {"target": "selector-empty-state"},
+  "Pointer popup": {"target": "selector-popup"},
+  "Touch sheet heading": {
+    "delegatesTo": {"owner": "component:Text", "target": "heading"}
+  },
+  "Touch sheet": {
+    "delegatesTo": {
+      "owner": "component:BottomSheet",
+      "target": "bottom-sheet"
+    }
+  }
+}
+```
+
+`Field` is conditional: standalone Selector renders it, while InputGroup owns
+that surrounding shell. `Pointer popup` and the two touch-sheet parts are
+alternative presentations of the same panel content, not simultaneous anatomy.
+Icon-rendered start content delegates to Icon; arbitrary `ReactNode` start content
+is caller-owned. The default renderer and custom `renderOption` functions that
+return `SelectorOption` retain its target; only bare caller-rendered option
+content stays outside that target, while the targeted option row remains.
+`selector-clear-icon` remains a deprecated compatibility alias and does not own a
+current anatomy row.
+
+This map records only shipped reachability. It does not treat the accepted,
+unimplemented option-source behavior in `spec:AST-001` or indicator-space change
+in `spec:AST-004` as current runtime behavior.
+
 ## Family and system relationships
 
 - The current architecture links in frontmatter own public API, theming, icon
