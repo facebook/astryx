@@ -376,7 +376,11 @@ export function TextInput({
   // Handle clear button click
   const handleClear = useCallback(() => {
     onChange?.('', null as unknown as ChangeEvent<HTMLInputElement>);
-    inputRef.current?.focus();
+    // Defer focus restoration past the button's unmount task so iOS Safari
+    // and touch browsers don't jump the page scroll to 0 on tap.
+    requestAnimationFrame(() => {
+      inputRef.current?.focus({preventScroll: true});
+    });
   }, [onChange]);
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)

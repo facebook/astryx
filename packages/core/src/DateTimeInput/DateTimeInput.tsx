@@ -1390,7 +1390,11 @@ function PointerDateTimeField({
   // --- Clear ---
   const handleClear = useCallback(() => {
     fireChange(undefined);
-    dateInputRef.current?.focus();
+    // Defer focus restoration past the button's unmount task so iOS Safari
+    // and touch browsers don't jump the page scroll to 0 on tap.
+    requestAnimationFrame(() => {
+      dateInputRef.current?.focus({preventScroll: true});
+    });
   }, [fireChange]);
 
   // Focus time input when clicking wrapper padding/icon

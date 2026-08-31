@@ -117,6 +117,8 @@ function renderInputClearButton({
           }
         />
       }
+      onPointerDown={e => e.preventDefault()}
+      onMouseDown={e => e.preventDefault()}
       onClick={onClick}
       onPointerDown={onPointerDown}
       onClickCapture={onClickCapture}

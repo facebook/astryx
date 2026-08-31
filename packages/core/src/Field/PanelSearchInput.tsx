@@ -230,10 +230,13 @@ export function PanelSearchInput({
   const handleClear = useCallback(() => {
     onValueChange('');
     // Clearing puts the caret back where the user was typing, matching
-    // TextInput's built-in clear.
-    if (typeof ref === 'object' && ref?.current) {
-      ref.current.focus();
-    }
+    // TextInput's built-in clear. Defer focus restoration past the button's
+    // unmount task so touch browsers don't jump page scroll on tap.
+    requestAnimationFrame(() => {
+      if (typeof ref === 'object' && ref?.current) {
+        ref.current.focus({preventScroll: true});
+      }
+    });
   }, [onValueChange, ref]);
 
   return (

@@ -589,7 +589,12 @@ export function FileInput({
       onChange(null);
       if (inputRef.current) {
         inputRef.current.value = '';
-        inputRef.current.focus();
+        const targetInput = inputRef.current;
+        // Defer focus restoration past the button's unmount task so iOS Safari
+        // and touch browsers don't jump the page scroll to 0 on tap.
+        requestAnimationFrame(() => {
+          targetInput.focus({preventScroll: true});
+        });
       }
     },
     [onChange],
