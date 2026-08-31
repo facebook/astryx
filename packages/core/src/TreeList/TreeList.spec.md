@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-template_version: 2
+template_version: 3
 kind: component
 id: component:TreeList
 authority: draft
@@ -142,7 +142,7 @@ caller-owned even though TreeList positions their slot wrappers.
   "Tree list": {"target": "tree-list"},
   "Header": {
     "none": {
-      "reason": "TreeList applies no public target to caller-provided Header content"
+      "reason": "intentional: Header is caller-provided content outside TreeList's public theming ownership"
     }
   },
   "Item": {"target": "tree-list-item"},
@@ -153,17 +153,17 @@ caller-owned even though TreeList positions their slot wrappers.
   "Item label": {"target": "tree-list-item-label"},
   "Item description": {
     "none": {
-      "reason": "No current public target is applied to the stable Item description"
+      "reason": "unsettled: No current public target reaches the stable Item description; future exposure still needs an owner decision"
     }
   },
   "Start content": {
     "none": {
-      "reason": "TreeList applies no public target to caller-provided Start content"
+      "reason": "intentional: Start content is caller-provided content outside TreeList's public theming ownership"
     }
   },
   "End content": {
     "none": {
-      "reason": "TreeList applies no public target to caller-provided End content"
+      "reason": "intentional: End content is caller-provided content outside TreeList's public theming ownership"
     }
   },
   "Guide": {"target": "tree-list-guide"}

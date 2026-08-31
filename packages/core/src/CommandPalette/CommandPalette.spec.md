@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-template_version: 2
+template_version: 3
 kind: component
 id: component:CommandPalette
 authority: draft
@@ -153,7 +153,7 @@ reachability, not a decision that it must remain unthemeable.
   },
   "Query field": {
     "none": {
-      "reason": "No current public target is applied directly to the native query field"
+      "reason": "unsettled: No current public target is applied directly to the native query field; future exposure still needs an owner decision"
     }
   },
   "Loading spinner": {
