@@ -87,7 +87,16 @@ describe('spec owner decision', () => {
           headContent: 'kind: design\nauthority: current',
         },
       ]),
-    ).toEqual({spec: false, design: true});
+    ).toEqual({spec: false, design: true, theme: false});
+    expect(
+      requiredApprovalGroups([
+        {
+          path: 'packages/themes/neutral/neutral.spec.md',
+          baseContent: null,
+          headContent: 'kind: theme\nauthority: current',
+        },
+      ]),
+    ).toEqual({spec: false, design: false, theme: true});
     expect(
       requiredApprovalGroups([
         {
@@ -96,7 +105,7 @@ describe('spec owner decision', () => {
           headContent: 'kind: component\nauthority: current',
         },
       ]),
-    ).toEqual({spec: true, design: false});
+    ).toEqual({spec: true, design: false, theme: false});
     expect(
       requiredApprovalGroups(
         [
@@ -113,7 +122,7 @@ describe('spec owner decision', () => {
         ],
         {touchesDesignAssets: true},
       ),
-    ).toEqual({spec: true, design: true});
+    ).toEqual({spec: true, design: true, theme: false});
     expect(
       requiredApprovalGroups([
         {
@@ -122,7 +131,7 @@ describe('spec owner decision', () => {
           headContent: 'kind: architecture\nauthority: current',
         },
       ]),
-    ).toEqual({spec: true, design: false});
+    ).toEqual({spec: true, design: false, theme: false});
     expect(
       requiredApprovalGroups([
         {
@@ -132,18 +141,68 @@ describe('spec owner decision', () => {
           headContent: 'kind: design\nauthority: current',
         },
       ]),
-    ).toEqual({spec: true, design: true});
+    ).toEqual({spec: true, design: true, theme: false});
   });
 
   it('owner-gates design assets even without a text record', () => {
     expect(requiredApprovalGroups([], {touchesDesignAssets: true})).toEqual({
       spec: false,
       design: true,
+      theme: false,
     });
     expect(requiredApprovalGroups([], {complete: false})).toEqual({
       spec: true,
       design: true,
+      theme: true,
     });
+  });
+
+  it('accepts an exact-head repo-owner review for the theme group', () => {
+    const groups = requiredApprovalGroups([
+      {
+        path: 'packages/themes/neutral/neutral.spec.md',
+        baseContent: null,
+        headContent: 'kind: theme\nauthority: current',
+      },
+    ]);
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang', 'rubyycheung', 'imdreamrunner'],
+      headSha: head,
+      comments: [],
+      reviews: [
+        {
+          user: {login: 'rubyycheung'},
+          state: 'APPROVED',
+          commit_id: head,
+          submitted_at: '2026-08-30T10:00:00Z',
+        },
+      ],
+    });
+
+    expect(groups).toEqual({spec: false, design: false, theme: true});
+    expect(decision).toMatchObject({
+      approved: true,
+      owner: 'rubyycheung',
+      source: 'review',
+    });
+  });
+
+  it('does not make a self-declared record owner an approver', () => {
+    const decision = resolveOwnerDecision({
+      owners: ['cixzhang', 'rubyycheung', 'imdreamrunner'],
+      headSha: head,
+      comments: [],
+      reviews: [
+        {
+          user: {login: 'self-declared-owner'},
+          state: 'APPROVED',
+          commit_id: head,
+          submitted_at: '2026-08-30T10:00:00Z',
+        },
+      ],
+    });
+
+    expect(decision.approved).toBe(false);
   });
 
   it('accepts either configured owner', () => {

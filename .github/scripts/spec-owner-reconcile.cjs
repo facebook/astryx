@@ -58,7 +58,14 @@ async function reconcileSpecOwnerGate({
   const designOwners = parseOwnerFile(
     fs.readFileSync(path.join(workspace, '.github/DESIGNOWNERS'), 'utf8'),
   );
-  const allOwners = new Set([...specOwners, ...designOwners]);
+  const engineeringOwners = parseOwnerFile(
+    fs.readFileSync(path.join(workspace, '.github/ENGOWNERS'), 'utf8'),
+  );
+  const allOwners = new Set([
+    ...specOwners,
+    ...engineeringOwners,
+    ...designOwners,
+  ]);
   if (!isAuthorizedEvent(context.eventName, context.payload, allOwners)) {
     core.info('Ignoring an event from someone outside the eligible owners.');
     return;
@@ -401,11 +408,22 @@ async function reconcileSpecOwnerGate({
     complete: scope.complete,
     touchesDesignAssets: scope.touchesDesignAssets,
   });
-  const ownerApprovalRequired = requiredGroups.spec || requiredGroups.design;
+  const ownerApprovalRequired =
+    requiredGroups.spec || requiredGroups.design || requiredGroups.theme;
   if (requiredGroups.design && designOwners.length === 0) {
     throw new Error('No DESIGNOWNERS are configured.');
   }
+  if (
+    requiredGroups.theme &&
+    engineeringOwners.length === 0 &&
+    designOwners.length === 0
+  ) {
+    throw new Error('No ENGOWNERS or DESIGNOWNERS are configured.');
+  }
   const designApprovers = [...new Set([...specOwners, ...designOwners])];
+  const themeApprovers = [
+    ...new Set([...engineeringOwners, ...designOwners]),
+  ];
   const readyAttestations = parseReadyAttestations(statuses, {
     repository,
     headSha: initialHead,
@@ -423,14 +441,27 @@ async function reconcileSpecOwnerGate({
   const designDecision = requiredGroups.design
     ? resolveOwnerDecision({...decisionInput, owners: designApprovers})
     : {approved: true, owner: null};
-  const approved = specDecision.approved && designDecision.approved;
-  const approvingOwners = [specDecision.owner, designDecision.owner]
+  const themeDecision = requiredGroups.theme
+    ? resolveOwnerDecision({...decisionInput, owners: themeApprovers})
+    : {approved: true, owner: null};
+  const approved =
+    specDecision.approved &&
+    designDecision.approved &&
+    themeDecision.approved;
+  const approvingOwners = [
+    specDecision.owner,
+    designDecision.owner,
+    themeDecision.owner,
+  ]
     .filter(Boolean)
     .filter((ownerName, index, owners) => owners.indexOf(ownerName) === index);
   const requiredOwnerDescription = [
     requiredGroups.spec ? `a spec owner (${specOwners.join(',')})` : null,
     requiredGroups.design
       ? `a design approver (${designApprovers.join(',')})`
+      : null,
+    requiredGroups.theme
+      ? `a theme approver (${themeApprovers.join(',')})`
       : null,
   ]
     .filter(Boolean)

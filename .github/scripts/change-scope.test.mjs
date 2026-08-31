@@ -7,12 +7,13 @@ const require = createRequire(import.meta.url);
 const {classifyChanges, parseNameStatus} = require('./change-scope.cjs');
 
 describe('spec-only change scope', () => {
-  it('accepts system, family, component, and plan records', () => {
+  it('accepts system, family, design, theme, component, and plan records', () => {
     const result = classifyChanges([
       {filename: 'docs/specs/AST-001-overlay-policy/spec.md'},
       {filename: 'docs/specs/AST-001-overlay-policy/plan.md'},
       {filename: 'docs/families/input-fields.md'},
       {filename: 'docs/design/selection-inputs.md'},
+      {filename: 'packages/themes/neutral/neutral.spec.md'},
       {filename: 'packages/core/src/Selector/Selector.spec.md'},
       {filename: 'packages/lab/src/FutureInput/FutureInput.spec.md'},
     ]);
@@ -86,11 +87,26 @@ describe('spec-only change scope', () => {
     'packages/core/src/Selector/Selector.audit.json',
     'docs/architecture/layers.md',
     'docs/templates/knowledge/component-spec.md',
+    'docs/templates/knowledge/theme-spec.md',
     'docs/schemas/knowledge/v2.json',
+    'docs/themes/neutral.md',
+    'packages/themes/neutral/Theme.spec.md',
+    'docs/themes/README.md',
+    'docs/README.md',
     'docs/specs/README.md',
     '.github/workflows/ci.yml',
   ])('rejects %s', filename => {
     expect(classifyChanges([{filename}]).specOnly).toBe(false);
+  });
+
+  it.each([
+    'docs/themes/neutral.md',
+    'packages/themes/neutral/Theme.spec.md',
+    'packages/themes/neutral/subdir/neutral.spec.md',
+  ])('treats misplaced theme candidate %s as unsafe knowledge', filename => {
+    const result = classifyChanges([{filename}]);
+    expect(result.touchesKnowledgeRecords).toBe(true);
+    expect(result.specOnly).toBe(false);
   });
 
   it('fails closed for an empty change set', () => {

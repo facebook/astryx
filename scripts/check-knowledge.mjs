@@ -64,7 +64,9 @@ export function parseKnowledgeDocument(content, filePath = '<document>') {
         block.push(lines[index + 1].trim());
         index += 1;
       }
-      if (block[0] === '[' && block.at(-1) === ']') {
+      if (block.length === 1 && /^\[.*\]$/.test(block[0])) {
+        raw = block[0];
+      } else if (block[0] === '[' && block.at(-1) === ']') {
         raw = `[${block.slice(1, -1).join('')}]`;
       } else if (block.every(item => item.startsWith('- '))) {
         raw = `[${block.map(item => item.slice(2)).join(',')}]`;
@@ -108,6 +110,55 @@ function matchingFiles(directory, predicate) {
     .map(entry => path.join(directory, entry.name));
 }
 
+function matchingFilesRecursively(directory, predicate) {
+  if (!fs.existsSync(directory)) return [];
+  const matches = [];
+  const pending = [directory];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    for (const entry of fs.readdirSync(current, {withFileTypes: true})) {
+      const candidate = path.join(current, entry.name);
+      if (entry.isDirectory()) pending.push(candidate);
+      else if (entry.isFile() && predicate(entry.name)) matches.push(candidate);
+    }
+  }
+  return matches;
+}
+
+export function discoverThemeRecordCandidates(root = DEFAULT_ROOT) {
+  const records = [];
+  const problems = [];
+
+  for (const filePath of matchingFiles(
+    path.join(root, 'docs/themes'),
+    name => name.endsWith('.md') && name !== 'README.md',
+  )) {
+    records.push(filePath);
+    problems.push(
+      `${path.relative(root, filePath)}: theme records must be placed at packages/themes/<theme>/<theme>.spec.md; docs/themes contains guidance only.`,
+    );
+  }
+
+  for (const themeDirectory of immediateDirectories(
+    path.join(root, 'packages/themes'),
+  )) {
+    const themeName = path.basename(themeDirectory);
+    const expectedPath = path.join(themeDirectory, `${themeName}.spec.md`);
+    for (const filePath of matchingFilesRecursively(themeDirectory, name =>
+      name.endsWith('.spec.md'),
+    )) {
+      records.push(filePath);
+      if (filePath !== expectedPath) {
+        problems.push(
+          `${path.relative(root, filePath)}: theme record must be placed exactly at packages/themes/${themeName}/${themeName}.spec.md.`,
+        );
+      }
+    }
+  }
+
+  return {records: records.sort(), problems};
+}
+
 export function discoverKnowledgeRecords(root = DEFAULT_ROOT) {
   const records = [];
 
@@ -134,6 +185,8 @@ export function discoverKnowledgeRecords(root = DEFAULT_ROOT) {
       name => name.endsWith('.md') && name !== 'README.md',
     ),
   );
+
+  records.push(...discoverThemeRecordCandidates(root).records);
 
   for (const packageName of ['core', 'lab']) {
     for (const componentDirectory of immediateDirectories(
@@ -496,6 +549,7 @@ function validateAgainstSchema(
   isTemplate,
   currentTemplateVersion,
   designApprovalOwners = [],
+  themeApprovalOwners = [],
 ) {
   const problems = [...document.problems];
   const {frontmatter, sections} = document;
@@ -534,6 +588,12 @@ function validateAgainstSchema(
     );
   }
 
+  for (const field of kindSchema.listFields ?? []) {
+    if (!Array.isArray(frontmatter.get(field))) {
+      problems.push(`${filePath}: ${field} must be a list.`);
+    }
+  }
+
   if (isTemplate) {
     if (templateVersion !== currentTemplateVersion) {
       problems.push(
@@ -558,9 +618,28 @@ function validateAgainstSchema(
     return problems;
   }
 
-  const owners = frontmatter.get('owners');
-  if (!Array.isArray(owners) || owners.length === 0) {
-    problems.push(`${filePath}: owners must be a non-empty inline list.`);
+  for (const field of kindSchema.requiredNonEmptyStringFields ?? []) {
+    const value = frontmatter.get(field);
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      problems.push(`${filePath}: ${field} must be a non-empty string.`);
+    }
+  }
+
+  const id = frontmatter.get('id');
+  if (
+    kindSchema.idPattern &&
+    (typeof id !== 'string' || !new RegExp(kindSchema.idPattern).test(id))
+  ) {
+    problems.push(
+      `${filePath}: id must match ${JSON.stringify(kindSchema.idPattern)}.`,
+    );
+  }
+
+  if (kindSchema.requiredFrontmatter.includes('owners')) {
+    const owners = frontmatter.get('owners');
+    if (!Array.isArray(owners) || owners.length === 0) {
+      problems.push(`${filePath}: owners must be a non-empty inline list.`);
+    }
   }
 
   const authority = frontmatter.get('authority');
@@ -583,7 +662,9 @@ function validateAgainstSchema(
     const authorizedOwners =
       kind === 'design'
         ? [...new Set([...schema.approvalOwners, ...designApprovalOwners])]
-        : schema.approvalOwners;
+        : kind === 'theme'
+          ? themeApprovalOwners
+          : schema.approvalOwners;
     if (!authorizedOwners.includes(approvedBy)) {
       problems.push(
         `${filePath}: current records require approved_by to name an authorized owner.`,
@@ -689,9 +770,46 @@ function currentSchemaFiles(root) {
   );
 }
 
+export function composeKnowledgeSchemas(rawSchemas) {
+  const composed = new Map();
+  const latestKindVersions = new Map();
+
+  function compose(version, stack = []) {
+    if (composed.has(version)) return composed.get(version);
+    const entry = rawSchemas.get(version);
+    if (!entry) throw new Error(`Schema v${version} does not exist.`);
+    if (stack.includes(version))
+      throw new Error('Knowledge schema extends cycle.');
+    const parentVersion = entry.schema.extends;
+    const parent =
+      parentVersion == null
+        ? null
+        : compose(parentVersion, [...stack, version]);
+    const schema = parent
+      ? {
+          ...parent.schema,
+          ...entry.schema,
+          kinds: {...parent.schema.kinds, ...(entry.schema.kinds ?? {})},
+        }
+      : entry.schema;
+    const result = {...entry, schema};
+    composed.set(version, result);
+    return result;
+  }
+
+  for (const version of [...rawSchemas.keys()].sort((a, b) => a - b)) {
+    const entry = rawSchemas.get(version);
+    compose(version);
+    for (const kind of Object.keys(entry.schema.kinds ?? {})) {
+      latestKindVersions.set(kind, version);
+    }
+  }
+  return {schemas: composed, latestKindVersions};
+}
+
 export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
   const schemaDirectory = path.join(root, 'docs/schemas/knowledge');
-  const schemas = new Map(
+  const rawSchemas = new Map(
     matchingFiles(schemaDirectory, name => /^v[0-9]+\.json$/.test(name)).map(
       schemaPath => {
         const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
@@ -707,11 +825,11 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
       },
     ),
   );
-  if (schemas.size === 0)
+  if (rawSchemas.size === 0)
     return ['docs/schemas/knowledge: no versioned schemas found.'];
+  const {schemas, latestKindVersions} = composeKnowledgeSchemas(rawSchemas);
   const latestVersion = Math.max(...schemas.keys());
-  const {schema, schemaPath} = schemas.get(latestVersion);
-  const relativeSchemaPath = path.relative(root, schemaPath);
+  const {schema} = schemas.get(latestVersion);
   const templateVersions = JSON.parse(
     fs.readFileSync(
       path.join(root, 'docs/templates/knowledge/versions.json'),
@@ -722,12 +840,21 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
   const designApprovalOwners = fs.existsSync(designOwnersPath)
     ? parseOwnerFile(fs.readFileSync(designOwnersPath, 'utf8'))
     : [];
-  const problems = [];
+  const engineeringOwnersPath = path.join(root, '.github/ENGOWNERS');
+  const engineeringApprovalOwners = fs.existsSync(engineeringOwnersPath)
+    ? parseOwnerFile(fs.readFileSync(engineeringOwnersPath, 'utf8'))
+    : [];
+  const themeApprovalOwners = [
+    ...new Set([...engineeringApprovalOwners, ...designApprovalOwners]),
+  ];
+  const problems = [...discoverThemeRecordCandidates(root).problems];
   const ids = new Map();
   const records = [];
   const delegations = [];
 
   for (const [kind, kindSchema] of Object.entries(schema.kinds)) {
+    const kindVersion = latestKindVersions.get(kind);
+    const kindSchemaEntry = schemas.get(kindVersion);
     if (
       !Number.isInteger(templateVersions[kind]) ||
       templateVersions[kind] < 1
@@ -751,12 +878,13 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
     problems.push(
       ...validateAgainstSchema(
         template,
-        schema,
-        relativeSchemaPath,
+        kindSchemaEntry.schema,
+        path.relative(root, kindSchemaEntry.schemaPath),
         kindSchema.template,
         true,
         templateVersions[kind],
         designApprovalOwners,
+        themeApprovalOwners,
       ),
     );
     if (template.frontmatter.get('kind') !== kind) {
@@ -785,14 +913,17 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
         false,
         templateVersions[document.frontmatter.get('kind')],
         designApprovalOwners,
+        themeApprovalOwners,
       ),
     );
     const authority = document.frontmatter.get('authority');
     const isActiveRecord =
       versionedSchema.schema.activeAuthorities.includes(authority);
-    if (isActiveRecord && recordVersion !== latestVersion) {
+    const kind = document.frontmatter.get('kind');
+    const latestKindVersion = latestKindVersions.get(kind);
+    if (isActiveRecord && recordVersion !== latestKindVersion) {
       problems.push(
-        `${filePath}: active records must use latest schema_version ${latestVersion}.`,
+        `${filePath}: active ${kind} records must use latest schema_version ${latestKindVersion} for that kind.`,
       );
     }
     if (document.frontmatter.get('kind') === 'component') {

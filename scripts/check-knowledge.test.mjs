@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {afterEach, describe, expect, it} from 'vitest';
 import {
+  composeKnowledgeSchemas,
+  discoverKnowledgeRecords,
   parseAnatomyThemingBlock,
   parseKnowledgeDocument,
   validateAnatomyThemingMap,
@@ -26,24 +28,35 @@ function fixtureRoot() {
     path.join(root, 'docs/templates/knowledge'),
     {recursive: true},
   );
-  fs.copyFileSync(
-    path.join(repoRoot, 'docs/schemas/knowledge/v1.json'),
-    path.join(root, 'docs/schemas/knowledge/v1.json'),
-  );
+  for (const version of ['v1.json', 'v2.json']) {
+    fs.copyFileSync(
+      path.join(repoRoot, `docs/schemas/knowledge/${version}`),
+      path.join(root, `docs/schemas/knowledge/${version}`),
+    );
+  }
   for (const relative of [
     'docs/specs',
     'docs/families',
     'docs/architecture',
+    'docs/themes',
     'packages/core/src',
     'packages/lab/src',
   ]) {
     fs.mkdirSync(path.join(root, relative), {recursive: true});
   }
+  for (const relative of [
+    'packages/themes/neutral',
+    'packages/themes/duplicate',
+  ]) {
+    fs.mkdirSync(path.join(root, relative), {recursive: true});
+  }
   fs.mkdirSync(path.join(root, '.github'), {recursive: true});
-  fs.copyFileSync(
-    path.join(repoRoot, '.github/DESIGNOWNERS'),
-    path.join(root, '.github/DESIGNOWNERS'),
-  );
+  for (const ownerFile of ['DESIGNOWNERS', 'ENGOWNERS']) {
+    fs.copyFileSync(
+      path.join(repoRoot, `.github/${ownerFile}`),
+      path.join(root, `.github/${ownerFile}`),
+    );
+  }
   return root;
 }
 
@@ -101,6 +114,102 @@ function componentRecord(overrides = {}) {
   return `---\n${frontmatter}\n---\n\n# Button component contract\n\n${sections}\n`;
 }
 
+function themeRecord(overrides = {}) {
+  const values = {
+    schema_version: '2',
+    template_version: '1',
+    kind: 'theme',
+    id: 'theme:neutral',
+    authority: 'draft',
+    approved_by: 'null',
+    approved_at: 'null',
+    review_triggers: '[tokens]',
+    verified_by: '[theme.test.ts]',
+    package: "'@astryxdesign/theme-neutral'",
+    source_theme: 'packages/themes/neutral/src/neutralTheme.ts',
+    references: '[architecture:theme-test]',
+    ...overrides,
+  };
+  const frontmatter = Object.entries(values)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('\n');
+  const sections = [
+    'Intent and audience',
+    'Inheritance and base',
+    'Portable token overrides',
+    'Theme-local role definitions',
+    'Tonal palette definitions',
+    'Component and state mappings',
+    'Compatibility and migration',
+    'Accessibility and contrast evidence',
+    'Build and artifact contract',
+    'Verification map',
+    'Decision log',
+    'Open questions',
+    'Content boundary',
+  ]
+    .map(section => `## ${section}\n\nBody.`)
+    .join('\n\n');
+  return `---\n${frontmatter}\n---\n\n# Neutral theme specification\n\n${sections}\n`;
+}
+
+function systemSpecRecord(overrides = {}) {
+  const values = {
+    schema_version: '1',
+    template_version: '1',
+    kind: 'system-spec',
+    id: 'spec:AST-900',
+    authority: 'current',
+    archive_reason: 'null',
+    superseded_by: 'null',
+    approved_by: 'cixzhang',
+    approved_at: '2026-08-31',
+    phase: 'accepted',
+    owners: '[cixzhang]',
+    affects_architecture: '[]',
+    affects_families: '[]',
+    affects_contributing: '[]',
+    affects_consumer_docs: '[]',
+    ...overrides,
+  };
+  const frontmatter = Object.entries(values)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('\n');
+  const sections = [
+    'Intent',
+    'Non-goals',
+    'Requirements',
+    'Current-state impact',
+    'Verification',
+    'Decision log',
+    'Open questions',
+  ]
+    .map(section => `## ${section}\n\nBody.`)
+    .join('\n\n');
+  return `---\n${frontmatter}\n---\n\n# Fixture system spec\n\n${sections}\n`;
+}
+
+function writeSystemSpec(root, directoryName, record) {
+  const directory = path.join(root, `docs/specs/${directoryName}`);
+  fs.mkdirSync(directory);
+  fs.writeFileSync(path.join(directory, 'spec.md'), record);
+}
+
+function writeCurrentArchitecture(root) {
+  const template = fs.readFileSync(
+    path.join(root, 'docs/templates/knowledge/architecture.md'),
+    'utf8',
+  );
+  fs.writeFileSync(
+    path.join(root, 'docs/architecture/theme-test.md'),
+    template
+      .replace('id: architecture:<surface>', 'id: architecture:theme-test')
+      .replace('authority: draft', 'authority: current')
+      .replace('approved_by: null', 'approved_by: cixzhang')
+      .replace('approved_at: null', 'approved_at: 2026-08-31'),
+  );
+}
+
 function anatomyThemingBlock(mapping) {
   return `### Theming anatomy\n\n<!-- anatomy-theming:v1 -->\n\`\`\`json\n${JSON.stringify(mapping, null, 2)}\n\`\`\``;
 }
@@ -143,6 +252,45 @@ afterEach(() => {
 });
 
 describe('schema evolution', () => {
+  it('tracks latest schema versions per kind', () => {
+    const raw = new Map([
+      [
+        1,
+        {
+          schema: {schemaVersion: 1, kinds: {component: {marker: 'v1'}}},
+          schemaPath: 'v1.json',
+        },
+      ],
+      [
+        2,
+        {
+          schema: {
+            schemaVersion: 2,
+            extends: 1,
+            kinds: {theme: {marker: 'v2'}},
+          },
+          schemaPath: 'v2.json',
+        },
+      ],
+      [
+        3,
+        {
+          schema: {
+            schemaVersion: 3,
+            extends: 2,
+            kinds: {component: {marker: 'v3'}},
+          },
+          schemaPath: 'v3.json',
+        },
+      ],
+    ]);
+    const {schemas, latestKindVersions} = composeKnowledgeSchemas(raw);
+    expect(schemas.get(2).schema.kinds.component.marker).toBe('v1');
+    expect(schemas.get(2).schema.kinds.theme.marker).toBe('v2');
+    expect(latestKindVersions.get('theme')).toBe(2);
+    expect(latestKindVersions.get('component')).toBe(3);
+  });
+
   it('allows appending a higher schema version', () => {
     expect(
       validateSchemaEvolution(
@@ -605,6 +753,255 @@ describe('knowledge validation', () => {
     expect(await validateKnowledgeRoot(root)).toEqual([]);
   });
 
+  it('discovers only the exact canonical package-local theme record without placement errors', async () => {
+    const root = fixtureRoot();
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord(),
+    );
+    fs.writeFileSync(
+      path.join(root, 'docs/themes/README.md'),
+      '# Guidance only\n',
+    );
+
+    const discovered = discoverKnowledgeRecords(root).map(filePath =>
+      path.relative(root, filePath),
+    );
+    expect(discovered).toContain('packages/themes/neutral/neutral.spec.md');
+    expect(discovered).not.toContain('docs/themes/README.md');
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'docs guidance directory',
+      'docs/themes/neutral.md',
+      /theme records must be placed at packages\/themes\/<theme>\/<theme>\.spec\.md/,
+    ],
+    [
+      'wrong package filename',
+      'packages/themes/neutral/Theme.spec.md',
+      /theme record must be placed exactly at packages\/themes\/neutral\/neutral\.spec\.md/,
+    ],
+    [
+      'nested package path',
+      'packages/themes/neutral/subdir/neutral.spec.md',
+      /theme record must be placed exactly at packages\/themes\/neutral\/neutral\.spec\.md/,
+    ],
+  ])(
+    'rejects a theme-shaped record in the %s',
+    async (_name, relative, error) => {
+      const root = fixtureRoot();
+      const absolute = path.join(root, relative);
+      fs.mkdirSync(path.dirname(absolute), {recursive: true});
+      fs.writeFileSync(absolute, themeRecord());
+
+      const discovered = discoverKnowledgeRecords(root).map(filePath =>
+        path.relative(root, filePath),
+      );
+      expect(discovered).toContain(relative);
+      expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(error);
+    },
+  );
+
+  it('accepts derived repo-owner approval on a current theme record', async () => {
+    const root = fixtureRoot();
+    writeCurrentArchitecture(root);
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord({
+        authority: 'current',
+        approved_by: 'rubyycheung',
+        approved_at: '2026-08-31',
+      }),
+    );
+
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('does not inherit v1 approvalOwners for theme approval', async () => {
+    const root = fixtureRoot();
+    writeCurrentArchitecture(root);
+    for (const ownerFile of ['ENGOWNERS', 'DESIGNOWNERS']) {
+      const filePath = path.join(root, `.github/${ownerFile}`);
+      fs.writeFileSync(
+        filePath,
+        fs.readFileSync(filePath, 'utf8').replace(/@cixzhang\b/g, ''),
+      );
+    }
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord({
+        authority: 'current',
+        approved_by: 'cixzhang',
+        approved_at: '2026-08-31',
+      }),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /approved_by to name an authorized owner/,
+    );
+  });
+
+  it('accepts an ENGOWNER approval on a current theme record', async () => {
+    const root = fixtureRoot();
+    writeCurrentArchitecture(root);
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord({
+        authority: 'current',
+        approved_by: 'czarandy',
+        approved_at: '2026-08-31',
+      }),
+    );
+
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('rejects a scalar references field on a current theme', async () => {
+    const root = fixtureRoot();
+    writeCurrentArchitecture(root);
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord({
+        authority: 'current',
+        approved_by: 'rubyycheung',
+        approved_at: '2026-08-31',
+        references: 'spec:AST-006',
+      }),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /references must be a list/,
+    );
+  });
+
+  it('does not let a self-declared theme owner approve a current record', async () => {
+    const root = fixtureRoot();
+    writeCurrentArchitecture(root);
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord({
+        authority: 'current',
+        additional_owners: '[self-declared-owner]',
+        approved_by: 'self-declared-owner',
+        approved_at: '2026-08-31',
+      }),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /approved_by to name an authorized owner/,
+    );
+  });
+
+  it('rejects an unresolved reference from a current theme record', async () => {
+    const root = fixtureRoot();
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord({
+        authority: 'current',
+        approved_by: 'rubyycheung',
+        approved_at: '2026-08-31',
+        references: '[architecture:missing]',
+      }),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /references reference architecture:missing does not resolve/,
+    );
+  });
+
+  it('rejects an unresolved typed reference list from a current theme', async () => {
+    const root = fixtureRoot();
+    writeCurrentArchitecture(root);
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord({
+        authority: 'current',
+        approved_by: 'rubyycheung',
+        approved_at: '2026-08-31',
+        references: '[spec:missing]',
+      }),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /references reference spec:missing does not resolve/,
+    );
+  });
+
+  it('rejects a current theme that relies on a draft deciding spec', async () => {
+    const root = fixtureRoot();
+    writeCurrentArchitecture(root);
+    const specDirectory = path.join(root, 'docs/specs/AST-006');
+    fs.mkdirSync(specDirectory);
+    const systemTemplate = fs.readFileSync(
+      path.join(root, 'docs/templates/knowledge/system-spec.md'),
+      'utf8',
+    );
+    fs.writeFileSync(
+      path.join(specDirectory, 'spec.md'),
+      systemTemplate.replace('id: spec:AST-000', 'id: spec:AST-006'),
+    );
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord({
+        authority: 'current',
+        approved_by: 'rubyycheung',
+        approved_at: '2026-08-31',
+        references: '[spec:AST-006]',
+      }),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /current records may not rely on non-current spec:AST-006/,
+    );
+  });
+
+  it('accepts a current theme list reference to a current deciding spec', async () => {
+    const root = fixtureRoot();
+    writeCurrentArchitecture(root);
+    writeSystemSpec(root, 'AST-006', systemSpecRecord({id: 'spec:AST-006'}));
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord({
+        authority: 'current',
+        approved_by: 'rubyycheung',
+        approved_at: '2026-08-31',
+        references: '[spec:AST-006]',
+      }),
+    );
+
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('rejects duplicate theme ids', async () => {
+    const root = fixtureRoot();
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord(),
+    );
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/duplicate/duplicate.spec.md'),
+      themeRecord(),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /duplicate id theme:neutral/,
+    );
+  });
+
+  it('rejects a theme id outside the package-theme-name format', async () => {
+    const root = fixtureRoot();
+    fs.writeFileSync(
+      path.join(root, 'packages/themes/neutral/neutral.spec.md'),
+      themeRecord({id: 'theme:Neutral Theme'}),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /id must match/,
+    );
+  });
+
   it('rejects duplicate authority fields', async () => {
     const root = fixtureRoot();
     const directory = path.join(root, 'packages/core/src/Button');
@@ -702,7 +1099,7 @@ describe('knowledge validation', () => {
       componentRecord({schema_version: '0'}),
     );
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /active records must use latest schema_version 1/,
+      /active component records must use latest schema_version 1 for that kind/,
     );
   });
 

@@ -101,9 +101,16 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).toContain('scope.touchesDesignAssets');
     expect(reconciler).toContain('requiredApprovalGroups(records');
     expect(reconciler).toContain("'.github/DESIGNOWNERS'");
+    expect(reconciler).toContain("'.github/ENGOWNERS'");
     expect(reconciler).toContain(
-      'specDecision.approved && designDecision.approved',
+      '...new Set([...engineeringOwners, ...designOwners])',
     );
+    expect(reconciler).not.toContain(
+      '...new Set([...specOwners, ...engineeringOwners, ...designOwners])',
+    );
+    expect(reconciler).toContain('specDecision.approved');
+    expect(reconciler).toContain('designDecision.approved');
+    expect(reconciler).toContain('themeDecision.approved');
     expect(reconciler).toContain('context: GATE_STATUS_CONTEXT');
     expect(reconciler).toContain('expectedHeadOid: $oid');
     expect(reconciler).toContain('mergeMethod: SQUASH');

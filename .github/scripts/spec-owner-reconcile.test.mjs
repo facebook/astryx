@@ -86,6 +86,12 @@ function createHarness({
   autoMerge = null,
   onPullGet,
   onEnableAutoMerge,
+  changedFile = {
+    filename: 'docs/specs/owner-ready/spec.md',
+    status: 'added',
+  },
+  headContent = 'kind: architecture\nauthority: current\n',
+  baseContent = '',
 } = {}) {
   const state = {
     pullGets: 0,
@@ -124,14 +130,7 @@ function createHarness({
       syncLabels();
       return {data: state.pr};
     },
-    listFiles: async () => ({
-      data: [
-        {
-          filename: 'docs/specs/owner-ready/spec.md',
-          status: 'added',
-        },
-      ],
-    }),
+    listFiles: async () => ({data: [changedFile]}),
     listReviews: async () => ({data: state.reviews}),
     listComments: async () => ({data: state.comments}),
     listTimeline: async () => ({data: state.timeline}),
@@ -194,9 +193,7 @@ function createHarness({
         getContent: async ({ref}) => ({
           data: {
             content: Buffer.from(
-              ref === state.pr.head.sha
-                ? 'kind: architecture\nauthority: current\n'
-                : '',
+              ref === state.pr.head.sha ? headContent : baseContent,
             ).toString('base64'),
           },
         }),
@@ -267,6 +264,167 @@ describe('spec owner workflow reconciliation', () => {
     ).toBe(false);
     expect(latestGateStatus(harness.state).state).toBe('pending');
     expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
+  it('keeps a current theme change pending without exact-head approval', async () => {
+    const harness = createHarness({
+      changedFile: {
+        filename: 'packages/themes/neutral/neutral.spec.md',
+        status: 'added',
+      },
+      headContent: 'kind: theme\nauthority: current\n',
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        action: 'synchronize',
+        actor: 'rubyycheung',
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'pending',
+      description: expect.stringContaining('theme approver'),
+    });
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+    expect(harness.state.pr.auto_merge).toBe(null);
+  });
+
+  it.each([
+    'docs/themes/neutral.md',
+    'packages/themes/neutral/Theme.spec.md',
+    'packages/themes/neutral/subdir/neutral.spec.md',
+  ])(
+    'keeps misplaced current theme candidate %s pending and non-merging',
+    async filename => {
+      const harness = createHarness({
+        changedFile: {filename, status: 'added'},
+        headContent: 'kind: theme\nauthority: current\n',
+      });
+
+      await run(
+        harness,
+        context({
+          runId: 100n,
+          action: 'synchronize',
+          actor: 'rubyycheung',
+        }),
+      );
+
+      expect(latestGateStatus(harness.state)).toMatchObject({
+        state: 'pending',
+        description: expect.stringContaining('theme approver'),
+      });
+      expect(harness.state.calls).not.toContain('enable-auto-merge');
+      expect(
+        harness.state.calls.some(call =>
+          call.includes('No knowledge records changed'),
+        ),
+      ).toBe(false);
+    },
+  );
+
+  it('accepts an exact-head derived theme-owner review for a current theme record', async () => {
+    const review = {
+      user: {login: 'rubyycheung'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({
+      changedFile: {
+        filename: 'packages/themes/neutral/neutral.spec.md',
+        status: 'added',
+      },
+      headContent:
+        'kind: theme\nauthority: current\nadditional_owners: [self-declared-owner]\n',
+      reviews: [review],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        actor: 'rubyycheung',
+        review,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('@rubyycheung'),
+    });
+    expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('accepts an exact-head ENGOWNER review for a current theme record', async () => {
+    const review = {
+      user: {login: 'czarandy'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({
+      changedFile: {
+        filename: 'packages/themes/neutral/neutral.spec.md',
+        status: 'added',
+      },
+      headContent: 'kind: theme\nauthority: current\n',
+      reviews: [review],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        actor: 'czarandy',
+        review,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('@czarandy'),
+    });
+    expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('does not authorize a theme record through its self-declared owners', async () => {
+    const review = {
+      user: {login: 'self-declared-owner'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({
+      changedFile: {
+        filename: 'packages/themes/neutral/neutral.spec.md',
+        status: 'added',
+      },
+      headContent:
+        'kind: theme\nauthority: current\nadditional_owners: [self-declared-owner]\n',
+      reviews: [review],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        actor: 'self-declared-owner',
+        review,
+      }),
+    );
+
+    expect(harness.state.pullGets).toBe(0);
+    expect(harness.state.statuses).toEqual([]);
   });
 
   it('abandons the old event when the live head changes', async () => {
