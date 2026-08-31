@@ -16,11 +16,11 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-families: []
+families: [family:navigation-destinations]
 design_specs: []
 architecture: [architecture:component-theming-surface]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-005/DEC-1, spec:AST-005/DEC-2]
 ---
 
 # Markdown component contract
@@ -166,6 +166,12 @@ and this change preserves the existing spelling exactly.
 - `architecture:component-theming-surface` owns anatomy qualification, target
   mapping, target-capability state, composition boundaries, and compatibility for
   frozen targets.
+- `family:navigation-destinations` owns the shared accept/block result for parsed
+  links and every Astryx-owned navigation sink. `spec:AST-005/DEC-1` requires
+  Markdown navigation to remain conformant with Core link plumbing.
+- `spec:AST-005/DEC-2` keeps embedded-resource policy separate. Markdown may
+  reject a broader set of image/resource URLs without narrowing the shared
+  navigation contract.
 - Nested Astryx primitives retain ownership of their own anatomy and targets;
   Markdown owns the outer block targets listed here.
 
