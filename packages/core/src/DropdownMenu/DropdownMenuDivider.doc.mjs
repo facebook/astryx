@@ -17,9 +17,6 @@ export const docs = {
         'StyleX styles applied after the menu spacing. Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
-  theming: {
-    targets: [{className: 'astryx-dropdown-menu-divider'}],
-  },
 };
 
 export const docsDense = {

@@ -39,6 +39,19 @@ describe('themeTargets (api/theme/targets)', () => {
     ]);
   }, 60_000);
 
+  it('lists each target once under its owning component', async () => {
+    const {data} = await themeTargets('dropdown-menu-divider');
+    expect(data.targets).toEqual([
+      {
+        key: 'dropdown-menu-divider',
+        className: 'astryx-dropdown-menu-divider',
+        component: 'DropdownMenu',
+        props: [],
+        states: [],
+      },
+    ]);
+  }, 60_000);
+
   // Half the system's keys contain "button" (chat-send-button, toggle-button,
   // …). A component name has to mean the component, or `theme targets Button`
   // answers a different question than `component Button` and the two views

@@ -144,7 +144,14 @@ export const docs = {
         'Compound-mode menu content: DropdownMenuItem, DropdownMenuDivider, DropdownMenuSubMenu, and the selectable items. Mutually exclusive with `items`.',
     },
   ],
-  components: [{name: 'DropdownMenuItem'}],
+  components: [
+    {name: 'DropdownMenuItem'},
+    {name: 'DropdownMenuDivider'},
+    {name: 'DropdownMenuCheckboxItem'},
+    {name: 'DropdownMenuRadioGroup'},
+    {name: 'DropdownMenuRadioItem'},
+    {name: 'DropdownMenuSubMenu'},
+  ],
   usage: {
     description:
       'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface.',
