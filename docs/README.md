@@ -7,6 +7,7 @@ it governs. Consumer documentation remains in component `.doc.mjs` files and
 ## Placement
 
 - `architecture/`: the shipped system, its boundaries, and invariants.
+- `contributing/`: practical contributor workflows that project current owner records without replacing them.
 - `design/`: human-owned visual and interaction specifications.
 - `families/`: contracts shared by sibling components.
 - `specs/`: consequential proposed or shipped system changes and their decisions.
