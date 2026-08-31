@@ -91,7 +91,7 @@ export const docs = {
       name: 'containerRef',
       type: 'React.RefObject<HTMLElement | null>',
       description:
-        "Bind the drawer to an element instead of the viewport: the panel is portalled into it and slides against ITS edge, at its height — the inspector that belongs to one pane rather than the whole screen. Give the container position: relative; it needs no overflow rule — the drawer clips itself to the container, and it stays put in the container's scrollport when the pane scrolls. Scope only: it narrows what modality and hasScrim apply TO (the container, not the page) without changing what either means. A bounded modal blocks its container with inert rather than the top layer, so the rest of the page stays live.",
+        "Bind the drawer to an element instead of the viewport: the panel is portalled into it and slides against ITS edge, at its height — the inspector that belongs to one pane rather than the whole screen. Give the container position: relative; it needs no overflow rule — the drawer clips itself to the container, and it stays put in the container's scrollport when the pane scrolls. Scope only: it narrows what modality and hasScrim apply TO (the container, not the page) without changing what either means. A bounded modal blocks its container with inert rather than the top layer, so the rest of the page stays live. Two bounded drawers in one container stack the same way sibling drawers do: the front one stays interactive and the one behind it is blocked with the rest of the container.",
     },
     {
       name: 'hasCloseButton',

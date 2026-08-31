@@ -10,7 +10,14 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, act, cleanup} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  cleanup,
+  within,
+} from '@testing-library/react';
 import {Profiler, useEffect, useRef, useState} from 'react';
 import {Drawer} from './Drawer';
 
@@ -855,6 +862,209 @@ describe('Drawer', () => {
         propertyName: 'transform',
       });
       expect(content).not.toHaveAttribute('inert');
+    });
+
+    describe('two bounded drawers in one container', () => {
+      function PairHarness({
+        isFrontOpen,
+        isBackOpen = true,
+        frontModality = 'modal',
+      }: {
+        isFrontOpen: boolean;
+        isBackOpen?: boolean;
+        frontModality?: 'modal' | 'nonModal';
+      }) {
+        const containerRef = useRef<HTMLDivElement>(null);
+        const [, force] = useState(0);
+        useEffect(() => {
+          force(1);
+        }, []);
+        return (
+          <>
+            <div
+              ref={containerRef}
+              data-testid="pane"
+              style={{position: 'relative', width: 600, height: 400}}>
+              <span>pane content</span>
+            </div>
+            <Drawer
+              isOpen={isBackOpen}
+              onOpenChange={onOpenChange}
+              label="Back drawer"
+              containerRef={containerRef}>
+              <button>back control</button>
+            </Drawer>
+            <Drawer
+              isOpen={isFrontOpen}
+              onOpenChange={onOpenChange}
+              label="Front drawer"
+              modality={frontModality}
+              containerRef={containerRef}>
+              <button>front control</button>
+            </Drawer>
+          </>
+        );
+      }
+
+      /** The portal wrapper this drawer owns: its ancestor directly under the host. */
+      function clipOf(label: string): HTMLElement {
+        const host = screen.getByTestId('pane');
+        let node = screen.getByRole('dialog', {name: label}) as HTMLElement;
+        while (node.parentElement != null && node.parentElement !== host) {
+          node = node.parentElement;
+        }
+        return node;
+      }
+
+      it('leaves the front drawer interactive and inerts the one behind it', () => {
+        // Each bounded modal used to inert every child of the host except its
+        // own clip wrapper, so two of them inerted each other and the front
+        // panel — the one the user is looking at — went dead to pointer and
+        // keyboard.
+        render(<PairHarness isFrontOpen />);
+
+        expect(clipOf('Front drawer')).not.toHaveAttribute('inert');
+        expect(clipOf('Back drawer')).toHaveAttribute('inert');
+        // The container behind both is still out of play.
+        expect(
+          screen.getByTestId('pane').querySelector('span'),
+        ).toHaveAttribute('inert');
+      });
+
+      it('hands enforcement back to the drawer behind when the front one goes', () => {
+        const {rerender} = render(<PairHarness isFrontOpen />);
+        expect(clipOf('Back drawer')).toHaveAttribute('inert');
+
+        rerender(<PairHarness isFrontOpen={false} />);
+        // Still enforcing mid-exit: the front panel is on screen for the whole
+        // slide-out, so the drawer behind it must not go live under it.
+        expect(clipOf('Back drawer')).toHaveAttribute('inert');
+
+        fireEvent.transitionEnd(
+          screen.getByRole('dialog', {name: 'Front drawer', hidden: true}),
+          {propertyName: 'transform'},
+        );
+
+        expect(clipOf('Back drawer')).not.toHaveAttribute('inert');
+        // And it is enforcing again, rather than merely un-inerted.
+        expect(
+          screen.getByTestId('pane').querySelector('span'),
+        ).toHaveAttribute('inert');
+      });
+
+      it('keeps the container blocked when the drawer behind closes first', () => {
+        // Enforcement has a single owner, and the cleanup hands back only what
+        // that owner inerted. If both drawers enforced, whichever applied
+        // first would own the container's children and the second would skip
+        // them as already-inert — so the first one closing would release the
+        // container while a modal drawer is still open over it.
+        const {rerender} = render(<PairHarness isFrontOpen />);
+        const paneContent = screen
+          .getByTestId('pane')
+          .querySelector('span') as HTMLElement;
+        expect(paneContent).toHaveAttribute('inert');
+
+        // Watched rather than sampled: a release that is repaired on the next
+        // render leaves the end state correct while the container is live for
+        // a frame underneath a modal drawer, which is the actual defect.
+        const releases: Array<string | null> = [];
+        const observer = new MutationObserver(records => {
+          for (const record of records) {
+            if (record.oldValue !== null) {
+              releases.push(record.oldValue);
+            }
+          }
+        });
+        observer.observe(paneContent, {
+          attributes: true,
+          attributeFilter: ['inert'],
+          attributeOldValue: true,
+        });
+
+        act(() => {
+          rerender(<PairHarness isFrontOpen isBackOpen={false} />);
+          fireEvent.transitionEnd(
+            screen.getByRole('dialog', {name: 'Back drawer', hidden: true}),
+            {propertyName: 'transform'},
+          );
+        });
+        observer.takeRecords().forEach(record => {
+          if (record.oldValue !== null) {
+            releases.push(record.oldValue);
+          }
+        });
+        observer.disconnect();
+
+        expect(releases).toEqual([]);
+        expect(paneContent).toHaveAttribute('inert');
+        expect(clipOf('Front drawer')).not.toHaveAttribute('inert');
+      });
+
+      it('does not inert a non-modal drawer opened on top of a modal one', () => {
+        // A modal drawer puts what is BEHIND it out of play. A drawer opened
+        // in front of it is not behind it, whatever its own modality.
+        render(<PairHarness isFrontOpen frontModality="nonModal" />);
+
+        expect(clipOf('Front drawer')).not.toHaveAttribute('inert');
+        expect(
+          screen.getByTestId('pane').querySelector('span'),
+        ).toHaveAttribute('inert');
+      });
+    });
+
+    it('does not reach into a second container with its own drawer', () => {
+      // Enforcement is scoped to the host, so two bounded drawers in
+      // different containers are independent — neither inerts the other.
+      function TwoPanes() {
+        const firstRef = useRef<HTMLDivElement>(null);
+        const secondRef = useRef<HTMLDivElement>(null);
+        const [, force] = useState(0);
+        useEffect(() => {
+          force(1);
+        }, []);
+        return (
+          <>
+            <div
+              ref={firstRef}
+              data-testid="pane-one"
+              style={{position: 'relative'}}>
+              <span>one content</span>
+            </div>
+            <div
+              ref={secondRef}
+              data-testid="pane-two"
+              style={{position: 'relative'}}>
+              <span>two content</span>
+            </div>
+            <Drawer
+              isOpen
+              onOpenChange={onOpenChange}
+              label="First drawer"
+              containerRef={firstRef}>
+              First
+            </Drawer>
+            <Drawer
+              isOpen
+              onOpenChange={onOpenChange}
+              label="Second drawer"
+              containerRef={secondRef}>
+              Second
+            </Drawer>
+          </>
+        );
+      }
+      render(<TwoPanes />);
+
+      for (const testId of ['pane-one', 'pane-two']) {
+        const host = screen.getByTestId(testId);
+        expect(host.querySelector('span')).toHaveAttribute('inert');
+        const dialog = within(host).getByRole('dialog');
+        let clip = dialog as HTMLElement;
+        while (clip.parentElement != null && clip.parentElement !== host) {
+          clip = clip.parentElement;
+        }
+        expect(clip).not.toHaveAttribute('inert');
+      }
     });
 
     it('follows the container when the element behind the ref is replaced', async () => {

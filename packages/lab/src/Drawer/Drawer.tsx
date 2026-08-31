@@ -57,6 +57,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import {createPortal} from 'react-dom';
@@ -120,6 +121,128 @@ function unregisterDrawer(id: string): void {
 
 function isTopDrawer(id: string): boolean {
   return openDrawerStack[openDrawerStack.length - 1]?.id === id;
+}
+
+// =============================================================================
+// Bounded stacking registry (internal)
+// =============================================================================
+
+// A SECOND registry, deliberately not the LIFO stack above, because the two
+// have different lifetimes. The stack above tracks OPEN drawers, so Escape
+// closes the innermost; a drawer leaves it the moment it starts closing.
+// Bounded enforcement has to outlive that: `inert` is held for the whole exit
+// transition, or the container behind a still-visible panel goes live under it
+// mid-slide. This registry therefore tracks RENDERED bounded drawers.
+type BoundedDrawerEntry = {
+  id: string;
+  host: HTMLElement;
+  /** This drawer's clip wrapper inside `host` — never inerted by a peer. */
+  clip: HTMLElement | null;
+  /** Whether this drawer enforces `modality="modal"` over its host. */
+  blocks: boolean;
+};
+
+const boundedDrawers: BoundedDrawerEntry[] = [];
+
+// Which drawer blocks a container depends on what else is rendered in it, so
+// a change in one Drawer has to reach the others. This registry is module
+// state; useSyncExternalStore over a version counter is how they re-evaluate.
+const boundedListeners = new Set<() => void>();
+let boundedVersion = 0;
+
+function notifyBoundedDrawers(): void {
+  boundedVersion += 1;
+  for (const listener of boundedListeners) {
+    listener();
+  }
+}
+
+function subscribeToBoundedDrawers(listener: () => void): () => void {
+  boundedListeners.add(listener);
+  return () => {
+    boundedListeners.delete(listener);
+  };
+}
+
+function getBoundedVersion(): number {
+  return boundedVersion;
+}
+
+/**
+ * Add or update this drawer's entry, keeping its position in the list.
+ *
+ * `modality`, `containerRef` and the clip element can all change while a
+ * drawer is open, and re-adding would promote a buried drawer to the front.
+ * Notifies only on a real change, since every listener re-runs the effect
+ * that calls this.
+ */
+function upsertBoundedDrawer(
+  id: string,
+  host: HTMLElement,
+  clip: HTMLElement | null,
+  blocks: boolean,
+): void {
+  const entry = boundedDrawers.find(candidate => candidate.id === id);
+  if (entry == null) {
+    boundedDrawers.push({id, host, clip, blocks});
+    notifyBoundedDrawers();
+    return;
+  }
+  if (entry.host === host && entry.clip === clip && entry.blocks === blocks) {
+    return;
+  }
+  entry.host = host;
+  entry.clip = clip;
+  entry.blocks = blocks;
+  notifyBoundedDrawers();
+}
+
+function removeBoundedDrawer(id: string): void {
+  const index = boundedDrawers.findIndex(entry => entry.id === id);
+  if (index === -1) {
+    return;
+  }
+  boundedDrawers.splice(index, 1);
+  notifyBoundedDrawers();
+}
+
+/**
+ * Whether this drawer is the front-most one enforcing modality over `host`.
+ *
+ * Only that drawer applies `inert`. Two bounded modal Drawers in one container
+ * each used to inert every child of the host except their own clip wrapper —
+ * so each inerted the other, and the front one, the one the user was actually
+ * looking at, went dead to pointer and keyboard.
+ */
+function isTopBlockingDrawerForHost(id: string, host: HTMLElement): boolean {
+  for (let index = boundedDrawers.length - 1; index >= 0; index -= 1) {
+    const entry = boundedDrawers[index];
+    if (entry.blocks && entry.host === host) {
+      return entry.id === id;
+    }
+  }
+  return false;
+}
+
+/**
+ * The clip wrappers the enforcing drawer must leave alone: its own, plus any
+ * drawer opened after it in the same host. A modal drawer puts what is BEHIND
+ * it out of play; a drawer in front of it is not that, and inerting one would
+ * reintroduce the same dead-panel bug one case over.
+ */
+function clipsNotBehind(id: string, host: HTMLElement): Set<HTMLElement> {
+  const clips = new Set<HTMLElement>();
+  const from = boundedDrawers.findIndex(entry => entry.id === id);
+  if (from === -1) {
+    return clips;
+  }
+  for (let index = from; index < boundedDrawers.length; index += 1) {
+    const entry = boundedDrawers[index];
+    if (entry.host === host && entry.clip != null) {
+      clips.add(entry.clip);
+    }
+  }
+  return clips;
 }
 
 // =============================================================================
@@ -570,6 +693,14 @@ export function Drawer({
   }, [onOpenChange]);
   // z-index assigned by the registry on open (non-modal stacking only).
   const [stackZ, setStackZ] = useState(NON_MODAL_BASE_Z);
+  // Re-render when any bounded drawer is added, removed, or changes what it
+  // enforces: which drawer blocks a container is a fact about all of them, and
+  // the registry is module state. The value itself is only a change signal.
+  const boundedTick = useSyncExternalStore(
+    subscribeToBoundedDrawers,
+    getBoundedVersion,
+    getBoundedVersion,
+  );
   // Whether the panel paints: true while open and for the whole slide-out.
   const [isRendered, setIsRendered] = useState(isOpen);
 
@@ -683,12 +814,34 @@ export function Drawer({
     };
   }, [portalTarget, isRendered]);
 
+  // Publish this drawer to the bounded registry so its peers can see it.
+  // Membership follows `isRendered`, not `isOpen`, so a closing drawer keeps
+  // enforcing for the whole exit transition; this is also the only place the
+  // registry can learn the clip element, which does not exist until commit.
+  useLayoutEffect(() => {
+    const host = portalTarget;
+    if (host == null || !isRendered) {
+      return;
+    }
+    upsertBoundedDrawer(drawerId, host, clipRef.current, blocksBehind);
+    return () => {
+      removeBoundedDrawer(drawerId);
+    };
+  }, [drawerId, portalTarget, blocksBehind, isRendered]);
+
   // Bounded mode's half of `modality="modal"`. A bounded panel cannot use the top
   // layer, so this is what "the area behind is out of play" means for a
   // container: `inert` covers pointer, tab order and the accessibility tree
   // at once. Before it, the scrim blocked the pointer only — two reverse Tabs
   // out of the panel landed on the dimmed opener and Enter fired a control no
   // click could reach.
+  //
+  // Only the FRONT-most blocking drawer in a container enforces. Every bounded
+  // modal used to inert each child of the host except its own clip wrapper, so
+  // two of them in one container inerted each other and the front panel — the
+  // one the user was looking at — went dead to pointer and keyboard. The pass
+  // also spares any drawer opened after this one: a modal puts what is BEHIND
+  // it out of play, and a drawer in front of it is not that.
   //
   // Held for the whole open lifetime, not stamped once at open. A pane is
   // live content: a row streams in, a menu opens, a lazy panel resolves. A
@@ -698,7 +851,12 @@ export function Drawer({
   // which is the only thing that can add one.
   useLayoutEffect(() => {
     const host = portalTarget;
-    if (host == null || !blocksBehind || !isRendered) {
+    if (
+      host == null ||
+      !blocksBehind ||
+      !isRendered ||
+      !isTopBlockingDrawerForHost(drawerId, host)
+    ) {
       return;
     }
     // Only what this drawer inerted, so a container that was already inert
@@ -706,11 +864,13 @@ export function Drawer({
     const blocked = new Set<HTMLElement>();
 
     const apply = () => {
+      const spared = clipsNotBehind(drawerId, host);
       const clip = clipRef.current;
       for (const child of Array.from(host.children)) {
         if (
           child === clip ||
           !(child instanceof HTMLElement) ||
+          spared.has(child) ||
           child.hasAttribute('inert')
         ) {
           continue;
@@ -737,7 +897,7 @@ export function Drawer({
         child.removeAttribute('inert');
       }
     };
-  }, [portalTarget, blocksBehind, isRendered]);
+  }, [portalTarget, blocksBehind, isRendered, drawerId, boundedTick]);
 
   // Opening, closing, the exit transition and the unmount cleanup all live in
   // the presence hook (#5549). Bounded mode hands it `isTopLayerModal`, not
