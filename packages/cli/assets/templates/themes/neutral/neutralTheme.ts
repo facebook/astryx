@@ -562,7 +562,7 @@ function withAlpha(
 }
 
 const neutralSyntax = defineSyntaxTheme({
-  name: 'xds-neutral',
+  name: 'astryx-neutral',
   tokens: {
     keyword: [
       getPaletteStop('purple', 30),
