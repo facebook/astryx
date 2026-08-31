@@ -144,6 +144,17 @@ independently.
 Review comments are evidence of the conversation; the checked-in record is the
 canonical decision.
 
+Record the durable outcome, not the review transcript. A ruling belongs in a
+canonical record when at least one is true:
+
+- it changes or clarifies an owning component, family, or system boundary;
+- it establishes a requirement or prohibition future work must preserve; or
+- it rejects an alternative that is consequential and likely to recur.
+
+A prop name, implementation mechanism, or failed visual experiment from an
+abandoned pull request stays in review history unless that detail itself passes
+this test.
+
 Use a separate lower spec pull request only when the ruling changes a shared
 contract beyond the contributor change and should land or be reused
 independently. The implementation pull request then rebases onto that decision.

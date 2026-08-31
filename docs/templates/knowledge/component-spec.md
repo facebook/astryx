@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-template_version: 1
+template_version: 2
 kind: component
 id: component:<Name>
 authority: draft
@@ -111,6 +111,8 @@ do not edit an existing component contract merely to backlink to a draft.
 
 ## Decision log
 
+<!-- Record a durable boundary or requirement, not a review transcript. Keep a rejected alternative only when it is consequential and likely to recur. -->
+
 ### DEC-1 — `<component-local decision>`
 
 **Reference:** `component:<Name>/DEC-1`
@@ -118,7 +120,7 @@ do not edit an existing component contract merely to backlink to a draft.
 
 `<Reason and user impact.>`
 
-Rejected: `<alternative — why>`.
+Rejected: `<include only when the alternative is consequential and likely to recur; otherwise delete this line>`.
 
 ## Open questions
 

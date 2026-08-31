@@ -252,10 +252,10 @@ describe('knowledge validation', () => {
     fs.mkdirSync(directory);
     fs.writeFileSync(
       path.join(directory, 'Button.spec.md'),
-      componentRecord({template_version: '2'}),
+      componentRecord({template_version: '3'}),
     );
     expect(validateKnowledgeRoot(root).join('\n')).toMatch(
-      /template_version 2 is newer than 1/,
+      /template_version 3 is newer than 2/,
     );
   });
 
