@@ -57,19 +57,58 @@ consumer docs:
    component's parent target, such as a Button label inheriting from `button`.
 3. **`delegatesTo`** — another Astryx component owns the part and its target, such
    as a Selector label using `Field/field-label`.
-4. **`none` with reason** — the part is intentionally not themeable. Common
-   reasons are consumer-owned content, non-visual structure, or fixed design.
+4. **`none` with classified reason** — no current public target reaches this
+   stable anatomy part. The required reason begins with exactly one factual
+   classification:
+   - `intentional:` — an approved boundary makes the part non-themeable now;
+   - `reachability-gap:` — a current target should reach the part, but does not;
+   - `unsettled:` — whether or how to expose the part still needs an owner decision.
+
+`none` records current reachability. It does not by itself decide that a part must
+remain unthemeable or authorize a future public target.
 
 Every current, non-deprecated public target maps to an anatomy entry or to an
 explicit family owner. Consumer `.doc.mjs` files continue to own anatomy names,
 descriptions, and public target documentation. Component specs own the exact map
 and explain only non-obvious rationale or exceptions.
 
-Visual props, states, and public CSS properties are capabilities of a target.
-They are not separate anatomy parts or separate targets. Runtime `themeProps()`
-reflection, public `.doc.mjs` theming metadata, and checked component-spec
-metadata describe one public surface without exposing maintainer dispositions to
-consumers.
+Visual prop axes and states are selector capabilities of a target. They are not
+separate anatomy parts or separate targets. Runtime `themeProps()` reflection,
+public `.doc.mjs` `theming.targets[].visualProps` / `states` metadata, and checked
+component-spec metadata describe those selector axes without exposing maintainer
+dispositions to consumers; they do not declare which CSS properties have
+guaranteed behavior.
+
+The shared guaranteed-property catalog is:
+
+| Category     | Exact authoring keys                                                                                                                                                                                            |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paint        | `color`, `backgroundColor`, `opacity`, `outlineColor`, `outlineOffset`, `outlineStyle`, `outlineWidth`, `boxShadow`, `textShadow`                                                                               |
+| Border/shape | `borderColor`, `borderStyle`, `borderWidth`, `borderRadius`                                                                                                                                                     |
+| Typography   | `fontFamily`, `fontSize`, `fontStyle`, `fontWeight`, `letterSpacing`, `lineHeight`, `textAlign`, `textDecorationColor`, `textDecorationLine`, `textDecorationStyle`, `textDecorationThickness`, `textTransform` |
+| Padding      | `padding`, `paddingBlock`, `paddingBlockStart`, `paddingBlockEnd`, `paddingInline`, `paddingInlineStart`, `paddingInlineEnd`                                                                                    |
+
+The initial catalog contains every standard CSS key used by the seven shipped
+package themes except `height`: `backgroundColor`, `borderColor`, `borderRadius`,
+`borderStyle`, `borderWidth`, `color`, `fontFamily`, `fontSize`, `fontWeight`,
+`lineHeight`, `padding`, `paddingBlock`, and `paddingInline`. It adds the explicit
+paint, typography, and logical-padding keys needed to make those categories
+coherent. `height` remains a target-specific addition because it changes layout.
+
+The catalog is a vocabulary, not an automatic guarantee on every target. Each
+target's `guaranteedProperties` lists the exact rational subset it supports from
+this catalog and any exact reviewed target-specific additions. Omission means
+best effort; no exception entry is required.
+
+The list is literal. A listed shorthand does not imply its longhands; a logical
+property does not imply a physical counterpart; and one property does not imply
+an alias such as `background`, `inlineSize`, or `outline`. Properties outside the
+catalog, including `height`, `width`, `gap`, positioning, overflow, and grid/flex
+structure, require an explicit target addition to become guaranteed.
+
+Every declared property must produce a rational, observable result on the anatomy
+part the target owns. Generic component styling may accept other CSS properties,
+but acceptance alone is best effort, not a compatibility promise.
 
 ## Boundaries and invariants
 
@@ -82,8 +121,10 @@ consumers.
   stable semantic part, either locally or through an explicit family owner.
 - **INV3 — Anatomy does not imply target proliferation.** Every participating
   anatomy entry has one component-spec mapping, but inheritance, delegation, and
-  `none` are valid outcomes. When desktop and touch render different parts or
-  use different theming owners, they use separate anatomy rows.
+  factual `none` are valid outcomes. A `none` reason distinguishes an intentional
+  current boundary from a reachability gap or unsettled future exposure; it never
+  silently decides future themeability. When desktop and touch render different
+  parts or use different theming owners, they use separate anatomy rows.
 - **INV4 — Targets paint.** A target belongs on a stable visible element that
   paints theme-controlled output—not an event wrapper, speculative internal
   structure, or a node created only for layout plumbing.
@@ -93,13 +134,35 @@ consumers.
 - **INV6 — State stays on the owning target.** Variant, size, selection, disabled,
   and interaction state are reflected as target capabilities through
   `themeProps`; they do not create parallel targets solely for each state.
-- **INV7 — Public properties and private expansion are separate.** This record
-  owns which public properties a target supports and their component semantics.
-  `architecture:theme-compilation` owns turning those properties into private
-  variables. Exact mappings remain checked code/metadata, not copied prose.
-- **INV8 — Aliases are compatibility, not anatomy.** Deprecated target aliases
+- **INV7 — Guarantees use one catalog and exact target declarations.** The shared
+  catalog defines the supported vocabulary, not an automatic target promise. Each
+  target's `guaranteedProperties` lists the rational catalog subset it guarantees
+  and any reviewed target-specific additions. Every listed property must produce
+  an observable result on the owned anatomy part, with representative compiler
+  and runtime evidence.
+- **INV8 — Names imply nothing beyond themselves.** No shorthand, longhand,
+  logical/physical counterpart, alias, or custom property is guaranteed unless
+  its exact authoring key appears in that target's declaration. Omitted properties
+  remain best effort; no exception mechanism is needed.
+- **INV9 — Generic styling is best effort.** A target may accept CSS properties
+  outside its declared guaranteed set through the generic styling pipeline. That
+  acceptance does not promise a useful effect or compatibility across releases.
+- **INV10 — Public semantic variables are admitted, not inferred.** When no
+  guaranteed CSS property can express a caller-owned need, a component may expose
+  a reviewed public custom property with purpose-based meaning, stable default or
+  fallback, defined target/state scope, consumer docs, and compatibility
+  coverage. It must pass the admission bar in
+  `architecture:public-component-api`; an implementation gap does not
+  automatically justify a new variable.
+- **INV11 — Private expansion stays private.** The compiler may translate a
+  guaranteed public property into one or more private `--_*` variables so the
+  owning component can route, compose, or transform the value across its internal
+  painters. By contract, those variables must not be authored directly or relied
+  on by consumers. Exact mappings remain checked code/metadata, not copied prose;
+  known enforcement gaps are recorded in `architecture:theme-compilation`.
+- **INV12 — Aliases are compatibility, not anatomy.** Deprecated target aliases
   may remain supported but do not count as current semantic parts.
-- **INV9 — Family ownership is explicit.** A family document may own a shared
+- **INV13 — Family ownership is explicit.** A family document may own a shared
   target for several components, but local docs link to that owner rather than
   leaving ownership to inference.
 
@@ -112,11 +175,20 @@ how themes become output, or the design rationale for a component's appearance.
   `.doc.mjs` public target metadata, compatibility aliases when required,
   generated/CLI discovery, and validation together.
 - Adding consumer anatomy requires a deliberate component-spec mapping to a
-  target, inheritance, delegation, or `none`. It does not automatically create
-  CSS API.
-- Adding a public target property records its semantic purpose in metadata. A
-  component-specific exception belongs in its component contract; common
-  property-to-variable behavior belongs to theme compilation.
+  target, inheritance, delegation, or factual `none`. It does not automatically
+  create CSS API. A `none` entry classifies the current state as `intentional`,
+  `reachability-gap`, or `unsettled`; changing reachability updates the mapping,
+  while future exposure still follows normal public-target review.
+- Adding a property to a target's `guaranteedProperties` records its purpose and
+  scope, proves a rational observable effect on the owned anatomy part, and adds
+  representative compiler/runtime coverage. Catalog membership alone does not add
+  a target guarantee; target-specific behavior outside the catalog is admitted by
+  the same reviewed declaration. Common property-to-variable behavior belongs to
+  theme compilation.
+- Adding a public semantic custom property first shows why no guaranteed CSS
+  property expresses the need, then updates its component contract, consumer
+  docs, stable fallback/default, scope, runtime evidence, and compatibility
+  coverage together. It is not the default response to an unsupported property.
 - Moving target ownership to a family updates every member's disposition and
   link in the same reviewed change.
 - Expanding participation to another package first extends the consistency guard
@@ -127,11 +199,20 @@ how themes become output, or the design rationale for a component's appearance.
 - Component `.doc.mjs` `usage.anatomy[]` owns the consumer-facing semantic part
   inventory and contains no theming disposition or maintainer rationale.
 - Component `.doc.mjs` `theming.targets[]` owns discoverable public targets and
-  their public properties/states.
+  their visual prop/state selector axes. `visualProps` does not declare CSS
+  property support.
+- The approved property catalog is owned by this record. Target
+  `guaranteedProperties` declarations will live in component `.doc.mjs`
+  `theming.targets[]` once the authoring schema supports them; there is not yet a
+  machine-readable field.
+- Component `.doc.mjs` `theming.vars[]` owns documented custom properties and
+  marks private implementation variables; `theming.derived[]` records checked
+  public-property expansion metadata.
 - A colocated component `.spec.md` `### Theming anatomy` block owns the exact,
   machine-readable anatomy-to-target dispositions. It is optional during
-  migration and excluded from generated consumer docs. Nearby prose records only
-  non-obvious rationale, exceptions, and links—not the exact mapping.
+  migration, checked against consumer anatomy, and excluded from generated
+  consumer docs. Nearby component-spec prose owns non-obvious rationale,
+  exceptions, and links.
 - Runtime `themeProps()` calls emit the target and state contract.
 - `scripts/check-knowledge.mjs`, `themingTargets.test.ts`,
   `extensibleAxes.test.ts`, and `derivedVarRegistry.test.ts` enforce the
@@ -141,19 +222,37 @@ how themes become output, or the design rationale for a component's appearance.
 
 ## Deciding specs
 
-None. The qualification rule, consumer boundary, and capability-based package
-scope were selected by the system owner.
+None. The qualification rule, consumer boundary, property support tiers, and
+capability-based package scope were selected by the system owner.
 
 ## Verification
 
-| Invariant  | Evidence                                              | Failure signal                                                                                       |
-| ---------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| INV1       | Cross-package target/documentation inventory          | An exported target in a participating package is invisible to metadata or CLI validation             |
-| INV2, INV3 | `scripts/check-knowledge.mjs`                         | A current target has no semantic part owner, or anatomy mechanically creates unnecessary targets     |
-| INV4, INV5 | Component review plus rendered DOM inspection         | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics |
-| INV6       | `themingTargets.test.ts` and `extensibleAxes.test.ts` | State/variant is invisible to the owner target or becomes an unnecessary parallel target             |
-| INV7       | Metadata plus compiler registry tests                 | A public property lacks semantics or private expansion is duplicated in component prose/code         |
-| INV8, INV9 | Alias and family-owner fixtures                       | Deprecated aliases count as current parts or cross-doc ownership remains implicit                    |
+| Invariant    | Evidence                                                         | Failure signal                                                                                                              |
+| ------------ | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| INV1         | Cross-package target/documentation inventory                     | An exported target in a participating package is invisible to metadata or CLI validation                                    |
+| INV2, INV3   | Bidirectional anatomy-disposition/target check                   | A current target has no semantic part owner, anatomy mechanically creates targets, or `none` silently becomes future policy |
+| INV4, INV5   | Component review plus rendered DOM inspection                    | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics                        |
+| INV6         | `themingTargets.test.ts` and `extensibleAxes.test.ts`            | State/variant is invisible to the owner target or becomes an unnecessary parallel target                                    |
+| INV7, INV8   | Existing property fixtures (partial; gaps below)                 | A declared property is missing evidence, or an unlisted counterpart is treated as implied                                   |
+| INV9         | API docs and compatibility review                                | Generic property acceptance is presented as a supported compatibility promise                                               |
+| INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below) | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                 |
+| INV12, INV13 | Alias and family-owner fixtures                                  | Deprecated aliases count as current parts or cross-doc ownership remains implicit                                           |
+
+Known conformance and verification gaps:
+
+- The shared catalog is approved, but the component-doc authoring schema has no
+  `guaranteedProperties` field. The follow-up must add the exact-name field,
+  migrate each current target with its rational catalog subset and reviewed
+  additions, expose the declarations to discovery, and reject unknown or implied
+  names. Until that migration lands, the catalog does not automatically guarantee
+  any property on any target.
+- CI does not yet require representative compiler and runtime evidence for each
+  declared target/property pair. The follow-up must make missing output-path or
+  observable runtime evidence fail validation; layout-sensitive additions also
+  require internal-coupling and directionality evidence.
+- Runtime/build private-variable rejection and media-surface derived expansion are
+  separate compiler conformance gaps owned and specified by
+  `architecture:theme-compilation`.
 
 ### Migration work from the 2026-08-30 audit
 

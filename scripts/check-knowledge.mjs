@@ -206,6 +206,7 @@ export function parseAnatomyThemingBlock(
 
 const THEME_TARGET_NAME = /^(?!astryx-)[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const THEMING_DISPOSITIONS = ['target', 'inherits', 'delegatesTo', 'none'];
+const NONE_REASON_PREFIX = /^(?:intentional|reachability-gap|unsettled):\s+\S/;
 
 function exactObjectKeys(value, expected) {
   return (
@@ -330,6 +331,10 @@ export function validateAnatomyThemingMap(
     const none = disposition.none;
     if (!exactObjectKeys(none, ['reason']) || !isNonEmptyString(none.reason)) {
       problems.push(`${where}.none requires a non-empty reason.`);
+    } else if (!NONE_REASON_PREFIX.test(none.reason)) {
+      problems.push(
+        `${where}.none.reason must start with intentional:, reachability-gap:, or unsettled:.`,
+      );
     }
   }
 

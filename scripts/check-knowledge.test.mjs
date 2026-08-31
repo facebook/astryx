@@ -170,7 +170,9 @@ describe('component theming anatomy metadata', () => {
     Root: {target: 'button'},
     Label: {inherits: 'button'},
     Icon: {delegatesTo: {owner: 'component:Icon', target: 'icon'}},
-    Content: {none: {reason: 'The consumer owns this content.'}},
+    Content: {
+      none: {reason: 'intentional: The consumer owns this content.'},
+    },
   };
 
   it('parses the optional versioned JSON block under Design relationships', () => {
@@ -196,6 +198,26 @@ describe('component theming anatomy metadata', () => {
     expect(validateAnatomyThemingMap(valid, contract)).toEqual([]);
   });
 
+  it('accepts every classified none reason', () => {
+    for (const classification of [
+      'intentional',
+      'reachability-gap',
+      'unsettled',
+    ]) {
+      expect(
+        validateAnatomyThemingMap(
+          {
+            ...valid,
+            Content: {
+              none: {reason: `${classification}: Current factual state.`},
+            },
+          },
+          contract,
+        ),
+      ).toEqual([]);
+    }
+  });
+
   it.each([
     [
       'multiple dispositions',
@@ -218,6 +240,11 @@ describe('component theming anatomy metadata', () => {
       /requires a non-empty reason/,
     ],
     [
+      'unclassified none reason',
+      {...valid, Content: {none: {reason: 'The consumer owns this content.'}}},
+      /must start with intentional:, reachability-gap:, or unsettled:/,
+    ],
+    [
       'prefixed target',
       {...valid, Root: {target: 'astryx-button'}},
       /omit the "astryx-" prefix/,
@@ -238,8 +265,8 @@ describe('component theming anatomy metadata', () => {
       {
         Label: {inherits: 'button'},
         Icon: {delegatesTo: {owner: 'component:Icon', target: 'icon'}},
-        Content: {none: {reason: 'Consumer owned.'}},
-        Unknown: {none: {reason: 'Not real.'}},
+        Content: {none: {reason: 'intentional: Consumer owned.'}},
+        Unknown: {none: {reason: 'unsettled: Not real.'}},
       },
       contract,
     ).join('\n');
@@ -396,10 +423,10 @@ describe('knowledge validation', () => {
     fs.mkdirSync(directory);
     fs.writeFileSync(
       path.join(directory, 'Button.spec.md'),
-      componentRecord({template_version: '3'}),
+      componentRecord({template_version: '4'}),
     );
     expect(validateKnowledgeRoot(root).join('\n')).toMatch(
-      /template_version 3 is newer than 2/,
+      /template_version 4 is newer than 3/,
     );
   });
 

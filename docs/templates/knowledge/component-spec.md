@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-template_version: 2
+template_version: 3
 kind: component
 id: component:<Name>
 authority: draft
@@ -102,7 +102,9 @@ Optional during migration. When present, this block must map every exact English
 anatomy name from <Name>.doc.mjs to one disposition. It is maintainer metadata:
 do not copy it into ComponentDoc, generated docsite data, CLI/MCP output, or
 consumer prose. Target names omit the `astryx-` prefix. Put only non-obvious
-rationale or exceptions in prose below the block.
+rationale or exceptions in prose below the block. `none` is factual: its reason
+must start with `intentional:`, `reachability-gap:`, or `unsettled:` so absence of
+current reachability never silently decides future themeability.
 -->
 
 <!-- anatomy-theming:v1 -->
@@ -114,7 +116,11 @@ rationale or exceptions in prose below the block.
   "<delegated part>": {
     "delegatesTo": {"owner": "component:<Owner>", "target": "<target>"}
   },
-  "<unthemed part>": {"none": {"reason": "<required reason>"}}
+  "<currently unreachable part>": {
+    "none": {
+      "reason": "<intentional | reachability-gap | unsettled>: <required factual reason>"
+    }
+  }
 }
 ```
 
