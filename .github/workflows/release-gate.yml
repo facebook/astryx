@@ -36,11 +36,6 @@ on:
     # 13:00 UTC = 06:00 PT — two hours before the 08:00 PT cut (see TIMING above).
     - cron: '0 13 * * *'
   workflow_dispatch:
-    inputs:
-      tiers:
-        description: 'Shot tiers: surface, theme-matrix, full'
-        required: false
-        default: 'surface,theme-matrix'
 
 permissions: {}
 
@@ -96,17 +91,22 @@ jobs:
             echo "::notice::No baseline on gh-pages yet — this run establishes one."
           fi
 
-      # Exit 2 means "changed", which is a question for the release cut, not a
-      # broken run. Exit 1 (crashed) still fails the job.
+      # The derived surface/matrix stays representative, but an accepted
+      # stable key is a durable release promise: recapture every still-valid
+      # baseline key until a reviewed removal prunes it. Package filtering is
+      # applied to the baseline too, so legacy canary keys do not block Core.
+      # The gate constructs the canonical stable tiers internally. A caller may
+      # not expand, rename, or narrow the plan that owns removal authority.
+      # Exit 2 means "changed", which is a release decision; only a crash (1)
+      # fails this job mechanically.
       - name: Run the visual gate
         id: gate
         run: |
           set +e
-          node .github/scripts/visual-gate/gate.mjs check \
+          node .github/scripts/visual-gate/gate.mjs release \
             --storybook-dir apps/storybook/dist \
             --baseline .visual-baseline \
             --out .visual-run \
-            --tiers "${{ inputs.tiers || 'surface,theme-matrix' }}" \
             --summary-output visual-summary.md
           code=$?
           cat visual-summary.md >> "$GITHUB_STEP_SUMMARY" || true
@@ -247,14 +247,12 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-slim
     permissions:
+      actions: read
       contents: write
-    # Not the pages-deploy group: GitHub keeps only the newest pending run per
-    # group, so joining it could cancel a pending site deploy (see
-    # cleanup-previews.yml for the same reasoning).
-    concurrency:
-      group: release-gate-publish
-      cancel-in-progress: false
     steps:
+      - name: Checkout publisher
+        uses: actions/checkout@v7
+
       - name: Download report
         uses: actions/download-artifact@v8
         with:
@@ -284,39 +282,9 @@ jobs:
           cat report/release-gate.json
 
       - name: Publish to gh-pages
-        run: |
-          set -eu
-          REPO_URL="https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git"
-          for attempt in 1 2 3; do
-            rm -rf /tmp/gh-pages
-            git clone --depth=1 --filter=blob:none --sparse --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
-            git -C /tmp/gh-pages sparse-checkout set visual-gate
-            RUN_DIR="/tmp/gh-pages/visual-gate/${GITHUB_RUN_ID}"
-            rm -rf "$RUN_DIR" /tmp/gh-pages/visual-gate/latest
-            mkdir -p "$RUN_DIR" /tmp/gh-pages/visual-gate/latest
-            cp -r report/. "$RUN_DIR"/
-            cp -r report/. /tmp/gh-pages/visual-gate/latest/
-
-            # Keep the twenty most recent run directories; the report images are
-            # only useful while the change they describe is still a live question.
-            ls -1d /tmp/gh-pages/visual-gate/*/ 2>/dev/null \
-              | grep -Ev '/(baseline|latest|publication-queue)/$' \
-              | sort -V | head -n -20 | xargs -r rm -rf
-
-            cd /tmp/gh-pages
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add -A visual-gate
-            git commit -m "release gate: ${GITHUB_RUN_ID}" || { echo "Nothing to publish"; exit 0; }
-            if git push origin gh-pages; then
-              echo "Published https://facebook.github.io/astryx/visual-gate/${GITHUB_RUN_ID}/"
-              exit 0
-            fi
-            echo "Push failed (attempt $attempt), retrying"
-            sleep $((attempt * 10))
-          done
-          echo "::error::Could not publish the release-gate report to gh-pages"
-          exit 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .github/scripts/gh-pages-publisher.mjs release-gate --source report
 
       - name: Summary
         env:

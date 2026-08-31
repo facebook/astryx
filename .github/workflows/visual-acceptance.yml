@@ -142,6 +142,7 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-slim
     permissions:
+      actions: read
       contents: write
       pull-requests: write
       statuses: write
@@ -185,42 +186,19 @@ jobs:
           ROLE_NAME: ${{ needs.authorize.outputs.role_name }}
           COMMENT_ID: ${{ needs.authorize.outputs.comment_id }}
           REASON: ${{ needs.authorize.outputs.reason }}
-        run: |
-          set -eu
-          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          PAGES="$RUNNER_TEMP/visual-acceptance-pages"
-          DEST="visual-gate/acceptances/${PR_NUMBER}/${HEAD_SHA}"
-          for attempt in 1 2 3 4 5; do
-            rm -rf "$PAGES"
-            git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" "$PAGES"
-            node .github/scripts/visual-gate/visual-acceptance.mjs accept \
-              --pages "$PAGES" \
-              --pr "$PR_NUMBER" \
-              --head "$HEAD_SHA" \
-              --run-id "$RUN_ID" \
-              --run-attempt "$RUN_ATTEMPT" \
-              --approver "$APPROVER" \
-              --approver-id "$APPROVER_ID" \
-              --permission "$PERMISSION" \
-              --effective-permission "$EFFECTIVE_PERMISSION" \
-              --role-name "$ROLE_NAME" \
-              --comment-id "$COMMENT_ID" \
-              --reason "$REASON"
-            if [ -z "$(git -C "$PAGES" status --porcelain -- "$DEST")" ]; then
-              echo "The current visual bundle was already accepted."
-              exit 0
-            fi
-            git -C "$PAGES" config user.name "github-actions[bot]"
-            git -C "$PAGES" config user.email "github-actions[bot]@users.noreply.github.com"
-            git -C "$PAGES" add "$DEST"
-            git -C "$PAGES" commit -m "visual acceptance: PR #${PR_NUMBER} at ${HEAD_SHA}"
-            if git -C "$PAGES" push origin gh-pages; then
-              exit 0
-            fi
-            sleep $((attempt * 2))
-          done
-          echo "::error::Could not archive visual acceptance after 5 attempts"
-          exit 1
+        run: >
+          node .github/scripts/gh-pages-publisher.mjs visual-acceptance-record
+          --pr "$PR_NUMBER"
+          --head "$HEAD_SHA"
+          --accepted-run-id "$RUN_ID"
+          --accepted-run-attempt "$RUN_ATTEMPT"
+          --approver "$APPROVER"
+          --approver-id "$APPROVER_ID"
+          --permission "$PERMISSION"
+          --effective-permission "$EFFECTIVE_PERMISSION"
+          --role-name "$ROLE_NAME"
+          --comment-id "$COMMENT_ID"
+          --reason "$REASON"
 
       - name: Reconcile acceptance against the latest published evidence
         id: reconcile

@@ -39,6 +39,21 @@ describe('themeTargets (api/theme/targets)', () => {
     ]);
   }, 60_000);
 
+  it.each(['table-header', 'table-body', 'table-footer'])(
+    '%s appears once under the Table owner',
+    async target => {
+      const {data} = await themeTargets('Table');
+      const matches = data.targets.filter(entry => entry.key === target);
+      expect(data.componentCount).toBe(1);
+      expect(matches).toHaveLength(1);
+      expect(matches[0]).toMatchObject({
+        key: target,
+        component: 'Table',
+      });
+    },
+    60_000,
+  );
+
   // Half the system's keys contain "button" (chat-send-button, toggle-button,
   // …). A component name has to mean the component, or `theme targets Button`
   // answers a different question than `component Button` and the two views

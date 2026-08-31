@@ -1,5 +1,24 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Stack container',
+    required: true,
+    description: 'Layout container that arranges content along one flex axis.',
+  },
+  {
+    name: 'Item',
+    required: false,
+    description: 'Optional StackItem wrapper that controls one item in the stack.',
+  },
+  {
+    name: 'Content',
+    required: false,
+    description: 'Caller-supplied content rendered by a Stack or StackItem.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -440,6 +459,7 @@ export const docs = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
@@ -629,6 +649,7 @@ export const docsZh = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
@@ -643,6 +664,7 @@ export const docsZh = {
 export const docsDense = {
   description: 'Stack layout primitives for horizontal/vertical sequences using flexbox w/ themed spacing tokens.',
   usage: {
+    anatomy,
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [

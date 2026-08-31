@@ -20,6 +20,32 @@ neutral yellow "waiting" signal, not a red failure).
   but does not block the merge.
 - An entitled owner's **approval clears the gate automatically** (no manual step).
 
+## Spec records
+
+Any PR that creates, changes, or archives a `current` architecture, component,
+family, design, or system spec waits on `spec-owner-approval` for its exact
+current head. `cixzhang` or `imdreamrunner` can approve every record kind.
+Current design records and normative design assets may also be approved by any
+handle in `.github/DESIGNOWNERS`. Mixed PRs still require `cixzhang` or
+`imdreamrunner` for non-design current records. When an approver is also the
+author, the explicit equivalent is a comment containing
+`/approve-spec <full-head-sha>`; a new commit invalidates it.
+
+A PR changes only spec records when every changed path is one of:
+
+- `docs/specs/<id>/spec.md` or `plan.md`;
+- a family or design spec (excluding indexes, templates, schemas, and assets);
+- a colocated Core/Lab `<Name>.spec.md`.
+
+Draft-only spec records can merge after validation without owner approval.
+Pure spec-record PRs do not add Changesets because they do not release packages;
+CI rejects a PR containing only spec records and `.changeset` entries.
+That classification fails closed on an empty or truncated file list and checks
+both sides of a rename. Pure spec-record PRs run knowledge validation, skip
+runtime/build/visual work with successful required-status acknowledgements, and
+enable squash auto-merge after owner approval. Mixed code/spec changes keep full
+CI and never gain this auto-merge path.
+
 ## Sources of truth
 
 | File                                                 | Meaning                                                          |

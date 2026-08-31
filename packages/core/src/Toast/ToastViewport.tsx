@@ -29,7 +29,7 @@ import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {useAnnounce} from '../hooks/useAnnounce';
-import {Toast} from './Toast';
+import {ToastSurface} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
 import {useTranslator} from '../i18n';
@@ -525,13 +525,14 @@ export function ToastViewport({
                   : undefined
               }>
               <div {...stylex.props(styles.toastWrapperInner)}>
-                <Toast
+                <ToastSurface
                   type={type}
                   body={o.body}
                   endContent={o.endContent}
                   isAutoHide={isAutoHide}
                   autoHideDuration={dur}
                   isExiting={isExiting}
+                  gestureDirection={isReversed ? -1 : 1}
                   onDismiss={reason => removeToast(entry.id, reason)}
                   renderContent={o.renderContent}
                 />

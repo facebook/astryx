@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    "tailwind-v4-control",
+    "shadcn-tailwind-v4-established",
+    "enterprise-scoped-synthetic"
+  ],
+  "promptFixtures": {
+    "s0": [
+      "tailwind-v4-control",
+      "shadcn-tailwind-v4-established",
+      "enterprise-scoped-synthetic"
+    ],
+    "s1": [
+      "tailwind-v4-control",
+      "shadcn-tailwind-v4-established",
+      "enterprise-scoped-synthetic"
+    ],
+    "s2": [
+      "tailwind-v4-control",
+      "shadcn-tailwind-v4-established",
+      "enterprise-scoped-synthetic"
+    ],
+    "s3": [
+      "tailwind-v4-control",
+      "shadcn-tailwind-v4-established",
+      "enterprise-scoped-synthetic"
+    ],
+    "s4": ["shadcn-tailwind-v4-established"],
+    "s5": ["enterprise-scoped-synthetic"]
+  },
+  "bundles": [
+    {
+      "id": "native-claude",
+      "harness": "native",
+      "model": "claude-family",
+      "effort": "high"
+    },
+    {
+      "id": "claude-code-claude",
+      "harness": "claude-code",
+      "model": "claude-family",
+      "effort": "high"
+    },
+    {
+      "id": "native-gpt",
+      "harness": "native",
+      "model": "gpt-family",
+      "effort": "high"
+    },
+    {
+      "id": "codex-gpt",
+      "harness": "codex",
+      "model": "gpt-family",
+      "effort": "high",
+      "blocked": true,
+      "blocker": "Upstream executor can return an empty successful turn."
+    }
+  ],
+  "infraRetryPolicy": {
+    "maxRetriesPerCell": 2,
+    "retryableStatuses": [
+      "infrastructure-failure",
+      "executor-unavailable",
+      "rate-limited"
+    ],
+    "agentFailureStatus": "agent-failure",
+    "rule": "Retry only a classified infrastructure failure. A real agent failure is a completed failing run and is never discarded or retried into a pass."
+  },
+  "stages": [
+    {
+      "id": "separation",
+      "description": "Confirm that the floor and direct controls separate before expanding the iteration loop.",
+      "fixtures": [
+        "tailwind-v4-control",
+        "shadcn-tailwind-v4-established",
+        "enterprise-scoped-synthetic"
+      ],
+      "conditions": ["floor", "direct"],
+      "prompts": ["s1"],
+      "bundles": [
+        "native-claude",
+        "claude-code-claude",
+        "native-gpt",
+        "codex-gpt"
+      ],
+      "reps": 2
+    },
+    {
+      "id": "guidance",
+      "description": "Iterate on all guidance conditions. Failures and explicit per-dimension tradeoffs guide instruction refinement; this stage does not rank candidates or authorize shipping.",
+      "fixtures": [
+        "tailwind-v4-control",
+        "shadcn-tailwind-v4-established",
+        "enterprise-scoped-synthetic"
+      ],
+      "conditions": ["floor", "current", "candidate", "direct"],
+      "reuseFromStages": ["separation"],
+      "prompts": ["s0", "s1", "s2", "s3", "s4", "s5"],
+      "bundles": [
+        "native-claude",
+        "claude-code-claude",
+        "native-gpt",
+        "codex-gpt"
+      ],
+      "reps": 2
+    },
+    {
+      "id": "confirmation",
+      "description": "Final candidate-only confirmation. Every supported fixture and prompt combination, bundle, and repetition must be present and clean.",
+      "fixtures": [
+        "tailwind-v4-control",
+        "shadcn-tailwind-v4-established",
+        "enterprise-scoped-synthetic"
+      ],
+      "conditions": ["candidate"],
+      "prompts": ["s0", "s1", "s2", "s3", "s4", "s5"],
+      "bundles": [
+        "native-claude",
+        "claude-code-claude",
+        "native-gpt",
+        "codex-gpt"
+      ],
+      "reps": 2,
+      "acceptance": {
+        "requiredVerdict": "clean",
+        "requireTaskSuccess": true,
+        "requireDiffAttestation": true,
+        "requiredRate": 1,
+        "requireCompleteMatrix": true
+      }
+    }
+  ],
+  "deferred": [
+    {
+      "fixtureFamily": "tailwind-v3",
+      "reason": "Explicitly deferred until the Tailwind v4 experiment establishes that the controls and measures separate."
+    }
+  ]
+}

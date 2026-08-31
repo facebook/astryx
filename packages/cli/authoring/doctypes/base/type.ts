@@ -49,6 +49,114 @@ export interface ComponentBestPractice {
 }
 
 /**
+ * A component-specific accessibility requirement.
+ *
+ * Keep this focused on what a consumer must preserve in the rendered result:
+ * naming, semantics, keyboard behavior, state exposure, contrast, and supported
+ * content combinations. Repository audit procedure belongs in the wiki rubric,
+ * not in this field.
+ *
+ * @example
+ * ```
+ * {name: 'Loading', description: 'Expose aria-busy and prevent duplicate activation unless the action is explicitly interruptible.'}
+ * ```
+ */
+export interface ComponentAccessibilityRequirement {
+  /** Short scannable label, e.g. `"Accessible name"` or `"Loading"`. */
+  name: string;
+  /**
+   * The accessibility contract consumers must preserve. Write at about a
+   * grade-7 reading level with short sentences, common words, and active
+   * voice. For color contrast, put the ratio in `requirement`; name the exact
+   * foreground, background, state, and any overlay in `description`; explain
+   * exceptions in plain language; and include enough detail for a human or
+   * agent to reproduce the check.
+   */
+  description: string;
+  /** Groups related requirements in the docsite Accessibility tab. */
+  category?: 'Color contrast' | 'Keyboard' | 'Semantics' | 'Content';
+  /** Relevant WCAG success criterion, e.g. `"1.4.3 Contrast (Minimum)"`. */
+  criterion?: string;
+  /** Short threshold or rule, e.g. `"4.5:1"`, `"3:1"`, or `"Exempt"`. */
+  requirement?: string;
+  /** Component states covered by this requirement. */
+  states?: string[];
+}
+
+export type ComponentAccessibilityThemeStatus = 'Pass' | 'Fail' | 'Not tested';
+
+export type ComponentAccessibilityThemeApplicability =
+  'Required' | 'Conditional' | 'Supplemental' | 'Decorative';
+
+export interface ComponentAccessibilityThemeMeasurement {
+  /** Column heading, e.g. `"Rest"` or `"Spinner"`. */
+  label: string;
+  /** Display value, e.g. `"15.13:1"`. */
+  value: string;
+  /** Optional supporting detail shown below the value, such as a worst case. */
+  detail?: string;
+  /**
+   * Whether this measurement is required for every use, required only in some
+   * contexts, shown as a supplemental cue, or decorative. Each theme declares
+   * this intent, informed by the component contract. Never infer it from the
+   * measured ratio. Non-required measurements do not determine row status.
+   */
+  applicability?: ComponentAccessibilityThemeApplicability;
+  /** Rendered foreground and background colors used for this measurement. */
+  colorPair?: {
+    foreground: string;
+    background: string;
+  };
+  /** Optional per-variant results shown from a compact details trigger. */
+  breakdown?: Array<{
+    label: string;
+    value: string;
+    detail?: string;
+    colorPair: {
+      foreground: string;
+      background: string;
+    };
+    status?: 'Pass' | 'Fail';
+  }>;
+  /** Mark a failed measurement so the docsite can emphasize it. */
+  status?: 'Pass' | 'Fail';
+}
+
+export interface ComponentAccessibilityThemeResult {
+  /** Row heading, usually a component variant. */
+  name: string;
+  /** Measurements shown between the row heading and status. */
+  measurements: ComponentAccessibilityThemeMeasurement[];
+  /** Overall result for the row. */
+  status: ComponentAccessibilityThemeStatus;
+}
+
+export interface ComponentAccessibilityThemeMode {
+  /** Theme mode covered by these results. */
+  mode: 'Light' | 'Dark';
+  /** Detailed results for the component in this mode. */
+  results: ComponentAccessibilityThemeResult[];
+}
+
+export interface ComponentAccessibilityThemeTable {
+  /** Optional heading for one complete group of measurements. */
+  title?: string;
+  /** Explains the scope of this measurement group. */
+  description?: string;
+  /** Detailed results separated by theme mode. */
+  modes: ComponentAccessibilityThemeMode[];
+}
+
+export interface ComponentAccessibilityThemeCoverage {
+  /** Display name of the audited theme. */
+  theme: string;
+  /** Complete groups of measurements for this theme and component. */
+  tables: ComponentAccessibilityThemeTable[];
+  /** Theme visuals intentionally excluded from measurement, with a reason. */
+  notMeasured?: string[];
+}
+
+/**
  * Code example for a component or sub-component.
  */
 export interface ComponentExampleDoc {
@@ -406,8 +514,8 @@ export interface HookReturnDoc {
 }
 
 /**
- * Component usage documentation — a concise summary, design guidance
- * best practices, and optional visual anatomy.
+ * Component usage documentation — a concise summary, design guidance,
+ * component-specific accessibility requirements, and optional visual anatomy.
  *
  * ## description
  * Exactly 2-3 short sentences:
@@ -439,6 +547,11 @@ export interface UsageDoc {
   /** 3-4 do/don't design guidance items. Usually 2 Do's then 1-2 Don'ts.
    *  Focus on how a designer would USE the component, not how it's built. */
   bestPractices?: ComponentBestPractice[];
+  /** Accessibility requirements specific to this component and its supported
+   * content combinations. Generic audit procedure stays in the wiki rubric. */
+  accessibility?: ComponentAccessibilityRequirement[];
+  /** Verified color-accessibility coverage for bundled themes. */
+  accessibilityThemeCoverage?: ComponentAccessibilityThemeCoverage[];
   /** Structural/visual anatomy of the component. Each entry describes one
    *  element that makes up the component (icon slot, label, container, etc.).
    *  Order entries in the visual reading order (leading → trailing, top → bottom). */
