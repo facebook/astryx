@@ -34,10 +34,6 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: spec-owner-${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr }}
-  cancel-in-progress: true
-
 env:
   SPEC_OWNERS: cixzhang,imdreamrunner
   REVIEW_LABEL: needs:spec-owner-review
@@ -45,9 +41,12 @@ env:
 
 jobs:
   reconcile:
+    # Keep ordinary PR discussion outside the privileged pull_request_target path.
     if: >-
       github.event_name != 'issue_comment' ||
-      github.event.issue.pull_request != null
+      (github.event.issue.pull_request != null &&
+       (startsWith(github.event.comment.body, '/approve-spec ') ||
+        startsWith(github.event.comment.body, '/revoke-spec ')))
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -66,252 +65,9 @@ jobs:
         with:
           retries: 3
           script: |
-            const fs = require('node:fs');
             const path = require('node:path');
-            const {classifyChanges} = require(path.join(
+            const {reconcileSpecOwnerGate} = require(path.join(
               process.env.GITHUB_WORKSPACE,
-              '.github/scripts/change-scope.cjs',
+              '.github/scripts/spec-owner-reconcile.cjs',
             ));
-            const {
-              parseOwnerFile,
-              requiredApprovalGroups,
-              resolveOwnerDecision,
-            } = require(path.join(
-              process.env.GITHUB_WORKSPACE,
-              '.github/scripts/spec-owner-decision.cjs',
-            ));
-            const {owner, repo} = context.repo;
-            const pull_number = Number(
-              context.payload.pull_request?.number ??
-              context.payload.issue?.number ??
-              context.payload.inputs?.pr,
-            );
-            if (!pull_number) throw new Error('Could not resolve a pull request number.');
-
-            const {data: pr} = await github.rest.pulls.get({owner, repo, pull_number});
-            const files = await github.paginate(github.rest.pulls.listFiles, {
-              owner, repo, pull_number, per_page: 100,
-            });
-            const scope = classifyChanges(files, {expectedCount: pr.changed_files});
-            const currentLabels = new Set(pr.labels.map(label => label.name));
-
-            async function setStatus(state, description) {
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: pr.head.sha,
-                context: 'spec-owner-approval', state,
-                description: description.slice(0, 140),
-              });
-            }
-            async function removeLabel(name) {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner, repo, issue_number: pull_number, name,
-                });
-              } catch (error) {
-                if (error.status !== 404) throw error;
-              }
-            }
-            async function ensureLabel(name, color, description) {
-              try {
-                await github.rest.issues.getLabel({owner, repo, name});
-              } catch (error) {
-                if (error.status !== 404) throw error;
-                await github.rest.issues.createLabel({
-                  owner, repo, name, color, description,
-                });
-              }
-              if (!currentLabels.has(name)) {
-                await github.rest.issues.addLabels({
-                  owner, repo, issue_number: pull_number, labels: [name],
-                });
-              }
-            }
-            async function disableOwnedAutoMerge() {
-              if (!currentLabels.has(process.env.AUTO_MERGE_LABEL)) return;
-              if (pr.auto_merge) {
-                await github.graphql(
-                  `mutation($id: ID!) {
-                    disablePullRequestAutoMerge(input: {pullRequestId: $id}) {
-                      pullRequest { number }
-                    }
-                  }`,
-                  {id: pr.node_id},
-                );
-              }
-              await removeLabel(process.env.AUTO_MERGE_LABEL);
-            }
-
-            if (!scope.touchesKnowledgeRecords) {
-              await disableOwnedAutoMerge();
-              await removeLabel(process.env.REVIEW_LABEL);
-              await setStatus('success', 'No knowledge records changed.');
-              return;
-            }
-
-            if (scope.specOnly) {
-              // Spec records cannot affect runtime pixels. This trusted path
-              // list is stricter than the visual classifier and is tested.
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: pr.head.sha,
-                context: 'visual-acceptance', state: 'success',
-                description: 'Spec-only change — no visual scope.',
-              });
-            }
-
-            async function readText(fullName, ref, filePath) {
-              const [repoOwner, repoName] = fullName.split('/');
-              try {
-                const {data} = await github.rest.repos.getContent({
-                  owner: repoOwner, repo: repoName, path: filePath, ref,
-                });
-                if (Array.isArray(data) || !data.content) {
-                  throw new Error(`Knowledge record ${filePath} could not be read as text.`);
-                }
-                return Buffer.from(data.content, 'base64').toString('utf8');
-              } catch (error) {
-                if (error.status === 404) return null;
-                throw error;
-              }
-            }
-
-            const knowledgeChanges = files.filter(file =>
-              scope.complete && (
-                classifyChanges([{filename: file.filename}]).touchesKnowledgeRecords ||
-                (file.previous_filename &&
-                  classifyChanges([{filename: file.previous_filename}]).touchesKnowledgeRecords)
-              ),
-            );
-            const records = await Promise.all(knowledgeChanges.map(async file => {
-              const previousPath = file.previous_filename || file.filename;
-              const baseIsTextRecord = previousPath.endsWith('.md');
-              const headIsTextRecord = file.filename.endsWith('.md');
-              return {
-                path: file.filename,
-                previousPath,
-                baseContent: !baseIsTextRecord || file.status === 'added'
-                  ? null
-                  : await readText(
-                      pr.base.repo.full_name,
-                      pr.base.sha,
-                      previousPath,
-                    ),
-                headContent: !headIsTextRecord || file.status === 'removed'
-                  ? null
-                  : await readText(pr.head.repo.full_name, pr.head.sha, file.filename),
-              };
-            }));
-            const requiredGroups = requiredApprovalGroups(records, {
-              complete: scope.complete,
-              touchesDesignAssets: scope.touchesDesignAssets,
-            });
-            const ownerApprovalRequired = requiredGroups.spec || requiredGroups.design;
-            const specOwners = process.env.SPEC_OWNERS.split(',');
-            const designOwners = parseOwnerFile(
-              fs.readFileSync(
-                path.join(process.env.GITHUB_WORKSPACE, '.github/DESIGNOWNERS'),
-                'utf8',
-              ),
-            );
-            if (requiredGroups.design && designOwners.length === 0) {
-              throw new Error('No DESIGNOWNERS are configured.');
-            }
-            const designApprovers = [...new Set([...specOwners, ...designOwners])];
-
-            const [reviews, comments] = await Promise.all([
-              github.paginate(github.rest.pulls.listReviews, {
-                owner, repo, pull_number, per_page: 100,
-              }),
-              github.paginate(github.rest.issues.listComments, {
-                owner, repo, issue_number: pull_number, per_page: 100,
-              }),
-            ]);
-            const specDecision = requiredGroups.spec
-              ? resolveOwnerDecision({
-                  reviews, comments, owners: specOwners, headSha: pr.head.sha,
-                })
-              : {approved: true, owner: null};
-            const designDecision = requiredGroups.design
-              ? resolveOwnerDecision({
-                  reviews, comments, owners: designApprovers, headSha: pr.head.sha,
-                })
-              : {approved: true, owner: null};
-            const approved = specDecision.approved && designDecision.approved;
-            const approvingOwners = [specDecision.owner, designDecision.owner]
-              .filter(Boolean)
-              .filter((ownerName, index, owners) => owners.indexOf(ownerName) === index);
-            const requiredOwnerDescription = [
-              requiredGroups.spec ? `a spec owner (${specOwners.join(',')})` : null,
-              requiredGroups.design
-                ? `a design approver (${designApprovers.join(',')})`
-                : null,
-            ].filter(Boolean).join(' and ');
-
-            if (ownerApprovalRequired && !approved) {
-              // Revoke our own auto-merge before any fallible label/status work.
-              await disableOwnedAutoMerge();
-              await ensureLabel(
-                process.env.REVIEW_LABEL,
-                'd4c5f9',
-                'Current knowledge records await owner approval',
-              );
-              await setStatus(
-                'pending',
-                `Waiting for ${requiredOwnerDescription} on ${pr.head.sha.slice(0, 7)}.`,
-              );
-              return;
-            }
-
-            if (pr.draft) {
-              await disableOwnedAutoMerge();
-              await removeLabel(process.env.REVIEW_LABEL);
-              await setStatus('success', 'Draft PR; owner gate is not blocking.');
-              return;
-            }
-
-            if (!scope.specOnly) {
-              await disableOwnedAutoMerge();
-              await removeLabel(process.env.REVIEW_LABEL);
-              await setStatus(
-                'success',
-                ownerApprovalRequired
-                  ? `Approved by ${approvingOwners.map(name => `@${name}`).join(' and ')} for ${pr.head.sha.slice(0, 7)}.`
-                  : 'No current knowledge record changed.',
-              );
-              return;
-            }
-
-            if (!pr.auto_merge) {
-              // Record ownership before enabling auto-merge. If enablement
-              // fails, the harmless label lets a later run clean up. If a user
-              // already enabled auto-merge, do not claim or later disable it.
-              await ensureLabel(
-                process.env.AUTO_MERGE_LABEL,
-                'bfdadc',
-                'Auto-merge was enabled by the spec owner gate',
-              );
-              try {
-                await github.graphql(
-                  `mutation($id: ID!, $oid: GitObjectID!) {
-                    enablePullRequestAutoMerge(input: {
-                      pullRequestId: $id,
-                      mergeMethod: SQUASH,
-                      expectedHeadOid: $oid
-                    }) {
-                      pullRequest { number }
-                    }
-                  }`,
-                  {id: pr.node_id, oid: pr.head.sha},
-                );
-                core.info(`Enabled squash auto-merge for spec-only PR #${pull_number}.`);
-              } catch (error) {
-                core.warning(`Could not enable auto-merge: ${error.message}`);
-                return;
-              }
-            }
-            await removeLabel(process.env.REVIEW_LABEL);
-            await setStatus(
-              'success',
-              ownerApprovalRequired
-                ? `Approved by ${approvingOwners.map(name => `@${name}`).join(' and ')} for ${pr.head.sha.slice(0, 7)}.`
-                : 'Draft-only knowledge change; owner approval is not required.',
-            );
+            await reconcileSpecOwnerGate({github, context, core});

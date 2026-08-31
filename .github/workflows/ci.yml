@@ -361,9 +361,11 @@ jobs:
           {
             "prNumber": "${{ steps.urls.outputs.pr_number }}",
             "shortHash": "${{ steps.urls.outputs.short_hash }}",
-            "storybookUrl": "${{ steps.urls.outputs.storybook_url }}",
-            "sandboxUrl": "${{ steps.urls.outputs.sandbox_url }}",
+            "headSha": "${{ github.event.pull_request.head.sha }}",
+            "headRepository": "${{ github.event.pull_request.head.repo.full_name }}",
+            "baseRepository": "${{ github.event.pull_request.base.repo.full_name }}",
             "runId": "${{ github.run_id }}",
+            "runAttempt": "${{ github.run_attempt }}",
             "runUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           }
           EOF

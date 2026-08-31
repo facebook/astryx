@@ -4,7 +4,7 @@ For the full contribution process — what we accept, how to propose new compone
 
 Key pages:
 
-- **[API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
+- **[API conventions guide](docs/contributing/api-conventions.md)** — practical naming, composition, styling, proposal, and review guidance linked to current owner records
 - **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
 - **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
 - **[Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle)** — how components move from lab → core and templates from hidden → visible
