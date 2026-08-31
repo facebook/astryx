@@ -12,6 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {Icon} from '../Icon/Icon';
 import {IconButton} from './IconButton';
 
 describe('IconButton', () => {
@@ -50,6 +51,37 @@ describe('IconButton', () => {
   it('forwards size prop', () => {
     render(<IconButton label="Add" icon={<span>+</span>} size="sm" />);
     expect(screen.getByRole('button', {name: 'Add'})).toBeInTheDocument();
+  });
+
+  it.each([
+    ['sm', 'sm'],
+    ['md', 'sm'],
+    ['lg', 'md'],
+  ] as const)(
+    'defaults the Astryx Icon to the %s button icon size',
+    (buttonSize, iconSize) => {
+      render(
+        <IconButton
+          label="Add"
+          icon={<Icon icon="check" data-testid="icon" />}
+          size={buttonSize}
+        />,
+      );
+
+      expect(screen.getByTestId('icon')).toHaveAttribute('data-size', iconSize);
+    },
+  );
+
+  it('preserves an explicit Astryx Icon size', () => {
+    render(
+      <IconButton
+        label="Add"
+        icon={<Icon icon="check" size="lg" data-testid="icon" />}
+        size="sm"
+      />,
+    );
+
+    expect(screen.getByTestId('icon')).toHaveAttribute('data-size', 'lg');
   });
 
   it('handles click events', async () => {

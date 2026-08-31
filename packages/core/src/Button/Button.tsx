@@ -38,6 +38,10 @@ import {
 } from '../theme/tokens.stylex';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {
+  IconDefaultSizeProvider,
+  type ContextualIconSize,
+} from '../Icon/IconDefaultSizeContext';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
@@ -232,6 +236,12 @@ export type ButtonVariant = keyof ButtonVariantMap;
  * Button size type derived from the sizeStyles StyleX object
  */
 export type ButtonSize = keyof typeof sizeStyles;
+
+const defaultIconSizeByButtonSize: Record<ButtonSize, ContextualIconSize> = {
+  sm: 'sm',
+  md: 'sm',
+  lg: 'md',
+};
 
 export interface ButtonProps extends BaseProps<HTMLButtonElement> {
   /** Ref forwarded to the root element */
@@ -706,7 +716,9 @@ export function Button({
         aria-hidden={isLoadingState || undefined}>
         {icon && (
           <span {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
-            {icon}
+            <IconDefaultSizeProvider value={defaultIconSizeByButtonSize[size]}>
+              {icon}
+            </IconDefaultSizeProvider>
           </span>
         )}
         {isIconOnly ? null : (

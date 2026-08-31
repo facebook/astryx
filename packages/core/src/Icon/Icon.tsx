@@ -31,6 +31,7 @@ import {getIcon} from './globalIconRegistry';
 import type {IconName, NamespacedIconName} from './globalIconRegistry';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {useIconSize} from './IconDefaultSizeContext';
 
 // =============================================================================
 // Styles
@@ -297,7 +298,7 @@ function getIconA11yProps(
 export function Icon({
   icon,
   color = 'inherit',
-  size = 'md',
+  size: sizeProp,
   label,
   ref,
   className,
@@ -305,6 +306,7 @@ export function Icon({
   xstyle,
   ...props
 }: IconProps) {
+  const size = useIconSize(sizeProp);
   // Derive ARIA from `label`: decorative (aria-hidden) by default, or a
   // meaningful image (role="img" + aria-label) when `label` is non-empty.
   const a11yProps = getIconA11yProps(label);
