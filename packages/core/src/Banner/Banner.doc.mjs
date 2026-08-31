@@ -17,7 +17,7 @@ export const docs = {
       {guidance: true, description: 'Keep titles short and scannable: "Payment failed" not "There was a problem processing your most recent payment."'},
       {guidance: false, description: 'Use Banner for short-lived messages that disappear on their own; use Toast instead.'},
       {guidance: false, description: 'Stack multiple banners with the same status; combine related messages into one banner.'},
-      {guidance: true, description: 'Set collapsible={false} when the user needs the content to act on the message, like the list of fields that failed validation. Keep the default toggle when the detail is long enough to bury the banner\u2019s own message.'},
+      {guidance: true, description: 'Set collapsible={false} when the user needs the content to act on the message, like the list of fields that failed validation. Keep the default toggle when the detail is long enough to bury the banner\'s own message.'},
       {guidance: true, description: 'Error and warning banners render as role="alert"; info and success render as role="status". Mount an alert banner in response to an event rather than on first paint, so assistive tech has a change to report.'},
       {guidance: false, description: 'Rely on the status color or icon alone to carry meaning; say which status it is in the title text, because the icon is decorative to a screen reader.'},
     ],
