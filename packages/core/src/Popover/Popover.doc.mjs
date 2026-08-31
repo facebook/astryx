@@ -149,7 +149,7 @@ export const docs = {
       { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
       { guidance: true, description: 'Provide a clear way to close: either by clicking outside or with an explicit close button.' },
       { guidance: false, description: 'Nest popovers inside other popovers; it creates confusing focus and navigation.' },
-      { guidance: false, description: 'Assume input complexity alone determines the presentation; evaluate the task’s focus, space, and interaction requirements.' },
+      { guidance: false, description: 'Assume input complexity alone determines the presentation; evaluate the task\'s focus, space, and interaction requirements.' },
       { guidance: false, description: 'Assume scrolling alone means Popover is the wrong component; a bounded Popover may scroll while a focused anchored interaction remains appropriate.' },
     ],
     anatomy: [
@@ -294,7 +294,7 @@ export const docsZh = {
       { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
       { guidance: true, description: 'Provide a clear way to close: either by clicking outside or with an explicit close button.' },
       { guidance: false, description: 'Nest popovers inside other popovers; it creates confusing focus and navigation.' },
-      { guidance: false, description: 'Assume input complexity alone determines the presentation; evaluate the task’s focus, space, and interaction requirements.' },
+      { guidance: false, description: 'Assume input complexity alone determines the presentation; evaluate the task\'s focus, space, and interaction requirements.' },
       { guidance: false, description: 'Assume scrolling alone means Popover is the wrong component; a bounded Popover may scroll while a focused anchored interaction remains appropriate.' },
     ],
     anatomy: [
@@ -316,7 +316,7 @@ export const docsDense = {
       { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
       { guidance: true, description: 'Provide a clear way to close: either by clicking outside or with an explicit close button.' },
       { guidance: false, description: 'Nest popovers inside other popovers; it creates confusing focus and navigation.' },
-      { guidance: false, description: 'Assume input complexity alone determines the presentation; evaluate the task’s focus, space, and interaction requirements.' },
+      { guidance: false, description: 'Assume input complexity alone determines the presentation; evaluate the task\'s focus, space, and interaction requirements.' },
       { guidance: false, description: 'Assume scrolling alone means Popover is the wrong component; a bounded Popover may scroll while a focused anchored interaction remains appropriate.' },
     ],
     anatomy: [
