@@ -375,6 +375,19 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
 
+        if (document.activeElement === container) {
+          // Programmatic initial focus can sit on the trap container itself
+          // (for example a dialog panel with no content controls). Move into
+          // the tabbable cycle instead of letting Tab escape to the page.
+          event.preventDefault();
+          if (event.shiftKey) {
+            last.focus();
+          } else {
+            first.focus();
+          }
+          return;
+        }
+
         if (event.shiftKey) {
           // Shift+Tab: if on first element, wrap to last
           if (document.activeElement === first) {

@@ -5,7 +5,7 @@
 export const docs = {
   name: 'TimeInput',
   displayName: 'Time Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'timeinput',
     'timepicker',

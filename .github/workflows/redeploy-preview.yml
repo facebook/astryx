@@ -21,14 +21,14 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: "PR number to re-deploy preview for"
+        description: 'PR number to re-deploy preview for'
         required: true
         type: string
 
 permissions: {}
 
 concurrency:
-  group: "pr-preview-${{ github.event.inputs.pr_number }}"
+  group: 'pr-preview-${{ github.event.inputs.pr_number }}'
   cancel-in-progress: true
 
 jobs:
@@ -104,44 +104,9 @@ jobs:
       - name: Deploy to GitHub Pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Copies pre-built static output only — never builds or runs PR code.
-          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
-          MAX_ATTEMPTS=5
-          WORK_DIR="$PWD"
-
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          for attempt in $(seq 1 $MAX_ATTEMPTS); do
-            echo "::group::Attempt $attempt of $MAX_ATTEMPTS"
-            cd "$WORK_DIR"
-
-            rm -rf /tmp/gh-pages
-            git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
-
-            rm -rf /tmp/gh-pages/pr/${PR_NUMBER}
-            mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}
-            cp -r storybook-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
-            mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
-            # Every preview points at the one shared main-sandbox asset copy.
-            find sandbox-dist -mindepth 1 -maxdepth 1 ! -name template-assets \
-              -exec cp -r {} /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/ \;
-
-            cd /tmp/gh-pages
-            git add -A
-            git commit -m "Deploy PR #${PR_NUMBER} preview" || { echo "Nothing to commit"; echo "::endgroup::"; exit 0; }
-
-            if git push origin gh-pages; then
-              echo "Deployed successfully on attempt $attempt"
-              echo "::endgroup::"
-              exit 0
-            fi
-
-            echo "Push failed (likely concurrent update), retrying in $((attempt * 2))s..."
-            echo "::endgroup::"
-            sleep $((attempt * 2))
-          done
-
-          echo "::error::Failed to deploy PR preview after $MAX_ATTEMPTS attempts"
-          exit 1
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+        run: >
+          node .github/scripts/gh-pages-publisher.mjs pr-preview
+          --pr "$PR_NUMBER"
+          --storybook storybook-dist
+          --sandbox sandbox-dist

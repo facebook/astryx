@@ -5,7 +5,7 @@ export const docs = {
   name: 'FieldStatus',
   displayName: 'Field Status',
   group: 'Field',
-  category: 'Data Input',
+  category: 'Form Controls',
   isHiddenFromOverview: true,
   description:
     'Status message component for form field validation feedback. Messages are announced to screen readers through persistent live regions (assertive for errors, polite otherwise), so conditional mounting is safe.',

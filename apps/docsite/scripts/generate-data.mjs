@@ -726,6 +726,68 @@ export interface BestPractice {
   description: string;
 }
 
+export interface AccessibilityRequirement {
+  name: string;
+  description: string;
+  category?: 'Color contrast' | 'Keyboard' | 'Semantics' | 'Content';
+  criterion?: string;
+  requirement?: string;
+  states?: string[];
+}
+
+export type AccessibilityThemeStatus = 'Pass' | 'Fail' | 'Not tested';
+
+export type AccessibilityThemeApplicability =
+  | 'Required'
+  | 'Conditional'
+  | 'Supplemental'
+  | 'Decorative';
+
+export interface AccessibilityThemeMeasurement {
+  label: string;
+  value: string;
+  detail?: string;
+  applicability?: AccessibilityThemeApplicability;
+  colorPair?: {
+    foreground: string;
+    background: string;
+  };
+  breakdown?: Array<{
+    label: string;
+    value: string;
+    detail?: string;
+    colorPair: {
+      foreground: string;
+      background: string;
+    };
+    status?: 'Pass' | 'Fail';
+  }>;
+  status?: 'Pass' | 'Fail';
+}
+
+export interface AccessibilityThemeResult {
+  name: string;
+  measurements: AccessibilityThemeMeasurement[];
+  status: AccessibilityThemeStatus;
+}
+
+export interface AccessibilityThemeMode {
+  mode: 'Light' | 'Dark';
+  results: AccessibilityThemeResult[];
+}
+
+export interface AccessibilityThemeTable {
+  title?: string;
+  description?: string;
+  modes: AccessibilityThemeMode[];
+}
+
+export interface AccessibilityThemeCoverage {
+  theme: string;
+  tables: AccessibilityThemeTable[];
+  notMeasured?: string[];
+}
+
 export interface AnatomyElement {
   name: string;
   required: boolean;
@@ -737,7 +799,8 @@ export interface UsageDoc {
   bestPractices?: BestPractice[];
   anatomy?: AnatomyElement[];
   features?: string[];
-  accessibility?: string[];
+  accessibility?: AccessibilityRequirement[];
+  accessibilityThemeCoverage?: AccessibilityThemeCoverage[];
   keyboard?: string;
   notes?: string[];
 }

@@ -28,7 +28,12 @@ const SHOT = {
   title: 'Core/Button',
   name: 'Default',
   component: 'Button',
+  packageName: '@astryxdesign/core',
+  packageNames: ['@astryxdesign/core'],
+  stableVisual: true,
   theme: 'neutral',
+  themePackageName: '@astryxdesign/theme-neutral',
+  stableThemeVisual: true,
   mode: 'light',
   reasons: ['trusted:pr-scope'],
 };
@@ -314,14 +319,17 @@ describe('trusted PR visual publisher', () => {
     expect(fs.existsSync(path.join(output, 'after', `${key}.png`))).toBe(true);
   });
 
-  it('derives a removed baseline shot when trusted capture omits expected scope', () => {
-    writeCapture({});
+  it('does not derive removals from a scoped PR capture', () => {
+    const other = 'core-card--default__neutral-light';
+    writeBaseline({
+      [KEY]: {shot: SHOT, bytes: png()},
+      [other]: {shot: {...SHOT, storyId: 'core-card--default', component: 'Card'}, bytes: png()},
+    });
     run();
     const verdict = JSON.parse(
       fs.readFileSync(path.join(output, 'verdict.json'), 'utf8'),
     );
-    expect(verdict).toMatchObject({status: 'changed', removed: [KEY]});
-    expect(fs.existsSync(path.join(output, 'before', `${KEY}.png`))).toBe(true);
+    expect(verdict.removed).toEqual([]);
   });
 
   it('rejects a trusted capture that claims another run', () => {

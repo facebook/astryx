@@ -6,7 +6,7 @@ export const docs = {
   name: 'InputGroup',
   displayName: 'Input Group',
   group: 'Field',
-  category: 'Data Input',
+  category: 'Form Controls',
   isHiddenFromOverview: true,
   keywords: [
     'inputgroup',

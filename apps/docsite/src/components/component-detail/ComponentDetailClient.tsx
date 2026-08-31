@@ -18,6 +18,7 @@ import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {Anatomy} from './Anatomy';
 import {BestPractices} from './BestPractices';
 import {Theming} from './Theming';
+import {Accessibility} from './Accessibility';
 import {HookSignature} from './HookSignature';
 import {ExampleBlock} from './ExampleBlock';
 import {MarkdownText} from '../MarkdownText';
@@ -170,14 +171,21 @@ function ComponentDetailInner({
   // themeable targets or CSS variables — never an empty tab.
   const hasThemingTab =
     CURRENT_TARGET === 'canary' && hasThemingContent(comp.theming);
-  const hasTabs = hasPlayground || hasThemingTab;
+  const accessibilityRequirements = comp.usage?.accessibility ?? [];
+  const accessibilityThemeCoverage =
+    comp.usage?.accessibilityThemeCoverage ?? [];
+  const hasAccessibilityTab =
+    accessibilityRequirements.length > 0 ||
+    accessibilityThemeCoverage.length > 0;
+  const hasTabs = hasPlayground || hasThemingTab || hasAccessibilityTab;
 
   const requestedTab = searchParams.get('tab') ?? 'overview';
   // Clamp to a tab that actually exists for this component so a stale or
   // hand-edited `?tab=` never lands on a blank panel.
   const tab =
     (requestedTab === 'properties' && hasPlayground) ||
-    (requestedTab === 'theming' && hasThemingTab)
+    (requestedTab === 'theming' && hasThemingTab) ||
+    (requestedTab === 'accessibility' && hasAccessibilityTab)
       ? requestedTab
       : 'overview';
   const setTab = (value: string) => {
@@ -224,6 +232,9 @@ function ComponentDetailInner({
               <Tab value="overview" label="Overview" />
               {hasPlayground && <Tab value="properties" label="Properties" />}
               {hasThemingTab && <Tab value="theming" label="Theming" />}
+              {hasAccessibilityTab && (
+                <Tab value="accessibility" label="Accessibility" />
+              )}
             </TabList>
 
             {tab === 'overview' && (
@@ -273,6 +284,14 @@ function ComponentDetailInner({
 
             {tab === 'theming' && comp.theming && (
               <Theming theming={comp.theming} props={comp.props} />
+            )}
+
+            {tab === 'accessibility' && hasAccessibilityTab && (
+              <Accessibility
+                componentName={comp.name}
+                requirements={accessibilityRequirements}
+                themeCoverage={accessibilityThemeCoverage}
+              />
             )}
           </>
         ) : (

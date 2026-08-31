@@ -5,7 +5,7 @@
 export const docs = {
   name: 'Switch',
   displayName: 'Switch',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'switch',
     'toggle',

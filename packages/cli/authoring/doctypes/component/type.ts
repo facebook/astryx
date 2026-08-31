@@ -5,6 +5,7 @@
  */
 
 import type {
+  ComponentAccessibilityRequirement,
   ComponentAnatomyElement,
   ComponentBestPractice,
   ComponentExampleDoc,
@@ -71,7 +72,8 @@ export interface ComponentBaseDoc {
    *  - `'Chat'` — conversational UI: messages, composers, layouts
    *  - `'Container'` — wrappers: cards, carousels, collapsibles
    *  - `'Content'` — display: text, icons, avatars, code blocks
-   *  - `'Data Input'` — data entry: text fields, selectors, date pickers
+   *  - `'Form Controls'` — data entry: text fields, selectors, date pickers
+   *  - `'Data Input'` — deprecated compatibility alias for `'Form Controls'`
    *  - `'Data Visualization'` — charts, graphs, 3D visualizations
    *  - `'Feedback & Status'` — progress indication: spinners, banners, badges
    *  - `'Layout'` — structural: grid, stack, dividers, app shell
@@ -84,6 +86,7 @@ export interface ComponentBaseDoc {
     | 'Chat'
     | 'Container'
     | 'Content'
+    | 'Form Controls'
     | 'Data Input'
     | 'Data Visualization'
     | 'Feedback & Status'
@@ -251,6 +254,7 @@ export interface ComponentTranslationDoc {
   usage?: {
     description?: string;
     bestPractices?: ComponentBestPractice[];
+    accessibility?: ComponentAccessibilityRequirement[];
     anatomy?: ComponentAnatomyElement[];
   };
   /** Sub-component translations. Must match docs.components length and order (if present). */

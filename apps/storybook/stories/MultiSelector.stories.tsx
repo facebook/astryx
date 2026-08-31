@@ -27,6 +27,10 @@ const meta: Meta<typeof MultiSelector> = {
     placeholder: {control: 'text'},
     size: {control: 'radio', options: ['sm', 'md', 'lg']},
     variant: {control: 'radio', options: ['input', 'ghost']},
+    presentation: {
+      control: 'radio',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+    },
     triggerDisplay: {
       control: 'radio',
       options: ['count', 'labels', 'badges'],
@@ -59,6 +63,22 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Select columns...',
+  },
+};
+
+export const BottomSheetPresentation: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Teams"
+        options={['Design', 'Engineering', 'Marketing', 'Operations']}
+        value={value}
+        onChange={setValue}
+        hasSelectAll
+        presentation="bottom-sheet"
+      />
+    );
   },
 };
 

@@ -1,5 +1,68 @@
 # @xds/cli
 
+# 0.5.2
+
+#### Fixes
+
+- Rename the Data Input component category to Form Controls (#5686)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
+# 0.5.1
+
+#### New Features
+
+- Component docs can declare structured `usage.accessibility` requirements, and `astryx component` renders them as a dedicated Accessibility section in full and compact output. Translated and dense documentation overlays preserve the base accessibility guidance unless they explicitly replace it. (#5646)
+- Icon APIs and themes accept namespaced extension keys, and NumberInput steppers use `numberInput:stepperDown` without widening the required `IconRegistry` keys (#5466)
+  `<Icon icon>`, `useIcon`, and `defineTheme({icons})` accept keys such as `numberInput:stepperDown` and `richtext:bold`; misspelled built-in names remain type errors. NumberInput keeps a compact centered Core fallback, while themes can override its steppers independently from the shared `chevronDown` semantic.
+- Rebuild the `settings-dialog` page template with searchable navigation, responsive grouped controls, live appearance previews, configurable keyboard shortcuts, and docsite gallery visibility. (#5568)
+- New `table-filter` page template: a table page built around a filter token list (#5448)
+  Ports the feature set of the internal XDS table page pattern onto Astryx primitives. The filter row is a token list of quick-filter toggles and field controls — `Selector`, `MultiSelector`, and a `ComplexSelector` wrapping a range `Slider` — that swaps to `PowerSearch` for anything the tokens can't express. Both modes read and write the same `PowerSearchFilter[]`, so a filter built in either survives the swap. Controls carry field chrome when unset and a pressed fill once they hold a value, so the row reads as one family whether a clause came from a toggle or a selector.
+
+  Around that: saved views that capture the filters and the whole table configuration, a bulk-edit bar that slides in on selection, and a view options popover with four panels — a drag-and-drop column transfer list, density, sticky edges, and grouping — that apply instantly. Clicking a row opens a resizable detail panel. The list pages in by infinite scroll against an `IntersectionObserver`, with skeleton rows aligned to the table's own column grid standing in for the batch in flight, and empty states for the no-results and no-data paths. The toolbar wraps to a second row under a container query rather than a viewport one, so it responds to the width the detail panel leaves it.
+
+  Uses the `Table - Filtering` category, already reserved in the `TemplateCategory` union.
+
+#### Fixes
+
+- `build`/`search` no longer rank a partially-matched template above one matching every term, no longer index TypeScript generic arguments as rendered components, and no longer treat breadth of rendered components as full-strength relevance. (#5614)
+- Component and hook names resolve case-exactly on macOS and Windows, matching Linux (#5478)
+  `findComponentReadme`, `findComponentSource` and `findHookDoc` probed candidate paths with `fs.existsSync`, which answers through the filesystem's own case folding. On a case-insensitive filesystem `astryx component button` resolved to `Button` instead of reporting an unknown component with suggestions, and `findHookDoc(core, 'mediaquery')` returned `.../hooks/useMediaquery.doc.mjs` — a spelling that exists nowhere, and that breaks any consumer reading it on Linux. The probes now verify each path segment against its parent's real directory listing, so these component and hook lookups resolve the same names to the same real paths on every host. The deliberate case-insensitive hook lookup is unchanged; it now returns the file's true casing.
+- The 56 `--color-data-*` defaults now reach runtime CSS and built themes from the same source, while dashboard template fallbacks match those defaults (#5562, #5566)
+  The defaults live once at `:root` in `@layer astryx-base`, so nested themes inherit parent overrides and `astryx theme build` matches `<Theme>` while `generateThemeCSS` keeps its existing return shape.
+
+  **Visual change.** A chart or template that previously painted nothing or used a mismatched hex fallback now paints the data token's default. Pin an explicit color to preserve a previous fallback.
+
+- The theme-showcase page no longer clips its own controls. In the store's product cards the quantity field and "Add to cart" button spilled out of both sides of the card; in the checkout card the card number truncated mid-number (`1234 1234 12`), the country selector ellipsized, and the pay button was left with only a few pixels of slack. (#5539)
+  The product-card row is the more visible of the two. It had no width of its own — the enclosing stack centers rather than stretches its children — so it sized to its contents and, being centered, overflowed the card at both edges once those contents outgrew it. That stayed hidden while the quantity field was narrow, and surfaced when `NumberInput` moved to `type="text"` for formatted display: a text input's default `size=20` made the field ~200px instead of ~65px, and the template was pinning it with a `style` `minWidth` (a floor, not a cap) plus `flexShrink: 0`. The field now uses `NumberInput`'s `width` prop, which is what actually sizes a field, and the row is pinned to the card width and allowed to wrap so the button drops to its own full-width line instead of ellipsizing on a narrow card.
+
+  The checkout sat in a grid track with a 200px minimum, so its width was a fraction of however many tracks happened to fit — it swung between 208px and 328px as the viewport resized, and the narrow end is well under what the form needs. Themes with a large spacing scale suffered most: Matcha's `--spacing-5` card padding alone spends 60px of that budget.
+
+  The checkout and chat panels are now a wrapping flex row. They share a row at roughly 1:2 while both flex bases fit, then the chat drops to its own full-width row, which makes 300px a floor for the checkout rather than an accident of the track count. Raising the track minimum instead would have left a tall gap beside the checkout at mid widths, since a two-track row can't hold a two-track span.
+
+  Two narrower fixes ride along, both text the card was breaking rather than fitting: the payment-method grid's minimum goes 70px to 80px so "Google" stops breaking mid-word on Matcha and Y2K, and on phones the card drops one padding step and sheds the card number's decorative start icon, which together buy back the room a 16-digit number needs at 360px.
+
+#### Documentation
+
+- `useAnnounce`, `useTypeahead`, `useInteractiveRole`, `useLongPress`, `useInputStatusIcon`, `useDevWarning` and `useIndicatorFocusRing` are now discoverable. The CLI's hook index is built from the `.doc.mjs` files next to each hook, and these seven shipped without one; so `astryx hook <name>` answered "No hook named", `astryx hook` omitted them and `astryx search` never returned them, while the package exported them with full TSDoc. Agents following the documented discovery workflow concluded the primitives did not exist and hand-rolled replacements; for `useAnnounce` that means a hand-built `aria-live` region, which usually does not announce at all. A test now fails when a hook is exported from the barrel without a doc, so the index cannot silently go stale again. (#5109)
+- rewrite all 46 page template descriptions to describe layout, container, data shape and behaviour — the things that actually differentiate one template from its siblings — instead of the sample data they happen to ship with, so `build` and `search` retrieve them from a description of the problem rather than a guess at the slug. (#5615)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @ernestt
+- @rubyycheung
+
+---
+
 # 0.5.0
 
 #### Breaking Changes

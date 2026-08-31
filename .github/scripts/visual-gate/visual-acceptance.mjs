@@ -12,14 +12,30 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 import {
   isVisualAcceptanceEndpointMaintainer,
   isVisualAcceptanceRecordMaintainer,
 } from './authorization.mjs';
 import {canonicalizePng} from './lib/canonical-png.mjs';
-import {readStoryIndex, shotKey, storiesInPackages} from './lib/plan.mjs';
+import {
+  readStoryIndex,
+  readThemeCatalog,
+  shotKey,
+  stableBaseline,
+  storiesInPackages,
+  withThemeMetadata,
+} from './lib/plan.mjs';
 import {renderReport} from './lib/report.mjs';
+import {loadConfig} from './lib/sources.mjs';
+
+const REPO_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../..',
+);
+const config = loadConfig(REPO_ROOT);
+const themeCatalog = readThemeCatalog(REPO_ROOT);
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -348,6 +364,9 @@ function accept() {
   if (evidence.verdict.status !== 'changed' || evidence.deltas.length === 0) {
     fail('current visual bundle has no delta to accept');
   }
+  if (evidence.deltas.some(delta => delta.kind === 'removed')) {
+    fail('scoped PR acceptance cannot authorize baseline removals');
+  }
   const manifestFile = path.join(
     pages,
     'visual-gate',
@@ -588,10 +607,13 @@ function readTrustedScope() {
   return scope;
 }
 
-function readTrustedBaseline() {
-  const baseline = readJSON(
+function readTrustedBaseline(stories = null) {
+  const raw = readJSON(
     path.join(path.resolve(flag('baseline')), 'manifest.json'),
   );
+  const baseline = stories
+    ? stableBaseline(raw, stories, themeCatalog, REPO_ROOT)
+    : raw;
   if (
     !baseline?.shots ||
     typeof baseline.shots !== 'object' ||
@@ -692,9 +714,14 @@ function trustedPlan() {
   const scope = readTrustedScope();
   if (scope.broadStableVisual)
     fail('broad stable scope must be deferred instead of captured');
-  const {entries: baselineEntries} = readTrustedBaseline();
   const storybookDir = path.resolve(flag('storybook-dir'));
   const output = path.resolve(flag('output'));
+  const allIndexed = readStoryIndex(storybookDir, [], REPO_ROOT);
+  const indexed = storiesInPackages(
+    allIndexed,
+    config.stableStoryPackages,
+  );
+  const {entries: baselineEntries} = readTrustedBaseline(allIndexed);
 
   const baselineThemes = [
     ...new Set(baselineEntries.map(([, shot]) => shot.theme)),
@@ -702,46 +729,54 @@ function trustedPlan() {
   const shots = [];
 
   if (scope.stableComponents.length > 0 || scope.stableThemes.length > 0) {
-    const indexed = storiesInPackages(readStoryIndex(storybookDir, []), [
-      'Core',
-    ]);
-    const stories = new Map();
-    const newTheme = scope.stableThemes.some(
-      theme => !baselineThemes.includes(theme),
-    );
-    for (const [, shot] of baselineEntries) {
-      if (
-        newTheme ||
-        scope.stableThemes.includes(shot.theme) ||
-        scope.stableComponents.includes(shot.component)
-      ) {
-        stories.set(shot.storyId, shot);
+    const indexedStories = new Map(indexed.map(story => [story.id, story]));
+    const add = (story, theme) => {
+      for (const mode of ['light', 'dark']) {
+        const shot = {
+          storyId: story.storyId ?? story.id,
+          title: story.title,
+          name: story.name,
+          component: story.component,
+          packageName: story.packageName,
+          packageNames: story.packageNames,
+          stableVisual: story.stableVisual,
+          theme,
+          mode,
+          reasons: ['trusted:pr-scope'],
+        };
+        shots.push({...shot, key: shotKey(shot)});
+      }
+    };
+
+    const componentStories = new Map();
+    for (const story of indexedStories.values()) {
+      if (scope.stableComponents.includes(story.component)) {
+        componentStories.set(story.storyId ?? story.id, story);
       }
     }
-    for (const story of indexed) {
-      if (scope.stableComponents.includes(story.component))
-        stories.set(story.id, story);
+    for (const story of componentStories.values()) {
+      for (const theme of baselineThemes) add(story, theme);
     }
-    const themes =
-      scope.stableThemes.length > 0 ? scope.stableThemes : baselineThemes;
-    for (const story of stories.values()) {
-      for (const theme of themes) {
-        for (const mode of ['light', 'dark']) {
-          const shot = {
-            storyId: story.storyId ?? story.id,
-            title: story.title,
-            name: story.name,
-            component: story.component,
-            theme,
-            mode,
-            reasons: ['trusted:pr-scope'],
-          };
-          shots.push({...shot, key: shotKey(shot)});
+
+    for (const theme of scope.stableThemes) {
+      const isNew = !baselineThemes.includes(theme);
+      const themeStories = new Map();
+      for (const [, shot] of baselineEntries) {
+        const story = indexedStories.get(shot.storyId) ?? shot;
+        if (isNew || shot.theme === theme) {
+          themeStories.set(shot.storyId, story);
         }
       }
+      for (const story of themeStories.values()) add(story, theme);
     }
   }
-  const unique = [...new Map(shots.map(shot => [shot.key, shot])).values()];
+  const unique = withThemeMetadata(
+    [...new Map(shots.map(shot => [shot.key, shot])).values()],
+    themeCatalog,
+  );
+  if (unique.some(shot => shot.stableThemeVisual !== true)) {
+    fail('trusted stable plan includes a private or canary theme');
+  }
   if (unique.length === 0 || unique.length > 5000) {
     fail(`trusted visual plan has invalid size ${unique.length}`);
   }
@@ -751,14 +786,26 @@ function trustedPlan() {
   );
 }
 
+function acceptedStableShots(acceptance) {
+  if (acceptance.keys.some(entry => entry.kind === 'removed')) {
+    fail('scoped PR promotion cannot remove baseline keys');
+  }
+  const shots = withThemeMetadata(
+    acceptance.keys.map(entry => ({...entry.shot, key: entry.key})),
+    themeCatalog,
+  );
+  if (shots.some(shot => shot.stableThemeVisual !== true)) {
+    fail('accepted stable plan includes a private or canary theme');
+  }
+  return shots;
+}
+
 function plan() {
   const acceptanceFile = path.resolve(flag('acceptance'));
   const acceptance = readJSON(acceptanceFile);
   validateAcceptance(acceptance, {dir: path.dirname(acceptanceFile)});
   const output = path.resolve(flag('output'));
-  const shots = acceptance.keys
-    .filter(entry => entry.kind !== 'removed')
-    .map(entry => ({...entry.shot, key: entry.key}));
+  const shots = acceptedStableShots(acceptance);
   writeJSON(output, shots);
   process.stdout.write(
     `Wrote ${shots.length} post-merge shot(s) to ${output}.\n`,
@@ -778,6 +825,7 @@ function promote() {
 
   const acceptance = readJSON(acceptanceFile);
   validateAcceptance(acceptance, {dir: path.dirname(acceptanceFile)});
+  acceptedStableShots(acceptance);
   const manifestFile = path.join(
     pages,
     'visual-gate',
@@ -822,10 +870,6 @@ function promote() {
       fail(
         `baseline conflict for ${entry.key}: expected ${entry.beforeSha256}, found ${currentBefore}`,
       );
-    }
-    if (entry.kind === 'removed') {
-      actions.push({entry, baselineFile, remove: true});
-      continue;
     }
 
     const acceptedAfter = path.join(acceptedDir, 'after', `${entry.key}.png`);
@@ -890,13 +934,8 @@ function promote() {
 
   for (const action of actions) {
     if (action.alreadyPromoted) continue;
-    if (action.remove) {
-      if (fs.existsSync(action.baselineFile)) fs.rmSync(action.baselineFile);
-      delete manifest.shots[action.entry.key];
-    } else {
-      fs.writeFileSync(action.baselineFile, action.canonicalBytes);
-      manifest.shots[action.entry.key] = action.capturedShot;
-    }
+    fs.writeFileSync(action.baselineFile, action.canonicalBytes);
+    manifest.shots[action.entry.key] = action.capturedShot;
   }
 
   manifest.capturedAt = captureManifest.capturedAt;
@@ -913,12 +952,8 @@ function promote() {
       pr: acceptance.pr,
       headSha: acceptance.headSha,
       mergeSha,
-      promoted: acceptance.keys
-        .filter(entry => entry.kind !== 'removed')
-        .map(entry => entry.key),
-      pruned: acceptance.keys
-        .filter(entry => entry.kind === 'removed')
-        .map(entry => entry.key),
+      promoted: acceptance.keys.map(entry => entry.key),
+      pruned: [],
     },
   ].slice(-200);
   writeJSON(manifestFile, manifest);

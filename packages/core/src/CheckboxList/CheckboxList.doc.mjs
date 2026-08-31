@@ -6,7 +6,7 @@ export const docs = {
   name: 'CheckboxList',
   displayName: 'Checkbox List',
   group: 'Checkbox',
-  category: 'Data Input',
+  category: 'Form Controls',
   isHiddenFromOverview: true,
   keywords: ["checkboxlist","checkbox","checkboxgroup","multichoice","multiselect","checklist"],
   description: 'Checkbox group container with field integration for label, description, and status.',

@@ -5,8 +5,7 @@ export const doc = {
   type: 'page',
   name: 'Project Status Dashboard',
   displayName: 'Project Status Dashboard',
-  description:
-    'Project / program / launch status tracker: a task progress donut (breaking overall completion down by task status, weighted by story points rather than task count), a milestone Gantt timeline with a today marker, a full-width workstream table with owner, %-complete, due date and status pill, a blockers & risks card listing each open item as a row that reveals its detail in a hover card, and a scope burndown chart. A release-phase control filters milestones, workstreams, and risks.',
+  description: 'Status analytics mixing progress and time-axis shapes: a completion donut, a horizontal timeline of dated bars against a today marker, a per-owner table with progress and status, an at-risk list, and a burndown. Project, program, milestone, roadmap, launch, or delivery status.',
   isReady: true,
   category: 'Dashboard - Project Status',
   isHiddenFromOverview: true,

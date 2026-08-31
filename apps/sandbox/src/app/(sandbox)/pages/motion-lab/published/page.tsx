@@ -16,6 +16,7 @@
  */
 
 import {Badge} from '@astryxdesign/core/Badge';
+import * as stylex from '@stylexjs/stylex';
 import {Banner} from '@astryxdesign/core/Banner';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
@@ -35,11 +36,21 @@ import {ComparePanes, DemoCard} from '../LabPrimitives';
 import {LayerRig, LoopRig} from '../LabDemos';
 import {LabPage} from '../PageFrame';
 import {
+  CORRECTED_EXIT_RULE,
   GUIDANCE_CONFLICTS,
+  SOURCES,
   PUBLISHED_PAGE_URL,
   PUBLISHED_SECTIONS,
   type GuidanceConflict,
 } from '../publishedGuidance';
+
+const sx = stylex.create({
+  quote: {
+    borderInlineStart: '2px solid var(--color-border)',
+    paddingInlineStart: '12px',
+    maxWidth: '62ch',
+  },
+});
 
 type Severity = GuidanceConflict['severity'];
 
@@ -54,6 +65,11 @@ const SEVERITY: Record<
     variant: 'error',
     question:
       'Two documents give opposite instructions. One of them has to move first.',
+  },
+  overreach: {
+    variant: 'warning',
+    question:
+      'The proposal claims more than its own cited sources support, and the published text sits closer to them. Narrow the proposal rather than rewriting the page.',
   },
   extension: {
     variant: 'warning',
@@ -118,7 +134,7 @@ export default function PublishedGuidancePage() {
       title="Against the published page"
       intro="Every proposal in the brief, beside the paragraph of astryx.atmeta.com/docs/motion it lands on. Quotes are verbatim, so this page can be diffed against the live one."
       badges={<Badge variant="error" label={`${reversals.length} reversals`} />}
-      decides="Which proposals are bug fixes and which are reversals of guidance Astryx publishes today.">
+      decides="Which proposals are bug fixes, which are reversals of published guidance, and which overreach their own sources.">
       <Banner
         status="error"
         title={`${reversals.length} of the ${GUIDANCE_CONFLICTS.length} conflicts reverse published guidance`}
@@ -221,6 +237,46 @@ export default function PublishedGuidancePage() {
       ))}
 
       <VStack gap={3}>
+        <Heading level={2}>Where the exit rules come from</Heading>
+        <Text color="secondary">
+          Two of the conflicts above are marked <em>overreach</em> rather than{' '}
+          <em>reversal</em>, which is a claim about evidence and so it should
+          show its working. The brief cites Emil Kowalski&rsquo;s animation
+          guidance and beUI as references, so those are the standard it can be
+          held to. Read against them the word &ldquo;exit&rdquo; comes apart
+          into two rules with very different support.
+        </Text>
+        <VStack gap={4}>
+          {SOURCES.map(entry => (
+            <Card key={entry.claim} variant="muted">
+              <VStack gap={2}>
+                <Text weight="semibold">{entry.claim}</Text>
+                {entry.support.map(sup => (
+                  <VStack key={sup.source} gap={0.5}>
+                    <Text type="supporting" color="secondary">
+                      {sup.source}
+                    </Text>
+                    <Text {...stylex.props(sx.quote)}>
+                      <em>&ldquo;{sup.says}&rdquo;</em>
+                    </Text>
+                  </VStack>
+                ))}
+                <Text type="supporting">{entry.verdict}</Text>
+              </VStack>
+            </Card>
+          ))}
+        </VStack>
+        <Banner
+          status="success"
+          title="The rule the sources actually support"
+          description={<Text>{CORRECTED_EXIT_RULE}</Text>}
+          endContent={
+            <AstryxLink href="/pages/motion-lab/exit-gap/">
+              Which surfaces that covers
+            </AstryxLink>
+          }
+        />
+
         <Heading level={2}>Scope of the doc rewrite</Heading>
         <Text color="secondary">
           {`${noted.length} of the ${PUBLISHED_SECTIONS.length} sections of the live page need something. Two of them are the reversals above and cannot be deferred: the rubric has no authority while the page contradicts it. The rest are additions — the page is accurate about what exists, and silent about how to choose.`}
