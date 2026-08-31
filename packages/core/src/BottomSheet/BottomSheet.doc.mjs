@@ -1,4 +1,33 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Sheet panel',
+    required: true,
+    description:
+      'Painted surface that rises from the bottom edge and contains the sheet.',
+  },
+  {
+    name: 'Content area',
+    required: true,
+    description:
+      'Scrollable area that presents the caller-provided sheet content.',
+  },
+  {
+    name: 'Handle',
+    required: true,
+    description:
+      'Decorative grab affordance and drag region at the top of the panel.',
+  },
+  {
+    name: 'Scrim',
+    required: false,
+    description:
+      'Backdrop that dims and blocks the page in a scrim-backed presentation.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -126,6 +155,7 @@ export const docs = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'A mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for multi-step flows.',
     bestPractices: [
@@ -277,6 +307,7 @@ export const docsDense = {
   description:
     'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, opt-in transform-based drag-to-resize snap points (snapPoints: viewport fraction, percent or px length), scrolling area resizes to the snapped visible height on release (a peek stop, a quarter of the sheet or less, keeps the full height and slides instead), Dialog-aligned dismissal purpose (info/form/required), purpose-gated swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
   usage: {
+    anatomy,
     description:
       'Mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for multi-step flows.',
     bestPractices: [
