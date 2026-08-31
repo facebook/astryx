@@ -73,6 +73,18 @@ export default function PreviewsPage() {
         <DemoBody>
           <TokenSlider token="--duration-reveal" label="travel" max={700} />
           <Text type="supporting" color="secondary">
+            Both panes here are core&rsquo;s <code>TabList</code>. The right one
+            is a swizzled copy of that same source with three changes — a{' '}
+            <code>hasTravellingIndicator</code> prop, one indicator in the strip
+            positioned over the selected tab, and a context flag telling each
+            Tab to suppress the indicator it draws for itself. It lives at{' '}
+            <code>proposed/TabList/</code>, so the difference you are watching
+            is the diff. The position is measured from the DOM rather than
+            tracked in state, because the tabs size themselves — that
+            ResizeObserver is the only real cost the proposal adds, and is the
+            part to review if it ships.
+          </Text>
+          <Text type="supporting" color="secondary">
             The proposed pane uses <code>--ease-move</code> rather than the
             entry curve, because the indicator is already on screen: it needs a
             legible path, not an arrival accent. This is also the strongest
@@ -142,6 +154,21 @@ export default function PreviewsPage() {
             the animation on the compositor but leaves the content beside it
             un-reflowed until the end, which reads worse than the layout cost.
             Worth prototyping both before granting the exception.
+          </Text>
+          <Text type="supporting" color="secondary">
+            <strong>
+              Both panes here are approximated, not the real component.{' '}
+            </strong>
+            A fork of core&rsquo;s <code>SideNav</code> needs{' '}
+            <code>SideNavCollapseContext</code> on the public surface —{' '}
+            <code>SideNav</code> is a provider and core exports only the reader
+            hook. Importing the context by relative path compiles and is
+            silently wrong: the app resolves to <code>dist</code> while the
+            relative path reaches <code>src</code>, so the fork provides one
+            context object and core&rsquo;s own children read another. The
+            one-line fix is a public API surface change and wants its own
+            review, so this demo stays weaker than the TabList one below it
+            until that lands.
           </Text>
         </DemoBody>
       </DemoCard>
@@ -231,7 +258,7 @@ export default function PreviewsPage() {
             panes={[
               {
                 tone: 'before',
-                label: 'Today',
+                label: 'Today — real CheckboxInput',
                 content: <CheckTickRig technique="hard" />,
               },
               {

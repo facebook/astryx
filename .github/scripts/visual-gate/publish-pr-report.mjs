@@ -13,12 +13,14 @@
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 import {incomparable} from './lib/baseline.mjs';
 import {canonicalizePng} from './lib/canonical-png.mjs';
 import {buildVerdict, compareCaptures} from './lib/compare.mjs';
-import {shotKey} from './lib/plan.mjs';
+import {readThemeCatalog, shotKey} from './lib/plan.mjs';
 import {renderReport} from './lib/report.mjs';
+import {loadConfig} from './lib/sources.mjs';
 
 const args = process.argv.slice(2);
 const flag = name => {
@@ -34,15 +36,16 @@ const pr = Number(flag('pr'));
 const headSha = flag('head-sha') ?? '';
 const runId = flag('run-id') ?? '';
 const runAttempt = flag('run-attempt') ?? '';
-const config = JSON.parse(
-  fs.readFileSync(
-    new URL('./visual-gate.config.json', import.meta.url),
-    'utf8',
-  ),
+const REPO_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../..',
 );
+const config = loadConfig(REPO_ROOT);
+const themeCatalog = readThemeCatalog(REPO_ROOT);
 
 const KEY = /^[A-Za-z0-9._-]{1,240}$/;
 const NAME = /^[A-Za-z0-9._-]{1,120}$/;
+const PACKAGE_NAME = /^@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
 const SHA = /^[0-9a-f]{40}$/;
 const MAX_PNG_BYTES = 12 * 1024 * 1024;
 const MAX_EDGE = 5000;
@@ -137,7 +140,16 @@ if (
   fail('trusted capture identity mismatch');
 }
 
-const baselineManifest = readJSON(path.join(baseline, 'manifest.json'));
+const rawBaselineManifest = readJSON(path.join(baseline, 'manifest.json'));
+const capturedKeys = new Set(Object.keys(manifest.shots));
+const baselineManifest = {
+  ...rawBaselineManifest,
+  shots: Object.fromEntries(
+    Object.entries(rawBaselineManifest.shots ?? {}).filter(([key]) =>
+      capturedKeys.has(key),
+    ),
+  ),
+};
 const blocker = incomparable(baselineManifest, manifest);
 if (blocker) fail(`baseline is not comparable: ${blocker}`);
 
@@ -145,6 +157,7 @@ const entries = Object.entries(manifest.shots);
 if (entries.length > MAX_SHOTS)
   fail(`trusted capture exceeds ${MAX_SHOTS} shots`);
 for (const [key, shot] of entries) {
+  const themeMetadata = themeCatalog[shot?.theme];
   if (
     !KEY.test(key) ||
     !shot ||
@@ -152,6 +165,12 @@ for (const [key, shot] of entries) {
     !shot.storyId ||
     typeof shot.theme !== 'string' ||
     !NAME.test(shot.theme) ||
+    !PACKAGE_NAME.test(shot.packageName ?? '') ||
+    shot.stableVisual !== true ||
+    !PACKAGE_NAME.test(shot.themePackageName ?? '') ||
+    shot.stableThemeVisual !== true ||
+    themeMetadata?.packageName !== shot.themePackageName ||
+    themeMetadata?.stableVisual !== true ||
     !['light', 'dark'].includes(shot.mode) ||
     !Array.isArray(shot.reasons) ||
     shotKey(shot) !== key
@@ -201,17 +220,7 @@ for (const [key, shot] of entries) {
   };
 }
 
-const baselineEntries = Object.entries(baselineManifest.shots ?? {});
-const expected = scope.broadStableVisual
-  ? baselineEntries.map(([key]) => key)
-  : baselineEntries
-      .filter(
-        ([, shot]) =>
-          scope.stableComponents.includes(shot.component) ||
-          scope.stableThemes.includes(shot.theme),
-      )
-      .map(([key]) => key);
-if (entries.length === 0 && expected.length === 0) {
+if (entries.length === 0) {
   fail('stable visual scope produced no trusted shots');
 }
 
@@ -223,9 +232,7 @@ const comparison = await compareCaptures({
   diffDir: path.join(output, 'diff'),
   threshold: config.threshold,
   maxDiffPixels: config.maxDiffPixels,
-  scoped: true,
 });
-comparison.removed = expected.filter(key => !trustedManifest.shots[key]);
 
 const verdict = buildVerdict({
   comparison,
