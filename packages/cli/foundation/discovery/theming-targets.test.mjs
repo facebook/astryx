@@ -67,6 +67,34 @@ describe('collectThemingTargets', () => {
     });
   });
 
+  it.each([
+    ['TableHeader', 'table-header'],
+    ['TableBody', 'table-body'],
+    ['TableFooter', 'table-footer'],
+  ])('keeps %s theming metadata available in its direct doc', async (name, key) => {
+    const doc = await loadComponentDoc(
+      path.join(coreSrc, 'Table', `${name}.doc.mjs`),
+    );
+    expect(doc.subComponentOf).toBe('Table');
+    expect(doc.theming.targets).toContainEqual({className: `astryx-${key}`});
+  });
+
+  it.each(['table-header', 'table-body', 'table-footer'])(
+    'enumerates %s once under its canonical Table owner',
+    async key => {
+      const matches = (await enumerated).filter(target => target.key === key);
+      expect(matches).toEqual([
+        {
+          key,
+          className: `astryx-${key}`,
+          component: 'Table',
+          props: [],
+          states: [],
+        },
+      ]);
+    },
+  );
+
   it('is sorted by key, so a diff of two runs is readable', async () => {
     const keys = (await enumerated).map(t => t.key);
     expect(keys).toEqual([...keys].sort((a, b) => a.localeCompare(b)));
@@ -78,9 +106,10 @@ describe('collectThemingTargets', () => {
   it('collapses to the override keys, merging the components that share one', async () => {
     const byKey = targetsByKey(await enumerated);
     expect(byKey['switch']).toEqual(['size', 'checked', 'disabled']);
-    // `radio` is documented by both Indicator and RadioList.
+    // `radio` is documented by two unrelated owners. Parent/child
+    // canonicalization must not collapse a shared target across families.
     const radio = (await enumerated).filter(t => t.key === 'radio');
-    expect(radio.length).toBeGreaterThan(1);
+    expect(radio.map(t => t.component)).toEqual(['Indicator', 'RadioList']);
     for (const t of radio) {
       for (const name of [...t.props, ...t.states]) {
         expect(byKey['radio']).toContain(name);

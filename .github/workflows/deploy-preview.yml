@@ -1,217 +1,286 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# Deploy PR Preview — publishes the Storybook + Sandbox preview for ALL PRs.
-#
-# Runs on workflow_run after CI completes, NOT on pull_request. That matters:
-# a pull_request workflow triggered by a fork gets a READ-ONLY token and can't
-# push to gh-pages, which is why fork PRs never got a preview. workflow_run runs
-# from the base repo with the repo's own write token, so it can deploy previews
-# for fork PRs too — one code path for every PR, no drift between a fork path
-# and a same-repo path (mirrors pr-comment.yml).
-#
-# Safety: this NEVER checks out or runs PR-controlled code. It only downloads
-# the pre-built static artifacts (storybook-<hash>, sandbox-<hash>) that CI
-# already produced and copies them into gh-pages. Do not add checkout of the PR
-# head or execution of PR code here.
+# Trusted preview publisher used by pr-comment.yml after an exact pull-request CI
+# run completes. The caller resolves the source identity; this workflow verifies
+# it again, downloads only that run's static artifacts, and records the published
+# targets in a result produced by the shared gh-pages publisher.
 
 name: Deploy PR Preview
 
 on:
-  workflow_run:
-    workflows: ['CI']
-    types: [completed]
+  workflow_call:
+    inputs:
+      pr_number:
+        required: true
+        type: string
+      head_sha:
+        required: true
+        type: string
+      head_repository:
+        required: true
+        type: string
+      head_repository_id:
+        required: true
+        type: string
+      head_ref:
+        required: true
+        type: string
+      base_repository:
+        required: true
+        type: string
+      source_run_id:
+        required: true
+        type: string
+      source_run_attempt:
+        required: true
+        type: string
+      source_conclusion:
+        required: true
+        type: string
 
 permissions: {}
 
-# Serialize preview deploys per source branch (≈ per PR). Two pushes to the same
-# PR shouldn't race each other's gh-pages push; cross-PR and main-deploy conflicts
-# are handled by the retry loop below. head_branch is the only PR-stable key
-# available in workflow_run context (the PR number isn't known until we parse the
-# artifact). Not cancel-in-progress: let an in-flight deploy finish its push.
-concurrency:
-  group: 'pr-preview-${{ github.event.workflow_run.head_branch }}'
-  cancel-in-progress: false
-
 jobs:
   deploy-preview:
-    # Only for CI runs triggered by a pull request.
-    if: github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-slim
     permissions:
       actions: read
       contents: write
       pull-requests: read
     steps:
-      - name: Checkout publisher
+      - name: Checkout trusted publisher
         uses: actions/checkout@v7
         with:
           ref: main
 
-      - name: Resolve trusted preview target
-        id: preview
+      - name: Confirm trusted source and preview identity
+        id: identity
         uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ inputs.pr_number }}
+          HEAD_SHA: ${{ inputs.head_sha }}
+          HEAD_REPOSITORY: ${{ inputs.head_repository }}
+          HEAD_REPOSITORY_ID: ${{ inputs.head_repository_id }}
+          HEAD_REF: ${{ inputs.head_ref }}
+          BASE_REPOSITORY: ${{ inputs.base_repository }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ inputs.source_run_attempt }}
+          SOURCE_CONCLUSION: ${{ inputs.source_conclusion }}
         with:
           retries: 3
           script: |
-            const run = context.payload.workflow_run;
-            const {owner, repo} = context.repo;
-            if (run.conclusion !== 'success') {
-              core.info(`CI run ${run.id} concluded ${run.conclusion}; preview deploy is not ready.`);
-              core.setOutput('ready', 'false');
-              return;
-            }
-            const pullByNumber = async number =>
-              (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
-            let candidates = [];
-            for (const pr of run.pull_requests ?? []) {
-              if (pr.number) candidates.push(await pullByNumber(pr.number));
-            }
-            if (candidates.length === 0) {
-              candidates = await github.paginate(
-                github.rest.repos.listPullRequestsAssociatedWithCommit,
-                {owner, repo, commit_sha: run.head_sha, per_page: 100},
-              );
-            }
-            const matches = candidates.filter(pr =>
-              pr.state === 'open' &&
-              pr.head?.sha === run.head_sha &&
-              pr.head?.ref === run.head_branch &&
-              String(pr.head?.repo?.id ?? '') === String(run.head_repository?.id ?? ''),
+            const {pathToFileURL} = require('node:url');
+            const preview = await import(
+              pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/lib/pr-preview.mjs`).href
             );
-            if (matches.length !== 1) {
-              core.setFailed(`Could not resolve one open PR for CI run ${run.id} at ${run.head_sha}.`);
-              return;
-            }
-            const pr = matches[0];
-            if (pr.draft) {
-              core.info(`PR #${pr.number} is draft; preview deploy is not ready.`);
-              core.setOutput('ready', 'false');
-              return;
-            }
-            core.setOutput('ready', 'true');
-            core.setOutput('pr_number', String(pr.number));
-            core.setOutput('head_sha', pr.head.sha);
-            core.setOutput('head_repo_id', String(pr.head.repo.id));
-            core.setOutput('head_ref', pr.head.ref);
-            core.setOutput('short_hash', pr.head.sha.slice(0, 7));
+            const expected = {
+              prNumber: Number(process.env.PR_NUMBER),
+              headSha: process.env.HEAD_SHA,
+              headRepository: process.env.HEAD_REPOSITORY,
+              headRepositoryId: process.env.HEAD_REPOSITORY_ID,
+              headRef: process.env.HEAD_REF,
+              baseRepository: process.env.BASE_REPOSITORY,
+              sourceRunId: Number(process.env.SOURCE_RUN_ID),
+              sourceRunAttempt: Number(process.env.SOURCE_RUN_ATTEMPT),
+              sourceConclusion: process.env.SOURCE_CONCLUSION,
+            };
+            const identity = await preview.confirmSourceRunIdentity({
+              github,
+              ...context.repo,
+              expected,
+            });
+            const reason =
+              identity.sourceConclusion === 'success'
+                ? identity.draft ? 'draft-pull-request' : 'publication-pending'
+                : `source-${identity.sourceConclusion || 'unknown'}`;
+            preview.writeDeploymentResult(
+              'preview-deployment.json',
+              preview.createUnavailableDeploymentResult(identity, reason),
+            );
+            core.setOutput('valid', 'true');
+            core.setOutput(
+              'eligible',
+              String(identity.sourceConclusion === 'success' && !identity.draft),
+            );
+            core.setOutput('short_hash', identity.headSha.slice(0, 7));
 
-      - name: Download PR metadata from the CI run
-        if: steps.preview.outputs.ready == 'true'
-        id: meta
+      - name: Download PR metadata from the exact CI run
+        if: steps.identity.outputs.eligible == 'true'
         uses: actions/download-artifact@v8
         with:
           name: pr-analysis
           path: pr-analysis
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ inputs.source_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Cross-check artifact identity
         id: artifact
-        if: steps.preview.outputs.ready == 'true'
-        env:
-          EXPECTED_PR: ${{ steps.preview.outputs.pr_number }}
-          EXPECTED_HEAD: ${{ steps.preview.outputs.head_sha }}
-          EXPECTED_RUN: ${{ github.event.workflow_run.id }}
-        run: |
-          if [ ! -f pr-analysis/pr-meta.json ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::No pr-meta.json — docsite-only or skipped PR, nothing to deploy."
-            exit 0
-          fi
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const meta = JSON.parse(fs.readFileSync('pr-analysis/pr-meta.json', 'utf8'));
-          const fail = message => { console.error(`::error::${message}`); process.exit(1); };
-          if (String(meta.prNumber) !== process.env.EXPECTED_PR) fail('artifact PR number does not match trusted PR');
-          const shortHash = String(meta.shortHash ?? '');
-          if (!/^[0-9a-f]{7,40}$/.test(shortHash)) fail('artifact head is not a valid hash');
-          if (!process.env.EXPECTED_HEAD.startsWith(shortHash)) fail('artifact head does not match trusted PR head');
-          if (String(meta.runId) !== process.env.EXPECTED_RUN) fail('artifact run id does not match workflow_run');
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'ready=true\n');
-          NODE
-
-      - name: Download Storybook artifact
-        id: dl-storybook
-        if: steps.preview.outputs.ready == 'true' && steps.artifact.outputs.ready == 'true'
-        uses: actions/download-artifact@v8
-        with:
-          name: storybook-${{ steps.preview.outputs.short_hash }}
-          path: storybook-dist
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        # Don't red-X the run if the artifact is gone (expired past retention, or
-        # a run that never produced it). The verify step below turns a missing
-        # artifact into a clean skip, not a failure — a preview is best-effort.
-        continue-on-error: true
-
-      - name: Download Sandbox artifact
-        id: dl-sandbox
-        if: steps.preview.outputs.ready == 'true' && steps.artifact.outputs.ready == 'true'
-        uses: actions/download-artifact@v8
-        with:
-          name: sandbox-${{ steps.preview.outputs.short_hash }}
-          path: sandbox-dist
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Verify preview artifacts are present
-        id: verify
-        if: steps.preview.outputs.ready == 'true' && steps.artifact.outputs.ready == 'true'
-        run: |
-          # A missing/expired artifact is not an error — deploy is best-effort.
-          # Skip cleanly (green) with a warning rather than failing CI for every
-          # contributor. Both dirs must exist AND be non-empty to deploy.
-          if [ -d storybook-dist ] && [ -n "$(ls -A storybook-dist 2>/dev/null)" ] && \
-             [ -d sandbox-dist ] && [ -n "$(ls -A sandbox-dist 2>/dev/null)" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Preview artifacts missing or empty (likely expired past retention) — skipping preview deploy for this run."
-          fi
-
-      - name: Confirm preview target before publish
-        id: final-preview
-        if: >-
-          steps.preview.outputs.ready == 'true' &&
-          steps.artifact.outputs.ready == 'true' &&
-          steps.verify.outputs.ready == 'true'
+        if: steps.identity.outputs.eligible == 'true'
         uses: actions/github-script@v9
         env:
-          PR_NUMBER: ${{ steps.preview.outputs.pr_number }}
-          HEAD_SHA: ${{ steps.preview.outputs.head_sha }}
-          HEAD_REF: ${{ steps.preview.outputs.head_ref }}
-          HEAD_REPO_ID: ${{ steps.preview.outputs.head_repo_id }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          HEAD_SHA: ${{ inputs.head_sha }}
+          HEAD_REPOSITORY: ${{ inputs.head_repository }}
+          BASE_REPOSITORY: ${{ inputs.base_repository }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ inputs.source_run_attempt }}
         with:
-          retries: 3
           script: |
-            const {owner, repo} = context.repo;
-            const pr = (await github.rest.pulls.get({
-              owner,
-              repo,
-              pull_number: Number(process.env.PR_NUMBER),
-            })).data;
-            if (
-              pr.state !== 'open' ||
-              pr.draft ||
-              pr.head.sha !== process.env.HEAD_SHA ||
-              pr.head.ref !== process.env.HEAD_REF ||
-              String(pr.head.repo?.id ?? '') !== process.env.HEAD_REPO_ID
-            ) {
-              core.info(`PR #${process.env.PR_NUMBER} is no longer the trusted preview target.`);
+            const fs = require('node:fs');
+            const {pathToFileURL} = require('node:url');
+            if (!fs.existsSync('pr-analysis/pr-meta.json')) {
+              core.warning('No current pr-meta.json; preview targets are unavailable.');
               core.setOutput('ready', 'false');
               return;
             }
-            core.setOutput('ready', 'true');
+            const preview = await import(
+              pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/lib/pr-preview.mjs`).href
+            );
+            try {
+              preview.validateAnalysisMetadata(
+                JSON.parse(fs.readFileSync('pr-analysis/pr-meta.json', 'utf8')),
+                {
+                  prNumber: Number(process.env.PR_NUMBER),
+                  headSha: process.env.HEAD_SHA,
+                  headRepository: process.env.HEAD_REPOSITORY,
+                  baseRepository: process.env.BASE_REPOSITORY,
+                  sourceRunId: Number(process.env.SOURCE_RUN_ID),
+                  sourceRunAttempt: Number(process.env.SOURCE_RUN_ATTEMPT),
+                },
+              );
+              core.setOutput('ready', 'true');
+            } catch (error) {
+              core.warning(`Ignoring invalid preview metadata: ${error.message}`);
+              core.setOutput('ready', 'false');
+            }
 
-      - name: Deploy PR preview to GitHub Pages
-        if: steps.final-preview.outputs.ready == 'true'
+      - name: Download Storybook artifact
+        if: steps.artifact.outputs.ready == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ steps.identity.outputs.short_hash }}
+          path: storybook-dist
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Download Sandbox artifact
+        if: steps.artifact.outputs.ready == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: sandbox-${{ steps.identity.outputs.short_hash }}
+          path: sandbox-dist
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Detect independently available preview targets
+        id: targets
+        if: always() && steps.identity.outputs.valid == 'true'
+        run: |
+          if [ "${{ steps.artifact.outputs.ready }}" = 'true' ] && [ -f storybook-dist/index.html ]; then
+            echo "storybook=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "storybook=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "${{ steps.artifact.outputs.ready }}" = 'true' ] && [ -f sandbox-dist/index.html ]; then
+            echo "sandbox=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "sandbox=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Confirm preview target immediately before publication
+        id: final
+        if: always() && steps.identity.outputs.valid == 'true'
+        uses: actions/github-script@v9
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ steps.preview.outputs.pr_number }}
-        run: >
-          node .github/scripts/gh-pages-publisher.mjs pr-preview
-          --pr "$PR_NUMBER"
-          --storybook storybook-dist
-          --sandbox sandbox-dist
+          PR_NUMBER: ${{ inputs.pr_number }}
+          HEAD_SHA: ${{ inputs.head_sha }}
+          HEAD_REPOSITORY: ${{ inputs.head_repository }}
+          HEAD_REPOSITORY_ID: ${{ inputs.head_repository_id }}
+          HEAD_REF: ${{ inputs.head_ref }}
+          BASE_REPOSITORY: ${{ inputs.base_repository }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ inputs.source_run_attempt }}
+          SOURCE_CONCLUSION: ${{ inputs.source_conclusion }}
+          STORYBOOK_CANDIDATE: ${{ steps.targets.outputs.storybook }}
+          SANDBOX_CANDIDATE: ${{ steps.targets.outputs.sandbox }}
+        with:
+          retries: 3
+          script: |
+            const {pathToFileURL} = require('node:url');
+            const preview = await import(
+              pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/lib/pr-preview.mjs`).href
+            );
+            const identity = await preview.confirmSourceRunIdentity({
+              github,
+              ...context.repo,
+              expected: {
+                prNumber: Number(process.env.PR_NUMBER),
+                headSha: process.env.HEAD_SHA,
+                headRepository: process.env.HEAD_REPOSITORY,
+                headRepositoryId: process.env.HEAD_REPOSITORY_ID,
+                headRef: process.env.HEAD_REF,
+                baseRepository: process.env.BASE_REPOSITORY,
+                sourceRunId: Number(process.env.SOURCE_RUN_ID),
+                sourceRunAttempt: Number(process.env.SOURCE_RUN_ATTEMPT),
+                sourceConclusion: process.env.SOURCE_CONCLUSION,
+              },
+            });
+            const mayPublish = identity.sourceConclusion === 'success' && !identity.draft;
+            core.setOutput('ready', 'true');
+            core.setOutput(
+              'storybook',
+              String(mayPublish && process.env.STORYBOOK_CANDIDATE === 'true'),
+            );
+            core.setOutput(
+              'sandbox',
+              String(mayPublish && process.env.SANDBOX_CANDIDATE === 'true'),
+            );
+
+      - name: Publish trusted preview result
+        if: always() && steps.final.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          HEAD_SHA: ${{ inputs.head_sha }}
+          HEAD_REPOSITORY: ${{ inputs.head_repository }}
+          HEAD_REPOSITORY_ID: ${{ inputs.head_repository_id }}
+          HEAD_REF: ${{ inputs.head_ref }}
+          BASE_REPOSITORY: ${{ inputs.base_repository }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ inputs.source_run_attempt }}
+          SOURCE_CONCLUSION: ${{ inputs.source_conclusion }}
+          STORYBOOK_AVAILABLE: ${{ steps.final.outputs.storybook }}
+          SANDBOX_AVAILABLE: ${{ steps.final.outputs.sandbox }}
+        run: |
+          args=(
+            pr-preview
+            --pr "$PR_NUMBER"
+            --head "$HEAD_SHA"
+            --head-repo "$HEAD_REPOSITORY"
+            --head-repo-id "$HEAD_REPOSITORY_ID"
+            --head-ref "$HEAD_REF"
+            --base-repo "$BASE_REPOSITORY"
+            --source-run-id "$SOURCE_RUN_ID"
+            --source-run-attempt "$SOURCE_RUN_ATTEMPT"
+            --source-conclusion "$SOURCE_CONCLUSION"
+            --result preview-deployment.json
+          )
+          if [ "$STORYBOOK_AVAILABLE" = 'true' ]; then
+            args+=(--storybook storybook-dist)
+          fi
+          if [ "$SANDBOX_AVAILABLE" = 'true' ]; then
+            args+=(--sandbox sandbox-dist)
+          fi
+          node .github/scripts/gh-pages-publisher.mjs "${args[@]}"
+
+      - name: Upload trusted preview result
+        if: always() && hashFiles('preview-deployment.json') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: preview-deployment-${{ inputs.source_run_id }}-${{ inputs.source_run_attempt }}
+          path: preview-deployment.json
+          if-no-files-found: error
+          retention-days: 1

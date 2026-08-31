@@ -34,11 +34,26 @@ export const docs = {
     ],
     anatomy: [
       {
-        name: 'Base-only anatomy',
+        name: 'Track',
         required: true,
-        description: 'This must not leak into translated output.',
+        description: 'The rail that shows the current on/off state.',
+      },
+      {
+        name: 'Thumb',
+        required: true,
+        description: 'The control that moves along the track.',
       },
     ],
+  },
+  props: [],
+};
+
+export const docsZh = {
+  name: 'AccessibilityOverlayFixture',
+  displayName: 'Accessibility Overlay Fixture',
+  category: 'Test',
+  usage: {
+    description: 'Translated full-doc description.',
   },
   props: [],
 };

@@ -89,6 +89,11 @@ guidance owns the process used to propose and test APIs.
   explicit compatibility decision and migration.
 - **INV10 — Shared subcontracts are linked, not copied.** Input Actions, layer
   behavior, theming, and family-specific rules stay with their owning records.
+- **INV11 — Public theme seams pass API admission.** A public semantic CSS custom
+  property is admitted only for caller-owned intent that the target's guaranteed
+  CSS property set cannot express. Its theming record owns the exact purpose,
+  stable default/fallback, scope, documentation, evidence, and compatibility
+  contract; an internal styling gap alone does not justify public API.
 
 This record applies to stable public packages. Lab components are not stable
 public promises until promotion.
@@ -96,11 +101,19 @@ public promises until promotion.
 ## Change coupling
 
 - Adding or changing an exported prop, type, default, package entry point, ref
-  target, or observable behavior triggers public-API review.
-- Consumer docs and representative tests change with the API in the same pull
-  request.
+  target, or intentional observable contract triggers public-API review.
+- A bug fix that restores an existing current contract or standard is
+  `preserves`. It requires regression evidence, but it does not create a new API
+  decision.
+- Consumer docs change when consumer usage or a documented promise changes, or
+  when the existing docs would otherwise become false. Fixing an implementation
+  defect does not by itself require consumer-doc changes.
 - A new prop includes the admission argument from `spec:AST-002/DEC-1`; it does
   not get accepted only because it solves one callsite.
+- A new public semantic CSS custom property includes the same admission argument
+  and shows why the target's guaranteed CSS property set cannot express the
+  caller-owned need. Its detailed contract and evidence stay in the owning
+  theming/component records.
 - A released breaking change includes the compatibility decision and migration
   evidence required by the release process.
 - Changes to a family-owned API update the family contract rather than copying
@@ -132,6 +145,7 @@ copy the component matrix.
 | INV3, INV4              | Historical API review benchmark and `spec:AST-002` evidence     | A prop combines unrelated axes or exposes a derivable implementation choice                  |
 | INV5, INV6, INV7        | BaseProps/passthrough lint and representative runtime tests     | Consumer ARIA/data/style/events are dropped, clobber component semantics, or fail to compose |
 | INV9                    | Published-surface, Changeset, migration, and public-type checks | A released API changes without explicit compatibility evidence                               |
+| INV11                   | Public-API admission review plus owning theming/component tests | A public semantic custom property exposes derivable or unsupported implementation detail     |
 | Consumer-doc projection | `docPropReferences.test.ts` and `docPropLiterals.test.ts`       | Docs name a nonexistent prop or omit public literal choices                                  |
 
 Known verification gaps:

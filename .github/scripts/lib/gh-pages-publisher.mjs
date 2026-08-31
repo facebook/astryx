@@ -2,10 +2,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+
+import {
+  createPreviewPublicationManifest,
+  createPublishedDeploymentResult,
+  writeDeploymentResult,
+} from './pr-preview.mjs';
 
 const PAGES_BRANCH = 'gh-pages';
 const QUEUE_REL = path.join('.astryx-gh-pages', 'publication-queue');
@@ -1541,9 +1548,42 @@ export async function publishManualVisualBaseline({
   refuse(`could not push the updated baseline after ${maxAttempts} attempts`);
 }
 
-function removeContents(destination) {
-  fs.rmSync(destination, {recursive: true, force: true});
+const PREVIEW_MANIFEST = '.astryx-preview.json';
+const PREVIEW_RESERVED_ROOTS = new Set([PREVIEW_MANIFEST, 'sandbox', 'visual']);
+
+function previewDirectory(value, name, {storybook = false} = {}) {
+  if (!value) return null;
+  const directory = path.resolve(value);
+  if (!fs.existsSync(directory) || !fs.statSync(directory).isDirectory()) {
+    refuse(`${name} must be a directory`);
+  }
+  const index = path.join(directory, 'index.html');
+  if (!fs.existsSync(index) || !fs.statSync(index).isFile()) {
+    refuse(`${name} must contain index.html`);
+  }
+  if (storybook) {
+    for (const reserved of PREVIEW_RESERVED_ROOTS) {
+      if (fs.existsSync(path.join(directory, reserved))) {
+        refuse(`${name} contains reserved path ${reserved}`);
+      }
+    }
+  }
+  return directory;
+}
+
+function sha256(file) {
+  return createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+function clearPreviewContents(destination) {
   fs.mkdirSync(destination, {recursive: true});
+  for (const entry of fs.readdirSync(destination, {withFileTypes: true})) {
+    if (entry.name === 'visual') continue;
+    fs.rmSync(path.join(destination, entry.name), {
+      recursive: true,
+      force: true,
+    });
+  }
 }
 
 export async function publishPrPreview({
@@ -1552,8 +1592,17 @@ export async function publishPrPreview({
   tempRoot,
   remoteURL,
   pr,
+  head,
+  headRepo,
+  headRepoId,
+  headRef,
+  baseRepo,
+  sourceRunId,
+  sourceRunAttempt,
+  sourceConclusion,
   storybook,
   sandbox,
+  resultFile,
   maxAttempts = 5,
   beforePush,
 }) {
@@ -1561,16 +1610,37 @@ export async function publishPrPreview({
   if (!Number.isSafeInteger(prNumber) || prNumber <= 0) {
     refuse('PR number is invalid');
   }
-  const storybookDir = path.resolve(storybook);
-  const sandboxDir = path.resolve(sandbox);
-  for (const [name, dir] of [
-    ['--storybook', storybookDir],
-    ['--sandbox', sandboxDir],
-  ]) {
-    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
-      refuse(`${name} must be a directory`);
-    }
+  if (baseRepo !== repository) {
+    refuse('preview base repository does not match publisher repository');
   }
+  const storybookDir = previewDirectory(storybook, '--storybook', {
+    storybook: true,
+  });
+  const sandboxDir = previewDirectory(sandbox, '--sandbox');
+  if (sourceConclusion !== 'success' && (storybookDir || sandboxDir)) {
+    refuse('failed source CI cannot publish preview targets');
+  }
+  const identity = {
+    prNumber,
+    headSha: head,
+    headRepository: headRepo,
+    headRepositoryId: headRepoId,
+    headRef,
+    baseRepository: baseRepo,
+    sourceRunId,
+    sourceRunAttempt,
+    sourceConclusion,
+  };
+  const storybookIndexSha256 = storybookDir
+    ? sha256(path.join(storybookDir, 'index.html'))
+    : null;
+  const sandboxIndexSha256 = sandboxDir
+    ? sha256(path.join(sandboxDir, 'index.html'))
+    : null;
+  const manifest = createPreviewPublicationManifest(identity, {
+    storybookIndexSha256,
+    sandboxIndexSha256,
+  });
   const destinationRel = `pr/${prNumber}`;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const checkout = checkoutPages({
@@ -1583,45 +1653,72 @@ export async function publishPrPreview({
     });
     try {
       const destination = path.join(checkout, destinationRel);
-      removeContents(destination);
-      copyContents(storybookDir, destination);
-      fs.mkdirSync(path.join(destination, 'sandbox'), {recursive: true});
-      for (const entry of fs.readdirSync(sandboxDir, {withFileTypes: true})) {
-        if (entry.name === 'template-assets') continue;
-        fs.cpSync(
-          path.join(sandboxDir, entry.name),
-          path.join(destination, 'sandbox', entry.name),
-          {recursive: true, force: true},
-        );
+      clearPreviewContents(destination);
+      if (storybookDir) copyContents(storybookDir, destination);
+      if (sandboxDir) {
+        const sandboxDestination = path.join(destination, 'sandbox');
+        fs.mkdirSync(sandboxDestination, {recursive: true});
+        for (const entry of fs.readdirSync(sandboxDir, {withFileTypes: true})) {
+          if (entry.name === 'template-assets') continue;
+          fs.cpSync(
+            path.join(sandboxDir, entry.name),
+            path.join(sandboxDestination, entry.name),
+            {recursive: true, force: true},
+          );
+        }
       }
-      const commit = commitIfNeeded(
-        checkout,
-        `Deploy PR #${prNumber} preview`,
-        ['-A', destinationRel],
+      if (
+        storybookDir &&
+        sha256(path.join(destination, 'index.html')) !== storybookIndexSha256
+      ) {
+        refuse('published Storybook index does not match its source artifact');
+      }
+      if (
+        sandboxDir &&
+        sha256(path.join(destination, 'sandbox', 'index.html')) !==
+          sandboxIndexSha256
+      ) {
+        refuse('published Sandbox index does not match its source artifact');
+      }
+      fs.writeFileSync(
+        path.join(destination, PREVIEW_MANIFEST),
+        `${JSON.stringify(manifest, null, 2)}\n`,
       );
-      if (commit === null) {
-        process.stdout.write('Nothing to publish.\n');
-        return {published: false};
-      }
-      await beforePush?.({attempt, checkout, commit});
-      const pushed = tryRun('git', [
-        '-C',
-        checkout,
-        'push',
-        'origin',
-        PAGES_BRANCH,
+      let commit = commitIfNeeded(checkout, `Deploy PR #${prNumber} preview`, [
+        '-A',
+        destinationRel,
       ]);
-      if (pushOrRetry(pushed)) {
-        process.stdout.write(`Deployed PR #${prNumber} preview.\n`);
-        return {published: true, commit};
+      if (commit !== null) {
+        await beforePush?.({attempt, checkout, commit});
+        const pushed = tryRun('git', [
+          '-C',
+          checkout,
+          'push',
+          'origin',
+          PAGES_BRANCH,
+        ]);
+        if (!pushOrRetry(pushed)) {
+          process.stdout.write(
+            `Push rejected; retrying PR preview publish (${attempt}/${maxAttempts}).\n`,
+          );
+          await sleep(attempt * 2000);
+          continue;
+        }
+      } else {
+        commit = git(checkout, 'rev-parse', 'HEAD');
       }
+
+      const result = createPublishedDeploymentResult(identity, {
+        storybookIndexSha256,
+        sandboxIndexSha256,
+        pagesCommit: commit,
+      });
+      if (resultFile) writeDeploymentResult(resultFile, result);
+      process.stdout.write(`Reconciled PR #${prNumber} preview.\n`);
+      return result;
     } finally {
       fs.rmSync(checkout, {recursive: true, force: true});
     }
-    process.stdout.write(
-      `Push rejected; retrying PR preview publish (${attempt}/${maxAttempts}).\n`,
-    );
-    await sleep(attempt * 2000);
   }
   refuse(
     `could not publish PR #${prNumber} preview after ${maxAttempts} attempts`,
@@ -2514,8 +2611,17 @@ export async function main(argv = process.argv.slice(2)) {
         publishPrPreview({
           ...context,
           pr,
+          head: flag(argv, '--head'),
+          headRepo: flag(argv, '--head-repo'),
+          headRepoId: flag(argv, '--head-repo-id'),
+          headRef: flag(argv, '--head-ref'),
+          baseRepo: flag(argv, '--base-repo'),
+          sourceRunId: flag(argv, '--source-run-id'),
+          sourceRunAttempt: flag(argv, '--source-run-attempt'),
+          sourceConclusion: flag(argv, '--source-conclusion'),
           storybook: flag(argv, '--storybook'),
           sandbox: flag(argv, '--sandbox'),
+          resultFile: flag(argv, '--result'),
         }),
     });
   } else if (command === 'cleanup-previews') {

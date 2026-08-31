@@ -13,12 +13,14 @@ describe('spec-only workflow contract', () => {
       '.github/workflows/ci.yml',
       '.github/workflows/lint.yml',
       '.github/workflows/pr-comment.yml',
-      '.github/workflows/spec-owner-gate.yml',
     ]) {
       expect(read(workflow), workflow).toContain(
         '.github/scripts/change-scope.cjs',
       );
     }
+    expect(read('.github/scripts/spec-owner-reconcile.cjs')).toContain(
+      "require('./change-scope.cjs')",
+    );
   });
 
   it('keeps required CI names green while skipping heavy work', () => {
@@ -50,29 +52,34 @@ describe('spec-only workflow contract', () => {
     expect(prComment).toContain('files.length !== pr.changed_files');
   });
 
-  it('requires approval on the current head before squash auto-merge', () => {
+  it('runs the tested exact-head reconciler from the trusted default branch', () => {
     const workflow = read('.github/workflows/spec-owner-gate.yml');
+    const reconciler = read('.github/scripts/spec-owner-reconcile.cjs');
     expect(workflow).toContain(
       'ref: ${{ github.event.repository.default_branch }}',
     );
-    expect(workflow).toContain('expectedCount: pr.changed_files');
-    expect(workflow).toContain('scope.touchesKnowledgeRecords');
-    expect(workflow).toContain('scope.touchesDesignAssets');
-    expect(workflow).toContain('requiredApprovalGroups(records');
-    expect(workflow).toContain("'.github/DESIGNOWNERS'");
-    expect(workflow).toContain('designApprovers');
     expect(workflow).toContain(
+      'reconcileSpecOwnerGate({github, context, core})',
+    );
+    expect(workflow).not.toContain('concurrency:');
+    expect(workflow).toContain(
+      "startsWith(github.event.comment.body, '/approve-spec ')",
+    );
+    expect(workflow).toContain(
+      "startsWith(github.event.comment.body, '/revoke-spec ')",
+    );
+    expect(reconciler).toContain('expectedCount: after.changed_files');
+    expect(reconciler).toContain('scope.touchesKnowledgeRecords');
+    expect(reconciler).toContain('scope.touchesDesignAssets');
+    expect(reconciler).toContain('requiredApprovalGroups(records');
+    expect(reconciler).toContain("'.github/DESIGNOWNERS'");
+    expect(reconciler).toContain(
       'specDecision.approved && designDecision.approved',
     );
-    expect(workflow).toContain(
-      'Draft-only knowledge change; owner approval is not required.',
-    );
-    expect(workflow).toContain("context: 'spec-owner-approval'");
-    expect(workflow).toContain('headSha: pr.head.sha');
-    expect(workflow).toContain('expectedHeadOid: $oid');
-    expect(workflow).toContain('mergeMethod: SQUASH');
-    expect(workflow).toContain('disablePullRequestAutoMerge');
-    expect(workflow).toContain('spec-auto-merge');
+    expect(reconciler).toContain('context: GATE_STATUS_CONTEXT');
+    expect(reconciler).toContain('expectedHeadOid: $oid');
+    expect(reconciler).toContain('mergeMethod: SQUASH');
+    expect(reconciler).toContain('disablePullRequestAutoMerge');
   });
 
   it('does not run the privileged visual-report path for spec-only PRs', () => {
