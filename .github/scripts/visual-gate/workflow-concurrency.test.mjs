@@ -43,6 +43,52 @@ describe('visual acceptance workflow concurrency', () => {
     );
   });
 
+  it('uses the shared metadata validator for exact and legacy PR artifacts', () => {
+    const value = workflow('pr-comment.yml');
+    const crossCheck = value.slice(
+      value.indexOf('      - name: Cross-check artifact identity'),
+      value.indexOf('      - name: Fetch the trusted visual baseline'),
+    );
+
+    expect(crossCheck).toContain('import {validateAnalysisMetadata}');
+    expect(crossCheck).toContain('validateAnalysisMetadata(metadata, {');
+    expect(crossCheck).not.toContain('meta.headSha !==');
+  });
+
+  it('orders trusted preview publication before comment reconciliation', () => {
+    const publisher = workflow('deploy-preview.yml');
+    const comment = workflow('pr-comment.yml');
+
+    expect(publisher).toContain('workflow_call:');
+    expect(publisher).toContain('source_run_attempt:');
+    expect(publisher).toContain('--result preview-deployment.json');
+    expect(comment).toContain('uses: ./.github/workflows/deploy-preview.yml');
+    expect(comment).toContain('needs: [resolve, deploy-preview]');
+    expect(comment).toContain(
+      "if: always() && steps.identity.outputs.valid == 'true'",
+    );
+    expect(comment).toContain('reconcilePrComment');
+    expect(comment).not.toContain('const previewAvailable');
+  });
+
+  it('keeps spec-only checks lightweight while removing stale links', () => {
+    const value = workflow('pr-comment.yml');
+    const reconcile = value.slice(
+      value.indexOf('  spec-only-reconcile:'),
+      value.indexOf('  deploy-preview:'),
+    );
+    const deploy = value.slice(
+      value.indexOf('  deploy-preview:'),
+      value.indexOf('  comment:'),
+    );
+
+    expect(value).toContain("needs.resolve.outputs.spec_only == 'true'");
+    expect(reconcile).toContain('reconcilePrComment');
+    expect(reconcile).toContain('createIfMissing: false');
+    expect(reconcile).not.toContain('Setup Node and pnpm');
+    expect(deploy).toContain("needs.resolve.outputs.spec_only != 'true'");
+  });
+
   it('keeps comment authorization read-only until the shared lock is held', () => {
     const value = workflow('visual-acceptance.yml');
     const authorize = value.slice(
@@ -306,9 +352,13 @@ describe('visual acceptance workflow concurrency', () => {
 
   it('grants visual publisher jobs read access to overlapping workflow runs', () => {
     const comment = workflow('pr-comment.yml');
+    const commentStart = comment.indexOf('  comment:');
     const commentJob = comment.slice(
-      comment.indexOf('  comment:'),
-      comment.indexOf('      - name: Checkout trusted default-branch code'),
+      commentStart,
+      comment.indexOf(
+        '      - name: Checkout trusted default-branch code',
+        commentStart,
+      ),
     );
     const acceptance = workflow('visual-acceptance.yml');
     const acceptJob = acceptance.slice(
@@ -339,45 +389,51 @@ describe('visual acceptance workflow concurrency', () => {
     expect(promoteJob).toContain('contents: write');
   });
 
-  it('resolves automatic previews from trusted API state before checking artifacts', () => {
+  it('verifies exact source identity before checking preview artifacts', () => {
     const value = workflow('deploy-preview.yml');
-    const resolve = value.indexOf('Resolve trusted preview target');
-    const metadata = value.indexOf('Download PR metadata from the CI run');
+    const resolve = value.indexOf(
+      'Confirm trusted source and preview identity',
+    );
+    const metadata = value.indexOf(
+      'Download PR metadata from the exact CI run',
+    );
     const crossCheck = value.indexOf('Cross-check artifact identity');
 
-    expect(value).toContain("run.conclusion !== 'success'");
-    expect(value).toContain('pr.draft');
-    expect(value).toContain('listPullRequestsAssociatedWithCommit');
-    expect(value).toContain('pr.head?.sha === run.head_sha');
-    expect(value).toContain('pr.head?.repo?.id');
-    expect(value).not.toContain('PR_NUMBER="$(jq');
+    expect(value).toContain('workflow_call:');
+    expect(value).toContain('confirmSourceRunIdentity');
+    expect(value).toContain('head_repository_id:');
+    expect(value).toContain('base_repository:');
+    expect(value).toContain('source_run_attempt:');
+    expect(value).not.toContain('listPullRequestsAssociatedWithCommit');
     expect(resolve).toBeGreaterThan(-1);
     expect(resolve).toBeLessThan(metadata);
     expect(metadata).toBeLessThan(crossCheck);
-    expect(value).toContain('artifact PR number does not match trusted PR');
-    expect(value).toContain('artifact head does not match trusted PR head');
-    expect(value).toContain('steps.preview.outputs.ready');
+    expect(value).toContain('validateAnalysisMetadata');
     expect(value).toContain('steps.artifact.outputs.ready');
   });
 
-  it('rechecks trusted preview readiness immediately before publishing', () => {
+  it('rechecks independent target readiness immediately before publishing', () => {
     const value = workflow('deploy-preview.yml');
-    const verify = value.indexOf('Verify preview artifacts are present');
-    const final = value.indexOf('Confirm preview target before publish');
-    const publish = value.indexOf('Deploy PR preview to GitHub Pages');
+    const detect = value.indexOf(
+      'Detect independently available preview targets',
+    );
+    const final = value.indexOf(
+      'Confirm preview target immediately before publication',
+    );
+    const publish = value.indexOf('Publish trusted preview result');
     const finalBlock = value.slice(final, publish);
     const publishBlock = value.slice(publish);
 
-    expect(final).toBeGreaterThan(verify);
+    expect(final).toBeGreaterThan(detect);
     expect(final).toBeLessThan(publish);
-    expect(finalBlock).toContain("pr.state !== 'open'");
-    expect(finalBlock).toContain('pr.draft');
-    expect(finalBlock).toContain('pr.head.sha !== process.env.HEAD_SHA');
-    expect(finalBlock).toContain('pr.head.ref !== process.env.HEAD_REF');
-    expect(finalBlock).toContain('pr.head.repo?.id');
+    expect(finalBlock).toContain('confirmSourceRunIdentity');
+    expect(finalBlock).toContain('identity.draft');
+    expect(finalBlock).toContain("'storybook',");
+    expect(finalBlock).toContain("'sandbox',");
     expect(publishBlock).toContain(
-      "if: steps.final-preview.outputs.ready == 'true'",
+      "if: always() && steps.final.outputs.ready == 'true'",
     );
+    expect(publishBlock).toContain('--result preview-deployment.json');
   });
 
   it('keeps every remaining gh-pages writer behind the shared publisher', () => {
@@ -421,8 +477,19 @@ describe('visual acceptance workflow concurrency', () => {
     const compact = workflow('compact-gh-pages.yml');
     const vibe = workflow('vibe-screenshots.yml');
 
-    expect(deployPreview).toContain('gh-pages-publisher.mjs pr-preview');
-    expect(redeployPreview).toContain('gh-pages-publisher.mjs pr-preview');
+    expect(deployPreview).toContain(
+      'node .github/scripts/gh-pages-publisher.mjs "${args[@]}"',
+    );
+    expect(deployPreview).toContain('--result preview-deployment.json');
+    expect(redeployPreview).toContain(
+      'node .github/scripts/gh-pages-publisher.mjs "${args[@]}"',
+    );
+    expect(redeployPreview).toContain('--result preview-deployment.json');
+    expect(redeployPreview).toContain('Checkout trusted publisher');
+    expect(redeployPreview).toContain('ref: main');
+    expect(redeployPreview.indexOf('Checkout trusted publisher')).toBeLessThan(
+      redeployPreview.indexOf('--result preview-deployment.json'),
+    );
     expect(cleanup).toContain('gh-pages-publisher.mjs cleanup-previews');
     expect(compact).toContain('gh-pages-publisher.mjs compact');
     expect(vibe).toContain('gh-pages-publisher.mjs vibe-screenshots');

@@ -6,7 +6,7 @@ export const docs = {
   name: 'DateTimeInput',
   displayName: 'Date Time Input',
   group: 'DateInput',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'datetimepicker',
     'datetime',

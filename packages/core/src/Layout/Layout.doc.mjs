@@ -1,5 +1,35 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Page shell',
+    required: true,
+    description: 'Outer Layout container that arranges the named page regions.',
+  },
+  {
+    name: 'Header',
+    required: false,
+    description: 'Optional top region for page or application header content.',
+  },
+  {
+    name: 'Panel',
+    required: false,
+    description:
+      'Optional start or end side region; both positions use the same LayoutPanel part.',
+  },
+  {
+    name: 'Content area',
+    required: false,
+    description: 'Optional central region for the page content.',
+  },
+  {
+    name: 'Footer',
+    required: false,
+    description: 'Optional bottom region for page footer content.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -129,6 +159,7 @@ export const docs = {
       { guidance: false, description: 'Use Layout for simple stacking layouts; use HStack or VStack instead.' },
       { guidance: false, description: 'Nest multiple Layout components; use one per page shell and compose content within its slots.' },
     ],
+    anatomy,
   },
 };
 
@@ -159,5 +190,6 @@ export const docsDense = {
       { guidance: false, description: 'Use Layout for simple stacking layouts; use HStack or VStack instead.' },
       { guidance: false, description: 'Nest multiple Layout components; use one per page shell and compose content within its slots.' },
     ],
+    anatomy,
   },
 };

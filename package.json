@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
     "check:package-boundaries": "node scripts/check-package-boundaries.js",
-    "check:repo": "pnpm check:sync && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures",
+    "check:repo": "pnpm check:sync && pnpm check:knowledge && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures",
     "check:fixtures": "node internal/vibe-tests/scripts/fixture-suite.mjs verify",
     "generate:cldr-weekdays": "node scripts/generate-cldr-weekdays.mjs",
     "check:cldr-weekdays": "node scripts/generate-cldr-weekdays.mjs --check",
@@ -58,7 +58,8 @@
     "prepare": "husky install",
     "dev:sandbox": "pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/sandbox dev",
     "dev:sandbox:source": "ASTRYX_SOURCE=1 pnpm -F @astryxdesign/sandbox dev",
-    "npm:prune-canaries": "node scripts/npm/prune-canaries.mjs"
+    "npm:prune-canaries": "node scripts/npm/prune-canaries.mjs",
+    "check:knowledge": "node scripts/check-knowledge.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

@@ -19,39 +19,49 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Check for docsite-only changes
+      - name: Classify changed files
         if: github.event_name == 'pull_request'
         id: scope
         run: |
           git fetch origin ${{ github.base_ref }} --depth=50
           MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null || echo "")
           if [ -z "$MERGE_BASE" ]; then
-            echo "docsite_only=false" >> $GITHUB_OUTPUT
+            printf 'docsite_only=false\nspec_only=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CHANGED=$(git diff --name-only "$MERGE_BASE"...HEAD)
-          NON_DOCSITE=$(echo "$CHANGED" | grep -v '^apps/docsite/' | head -1)
-          if [ -z "$NON_DOCSITE" ]; then
-            echo "docsite_only=true" >> $GITHUB_OUTPUT
+          CLASSIFIER="$RUNNER_TEMP/change-scope.cjs"
+          if git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs" > "$CLASSIFIER" 2>/dev/null; then
+            git diff --name-status "$MERGE_BASE"...HEAD \
+              | node "$CLASSIFIER" --github-output
           else
-            echo "docsite_only=false" >> $GITHUB_OUTPUT
+            # Bootstrap fallback: before the trusted classifier exists on main,
+            # no PR can receive the spec-only fast path.
+            CHANGED=$(git diff --name-only "$MERGE_BASE"...HEAD)
+            NON_DOCSITE=$(printf '%s\n' "$CHANGED" | grep -v '^apps/docsite/' | head -1)
+            printf 'docsite_only=%s\nspec_only=false\n' \
+              "$( [ -z "$NON_DOCSITE" ] && echo true || echo false )" \
+              >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Skip for docsite-only changes
-        if: steps.scope.outputs.docsite_only == 'true'
-        run: echo "Docsite-only PR — skipping lint"
+      - name: Validate spec records
+        if: steps.scope.outputs.spec_only == 'true'
+        run: node scripts/check-knowledge.mjs
+
+      - name: Skip full lint for lightweight docs
+        if: steps.scope.outputs.docsite_only == 'true' || steps.scope.outputs.spec_only == 'true'
+        run: echo "Lightweight documentation PR — skipping full lint"
 
       - uses: ./.github/actions/setup
-        if: steps.scope.outputs.docsite_only != 'true'
+        if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true'
 
       - name: Clear ESLint cache
-        if: steps.scope.outputs.docsite_only != 'true'
+        if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true'
         run: rm -rf .eslintcache node_modules/.cache
 
       - name: Check repository guardrails
-        if: steps.scope.outputs.docsite_only != 'true'
+        if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true'
         run: pnpm check:repo
 
       - name: Run ESLint
-        if: steps.scope.outputs.docsite_only != 'true'
+        if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true'
         run: pnpm lint

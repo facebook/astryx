@@ -415,6 +415,10 @@
     "defaultMessage": "Menu",
     "description": "Screen-reader-only fallback name for a dropdown menu popover. Very generic; consumers usually override. Noun (\"a menu\"), not the imperative."
   },
+  "@astryx.dropdownMenu.back": {
+    "defaultMessage": "Back",
+    "description": "Button label that returns from a nested action list to its parent inside a DropdownMenu bottom sheet. Imperative navigation action."
+  },
   "@astryx.lightbox.close": {
     "defaultMessage": "Close",
     "description": "\"Close\" = shut/dismiss (not \"nearby\"). Screen-reader-only label on the X button that dismisses a Lightbox."
@@ -950,6 +954,22 @@
   "@astryx.chatToolCalls.error": {
     "defaultMessage": "Error: {message}",
     "description": "Screen-reader text for a tool call that failed. {message} is the error detail."
+  },
+  "@astryx.chatToolCalls.status.pending": {
+    "defaultMessage": "Pending",
+    "description": "Screen-reader-only status label for a tool call that is waiting to begin."
+  },
+  "@astryx.chatToolCalls.status.running": {
+    "defaultMessage": "Running",
+    "description": "Screen-reader-only status label for a tool call that is currently running."
+  },
+  "@astryx.chatToolCalls.status.complete": {
+    "defaultMessage": "Complete",
+    "description": "Screen-reader-only status label for a tool call that completed successfully."
+  },
+  "@astryx.chatToolCalls.status.error": {
+    "defaultMessage": "Failed",
+    "description": "Screen-reader-only status label for a failed tool call when no error detail is supplied."
   },
   "@astryx.chatToolCalls.groupLabel": {
     "defaultMessage": "{count} tool calls",

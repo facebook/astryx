@@ -48,7 +48,9 @@ const NAME = /^[A-Za-z0-9._-]{1,120}$/;
 const PACKAGE_NAME = /^@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
 const SHA = /^[0-9a-f]{40}$/;
 const MAX_PNG_BYTES = 12 * 1024 * 1024;
-const MAX_EDGE = 5000;
+const MAX_PNG_WIDTH = 5000;
+const MAX_PNG_HEIGHT = 10000;
+const MAX_PNG_PIXELS = 25_000_000;
 const MAX_SHOTS = 5000;
 
 function fail(message) {
@@ -67,6 +69,29 @@ function shaFile(file) {
   return createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 }
 
+function pngDimensions(bytes, label) {
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (
+    bytes.length < 24 ||
+    !bytes.subarray(0, 8).equals(signature) ||
+    bytes.toString('ascii', 12, 16) !== 'IHDR'
+  ) {
+    fail(`${label} is not a valid PNG: invalid header`);
+  }
+  const width = bytes.readUInt32BE(16);
+  const height = bytes.readUInt32BE(20);
+  if (
+    width <= 0 ||
+    height <= 0 ||
+    width > MAX_PNG_WIDTH ||
+    height > MAX_PNG_HEIGHT ||
+    width * height > MAX_PNG_PIXELS
+  ) {
+    fail(`${label} has invalid dimensions ${width}x${height}`);
+  }
+  return {width, height};
+}
+
 function copyPng(source, target, label) {
   if (!fs.existsSync(source)) fail(`${label} is missing`);
   const stat = fs.lstatSync(source);
@@ -74,19 +99,16 @@ function copyPng(source, target, label) {
     fail(`${label} is not a regular file`);
   if (stat.size <= 0 || stat.size > MAX_PNG_BYTES)
     fail(`${label} has invalid size`);
+  const bytes = fs.readFileSync(source);
+  const dimensions = pngDimensions(bytes, label);
   let image;
   try {
-    image = canonicalizePng(fs.readFileSync(source));
+    image = canonicalizePng(bytes);
   } catch (error) {
     fail(`${label} is not a valid PNG: ${error.message}`);
   }
-  if (
-    image.width <= 0 ||
-    image.height <= 0 ||
-    image.width > MAX_EDGE ||
-    image.height > MAX_EDGE
-  ) {
-    fail(`${label} has invalid dimensions ${image.width}x${image.height}`);
+  if (image.width !== dimensions.width || image.height !== dimensions.height) {
+    fail(`${label} dimensions changed while decoding`);
   }
   fs.mkdirSync(path.dirname(target), {recursive: true});
   fs.writeFileSync(target, image.bytes);

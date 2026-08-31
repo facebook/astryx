@@ -1,5 +1,27 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Handle',
+    required: true,
+    description:
+      'Focusable separator that owns pointer and keyboard resize interaction.',
+  },
+  {
+    name: 'Grip pill',
+    required: false,
+    description:
+      'Default visible grip indicator; custom handle content can replace it.',
+  },
+  {
+    name: 'Grab zone',
+    required: true,
+    description:
+      'Invisible enlarged pointer region aligned with the grip or divider.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'Resizable',
@@ -19,6 +41,7 @@ export const docs = {
     'grip',
   ],
   usage: {
+    anatomy,
     description:
       'Hook-based resizable panel system. useResizable() manages size state ' +
       'and ResizeHandle provides the interactive pill-grip separator. ' +
@@ -86,8 +109,7 @@ export const docs = {
         {
           name: 'collapsedSize',
           type: 'number',
-          description:
-            'Pixel threshold that triggers collapse during drag.',
+          description: 'Pixel threshold that triggers collapse during drag.',
           default: '40',
         },
         {
@@ -98,13 +120,13 @@ export const docs = {
         {
           name: 'shrinkOrder',
           type: 'number',
-          description:
-            'Cascade priority: lower number shrinks first.',
+          description: 'Cascade priority: lower number shrinks first.',
         },
         {
           name: 'autoSaveId',
           type: 'string',
-          description: 'Key for persisting sizes and collapse state to localStorage.',
+          description:
+            'Key for persisting sizes and collapse state to localStorage.',
         },
       ],
     },
@@ -190,20 +212,35 @@ export const docs = {
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'Hook-based resizable panel system. useResizable() manages size state; ResizeHandle provides interactive pill-grip separator.',
+  description:
+    'Hook-based resizable panel system. useResizable() manages size state; ResizeHandle provides interactive pill-grip separator.',
   usage: {
+    anatomy,
     description:
       'Hook-based resizable panel system. useResizable() manages size state; ResizeHandle provides interactive pill-grip separator. Pass resize props to existing layout components via their resizable prop.',
     bestPractices: [
-      {guidance: true, description: 'Use useResizable() w/ existing Astryx layout components. Pass returned props to resizable prop on LayoutPanel or SideNav.'},
-      {guidance: true, description: 'Provide accessible label on each ResizeHandle when multiple handles exist (e.g. "Resize sidebar", "Resize terminal").'},
-      {guidance: false, description: 'Wrap panels in extra container components for resize. Hook-first architecture avoids extra DOM; use it directly on existing components.'},
+      {
+        guidance: true,
+        description:
+          'Use useResizable() w/ existing Astryx layout components. Pass returned props to resizable prop on LayoutPanel or SideNav.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide accessible label on each ResizeHandle when multiple handles exist (e.g. "Resize sidebar", "Resize terminal").',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap panels in extra container components for resize. Hook-first architecture avoids extra DOM; use it directly on existing components.',
+      },
     ],
   },
   components: [
     {
       name: 'useResizable',
-      description: 'Hook managing resize state for one or more panel regions. Returns size, isCollapsed, collapse/expand/resize methods, + props to pass to handles.',
+      description:
+        'Hook managing resize state for one or more panel regions. Returns size, isCollapsed, collapse/expand/resize methods, + props to pass to handles.',
       propDescriptions: {
         defaultSize: 'initial size in px or % string (e.g. "20%")',
         minSizePx: 'minimum size in px',
@@ -217,14 +254,20 @@ export const docsDense = {
     },
     {
       name: 'ResizeHandle',
-      description: 'Draggable separator between panels. Pill-grip: invisible at rest, visible on hover (0.6 opacity), fully opaque during drag (1.0). Keyboard-accessible.',
+      description:
+        'Draggable separator between panels. Pill-grip: invisible at rest, visible on hover (0.6 opacity), fully opaque during drag (1.0). Keyboard-accessible.',
       propDescriptions: {
-        direction: 'layout direction: determines cursor + indicator orientation',
-        isReversed: 'reverse drag direction. Use when handle controls panel on end/right/bottom side',
+        direction:
+          'layout direction: determines cursor + indicator orientation',
+        isReversed:
+          'reverse drag direction. Use when handle controls panel on end/right/bottom side',
         isDisabled: 'handle interactive?',
-        hasDivider: 'show full-length 1px divider line through handle. Use when adjacent panels share same background',
-        isAlwaysVisible: 'show pill grip at rest instead of only on hover. Use when discoverability important',
-        pillPlacement: 'which side of divider pill sits on. auto = content side (derived from isReversed), flips when collapsed; start = left/top, end = right/bottom, center = centered on divider',
+        hasDivider:
+          'show full-length 1px divider line through handle. Use when adjacent panels share same background',
+        isAlwaysVisible:
+          'show pill grip at rest instead of only on hover. Use when discoverability important',
+        pillPlacement:
+          'which side of divider pill sits on. auto = content side (derived from isReversed), flips when collapsed; start = left/top, end = right/bottom, center = centered on divider',
         label: 'accessible label for separator',
         resizable: 'resize props from useResizable: connects handle to panel',
       },

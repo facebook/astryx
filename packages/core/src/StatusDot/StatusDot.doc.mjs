@@ -1,5 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Dot',
+    required: true,
+    description: 'Painted status dot that carries the selected semantic variant.',
+  },
+  {
+    name: 'Status icon',
+    required: false,
+    description: 'Optional caller-supplied icon rendered inside the dot.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -55,6 +69,7 @@ export const docs = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
@@ -115,6 +130,7 @@ export const docsZh = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
@@ -133,6 +149,7 @@ export const docsZh = {
 export const docsDense = {
   description: 'Small colored dot indicator for status display (online/offline, severity, etc).',
   usage: {
+    anatomy,
     description:
       'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
