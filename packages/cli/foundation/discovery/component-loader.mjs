@@ -194,7 +194,8 @@ function overlayComponentDoc(docs, translation) {
     });
   };
 
-  /** Preserve structured accessibility data without changing established translated output.
+  /** Preserve canonical structured guidance added after legacy full-doc translations,
+   * without changing established translated prose behavior.
    * @param {any} baseUsage
    * @param {any} translatedUsage
    */
@@ -209,6 +210,9 @@ function overlayComponentDoc(docs, translation) {
       ...(translatedUsage.accessibilityThemeCoverage === undefined &&
       baseUsage?.accessibilityThemeCoverage !== undefined
         ? {accessibilityThemeCoverage: baseUsage.accessibilityThemeCoverage}
+        : null),
+      ...(translatedUsage.anatomy === undefined && baseUsage?.anatomy !== undefined
+        ? {anatomy: baseUsage.anatomy}
         : null),
     };
   };
