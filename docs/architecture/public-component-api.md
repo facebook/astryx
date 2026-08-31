@@ -96,9 +96,13 @@ public promises until promotion.
 ## Change coupling
 
 - Adding or changing an exported prop, type, default, package entry point, ref
-  target, or observable behavior triggers public-API review.
-- Consumer docs and representative tests change with the API in the same pull
-  request.
+  target, or intentional observable contract triggers public-API review.
+- A bug fix that restores an existing current contract or standard is
+  `preserves`. It requires regression evidence, but it does not create a new API
+  decision.
+- Consumer docs change when consumer usage or a documented promise changes, or
+  when the existing docs would otherwise become false. Fixing an implementation
+  defect does not by itself require consumer-doc changes.
 - A new prop includes the admission argument from `spec:AST-002/DEC-1`; it does
   not get accepted only because it solves one callsite.
 - A released breaking change includes the compatibility decision and migration

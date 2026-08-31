@@ -219,9 +219,13 @@ Before requesting review:
   open or closed.
 - **Protect compatibility.** State defaults and observable behavior. Include a
   migration for a released breaking change.
-- **Ship evidence together.** Update consumer docs, public exports, focused
-  runtime and type tests, and representative integration coverage in the same
-  pull request.
+- **Ship API evidence together.** When consumer usage or a documented promise
+  changes, update consumer docs, public exports, focused runtime and type tests,
+  and representative integration coverage in the same pull request.
+
+A bug fix that restores an existing current contract or standard is not a new
+API proposal. Add regression evidence. Change consumer docs only when usage or a
+documented promise changes, or when existing docs would otherwise become false.
 
 If two or three viable shapes remain after applying current conventions, use the
 [API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)
