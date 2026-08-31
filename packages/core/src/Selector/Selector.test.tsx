@@ -38,6 +38,7 @@ import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {spacingVars} from '../theme/tokens.stylex';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
+import {SELECTOR_MOTION_DURATION} from './selectorMotion.stylex';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -253,6 +254,43 @@ function mockSelectorRects({
 }
 
 describe('Selector', () => {
+  it('keeps keyboard-triggered popover disclosure instant', () => {
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    const popover = screen.getByRole('listbox', h).closest('[popover]');
+    if (!(popover instanceof HTMLElement)) {
+      throw new Error('selector popover not found');
+    }
+
+    act(() => trigger.focus());
+    fireEvent.keyDown(trigger, {key: 'Enter'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(popover.style.getPropertyValue(SELECTOR_MOTION_DURATION)).toBe('0s');
+
+    fireEvent.keyDown(trigger, {key: 'Escape'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(popover.style.getPropertyValue(SELECTOR_MOTION_DURATION)).toBe('0s');
+  });
+
+  it('leaves pointer-triggered popover disclosure on the themed durations', () => {
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    const popover = screen.getByRole('listbox', h).closest('[popover]');
+    if (!(popover instanceof HTMLElement)) {
+      throw new Error('selector popover not found');
+    }
+
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(popover.style.getPropertyValue(SELECTOR_MOTION_DURATION)).toBe('');
+
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(popover.style.getPropertyValue(SELECTOR_MOTION_DURATION)).toBe('');
+  });
+
   it('uses a bottom sheet and closes after a selection when requested', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

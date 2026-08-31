@@ -5,7 +5,7 @@
 /**
  * @file Selector.tsx
  * @input Uses React, StyleX, usePopover, useTooltip, Icon, InputGroupContext,
- *   and Selector positioning hooks
+ *   interaction modality, and Selector positioning/motion hooks
  * @output Exports Selector component
  * @position Core implementation; consumed by index.ts
  *
@@ -29,6 +29,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {useIndicator} from '../Indicator';
@@ -42,7 +43,6 @@ import {
   type FieldStatusVariant,
 } from '../Field';
 import {Divider} from '../Divider';
-import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {useKeepLayerOpenProps, type LayerPlacement} from '../Layer/useLayer';
 import {InternalInputClearButton} from '../Field/InputClearButton';
 import {Spinner} from '../Spinner';
@@ -89,6 +89,14 @@ import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {SelectorBottomSheet} from './SelectorBottomSheet';
 import {useSelectorPresentation} from './useSelectorPresentation';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
+import {
+  SELECTOR_MOTION_DURATION,
+  selectorMotionStyles,
+} from './selectorMotion.stylex';
+import {
+  getInteractionModality,
+  trackInteractionModality,
+} from '../utils/interactionModality';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -210,12 +218,22 @@ const styles = stylex.create({
   // picks these up and needs no transition opt-out.
   triggerIconRotation: {
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     transformOrigin: 'center',
   },
   triggerIconOpen: {
     transform: 'rotate(180deg)',
+    transitionDuration: {
+      default: durationVars['--duration-fast-max'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+  },
+  triggerIconInstant: {
+    transitionDuration: '0s',
   },
   triggerGhost: {
     width: 'auto',
@@ -986,11 +1004,60 @@ export function Selector<T extends SelectorOptionType>(
   });
   const {popover} = surface;
   const keepOpenProps = useKeepLayerOpenProps(popover.id, popover.isOpen);
+  const motionResetFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    trackInteractionModality();
+    return () => {
+      if (motionResetFrameRef.current != null) {
+        cancelAnimationFrame(motionResetFrameRef.current);
+      }
+    };
+  }, []);
+
+  // The pointer surface uses a short spatial transition. Keyboard disclosure is
+  // intentionally instant: set the private duration override before the native
+  // popover state changes, then clear it after one painted frame so a later
+  // pointer dismissal still receives the normal exit transition.
+  const preparePopoverMotion = useCallback(() => {
+    if (surface.activePresentation !== 'popover') {
+      return;
+    }
+    const element = document.getElementById(popover.id);
+    if (!element) {
+      return;
+    }
+    if (motionResetFrameRef.current != null) {
+      cancelAnimationFrame(motionResetFrameRef.current);
+      motionResetFrameRef.current = null;
+    }
+    if (getInteractionModality() === 'pointer') {
+      element.style.removeProperty(SELECTOR_MOTION_DURATION);
+      return;
+    }
+    element.style.setProperty(SELECTOR_MOTION_DURATION, '0s');
+    motionResetFrameRef.current = requestAnimationFrame(() => {
+      motionResetFrameRef.current = requestAnimationFrame(() => {
+        element.style.removeProperty(SELECTOR_MOTION_DURATION);
+        motionResetFrameRef.current = null;
+      });
+    });
+  }, [popover.id, surface.activePresentation]);
+
+  const showSurface = useCallback(() => {
+    preparePopoverMotion();
+    surface.show();
+  }, [preparePopoverMotion, surface]);
+
+  const hideSurface = useCallback(() => {
+    preparePopoverMotion();
+    surface.hide();
+  }, [preparePopoverMotion, surface]);
 
   // Open dropdown on mount when isDefaultOpen is true
   useEffect(() => {
     if (isDefaultOpen) {
-      surface.show();
+      showSurface();
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
@@ -1149,7 +1216,7 @@ export function Selector<T extends SelectorOptionType>(
     isOpen: surface.isOpen,
     hasSearch,
     onOpen: useCallback(() => {
-      surface.show();
+      showSurface();
       if (hasSearch) {
         requestAnimationFrame(() => {
           const input = searchRef.current;
@@ -1161,8 +1228,8 @@ export function Selector<T extends SelectorOptionType>(
           }
         });
       }
-    }, [surface, hasSearch]),
-    onClose: surface.hide,
+    }, [showSurface, hasSearch]),
+    onClose: hideSurface,
     onSelect: commitValue,
     onClear: hasClear ? clearValue : undefined,
     onSearchSeed: appendSearchQuery,
@@ -1554,6 +1621,7 @@ export function Selector<T extends SelectorOptionType>(
   // it. Outside a group the caller's own row decides, and the trigger's
   // padding sizes it to whatever that draws.
   const rowLayout = inputGroup ? 'inline' : 'stacked';
+  const hasPointerMotion = getInteractionModality() === 'pointer';
 
   // What the closed trigger shows for the current selection: the option's icon
   // and label. `startIcon` wins over the option's own icon so a caller who
@@ -1648,7 +1716,10 @@ export function Selector<T extends SelectorOptionType>(
         offset: shouldOverlaySelectedItem
           ? undefined
           : spacingVars['--spacing-1'],
-        xstyle: [styles.popover, layerAnimations[popoverPlacement]],
+        xstyle: [
+          styles.popover,
+          selectorMotionStyles[popoverPlacement] as unknown as StyleXStyles,
+        ],
         style: popoverOffsetStyle,
       })
     );
@@ -1809,6 +1880,7 @@ export function Selector<T extends SelectorOptionType>(
             xstyle={[
               styles.triggerIcon,
               styles.triggerIconRotation,
+              !hasPointerMotion && styles.triggerIconInstant,
               surface.isOpen && styles.triggerIconOpen,
             ]}
             // Stable theme target on the chevron glyph itself, so a theme can

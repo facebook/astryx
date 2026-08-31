@@ -95,6 +95,7 @@ These requirements describe shipped behavior on current `main`.
 | FR3 | Every option row reserves one selection-mark column at `indicatorPosition`, even when the default unchecked indicator draws nothing. The column has a minimum width and can grow for a larger themed replacement. | `itemMarkColumn`, indicator-position tests, and theme tests |
 | FR4 | `popover` uses an anchored Popover. `bottom-sheet` uses a modal BottomSheet. `adaptive` resolves to the modal bottom sheet on compact coarse-pointer screens and Popover otherwise.                               | Presentation controller and adaptive-presentation tests     |
 | FR5 | While `isLoading` is true, the trigger exposes busy state and the listbox suppresses empty and no-results output.                                                                                                 | Loading, empty-state, and announcement tests                |
+| FR6 | Pointer-opened popovers transition in and out with interruptible opacity/transform transitions. Keyboard disclosure is instant; reduced motion removes the transform and keeps a brief fade.                      | Motion source-build, modality, and real-browser tests       |
 
 ### Allowed variation
 
@@ -109,16 +110,16 @@ These requirements describe shipped behavior on current `main`.
 
 ### Representative states
 
-| State                    | Required invariant                                                                   | Allowed variation                                      |
-| ------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| closed with no value     | Label and placeholder identify the field                                             | Consumer placeholder text                              |
-| closed with a value      | Selected option is represented in the trigger                                        | Custom `renderValue` content                           |
-| pointer / popover        | Anchored surface exposes the listbox without modal-dialog semantics                  | Default or explicit placement                          |
-| compact coarse pointer   | BottomSheet exposes a modal dialog containing the listbox                            | Explicit `bottom-sheet` or resolved `adaptive`         |
-| searching                | Visible options, keyboard navigation, and announced result count use one filter      | Consumer search and empty text                         |
-| loading                  | Trigger is busy; empty and no-results output is suppressed                           | Consumer loading duration                              |
-| disabled with reason     | Trigger remains focusable enough to expose the reason while activation stays blocked | Consumer reason text                                   |
-| selected/unselected rows | Row semantics and theming state are correct; both reserve the indicator column       | Start/end position and themed indicator representation |
+| State                    | Required invariant                                                                                                           | Allowed variation                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| closed with no value     | Label and placeholder identify the field                                                                                     | Consumer placeholder text                              |
+| closed with a value      | Selected option is represented in the trigger                                                                                | Custom `renderValue` content                           |
+| pointer / popover        | Anchored surface exposes the listbox without modal-dialog semantics; pointer disclosure uses interruptible open/close motion | Default or explicit placement                          |
+| compact coarse pointer   | BottomSheet exposes a modal dialog containing the listbox                                                                    | Explicit `bottom-sheet` or resolved `adaptive`         |
+| searching                | Visible options, keyboard navigation, and announced result count use one filter                                              | Consumer search and empty text                         |
+| loading                  | Trigger is busy; empty and no-results output is suppressed                                                                   | Consumer loading duration                              |
+| disabled with reason     | Trigger remains focusable enough to expose the reason while activation stays blocked                                         | Consumer reason text                                   |
+| selected/unselected rows | Row semantics and theming state are correct; both reserve the indicator column                                               | Start/end position and themed indicator representation |
 
 ### Transformation and precedence order
 
@@ -260,6 +261,7 @@ in `spec:AST-004` as current runtime behavior.
 | FR3, AV1              | `itemMarkColumn` source inspection plus indicator-position and replacement-indicator tests | start/end, selected/unselected, check/radio        | Removing the wrapper fails row-structure tests; changing its reserved width requires source/layout review      | `audit:Selector/design-rendered` |
 | FR4, AR1, AR2         | presentation tests plus `aria-haspopup` source review                                      | pointer, compact coarse pointer, search/non-search | Wrong Popover/dialog roles or focus destinations fail tests; `aria-haspopup` values require source/a11y review | `audit:Selector/accessibility`   |
 | FR5                   | loading, empty-state, and live-region tests                                                | empty options, unmatched search, loading           | Empty/no-results output appears or is announced while loading                                                  | `audit:Selector/behavior`        |
+| FR6                   | motion source-build, modality unit tests, and real-browser frame capture                   | pointer/keyboard, open/close, reduced motion       | Keyboard disclosure animates, exit disappears immediately, or reduced motion still translates/scales           | `audit:Selector/design-rendered` |
 | source-build contract | `Selector.source-build.test.mjs`                                                           | package source compiled by consumer Babel          | Moving evaluated StyleX values outside the supported source form fails compilation                             | `audit:Selector/code-health`     |
 
 ## Decision log
