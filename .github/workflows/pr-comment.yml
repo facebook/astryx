@@ -425,19 +425,18 @@ jobs:
           EXPECTED_RUN: ${{ steps.identity.outputs.run_id }}
           EXPECTED_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
         run: |
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const meta = JSON.parse(fs.readFileSync('pr-analysis/pr-meta.json', 'utf8'));
-          const fail = (message) => { console.error(`::error::${message}`); process.exit(1); };
-          if (String(meta.prNumber) !== process.env.EXPECTED_PR) fail('artifact PR number does not match trusted PR');
-          if (meta.headSha !== process.env.EXPECTED_HEAD) fail('artifact head does not match trusted PR head');
-          if (meta.headRepository !== process.env.EXPECTED_HEAD_REPO) fail('artifact head repository does not match trusted PR');
-          if (meta.baseRepository !== process.env.EXPECTED_BASE_REPO) fail('artifact base repository does not match trusted PR');
-          if (String(meta.runId) !== process.env.EXPECTED_RUN) fail('artifact run id does not match workflow_run');
-          if (String(meta.runAttempt) !== process.env.EXPECTED_ATTEMPT) fail('artifact run attempt does not match workflow_run');
-          const shortHash = String(meta.shortHash ?? '');
-          if (!/^[0-9a-f]{7,40}$/.test(shortHash)) fail('artifact head is not a valid hash');
-          if (!process.env.EXPECTED_HEAD.startsWith(shortHash)) fail('artifact short hash does not match trusted PR head');
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          import {validateAnalysisMetadata} from './.github/scripts/lib/pr-preview.mjs';
+          const metadata = JSON.parse(fs.readFileSync('pr-analysis/pr-meta.json', 'utf8'));
+          validateAnalysisMetadata(metadata, {
+            prNumber: process.env.EXPECTED_PR,
+            headSha: process.env.EXPECTED_HEAD,
+            headRepository: process.env.EXPECTED_HEAD_REPO,
+            baseRepository: process.env.EXPECTED_BASE_REPO,
+            sourceRunId: process.env.EXPECTED_RUN,
+            sourceRunAttempt: process.env.EXPECTED_ATTEMPT,
+          });
           NODE
 
       - name: Fetch the trusted visual baseline

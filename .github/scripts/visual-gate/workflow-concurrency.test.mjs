@@ -43,6 +43,18 @@ describe('visual acceptance workflow concurrency', () => {
     );
   });
 
+  it('uses the shared metadata validator for exact and legacy PR artifacts', () => {
+    const value = workflow('pr-comment.yml');
+    const crossCheck = value.slice(
+      value.indexOf('      - name: Cross-check artifact identity'),
+      value.indexOf('      - name: Fetch the trusted visual baseline'),
+    );
+
+    expect(crossCheck).toContain('import {validateAnalysisMetadata}');
+    expect(crossCheck).toContain('validateAnalysisMetadata(metadata, {');
+    expect(crossCheck).not.toContain('meta.headSha !==');
+  });
+
   it('orders trusted preview publication before comment reconciliation', () => {
     const publisher = workflow('deploy-preview.yml');
     const comment = workflow('pr-comment.yml');

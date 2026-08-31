@@ -12,6 +12,7 @@ import {
   createUnavailableDeploymentResult,
   reconcilePrComment,
   resolveWorkflowRunPullRequest,
+  validateAnalysisMetadata,
   writeDeploymentResult,
 } from './pr-preview.mjs';
 
@@ -269,6 +270,59 @@ describe('trusted PR preview identity', () => {
         run,
       }),
     ).rejects.toThrow(/expected exactly one current pull request/);
+  });
+});
+
+describe('analysis metadata compatibility', () => {
+  it('accepts legacy metadata only when trusted run, PR, and head prefix match', () => {
+    const value = identity();
+    expect(
+      validateAnalysisMetadata(
+        {
+          prNumber: String(value.prNumber),
+          shortHash: value.headSha.slice(0, 7),
+          runId: String(value.sourceRunId),
+        },
+        value,
+      ),
+    ).toBeDefined();
+  });
+
+  it.each([
+    ['prNumber', '9999', /pull request/],
+    ['shortHash', '1234567', /short hash/],
+    ['runId', '9999', /source run/],
+  ])('rejects mismatched legacy %s', (field, mismatch, error) => {
+    const value = identity();
+    expect(() =>
+      validateAnalysisMetadata(
+        {
+          prNumber: String(value.prNumber),
+          shortHash: value.headSha.slice(0, 7),
+          runId: String(value.sourceRunId),
+          [field]: mismatch,
+        },
+        value,
+      ),
+    ).toThrow(error);
+  });
+
+  it('does not ignore mismatched exact identity fields when they are present', () => {
+    const value = identity();
+    expect(() =>
+      validateAnalysisMetadata(
+        {
+          prNumber: value.prNumber,
+          shortHash: value.headSha.slice(0, 7),
+          headSha: 'f'.repeat(40),
+          headRepository: value.headRepository,
+          baseRepository: value.baseRepository,
+          runId: value.sourceRunId,
+          runAttempt: value.sourceRunAttempt,
+        },
+        value,
+      ),
+    ).toThrow(/analysis head does not match/);
   });
 });
 
