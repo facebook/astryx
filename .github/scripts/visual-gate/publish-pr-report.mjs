@@ -349,7 +349,7 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.join(output, 'index.html'),
   renderReport(verdict, {
-    acceptHint: `/accept-visual ${runId}/${runAttempt} <why every changed frame is correct>`,
+    acceptHint: `Repository maintainers only: /accept-visual ${runId}/${runAttempt} <why every changed frame is correct>`,
     oneSidedEvidence: true,
   }),
 );

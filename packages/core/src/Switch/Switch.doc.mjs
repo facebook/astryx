@@ -1,5 +1,44 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Field',
+    required: true,
+    description: 'Container arranging the switch, label, and feedback.',
+  },
+  {
+    name: 'Track',
+    required: true,
+    description: 'Pill-shaped surface that shows the off or on state.',
+  },
+  {
+    name: 'Thumb',
+    required: true,
+    description: 'Indicator that moves across the track when state changes.',
+  },
+  {
+    name: 'Label',
+    required: true,
+    description: 'Text identifying the setting controlled by the switch.',
+  },
+  {
+    name: 'Description',
+    required: false,
+    description: 'Helper text below the label.',
+  },
+  {
+    name: 'Spinner',
+    required: false,
+    description: 'Loading indicator shown inside the thumb while busy.',
+  },
+  {
+    name: 'Status message',
+    required: false,
+    description: 'Error, warning, or success message below the switch.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -171,6 +210,7 @@ export const docs = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
     bestPractices: [

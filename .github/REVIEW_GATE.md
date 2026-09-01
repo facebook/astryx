@@ -27,9 +27,22 @@ family, design, or system spec waits on `spec-owner-approval` for its exact
 current head. `cixzhang` or `imdreamrunner` can approve every record kind.
 Current design records and normative design assets may also be approved by any
 handle in `.github/DESIGNOWNERS`. Mixed PRs still require `cixzhang` or
-`imdreamrunner` for non-design current records. When an approver is also the
-author, the explicit equivalent is a comment containing
-`/approve-spec <full-head-sha>`; a new commit invalidates it.
+`imdreamrunner` for non-design current records. Same-repository owner reviews
+update the exact-head approval automatically. Fork review events cannot write
+with their read-only token, so an approver uses an issue comment containing
+`/approve-spec <full-head-sha>` instead; that command runs from the trusted
+default branch and a new commit invalidates it.
+
+When a DESIGNOWNER authors a PR, marking it ready for review attests that exact
+head for the design-approval group. That evidence also counts when the PR
+contains non-design current records, but every other applicable code or
+spec-owner group remains separately required.
+
+The attestation does not grant auto-merge by itself. The existing gate may enable
+squash auto-merge only when every changed path is a recognized spec record,
+every required owner group has approved the exact head, and all branch checks
+pass. Normative assets and indexes are outside that scope; adding any code path
+also prevents the spec-only auto-merge path.
 
 A PR changes only spec records when every changed path is one of:
 

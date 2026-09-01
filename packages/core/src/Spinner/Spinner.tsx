@@ -226,7 +226,6 @@ const styles = stylex.create({
   spinner: {
     display: 'inline-grid',
     placeItems: 'center',
-    overflow: 'hidden',
     verticalAlign: 'middle',
     // The public geometry vars, resolved into the registered `<length>` pair
     // the arithmetic below needs. Reading them here rather than in each
@@ -241,6 +240,27 @@ const styles = stylex.create({
     // an inline style to a rule, which would hand a caller's `style={{width}}`
     // a precedence over the box that it has never had.
     [BOX_SIZE]: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_STROKE}) * 2)`,
+
+    // The box is the ring's size, and a host does not get to take that away.
+    //
+    // `overflow: hidden` used to sit here, carried over from the canvas ring
+    // this component no longer draws. It clipped nothing — the painted circle
+    // is inscribed in the box, so hiding and showing the overflow render
+    // byte-identical pixels at every size, every shade, the labelled case and
+    // every rotation angle. What it did do is remove the floor under this box:
+    // a flex item whose overflow is not `visible` has an automatic minimum
+    // size of zero, so a narrow flex host was free to compress the box while
+    // the ring kept drawing at the size its own attributes ask for, and then
+    // the clip cut the ring off at the box edge. Ordinary rows hit it — a
+    // spinner beside a label in a 140px row lost 4px of its ring, one beside a
+    // `flex: 1 0 100px` sibling lost half of it — with nothing reporting a
+    // problem, because a sliced ring still spins.
+    //
+    // `flex-shrink: 0` then states the invariant directly rather than leaving
+    // it to the automatic minimum size, which a host takes away again the
+    // moment it sets `min-width: 0` on its items. A spinner that does not fit
+    // overflows its host visibly instead of being silently sliced.
+    flexShrink: 0,
   },
   ring: {
     backfaceVisibility: 'hidden',

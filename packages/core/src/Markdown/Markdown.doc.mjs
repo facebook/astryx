@@ -1,5 +1,62 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Document',
+    required: true,
+    description:
+      'Root container for block or inline Markdown content.',
+  },
+  {
+    name: 'Heading',
+    required: false,
+    description:
+      'Rendered heading block; a custom heading renderer replaces the default part.',
+  },
+  {
+    name: 'Paragraph',
+    required: false,
+    description:
+      'Rendered paragraph block; a custom paragraph renderer replaces the default part.',
+  },
+  {
+    name: 'List',
+    required: false,
+    description:
+      'Ordered, unordered, or task-list block rendered from Markdown items.',
+  },
+  {
+    name: 'Code block',
+    required: false,
+    description:
+      'Fenced code block; a custom code renderer replaces the default part.',
+  },
+  {
+    name: 'Blockquote',
+    required: false,
+    description:
+      'Quoted block; a custom blockquote renderer replaces the default part.',
+  },
+  {
+    name: 'Table',
+    required: false,
+    description: 'Scrollable table block rendered from Markdown rows and columns.',
+  },
+  {
+    name: 'Divider',
+    required: false,
+    description:
+      'Horizontal rule block; a custom hr renderer replaces the default part.',
+  },
+  {
+    name: 'Image',
+    required: false,
+    description:
+      'Block image or unsafe-URL fallback; a custom image renderer replaces a safe default image.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -168,6 +225,7 @@ export const docs = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
@@ -381,6 +439,7 @@ export const docsZh = {
     ],
   },
   usage: {
+    anatomy,
     description:
       'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
@@ -397,6 +456,7 @@ export const docsDense = {
   description:
     'Renders markdown string as Astryx-styled components. Use for user-generated content, AI responses, docs. Headings, lists, tables, code, citations w/ consistent styling.',
   usage: {
+    anatomy,
     description:
       'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [

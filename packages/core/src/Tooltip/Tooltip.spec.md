@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:Tooltip
@@ -12,6 +12,7 @@ owners: [cixzhang]
 review_triggers: [theming]
 verified_by:
   [packages/core/src/Tooltip/Tooltip.test.tsx, scripts/check-knowledge.mjs]
+modules: []
 families: [family:overlay-dismissal]
 design_specs: []
 architecture:

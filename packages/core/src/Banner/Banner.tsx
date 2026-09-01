@@ -15,6 +15,11 @@
  * - Status icon (themeProps 'banner-icon'): the target rides on the default
  *   <Icon> itself — the element that paints — so 'status:X' overrides reach
  *   the glyph (#4166); for a custom `icon` node it stays on the layout wrapper
+ * - Description (themeProps 'banner-description'): the supporting line owns its
+ *   own colour and type, and the space between it and the title
+ * - The end area carries no target: it is a layout row (flex, wrap, edge
+ *   compensation) rather than a painted surface, and a theme that wants the
+ *   header to grow around its buttons sets `padding-block` on 'banner'
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - Children are collapsible by default: a toggle appears in the header end
@@ -631,7 +636,13 @@ export function Banner({
           )}>
           <div {...stylex.props(styles.title)}>{title}</div>
           {isRenderable(description) && (
-            <div {...stylex.props(styles.description)}>{description}</div>
+            <div
+              {...mergeProps(
+                themeProps('banner-description'),
+                stylex.props(styles.description),
+              )}>
+              {description}
+            </div>
           )}
         </div>
         {showEndArea && (

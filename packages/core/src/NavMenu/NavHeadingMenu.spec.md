@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:NavHeadingMenu
@@ -18,7 +18,8 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-families: []
+modules: []
+families: [family:navigation-destinations]
 design_specs: []
 architecture:
   [
@@ -28,7 +29,7 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-005/DEC-1]
 ---
 
 # NavHeadingMenu component contract
@@ -173,7 +174,11 @@ owns the layer lifecycle and supplies the close callback through context.
   heading-provided close callback.
 - `architecture:public-component-api` owns the stable props and subcomponent
   surface; this documentation adds no API.
-- NavHeadingMenu has no current family contract.
+- `family:navigation-destinations` owns the shared accept/block result for a
+  NavHeadingMenuItem `href`; `spec:AST-005/DEC-1` requires native and
+  custom-router item paths to preserve that result.
+- NavHeadingMenu's current custom-router path inherits the `useLinkComponent`
+  adoption gap recorded by the family until the accepted implementation lands.
 
 ## Verification map
 

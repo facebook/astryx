@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-30
+approved_at: 2026-08-31
 owners: [cixzhang, imdreamrunner]
 review_triggers: [public-api, behavior, layout, accessibility, theming]
 verified_by:
@@ -40,28 +40,34 @@ deciding_specs: []
 ## Intent
 
 A page or bounded work area should have predictable structural regions before
-its product content is added. Builders can use a generic Section, a named Layout
-shell, or a contextual Toolbar without each surface inventing its own inset,
-boundary, region direction, or content ownership.
+its product content is added. Builders can use a generic Section, a five-slot
+Layout primitive, or a contextual Toolbar without each surface inventing its
+own inset, boundary, region direction, or content ownership. AppShell owns the
+page shell that composes these lower-level regions with application navigation.
 
 ## Membership rule
 
 A component belongs when its primary public purpose is defining a stable
-structural region: a generic page/content region, a named shell region, or a
-contextual action region. Members may compose shared layout primitives, but they
-own a stronger boundary than arbitrary-child arrangement alone.
+structural region: a generic page/content region, a named position in Layout's
+five-slot topology, or a contextual action region. Members may compose shared
+layout primitives, but they own a stronger boundary than arbitrary-child
+arrangement alone.
 
 - **Members:** Section; Layout and its Header, Content, Footer, and Panel regions;
   Toolbar.
-- **Collaborators:** `family:layout-primitives` supplies arrangement utilities;
-  `architecture:container-padding` supplies inset and bleed geometry;
-  useResizable and ResizeHandle may drive a panel's size; AppShell composes page
-  regions; component theming owns visual targets.
+- **Collaborators:** `family:layout-primitives` supplies arbitrary-child
+  arrangement utilities; `architecture:container-padding` supplies the broader
+  inset and bleed system used by Section, Layout and its regions, Table, Toolbar,
+  and Divider; useResizable and ResizeHandle may drive a panel's size; AppShell
+  owns the page shell and composes Layout with application navigation; component
+  theming owns visual targets.
 - **Excluded:** Stack, Grid, Center, and their modifiers arrange arbitrary
   children without claiming a structural region. FormLayout owns field-specific
-  arrangement and optionality. Card is a discrete-item surface. AppShell and
-  navigation components own application/navigation semantics rather than this
-  region grammar.
+  arrangement and optionality. Card is a discrete-item surface. AppShell owns
+  page-shell and navigation semantics rather than this reusable region grammar.
+  Table owns structured data, and Divider owns separation; their participation
+  in `architecture:container-padding` does not make either a layout-region
+  member.
 
 A component does not join because it happens to render a flex row, a padded
 wrapper, or a header-like visual treatment.
@@ -70,9 +76,9 @@ wrapper, or a header-like visual treatment.
 
 - Section owns the generic painted page/content region, including its variant,
   selected divider edges, component padding, and nested Section behavior.
-- Layout owns shell topology, slot presence, region position, shared outer/inner
-  inset, height mode, content-width propagation, and default header/footer
-  divider context.
+- Layout owns its five-slot topology, slot presence, region position, shared
+  outer/inner inset, height mode, content-width propagation, and default
+  header/footer divider context. It does not own the page shell.
 - LayoutHeader, LayoutContent, LayoutFooter, and LayoutPanel own their region
   element, optional landmark role/name, local padding, and region-specific size
   or scrolling behavior.
@@ -88,9 +94,9 @@ wrapper, or a header-like visual treatment.
 | Concept               | Values or states                                                    | Default semantics                                                           | Stability              |
 | --------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------- |
 | generic region        | Section                                                             | Related page/content area with an optional painted treatment                | current                |
-| shell topology        | header, start, content, end, footer                                 | Layout places provided regions in logical reading direction                 | current                |
+| five-slot topology    | header, start, content, end, footer                                 | Layout places provided regions in logical reading direction                 | current                |
 | contextual actions    | start, optional center, end                                         | Toolbar groups controls within a bounded content region                     | current                |
-| outer and inner inset | shell edge or adjacent-region edge                                  | A Layout region uses the inset appropriate to the edges it touches          | current                |
+| outer and inner inset | Layout edge or adjacent-region edge                                 | A Layout region uses the inset appropriate to the edges it touches          | current                |
 | boundary              | absent or divider                                                   | A member may draw only the edges its component contract exposes             | current                |
 | region scroll         | clipped, scrollable, or page-owned where exposed                    | LayoutContent and LayoutPanel own their current overflow choice             | component-owned        |
 | landmark              | no explicit role, or caller-supplied role and label                 | A region does not infer page-level landmark semantics from visual placement | current                |
@@ -105,16 +111,16 @@ wrapper, or a header-like visual treatment.
 - **FR2 — Region direction is logical.** Start and end follow writing direction.
   Divider placement and panel adjacency use the same logical region position.
 - **FR3 — Layout selects geometry from slot presence.** Header, Content, Footer,
-  and Panel apply outer inset where they touch the shell and inner inset where
-  they meet another region. Omitted slots do not leave an area wrapper. The
-  inherited geometry republished to full-bleed descendants is subject to the
-  current LayoutContent/LayoutPanel conformance gap in
+  and Panel apply outer inset where they touch the Layout boundary and inner
+  inset where they meet another region. Omitted slots do not leave an area
+  wrapper. The inherited geometry republished to full-bleed descendants is
+  subject to the current LayoutContent/LayoutPanel conformance gap in
   `architecture:container-padding`.
 - **FR4 — Explicit region padding replaces the automatic applied inset.**
-  Section publishes its component inset; Layout distributes shell inset to
-  named regions; a region's explicit padding or zero-padding path selects its
-  local styles. This does not claim that every automatic Layout edge currently
-  republishes an exact matching descendant variable.
+  Section publishes its component inset; Layout distributes outer and inner
+  inset across its named slots; a region's explicit padding or zero-padding
+  path selects its local styles. This does not claim that every automatic
+  Layout edge currently republishes an exact matching descendant variable.
 - **FR5 — Boundary ownership is caller-selected where composition permits two
   owners.** LayoutHeader and LayoutFooter each own their implied edge. Section
   and Toolbar expose selected edges. LayoutPanel may draw its content-facing
@@ -148,13 +154,14 @@ wrapper, or a header-like visual treatment.
 ## Allowed component variation
 
 - **AV1 — Region strength.** Section is a generic region; Layout members are
-  position-aware shell zones; Toolbar is a semantic action bar.
+  position-aware slots in the five-slot primitive; Toolbar is a semantic action
+  bar.
 - **AV2 — Surface treatment.** Section and Toolbar may use Section variants and
   selected edges. Layout regions use their existing divider and padding
   treatments. Family membership does not unify their visual API.
 - **AV3 — Region content.** Header, footer, panel, content, and toolbar lanes may
   hold any content allowed by their component contracts.
-- **AV4 — Size model.** Layout owns fill/auto shell height and content-width
+- **AV4 — Size model.** Layout owns fill/auto container height and content-width
   propagation; individual regions own applicable height, width, padding, and
   scroll props; Section owns its box-size props.
 - **AV5 — Interaction.** Toolbar owns roving focus and keyboard hints. Other
@@ -170,7 +177,7 @@ wrapper, or a header-like visual treatment.
 | Member and state                                 | Shared invariant                                                | Deliberate variation                                                                 |
 | ------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | Section / default, transparent, or muted         | Owns one generic region and publishes its applied inset         | Variant and selected divider edges are Section-local                                 |
-| Layout / content only                            | Slot presence selects shell-edge inset                          | Children are a shorthand for the content slot; explicit content wins                 |
+| Layout / content only                            | Slot presence selects Layout-edge inset                         | Children are a shorthand for the content slot; explicit content wins                 |
 | Layout / all regions                             | Start/end stay logical; named regions receive outer/inner inset | Header, content, footer, and panels expose different size/scroll controls            |
 | LayoutHeader or LayoutFooter / divider inherited | One boundary owner and explicit landmark semantics              | Parent `defaultHasDividers` supplies the default; local false may override it        |
 | LayoutContent / scrollable or page-owned         | Region owns current overflow choice                             | `isScrollable={false}` supports parent/page scrolling and sticky descendants         |
@@ -182,9 +189,9 @@ wrapper, or a header-like visual treatment.
 | Component or concern | Adoption                                                          | Current gap or exception                                                                                                                                                             |
 | -------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Section              | Generic region and container-padding publisher                    | Its nested escape is always inline but only first/last child on the block axis                                                                                                       |
-| Layout shell         | Named region owner with slot contexts                             | Source applies `contentWidth` to the middle row and propagates it to header/footer wrappers, but tests do not prove contentWidth-specific style or rendered panel/content allocation |
+| Layout container     | Five-slot region owner with slot contexts                         | Source applies `contentWidth` to the middle row and propagates it to header/footer wrappers, but tests do not prove contentWidth-specific style or rendered panel/content allocation |
 | LayoutContent        | Reads slot presence and applies outer/inner inset                 | Its no-start path writes the outer value to both inline geometry variables, while no-end changes padding without the matching variable update                                        |
-| LayoutPanel          | Applies position-aware padding and may accept resize-driven width | Automatic shell-facing padding leaves baseline inner geometry variables; an adjacent `ResizeHandle hasDivider` can double the line unless the caller sets panel `hasDivider={false}` |
+| LayoutPanel          | Applies position-aware padding and may accept resize-driven width | Automatic Layout-edge padding leaves baseline inner geometry variables; an adjacent `ResizeHandle hasDivider` can double the line unless the caller sets panel `hasDivider={false}`  |
 | LayoutHeader/Footer  | Region-specific inset, boundary, and landmarks                    | Cross-region computed-style parity is not covered by one browser matrix                                                                                                              |
 | Toolbar              | Section-backed surface plus toolbar behavior                      | Inline inset and edge compensation follow the composed Section's current padding context                                                                                             |
 | Responsive regions   | Caller/AppShell composition                                       | LayoutPanel has no current shared responsive visibility contract                                                                                                                     |
@@ -241,6 +248,15 @@ Section, Layout and its named regions, and Toolbar form the layout-regions
 family. Stack, Grid, Center, and their modifiers have a separate
 layout-primitives owner. This keeps shared region rules focused on structural
 boundaries without turning every flex/grid container into a page region.
+
+### DEC-2 — AppShell owns the page shell
+
+**Decider:** `cixzhang`, `2026-08-31`
+
+AppShell owns the page shell and application-navigation composition. Layout is
+the general five-slot primitive used to arrange `header`, `start`, `content`,
+`end`, and `footer` regions within a page or bounded container. The broader
+container-padding participants retain their own component ownership.
 
 ## Open questions
 
