@@ -481,8 +481,8 @@ export interface MultiSelectorProps<
   /**
    * Whether the selector is read-only.
    * The selected values stay visible, focusable, and included in form
-   * submission, and are exposed to assistive technology as a read-only text
-   * field. The selection surface and editing affordances are removed.
+   * submission, and retain their combobox identity with `aria-readonly`. The
+   * selection surface and editing affordances are removed.
    * Unlike `isDisabled`, a read-only selector is not dimmed and stays in the
    * tab order. `isDisabled` takes precedence when both are set.
    * @default false
