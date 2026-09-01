@@ -40,6 +40,34 @@ describe('spec-only workflow contract', () => {
     expect(lint).toContain('node scripts/check-knowledge.mjs');
   });
 
+  it('sets up dependencies before spec validation and skips heavy spec-only work', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const jobStart = ci.indexOf('  docsite-test:');
+    const jobEnd = ci.indexOf('\n  check-components:', jobStart);
+    const docsiteJob = ci.slice(jobStart, jobEnd);
+
+    const checkout = docsiteJob.indexOf('- uses: actions/checkout@v7');
+    const setup = docsiteJob.indexOf('- uses: ./.github/actions/setup');
+    const validate = docsiteJob.indexOf('- name: Validate spec records');
+    const build = docsiteJob.indexOf('- name: Build core package');
+    const generate = docsiteJob.indexOf(
+      '- name: Generate and test docsite data',
+    );
+
+    expect(checkout).toBeGreaterThanOrEqual(0);
+    expect(setup).toBeGreaterThan(checkout);
+    expect(validate).toBeGreaterThan(setup);
+    expect(build).toBeGreaterThan(validate);
+    expect(generate).toBeGreaterThan(build);
+    expect(docsiteJob.slice(setup, validate)).not.toContain('\n        if:');
+    expect(docsiteJob.slice(build, generate)).toContain(
+      "if: needs.check-scope.outputs.spec_only != 'true'",
+    );
+    expect(docsiteJob.slice(generate)).toContain(
+      "if: needs.check-scope.outputs.spec_only != 'true'",
+    );
+  });
+
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain('if: ${{ always() && !cancelled() }}');
@@ -62,6 +90,21 @@ describe('spec-only workflow contract', () => {
       'reconcileSpecOwnerGate({github, context, core})',
     );
     expect(workflow).not.toContain('concurrency:');
+    const reconcileCondition = workflow
+      .slice(
+        workflow.indexOf('    if: >-', workflow.indexOf('  reconcile:')),
+        workflow.indexOf('    runs-on:', workflow.indexOf('  reconcile:')),
+      )
+      .replace(/^    if: >-\s*/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    expect(reconcileCondition).toBe(
+      "(github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'issue_comment' || (github.event.issue.pull_request != null && (startsWith(github.event.comment.body, '/approve-spec ') || startsWith(github.event.comment.body, '/revoke-spec '))))",
+    );
+    expect(workflow).toContain('pull_request_review:');
+    expect(workflow).toContain('issue_comment:');
+    expect(workflow).toContain('permissions: {}');
+    expect(workflow).not.toContain('pull_request_review_target');
     expect(workflow).toContain(
       "startsWith(github.event.comment.body, '/approve-spec ')",
     );
@@ -73,9 +116,16 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).toContain('scope.touchesDesignAssets');
     expect(reconciler).toContain('requiredApprovalGroups(records');
     expect(reconciler).toContain("'.github/DESIGNOWNERS'");
+    expect(reconciler).toContain("'.github/ENGOWNERS'");
     expect(reconciler).toContain(
-      'specDecision.approved && designDecision.approved',
+      '...new Set([...engineeringOwners, ...designOwners])',
     );
+    expect(reconciler).not.toContain(
+      '...new Set([...specOwners, ...engineeringOwners, ...designOwners])',
+    );
+    expect(reconciler).toContain('specDecision.approved');
+    expect(reconciler).toContain('designDecision.approved');
+    expect(reconciler).toContain('themeDecision.approved');
     expect(reconciler).toContain('context: GATE_STATUS_CONTEXT');
     expect(reconciler).toContain('expectedHeadOid: $oid');
     expect(reconciler).toContain('mergeMethod: SQUASH');

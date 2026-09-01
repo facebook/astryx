@@ -192,6 +192,7 @@ async function plan() {
         storybookDir,
         theme: config.defaultTheme,
         viewport: config.viewport,
+        concurrency: config.scoutConcurrency,
       });
       if (cachePath) fs.writeFileSync(cachePath, `${JSON.stringify(observations)}\n`);
     }
@@ -249,6 +250,7 @@ async function runCapture(shots, releasePlan = null) {
     viewport: config.viewport,
     settleMs: config.settleMs,
     fastGlobals: !has('no-fast-globals'),
+    concurrency: config.captureConcurrency,
     onProgress: ({done, total}) => {
       if (done === total || done - last >= 50) {
         last = done;
@@ -376,13 +378,14 @@ async function check() {
   let comparison;
   try {
     comparison = await compare({
-    baselineDir: path.join(baselineDir, 'shots'),
-    currentDir: path.join(outDir, 'shots'),
-    baselineManifest,
-    currentManifest: manifest,
-    diffDir: path.join(reportDir, 'diff'),
-    threshold: config.threshold,
-    maxDiffPixels: config.maxDiffPixels,
+      baselineDir: path.join(baselineDir, 'shots'),
+      currentDir: path.join(outDir, 'shots'),
+      baselineManifest,
+      currentManifest: manifest,
+      diffDir: path.join(reportDir, 'diff'),
+      threshold: config.threshold,
+      maxDiffPixels: config.maxDiffPixels,
+      concurrency: config.compareConcurrency,
       failures,
     });
   } catch (error) {
@@ -399,6 +402,7 @@ async function check() {
       diffDir: path.join(reportDir, 'diff'),
       threshold: config.threshold,
       maxDiffPixels: config.maxDiffPixels,
+      concurrency: config.compareConcurrency,
     });
   }
 

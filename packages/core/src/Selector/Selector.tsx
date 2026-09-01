@@ -244,6 +244,16 @@ const styles = stylex.create({
       ':active': 'none',
     },
   },
+  triggerReadOnly: {
+    cursor: 'default',
+  },
+  triggerGhostReadOnly: {
+    backgroundImage: 'none',
+    transform: {
+      default: 'none',
+      ':active': 'none',
+    },
+  },
 
   // Clear button
   statusButton: {
@@ -505,6 +515,17 @@ interface SelectorPropsBase<
    * @default false
    */
   isDisabled?: boolean;
+
+  /**
+   * Whether the selector is read-only.
+   * The selected value stays visible, focusable, and included in form
+   * submission, and retains its combobox identity with `aria-readonly`. The
+   * selection surface and editing affordances are removed.
+   * Unlike `isDisabled`, a read-only selector is not dimmed and stays in the
+   * tab order. `isDisabled` takes precedence when both are set.
+   * @default false
+   */
+  isReadOnly?: boolean;
 
   /**
    * Explains why the selector is disabled. When set together with
@@ -804,6 +825,7 @@ export function Selector<T extends SelectorOptionType>(
     isOptional = false,
     isRequired = false,
     isDisabled = false,
+    isReadOnly = false,
     disabledMessage,
     options,
     value,
@@ -851,6 +873,7 @@ export function Selector<T extends SelectorOptionType>(
     variant === 'ghost' && statusVariant === 'attached'
       ? 'detached'
       : statusVariant;
+  const isEffectivelyReadOnly = isReadOnly && !isDisabled;
 
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;
@@ -862,11 +885,12 @@ export function Selector<T extends SelectorOptionType>(
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputLabelId = useId();
+  const readOnlyDescriptionId = useId();
   const searchId = useId();
   // Measure from the same outer control that usePopover anchors to; using the
   // shorter inner button makes every size's selected row land too low.
   const anchorRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const inputGroup = useInputGroup();
 
@@ -923,6 +947,7 @@ export function Selector<T extends SelectorOptionType>(
         ? statusTooltip.describedBy
         : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      isEffectivelyReadOnly ? readOnlyDescriptionId : null,
     ],
     inputGroup,
   );
@@ -985,15 +1010,26 @@ export function Selector<T extends SelectorOptionType>(
     },
   });
   const {popover} = surface;
+  const hideSurface = surface.hide;
+  const isSurfaceOpen = surface.isOpen;
   const keepOpenProps = useKeepLayerOpenProps(popover.id, popover.isOpen);
 
-  // Open dropdown on mount when isDefaultOpen is true
+  // Open dropdown on mount when isDefaultOpen is true and interaction is allowed.
   useEffect(() => {
-    if (isDefaultOpen) {
+    if (isDefaultOpen && !isEffectivelyReadOnly) {
       surface.show();
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
+
+  // Read-only is controlled by caller policy, so an already-open surface must
+  // close when that policy changes. The presentation controller keeps a sheet
+  // mounted through its exit and lets BottomSheet return final focus.
+  useEffect(() => {
+    if (isEffectivelyReadOnly && isSurfaceOpen) {
+      hideSurface();
+    }
+  }, [isEffectivelyReadOnly, isSurfaceOpen, hideSurface]);
 
   // Announce the filtered result count from the query-change handlers (matching
   // BaseTypeahead) rather than a reactive effect: computing the count for the
@@ -1145,7 +1181,7 @@ export function Selector<T extends SelectorOptionType>(
     // highlight on it and Delete/Backspace could clear a value the action has
     // already replaced.
     value: optimisticValue,
-    isDisabled,
+    isDisabled: isDisabled || isEffectivelyReadOnly,
     isOpen: surface.isOpen,
     hasSearch,
     onOpen: useCallback(() => {
@@ -1197,14 +1233,17 @@ export function Selector<T extends SelectorOptionType>(
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (isDisabled || isEffectivelyReadOnly) {
+        return;
+      }
       // With hasSearch the query input owns typing, so type-to-select is off.
-      if (!isDisabled && !hasSearch && typeahead.onKeyDown(e)) {
+      if (!hasSearch && typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }
       onKeyDown(e);
     },
-    [isDisabled, hasSearch, typeahead, onKeyDown],
+    [isDisabled, isEffectivelyReadOnly, hasSearch, typeahead, onKeyDown],
   );
 
   // Keep the highlighted option visible during keyboard navigation. The
@@ -1628,30 +1667,55 @@ export function Selector<T extends SelectorOptionType>(
     </div>
   );
 
-  const selectionSurface =
-    surface.activePresentation === 'bottom-sheet' ? (
-      <SelectorBottomSheet
-        isOpen={surface.isSheetOpen}
-        onOpenChange={surface.onSheetOpenChange}
-        finalFocusRef={triggerRef}
-        initialFocusRef={hasSearch ? searchRef : listboxRef}
-        label={label}>
-        {panelContent}
-      </SelectorBottomSheet>
-    ) : (
-      popover.render(panelContent, {
-        placement: popoverPlacement,
-        alignment: 'start',
-        // The system's standard menu clearance, except in overlay mode:
-        // there the measured negative margin owns the block geometry and
-        // the menu is meant to sit on the trigger, not clear it.
-        offset: shouldOverlaySelectedItem
-          ? undefined
-          : spacingVars['--spacing-1'],
-        xstyle: [styles.popover, layerAnimations[popoverPlacement]],
-        style: popoverOffsetStyle,
-      })
-    );
+  let selectionSurface: ReactNode = null;
+  if (surface.activePresentation === 'bottom-sheet') {
+    if (!isEffectivelyReadOnly || surface.isSheetPresented) {
+      selectionSurface = (
+        <SelectorBottomSheet
+          isOpen={surface.isSheetOpen}
+          onOpenChange={surface.onSheetOpenChange}
+          finalFocusRef={triggerRef}
+          initialFocusRef={hasSearch ? searchRef : listboxRef}
+          label={label}>
+          {panelContent}
+        </SelectorBottomSheet>
+      );
+    }
+  } else if (!isEffectivelyReadOnly) {
+    selectionSurface = popover.render(panelContent, {
+      placement: popoverPlacement,
+      alignment: 'start',
+      // The system's standard menu clearance, except in overlay mode:
+      // there the measured negative margin owns the block geometry and
+      // the menu is meant to sit on the trigger, not clear it.
+      offset: shouldOverlaySelectedItem
+        ? undefined
+        : spacingVars['--spacing-1'],
+      xstyle: [styles.popover, layerAnimations[popoverPlacement]],
+      style: popoverOffsetStyle,
+    });
+  }
+
+  const triggerSharedProps: React.HTMLAttributes<HTMLElement> = {
+    ...rest,
+    id: triggerId,
+    'aria-describedby': ariaDescribedBy,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-required': isEffectivelyRequired ? 'true' : undefined,
+    'aria-invalid': status?.type === 'error' ? 'true' : undefined,
+    'aria-busy': isBusy || undefined,
+    onKeyDown: handleTriggerKeyDown,
+    onFocus: event => {
+      onFocus?.(event);
+      surface.onTriggerFocus(event);
+    },
+    tabIndex: isDisabled && !showsDisabledMessage ? -1 : 0,
+    ...stylex.props(
+      styles.trigger,
+      isEffectivelyReadOnly && styles.triggerReadOnly,
+      inputGroup && styles.triggerButtonInGroup,
+    ),
+  };
 
   const selectorContent = (
     <>
@@ -1672,6 +1736,7 @@ export function Selector<T extends SelectorOptionType>(
             size,
             status: status?.type ?? null,
             disabled: isDisabled ? 'disabled' : null,
+            readonly: isEffectivelyReadOnly ? 'readonly' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,
@@ -1683,7 +1748,11 @@ export function Selector<T extends SelectorOptionType>(
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,
+            isEffectivelyReadOnly && styles.triggerReadOnly,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
+            variant === 'ghost' &&
+              isEffectivelyReadOnly &&
+              styles.triggerGhostReadOnly,
             !selectedItem && styles.triggerPlaceholder,
             variant !== 'ghost' &&
               status &&
@@ -1704,45 +1773,43 @@ export function Selector<T extends SelectorOptionType>(
         {inputGroup && (
           <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
         )}
+        {isEffectivelyReadOnly && (
+          <VisuallyHidden id={readOnlyDescriptionId}>
+            {t('@astryx.input.readOnly')}
+          </VisuallyHidden>
+        )}
         <button
-          ref={triggerRef}
-          id={triggerId}
+          {...triggerSharedProps}
+          ref={triggerRef as React.Ref<HTMLButtonElement>}
           type="button"
-          // In hasSearch mode the popup's search input is the combobox (it owns
-          // focus + aria-activedescendant, comboboxes-4), so the trigger is a
-          // plain button that opens the listbox — not a second combobox.
-          role={hasSearch ? undefined : 'combobox'}
-          {...rest}
+          // The read-only trigger stays a combobox even when hasSearch is set:
+          // no search input is rendered in that state, and preserving the role
+          // keeps the control's programmatic identity stable. Editable search
+          // mode still moves combobox semantics to the popup input.
+          role={isEffectivelyReadOnly || !hasSearch ? 'combobox' : undefined}
           aria-haspopup={
-            surface.activePresentation === 'bottom-sheet' ? 'dialog' : 'listbox'
+            isEffectivelyReadOnly
+              ? undefined
+              : surface.activePresentation === 'bottom-sheet'
+                ? 'dialog'
+                : 'listbox'
           }
-          aria-expanded={surface.isOpen}
-          aria-controls={listboxId}
+          aria-expanded={isEffectivelyReadOnly ? false : surface.isOpen}
+          aria-controls={isEffectivelyReadOnly ? undefined : listboxId}
+          aria-readonly={isEffectivelyReadOnly || undefined}
           aria-activedescendant={
-            !hasSearch && surface.isOpen && highlightedIndex >= 0
+            !isEffectivelyReadOnly &&
+            !hasSearch &&
+            surface.isOpen &&
+            highlightedIndex >= 0
               ? getItemId(highlightedIndex)
               : undefined
           }
-          aria-describedby={ariaDescribedBy}
-          aria-labelledby={ariaLabelledBy}
-          aria-required={isEffectivelyRequired ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
-          aria-busy={isBusy || undefined}
           // With a disabledMessage the trigger keeps focusability via
           // aria-disabled so the reason is focus-discoverable; activation is
           // still blocked by the isDisabled guards in useCombobox.
           disabled={isDisabled && !showsDisabledMessage}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          onKeyDown={handleTriggerKeyDown}
-          onFocus={event => {
-            onFocus?.(event);
-            surface.onTriggerFocus(event);
-          }}
-          tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-          {...stylex.props(
-            styles.trigger,
-            inputGroup && styles.triggerButtonInGroup,
-          )}>
+          aria-disabled={showsDisabledMessage ? 'true' : undefined}>
           {valueContent}
         </button>
         {htmlName != null && (
@@ -1756,7 +1823,7 @@ export function Selector<T extends SelectorOptionType>(
           />
         )}
         {isBusy && <Spinner size="sm" />}
-        {hasClear && value != null && !isDisabled && (
+        {hasClear && value != null && !isDisabled && !isEffectivelyReadOnly && (
           <InternalInputClearButton
             {...keepOpenProps}
             label={t('@astryx.selector.clearLabel', {label})}
@@ -1798,7 +1865,7 @@ export function Selector<T extends SelectorOptionType>(
               xstyle={styles.triggerIcon}
             />
           )
-        ) : (
+        ) : !isEffectivelyReadOnly ? (
           <Icon
             icon="chevronDown"
             size="sm"
@@ -1820,7 +1887,7 @@ export function Selector<T extends SelectorOptionType>(
               state: surface.isOpen ? 'expanded' : 'collapsed',
             })}
           />
-        )}
+        ) : null}
       </div>
 
       {selectionSurface}

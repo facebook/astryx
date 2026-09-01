@@ -40,6 +40,7 @@ interface SelectorPresentationController {
   hide: () => void;
   isOpen: boolean;
   isSheetOpen: boolean;
+  isSheetPresented: boolean;
   isTriggerFocusRingSuppressed: boolean;
   onSheetOpenChange: (isOpen: boolean) => void;
   onTriggerFocus: (event: FocusEvent<HTMLElement>) => void;
@@ -59,6 +60,10 @@ export function useSelectorPresentation({
     useRef<ResolvedAdaptivePresentation>(resolvedPresentation);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const isSheetOpenRef = useRef(false);
+  // BottomSheet owns its exit animation and final-focus handoff. Keep it mounted
+  // after the controlled open state turns false until that handoff reaches the
+  // trigger, then consumers may remove the hidden surface tree.
+  const [isSheetPresented, setIsSheetPresented] = useState(false);
   const onHideRef = useRef(onHide);
   const {
     isFocusRingSuppressed,
@@ -88,8 +93,10 @@ export function useSelectorPresentation({
     activePresentationRef.current = resolvedPresentation;
     if (resolvedPresentation === 'bottom-sheet') {
       isSheetOpenRef.current = true;
+      setIsSheetPresented(true);
       setIsSheetOpen(true);
     } else {
+      setIsSheetPresented(false);
       showPopover();
     }
   }, [resetFocusReturn, resolvedPresentation, showPopover]);
@@ -106,7 +113,18 @@ export function useSelectorPresentation({
   }, [hidePopover, prepareFocusReturn]);
 
   const handleTriggerFocus = useCallback(
-    (_event: FocusEvent<HTMLElement>) => onFocusReturnTargetFocus(),
+    (_event: FocusEvent<HTMLElement>) => {
+      onFocusReturnTargetFocus();
+      if (
+        !isSheetOpenRef.current &&
+        activePresentationRef.current === 'bottom-sheet'
+      ) {
+        // BottomSheet focuses finalFocusRef only after its exit completes. That
+        // focus event is the lifecycle signal that the retained sheet can now
+        // leave the tree without dropping focus to the document body.
+        setIsSheetPresented(false);
+      }
+    },
     [onFocusReturnTargetFocus],
   );
 
@@ -122,9 +140,10 @@ export function useSelectorPresentation({
   );
 
   const isOpen = popover.isOpen || isSheetOpen;
-  const activePresentation = isOpen
-    ? activePresentationRef.current
-    : resolvedPresentation;
+  const activePresentation =
+    isOpen || isSheetPresented
+      ? activePresentationRef.current
+      : resolvedPresentation;
 
   const wasJustDismissed = useCallback(
     () =>
@@ -137,6 +156,7 @@ export function useSelectorPresentation({
     hide,
     isOpen,
     isSheetOpen,
+    isSheetPresented,
     isTriggerFocusRingSuppressed: isFocusRingSuppressed,
     onSheetOpenChange: handleSheetOpenChange,
     onTriggerFocus: handleTriggerFocus,

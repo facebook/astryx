@@ -3,6 +3,7 @@
 /* global Buffer */
 
 import {createRequire} from 'node:module';
+import fs from 'node:fs';
 import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 
@@ -30,6 +31,7 @@ function context({
   actor = 'cixzhang',
   author = 'cixzhang',
   headSha = head,
+  headRepository = repository,
   comment,
   review,
 }) {
@@ -51,7 +53,10 @@ function context({
               number: 17,
               updated_at: '2026-08-30T10:00:00Z',
               user: {login: author},
-              head: {sha: headSha},
+              head: {
+                sha: headSha,
+                repo: {full_name: headRepository},
+              },
             },
     },
   };
@@ -78,15 +83,25 @@ function trustedStatus({
 
 function createHarness({
   author = 'cixzhang',
+  headRepository = repository,
   statuses = [],
   comments = [],
   reviews = [],
   timeline = [],
   labels = [],
   autoMerge = null,
+  draft = false,
   onPullGet,
   onEnableAutoMerge,
+  changedFile = {
+    filename: 'docs/specs/owner-ready/spec.md',
+    status: 'added',
+  },
+  changedFiles,
+  headContent = 'kind: architecture\nauthority: current\n',
+  baseContent = '',
 } = {}) {
+  const files = changedFiles ?? [changedFile];
   const state = {
     pullGets: 0,
     statuses: [...statuses],
@@ -100,15 +115,15 @@ function createHarness({
       number: 17,
       node_id: 'PR_node',
       user: {login: author},
-      head: {sha: head, repo: {full_name: repository}},
+      head: {sha: head, repo: {full_name: headRepository}},
       base: {
         sha: '2222222222222222222222222222222222222222',
         repo: {full_name: repository},
       },
-      changed_files: 1,
+      changed_files: files.length,
       labels: [],
       auto_merge: autoMerge,
-      draft: false,
+      draft,
     },
   };
 
@@ -124,14 +139,7 @@ function createHarness({
       syncLabels();
       return {data: state.pr};
     },
-    listFiles: async () => ({
-      data: [
-        {
-          filename: 'docs/specs/owner-ready/spec.md',
-          status: 'added',
-        },
-      ],
-    }),
+    listFiles: async () => ({data: files}),
     listReviews: async () => ({data: state.reviews}),
     listComments: async () => ({data: state.comments}),
     listTimeline: async () => ({data: state.timeline}),
@@ -194,9 +202,7 @@ function createHarness({
         getContent: async ({ref}) => ({
           data: {
             content: Buffer.from(
-              ref === state.pr.head.sha
-                ? 'kind: architecture\nauthority: current\n'
-                : '',
+              ref === state.pr.head.sha ? headContent : baseContent,
             ).toString('base64'),
           },
         }),
@@ -237,6 +243,27 @@ function latestGateStatus(state) {
   );
 }
 
+const designRecord = {
+  filename: 'docs/design/interaction-states.md',
+  status: 'added',
+};
+const currentDesign = 'kind: design\nauthority: current\n';
+
+function createDesignHarness(options = {}) {
+  return createHarness({
+    author: 'ernestt',
+    changedFile: designRecord,
+    headContent: currentDesign,
+    ...options,
+  });
+}
+
+function hasReadyAttestation(state, owner = 'ernestt') {
+  return state.statuses.some(
+    status => status.context === `spec-owner-ready/${owner}`,
+  );
+}
+
 describe('spec owner workflow reconciliation', () => {
   it('treats an eligible owner-author ready event as exact-head approval', async () => {
     const harness = createHarness();
@@ -250,6 +277,232 @@ describe('spec owner workflow reconciliation', () => {
     ).toBe(true);
     expect(latestGateStatus(harness.state).state).toBe('success');
     expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('lets a DESIGNOWNER author self-attest an exact design-record-only head', async () => {
+    const harness = createDesignHarness();
+
+    await run(
+      harness,
+      context({runId: 100n, actor: 'ernestt', author: 'ernestt'}),
+    );
+
+    expect(hasReadyAttestation(harness.state)).toBe(true);
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('Approved by @ernestt'),
+    });
+    expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('requires the ready actor to be the PR author', async () => {
+    const harness = createDesignHarness();
+
+    await run(
+      harness,
+      context({runId: 100n, actor: 'rubyycheung', author: 'ernestt'}),
+    );
+
+    expect(hasReadyAttestation(harness.state, 'rubyycheung')).toBe(false);
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
+  it('requires the ready event to identify the exact live head', async () => {
+    const harness = createDesignHarness();
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        actor: 'ernestt',
+        author: 'ernestt',
+        headSha: nextHead,
+      }),
+    );
+
+    expect(hasReadyAttestation(harness.state)).toBe(false);
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
+  it('keeps a DESIGNOWNER ready marker outside the spec-only auto-merge path', async () => {
+    const harness = createDesignHarness({
+      changedFiles: [
+        designRecord,
+        {
+          filename: 'packages/core/src/Button/Button.tsx',
+          status: 'modified',
+        },
+      ],
+    });
+
+    await run(
+      harness,
+      context({runId: 100n, actor: 'ernestt', author: 'ernestt'}),
+    );
+
+    // The exact-head marker is evidence for applicable owner groups, not merge
+    // authority. Mixed code/spec scope must stop before auto-merge enablement.
+    expect(hasReadyAttestation(harness.state)).toBe(true);
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+    expect(harness.state.pr.auto_merge).toBe(null);
+  });
+
+  it('requires a real ready transition and never auto-merges a draft PR', async () => {
+    const readyDraft = createDesignHarness({draft: true});
+
+    await run(
+      readyDraft,
+      context({runId: 100n, actor: 'ernestt', author: 'ernestt'}),
+    );
+
+    expect(hasReadyAttestation(readyDraft.state)).toBe(true);
+    expect(readyDraft.state.calls).not.toContain('enable-auto-merge');
+    expect(readyDraft.state.pr.auto_merge).toBe(null);
+
+    const synchronizedDraft = createDesignHarness({draft: true});
+    await run(
+      synchronizedDraft,
+      context({
+        runId: 101n,
+        action: 'synchronize',
+        actor: 'ernestt',
+        author: 'ernestt',
+      }),
+    );
+
+    expect(hasReadyAttestation(synchronizedDraft.state)).toBe(false);
+    expect(synchronizedDraft.state.calls).not.toContain('enable-auto-merge');
+    expect(synchronizedDraft.state.pr.auto_merge).toBe(null);
+  });
+
+  it('publishes owner approval and keeps conservative ownership when enablement is rejected', async () => {
+    const harness = createHarness({
+      onEnableAutoMerge: () => {
+        const error = new Error('Resource not accessible by integration');
+        error.status = 403;
+        throw error;
+      },
+    });
+
+    await run(harness, context({runId: 100n}));
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('Approved by @cixzhang'),
+    });
+    const terminalStatus = harness.state.calls.indexOf(
+      'status:spec-owner-approval:success',
+    );
+    const warning = harness.state.calls.findIndex(call =>
+      call.includes('Could not enable auto-merge'),
+    );
+    expect(terminalStatus).toBeGreaterThan(-1);
+    expect(warning).toBeGreaterThan(terminalStatus);
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+    expect(harness.state.labels.has('spec-auto-merge')).toBe(true);
+    expect(harness.state.calls).not.toContain('remove-label:spec-auto-merge');
+    expect(harness.state.calls).not.toContain('disable-auto-merge');
+    expect(harness.state.pr.auto_merge).toBe(null);
+  });
+
+  it('preserves the marker when an ambiguous enable error follows a successful mutation', async () => {
+    const harness = createHarness({
+      onEnableAutoMerge: state => {
+        state.pr.auto_merge = {merge_method: 'squash'};
+        state.calls.push('auto-merge-applied-before-error');
+        const error = new Error('The response was lost after the mutation.');
+        error.status = 502;
+        throw error;
+      },
+    });
+
+    await run(harness, context({runId: 100n}));
+
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    expect(harness.state.pr.auto_merge).toEqual({merge_method: 'squash'});
+    expect(harness.state.labels.has('spec-auto-merge')).toBe(true);
+    expect(harness.state.calls).not.toContain('remove-label:spec-auto-merge');
+    expect(harness.state.calls).not.toContain('disable-auto-merge');
+  });
+
+  it('does not let an old failure erase newer same-head auto-merge ownership', async () => {
+    const harness = createHarness({
+      onEnableAutoMerge: state => {
+        // The old run added the marker, then a newer run for the same exact
+        // head enabled auto-merge before the old request returned an error.
+        state.statuses.unshift(
+          trustedStatus({runId: 101n, sha: head, state: 'success'}),
+        );
+        state.pr.auto_merge = {merge_method: 'squash'};
+        state.labels.add('spec-auto-merge');
+        state.pr.labels = [{name: 'spec-auto-merge'}];
+        state.calls.push('newer-run-enabled-auto-merge');
+        const error = new Error('The old enable request was rejected.');
+        error.status = 422;
+        throw error;
+      },
+    });
+
+    await run(harness, context({runId: 100n}));
+
+    expect(
+      harness.state.statuses.some(
+        status =>
+          status.sha === head &&
+          status.context === 'spec-owner-approval' &&
+          status.state === 'success' &&
+          status.target_url === canonicalRunUrl(repository, '100', '1'),
+      ),
+    ).toBe(true);
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      target_url: canonicalRunUrl(repository, '101', '1'),
+    });
+    expect(harness.state.pr.head.sha).toBe(head);
+    expect(harness.state.pr.auto_merge).toEqual({merge_method: 'squash'});
+    expect(harness.state.labels.has('spec-auto-merge')).toBe(true);
+    const oldMarker = harness.state.calls.indexOf('add-label:spec-auto-merge');
+    const newerOwner = harness.state.calls.indexOf(
+      'newer-run-enabled-auto-merge',
+    );
+    expect(oldMarker).toBeGreaterThan(-1);
+    expect(newerOwner).toBeGreaterThan(oldMarker);
+    expect(harness.state.calls).not.toContain('remove-label:spec-auto-merge');
+    expect(harness.state.calls).not.toContain('disable-auto-merge');
+  });
+
+  it('keeps terminal approval before a non-destructive enable failure path', () => {
+    const source = fs.readFileSync(
+      path.join(workspace, '.github/scripts/spec-owner-reconcile.cjs'),
+      'utf8',
+    );
+    const specOnlyPath = source.slice(
+      source.indexOf('// Owner approval is the gate decision'),
+    );
+    const terminalStatus = specOnlyPath.indexOf(
+      "setFinalStatus(initialHead, 'success', successDescription)",
+    );
+    const enable = specOnlyPath.indexOf('enablePullRequestAutoMerge');
+    const catchStart = specOnlyPath.indexOf('} catch (error) {', enable);
+    const catchEnd = specOnlyPath.indexOf(
+      '\n    }\n  }\n\n  if (enabledAutoMergeByThisRun)',
+      catchStart,
+    );
+    const catchBlock = specOnlyPath.slice(catchStart, catchEnd);
+
+    expect(terminalStatus).toBeGreaterThan(-1);
+    expect(enable).toBeGreaterThan(terminalStatus);
+    expect(catchStart).toBeGreaterThan(enable);
+    expect(catchEnd).toBeGreaterThan(catchStart);
+    expect(catchBlock).toContain(
+      'Leave the conservative ownership marker intact.',
+    );
+    expect(catchBlock).not.toContain('removeLabel');
+    expect(catchBlock).not.toContain('disableAutoMerge');
+    expect(catchBlock).not.toContain('cleanupFailedAutoMergeEnable');
   });
 
   it('does not attest ready_for_review by a non-owner author', async () => {
@@ -267,6 +520,167 @@ describe('spec owner workflow reconciliation', () => {
     ).toBe(false);
     expect(latestGateStatus(harness.state).state).toBe('pending');
     expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
+  it('keeps a current theme change pending without exact-head approval', async () => {
+    const harness = createHarness({
+      changedFile: {
+        filename: 'packages/themes/neutral/neutral.spec.md',
+        status: 'added',
+      },
+      headContent: 'kind: theme\nauthority: current\n',
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        action: 'synchronize',
+        actor: 'rubyycheung',
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'pending',
+      description: expect.stringContaining('theme approver'),
+    });
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+    expect(harness.state.pr.auto_merge).toBe(null);
+  });
+
+  it.each([
+    'docs/themes/neutral.md',
+    'packages/themes/neutral/Theme.spec.md',
+    'packages/themes/neutral/subdir/neutral.spec.md',
+  ])(
+    'keeps misplaced current theme candidate %s pending and non-merging',
+    async filename => {
+      const harness = createHarness({
+        changedFile: {filename, status: 'added'},
+        headContent: 'kind: theme\nauthority: current\n',
+      });
+
+      await run(
+        harness,
+        context({
+          runId: 100n,
+          action: 'synchronize',
+          actor: 'rubyycheung',
+        }),
+      );
+
+      expect(latestGateStatus(harness.state)).toMatchObject({
+        state: 'pending',
+        description: expect.stringContaining('theme approver'),
+      });
+      expect(harness.state.calls).not.toContain('enable-auto-merge');
+      expect(
+        harness.state.calls.some(call =>
+          call.includes('No knowledge records changed'),
+        ),
+      ).toBe(false);
+    },
+  );
+
+  it('accepts an exact-head derived theme-owner review for a current theme record', async () => {
+    const review = {
+      user: {login: 'rubyycheung'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({
+      changedFile: {
+        filename: 'packages/themes/neutral/neutral.spec.md',
+        status: 'added',
+      },
+      headContent:
+        'kind: theme\nauthority: current\nadditional_owners: [self-declared-owner]\n',
+      reviews: [review],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        actor: 'rubyycheung',
+        review,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('@rubyycheung'),
+    });
+    expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('accepts an exact-head ENGOWNER review for a current theme record', async () => {
+    const review = {
+      user: {login: 'czarandy'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({
+      changedFile: {
+        filename: 'packages/themes/neutral/neutral.spec.md',
+        status: 'added',
+      },
+      headContent: 'kind: theme\nauthority: current\n',
+      reviews: [review],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        actor: 'czarandy',
+        review,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('@czarandy'),
+    });
+    expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('does not authorize a theme record through its self-declared owners', async () => {
+    const review = {
+      user: {login: 'self-declared-owner'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({
+      changedFile: {
+        filename: 'packages/themes/neutral/neutral.spec.md',
+        status: 'added',
+      },
+      headContent:
+        'kind: theme\nauthority: current\nadditional_owners: [self-declared-owner]\n',
+      reviews: [review],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        actor: 'self-declared-owner',
+        review,
+      }),
+    );
+
+    expect(harness.state.pullGets).toBe(0);
+    expect(harness.state.statuses).toEqual([]);
   });
 
   it('abandons the old event when the live head changes', async () => {
@@ -404,6 +818,92 @@ describe('spec owner workflow reconciliation', () => {
     expect(
       harness.state.calls.some(call => call.includes('yielded to newer run')),
     ).toBe(true);
+  });
+
+  it('skips fork owner reviews before any GitHub API work', async () => {
+    const review = {
+      user: {login: 'cixzhang'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const messages = [];
+    const github = new Proxy(
+      {},
+      {
+        get() {
+          throw new Error('GitHub API accessed');
+        },
+      },
+    );
+
+    await reconcileSpecOwnerGate({
+      github,
+      context: context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        headRepository: 'contributor/astryx',
+        review,
+      }),
+      core: {info: message => messages.push(message)},
+      workspace,
+      env,
+    });
+
+    expect(messages).toEqual([
+      'Skipping fork pull request review; use an exact-head owner command to reconcile.',
+    ]);
+  });
+
+  it('reconciles same-repository owner reviews automatically', async () => {
+    const review = {
+      user: {login: 'cixzhang'},
+      state: 'APPROVED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({reviews: [review]});
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'submitted',
+        review,
+      }),
+    );
+
+    expect(harness.state.pullGets).toBeGreaterThan(0);
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('reconciles an exact-head owner command for a fork current-spec PR', async () => {
+    const comment = {
+      user: {login: 'cixzhang'},
+      body: `/approve-spec ${head}`,
+      created_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({
+      headRepository: 'contributor/astryx',
+      comments: [comment],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment,
+      }),
+    );
+
+    expect(harness.state.pullGets).toBeGreaterThan(0);
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    expect(harness.state.calls).toContain('enable-auto-merge');
   });
 
   it('rejects valid-shaped non-owner commands before API work', async () => {

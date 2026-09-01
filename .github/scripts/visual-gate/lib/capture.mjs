@@ -23,9 +23,12 @@
  * Speed. Storybook applies the theme through a global, so a theme change is a
  * re-render, not a reload: the plan is walked grouped by story, and the theme
  * and color mode are switched over Storybook's own channel while the page
- * stays put (~130ms per shot against ~1s for a reload). `--no-fast-globals`
- * forces a reload per shot for the case where a story's own state would
- * survive the re-render and make the shot depend on the one before it.
+ * stays put (~130ms per shot against ~1s for a reload). Independent story
+ * groups run on a small fixed worker pool; one story never crosses workers, so
+ * its seeded random state and fast-global sequence remain deterministic.
+ * `--no-fast-globals` forces a reload per shot for the case where a story's own
+ * state would survive the re-render and make the shot depend on the one before
+ * it.
  */
 
 import * as fs from 'node:fs';
@@ -137,6 +140,46 @@ export async function blockExternalNetwork(context, origin) {
 }
 
 export const CAPTURE_CONTEXT_SECURITY = {serviceWorkers: 'block'};
+
+/**
+ * Split a capture plan across workers without ever splitting one story.
+ *
+ * Story boundaries are load-bearing: theme and mode changes reuse one loaded
+ * Storybook document, and every navigation resets the seeded PRNG. Keeping all
+ * shots for a story together preserves both fast globals and deterministic
+ * random state while letting independent stories run in parallel.
+ *
+ * @param {import('./plan.mjs').Shot[]} plan
+ * @param {number} concurrency
+ * @returns {import('./plan.mjs').Shot[][]}
+ */
+export function partitionCapturePlan(plan, concurrency) {
+  if (plan.length === 0) return [];
+  const workerCount = Math.max(1, Math.min(Math.floor(concurrency), plan.length));
+  const groups = [];
+  const groupByStory = Object.create(null);
+  for (const shot of plan) {
+    let group = groupByStory[shot.storyId];
+    if (!group) {
+      group = [];
+      groupByStory[shot.storyId] = group;
+      groups.push(group);
+    }
+    group.push(shot);
+  }
+
+  const partitions = Array.from({length: workerCount}, () => []);
+  const loads = Array(workerCount).fill(0);
+  for (const group of groups) {
+    let worker = 0;
+    for (let index = 1; index < workerCount; index += 1) {
+      if (loads[index] < loads[worker]) worker = index;
+    }
+    partitions[worker].push(...group);
+    loads[worker] += group.length;
+  }
+  return partitions.filter(partition => partition.length > 0);
+}
 
 export function serveDirectory(dir) {
   const root = fs.realpathSync(dir);
@@ -306,6 +349,50 @@ async function settle(page, settleMs) {
   }
 }
 
+export function partitionScoutStories(storyIds, concurrency) {
+  if (storyIds.length === 0) return [];
+  const workerCount = Math.max(1, Math.min(Math.floor(concurrency), storyIds.length));
+  const partitions = Array.from({length: workerCount}, () => []);
+  storyIds.forEach((storyId, index) => partitions[index % workerCount].push(storyId));
+  return partitions;
+}
+
+async function scoutPartition({storyIds, browser, origin, theme, viewport, onStory}) {
+  const context = await browser.newContext({
+    viewport,
+    deviceScaleFactor: 1,
+    timezoneId: TIMEZONE_ID,
+    ...CAPTURE_CONTEXT_SECURITY,
+  });
+  await context.clock.setFixedTime(FROZEN_NOW);
+  await context.addInitScript(BACKGROUND_NETWORK_GUARD);
+  await context.addInitScript(SEEDED_RANDOM);
+  await blockExternalNetwork(context, origin);
+  const page = await context.newPage();
+  const observations = {};
+
+  try {
+    for (const storyId of storyIds) {
+      try {
+        await page.goto(
+          `${origin}/iframe.html?id=${encodeURIComponent(storyId)}&viewMode=story&globals=astryxTheme:${theme};colorMode:light`,
+          {waitUntil: 'load', timeout: 30000},
+        );
+        await page.waitForSelector('#storybook-root > *', {timeout: 20000});
+        observations[storyId] = await observeTargets(page);
+      } catch {
+        // A story that will not render is the capture's problem to report, not
+        // the scout's; it simply contributes no observations.
+        observations[storyId] = {};
+      }
+      onStory();
+    }
+  } finally {
+    await context.close();
+  }
+  return observations;
+}
+
 /**
  * Load stories without photographing them, and report what each one rendered.
  *
@@ -320,78 +407,48 @@ async function settle(page, settleMs) {
  * @param {string} options.storybookDir
  * @param {string} options.theme - any theme; observed targets do not depend on it
  * @param {{width: number, height: number}} options.viewport
+ * @param {number} [options.concurrency]
  * @param {(progress: {done: number, total: number}) => void} [options.onProgress]
  * @returns {Promise<Record<string, Record<string, string[]>>>} story id → observed targets
  */
-export async function scout({storyIds, storybookDir, theme, viewport, onProgress}) {
+export async function scout({storyIds, storybookDir, theme, viewport, concurrency = 1, onProgress}) {
   const {chromium} = await import('playwright');
   const server = await serveDirectory(storybookDir);
   const origin = `http://127.0.0.1:${server.port}`;
-  const browser = await chromium.launch();
-  const context = await browser.newContext({
-    viewport,
-    deviceScaleFactor: 1,
-    timezoneId: TIMEZONE_ID,
-    ...CAPTURE_CONTEXT_SECURITY,
-  });
-  await context.clock.setFixedTime(FROZEN_NOW);
-  await context.addInitScript(BACKGROUND_NETWORK_GUARD);
-  await context.addInitScript(SEEDED_RANDOM);
-  await blockExternalNetwork(context, origin);
-  const page = await context.newPage();
-
-  /** @type {Record<string, Record<string, string[]>>} */
-  const observations = {};
-  let done = 0;
-  for (const storyId of storyIds) {
-    try {
-      await page.goto(
-        `${origin}/iframe.html?id=${encodeURIComponent(storyId)}&viewMode=story&globals=astryxTheme:${theme};colorMode:light`,
-        {waitUntil: 'load', timeout: 30000},
-      );
-      await page.waitForSelector('#storybook-root > *', {timeout: 20000});
-      observations[storyId] = await observeTargets(page);
-    } catch {
-      // A story that will not render is the capture's problem to report, not
-      // the scout's; it simply contributes no observations.
-      observations[storyId] = {};
-    }
-    onProgress?.({done: ++done, total: storyIds.length});
+  let browser;
+  try {
+    browser = await chromium.launch();
+    let done = 0;
+    const results = await Promise.all(
+      partitionScoutStories(storyIds, concurrency).map(partition =>
+        scoutPartition({
+          storyIds: partition,
+          browser,
+          origin,
+          theme,
+          viewport,
+          onStory: () => onProgress?.({done: ++done, total: storyIds.length}),
+        }),
+      ),
+    );
+    const observed = Object.assign({}, ...results);
+    return Object.fromEntries(storyIds.map(storyId => [storyId, observed[storyId] ?? {}]));
+  } finally {
+    await browser?.close().catch(() => {});
+    await server.close();
   }
-
-  await browser.close();
-  await server.close();
-  return observations;
 }
 
-/**
- * @param {object} options
- * @param {import('./plan.mjs').Shot[]} options.plan
- * @param {string} options.storybookDir
- * @param {string} options.outDir
- * @param {{width: number, height: number}} options.viewport
- * @param {number} options.settleMs
- * @param {boolean} options.fastGlobals
- * @param {(progress: {done: number, total: number, key: string}) => void} [options.onProgress]
- * @returns {Promise<{manifest: object, failures: Array<{key: string, error: string}>}>}
- */
-export async function capture({
+async function capturePartition({
   plan,
-  storybookDir,
-  outDir,
+  browser,
+  origin,
+  shotsDir,
   viewport,
   settleMs,
   fastGlobals,
-  onProgress,
+  onShot,
 }) {
-  const {chromium} = await import('playwright');
-  const shotsDir = path.join(outDir, 'shots');
-  fs.mkdirSync(shotsDir, {recursive: true});
-
-  const server = await serveDirectory(storybookDir);
-  const origin = `http://127.0.0.1:${server.port}`;
-  const browser = await chromium.launch();
-  const browserVersion = browser.version();
   const context = await browser.newContext({
     viewport,
     deviceScaleFactor: 1,
@@ -403,92 +460,159 @@ export async function capture({
   await context.clock.setFixedTime(FROZEN_NOW);
   await context.addInitScript(BACKGROUND_NETWORK_GUARD);
   await context.addInitScript(SEEDED_RANDOM);
-  // Anything off-origin is a determinism hazard, and nothing in a component
-  // story legitimately needs it.
   await blockExternalNetwork(context, origin);
   const page = await context.newPage();
   await page.addStyleTag({content: FREEZE_CSS}).catch(() => {});
 
-  /** @type {Record<string, {sha256: string, width: number, height: number, storyId: string, theme: string, mode: string, reasons: string[]}>} */
   const shots = {};
-  /** @type {Record<string, Set<string>>} */
   const observed = {};
-  /** @type {Array<{key: string, error: string}>} */
   const failures = [];
-
   let currentStory = null;
-  let done = 0;
 
-  for (const shot of plan) {
-    try {
-      const globals = {astryxTheme: shot.theme, colorMode: shot.mode};
-      const needsLoad = !fastGlobals || currentStory !== shot.storyId;
-      if (needsLoad) {
-        const globalsParam = `astryxTheme:${shot.theme};colorMode:${shot.mode}`;
-        await page.goto(
-          `${origin}/iframe.html?id=${encodeURIComponent(shot.storyId)}&viewMode=story&globals=${globalsParam}`,
-          {waitUntil: 'load', timeout: 30000},
-        );
-        await page.waitForSelector('#storybook-root > *', {timeout: 30000});
-        currentStory = shot.storyId;
-      } else {
-        await applyGlobals(page, globals);
+  try {
+    for (const shot of plan) {
+      try {
+        const globals = {astryxTheme: shot.theme, colorMode: shot.mode};
+        const needsLoad = !fastGlobals || currentStory !== shot.storyId;
+        if (needsLoad) {
+          const globalsParam = `astryxTheme:${shot.theme};colorMode:${shot.mode}`;
+          await page.goto(
+            `${origin}/iframe.html?id=${encodeURIComponent(shot.storyId)}&viewMode=story&globals=${globalsParam}`,
+            {waitUntil: 'load', timeout: 30000},
+          );
+          await page.waitForSelector('#storybook-root > *', {timeout: 30000});
+          currentStory = shot.storyId;
+        } else {
+          await applyGlobals(page, globals);
+        }
+        await page.addStyleTag({content: FREEZE_CSS});
+        await settle(page, settleMs);
+        await verifyApplied(page, {theme: shot.theme, mode: shot.mode});
+
+        const png = await page.screenshot({fullPage: true, animations: 'disabled'});
+        fs.writeFileSync(path.join(shotsDir, `${shot.key}.png`), png);
+        const size = await page.evaluate(() => ({
+          width: document.documentElement.scrollWidth,
+          height: document.documentElement.scrollHeight,
+        }));
+        shots[shot.key] = {
+          sha256: crypto.createHash('sha256').update(png).digest('hex'),
+          width: size.width,
+          height: size.height,
+          storyId: shot.storyId,
+          title: shot.title,
+          name: shot.name,
+          component: shot.component,
+          theme: shot.theme,
+          mode: shot.mode,
+          reasons: shot.reasons,
+        };
+
+        for (const [key, values] of Object.entries(await observeTargets(page))) {
+          observed[key] ??= new Set();
+          for (const value of values) observed[key].add(value);
+        }
+      } catch (error) {
+        failures.push({key: shot.key, error: String(error?.message ?? error).slice(0, 400)});
+        // A story that will not render poisons the page for the next shot in the
+        // same story group; force a fresh navigation on the next iteration.
+        currentStory = null;
       }
-      await page.addStyleTag({content: FREEZE_CSS});
-      await settle(page, settleMs);
-      await verifyApplied(page, {theme: shot.theme, mode: shot.mode});
+      onShot(shot.key);
+    }
+  } finally {
+    await context.close();
+  }
 
-      const png = await page.screenshot({fullPage: true, animations: 'disabled'});
-      fs.writeFileSync(path.join(shotsDir, `${shot.key}.png`), png);
-      const size = await page.evaluate(() => ({
-        width: document.documentElement.scrollWidth,
-        height: document.documentElement.scrollHeight,
-      }));
-      shots[shot.key] = {
-        sha256: crypto.createHash('sha256').update(png).digest('hex'),
-        width: size.width,
-        height: size.height,
-        storyId: shot.storyId,
-        title: shot.title,
-        name: shot.name,
-        component: shot.component,
-        theme: shot.theme,
-        mode: shot.mode,
-        reasons: shot.reasons,
-      };
+  return {shots, observed, failures};
+}
 
-      for (const [key, values] of Object.entries(await observeTargets(page))) {
+/**
+ * @param {object} options
+ * @param {import('./plan.mjs').Shot[]} options.plan
+ * @param {string} options.storybookDir
+ * @param {string} options.outDir
+ * @param {{width: number, height: number}} options.viewport
+ * @param {number} options.settleMs
+ * @param {boolean} options.fastGlobals
+ * @param {number} [options.concurrency]
+ * @param {(progress: {done: number, total: number, key: string}) => void} [options.onProgress]
+ * @returns {Promise<{manifest: object, failures: Array<{key: string, error: string}>}>}
+ */
+export async function capture({
+  plan,
+  storybookDir,
+  outDir,
+  viewport,
+  settleMs,
+  fastGlobals,
+  concurrency = 1,
+  onProgress,
+}) {
+  const {chromium} = await import('playwright');
+  const shotsDir = path.join(outDir, 'shots');
+  fs.mkdirSync(shotsDir, {recursive: true});
+
+  const server = await serveDirectory(storybookDir);
+  const origin = `http://127.0.0.1:${server.port}`;
+  let browser;
+  try {
+    browser = await chromium.launch();
+    const browserVersion = browser.version();
+    let done = 0;
+    const results = await Promise.all(
+      partitionCapturePlan(plan, concurrency).map(partition =>
+        capturePartition({
+          plan: partition,
+          browser,
+          origin,
+          shotsDir,
+          viewport,
+          settleMs,
+          fastGlobals,
+          onShot: key => onProgress?.({done: ++done, total: plan.length, key}),
+        }),
+      ),
+    );
+
+    const captured = Object.assign({}, ...results.map(result => result.shots));
+    const shots = Object.fromEntries(
+      plan.filter(shot => captured[shot.key]).map(shot => [shot.key, captured[shot.key]]),
+    );
+    const observed = {};
+    for (const result of results) {
+      for (const [key, values] of Object.entries(result.observed)) {
         observed[key] ??= new Set();
         for (const value of values) observed[key].add(value);
       }
-    } catch (error) {
-      failures.push({key: shot.key, error: String(error?.message ?? error).slice(0, 400)});
-      // A story that will not render poisons the page for the next shot in the
-      // same story group.
-      currentStory = null;
     }
-    done += 1;
-    onProgress?.({done, total: plan.length, key: shot.key});
+
+    const failuresByKey = Object.fromEntries(
+      results.flatMap(result => result.failures).map(failure => [failure.key, failure]),
+    );
+    const failures = plan.flatMap(shot =>
+      failuresByKey[shot.key] ? [failuresByKey[shot.key]] : [],
+    );
+
+    return {
+      manifest: {
+        version: 1,
+        platform: `${process.platform}-${process.arch}`,
+        browser: `chromium-${browserVersion}`,
+        viewport,
+        settleMs,
+        frozenClock: FROZEN_NOW.toISOString(),
+        timezoneId: TIMEZONE_ID,
+        capturedAt: new Date().toISOString(),
+        shots,
+        observedTargets: Object.fromEntries(
+          Object.entries(observed).map(([key, values]) => [key, [...values].sort()]),
+        ),
+      },
+      failures,
+    };
+  } finally {
+    await browser?.close().catch(() => {});
+    await server.close();
   }
-
-  await browser.close();
-  await server.close();
-
-  return {
-    manifest: {
-      version: 1,
-      platform: `${process.platform}-${process.arch}`,
-      browser: `chromium-${browserVersion}`,
-      viewport,
-      settleMs,
-      frozenClock: FROZEN_NOW.toISOString(),
-      timezoneId: TIMEZONE_ID,
-      capturedAt: new Date().toISOString(),
-      shots,
-      observedTargets: Object.fromEntries(
-        Object.entries(observed).map(([key, values]) => [key, [...values].sort()]),
-      ),
-    },
-    failures,
-  };
 }

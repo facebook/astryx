@@ -77,12 +77,13 @@ jobs:
 
       - uses: actions/checkout@v7
 
+      # Spec validation imports the canonical CLI discovery path, so the
+      # lightweight docs path needs workspace dependencies too.
+      - uses: ./.github/actions/setup
+
       - name: Validate spec records
         if: needs.check-scope.outputs.spec_only == 'true'
         run: node scripts/check-knowledge.mjs
-
-      - uses: ./.github/actions/setup
-        if: needs.check-scope.outputs.spec_only != 'true'
 
       # docsite `generate` runs `astryx theme build`, which imports the compiled
       # @astryxdesign/core/theme entry (dist/theme/index.js). Build core first so that

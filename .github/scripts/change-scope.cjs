@@ -7,20 +7,28 @@
  * Classifies changed paths without reading PR-controlled content.
  *
  * A spec-only PR may change only spec records. Templates, schemas, indexes,
- * architecture, audits, workflows, and code deliberately do not qualify.
+ * architecture, guidance, audits, workflows, and code deliberately do not
+ * qualify.
  */
 
 const SPEC_RECORD_PATTERNS = [
   /^docs\/specs\/[^/]+\/(?:spec|plan)\.md$/,
   /^docs\/families\/(?!README\.md$)[^/]+\.md$/,
   /^docs\/design\/(?!README\.md$)(?!assets\/)[^/]+\.md$/,
+  /^packages\/themes\/([^/]+)\/\1\.spec\.md$/,
   /^packages\/(?:core|lab)\/src\/[^/]+\/[^/]+\.spec\.md$/,
 ];
 
 const CHANGESET_PATTERN = /^\.changeset\/(?!README\.md$)[^/]+\.md$/;
 
+const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
+const THEME_PACKAGE_CANDIDATE =
+  /^packages\/themes\/[^/]+\/(?:.*\/)?[^/]+\.spec\.md$/;
+
 const KNOWLEDGE_RECORD_PATTERNS = [
   ...SPEC_RECORD_PATTERNS,
+  THEME_DOC_CANDIDATE,
+  THEME_PACKAGE_CANDIDATE,
   /^docs\/architecture\/(?!README\.md$)[^/]+\.md$/,
   /^docs\/design\/assets\//,
 ];

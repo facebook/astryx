@@ -6,6 +6,7 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
+import {collectThemingTargets} from '../packages/cli/foundation/discovery/theming-targets.mjs';
 
 const require = createRequire(import.meta.url);
 const {
@@ -63,7 +64,9 @@ export function parseKnowledgeDocument(content, filePath = '<document>') {
         block.push(lines[index + 1].trim());
         index += 1;
       }
-      if (block[0] === '[' && block.at(-1) === ']') {
+      if (block.length === 1 && /^\[.*\]$/.test(block[0])) {
+        raw = block[0];
+      } else if (block[0] === '[' && block.at(-1) === ']') {
         raw = `[${block.slice(1, -1).join('')}]`;
       } else if (block.every(item => item.startsWith('- '))) {
         raw = `[${block.map(item => item.slice(2)).join(',')}]`;
@@ -107,6 +110,55 @@ function matchingFiles(directory, predicate) {
     .map(entry => path.join(directory, entry.name));
 }
 
+function matchingFilesRecursively(directory, predicate) {
+  if (!fs.existsSync(directory)) return [];
+  const matches = [];
+  const pending = [directory];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    for (const entry of fs.readdirSync(current, {withFileTypes: true})) {
+      const candidate = path.join(current, entry.name);
+      if (entry.isDirectory()) pending.push(candidate);
+      else if (entry.isFile() && predicate(entry.name)) matches.push(candidate);
+    }
+  }
+  return matches;
+}
+
+export function discoverThemeRecordCandidates(root = DEFAULT_ROOT) {
+  const records = [];
+  const problems = [];
+
+  for (const filePath of matchingFiles(
+    path.join(root, 'docs/themes'),
+    name => name.endsWith('.md') && name !== 'README.md',
+  )) {
+    records.push(filePath);
+    problems.push(
+      `${path.relative(root, filePath)}: theme records must be placed at packages/themes/<theme>/<theme>.spec.md; docs/themes contains guidance only.`,
+    );
+  }
+
+  for (const themeDirectory of immediateDirectories(
+    path.join(root, 'packages/themes'),
+  )) {
+    const themeName = path.basename(themeDirectory);
+    const expectedPath = path.join(themeDirectory, `${themeName}.spec.md`);
+    for (const filePath of matchingFilesRecursively(themeDirectory, name =>
+      name.endsWith('.spec.md'),
+    )) {
+      records.push(filePath);
+      if (filePath !== expectedPath) {
+        problems.push(
+          `${path.relative(root, filePath)}: theme record must be placed exactly at packages/themes/${themeName}/${themeName}.spec.md.`,
+        );
+      }
+    }
+  }
+
+  return {records: records.sort(), problems};
+}
+
 export function discoverKnowledgeRecords(root = DEFAULT_ROOT) {
   const records = [];
 
@@ -133,6 +185,8 @@ export function discoverKnowledgeRecords(root = DEFAULT_ROOT) {
       name => name.endsWith('.md') && name !== 'README.md',
     ),
   );
+
+  records.push(...discoverThemeRecordCandidates(root).records);
 
   for (const packageName of ['core', 'lab']) {
     for (const componentDirectory of immediateDirectories(
@@ -349,6 +403,103 @@ export function validateAnatomyThemingMap(
   return problems;
 }
 
+function collectDelegations(mapping, filePath) {
+  const delegations = [];
+  for (const [anatomy, disposition] of Object.entries(mapping)) {
+    const delegation = disposition?.delegatesTo;
+    if (!exactObjectKeys(delegation, ['owner', 'target'])) continue;
+    if (
+      !/^(component:[A-Z][A-Za-z0-9]*|family:[a-z0-9]+(?:-[a-z0-9]+)*)$/.test(
+        delegation.owner,
+      )
+    )
+      continue;
+    if (!THEME_TARGET_NAME.test(delegation.target)) continue;
+    delegations.push({
+      filePath,
+      anatomy,
+      owner: delegation.owner,
+      target: delegation.target,
+    });
+  }
+  return delegations;
+}
+
+/**
+ * Validate delegatesTo pairs against the CLI's canonical active owner/target
+ * inventory and active knowledge-family membership.
+ */
+export function validateDelegations(
+  delegations,
+  canonicalTargets,
+  activeFamilies = new Map(),
+) {
+  const targetsByOwner = new Map();
+  const ownersByTarget = new Map();
+  for (const {component, key} of canonicalTargets) {
+    const owner = `component:${component.replace(/^XDS/, '')}`;
+    const targets = targetsByOwner.get(owner) ?? new Set();
+    targets.add(key);
+    targetsByOwner.set(owner, targets);
+    const owners = ownersByTarget.get(key) ?? new Set();
+    owners.add(owner);
+    ownersByTarget.set(key, owners);
+  }
+
+  function targetOwnership(target) {
+    const owners = [...(ownersByTarget.get(target) ?? [])]
+      .sort()
+      .map(value => JSON.stringify(value));
+    return owners.length > 0
+      ? ` canonical owner${owners.length === 1 ? '' : 's'} for target ${JSON.stringify(target)}: ${owners.join(', ')}.`
+      : ` no active canonical owner declares target ${JSON.stringify(target)}.`;
+  }
+
+  const problems = [];
+  for (const {filePath, anatomy, owner, target} of delegations) {
+    const where = `${filePath}: theming anatomy ${JSON.stringify(anatomy)}.delegatesTo`;
+
+    if (owner.startsWith('family:')) {
+      const family = activeFamilies.get(owner);
+      if (!family) {
+        problems.push(
+          `${where}: owner ${JSON.stringify(owner)} does not resolve to an active family record (target ${JSON.stringify(target)}).`,
+        );
+        continue;
+      }
+
+      const memberOwners = new Set(family.members);
+      const matchingMembers = [
+        ...(ownersByTarget.get(target) ?? new Set()),
+      ].filter(member => memberOwners.has(member));
+      if (matchingMembers.length === 0) {
+        problems.push(
+          `${where}: target ${JSON.stringify(target)} is not an active canonical target of any component in ${JSON.stringify(owner)} members (${family.filePath});${targetOwnership(target)}`,
+        );
+      }
+      continue;
+    }
+
+    const ownedTargets = targetsByOwner.get(owner);
+    if (!ownedTargets) {
+      problems.push(
+        `${where}: owner ${JSON.stringify(owner)} does not exist in the canonical active component target inventory;${targetOwnership(target)}`,
+      );
+      continue;
+    }
+    if (!ownedTargets.has(target)) {
+      const available = [...ownedTargets]
+        .sort()
+        .map(value => JSON.stringify(value))
+        .join(', ');
+      problems.push(
+        `${where}: target ${JSON.stringify(target)} is not an active target owned by ${JSON.stringify(owner)}; active targets for that owner: ${available};${targetOwnership(target)}`,
+      );
+    }
+  }
+  return problems;
+}
+
 function loadComponentContract(root, specPath, componentName) {
   const directory = path.dirname(specPath);
   for (const docPath of matchingFiles(directory, name =>
@@ -398,6 +549,7 @@ function validateAgainstSchema(
   isTemplate,
   currentTemplateVersion,
   designApprovalOwners = [],
+  themeApprovalOwners = [],
 ) {
   const problems = [...document.problems];
   const {frontmatter, sections} = document;
@@ -436,6 +588,12 @@ function validateAgainstSchema(
     );
   }
 
+  for (const field of kindSchema.listFields ?? []) {
+    if (!Array.isArray(frontmatter.get(field))) {
+      problems.push(`${filePath}: ${field} must be a list.`);
+    }
+  }
+
   if (isTemplate) {
     if (templateVersion !== currentTemplateVersion) {
       problems.push(
@@ -460,9 +618,28 @@ function validateAgainstSchema(
     return problems;
   }
 
-  const owners = frontmatter.get('owners');
-  if (!Array.isArray(owners) || owners.length === 0) {
-    problems.push(`${filePath}: owners must be a non-empty inline list.`);
+  for (const field of kindSchema.requiredNonEmptyStringFields ?? []) {
+    const value = frontmatter.get(field);
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      problems.push(`${filePath}: ${field} must be a non-empty string.`);
+    }
+  }
+
+  const id = frontmatter.get('id');
+  if (
+    kindSchema.idPattern &&
+    (typeof id !== 'string' || !new RegExp(kindSchema.idPattern).test(id))
+  ) {
+    problems.push(
+      `${filePath}: id must match ${JSON.stringify(kindSchema.idPattern)}.`,
+    );
+  }
+
+  if (kindSchema.requiredFrontmatter.includes('owners')) {
+    const owners = frontmatter.get('owners');
+    if (!Array.isArray(owners) || owners.length === 0) {
+      problems.push(`${filePath}: owners must be a non-empty inline list.`);
+    }
   }
 
   const authority = frontmatter.get('authority');
@@ -485,7 +662,9 @@ function validateAgainstSchema(
     const authorizedOwners =
       kind === 'design'
         ? [...new Set([...schema.approvalOwners, ...designApprovalOwners])]
-        : schema.approvalOwners;
+        : kind === 'theme'
+          ? themeApprovalOwners
+          : schema.approvalOwners;
     if (!authorizedOwners.includes(approvedBy)) {
       problems.push(
         `${filePath}: current records require approved_by to name an authorized owner.`,
@@ -591,9 +770,46 @@ function currentSchemaFiles(root) {
   );
 }
 
-export function validateKnowledgeRoot(root = DEFAULT_ROOT) {
+export function composeKnowledgeSchemas(rawSchemas) {
+  const composed = new Map();
+  const latestKindVersions = new Map();
+
+  function compose(version, stack = []) {
+    if (composed.has(version)) return composed.get(version);
+    const entry = rawSchemas.get(version);
+    if (!entry) throw new Error(`Schema v${version} does not exist.`);
+    if (stack.includes(version))
+      throw new Error('Knowledge schema extends cycle.');
+    const parentVersion = entry.schema.extends;
+    const parent =
+      parentVersion == null
+        ? null
+        : compose(parentVersion, [...stack, version]);
+    const schema = parent
+      ? {
+          ...parent.schema,
+          ...entry.schema,
+          kinds: {...parent.schema.kinds, ...(entry.schema.kinds ?? {})},
+        }
+      : entry.schema;
+    const result = {...entry, schema};
+    composed.set(version, result);
+    return result;
+  }
+
+  for (const version of [...rawSchemas.keys()].sort((a, b) => a - b)) {
+    const entry = rawSchemas.get(version);
+    compose(version);
+    for (const kind of Object.keys(entry.schema.kinds ?? {})) {
+      latestKindVersions.set(kind, version);
+    }
+  }
+  return {schemas: composed, latestKindVersions};
+}
+
+export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
   const schemaDirectory = path.join(root, 'docs/schemas/knowledge');
-  const schemas = new Map(
+  const rawSchemas = new Map(
     matchingFiles(schemaDirectory, name => /^v[0-9]+\.json$/.test(name)).map(
       schemaPath => {
         const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
@@ -609,11 +825,11 @@ export function validateKnowledgeRoot(root = DEFAULT_ROOT) {
       },
     ),
   );
-  if (schemas.size === 0)
+  if (rawSchemas.size === 0)
     return ['docs/schemas/knowledge: no versioned schemas found.'];
+  const {schemas, latestKindVersions} = composeKnowledgeSchemas(rawSchemas);
   const latestVersion = Math.max(...schemas.keys());
-  const {schema, schemaPath} = schemas.get(latestVersion);
-  const relativeSchemaPath = path.relative(root, schemaPath);
+  const {schema} = schemas.get(latestVersion);
   const templateVersions = JSON.parse(
     fs.readFileSync(
       path.join(root, 'docs/templates/knowledge/versions.json'),
@@ -624,11 +840,21 @@ export function validateKnowledgeRoot(root = DEFAULT_ROOT) {
   const designApprovalOwners = fs.existsSync(designOwnersPath)
     ? parseOwnerFile(fs.readFileSync(designOwnersPath, 'utf8'))
     : [];
-  const problems = [];
+  const engineeringOwnersPath = path.join(root, '.github/ENGOWNERS');
+  const engineeringApprovalOwners = fs.existsSync(engineeringOwnersPath)
+    ? parseOwnerFile(fs.readFileSync(engineeringOwnersPath, 'utf8'))
+    : [];
+  const themeApprovalOwners = [
+    ...new Set([...engineeringApprovalOwners, ...designApprovalOwners]),
+  ];
+  const problems = [...discoverThemeRecordCandidates(root).problems];
   const ids = new Map();
   const records = [];
+  const delegations = [];
 
   for (const [kind, kindSchema] of Object.entries(schema.kinds)) {
+    const kindVersion = latestKindVersions.get(kind);
+    const kindSchemaEntry = schemas.get(kindVersion);
     if (
       !Number.isInteger(templateVersions[kind]) ||
       templateVersions[kind] < 1
@@ -652,12 +878,13 @@ export function validateKnowledgeRoot(root = DEFAULT_ROOT) {
     problems.push(
       ...validateAgainstSchema(
         template,
-        schema,
-        relativeSchemaPath,
+        kindSchemaEntry.schema,
+        path.relative(root, kindSchemaEntry.schemaPath),
         kindSchema.template,
         true,
         templateVersions[kind],
         designApprovalOwners,
+        themeApprovalOwners,
       ),
     );
     if (template.frontmatter.get('kind') !== kind) {
@@ -686,22 +913,26 @@ export function validateKnowledgeRoot(root = DEFAULT_ROOT) {
         false,
         templateVersions[document.frontmatter.get('kind')],
         designApprovalOwners,
+        themeApprovalOwners,
       ),
     );
-    if (
-      versionedSchema.schema.activeAuthorities.includes(
-        document.frontmatter.get('authority'),
-      ) &&
-      recordVersion !== latestVersion
-    ) {
+    const authority = document.frontmatter.get('authority');
+    const isActiveRecord =
+      versionedSchema.schema.activeAuthorities.includes(authority);
+    const kind = document.frontmatter.get('kind');
+    const latestKindVersion = latestKindVersions.get(kind);
+    if (isActiveRecord && recordVersion !== latestKindVersion) {
       problems.push(
-        `${filePath}: active records must use latest schema_version ${latestVersion}.`,
+        `${filePath}: active ${kind} records must use latest schema_version ${latestKindVersion} for that kind.`,
       );
     }
     if (document.frontmatter.get('kind') === 'component') {
       const parsed = parseAnatomyThemingBlock(content, filePath);
       problems.push(...parsed.problems);
       if (parsed.mapping != null) {
+        if (isActiveRecord) {
+          delegations.push(...collectDelegations(parsed.mapping, filePath));
+        }
         const componentName = String(document.frontmatter.get('id') ?? '')
           .replace(/^component:/, '')
           .replace(/\/.*$/, '');
@@ -735,6 +966,30 @@ export function validateKnowledgeRoot(root = DEFAULT_ROOT) {
     records.push({filePath, document});
   }
 
+  if (delegations.length > 0) {
+    const activeFamilies = new Map();
+    for (const {filePath, document} of records) {
+      const authority = document.frontmatter.get('authority');
+      if (
+        document.frontmatter.get('kind') !== 'family' ||
+        !schema.activeAuthorities.includes(authority)
+      )
+        continue;
+      const id = document.frontmatter.get('id');
+      const members = document.frontmatter.get('members');
+      if (typeof id !== 'string' || !Array.isArray(members)) continue;
+      if (!activeFamilies.has(id)) activeFamilies.set(id, {filePath, members});
+    }
+
+    const canonicalTargets = await collectThemingTargets(
+      path.join(root, 'packages/core/src'),
+      {includeDeprecated: false},
+    );
+    problems.push(
+      ...validateDelegations(delegations, canonicalTargets, activeFamilies),
+    );
+  }
+
   for (const {filePath, document} of records) {
     if (document.frontmatter.get('authority') !== 'current') continue;
     const kindSchema = schema.kinds[document.frontmatter.get('kind')];
@@ -761,7 +1016,7 @@ export function validateKnowledgeRoot(root = DEFAULT_ROOT) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const problems = validateKnowledgeRoot();
+  const problems = await validateKnowledgeRoot();
   const baseIndex = process.argv.indexOf('--base');
   if (baseIndex !== -1) {
     const baseRevision = process.argv[baseIndex + 1];

@@ -181,9 +181,12 @@ instant lives in `lib/capture.mjs` and is recorded in every manifest. Changing
 it changes those shots, so it is a deliberate rebaseline, not a tweak.
 
 Theme and colour mode are switched over Storybook's own channel rather than
-by reloading, which is what keeps 514 shots inside a few minutes;
-`--no-fast-globals` forces a reload per shot if a story's state ever turns out
-to survive the re-render.
+by reloading. Two workers scout and capture independent story groups
+concurrently, but all shots for one story stay together so seeded random state
+and fast-global ordering remain deterministic. After capture closes the browser,
+two CPU workers decode and compare the baseline PNGs. `--no-fast-globals`
+forces a reload per shot if a story's state ever turns out to survive the
+re-render.
 
 ## Where the images live
 

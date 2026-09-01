@@ -9,7 +9,13 @@ import {fileURLToPath} from 'node:url';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {PNG} from 'pngjs';
 
-import {analyzeTargeting, buildVerdict, compareCaptures, compareReleaseCaptures} from './compare.mjs';
+import {
+  analyzeTargeting,
+  buildVerdict,
+  compareCaptures,
+  compareReleaseCaptures,
+  partitionComparisonKeys,
+} from './compare.mjs';
 import {createReleasePlan} from './plan.mjs';
 
 /** A solid rectangle, so a change is unambiguous. */
@@ -61,11 +67,33 @@ const compare = (baseline, current) =>
   });
 
 describe('compareCaptures', () => {
+  it('balances the current 3,378-shot comparison across two CPU workers', () => {
+    const keys = Array.from({length: 3378}, (_, index) => `shot-${index}`);
+    const partitions = partitionComparisonKeys(keys, 2);
+    expect(partitions.map(partition => partition.length)).toEqual([1689, 1689]);
+    expect(new Set(partitions.flat()).size).toBe(3378);
+  });
+
   it('calls an identical shot unchanged without decoding it', async () => {
     write('baseline', 'a', png(10, 10, [255, 0, 0]));
     write('current', 'a', png(10, 10, [255, 0, 0]));
     const result = await compare(manifest({a: {sha256: 'same'}}), manifest({a: {sha256: 'same'}}));
     expect(result).toMatchObject({unchanged: ['a'], changes: [], added: [], removed: []});
+  });
+
+  it('skips pixelmatch when differently encoded PNGs decode to identical pixels', async () => {
+    const image = png(10, 10, [255, 0, 0]);
+    const decoded = PNG.sync.read(image);
+    write('baseline', 'a', PNG.sync.write(decoded, {deflateLevel: 1, filterType: 0}));
+    write('current', 'a', PNG.sync.write(decoded, {deflateLevel: 9, filterType: -1}));
+
+    const result = await compare(
+      manifest({a: {sha256: 'baseline-encoding'}}),
+      manifest({a: {sha256: 'current-encoding'}}),
+    );
+
+    expect(result).toMatchObject({unchanged: ['a'], changes: []});
+    expect(fs.readdirSync(path.join(root, 'diff'))).toEqual([]);
   });
 
   it('reports a changed shot with its pixel count and writes a diff image', async () => {
@@ -187,6 +215,24 @@ describe('compareCaptures', () => {
     expect(() =>
       execFileSync(process.execPath, [gate, 'release', '--tiers', 'surface'], {encoding: 'utf8'}),
     ).toThrow(/stable release plan is internal/);
+  });
+
+  it('keeps current-manifest order when equal diffs cross worker partitions', async () => {
+    const keys = ['a', 'b', 'c', 'd'];
+    for (const key of keys) {
+      write('baseline', key, png(10, 10, [255, 0, 0]));
+      write('current', key, png(10, 10, [0, 0, 255]));
+    }
+    const before = manifest(
+      Object.fromEntries(keys.map(key => [key, {sha256: `before-${key}`}]))
+    );
+    const after = manifest(
+      Object.fromEntries(keys.map(key => [key, {sha256: `after-${key}`}]))
+    );
+
+    const result = await compare(before, after);
+
+    expect(result.changes.map(change => change.key)).toEqual(keys);
   });
 
   it('ranks the biggest change first', async () => {

@@ -16,7 +16,7 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-families: []
+families: [family:navigation-destinations]
 design_specs: []
 architecture:
   [
@@ -25,7 +25,7 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-005/DEC-1]
 ---
 
 # TreeList component contract
@@ -183,8 +183,11 @@ authorize a new target.
   surface; this documentation adds no API.
 - `architecture:interaction-modality` owns shared keyboard and pointer modality;
   TreeList continues to own its existing tree focus and activation behavior.
-- TreeList has no current family contract, and no unresolved family or runtime
-  record identifier is included.
+- `family:navigation-destinations` owns the shared accept/block result for a
+  TreeListItem `href`; `spec:AST-005/DEC-1` requires native and custom-router
+  item paths to preserve that result.
+- TreeList's current custom-router path inherits the `useLinkComponent` adoption
+  gap recorded by the family until the accepted implementation lands.
 
 ## Verification map
 

@@ -35,8 +35,13 @@ Astryx keeps different facts in different places:
 
 - Component contracts describe behavior one component promises.
 - Family contracts describe behavior sibling components share.
-- Design specs record human-owned visual and interaction decisions.
-- System specs record decisions that cross components or change architecture.
+- Design specs record human-owned visual and interaction decisions, including the
+  cross-theme accessibility and contrast methodology used to judge token/color
+  pairings.
+- Theme specs record one package theme's intent, inherited base, selected token
+  and palette mappings, required pairings/states, theme-specific exceptions,
+  measured receipts, known gaps, compatibility, and artifacts.
+- System specs record decisions that cross components or themes or change architecture.
 - Consumer docs explain props, examples, and usage.
 - Audit records hold current evidence and findings.
 
@@ -44,8 +49,8 @@ The reviewer starts with the changed code and the nearest current component
 contract. They follow only the links needed for the question:
 
 ```text
-changed code
-  → nearest current component contract
+changed code or theme source
+  → nearest current component or theme contract
   → relevant family or design requirement
   → architecture or system decision only when referenced
   → mapped tests and audit evidence
@@ -53,6 +58,16 @@ changed code
 
 A current record may cite a previous human decision. When the new case is within
 that decision's stated scope, the reviewer applies it without asking again.
+
+Theme records sit between shared theming architecture and downstream records.
+Cross-theme API, vocabulary, inheritance, validation, compiler behavior, and
+artifact policy remain in architecture or system specs. Cross-theme human visual
+and accessibility methodology for contrast belongs in a current design record;
+shared measurement/tool implementation belongs to architecture or tooling. One
+theme's selected token/palette mappings, required pairings and states,
+exceptions, measured receipts, known gaps, migration, and artifacts belong in
+its package-local theme record. Components and families continue to own
+observable behavior; consumer docs continue to own supported syntax and examples.
 
 Every record is either:
 
@@ -64,8 +79,13 @@ Every record is either:
 
 - **INV1 — Current means approved.** Only `current` records guide implementation
   and review.
-- **INV2 — One fact has one owner.** A component record does not copy family,
-  design, consumer, or audit content.
+- **INV2 — One fact has one owner.** A component or theme record does not copy
+  family, design, system, consumer, audit, or tooling content. Cross-theme API and
+  compiler behavior stay in architecture/system records; human contrast
+  methodology stays in design; shared measurement implementation stays in
+  architecture/tooling; theme-specific mappings, states, exceptions, receipts,
+  and gaps stay in the package-local theme record; observable component behavior
+  stays in component/family records; consumer syntax stays in consumer docs.
 - **INV3 — Existing decisions are reusable.** A reviewer cites an applicable
   decision and proceeds without asking the human again.
 - **INV4 — New judgment is explicit.** A reviewer asks a human when no current
@@ -73,12 +93,15 @@ Every record is either:
   human-owned.
 - **INV5 — Blank forms are not policy.** Templates only create drafts. Search
   and review never present template text as an approved Astryx decision.
-- **INV6 — Required structure changes together.** Template wording may change
-  without touching existing records. Adding or removing a required field or
-  section must update every draft and current record in the same pull request.
+- **INV6 — Required structure changes per kind.** Template wording may change
+  without touching existing records. Adding a new kind does not migrate unrelated
+  kinds. Adding or removing a required field or section from an existing kind
+  creates a later schema definition for that kind and migrates every active record
+  of that kind in the same pull request.
 - **INV7 — Only pure spec changes use lightweight CI.** Every changed file must
-  be a component, family, design, or system spec. A change to code, architecture,
-  templates, schemas, audits, or any unknown path runs normal CI.
+  be a component, family, design, theme, or system spec. A change to code,
+  architecture, guidance, templates, schemas, audits, or any unknown path runs
+  normal CI.
 - **INV8 — Private operations stay private.** Public records never name or link
   private release or automation systems.
 - **INV9 — Current records have no implicit precedence.** A newer, narrower, or
@@ -88,7 +111,8 @@ Every record is either:
 
 1. A draft is context only and cannot conflict with current policy.
 2. Identify the canonical owner from the fact's scope: component behavior,
-   family behavior, design representation, consumer usage, or audit evidence.
+   family behavior, design representation, one theme's semantics/mappings,
+   cross-theme architecture, consumer usage, or audit evidence.
 3. If two current records make different claims, review stops. Do not choose by
    recency, path proximity, or specificity; record a `novel-human` gap.
 4. Resolve the gap by changing the canonical owner and removing the copied claim.
@@ -101,7 +125,7 @@ Every record is either:
 
 A document does not stay current by convention alone.
 
-Before any component, family, design, or architecture record becomes `current`,
+Before any component, family, design, theme, or architecture record becomes `current`,
 the repository must support this flow:
 
 1. The record names the code surface that can affect it and the checks that
@@ -183,12 +207,16 @@ flow passes the historical review benchmark and is enforced on pull requests.
 
 - `AGENTS.md` points reviewers to the narrowest relevant record.
 - `docs/templates/knowledge/` contains authoring forms.
+- `packages/themes/<theme>/<theme>.spec.md` contains that package theme's
+  canonical record; `docs/themes/README.md` is guidance and an index only.
 - `docs/schemas/knowledge/` defines required structure.
 - `scripts/check-knowledge.mjs` validates templates, records, and approval
   metadata.
 - `.github/scripts/change-scope.cjs` identifies pure spec-record changes.
 - `.github/workflows/spec-owner-gate.yml` binds approval to the exact pull
-  request head and enables auto-merge only for pure spec changes.
+  request head. Theme approval derives from the committed union of
+  `.github/ENGOWNERS` and `.github/DESIGNOWNERS`; record metadata never
+  self-authorizes. The workflow enables auto-merge only for pure spec changes.
 
 ## Deciding specs
 
@@ -225,9 +253,9 @@ work.
 
 ## Verification
 
-| Invariant                         | Evidence                                       | Failure signal                                                                                         |
-| --------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| INV1, INV6                        | `scripts/check-knowledge.test.mjs`             | An unapproved current record or unmigrated active record passes                                        |
-| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`        | A template, schema, architecture, code change, unsafe rename, or truncated list qualifies as spec-only |
-| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs` | An approval for another commit clears the gate                                                         |
-| INV3, INV4                        | Blinded historical review benchmark            | Reviewer re-asks a settled decision or invents a new one                                               |
+| Invariant                         | Evidence                                       | Failure signal                                                                                                                                      |
+| --------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV6                        | `scripts/check-knowledge.test.mjs`             | An unapproved current record or unmigrated active record passes                                                                                     |
+| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`        | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                    |
+| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs` | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record |
+| INV3, INV4                        | Blinded historical review benchmark            | Reviewer re-asks a settled decision or invents a new one                                                                                            |

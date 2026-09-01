@@ -45,7 +45,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-<!-- Concepts, not a prop table. Consumer syntax/defaults remain in <Name>.doc.mjs. -->
+<!--
+Concepts, not a prop table. Consumer syntax/defaults remain in <Name>.doc.mjs.
+Record only component-local semantic concepts, additions, and exceptions; inherit
+current family rules. For an explicitly co-owned public hook or utility, cover
+semantic inputs/outputs and lifetime/resource behavior through concept rows and
+linked local requirements. Follow spec:AST-002 without copying system rules.
+-->
 
 | Concept     | Closed values or states | Meaning     | Availability by variant/orientation/state | Default     | Owner              | Stability                  | Invalid-value behavior          |
 | ----------- | ----------------------- | ----------- | ----------------------------------------- | ----------- | ------------------ | -------------------------- | ------------------------------- |
