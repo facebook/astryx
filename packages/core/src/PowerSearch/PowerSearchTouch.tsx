@@ -175,6 +175,15 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
   },
+  searchRow: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    alignItems: 'end',
+    gap: spacingVars['--spacing-1'],
+  },
+  touchInput: {
+    minHeight: spacingVars['--spacing-11'],
+  },
   touchAction: {
     minHeight: spacingVars['--spacing-11'],
   },
@@ -475,6 +484,7 @@ export function PowerSearchTouchSurface({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const managerAddButtonRef = useRef<HTMLButtonElement>(null);
+  const contentSearchInputRef = useRef<HTMLInputElement>(null);
   const managerRowsRef = useRef(new Map<number, HTMLLIElement>());
   const fieldRowsRef = useRef(new Map<string, HTMLLIElement>());
   const latestFiltersRef = useRef(filters);
@@ -727,6 +737,9 @@ export function PowerSearchTouchSurface({
   // sentinel value so every filter is confirmed through the same Save action.
   const handleFieldSelect = useCallback(
     (field: PowerSearchField) => {
+      if (!isInteractive) {
+        return;
+      }
       const operators = field.operators.filter(isSupportedOperator);
       const preferred = config.getDefaultOperator(field.key);
       const operator =
@@ -743,7 +756,7 @@ export function PowerSearchTouchSurface({
       setDraft(next);
       setStep('value');
     },
-    [config],
+    [config, isInteractive],
   );
 
   const handleFilterEdit = useCallback(
@@ -780,9 +793,27 @@ export function PowerSearchTouchSurface({
         (candidate, candidateIndex) =>
           candidate.isReadOnly ? [] : [candidateIndex],
       );
-      const nextIndex =
-        editableIndices.find(candidateIndex => candidateIndex >= index) ??
-        editableIndices.at(-1);
+      const nextIndex = editableIndices.reduce<number | undefined>(
+        (nearest, candidateIndex) => {
+          if (nearest == null) {
+            return candidateIndex;
+          }
+          const candidateDistance = Math.abs(candidateIndex - index);
+          const nearestDistance = Math.abs(nearest - index);
+          if (candidateDistance < nearestDistance) {
+            return candidateIndex;
+          }
+          if (
+            candidateDistance === nearestDistance &&
+            candidateIndex >= index &&
+            nearest < index
+          ) {
+            return candidateIndex;
+          }
+          return nearest;
+        },
+        undefined,
+      );
       if (nextIndex == null) {
         pendingSheetFocusRef.current = {type: 'manager-add'};
       } else {
@@ -1187,17 +1218,44 @@ export function PowerSearchTouchSurface({
                 />
               </div>
               {hasContentSearch && isInteractive && (
-                <TextInput
-                  label={searchLabel}
-                  isLabelHidden
-                  placeholder={contentSearchPlaceholder}
-                  value={contentQuery}
-                  onChange={setContentQuery}
-                  onKeyDown={handleContentSearchKeyDown}
-                  startIcon={<Icon icon="search" size="sm" color="secondary" />}
-                  hasClear
-                  width="100%"
-                />
+                <div {...stylex.props(styles.searchRow)}>
+                  <TextInput
+                    ref={contentSearchInputRef}
+                    label={searchLabel}
+                    isLabelHidden
+                    placeholder={contentSearchPlaceholder}
+                    value={contentQuery}
+                    onChange={setContentQuery}
+                    onKeyDown={handleContentSearchKeyDown}
+                    startIcon={
+                      <Icon icon="search" size="sm" color="secondary" />
+                    }
+                    width="100%"
+                    xstyle={styles.touchInput}
+                  />
+                  {contentQuery !== '' && (
+                    <IconButton
+                      label={t('@astryx.textInput.clearLabel', {
+                        label: searchLabel,
+                      })}
+                      tooltip={t('@astryx.textInput.clearLabel', {
+                        label: searchLabel,
+                      })}
+                      icon={<Icon icon="close" size="sm" color="inherit" />}
+                      variant="ghost"
+                      size="sm"
+                      xstyle={styles.touchIconAction}
+                      onClick={() => {
+                        setContentQuery('');
+                        requestAnimationFrame(() =>
+                          contentSearchInputRef.current?.focus({
+                            preventScroll: true,
+                          }),
+                        );
+                      }}
+                    />
+                  )}
+                </div>
               )}
             </div>
             <div {...stylex.props(styles.body)}>
@@ -1333,7 +1391,9 @@ export function PowerSearchTouchSurface({
                   value={fieldQuery}
                   onChange={setFieldQuery}
                   startIcon={<Icon icon="search" size="sm" color="secondary" />}
+                  isDisabled={!isInteractive}
                   width="100%"
+                  xstyle={styles.touchInput}
                 />
               )}
             </div>
@@ -1363,6 +1423,7 @@ export function PowerSearchTouchSurface({
                           }
                         }}
                         field={field}
+                        isDisabled={!isInteractive}
                         onSelect={handleFieldSelect}
                       />
                     ))}
@@ -1511,10 +1572,12 @@ PowerSearchTouchSurface.displayName = 'PowerSearchTouchSurface';
 
 function FieldRow({
   field,
+  isDisabled,
   itemRef,
   onSelect,
 }: {
   field: PowerSearchField;
+  isDisabled?: boolean;
   itemRef?: React.Ref<HTMLLIElement>;
   onSelect: (field: PowerSearchField) => void;
 }): ReactNode {
@@ -1522,6 +1585,7 @@ function FieldRow({
     <ListItem
       ref={itemRef}
       label={field.label}
+      isDisabled={isDisabled}
       startContent={field.icon}
       endContent={
         <Icon
