@@ -53,6 +53,7 @@ import {
 import {Heading} from '../Heading';
 import {Icon, renderIconSlot} from '../Icon';
 import {List, ListItem} from '../List';
+import {RadioList, RadioListItem} from '../RadioList';
 import {Text} from '../Text';
 import {TextInput} from '../TextInput';
 import {useSize} from '../SizeContext/SizeContext';
@@ -63,6 +64,7 @@ import {useTranslator} from '../i18n';
 import {
   borderVars,
   colorVars,
+  radiusVars,
   sizeVars,
   spacingVars,
   typeScaleVars,
@@ -110,6 +112,12 @@ const sizeStyles = stylex.create({
   },
 });
 
+const triggerVisualSizeStyles = stylex.create({
+  sm: {height: `calc(${sizeVars['--size-element-sm']} - 8px)`},
+  md: {height: `calc(${sizeVars['--size-element-md']} - 8px)`},
+  lg: {height: `calc(${sizeVars['--size-element-lg']} - 8px)`},
+});
+
 const styles = stylex.create({
   // Mirrors Tokenizer's wrapper so the tap target is visually the same field
   // the desktop variant renders, down to the concentric token inset.
@@ -131,34 +139,35 @@ const styles = stylex.create({
   startIconWithTokens: {
     marginInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
   },
-  // The trigger grows to fill the row so the field's empty space is the tap
-  // target, not dead pixels next to one.
+  // The button keeps a 44px touch target while the visible treatment matches
+  // the surrounding capsules in type size and height.
   trigger: {
     appearance: 'none',
-    flexGrow: 1,
-    flexBasis: 0,
-    minWidth: sizeVars['--size-element-lg'],
+    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     minHeight: spacingVars['--spacing-11'],
     paddingBlock: 0,
-    paddingInline: spacingVars['--spacing-1'],
+    paddingInline: 0,
     margin: 0,
     borderWidth: 0,
-    borderRadius: 'var(--_field-radius)',
     backgroundColor: 'transparent',
-    color: colorVars['--color-text-secondary'],
+    color: colorVars['--color-text-accent'],
     fontFamily: typographyVars['--font-family-body'],
-    // Matches the text size the fine-pointer input renders at, including the
-    // coarse-pointer floor that prevents iOS Safari zoom.
-    fontSize: {
-      default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
-    },
-    lineHeight: typeScaleVars['--text-body-leading'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     textAlign: 'start',
+    whiteSpace: 'nowrap',
     cursor: {default: 'pointer', ':disabled': 'not-allowed'},
     outline: 'none',
+  },
+  triggerVisual: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    paddingInline: spacingVars['--spacing-2'],
+    borderRadius: radiusVars['--radius-inner'],
+    backgroundColor: colorVars['--color-accent-muted'],
+    whiteSpace: 'nowrap',
   },
   triggerReadOnly: {
     cursor: 'default',
@@ -260,7 +269,7 @@ const styles = stylex.create({
 // Draft state
 // =============================================================================
 
-type SheetStep = 'fields' | 'operator' | 'value';
+type SheetStep = 'fields' | 'value';
 
 interface FilterDraft {
   readonly mode: 'create' | 'edit';
@@ -364,9 +373,9 @@ const DEFAULT_MAX_SEARCH_RESULTS = 10;
  * or edits one filter at a time.
  *
  * Tapping the field opens a pinned-tall sheet listing the available fields.
- * Choosing one opens its value editor; a field with more than one operator
- * shows the operator as a row that drills into its own list. Tapping a token
- * reopens that filter's editor, where Delete removes it.
+ * Choosing one opens its value editor; fields with multiple operators show the
+ * operators as radio options in that same sheet. Tapping a token reopens that
+ * filter's editor, where the footer can remove it.
  */
 export function PowerSearchTouchSurface({
   config: configProp,
@@ -408,6 +417,7 @@ export function PowerSearchTouchSurface({
   const saveButtonLabel =
     saveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const addFilterLabel = t('@astryx.powersearch.mobile.addFilter');
+  const addFilterTitle = t('@astryx.powersearch.mobile.addFilterTitle');
 
   const triggerId = useId();
   const labelId = useId();
@@ -540,9 +550,8 @@ export function PowerSearchTouchSurface({
     [commitSavedFilter],
   );
 
-  // Choosing a field opens its editor. An `empty` operator (`is unassigned`)
-  // has nothing to edit, so it lands as a filter straight away — the same
-  // shortcut the desktop tokenizer takes.
+  // Choosing a field opens its editor. Empty-value operators still stage their
+  // sentinel value so every filter is confirmed through the same Apply action.
   const handleFieldSelect = useCallback(
     (field: PowerSearchField) => {
       const operators = field.operators.filter(isSupportedOperator);
@@ -556,16 +565,12 @@ export function PowerSearchTouchSurface({
         mode: 'create',
         field: field.key,
         operator: operator.key,
+        value: operator.value.type === 'empty' ? {type: 'empty'} : undefined,
       };
-      if (operator.value.type === 'empty') {
-        setDraft(next);
-        commitFilter(next, {type: 'empty'});
-        return;
-      }
       setDraft(next);
       setStep('value');
     },
-    [config, commitFilter],
+    [config],
   );
 
   const handleTokenClick = useCallback(
@@ -637,32 +642,21 @@ export function PowerSearchTouchSurface({
       const next: FilterDraft = {
         ...draft,
         operator: operator.key,
-        value: keepsValue ? draft.value : undefined,
+        value:
+          operator.value.type === 'empty'
+            ? {type: 'empty'}
+            : keepsValue
+              ? draft.value
+              : undefined,
       };
       setDraft(next);
-      if (operator.value.type === 'empty') {
-        commitFilter(next, {type: 'empty'});
-        return;
-      }
-      setStep('value');
     },
-    [commitFilter, draft],
+    [draft],
   );
 
   const handleDraftValueChange = useCallback((value: FilterValue) => {
     setDraft(current => (current == null ? current : {...current, value}));
   }, []);
-
-  const handleDraftValueCommit = useCallback(
-    (value: FilterValue) => {
-      if (draft == null) {
-        return;
-      }
-      setDraft({...draft, value});
-      commitFilter(draft, value);
-    },
-    [draft, commitFilter],
-  );
 
   const handleApply = useCallback(() => {
     if (draft?.value == null) {
@@ -834,22 +828,20 @@ export function PowerSearchTouchSurface({
       ? componentOverrides?.[draftOperator.value.type]?.Editor
       : undefined;
 
+  const resolvedEditorOperatorLabel =
+    draftOperator == null ? '' : resolveOperatorLabel(draftOperator, t);
   const editorTitle =
-    draft?.mode === 'edit'
-      ? t('@astryx.powersearch.mobile.editFilter')
-      : (draftField?.label ?? addFilterLabel);
-
-  // Only when the operator is not already spelled out by its own drill-down
-  // row, so the sheet never says the same thing twice.
-  const editorOperatorHint =
-    draftOperator != null && draftOperators.length <= 1
-      ? resolveOperatorLabel(draftOperator, t)
-      : '';
+    draftField == null
+      ? addFilterTitle
+      : draftOperators.length <= 1 && resolvedEditorOperatorLabel !== ''
+        ? t('@astryx.powersearch.mobile.filterTitle', {
+            field: draftField.label,
+            operator: resolvedEditorOperatorLabel,
+          })
+        : draftField.label;
 
   const isApplyDisabled = draft?.operator == null || draft.value == null;
-  const isValueCommittedOnTap = draftOperator?.value.type === 'enum';
-  const isEditorFooterShown =
-    !isReadOnly && (draft?.mode === 'edit' || !isValueCommittedOnTap);
+  const isEditorFooterShown = !isReadOnly;
 
   return (
     <>
@@ -931,7 +923,13 @@ export function PowerSearchTouchSurface({
               styles.trigger,
               isReadOnly && styles.triggerReadOnly,
             )}>
-            {addFilterLabel}
+            <span
+              {...stylex.props(
+                styles.triggerVisual,
+                triggerVisualSizeStyles[size],
+              )}>
+              {addFilterLabel}
+            </span>
           </button>
           {(endContent || isRenderable(resultCountText) || isClearShown) && (
             <div {...stylex.props(styles.endSection)}>
@@ -958,12 +956,12 @@ export function PowerSearchTouchSurface({
         activeSheet={step}
         onActiveSheetChange={handleActiveSheetChange}
         onTransitionEnd={handleSheetTransitionEnd}>
-        <BottomSheet sheetId="fields" label={addFilterLabel} height="tall">
+        <BottomSheet sheetId="fields" label={addFilterTitle} height="tall">
           <div {...stylex.props(styles.sheet)}>
             <div {...stylex.props(styles.header)}>
               <div {...stylex.props(styles.headerRow)}>
                 <div {...stylex.props(styles.headerText)}>
-                  <Heading level={3}>{addFilterLabel}</Heading>
+                  <Heading level={3}>{addFilterTitle}</Heading>
                 </div>
                 <Button
                   label={t('@astryx.powersearch.editor.cancel')}
@@ -1017,62 +1015,6 @@ export function PowerSearchTouchSurface({
         </BottomSheet>
 
         <BottomSheet
-          sheetId="operator"
-          label={t('@astryx.powersearch.editor.operator')}
-          height="tall"
-          purpose="form">
-          <div {...stylex.props(styles.sheet)}>
-            <div {...stylex.props(styles.header)}>
-              <div {...stylex.props(styles.headerRow)}>
-                <Button
-                  label={t('@astryx.powersearch.mobile.back')}
-                  icon={
-                    <Icon
-                      icon="chevronLeft"
-                      size="sm"
-                      xstyle={rtlStyles.mirror}
-                    />
-                  }
-                  isIconOnly
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setStep('value')}
-                />
-                <div {...stylex.props(styles.headerText)}>
-                  <Heading level={3}>
-                    {draftField?.label ??
-                      t('@astryx.powersearch.editor.operator')}
-                  </Heading>
-                  <Text type="supporting" color="secondary">
-                    {t('@astryx.powersearch.editor.operator')}
-                  </Text>
-                </div>
-              </div>
-            </div>
-            <div {...stylex.props(styles.body)}>
-              <List hasDividers density="spacious" xstyle={styles.flushList}>
-                {draftOperators.map(operator => {
-                  const isSelected = operator.key === draft?.operator;
-                  return (
-                    <ListItem
-                      key={operator.key}
-                      label={resolveOperatorLabel(operator, t)}
-                      isSelected={isSelected}
-                      endContent={
-                        isSelected ? (
-                          <Icon icon="check" size="sm" color="accent" />
-                        ) : undefined
-                      }
-                      onClick={() => handleOperatorSelect(operator)}
-                    />
-                  );
-                })}
-              </List>
-            </div>
-          </div>
-        </BottomSheet>
-
-        <BottomSheet
           sheetId="value"
           label={editorTitle}
           height="tall"
@@ -1097,15 +1039,9 @@ export function PowerSearchTouchSurface({
                   />
                 )}
                 <div {...stylex.props(styles.headerText)}>
-                  <Heading level={3}>{editorTitle}</Heading>
-                  {/* With one operator there is no drill-down row to show it,
-                      so the header carries it: the sheet reads "Author / is"
-                      rather than naming a column and offering a bare input. */}
-                  {editorOperatorHint !== '' && (
-                    <Text type="supporting" color="secondary">
-                      {editorOperatorHint}
-                    </Text>
-                  )}
+                  <Heading level={3} maxLines={1}>
+                    {editorTitle}
+                  </Heading>
                 </div>
                 {draft?.mode === 'edit' && (
                   <Button
@@ -1150,25 +1086,26 @@ export function PowerSearchTouchSurface({
                 <>
                   <div {...stylex.props(styles.body)}>
                     {draftOperators.length > 1 && (
-                      <List
-                        hasDividers
-                        density="spacious"
-                        xstyle={styles.flushList}>
-                        <ListItem
-                          label={t('@astryx.powersearch.editor.operator')}
-                          description={resolveOperatorLabel(draftOperator, t)}
-                          endContent={
-                            <Icon
-                              icon="chevronRight"
-                              size="sm"
-                              color="secondary"
-                              xstyle={rtlStyles.mirror}
-                            />
+                      <RadioList
+                        label={t('@astryx.powersearch.editor.operator')}
+                        value={draft.operator ?? ''}
+                        onChange={operatorKey => {
+                          const operator = draftOperators.find(
+                            candidate => candidate.key === operatorKey,
+                          );
+                          if (operator != null) {
+                            handleOperatorSelect(operator);
                           }
-                          isDisabled={isReadOnly}
-                          onClick={() => setStep('operator')}
-                        />
-                      </List>
+                        }}
+                        isDisabled={isReadOnly}>
+                        {draftOperators.map(operator => (
+                          <RadioListItem
+                            key={operator.key}
+                            label={resolveOperatorLabel(operator, t)}
+                            value={operator.key}
+                          />
+                        ))}
+                      </RadioList>
                     )}
                     <PowerSearchTouchValueEditor
                       key={`${draft.field}-${draft.operator}`}
@@ -1176,7 +1113,6 @@ export function PowerSearchTouchSurface({
                       operatorValue={draftOperator.value}
                       filterValue={draft.value}
                       onChange={handleDraftValueChange}
-                      onCommit={handleDraftValueCommit}
                       isDisabled={isReadOnly}
                       maxMenuItems={maxOperatorMenuItems}
                       timezoneID={timezoneID}
@@ -1186,26 +1122,24 @@ export function PowerSearchTouchSurface({
                     <div {...stylex.props(styles.footer)}>
                       {draft.mode === 'edit' && (
                         <Button
-                          label={t('@astryx.powersearch.editor.delete')}
+                          label={t('@astryx.powersearch.mobile.removeFilter')}
                           variant="ghost"
                           onClick={handleDelete}
                         />
                       )}
-                      {!isValueCommittedOnTap && (
-                        <div
-                          {...stylex.props(
-                            styles.footerActions,
-                            draft.mode !== 'edit' && styles.footerSoleAction,
-                          )}>
-                          <Button
-                            label={saveButtonLabel}
-                            variant="primary"
-                            isDisabled={isApplyDisabled}
-                            onClick={handleApply}
-                            width={draft.mode === 'edit' ? undefined : '100%'}
-                          />
-                        </div>
-                      )}
+                      <div
+                        {...stylex.props(
+                          styles.footerActions,
+                          draft.mode !== 'edit' && styles.footerSoleAction,
+                        )}>
+                        <Button
+                          label={saveButtonLabel}
+                          variant="primary"
+                          isDisabled={isApplyDisabled}
+                          onClick={handleApply}
+                          width={draft.mode === 'edit' ? undefined : '100%'}
+                        />
+                      </div>
                     </div>
                   )}
                 </>
