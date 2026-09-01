@@ -8,6 +8,8 @@
   "tiers": ["surface", "theme-matrix", "probe"],
   "viewport": {"width": 1024, "height": 768},
   "settleMs": 50,
+  "$captureConcurrency": "Independent stories may capture concurrently, but every shot for one story stays on one worker so seeded state and fast theme switches remain deterministic.",
+  "captureConcurrency": 2,
   "threshold": 0.1,
   "maxDiffPixels": 0,
   "excludeStories": {

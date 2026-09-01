@@ -174,13 +174,14 @@ function unreadableTheme(repoRoot, name, built, error, rebuilt) {
 
 /**
  * @param {string} repoRoot
- * @returns {{excludeStories: Record<string, string>, viewport: {width: number, height: number}, settleMs: number, threshold: number, maxDiffPixels: number, defaultTheme: string, probeTheme: string, stableStoryPackages: string[], tiers: string[]}}
+ * @returns {{excludeStories: Record<string, string>, viewport: {width: number, height: number}, settleMs: number, captureConcurrency: number, threshold: number, maxDiffPixels: number, defaultTheme: string, probeTheme: string, stableStoryPackages: string[], tiers: string[]}}
  */
 export function loadConfig(repoRoot) {
   const defaults = {
     excludeStories: {},
     viewport: {width: 1024, height: 768},
     settleMs: 50,
+    captureConcurrency: 2,
     threshold: 0.1,
     maxDiffPixels: 0,
     defaultTheme: 'neutral',

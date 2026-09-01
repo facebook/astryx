@@ -249,6 +249,7 @@ async function runCapture(shots, releasePlan = null) {
     viewport: config.viewport,
     settleMs: config.settleMs,
     fastGlobals: !has('no-fast-globals'),
+    concurrency: config.captureConcurrency,
     onProgress: ({done, total}) => {
       if (done === total || done - last >= 50) {
         last = done;

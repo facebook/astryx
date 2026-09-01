@@ -11,12 +11,56 @@ import {
   CAPTURE_CONTEXT_SECURITY,
   blockExternalNetwork,
   isSameOrigin,
+  partitionCapturePlan,
   serveDirectory,
 } from './capture.mjs';
 
 const roots = [];
 afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, {recursive: true, force: true});
+});
+
+describe('capture plan partitioning', () => {
+  it('keeps the 3,378-shot release workload below 1,700 shots per worker', () => {
+    const plan = [];
+    for (let story = 0; story < 388; story += 1) {
+      const shots = story < 274 ? 9 : 8;
+      for (let index = 0; index < shots; index += 1) {
+        plan.push({key: `${story}-${index}`, storyId: `story-${story}`});
+      }
+    }
+
+    const partitions = partitionCapturePlan(plan, 2);
+    expect(partitions).toHaveLength(2);
+    expect(partitions.flat()).toHaveLength(3378);
+    expect(Math.max(...partitions.map(partition => partition.length))).toBeLessThan(1700);
+
+    const ownerByStory = {};
+    partitions.forEach((partition, worker) => {
+      for (const shot of partition) {
+        ownerByStory[shot.storyId] ??= worker;
+        expect(ownerByStory[shot.storyId]).toBe(worker);
+      }
+    });
+    expect(new Set(partitions.flat().map(shot => shot.key)).size).toBe(3378);
+  });
+
+  it('uses one worker for empty or single-worker plans and never splits interleaved stories', () => {
+    expect(partitionCapturePlan([], 2)).toEqual([]);
+    const plan = [
+      {key: 'a-light', storyId: 'a'},
+      {key: 'a-dark', storyId: 'a'},
+      {key: 'b-light', storyId: 'b'},
+    ];
+    expect(partitionCapturePlan(plan, 1)).toEqual([plan]);
+
+    const interleaved = [plan[0], plan[2], plan[1]];
+    const partitions = partitionCapturePlan(interleaved, 2);
+    const aWorkers = partitions
+      .map((partition, worker) => (partition.some(shot => shot.storyId === 'a') ? worker : null))
+      .filter(worker => worker !== null);
+    expect(aWorkers).toHaveLength(1);
+  });
 });
 
 describe('capture network boundary', () => {
