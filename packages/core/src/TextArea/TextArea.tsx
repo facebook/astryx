@@ -16,6 +16,7 @@
  * - /packages/cli/assets/templates/blocks/components/TextArea/ (showcase blocks)
  */
 
+import type React from 'react';
 import {
   useId,
   useOptimistic,
@@ -349,6 +350,12 @@ export interface TextAreaProps extends Omit<
    * Callback fired when the textarea loses focus.
    */
   onBlur?: (e: FocusEvent<HTMLTextAreaElement>) => void;
+  /**
+   * The native `autocomplete` attribute, forwarded unchanged to the
+   * `<textarea>`. Browser/form autofill behavior, not a styling escape
+   * hatch — unset leaves the browser's default.
+   */
+  autoComplete?: React.TextareaHTMLAttributes<HTMLTextAreaElement>['autoComplete'];
 }
 
 /**
@@ -387,6 +394,7 @@ export function TextArea({
   htmlName,
   onFocus,
   onBlur,
+  autoComplete,
   width,
   xstyle,
   className,
@@ -597,6 +605,7 @@ export function TextArea({
           onBlur={onBlur}
           placeholder={placeholder}
           rows={rows}
+          autoComplete={autoComplete}
           // With a disabledMessage the textarea keeps focusability via
           // aria-disabled so the reason is focus-discoverable; readOnly + the
           // handleChange guard keep the value from changing.

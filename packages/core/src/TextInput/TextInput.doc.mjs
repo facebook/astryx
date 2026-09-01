@@ -163,6 +163,12 @@ export const docs = {
       description:
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        "The native autocomplete attribute, forwarded unchanged to the <input>. Browser/form autofill behavior, not a styling escape hatch; unset leaves the browser's default.",
+    },
   ],
   theming: {
     targets: [
@@ -335,6 +341,12 @@ export const docsZh = {
       type: 'string',
       description:
         '输入框的 HTML name 属性，用于表单提交。',
+    },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        '原生 autocomplete 属性，原样转发给 <input>。这是浏览器/表单自动填充行为，不是样式逃生舱；不设置则使用浏览器默认值。',
     },
   ],
   theming: {

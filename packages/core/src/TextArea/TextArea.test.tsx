@@ -745,6 +745,28 @@ describe('TextArea', () => {
     });
   });
 
+  describe('autoComplete prop (#5638)', () => {
+    it('forwards autoComplete to the underlying textarea', () => {
+      render(
+        <TextArea
+          label="Bio"
+          value=""
+          onChange={() => {}}
+          autoComplete="off"
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'autocomplete',
+        'off',
+      );
+    });
+
+    it('does not set autocomplete when autoComplete is not provided', () => {
+      render(<TextArea label="Bio" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('autocomplete');
+    });
+  });
+
   describe('form participation', () => {
     it('submits the value under htmlName', () => {
       const {container} = render(

@@ -256,6 +256,12 @@ export const docs = {
       description: 'Callback fired when the textarea loses focus.',
     },
     {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        "The native autocomplete attribute, forwarded unchanged to the <textarea>. Browser/form autofill behavior, not a styling escape hatch; unset leaves the browser's default.",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -505,6 +511,12 @@ export const docsZh = {
       name: 'onBlur',
       type: '(e: FocusEvent<HTMLTextAreaElement>) => void',
       description: '文本域失去焦点时触发的回调。',
+    },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        '原生 autocomplete 属性，原样转发给 <textarea>。这是浏览器/表单自动填充行为，不是样式逃生舱；不设置则使用浏览器默认值。',
     },
     {
       name: 'xstyle',

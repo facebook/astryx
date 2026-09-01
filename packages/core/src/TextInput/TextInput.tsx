@@ -16,6 +16,7 @@
  * - /packages/cli/assets/templates/blocks/components/TextInput/ (showcase blocks)
  */
 
+import type React from 'react';
 import {
   useId,
   useOptimistic,
@@ -259,6 +260,12 @@ export interface TextInputProps extends Omit<
    * Callback fired on keydown events on the input.
    */
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  /**
+   * The native `autocomplete` attribute, forwarded unchanged to the
+   * `<input>`. Browser/form autofill behavior, not a styling escape hatch —
+   * unset leaves the browser's default.
+   */
+  autoComplete?: React.InputHTMLAttributes<HTMLInputElement>['autoComplete'];
 }
 
 /**
@@ -295,6 +302,7 @@ export function TextInput({
   htmlName,
   onEnter,
   onKeyDown,
+  autoComplete,
   width,
   xstyle,
   className,
@@ -439,6 +447,7 @@ export function TextInput({
             : undefined
         }
         placeholder={placeholder}
+        autoComplete={autoComplete}
         // With a disabledMessage the input keeps focusability via aria-disabled
         // so the reason is focus-discoverable; readOnly + the handleChange guard
         // keep the value from changing.

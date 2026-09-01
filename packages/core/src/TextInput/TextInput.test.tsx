@@ -371,6 +371,28 @@ describe('TextInput', () => {
     });
   });
 
+  describe('autoComplete prop (#5638)', () => {
+    it('forwards autoComplete to the underlying input', () => {
+      render(
+        <TextInput
+          label="Name"
+          value=""
+          onChange={() => {}}
+          autoComplete="name"
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'autocomplete',
+        'name',
+      );
+    });
+
+    it('does not set autocomplete when autoComplete is not provided', () => {
+      render(<TextInput label="Name" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('autocomplete');
+    });
+  });
+
   describe('form participation', () => {
     it('submits the value under htmlName', () => {
       const {container} = render(
