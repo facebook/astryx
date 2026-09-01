@@ -3,6 +3,9 @@
 'use strict';
 /* global console, module, process, require */
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const {isComponentSpecRecordPath} = require('./knowledge-paths.cjs');
+
 /**
  * Classifies changed paths without reading PR-controlled content.
  *
@@ -16,7 +19,6 @@ const SPEC_RECORD_PATTERNS = [
   /^docs\/families\/(?!README\.md$)[^/]+\.md$/,
   /^docs\/design\/(?!README\.md$)(?!assets\/)[^/]+\.md$/,
   /^packages\/themes\/([^/]+)\/\1\.spec\.md$/,
-  /^packages\/(?:core|lab)\/src\/[^/]+\/[^/]+\.spec\.md$/,
 ];
 
 const CHANGESET_PATTERN = /^\.changeset\/(?!README\.md$)[^/]+\.md$/;
@@ -34,7 +36,10 @@ const KNOWLEDGE_RECORD_PATTERNS = [
 ];
 
 function isSpecRecordPath(filePath) {
-  return SPEC_RECORD_PATTERNS.some(pattern => pattern.test(filePath));
+  return (
+    isComponentSpecRecordPath(filePath) ||
+    SPEC_RECORD_PATTERNS.some(pattern => pattern.test(filePath))
+  );
 }
 
 function isPackageReleasePath(filePath) {
@@ -54,7 +59,10 @@ function isPackageReleasePath(filePath) {
 }
 
 function isKnowledgeRecordPath(filePath) {
-  return KNOWLEDGE_RECORD_PATTERNS.some(pattern => pattern.test(filePath));
+  return (
+    isSpecRecordPath(filePath) ||
+    KNOWLEDGE_RECORD_PATTERNS.some(pattern => pattern.test(filePath))
+  );
 }
 
 function normalizeChange(change) {

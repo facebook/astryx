@@ -12,7 +12,7 @@ const anatomy = [
     name: 'Trigger',
     required: true,
     description:
-      'Painted control that displays the current selection or placeholder and opens the selection surface.',
+      'Painted control that displays the current selection or placeholder and opens the selection surface when editable.',
   },
   {
     name: 'Icon-rendered start icon',
@@ -146,7 +146,7 @@ export const docs = {
       {
         className: 'astryx-selector',
         visualProps: ['variant', 'size', 'status'],
-        states: ['disabled'],
+        states: ['disabled', 'readonly'],
       },
       {className: 'astryx-selector-option'},
       {
@@ -248,6 +248,13 @@ export const docs = {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Disables the selector.',
+      default: 'false',
+    },
+    {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Makes the selector read-only: the selected value stays visible, focusable, and included in form submission, and retains its combobox identity with aria-readonly. The selection surface, clear action, and disclosure indicator are removed. Unlike isDisabled, the control is not dimmed. isDisabled takes precedence when both are set.',
       default: 'false',
     },
     {

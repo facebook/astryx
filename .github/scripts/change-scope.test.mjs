@@ -15,6 +15,10 @@ describe('spec-only change scope', () => {
       {filename: 'docs/design/selection-inputs.md'},
       {filename: 'packages/themes/neutral/neutral.spec.md'},
       {filename: 'packages/core/src/Selector/Selector.spec.md'},
+      {
+        filename:
+          'packages/core/src/Table/plugins/rowStatus/useTableRowStatus.spec.md',
+      },
       {filename: 'packages/lab/src/FutureInput/FutureInput.spec.md'},
     ]);
     expect(result.specOnly).toBe(true);
@@ -85,6 +89,9 @@ describe('spec-only change scope', () => {
   it.each([
     'packages/core/src/Selector/Selector.tsx',
     'packages/core/src/Selector/Selector.audit.json',
+    'packages/core/src/Table/__fixtures__/fake.spec.md',
+    'packages/core/src/Table/generated/fake.spec.md',
+    'packages/core/src/Table/plugins/fake.generated.spec.md',
     'docs/architecture/layers.md',
     'docs/templates/knowledge/component-spec.md',
     'docs/templates/knowledge/theme-spec.md',
@@ -107,6 +114,19 @@ describe('spec-only change scope', () => {
     const result = classifyChanges([{filename}]);
     expect(result.touchesKnowledgeRecords).toBe(true);
     expect(result.specOnly).toBe(false);
+  });
+
+  it.each([
+    'packages/core/src/__tests__/TopLevel.spec.md',
+    'packages/core/src/Selector/__fixtures__/fixture.spec.md',
+    'packages/core/src/Selector/.hidden/Hidden.spec.md',
+    'packages/core/src/Selector/.Hidden.spec.md',
+    'packages/core/src/Selector/generated/fake.spec.md',
+    'packages/core/src/Selector/plugins/fake.generated.spec.md',
+  ])('ignores non-record component spec path %s consistently', filename => {
+    const result = classifyChanges([{filename}]);
+    expect(result.specOnly).toBe(false);
+    expect(result.touchesKnowledgeRecords).toBe(false);
   });
 
   it('fails closed for an empty change set', () => {

@@ -28,7 +28,7 @@ function fixtureRoot() {
     path.join(root, 'docs/templates/knowledge'),
     {recursive: true},
   );
-  for (const version of ['v1.json', 'v2.json']) {
+  for (const version of ['v1.json', 'v2.json', 'v3.json']) {
     fs.copyFileSync(
       path.join(repoRoot, `docs/schemas/knowledge/${version}`),
       path.join(root, `docs/schemas/knowledge/${version}`),
@@ -73,7 +73,7 @@ function addSchemaVersion(root, version) {
 
 function componentRecord(overrides = {}) {
   const values = {
-    schema_version: '1',
+    schema_version: '3',
     template_version: '1',
     kind: 'component',
     id: 'component:Button',
@@ -85,6 +85,7 @@ function componentRecord(overrides = {}) {
     owners: '[owner]',
     review_triggers: '[behavior]',
     verified_by: '[Button.test.tsx]',
+    modules: '[]',
     families: '[family:actions]',
     design_specs: '[design:actions]',
     architecture: '[architecture:components]',
@@ -112,6 +113,46 @@ function componentRecord(overrides = {}) {
     .map(section => `## ${section}\n\nBody.`)
     .join('\n\n');
   return `---\n${frontmatter}\n---\n\n# Button component contract\n\n${sections}\n`;
+}
+
+function moduleRecord(overrides = {}) {
+  const values = {
+    schema_version: '3',
+    template_version: '1',
+    kind: 'module',
+    id: 'module:Button/useButtonThing',
+    authority: 'draft',
+    archive_reason: 'null',
+    superseded_by: 'null',
+    approved_by: 'null',
+    approved_at: 'null',
+    owners: '[owner]',
+    review_triggers: '[public-api,behavior,accessibility]',
+    verified_by: '[useButtonThing.test.ts]',
+    parent_component: 'component:Button',
+    references: '[]',
+    ...overrides,
+  };
+  const frontmatter = Object.entries(values)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('\n');
+  const sections = [
+    'Intent',
+    'Compatibility and migration',
+    'Ownership boundary',
+    'Public API and concepts',
+    'Behavioral contract',
+    'Accessibility contract',
+    'Design relationships',
+    'Parent and system relationships',
+    'Verification map',
+    'Decision log',
+    'Open questions',
+    'Content boundary',
+  ]
+    .map(section => `## ${section}\n\nBody.`)
+    .join('\n\n');
+  return `---\n${frontmatter}\n---\n\n# Button module contract\n\n${sections}\n`;
 }
 
 function themeRecord(overrides = {}) {
@@ -753,6 +794,368 @@ describe('knowledge validation', () => {
     expect(await validateKnowledgeRoot(root)).toEqual([]);
   });
 
+  it('accepts a flat public member record backed by the root consumer doc', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/NavMenu');
+    fs.mkdirSync(directory);
+    fs.writeFileSync(
+      path.join(directory, 'NavMenu.doc.mjs'),
+      "export const docs = {name: 'NavHeadingMenu'};\n",
+    );
+    fs.writeFileSync(
+      path.join(directory, 'NavHeadingMenu.spec.md'),
+      componentRecord({id: 'component:NavHeadingMenu'}),
+    );
+
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('accepts a flat public member record backed by a full inline consumer entry', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Table');
+    fs.mkdirSync(directory);
+    fs.writeFileSync(
+      path.join(directory, 'Table.doc.mjs'),
+      `export const docs = {
+  name: 'Table',
+  components: [{name: 'TableRow', description: 'A public row.', props: []}],
+};\n`,
+    );
+    fs.writeFileSync(
+      path.join(directory, 'TableRow.spec.md'),
+      componentRecord({id: 'component:TableRow'}),
+    );
+
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('rejects a flat component record unrelated to its component root', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Button');
+    fs.mkdirSync(directory);
+    const parentDoc = writeButtonDoc(directory).replace(
+      '  usage: {',
+      "  components: [{name: 'Wrong', projection: {anatomy: []}}],\n  usage: {",
+    );
+    fs.writeFileSync(path.join(directory, 'Button.doc.mjs'), parentDoc);
+    fs.writeFileSync(
+      path.join(directory, 'Wrong.spec.md'),
+      componentRecord({id: 'component:Wrong'}),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /flat component record component:Wrong must match component root "Button" or an exact public component entry/,
+    );
+  });
+
+  it('discovers a nested module beside its flat parent and ignores non-record trees', async () => {
+    const root = fixtureRoot();
+    const componentDirectory = path.join(root, 'packages/core/src/Button');
+    const modulePath = path.join(
+      componentDirectory,
+      'plugins/thing/useButtonThing.spec.md',
+    );
+    fs.mkdirSync(path.dirname(modulePath), {recursive: true});
+    fs.writeFileSync(
+      path.join(componentDirectory, 'Button.spec.md'),
+      componentRecord({modules: '[module:Button/useButtonThing]'}),
+    );
+    fs.writeFileSync(modulePath, moduleRecord());
+
+    const ignored = [
+      '__fixtures__/fixture.spec.md',
+      '__generated__/generated.spec.md',
+      '__tests__/test.spec.md',
+      '.hidden/hidden.spec.md',
+      '.hidden.spec.md',
+      'fixtures/fixture.spec.md',
+      'generated/generated.spec.md',
+      'node_modules/dependency.spec.md',
+      'plugins/thing/snapshot.generated.spec.md',
+    ];
+    for (const relative of ignored) {
+      const ignoredPath = path.join(componentDirectory, relative);
+      fs.mkdirSync(path.dirname(ignoredPath), {recursive: true});
+      fs.writeFileSync(ignoredPath, moduleRecord());
+    }
+    const topLevelIgnored = path.join(
+      root,
+      'packages/core/src/__tests__/TopLevel.spec.md',
+    );
+    fs.mkdirSync(path.dirname(topLevelIgnored), {recursive: true});
+    fs.writeFileSync(topLevelIgnored, moduleRecord());
+
+    const discovered = discoverKnowledgeRecords(root).map(filePath =>
+      path.relative(root, filePath).split(path.sep).join('/'),
+    );
+    expect(discovered).toContain('packages/core/src/Button/Button.spec.md');
+    expect(discovered).toContain(
+      'packages/core/src/Button/plugins/thing/useButtonThing.spec.md',
+    );
+    for (const relative of ignored) {
+      expect(discovered).not.toContain(`packages/core/src/Button/${relative}`);
+    }
+    expect(discovered).not.toContain(
+      'packages/core/src/__tests__/TopLevel.spec.md',
+    );
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('rejects a nested component record instead of treating it as a module', async () => {
+    const root = fixtureRoot();
+    const componentDirectory = path.join(root, 'packages/core/src/Button');
+    const nestedPath = path.join(componentDirectory, 'notes/Extra.spec.md');
+    fs.mkdirSync(path.dirname(nestedPath), {recursive: true});
+    fs.writeFileSync(
+      path.join(componentDirectory, 'Button.spec.md'),
+      componentRecord(),
+    );
+    fs.writeFileSync(nestedPath, componentRecord({id: 'component:Extra'}));
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /nested records use kind: module/,
+    );
+  });
+
+  it('rejects a direct-child module record', async () => {
+    const root = fixtureRoot();
+    const componentDirectory = path.join(root, 'packages/core/src/Button');
+    fs.mkdirSync(componentDirectory, {recursive: true});
+    fs.writeFileSync(
+      path.join(componentDirectory, 'Button.spec.md'),
+      componentRecord({modules: '[module:Button/useButtonThing]'}),
+    );
+    fs.writeFileSync(
+      path.join(componentDirectory, 'useButtonThing.spec.md'),
+      moduleRecord(),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /module records must be nested beneath their component root/,
+    );
+  });
+
+  it('rejects missing parent links and orphan module records', async () => {
+    const root = fixtureRoot();
+    const componentDirectory = path.join(root, 'packages/core/src/Button');
+    const modulePath = path.join(
+      componentDirectory,
+      'plugins/orphan/useOrphan.spec.md',
+    );
+    fs.mkdirSync(path.dirname(modulePath), {recursive: true});
+    fs.writeFileSync(
+      path.join(componentDirectory, 'Button.spec.md'),
+      componentRecord({modules: '[module:Button/useMissing]'}),
+    );
+    fs.writeFileSync(
+      modulePath,
+      moduleRecord({
+        id: 'module:Button/useOrphan',
+        parent_component: 'component:Button',
+      }),
+    );
+
+    const problems = (await validateKnowledgeRoot(root)).join('\n');
+    expect(problems).toMatch(
+      /modules reference module:Button\/useMissing does not resolve/,
+    );
+    expect(problems).toMatch(/module module:Button\/useOrphan is orphaned/);
+  });
+
+  it('rejects mismatched parent declarations and component roots', async () => {
+    const root = fixtureRoot();
+    const buttonDirectory = path.join(root, 'packages/core/src/Button');
+    const otherDirectory = path.join(root, 'packages/core/src/Other');
+    const modulePath = path.join(
+      otherDirectory,
+      'plugins/thing/useButtonThing.spec.md',
+    );
+    fs.mkdirSync(buttonDirectory, {recursive: true});
+    fs.mkdirSync(path.dirname(modulePath), {recursive: true});
+    fs.writeFileSync(
+      path.join(buttonDirectory, 'Button.spec.md'),
+      componentRecord({modules: '[module:Other/useButtonThing]'}),
+    );
+    fs.writeFileSync(
+      path.join(otherDirectory, 'Other.spec.md'),
+      componentRecord({
+        id: 'component:Other',
+        modules: '[module:Other/useButtonThing]',
+      }),
+    );
+    fs.writeFileSync(
+      modulePath,
+      moduleRecord({
+        id: 'module:Other/useButtonThing',
+        parent_component: 'component:Other',
+      }),
+    );
+
+    const problems = (await validateKnowledgeRoot(root)).join('\n');
+    expect(problems).toMatch(
+      /Button\.spec\.md: modules reference module:Other\/useButtonThing, but that module declares parent_component "component:Other"/,
+    );
+    expect(problems).toMatch(/must live in the same component root/);
+  });
+
+  it('requires parent_component to resolve to a component record', async () => {
+    const root = fixtureRoot();
+    const familyTemplate = fs.readFileSync(
+      path.join(root, 'docs/templates/knowledge/family-contract.md'),
+      'utf8',
+    );
+    fs.writeFileSync(
+      path.join(root, 'docs/families/not-a-component.md'),
+      familyTemplate.replace(
+        'id: family:<family-name>',
+        'id: component:Button',
+      ),
+    );
+    const modulePath = path.join(
+      root,
+      'packages/core/src/Button/plugins/thing/useButtonThing.spec.md',
+    );
+    fs.mkdirSync(path.dirname(modulePath), {recursive: true});
+    fs.writeFileSync(modulePath, moduleRecord());
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /parent_component component:Button must resolve to a component record, not family/,
+    );
+  });
+
+  it('requires parent module links to resolve to module records', async () => {
+    const root = fixtureRoot();
+    const familyTemplate = fs.readFileSync(
+      path.join(root, 'docs/templates/knowledge/family-contract.md'),
+      'utf8',
+    );
+    fs.writeFileSync(
+      path.join(root, 'docs/families/actions.md'),
+      familyTemplate.replace('family:<family-name>', 'family:actions'),
+    );
+    const componentDirectory = path.join(root, 'packages/core/src/Button');
+    fs.mkdirSync(componentDirectory, {recursive: true});
+    fs.writeFileSync(
+      path.join(componentDirectory, 'Button.spec.md'),
+      componentRecord({modules: '[family:actions]'}),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /modules reference family:actions must resolve to a module record, not family/,
+    );
+  });
+
+  it('rejects duplicate module links and duplicate module ids', async () => {
+    const root = fixtureRoot();
+    const componentDirectory = path.join(root, 'packages/core/src/Button');
+    fs.mkdirSync(componentDirectory, {recursive: true});
+    fs.writeFileSync(
+      path.join(componentDirectory, 'Button.spec.md'),
+      componentRecord({
+        modules: '[module:Button/useButtonThing,module:Button/useButtonThing]',
+      }),
+    );
+    for (const owner of ['first', 'second']) {
+      const modulePath = path.join(
+        componentDirectory,
+        `plugins/${owner}/useButtonThing.spec.md`,
+      );
+      fs.mkdirSync(path.dirname(modulePath), {recursive: true});
+      fs.writeFileSync(modulePath, moduleRecord());
+    }
+
+    const problems = (await validateKnowledgeRoot(root)).join('\n');
+    expect(problems).toMatch(/duplicate id module:Button\/useButtonThing/);
+    expect(problems).toMatch(
+      /modules contains duplicate reference module:Button\/useButtonThing/,
+    );
+  });
+
+  it('requires module ids and filenames to encode the same public name', async () => {
+    const root = fixtureRoot();
+    const componentDirectory = path.join(root, 'packages/core/src/Button');
+    const modulePath = path.join(
+      componentDirectory,
+      'plugins/thing/WrongName.spec.md',
+    );
+    fs.mkdirSync(path.dirname(modulePath), {recursive: true});
+    fs.writeFileSync(
+      path.join(componentDirectory, 'Button.spec.md'),
+      componentRecord({modules: '[module:Button/useButtonThing]'}),
+    );
+    fs.writeFileSync(modulePath, moduleRecord());
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /module filename must be useButtonThing\.spec\.md/,
+    );
+  });
+
+  it('validates module anatomy only against the module consumer doc', async () => {
+    const root = fixtureRoot();
+    const componentDirectory = path.join(root, 'packages/core/src/Button');
+    const modulePath = path.join(
+      componentDirectory,
+      'plugins/thing/useButtonThing.spec.md',
+    );
+    fs.mkdirSync(path.dirname(modulePath), {recursive: true});
+    fs.writeFileSync(
+      path.join(componentDirectory, 'Button.spec.md'),
+      componentRecord({modules: '[module:Button/useButtonThing]'}),
+    );
+    fs.writeFileSync(
+      path.join(componentDirectory, 'useButtonThing.doc.mjs'),
+      `export const docs = {
+  name: 'useButtonThing',
+  usage: {
+    anatomy: [
+      {name: 'Generated control', required: true, description: 'Generated UI.'},
+    ],
+  },
+  theming: {
+    targets: [{className: 'astryx-button-thing'}],
+  },
+};\n`,
+    );
+    fs.writeFileSync(
+      modulePath,
+      withAnatomyTheming(moduleRecord(), {
+        'Generated control': {target: 'button-thing'},
+      }),
+    );
+
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('never validates a module map against parent aggregate anatomy', async () => {
+    const root = fixtureRoot();
+    const componentDirectory = path.join(root, 'packages/core/src/Button');
+    const modulePath = path.join(
+      componentDirectory,
+      'plugins/thing/useButtonThing.spec.md',
+    );
+    fs.mkdirSync(path.dirname(modulePath), {recursive: true});
+    const parentDoc = writeButtonDoc(componentDirectory).replace(
+      '  usage: {',
+      "  components: [{name: 'useButtonThing'}],\n  usage: {",
+    );
+    fs.writeFileSync(
+      path.join(componentDirectory, 'Button.doc.mjs'),
+      parentDoc,
+    );
+    fs.writeFileSync(
+      path.join(componentDirectory, 'Button.spec.md'),
+      componentRecord({modules: '[module:Button/useButtonThing]'}),
+    );
+    fs.writeFileSync(
+      modulePath,
+      withAnatomyTheming(moduleRecord(), {Root: {target: 'button'}}),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
+      /no exact consumer doc entry for module useButtonThing/,
+    );
+  });
+
   it('discovers only the exact canonical package-local theme record without placement errors', async () => {
     const root = fixtureRoot();
     fs.writeFileSync(
@@ -1082,10 +1485,10 @@ describe('knowledge validation', () => {
     fs.mkdirSync(directory);
     fs.writeFileSync(
       path.join(directory, 'Button.spec.md'),
-      componentRecord({template_version: '4'}),
+      componentRecord({template_version: '5'}),
     );
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /template_version 4 is newer than 3/,
+      /template_version 5 is newer than 4/,
     );
   });
 
@@ -1099,7 +1502,7 @@ describe('knowledge validation', () => {
       componentRecord({schema_version: '0'}),
     );
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /active component records must use latest schema_version 1 for that kind/,
+      /active component records must use latest schema_version 3 for that kind/,
     );
   });
 

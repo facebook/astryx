@@ -350,6 +350,26 @@ describe('spec owner workflow reconciliation', () => {
     expect(harness.state.pr.auto_merge).toBe(null);
   });
 
+  it.each([
+    'packages/core/src/__tests__/TopLevel.spec.md',
+    'packages/core/src/Button/.hidden/Hidden.spec.md',
+    'packages/core/src/Button/.Hidden.spec.md',
+    'packages/core/src/Button/generated/Generated.spec.md',
+  ])('does not owner-gate ignored component spec path %s', async filename => {
+    const harness = createHarness({
+      changedFile: {filename, status: 'added'},
+      headContent: 'kind: module\nauthority: current\n',
+    });
+
+    await run(harness, context({runId: 100n, action: 'synchronize'}));
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: 'No knowledge records changed.',
+    });
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
   it('requires a real ready transition and never auto-merges a draft PR', async () => {
     const readyDraft = createDesignHarness({draft: true});
 

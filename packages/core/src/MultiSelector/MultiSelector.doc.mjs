@@ -12,7 +12,7 @@ const anatomy = [
     name: 'Trigger',
     required: true,
     description:
-      'Painted control that displays the current selection or placeholder and opens the selection surface.',
+      'Painted control that displays the current selection or placeholder and opens the selection surface when editable.',
   },
   {
     name: 'Icon-rendered start icon',
@@ -134,7 +134,7 @@ export const docs = {
       {
         className: 'astryx-multi-selector',
         visualProps: ['variant', 'size', 'status'],
-        states: ['disabled'],
+        states: ['disabled', 'readonly'],
       },
       {
         className: 'astryx-multi-selector-clear-icon',
@@ -271,6 +271,13 @@ export const docs = {
           name: 'isDisabled',
           type: 'boolean',
           description: 'Disables the selector.',
+        },
+        {
+          name: 'isReadOnly',
+          type: 'boolean',
+          description:
+            'Makes the selector read-only: the selected values stay visible, focusable, and included in form submission, and retain their combobox identity with aria-readonly. The selection surface, clear action, and disclosure indicator are removed. Unlike isDisabled, the control is not dimmed. isDisabled takes precedence when both are set.',
+          default: 'false',
         },
         {
           name: 'htmlName',
@@ -459,6 +466,8 @@ export const docsZh = {
         emptyText: '没有可显示的选项时，下拉面板中显示的内容。',
         emptySearchText: '搜索查询未匹配到任何选项时，下拉面板中显示的内容。',
         isDisabled: '禁用选择器。',
+        isReadOnly:
+          '将选择器设为只读：保留当前值、焦点顺序和表单提交，但移除选择面板、清除操作和展开指示器。与 isDisabled 不同，只读控件不会变暗；两者同时设置时 isDisabled 优先。',
         htmlName:
           '用于表单提交的 HTML name 属性。为每个已选值渲染一个隐藏输入，类似原生多选。',
         disabledMessage:
@@ -600,6 +609,8 @@ export const docsDense = {
         emptyText: 'panel content when there are no options',
         emptySearchText: 'panel content when the query matches nothing',
         isDisabled: 'disables selector',
+        isReadOnly:
+          'read-only: preserves values, focus + form submission; removes menu, clear + disclosure',
         htmlName: 'HTML name attr; one hidden input per selected value.',
         disabledMessage:
           'why disabled; w/ isDisabled shows tooltip on hover/focus, trigger stays focusable via aria-disabled; use instead of Tooltip wrapper',

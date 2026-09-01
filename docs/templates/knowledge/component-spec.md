@@ -1,6 +1,6 @@
 ---
-schema_version: 1
-template_version: 3
+schema_version: 3
+template_version: 4
 kind: component
 id: component:<Name>
 authority: draft
@@ -11,6 +11,7 @@ approved_at: null
 owners: [<owner>]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by: [<test-or-check>]
+modules: [module:<Name>/<PublicModule>]
 families: [family:<family-name>]
 design_specs: [design:<surface>]
 architecture: [architecture:<surface>]
@@ -48,9 +49,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 <!--
 Concepts, not a prop table. Consumer syntax/defaults remain in <Name>.doc.mjs.
 Record only component-local semantic concepts, additions, and exceptions; inherit
-current family rules. For an explicitly co-owned public hook or utility, cover
-semantic inputs/outputs and lifetime/resource behavior through concept rows and
-linked local requirements. Follow spec:AST-002 without copying system rules.
+current family rules. When a public hook, plugin, utility, or subsystem has an
+independent contract, list its `module:<Name>/<PublicName>` record in `modules`
+and keep its API, behavior, accessibility, precedence, and evidence there.
+Follow spec:AST-002 without copying system rules.
 -->
 
 | Concept     | Closed values or states | Meaning     | Availability by variant/orientation/state | Default     | Owner              | Stability                  | Invalid-value behavior          |
@@ -132,10 +134,13 @@ current reachability never silently decides future themeability.
 
 ## Family and system relationships
 
-Frontmatter lists only `current` family, design, architecture, and system
-relationships. Candidate records list proposed members on the candidate itself;
-do not edit an existing component contract merely to backlink to a draft.
+Frontmatter lists structural `modules` links plus only `current` family, design,
+architecture, and system relationships. A module backlink may name an active
+draft because it records ownership rather than adopting draft behavior. Candidate
+family or design records list proposed members on the candidate itself; do not
+edit an existing component contract merely to backlink to those drafts.
 
+- `module:<Name>/<PublicName>` owns `<independent public module contract>`; this component owns aggregate module protocol, ordering, and composition.
 - `family:<family-name>` owns `<shared concept>`; this component `<adopts or deliberately differs>`.
 
 ## Verification map

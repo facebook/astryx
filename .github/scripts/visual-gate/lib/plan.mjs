@@ -43,6 +43,9 @@ export const MODES = ['light', 'dark'];
 /** Story names preferred as a component's representative, most preferred first. */
 const REPRESENTATIVE_NAMES = ['Default', 'Basic', 'Primary', 'Overview', 'Example'];
 
+/** A story carrying this tag is always captured for a touched component. */
+export const VISUAL_BASELINE_TAG = 'visual-baseline';
+
 /** A story carrying this tag is never captured (see visual-gate.config.json for the reasoned list). */
 export const SKIP_TAG = 'no-visual';
 
@@ -442,9 +445,10 @@ export function buildPlan({
   }
 
   if (tiers.includes('component')) {
-    // The PR tier: every story of the named components, in the default theme
-    // and in every theme that styles them. Deeper than `surface` (which shoots
-    // one story per component), and narrow enough to run per PR.
+    // The PR tier: one representative story in every theme that styles the
+    // touched component, plus explicit visual-baseline opt-ins in the default
+    // theme. Behavioral and audit-only fixtures remain available to their
+    // dedicated checks without multiplying the pixel baseline.
     const themesByComponent = new Map();
     for (const target of targets) {
       for (const [theme, keys] of Object.entries(themeOverrides)) {
@@ -455,10 +459,18 @@ export function buildPlan({
         themesByComponent.get(target.component).add(theme);
       }
     }
-    for (const story of stories) {
-      if (!components.includes(story.component)) continue;
+    const subject = stories.filter(
+      story =>
+        components.includes(story.component) &&
+        (representatives.get(story.component)?.id === story.id ||
+          (story.tags ?? []).includes(VISUAL_BASELINE_TAG)),
+    );
+    for (const story of subject) {
+      const isRepresentative =
+        representatives.get(story.component)?.id === story.id;
       for (const mode of MODES) {
         add({...toShotBase(story), theme: defaultTheme, mode}, 'component');
+        if (!isRepresentative) continue;
         for (const theme of themesByComponent.get(story.component) ?? []) {
           if (theme === defaultTheme) continue;
           add({...toShotBase(story), theme, mode}, `theme:${theme}`);
