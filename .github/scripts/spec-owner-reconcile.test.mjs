@@ -90,15 +90,18 @@ function createHarness({
   timeline = [],
   labels = [],
   autoMerge = null,
+  draft = false,
   onPullGet,
   onEnableAutoMerge,
   changedFile = {
     filename: 'docs/specs/owner-ready/spec.md',
     status: 'added',
   },
+  changedFiles,
   headContent = 'kind: architecture\nauthority: current\n',
   baseContent = '',
 } = {}) {
+  const files = changedFiles ?? [changedFile];
   const state = {
     pullGets: 0,
     statuses: [...statuses],
@@ -117,10 +120,10 @@ function createHarness({
         sha: '2222222222222222222222222222222222222222',
         repo: {full_name: repository},
       },
-      changed_files: 1,
+      changed_files: files.length,
       labels: [],
       auto_merge: autoMerge,
-      draft: false,
+      draft,
     },
   };
 
@@ -136,7 +139,7 @@ function createHarness({
       syncLabels();
       return {data: state.pr};
     },
-    listFiles: async () => ({data: [changedFile]}),
+    listFiles: async () => ({data: files}),
     listReviews: async () => ({data: state.reviews}),
     listComments: async () => ({data: state.comments}),
     listTimeline: async () => ({data: state.timeline}),
@@ -240,6 +243,27 @@ function latestGateStatus(state) {
   );
 }
 
+const designRecord = {
+  filename: 'docs/design/interaction-states.md',
+  status: 'added',
+};
+const currentDesign = 'kind: design\nauthority: current\n';
+
+function createDesignHarness(options = {}) {
+  return createHarness({
+    author: 'ernestt',
+    changedFile: designRecord,
+    headContent: currentDesign,
+    ...options,
+  });
+}
+
+function hasReadyAttestation(state, owner = 'ernestt') {
+  return state.statuses.some(
+    status => status.context === `spec-owner-ready/${owner}`,
+  );
+}
+
 describe('spec owner workflow reconciliation', () => {
   it('treats an eligible owner-author ready event as exact-head approval', async () => {
     const harness = createHarness();
@@ -253,6 +277,105 @@ describe('spec owner workflow reconciliation', () => {
     ).toBe(true);
     expect(latestGateStatus(harness.state).state).toBe('success');
     expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('lets a DESIGNOWNER author self-attest an exact design-record-only head', async () => {
+    const harness = createDesignHarness();
+
+    await run(
+      harness,
+      context({runId: 100n, actor: 'ernestt', author: 'ernestt'}),
+    );
+
+    expect(hasReadyAttestation(harness.state)).toBe(true);
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('Approved by @ernestt'),
+    });
+    expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('requires the ready actor to be the PR author', async () => {
+    const harness = createDesignHarness();
+
+    await run(
+      harness,
+      context({runId: 100n, actor: 'rubyycheung', author: 'ernestt'}),
+    );
+
+    expect(hasReadyAttestation(harness.state, 'rubyycheung')).toBe(false);
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
+  it('requires the ready event to identify the exact live head', async () => {
+    const harness = createDesignHarness();
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        actor: 'ernestt',
+        author: 'ernestt',
+        headSha: nextHead,
+      }),
+    );
+
+    expect(hasReadyAttestation(harness.state)).toBe(false);
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
+  it('keeps a DESIGNOWNER ready marker outside the spec-only auto-merge path', async () => {
+    const harness = createDesignHarness({
+      changedFiles: [
+        designRecord,
+        {
+          filename: 'packages/core/src/Button/Button.tsx',
+          status: 'modified',
+        },
+      ],
+    });
+
+    await run(
+      harness,
+      context({runId: 100n, actor: 'ernestt', author: 'ernestt'}),
+    );
+
+    // The exact-head marker is evidence for applicable owner groups, not merge
+    // authority. Mixed code/spec scope must stop before auto-merge enablement.
+    expect(hasReadyAttestation(harness.state)).toBe(true);
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+    expect(harness.state.pr.auto_merge).toBe(null);
+  });
+
+  it('requires a real ready transition and never auto-merges a draft PR', async () => {
+    const readyDraft = createDesignHarness({draft: true});
+
+    await run(
+      readyDraft,
+      context({runId: 100n, actor: 'ernestt', author: 'ernestt'}),
+    );
+
+    expect(hasReadyAttestation(readyDraft.state)).toBe(true);
+    expect(readyDraft.state.calls).not.toContain('enable-auto-merge');
+    expect(readyDraft.state.pr.auto_merge).toBe(null);
+
+    const synchronizedDraft = createDesignHarness({draft: true});
+    await run(
+      synchronizedDraft,
+      context({
+        runId: 101n,
+        action: 'synchronize',
+        actor: 'ernestt',
+        author: 'ernestt',
+      }),
+    );
+
+    expect(hasReadyAttestation(synchronizedDraft.state)).toBe(false);
+    expect(synchronizedDraft.state.calls).not.toContain('enable-auto-merge');
+    expect(synchronizedDraft.state.pr.auto_merge).toBe(null);
   });
 
   it('publishes owner approval and keeps conservative ownership when enablement is rejected', async () => {
