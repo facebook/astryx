@@ -158,6 +158,7 @@ internal/vibe-tests/
 │   ├── setup-measure.mjs     # build + exact style, geometry, and overlay probes
 │   ├── setup-workspace.mjs   # copy-on-write build root; the sandbox is never written to
 │   ├── setup-integrity.mjs   # read-only diff attestation and escape-hatch checks
+│   ├── setup-important.mjs   # syntactic `!important` detection for that checker
 │   ├── setup-eval.ts         # strict deterministic deltas against each fixture
 │   └── setup-aggregate.ts    # matrix coverage, A/B deltas, and final acceptance
 ├── results/             # Iteration results (gitignored)

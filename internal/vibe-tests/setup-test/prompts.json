@@ -345,7 +345,15 @@
             ]
           }
         ],
-        "allowedHostChanges": [],
+        "allowedHostChanges": [
+          {
+            "$comment": "The task mandates adding a dialog trigger to the host shell, so the shell grows by exactly that block and its text gains exactly that block's copy. Height, the height-derived geometry, and added text are permitted on the shell alone; its position, width, every computed style, and every other probe stay strict.",
+            "fixture": "enterprise-scoped-synthetic",
+            "probe": "host-shell",
+            "fields": ["height", "geometry.height", "geometry.bottom"],
+            "textInsertionOnly": true
+          }
+        ],
         "replacedHostProbes": [],
         "allowedOverlayChanges": [
           {

@@ -75,20 +75,53 @@ describe('setup execution matrix', () => {
     const allFields = prompts.flatMap(prompt =>
       prompt.contract.allowedHostChanges.flatMap(allowed => allowed.fields),
     );
-    expect(allFields.every(field => field.startsWith('geometry.'))).toBe(true);
+    // Position offsets, plus block-axis growth where a task mandates inserting
+    // something into a host container. Nothing else is exemptible.
+    expect(
+      allFields.every(
+        field => field.startsWith('geometry.') || field === 'height',
+      ),
+    ).toBe(true);
     expect(allFields).not.toContain('geometry.width');
+    expect(allFields).not.toContain('width');
     expect(allFields).not.toContain('color');
+    // Container text is never exempted outright, only ever insertion-only.
+    expect(allFields).not.toContain('text');
 
-    const invalid = structuredClone(prompts);
-    invalid
-      .find(prompt => prompt.id === 's1')
-      .contract.allowedHostChanges.push({
-        fixture: 'tailwind-v4-control',
-        probe: 'primary-action',
-        fields: ['color'],
-      });
-    expect(() => validatePromptContracts(invalid, probes, matrix)).toThrow(
-      /cannot allow protected host field color/,
+    // One per protected class: a computed style, an inline-axis dimension,
+    // and container text, which is only ever insertion-only.
+    for (const field of ['color', 'width', 'text']) {
+      const invalid = structuredClone(prompts);
+      invalid
+        .find(prompt => prompt.id === 's1')
+        .contract.allowedHostChanges.push({
+          fixture: 'tailwind-v4-control',
+          probe: 'primary-action',
+          fields: [field],
+        });
+      expect(() => validatePromptContracts(invalid, probes, matrix)).toThrow(
+        new RegExp(`cannot allow protected host field ${field}`),
+      );
+    }
+  });
+
+  it('accepts the s5 insertion allowance and nothing broader', () => {
+    const s5 = prompts.find(prompt => prompt.id === 's5');
+    expect(s5.contract.allowedHostChanges).toEqual([
+      expect.objectContaining({
+        fixture: 'enterprise-scoped-synthetic',
+        probe: 'host-shell',
+        fields: ['height', 'geometry.height', 'geometry.bottom'],
+        textInsertionOnly: true,
+      }),
+    ]);
+
+    const badFlag = structuredClone(prompts);
+    badFlag.find(
+      prompt => prompt.id === 's5',
+    ).contract.allowedHostChanges[0].textInsertionOnly = 'yes';
+    expect(() => validatePromptContracts(badFlag, probes, matrix)).toThrow(
+      /textInsertionOnly must be a boolean/,
     );
   });
 

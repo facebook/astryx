@@ -8,6 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {loadOptionalExecutionProvenance} from '../src/provenance-aggregation.js';
 import {
   compareCandidate,
+  failureCauses,
   passesAcceptance,
   scoreArm,
   strictAcceptanceSummary,
@@ -151,6 +152,7 @@ function renderTable(rows: SetupAggregateRow[]) {
     'condition',
     'executor',
     'rep',
+    'run',
     'builds',
     'runtime',
     'regressions',
@@ -159,6 +161,7 @@ function renderTable(rows: SetupAggregateRow[]) {
     'task',
     'integrity',
     'verdict',
+    'cause',
     'accepts',
   ];
   const body = rows.map(row => [
@@ -168,6 +171,11 @@ function renderTable(rows: SetupAggregateRow[]) {
     row.condition,
     row.executor,
     String(row.rep || '-'),
+    row.score.validRun
+      ? row.score.executionSucceeded
+        ? 'ok'
+        : 'AGENT-FAILURE'
+      : 'INVALID',
     row.score.builds ? 'yes' : 'NO',
     String(row.score.consoleErrors + row.score.failedRequests),
     `${row.score.regressions} (${Object.entries(row.score.byCategory)
@@ -181,6 +189,7 @@ function renderTable(rows: SetupAggregateRow[]) {
     row.score.taskSuccess ? 'yes' : 'NO',
     String(row.score.integrityFailures.length),
     verdict(row.score),
+    failureCauses(row.score).join('+') || '-',
     passesAcceptance(row.score) ? 'yes' : 'NO',
   ]);
   const widths = header.map((heading, index) =>

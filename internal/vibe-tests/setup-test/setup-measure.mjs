@@ -469,6 +469,39 @@ export function readPage(spec) {
         inTopLayer,
         portalChild: topLayerElement.parentElement === document.body,
       },
+      /**
+       * The host token scopes this surface sits inside, nearest first.
+       *
+       * Recorded so that "the host's tokens no longer reach this element" is
+       * reported as the structural fact it is, rather than only as a list of
+       * colours that came out different. The two failures look identical in a
+       * style diff and have opposite fixes: restate the colours and the next
+       * host token change silently desynchronizes; restore the boundary and the
+       * host's own rules resolve as they always did.
+       */
+      tokenScopes: (spec.hostTokenScopes ?? []).length
+        ? (() => {
+            const scopes = [];
+            for (
+              let node = element;
+              node instanceof Element;
+              node = node.parentElement
+            ) {
+              for (const selector of spec.hostTokenScopes) {
+                let matches = false;
+                try {
+                  matches = node.matches(selector);
+                } catch {
+                  matches = false;
+                }
+                if (matches && !scopes.includes(selector)) {
+                  scopes.push(selector);
+                }
+              }
+            }
+            return scopes;
+          })()
+        : [],
     };
   };
 
@@ -723,6 +756,7 @@ async function main() {
   const probeSpec = {
     properties: probeFile.properties,
     surfaceProperties,
+    hostTokenScopes: fixtureProbes.hostTokenScopes ?? [],
     probes: fixtureProbes.probes,
     rootVariables: fixtureProbes.rootVariables,
     interaction: fixtureProbes.interaction ?? null,

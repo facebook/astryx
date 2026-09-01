@@ -1133,4 +1133,176 @@ describeCanonical('canonical intended changes', () => {
       expect(menu.topLayer.inTopLayer).toBe(true);
     }
   }, 180_000);
+
+  /**
+   * The s5 task mandates a new Astryx dialog, so the executor has to put a
+   * trigger for it somewhere in the host page. Both strategy-pilot executors
+   * added a block to the host shell, and the shell then grew by that block and
+   * gained its copy — eight identical measured "regressions" that the task
+   * itself required. The contract now allows exactly that: the shell's height,
+   * the two geometry fields height moves, and text it *gains*. Everything else
+   * about the shell, and every other probe, stays exact.
+   *
+   * The canonical composition above reuses the fixture's own trigger and so
+   * never reflows the shell. This variant inserts a new one, the way the task
+   * reads and the way the pilot's executors read it.
+   */
+  function insertShellDialogTrigger(arm: string) {
+    edit(path.join(arm, 'src', 'App.tsx'), source =>
+      source
+        .replace(
+          `            data-vibe-probe="dialog-trigger"
+            data-vibe-result="astryx-dialog-trigger"`,
+          `            data-vibe-probe="dialog-trigger"`,
+        )
+        .replace(
+          '      </main>',
+          `        <section className="rounded-lg border border-border bg-panel p-4">
+          <h2 className="text-sm font-semibold">Escalation routing</h2>
+          <button
+            className="mt-3 rounded-md border border-border bg-panel px-3 py-2 text-sm font-medium"
+            data-vibe-result="astryx-dialog-trigger"
+            onClick={() => setDialogOpen(true)}
+            type="button">
+            Open service actions
+          </button>
+        </section>
+      </main>`,
+        ),
+    );
+  }
+
+  let shellTriggerMeasurement: {
+    baseline: Measurement;
+    result: Measurement;
+  } | null = null;
+
+  function measureShellTriggerInsertion() {
+    if (shellTriggerMeasurement) {
+      return shellTriggerMeasurement;
+    }
+    const {
+      root,
+      baseline: baselineApp,
+      arm,
+    } = preparePair('enterprise-scoped-synthetic');
+    applyEnterpriseComposition(arm);
+    insertShellDialogTrigger(arm);
+    const baseline = measure(
+      baselineApp,
+      'enterprise-scoped-synthetic',
+      path.join(root, 's5-shell-baseline.json'),
+    );
+    const provenance = provenanceFor(arm, 'enterprise-scoped-synthetic', 's5');
+    const result = measure(
+      arm,
+      'enterprise-scoped-synthetic',
+      path.join(root, 's5-shell-arm.json'),
+      provenance,
+    );
+    expect(
+      result.build.ok,
+      `${result.build.stdout}\n${result.build.stderr}`,
+    ).toBe(true);
+    shellTriggerMeasurement = {baseline, result};
+    return shellTriggerMeasurement;
+  }
+
+  it('accepts the host-shell reflow the mandated trigger insertion causes', () => {
+    const {baseline, result} = measureShellTriggerInsertion();
+    const score = scoreArm(baseline, result);
+
+    expect(score.regressionDetails, JSON.stringify(score, null, 2)).toEqual([]);
+    expect(score.taskFailures).toEqual([]);
+    expect(verdict(score)).toBe('clean');
+    expect(passesAcceptance(score)).toBe(true);
+
+    // The reflow the allowance covers really happened, in both modes, or this
+    // case is proving nothing.
+    for (const scheme of ['light', 'dark'] as const) {
+      const before = baseline.schemes[scheme].probes['host-shell'];
+      const after = result.schemes[scheme].probes['host-shell'];
+      if ('missing' in before || 'missing' in after) {
+        throw new Error('missing host-shell probe');
+      }
+      expect(after.geometry.height).toBeGreaterThan(before.geometry.height);
+      expect(after.text.length).toBeGreaterThan(before.text.length);
+      // and nothing the allowance does not name moved
+      expect(after.geometry.y).toBe(before.geometry.y);
+      expect(after.geometry.x).toBe(before.geometry.x);
+      expect(after.geometry.width).toBe(before.geometry.width);
+      // `height` is the one computed style the allowance names, and it is the
+      // only one that may differ.
+      expect(after.style.height).not.toBe(before.style.height);
+      const {height: _afterHeight, ...afterStyle} = after.style;
+      const {height: _beforeHeight, ...beforeStyle} = before.style;
+      expect(afterStyle).toEqual(beforeStyle);
+    }
+  }, 180_000);
+
+  /**
+   * Mutation proofs over the accepted measurement above. Each one changes one
+   * measured field of the real run and re-scores it: the allowance must be
+   * narrow enough that every one of them fails.
+   */
+  it.each([
+    {
+      name: 'a computed style on the same probe',
+      probe: 'host-shell',
+      style: {color: 'rgb(1, 2, 3)'},
+    },
+    {
+      name: "the shell's own width, which the allowance does not name",
+      probe: 'host-shell',
+      geometry: {width: 1_000},
+    },
+    {
+      name: "another probe's height, which the allowance must not reach",
+      probe: 'status',
+      geometry: {height: 99},
+    },
+  ])(
+    'still reports $name as host damage',
+    ({probe, style, geometry}) => {
+      const {baseline, result} = measureShellTriggerInsertion();
+      const mutated = JSON.parse(JSON.stringify(result)) as Measurement;
+      for (const scheme of ['light', 'dark'] as const) {
+        const reading = mutated.schemes[scheme].probes[probe] as {
+          style: Record<string, string>;
+          geometry: Record<string, number>;
+        };
+        Object.assign(reading.style, style ?? {});
+        Object.assign(reading.geometry, geometry ?? {});
+      }
+
+      const score = scoreArm(baseline, mutated);
+
+      expect(score.regressions).toBeGreaterThan(0);
+      expect(passesAcceptance(score)).toBe(false);
+    },
+    180_000,
+  );
+
+  it('still reports host text the shell lost, not just text it gained', () => {
+    const {baseline, result} = measureShellTriggerInsertion();
+    const mutated = JSON.parse(JSON.stringify(result)) as Measurement;
+    for (const scheme of ['light', 'dark'] as const) {
+      const reading = mutated.schemes[scheme].probes['host-shell'] as {
+        text: string;
+      };
+      // Drop one word of the host's own copy while keeping the added block's
+      // text: an insertion-only allowance must not cover this.
+      reading.text = reading.text.replace('Portfolio console ', '');
+    }
+
+    const score = scoreArm(baseline, mutated);
+
+    expect(
+      score.regressionDetails.some(
+        regression =>
+          regression.probe === 'host-shell' && regression.property === 'text',
+      ),
+    ).toBe(true);
+    expect(passesAcceptance(score)).toBe(false);
+  }, 180_000);
 });

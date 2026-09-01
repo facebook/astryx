@@ -3,14 +3,27 @@
 import {createHash} from 'node:crypto';
 
 const SHA256 = /^[a-f0-9]{64}$/;
+/**
+ * The host-probe fields a task contract may ever exempt.
+ *
+ * A task that inserts a control into an existing container moves what follows
+ * it and makes the container taller, so those consequences can be declared as
+ * intended. Nothing else can: no computed style, no width, and no container
+ * text. `text` is deliberately absent — a task that adds copy to a container
+ * declares `textInsertionOnly`, which permits text the container *gains* and
+ * still reports text it loses or rewrites, where a `text` field would exempt
+ * the comparison outright and let an executor delete host copy.
+ */
 const ALLOWABLE_HOST_FIELDS = new Set([
-  'text',
   'geometry.x',
   'geometry.y',
   'geometry.top',
   'geometry.right',
   'geometry.bottom',
   'geometry.left',
+  // Block-axis growth only: an insertion makes a container taller, never wider.
+  'height',
+  'geometry.height',
 ]);
 const ALLOWABLE_OVERLAY_FIELDS = new Set([
   'geometry.x',
@@ -177,6 +190,14 @@ export function validatePromptContracts(prompts, probeConfig, matrixConfig) {
         allowed.fields,
         `prompt ${prompt.id} ${allowed.fixture}:${allowed.probe} fields`,
       );
+      if (
+        'textInsertionOnly' in allowed &&
+        typeof allowed.textInsertionOnly !== 'boolean'
+      ) {
+        throw new Error(
+          `prompt ${prompt.id} ${allowed.fixture}:${allowed.probe} textInsertionOnly must be a boolean`,
+        );
+      }
       assertUnique(
         allowed.fields,
         `prompt ${prompt.id} ${allowed.fixture}:${allowed.probe} fields`,

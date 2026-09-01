@@ -12,7 +12,11 @@ import {
   cascadeInverted,
   compareCandidate,
   contrastFailures,
+  failureBreakdown,
+  failureCauses,
   hardGateVector,
+  isComparableRun,
+  isTextInsertionOnly,
   nestedLayerFailures,
   passesAcceptance,
   regressions,
@@ -839,5 +843,440 @@ describe('strict confirmation summary', () => {
     });
     expect(summary.damageFree).toEqual({numerator: 0, denominator: 1, rate: 0});
     expect(summary.passes).toBe(false);
+  });
+});
+
+/**
+ * The s5 intended-change allowance.
+ *
+ * A task that mandates inserting a control into a host container makes that
+ * container taller and adds the control's copy to its text. Both measured `s5`
+ * cells reported the identical eight "regressions" for doing what the task
+ * said. The allowance is field-granular on purpose: it names the shell's height
+ * and the two geometry fields height moves, and permits text the container
+ * *gains* — and nothing else, on nothing else.
+ */
+describe('intended-change allowances for a mandated insertion', () => {
+  const SHELL_ALLOWANCE: TaskContract = {
+    ...TASK,
+    allowedHostChanges: [
+      {
+        fixture: 'enterprise-scoped-synthetic',
+        probe: 'host-shell',
+        fields: ['height', 'geometry.height', 'geometry.bottom'],
+        textInsertionOnly: true,
+      },
+    ],
+  };
+
+  const shellScheme = (
+    overrides: {
+      style?: Record<string, string>;
+      geometry?: Record<string, number>;
+      text?: string;
+    } = {},
+  ) =>
+    scheme({
+      probes: {
+        'host-shell': {
+          style: {...STYLE, ...(overrides.style ?? {})},
+          geometry: {...GEOMETRY, ...(overrides.geometry ?? {})},
+          contrast: 12,
+          text: overrides.text ?? 'Portfolio console Service controls',
+        },
+        status: probe({...STYLE, color: 'rgb(110, 231, 183)'}, 8.1, 'Ready'),
+      },
+    });
+
+  const scored = (
+    overrides: Parameters<typeof shellScheme>[0],
+    contract: TaskContract = SHELL_ALLOWANCE,
+  ) =>
+    scoreArm(
+      measurement({
+        label: 'baseline',
+        task: false,
+        light: shellScheme(),
+        dark: shellScheme(),
+      }),
+      measurement({
+        fixture: 'enterprise-scoped-synthetic',
+        contract,
+        light: shellScheme(overrides),
+        dark: shellScheme(overrides),
+      }),
+    );
+
+  const REFLOW = {
+    style: {height: '140px'},
+    geometry: {height: 140, bottom: 160},
+    text: 'Portfolio console Service controls Escalation routing Open service actions',
+  };
+
+  it('accepts the growth and added text the insertion causes', () => {
+    const score = scored(REFLOW);
+    expect(score.regressionDetails).toEqual([]);
+    expect(verdict(score)).toBe('clean');
+  });
+
+  it('reports the same change with no allowance in the contract', () => {
+    const score = scored(REFLOW, TASK);
+    expect(
+      score.regressionDetails
+        .map(regression => regression.property)
+        .sort()
+        .filter((value, index, all) => all.indexOf(value) === index),
+    ).toEqual(['geometry.bottom', 'geometry.height', 'height', 'text']);
+  });
+
+  it.each([
+    {name: 'a computed style', overrides: {style: {color: 'rgb(1, 2, 3)'}}},
+    {
+      name: 'a geometry field the allowance does not name',
+      overrides: {geometry: {width: 999}},
+    },
+  ])('still reports $name on the same probe', ({overrides}) => {
+    const score = scored({
+      ...REFLOW,
+      style: {...REFLOW.style, ...(overrides.style ?? {})},
+      geometry: {...REFLOW.geometry, ...(overrides.geometry ?? {})},
+    });
+    expect(score.regressions).toBeGreaterThan(0);
+    expect(verdict(score)).not.toBe('clean');
+  });
+
+  it('permits added text but never lost or rewritten text', () => {
+    expect(
+      isTextInsertionOnly('Portfolio console', 'Portfolio console Escalation'),
+    ).toBe(true);
+    expect(
+      isTextInsertionOnly('Portfolio console', 'Escalation Portfolio console'),
+    ).toBe(true);
+    expect(isTextInsertionOnly('Portfolio console', 'Portfolio')).toBe(false);
+    expect(isTextInsertionOnly('Portfolio console', 'Portfolio desk')).toBe(
+      false,
+    );
+    expect(isTextInsertionOnly('Portfolio console', 'console Portfolio')).toBe(
+      false,
+    );
+  });
+
+  it('reports host copy the container lost even under the allowance', () => {
+    const score = scored({
+      ...REFLOW,
+      text: 'Service controls Escalation routing Open service actions',
+    });
+    expect(
+      score.regressionDetails.some(
+        regression =>
+          regression.probe === 'host-shell' && regression.property === 'text',
+      ),
+    ).toBe(true);
+  });
+
+  it('does not leak the allowance to another probe', () => {
+    const score = scoreArm(
+      measurement({
+        label: 'baseline',
+        task: false,
+        light: shellScheme(),
+        dark: shellScheme(),
+      }),
+      measurement({
+        fixture: 'enterprise-scoped-synthetic',
+        contract: SHELL_ALLOWANCE,
+        light: scheme({
+          probes: {
+            'host-shell': {
+              style: STYLE,
+              geometry: GEOMETRY,
+              contrast: 12,
+              text: 'Portfolio console Service controls',
+            },
+            status: probe(
+              {...STYLE, color: 'rgb(110, 231, 183)', height: '99px'},
+              8.1,
+              'Ready',
+            ),
+          },
+        }),
+        dark: shellScheme(),
+      }),
+    );
+    expect(
+      score.regressionDetails.some(
+        regression =>
+          regression.probe === 'status' && regression.property === 'height',
+      ),
+    ).toBe(true);
+  });
+
+  it('does not apply an allowance written for another fixture', () => {
+    const score = scoreArm(
+      measurement({
+        label: 'baseline',
+        task: false,
+        light: shellScheme(),
+        dark: shellScheme(),
+      }),
+      measurement({
+        fixture: 'tailwind-v4-control',
+        contract: SHELL_ALLOWANCE,
+        light: shellScheme(REFLOW),
+        dark: shellScheme(REFLOW),
+      }),
+    );
+    expect(score.regressions).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The report distinction. `verdict` answers "is this acceptable"; it is not a
+ * description of what went wrong, and the operator report read it as one.
+ */
+describe('failure kinds', () => {
+  const withScore = (mutate: (value: ReturnType<typeof scoreArm>) => void) => {
+    const value = scoreArm(baseline(), measurement());
+    mutate(value);
+    return value;
+  };
+
+  it('is empty for a clean completed run', () => {
+    expect(failureBreakdown(scoreArm(baseline(), measurement()))).toEqual({
+      hostDamage: 0,
+      runtime: 0,
+      integrity: 0,
+      task: 0,
+      telemetry: 0,
+    });
+    expect(failureCauses(scoreArm(baseline(), measurement()))).toEqual([]);
+  });
+
+  it.each([
+    {
+      kind: 'hostDamage',
+      mutate: (value: ReturnType<typeof scoreArm>) => {
+        value.regressions = 2;
+      },
+    },
+    {
+      kind: 'integrity',
+      mutate: (value: ReturnType<typeof scoreArm>) => {
+        value.integrityFailures = ['hardcoded-important'];
+      },
+    },
+    {
+      kind: 'task',
+      mutate: (value: ReturnType<typeof scoreArm>) => {
+        value.taskFailures = ['light:menu:host-style'];
+      },
+    },
+    {
+      kind: 'telemetry',
+      mutate: (value: ReturnType<typeof scoreArm>) => {
+        value.executionSucceeded = false;
+      },
+    },
+  ])('attributes a $kind failure to that kind alone', ({kind, mutate}) => {
+    expect(failureCauses(withScore(mutate))).toEqual([kind]);
+  });
+
+  it('counts a measurement error as telemetry, not as host damage', () => {
+    const value = withScore(score => {
+      score.measurementErrors = ['probe read failed'];
+    });
+    expect(failureBreakdown(value).telemetry).toBe(1);
+    expect(failureBreakdown(value).hostDamage).toBe(0);
+  });
+
+  it('marks a run the executor did not finish as not comparable', () => {
+    expect(isComparableRun(scoreArm(baseline(), measurement()))).toBe(true);
+    expect(
+      isComparableRun(
+        withScore(score => {
+          score.executionSucceeded = false;
+        }),
+      ),
+    ).toBe(false);
+  });
+});
+
+/**
+ * Relocated host UI must stay inside the host token scope that was painting it.
+ *
+ * A task that composes existing host markup inside a design-system overlay
+ * moves that markup in the DOM. An established app frequently scopes part of
+ * its palette to a region — a settings panel, a guest area — so an element that
+ * was inside the region resolves the region's values and the same element
+ * outside it resolves the global ones. The classes do not change and the colour
+ * does, which reads like the design system repainting a host component and is
+ * not.
+ *
+ * `host-boundary` is reported apart from `host-style` because the two have
+ * opposite fixes. Losing the boundary means the host's own rules stopped
+ * reaching the element: restore the boundary. Restating the colours instead
+ * produces a surface that matches today and silently desynchronizes the next
+ * time the host retunes its palette — which is why the boundary is checked
+ * structurally and not inferred from the colours agreeing.
+ */
+describe('relocated host surfaces keep their host token boundary', () => {
+  const SCOPE = '[data-guest-design-system]';
+
+  const relocated = ({
+    tokenScopes,
+    style = STYLE,
+  }: {
+    tokenScopes: string[];
+    style?: Record<string, string>;
+  }) => {
+    const reference = interaction('host-baseline', {tokenScopes: [SCOPE]});
+    const moved: InteractionReading = {
+      id: 'host-menu-in-astryx-dialog',
+      direction: 'host-in-astryx',
+      opened: true,
+      keyboardReached: {
+        'astryx-dialog-trigger': true,
+        'host-menu-trigger': true,
+      },
+      surfaces: {
+        'astryx-dialog-backdrop': layerSurface('backdrop', '40'),
+        'astryx-dialog-surface': layerSurface('dialog', '50'),
+        'host-menu-surface': layerSurface('popover', '70', {
+          tokenScopes,
+          style,
+        }),
+      },
+    };
+    const contract: TaskContract = {
+      ...TASK,
+      interactions: [
+        {
+          id: 'host-menu-in-astryx-dialog',
+          direction: 'host-in-astryx',
+          open: [
+            {
+              name: 'astryx-dialog-trigger',
+              source: 'result',
+              method: 'keyboard-activate',
+              key: 'Enter',
+            },
+            {
+              name: 'host-menu-trigger',
+              source: 'result',
+              method: 'keyboard-activate',
+              key: 'Enter',
+            },
+          ],
+          surfaces: [
+            {
+              name: 'astryx-dialog-backdrop',
+              source: 'result',
+              kind: 'backdrop',
+              marker: 'astryx-dialog-surface',
+            },
+            {name: 'astryx-dialog-surface', source: 'result', kind: 'dialog'},
+            {
+              name: 'host-menu-surface',
+              source: 'result',
+              kind: 'popover',
+              styleReference: 'popover-surface',
+            },
+          ],
+        },
+      ],
+    };
+    const armScheme = () =>
+      scheme({taskInteractions: {'host-menu-in-astryx-dialog': moved}});
+    return {
+      baseline: measurement({
+        light: scheme({interaction: reference}),
+        dark: scheme({interaction: reference}),
+      }),
+      arm: measurement({
+        light: armScheme(),
+        dark: armScheme(),
+        contract,
+      }),
+    };
+  };
+
+  it('accepts a relocated surface that kept the boundary and matches', () => {
+    const {baseline, arm} = relocated({tokenScopes: [SCOPE]});
+    const score = scoreArm(baseline, arm);
+    expect(score.taskFailures).toEqual([]);
+    expect(passesAcceptance(score)).toBe(true);
+  });
+
+  it('reports a lost boundary distinctly from the colours it changed', () => {
+    // The measured failure: the executor carried the host's mode hooks onto the
+    // moved menu but not the attribute scoping its palette.
+    const {baseline, arm} = relocated({
+      tokenScopes: [],
+      style: {...STYLE, backgroundColor: 'rgb(255, 255, 255)'},
+    });
+    const score = scoreArm(baseline, arm);
+    expect(score.taskFailures).toContain(
+      'light:host-menu-in-astryx-dialog:host-menu-surface:host-boundary',
+    );
+    expect(score.taskFailures).toContain(
+      'dark:host-menu-in-astryx-dialog:host-menu-surface:host-boundary',
+    );
+    expect(score.taskFailures).toContain(
+      'light:host-menu-in-astryx-dialog:host-menu-surface:host-style',
+    );
+    expect(passesAcceptance(score)).toBe(false);
+  });
+
+  it('still reports the lost boundary when the colours were restated to match', () => {
+    // The mutation that matters. Copying the region's colours onto the moved
+    // element makes every style comparison agree while the element is no longer
+    // inside the region, so the next host palette change desynchronizes it
+    // silently. Matching colours must not buy a pass.
+    const {baseline, arm} = relocated({tokenScopes: []});
+    const score = scoreArm(baseline, arm);
+    expect(score.taskFailures).not.toContain(
+      'light:host-menu-in-astryx-dialog:host-menu-surface:host-style',
+    );
+    expect(score.taskFailures).toContain(
+      'light:host-menu-in-astryx-dialog:host-menu-surface:host-boundary',
+    );
+    expect(passesAcceptance(score)).toBe(false);
+  });
+
+  it('still reports a restyle that happened inside the right boundary', () => {
+    // The converse mutation: keeping the boundary must not excuse a real
+    // repaint of the host surface.
+    const {baseline, arm} = relocated({
+      tokenScopes: [SCOPE],
+      style: {...STYLE, color: 'rgb(1, 2, 3)'},
+    });
+    const score = scoreArm(baseline, arm);
+    expect(score.taskFailures).toContain(
+      'light:host-menu-in-astryx-dialog:host-menu-surface:host-style',
+    );
+    expect(score.taskFailures).not.toContain(
+      'light:host-menu-in-astryx-dialog:host-menu-surface:host-boundary',
+    );
+    expect(passesAcceptance(score)).toBe(false);
+  });
+
+  it('treats a fixture with no scoped regions as trivially satisfied', () => {
+    // Two of the three fixtures define tokens only at the root, so every
+    // surface records an empty scope list and this check never fires for them.
+    const {baseline, arm} = relocated({tokenScopes: []});
+    const unscopedBaseline = JSON.parse(
+      JSON.stringify(baseline),
+    ) as typeof baseline;
+    for (const key of ['light', 'dark'] as const) {
+      const surfaces = unscopedBaseline.schemes[key].interaction?.surfaces;
+      const reference = surfaces?.['popover-surface'];
+      if (reference && !('missing' in reference)) {
+        reference.tokenScopes = [];
+      }
+    }
+    const score = scoreArm(unscopedBaseline, arm);
+    expect(
+      score.taskFailures.filter(failure => failure.endsWith('host-boundary')),
+    ).toEqual([]);
   });
 });
