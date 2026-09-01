@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "component": "core/Timestamp",
+    "reason": "Timestamp renders locale-formatted text and a direction-neutral hover card; it has no directional icons, contextual decorations, side-specific layout, order, scroll, drag, or directional keyboard behavior."
+  }
+]
