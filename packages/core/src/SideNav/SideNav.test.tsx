@@ -1138,6 +1138,36 @@ describe('SideNavItem (collapsed)', () => {
     expect(trigger).toHaveAttribute('aria-label', 'Settings');
   });
 
+  it('keeps a consumer aria-label on the collapsed link, not the label text (#5641)', () => {
+    renderCollapsed(
+      <SideNavItem
+        label="Home"
+        icon={StubIcon}
+        href="/home"
+        aria-label="Open Home, 3 items need attention"
+      />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute(
+      'aria-label',
+      'Open Home, 3 items need attention',
+    );
+  });
+
+  it('keeps a consumer aria-label on the collapsed popover trigger, not the label text (#5641)', () => {
+    renderCollapsed(
+      <SideNavItem
+        label="Settings"
+        icon={StubIcon}
+        data-testid="parent"
+        aria-label="Settings, 2 unread">
+        <SideNavItem label="General" />
+      </SideNavItem>,
+    );
+    const trigger = screen.getByTestId('parent');
+    expect(trigger).toHaveAttribute('aria-label', 'Settings, 2 unread');
+  });
+
   it('opens popover on click showing children in expanded form', async () => {
     const user = userEvent.setup();
     renderCollapsed(

@@ -580,7 +580,7 @@ export function SideNavItem({
             type="button"
             {...rest}
             {...hoverTriggerProps}
-            aria-label={label}
+            aria-label={rest['aria-label'] ?? label}
             data-testid={testId}
             {...popover.triggerProps}
             {...collapsedItemStyles}>
@@ -607,7 +607,7 @@ export function SideNavItem({
     const collapsedAriaProps = {
       'aria-current': isSelected ? ('page' as const) : undefined,
       'aria-disabled': isDisabled || undefined,
-      'aria-label': label,
+      'aria-label': rest['aria-label'] ?? label,
       'data-testid': testId,
     };
 
