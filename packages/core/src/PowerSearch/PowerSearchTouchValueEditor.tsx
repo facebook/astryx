@@ -42,6 +42,9 @@ const styles = stylex.create({
   input: {
     paddingBlockStart: spacingVars['--spacing-1'],
   },
+  touchControl: {
+    minHeight: spacingVars['--spacing-11'],
+  },
 });
 
 export interface PowerSearchTouchValueEditorProps {
@@ -164,6 +167,7 @@ export function PowerSearchTouchValueEditor({
         onChange={handleFallbackChange}
         config={config}
         isDisabled={isDisabled}
+        controlXStyle={styles.touchControl}
         maxMenuItems={maxMenuItems}
         timezoneID={timezoneID}
       />
