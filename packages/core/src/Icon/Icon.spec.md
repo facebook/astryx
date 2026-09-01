@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:Icon
@@ -11,6 +11,7 @@ approved_at: 2026-08-30
 owners: [cixzhang, imdreamrunner]
 review_triggers: [public-api, behavior, theming, accessibility]
 verified_by: [packages/core/src/Icon/Icon.test.tsx, scripts/check-knowledge.mjs]
+modules: []
 families: []
 design_specs: []
 architecture:

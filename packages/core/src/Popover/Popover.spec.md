@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:Popover
@@ -20,6 +20,7 @@ verified_by:
     packages/cli/foundation/discovery/theming-targets.test.mjs,
     scripts/check-knowledge.mjs,
   ]
+modules: []
 families: [family:overlay-dismissal]
 design_specs: []
 architecture:

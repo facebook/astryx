@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:TreeList
@@ -16,6 +16,7 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
+modules: []
 families: [family:navigation-destinations]
 design_specs: []
 architecture:

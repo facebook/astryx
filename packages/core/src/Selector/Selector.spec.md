@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:Selector
@@ -15,6 +15,7 @@ verified_by:
     packages/core/src/Selector/Selector.test.tsx,
     packages/core/src/Selector/Selector.source-build.test.mjs,
   ]
+modules: []
 families: []
 design_specs: []
 architecture:

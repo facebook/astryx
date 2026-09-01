@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:Divider
@@ -12,6 +12,7 @@ owners: [cixzhang]
 review_triggers: [theming]
 verified_by:
   [packages/core/src/Divider/Divider.test.tsx, scripts/check-knowledge.mjs]
+modules: []
 families: []
 design_specs: []
 architecture:

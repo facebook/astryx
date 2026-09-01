@@ -48,8 +48,12 @@ jobs:
             printf 'docsite_only=false\nspec_only=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CLASSIFIER="$RUNNER_TEMP/change-scope.cjs"
-          if git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs" > "$CLASSIFIER" 2>/dev/null; then
+          CLASSIFIER_DIR="$RUNNER_TEMP/change-scope"
+          mkdir -p "$CLASSIFIER_DIR"
+          CLASSIFIER="$CLASSIFIER_DIR/change-scope.cjs"
+          MATCHER="$CLASSIFIER_DIR/knowledge-paths.cjs"
+          if git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs" > "$CLASSIFIER" 2>/dev/null \
+            && git show "origin/${{ github.base_ref }}:.github/scripts/knowledge-paths.cjs" > "$MATCHER" 2>/dev/null; then
             git diff --name-status "$MERGE_BASE"...HEAD \
               | node "$CLASSIFIER" --github-output
           else
