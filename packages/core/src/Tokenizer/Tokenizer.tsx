@@ -11,6 +11,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Tokenizer/index.ts
+ * - /packages/core/src/Tokenizer/delimiters.ts (delimiter-splitting helper)
  * - /apps/storybook/stories/Tokenizer.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Tokenizer/ (showcase blocks)
  */
@@ -45,6 +46,7 @@ import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
 import {useTooltip} from '../Tooltip';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {toDelimiterPattern, splitOnDelimiters} from './delimiters';
 import {
   colorVars,
   spacingVars,
@@ -71,7 +73,10 @@ export type {
  */
 export type TokenizerChange<T extends SearchableItem> =
   | {item: T; type: 'add'}
-  | {item: T; type: 'create'}
+  // `items` is present only when a single commit created more than one token
+  // (a delimited paste). `item` is always the last created token, so consumers
+  // that ignore `items` keep working.
+  | {item: T; items?: T[]; type: 'create'}
   | {item: T; type: 'remove'}
   | {type: 'reorder'};
 
@@ -213,9 +218,48 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
    * Allow users to create new tokens from free-text input.
    * When true, pressing Enter with text in the input commits the typed value
    * as a new token — even if the search source returned no results.
+   * See `delimiters` for committing a value with a comma or a newline instead
+   * of Enter.
    * @default false
    */
   hasCreate?: boolean;
+  /**
+   * Characters or patterns that commit the text typed so far as a token — the
+   * same commit Enter performs, but mid-typing and on paste. Only active when
+   * `hasCreate` is set; with `hasCreate` off, typing and pasting behave exactly
+   * as before.
+   *
+   * Whenever the input text contains a delimiter — typed at the end of a value,
+   * or arriving in one shot from a paste — the text is read as a list: every
+   * value is trimmed, blanks and values already selected are dropped, and each
+   * remaining value becomes a token, up to `maxEntries`. A paste is read
+   * together with what the input already holds — the clipboard is spliced over
+   * the selection, exactly as the browser would insert it — and text composed
+   * with an input method is read when the composition ends, never mid-way.
+   * The input is left empty afterwards, so nothing is committed twice. Text
+   * with no delimiter in it passes through untouched, so pasting a single
+   * value still offers the "Create" option and still waits for Enter.
+   *
+   * Delimiter strings match literally — regex characters such as `.` need no
+   * escaping — and longer strings are matched before shorter ones, so
+   * `[', ', ',']` splits `"a, b"` into `a` and `b` rather than `a` and `" b"`.
+   * A RegExp is matched as written; any groups it contains are ignored, so
+   * `/(,|;)/` and `/[,;]/` behave the same.
+   *
+   * Values created this way are always free text — `id` and `label` are both
+   * the trimmed value — and are never matched against `searchSource`.
+   *
+   * Pass `[]` to turn delimiters off and keep Enter as the only way to create.
+   * Do that when a value may legitimately contain a comma, such as a name
+   * written `"Smith, John"` or a company written `"Acme, Inc."`.
+   *
+   * The default is comma plus newline in both flavors, so comma lists and
+   * spreadsheet columns split no matter which platform wrote the clipboard
+   * (LF, CRLF, or classic-Mac CR).
+   *
+   * @default [',', '\n', '\r']
+   */
+  delimiters?: ReadonlyArray<string> | RegExp;
   /** Query change callback. */
   onChangeQuery?: (query: string) => void;
   /** Fires when focus enters the tokenizer from outside. */
@@ -349,6 +393,20 @@ const layerPlaceholderSizeStyles = stylex.create({
 // "Create: X" suggestions from real search results.
 const CREATABLE_ID_PREFIX = '__xds_create__';
 
+// Default delimiter set for free-text creation: comma and newline, so pasting
+// a comma- or newline-separated list "just works" when hasCreate is on. CR is
+// included alongside LF because clipboard text from Excel for Mac and other
+// legacy-Mac sources separates rows with bare \r (CRLF still splits cleanly:
+// the empty segment between \r and \n is dropped as a blank). Frozen and
+// shared so the destructure default keeps a stable identity across renders
+// (a fresh literal would thrash the delimiterPattern memo). Space is
+// deliberately excluded — it would split ordinary multi-word values.
+const DEFAULT_DELIMITERS: ReadonlyArray<string> = Object.freeze([
+  ',',
+  '\n',
+  '\r',
+]);
+
 /**
  * Multi-select input with token chips and typeahead search.
  *
@@ -419,6 +477,7 @@ export function Tokenizer<T extends SearchableItem>({
   tokenOverflowBehavior = 'none',
   debounceMs,
   hasCreate = false,
+  delimiters = DEFAULT_DELIMITERS,
   onChangeQuery,
   onFocus,
   onBlur,
@@ -643,6 +702,92 @@ export function Tokenizer<T extends SearchableItem>({
     [value, onChange, isAtMax, selectedIds, hasCreate, announce, t],
   );
 
+  // Compile the delimiter set once per (hasCreate, delimiters) change. Gated on
+  // hasCreate so the whole feature is inert — and this is a no-op — when
+  // free-text creation is off.
+  const delimiterPattern = useMemo(
+    () => (hasCreate ? toDelimiterPattern(delimiters) : null),
+    [hasCreate, delimiters],
+  );
+
+  // Lift delimited text out of the input and commit each value as a token.
+  // Wired as BaseTypeahead's transformQuery, so it runs for both typing and
+  // paste at the single point where input text becomes the query. Returns the
+  // text to leave in the input: '' when a delimiter was found (nothing is left
+  // for Enter to double-commit), or the text unchanged when there was none.
+  //
+  // The trim / duplicate / isAtMax rules mirror handleAdd's create path above;
+  // keep the two in sync if either changes.
+  const commitDelimitedText = useCallback(
+    (text: string): string => {
+      const segments = splitOnDelimiters(text, delimiterPattern);
+      if (segments == null) {
+        // No delimiter present — leave the text in the input so a single value
+        // still offers "Create" and waits for Enter.
+        return text;
+      }
+      if (isDisabled) {
+        // Belt over BaseTypeahead's own disabled guards: a focusable-disabled
+        // (readOnly) input still fires paste events, and this path must never
+        // mutate a disabled control.
+        return text;
+      }
+      if (isAtMax) {
+        // At capacity, swallow nothing: leave the text visible rather than
+        // silently dropping a paste on a field that can accept no more.
+        return text;
+      }
+      const seen = new Set(selectedIds);
+      const created: T[] = [];
+      for (const segment of segments) {
+        const trimmed = segment.trim();
+        if (!trimmed || seen.has(trimmed)) {
+          continue;
+        }
+        if (maxEntries != null && value.length + created.length >= maxEntries) {
+          break;
+        }
+        seen.add(trimmed);
+        // Free-text token: id and label are both the trimmed value. Asserted
+        // through a variable (not the literal) to match the create path above.
+        const createdItem = {id: trimmed, label: trimmed};
+        created.push(createdItem as T);
+      }
+      if (created.length === 0) {
+        // Every segment was empty or a duplicate — still consume the delimiter
+        // so the raw text can't linger for Enter to create with a comma in it.
+        return '';
+      }
+      const newItems = [...value, ...created];
+      // One onChange per commit, never one per token: N sequential calls would
+      // each close over the same stale `value` and overwrite each other. `item`
+      // is the last created token so single-create consumers are unaffected;
+      // `items` carries the full batch only when more than one was created.
+      onChange(
+        newItems,
+        created.length === 1
+          ? {item: created[0], type: 'create'}
+          : {item: created[created.length - 1], items: created, type: 'create'},
+      );
+      announce(
+        created.length === 1
+          ? `Added ${created[0].label}`
+          : `Added ${created.length} items`,
+      );
+      return '';
+    },
+    [
+      delimiterPattern,
+      isDisabled,
+      isAtMax,
+      selectedIds,
+      value,
+      maxEntries,
+      onChange,
+      announce,
+    ],
+  );
+
   // Handle removing an item. Single removal path: both Backspace on an empty
   // input and the per-token remove buttons route through here, so the
   // announcement covers both.
@@ -814,6 +959,7 @@ export function Tokenizer<T extends SearchableItem>({
         ariaDescribedBy={ariaDescribedBy}
         onChangeQuery={onChangeQuery}
         __queryEntries={createEntries}
+        transformQuery={hasCreate ? commitDelimitedText : undefined}
         debounceMs={debounceMs}
         onKeyDown={handleKeyDown}
         anchorRef={wrapperRef}

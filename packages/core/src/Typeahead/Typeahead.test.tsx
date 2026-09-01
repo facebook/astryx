@@ -1249,6 +1249,53 @@ describe('BaseTypeahead paste behavior', () => {
   });
 });
 
+describe('BaseTypeahead transformQuery', () => {
+  it('rewrites edited text before it becomes the query', async () => {
+    const onChangeQuery = vi.fn();
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        onChangeQuery={onChangeQuery}
+        transformQuery={v => v.toUpperCase()}
+        debounceMs={0}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await act(async () => {
+      fireEvent.change(input, {target: {value: 'ab'}});
+    });
+
+    // The input shows the transformed value, and the transformed value — not
+    // the raw one — is what onChangeQuery reports.
+    expect(input).toHaveValue('AB');
+    expect(onChangeQuery).toHaveBeenLastCalledWith('AB');
+  });
+
+  it('is byte-identical to today when the prop is absent', async () => {
+    const onChangeQuery = vi.fn();
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        onChangeQuery={onChangeQuery}
+        debounceMs={0}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await act(async () => {
+      fireEvent.change(input, {target: {value: 'ab'}});
+    });
+
+    expect(input).toHaveValue('ab');
+    expect(onChangeQuery).toHaveBeenLastCalledWith('ab');
+  });
+});
+
 describe('Typeahead disabledMessage', () => {
   // jsdom does not implement the Popover API used by the tooltip, so mock
   // showPopover/hidePopover to toggle a `popover-open` attribute the tests

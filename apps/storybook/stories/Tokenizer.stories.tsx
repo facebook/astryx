@@ -323,7 +323,7 @@ export const Creatable: Story = {
             setTags(items);
           }}
           hasCreate
-          placeholder="Type a tag and press Enter..."
+          placeholder="Type or paste a list of tags..."
         />
         <p
           style={{
@@ -331,7 +331,8 @@ export const Creatable: Story = {
             fontSize: 14,
             color: 'var(--color-text-secondary)',
           }}>
-          {tags.length} tag{tags.length !== 1 ? 's' : ''} added
+          {tags.length} tag{tags.length !== 1 ? 's' : ''} added. Type a comma or
+          paste a comma-separated list to add several at once.
         </p>
       </div>
     );
@@ -402,6 +403,67 @@ export const CreatableWithSearch: Story = {
     label: 'Team Members',
   },
   name: 'Creatable + Search',
+};
+
+// Opt out of delimiter splitting when a value may legitimately contain a comma,
+// like a name written "Smith, John". With delimiters={[]}, Enter is the only
+// way to create, and a comma stays part of the value.
+export const CreatableCommaValues: Story = {
+  render: args => {
+    const [value, setValue] = useState<SearchableItem[]>([]);
+    return (
+      <div>
+        <Tokenizer
+          {...args}
+          searchSource={emptySource}
+          value={value}
+          onChange={(items, _change) => {
+            setValue(items);
+          }}
+          hasCreate
+          delimiters={[]}
+          placeholder='Type e.g. "Smith, John" and press Enter...'
+        />
+        <p style={{marginTop: 8, fontSize: 14, opacity: 0.72}}>
+          Commas stay part of the value. {value.length} added.
+        </p>
+      </div>
+    );
+  },
+  args: {
+    label: 'Names (Last, First)',
+  },
+  name: 'Creatable — comma-safe (delimiters={[]})',
+};
+
+// Custom delimiter set: split on comma, semicolon, or newline. Handy for
+// pasting values copied from a spreadsheet or a semicolon-separated export.
+export const CreatableCustomDelimiters: Story = {
+  render: args => {
+    const [value, setValue] = useState<SearchableItem[]>([]);
+    return (
+      <div>
+        <Tokenizer
+          {...args}
+          searchSource={emptySource}
+          value={value}
+          onChange={(items, _change) => {
+            setValue(items);
+          }}
+          hasCreate
+          delimiters={[',', ';', '\n']}
+          placeholder="Paste a comma- or semicolon-separated list..."
+        />
+        <p style={{marginTop: 8, fontSize: 14, opacity: 0.72}}>
+          {value.length} added. Splits on comma, semicolon, or newline.
+        </p>
+      </div>
+    );
+  },
+  args: {
+    label: 'Emails',
+  },
+  name: 'Creatable — custom delimiters',
 };
 
 // Disabled with an explanation tooltip. Hover or keyboard-focus the input to see

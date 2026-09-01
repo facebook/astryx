@@ -471,6 +471,47 @@ describe('StringListEditor (#1107)', () => {
     // Should render the tokenizer with a combobox
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
+
+  it('keeps a comma-containing value as ONE token (delimiters pinned off)', async () => {
+    // Tripwire for the delimiters={[]} pin in StringListEditor: hasCreate is
+    // inferred here, so Tokenizer's default comma splitting must NOT apply —
+    // filter values like "Acme, Inc." are single values that persist into
+    // saved queries. If the pin is removed, this commits ['Acme'] instead.
+    const onChange = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'string_list'}}
+        filterValue={undefined}
+        onChange={onChange}
+        config={stubConfig}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await act(async () => {
+      fireEvent.change(input, {target: {value: 'Acme, Inc.'}});
+    });
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 50));
+    });
+
+    // The whole string is one prospective value — not split on the comma.
+    expect(screen.getByText('Create "Acme, Inc."')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+    });
+    await act(async () => {
+      fireEvent.keyDown(input, {key: 'Enter'});
+    });
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'string_list',
+        value: ['Acme, Inc.'],
+      }),
+    );
+  });
 });
 
 describe('maxMenuItems', () => {

@@ -194,6 +194,14 @@ function StringListEditor({
       debounceMs={operatorValue.searchSource ? 150 : 0}
       hasCreate={hasCreate}
       maxMenuItems={maxMenuItems}
+      // hasCreate here is inferred above — a string_list operator with no
+      // searchSource gets creatable mode without the app author writing the
+      // word, and its values persist into saved queries where a comma is often
+      // part of the value ("Acme, Inc."). Opt out of Tokenizer's default
+      // comma/newline splitting rather than silently change stored filters.
+      // Per-operator paste splitting is meant to arrive via
+      // OperatorTokenizationConfig (PowerSearch/types.ts) — see follow-up.
+      delimiters={[]}
     />
   );
 }
