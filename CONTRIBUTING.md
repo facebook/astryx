@@ -474,8 +474,11 @@ When the audit reports baseline entries as "resolved", delete them from
 PRs that touch components also run an RTL audit (`pr-rtl`), scoped to the
 changed components like `pr-a11y`. It is soft-gated — findings show in the job
 summary but don't block. Repro locally with `pnpm rtl:audit -- --filter Avatar`
-(the `--` matters: `pnpm -F` is itself `--filter`). See
-`apps/storybook/rtl-audit/README.md`.
+(the `--` matters: `pnpm -F` is itself `--filter`). The report classifies every
+scoped component as **measured**, **verified N-A**, or a **coverage gap**; an
+unexplained all-N-A result is not a clean RTL result. The weekly unfiltered run
+applies the same contract to the full existing roster, while PR CI applies it
+to new and changed components. See `apps/storybook/rtl-audit/README.md`.
 
 ### Modal close visibility guard
 

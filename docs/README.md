@@ -15,9 +15,24 @@ it governs. Consumer documentation remains in component `.doc.mjs` files and
 - `templates/knowledge/`: authoring templates. Templates never live among records.
 - `schemas/knowledge/`: versioned structural requirements for templates and records.
 
-Component-local contracts and audits live beside the component as
-`<Name>.spec.md` and `<Name>.audit.json`. Theme contracts likewise live beside
-the package as `packages/themes/<theme>/<theme>.spec.md`.
+Component contracts are direct children of their Core or Lab component root and
+use `<PublicName>.spec.md`. `<PublicName>` normally matches the root directory;
+a public member such as `NavMenu/NavHeadingMenu.spec.md` is valid only when an
+exact top-level or full inline consumer-doc entry in that root declares the same
+public name. A flat filename and matching `component:` id alone are not enough.
+
+Independently contractible public hooks, plugins, utilities, and subsystems use
+`kind: module` records named `<PublicName>.spec.md` at least one directory below
+the same component root. Their canonical id is
+`module:<ParentComponent>/<PublicName>`; the module's `parent_component` and the
+parent component's `modules` list must agree. Private transform helpers do not
+require records.
+
+Component-local discovery and PR routing ignore hidden path segments,
+`*.generated.spec.md`, and fixture, test, generated, build-output, coverage, and
+`node_modules` directories. Those files are not knowledge records or spec-only
+changes. Theme contracts live beside the package as
+`packages/themes/<theme>/<theme>.spec.md`.
 
 ## Authority
 
@@ -38,9 +53,11 @@ Every knowledge record declares `authority: draft | current | archived`.
   through GitHub review. When an approver is also the PR author, they comment
   `/approve-spec <full-head-sha>`. Any new commit invalidates that approval.
 - Only `current` documents guide implementation and review.
-- Current records link only other current records. Draft relationships are listed
-  on the candidate record; promotion updates affected backlinks under owner
-  review.
+- Current records rely only on other current records. `modules` and
+  `parent_component` are structural ownership links, so they may connect active
+  draft/current records without making draft behavior authoritative. Other draft
+  relationships are listed on the candidate record; promotion updates affected
+  backlinks under owner review.
 - `archived` documents declare `archive_reason` (`superseded`, `withdrawn`, or
   `historical`) and link `superseded_by` when a replacement exists.
 

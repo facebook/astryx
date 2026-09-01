@@ -40,6 +40,8 @@ jobs:
       total_findings: ${{ steps.summarize.outputs.total_findings }}
       components_audited: ${{ steps.summarize.outputs.components_audited }}
       stories_scanned: ${{ steps.summarize.outputs.stories_scanned }}
+      coverage_gaps: ${{ steps.summarize.outputs.coverage_gaps }}
+      verified_na: ${{ steps.summarize.outputs.verified_na }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
