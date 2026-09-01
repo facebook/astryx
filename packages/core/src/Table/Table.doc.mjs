@@ -1,5 +1,104 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Table',
+    required: true,
+    description:
+      'Semantic table element that groups the table sections, rows, and cells.',
+  },
+  {
+    name: 'Scroll region',
+    required: true,
+    description:
+      'Keyboard-focusable outer region that scrolls horizontally when the columns overflow.',
+  },
+  {
+    name: 'Header section',
+    required: false,
+    description:
+      'Column-heading section generated when data-driven columns are present or supplied with TableHeader in children mode.',
+  },
+  {
+    name: 'Column header cell',
+    required: false,
+    description:
+      'Cell that identifies one column and may contain sorting or bulk-selection controls.',
+  },
+  {
+    name: 'Sort control',
+    required: false,
+    description:
+      "Button that wraps a sortable column label and changes that column's sort direction.",
+  },
+  {
+    name: 'Sort indicator glyph',
+    required: false,
+    description: 'Directional symbol rendered by Icon inside a Sort control.',
+  },
+  {
+    name: 'Sort priority',
+    required: false,
+    description:
+      'Number shown for a sorted column when multi-column sorting is active.',
+  },
+  {
+    name: 'Selection control',
+    required: false,
+    description:
+      'CheckboxInput rendered in the header and selectable body rows by the selection plugin.',
+  },
+  {
+    name: 'Body section',
+    required: true,
+    description:
+      'Section containing data rows or the current empty state; data-driven mode renders it automatically.',
+  },
+  {
+    name: 'Row',
+    required: false,
+    description:
+      'Repeated TableRow that groups cells in a standard header, body, or footer row.',
+  },
+  {
+    name: 'Cell',
+    required: false,
+    description:
+      'TableCell containing one value or caller-provided content in a standard body or footer row.',
+  },
+  {
+    name: 'Default empty state',
+    required: false,
+    description:
+      'Compact EmptyState shown for an empty data array unless it is replaced or disabled.',
+  },
+  {
+    name: 'Expansion control',
+    required: false,
+    description:
+      'Button in a leading cell that expands or collapses one expandable row.',
+  },
+  {
+    name: 'Expansion glyph',
+    required: false,
+    description:
+      'Directional symbol rendered by Icon inside an Expansion control.',
+  },
+  {
+    name: 'Expanded detail panel',
+    required: false,
+    description:
+      'Detail row and spanning cell rendered below an expanded row around caller-provided content.',
+  },
+  {
+    name: 'Footer section',
+    required: false,
+    description:
+      'Optional summary or totals section supplied with TableFooter in children mode.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -147,14 +246,7 @@ export const docs = {
       { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
       { guidance: false, description: 'Omit width on text-heavy columns; without an explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
     ],
-    anatomy: [
-      {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
-      {name: 'Body Rows', required: true, description: 'Rows with consistent data structure.'},
-      {name: 'Footer', required: false, description: 'Displays summary or totals.'},
-      {name: 'Top Bar', required: false, description: 'Contains title, toolbar, and filters.'},
-      {name: 'Bottom Bar', required: false, description: 'Contains pagination controls.'},
-      {name: 'Support Panels', required: false, description: 'Displays row details in a side panel.'},
-    ],
+    anatomy,
   },
 };
 
@@ -169,14 +261,7 @@ export const docsZh = {
       { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
       { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
     ],
-    anatomy: [
-      {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
-      {name: 'Body Rows', required: true, description: 'Rows with consistent data structure.'},
-      {name: 'Footer', required: false, description: 'Displays summary or totals.'},
-      {name: 'Top Bar', required: false, description: 'Contains title, toolbar, and filters.'},
-      {name: 'Bottom Bar', required: false, description: 'Contains pagination controls.'},
-      {name: 'Support Panels', required: false, description: 'Displays row details in a side panel.'},
-    ],
+    anatomy,
   },
 };
 
@@ -196,13 +281,6 @@ export const docsDense = {
       { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
       { guidance: false, description: 'Omit width on text-heavy columns; w/o explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
     ],
-    anatomy: [
-      {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
-      {name: 'Body Rows', required: true, description: 'Rows with consistent data structure.'},
-      {name: 'Footer', required: false, description: 'Displays summary or totals.'},
-      {name: 'Top Bar', required: false, description: 'Contains title, toolbar, and filters.'},
-      {name: 'Bottom Bar', required: false, description: 'Contains pagination controls.'},
-      {name: 'Support Panels', required: false, description: 'Displays row details in a side panel.'},
-    ],
+    anatomy,
   },
 };

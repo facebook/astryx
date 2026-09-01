@@ -41,6 +41,10 @@ const coreSrc = path.join(coreDir, 'src');
 
 /** @type {Promise<import('./theming-targets.mjs').ThemingTarget[]>} */
 const enumerated = collectThemingTargets(coreSrc);
+/** @type {Promise<import('./theming-targets.mjs').ThemingTarget[]>} */
+const activeEnumerated = collectThemingTargets(coreSrc, {
+  includeDeprecated: false,
+});
 
 describe('collectThemingTargets', () => {
   it('enumerates the whole surface, not a handful', async () => {
@@ -54,6 +58,39 @@ describe('collectThemingTargets', () => {
       expect(t.className).toBe(`astryx-${t.key}`);
       expect(t.component).toBeTruthy();
     }
+  });
+
+  it('can limit ownership checks to active targets', async () => {
+    const all = await enumerated;
+    const active = await activeEnumerated;
+    expect(
+      all.some(t => t.component === 'CodeBlock' && t.key === 'codeblock'),
+    ).toBe(true);
+    expect(
+      active.some(t => t.component === 'CodeBlock' && t.key === 'codeblock'),
+    ).toBe(false);
+    expect(
+      active.some(t => t.component === 'CodeBlock' && t.key === 'code-block'),
+    ).toBe(true);
+  });
+
+  it('keeps the deprecated Popover alias enumerable but out of active ownership', async () => {
+    const allPopoverKeys = (await enumerated)
+      .filter(target => target.component === 'Popover')
+      .map(target => target.key);
+    const activePopoverKeys = (await activeEnumerated)
+      .filter(target => target.component === 'Popover')
+      .map(target => target.key);
+    const doc = await loadComponentDoc(
+      path.join(coreSrc, 'Popover', 'Popover.doc.mjs'),
+    );
+
+    expect(allPopoverKeys).toEqual(['popover', 'popover-surface']);
+    expect(activePopoverKeys).toEqual(['popover']);
+    expect(doc.theming.targets).toContainEqual({
+      className: 'astryx-popover-surface',
+      deprecatedFor: 'popover',
+    });
   });
 
   it('carries the props and states a target reflects', async () => {
@@ -71,13 +108,16 @@ describe('collectThemingTargets', () => {
     ['TableHeader', 'table-header'],
     ['TableBody', 'table-body'],
     ['TableFooter', 'table-footer'],
-  ])('keeps %s theming metadata available in its direct doc', async (name, key) => {
-    const doc = await loadComponentDoc(
-      path.join(coreSrc, 'Table', `${name}.doc.mjs`),
-    );
-    expect(doc.subComponentOf).toBe('Table');
-    expect(doc.theming.targets).toContainEqual({className: `astryx-${key}`});
-  });
+  ])(
+    'keeps %s theming metadata available in its direct doc',
+    async (name, key) => {
+      const doc = await loadComponentDoc(
+        path.join(coreSrc, 'Table', `${name}.doc.mjs`),
+      );
+      expect(doc.subComponentOf).toBe('Table');
+      expect(doc.theming.targets).toContainEqual({className: `astryx-${key}`});
+    },
+  );
 
   it.each(['table-header', 'table-body', 'table-footer'])(
     'enumerates %s once under its canonical Table owner',

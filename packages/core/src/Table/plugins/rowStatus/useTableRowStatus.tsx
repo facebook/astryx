@@ -64,18 +64,33 @@ const ICON_COLOR_BY_STATUS: Record<TableRowStatusColor, IconColor> = {
 };
 
 /**
- * A row's status indicator. `color` accepts a semantic status color
- * (mapped to a theme token) or any raw CSS color string as an escape hatch.
- * By default the plugin renders a colored status dot. Provide `icon` to signal
- * status by shape as well as color, which is more accessible when several
- * statuses coexist. `label` is required so the status is never conveyed by
- * color alone — it names the indicator for assistive technology and shows on
- * hover. Return `null` for rows with no status.
+ * Semantic statuses resolve through the theme-aware icon registry by default, so
+ * a theme owns both their shape and color. Palette colors and raw CSS values do
+ * not carry outcome semantics, so they retain the neutral dot unless the caller
+ * provides an explicit icon.
+ */
+const DEFAULT_ICON_BY_STATUS: Partial<Record<TableRowStatusColor, IconName>> = {
+  success: 'success',
+  error: 'error',
+  warning: 'warning',
+};
+
+/**
+ * A row's status indicator. Semantic status colors (`success`, `warning`,
+ * `error`) resolve to the matching themed semantic icon by default. Palette
+ * colors and raw CSS values retain the neutral dot because color alone cannot
+ * establish an outcome glyph. Provide `icon` to override either default.
+ * `label` is required so the status is never conveyed by color alone — it names
+ * the indicator for assistive technology and shows on hover. Return `null` for
+ * rows with no status.
  */
 export interface TableRowStatus {
   /** Semantic status color (preferred) or a raw CSS color string. */
   color: TableRowStatusColor | (string & {});
-  /** Optional icon rendered as the signifier instead of the dot (shape as an a11y differentiator). */
+  /**
+   * Optional icon override. Semantic status colors use their matching themed
+   * icon by default; palette/raw colors use a dot.
+   */
   icon?: IconName;
   /**
    * Accessible name for the status, announced to assistive technology and
@@ -127,8 +142,8 @@ const styles = stylex.create({
 
 /**
  * Returns a {@link TablePlugin} that prepends a narrow column signaling per-row
- * status: a colored status dot by default, or an icon when `icon` is provided
- * (shape + color is more accessible than color alone).
+ * status: a themed semantic icon for `success`, `warning`, and `error`; a
+ * colored dot for palette/raw colors; or an explicit icon override.
  *
  * @example
  * ```
@@ -166,9 +181,12 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
             if (!status) {
               return null;
             }
-            const signifier = status.icon ? (
+            const icon =
+              status.icon ??
+              DEFAULT_ICON_BY_STATUS[status.color as TableRowStatusColor];
+            const signifier = icon ? (
               <Icon
-                icon={status.icon}
+                icon={icon}
                 size="xsm"
                 color={
                   ICON_COLOR_BY_STATUS[status.color as TableRowStatusColor] ??
