@@ -79,6 +79,11 @@ describe('TableRowStatusValue type', () => {
       label: string;
     }>().toMatchTypeOf<TableRowStatusValue>();
     expectTypeOf<{
+      color: 'red';
+      label: string;
+      status: undefined;
+    }>().toMatchTypeOf<TableRowStatusValue>();
+    expectTypeOf<{
       color: 'rgb(1, 2, 3)';
       icon: 'check';
       label: string;
@@ -178,27 +183,53 @@ describe('useTableRowStatus', () => {
     }
   });
 
-  it('keeps semantic-looking custom colors on the stable 8px dot path', () => {
+  it('keeps every semantic-looking custom color on the stable 8px dot path', () => {
+    render(
+      <Harness
+        statusFn={item =>
+          item.id === 'a'
+            ? {color: 'success', label: 'Success-colored custom marker'}
+            : item.id === 'b'
+              ? {color: 'warning', label: 'Warning-colored custom marker'}
+              : {color: 'error', label: 'Error-colored custom marker'}
+        }
+      />,
+    );
+
+    const expectedTokens = {
+      'Success-colored custom marker': '--color-icon-green',
+      'Warning-colored custom marker': '--color-icon-orange',
+      'Error-colored custom marker': '--color-icon-red',
+    } as const;
+
+    for (const [label, token] of Object.entries(expectedTokens)) {
+      const indicator = screen.getByRole('img', {name: label});
+      const dot = indicator.firstElementChild;
+
+      expect(indicator.querySelector('svg')).toBeNull();
+      expect(dot).toBeInstanceOf(HTMLElement);
+      expect(getComputedStyle(dot as HTMLElement).width).toBe('8px');
+      expect(getComputedStyle(dot as HTMLElement).height).toBe('8px');
+      expect(dot?.getAttribute('style')).toContain(token);
+    }
+  });
+
+  it('keeps an explicit undefined status on the custom-marker path', () => {
     render(
       <Harness
         statusFn={item =>
           item.state === 'error'
-            ? {color: 'success', label: 'Success-colored custom marker'}
+            ? {status: undefined, color: 'red', label: 'Custom marker'}
             : null
         }
       />,
     );
 
-    const indicator = screen.getByRole('img', {
-      name: 'Success-colored custom marker',
-    });
-    const dot = indicator.firstElementChild;
-
+    const indicator = screen.getByRole('img', {name: 'Custom marker'});
     expect(indicator.querySelector('svg')).toBeNull();
-    expect(dot).toBeInstanceOf(HTMLElement);
-    expect(getComputedStyle(dot as HTMLElement).width).toBe('8px');
-    expect(getComputedStyle(dot as HTMLElement).height).toBe('8px');
-    expect(dot?.getAttribute('style')).toContain('--color-icon-green');
+    expect(indicator.firstElementChild?.getAttribute('style')).toContain(
+      '--color-icon-red',
+    );
   });
 
   it('uses an explicit custom icon only on the custom-marker branch', () => {
@@ -229,6 +260,33 @@ describe('useTableRowStatus', () => {
     expect(screen.queryByTestId('semantic-error')).not.toBeInTheDocument();
     expect(indicator.getAttribute('style')).toContain('--color-icon-red');
     expect(glyph.parentElement).toHaveAttribute('data-color', 'inherit');
+  });
+
+  it('applies a raw CSS color to an explicit custom icon', () => {
+    const theme = defineTheme({
+      name: 'table-row-status-raw-custom-icon',
+      icons: {check: <svg data-testid="raw-caller-check" />},
+    });
+
+    render(
+      <Theme theme={theme}>
+        <Harness
+          statusFn={item =>
+            item.state === 'error'
+              ? {
+                  color: 'rgb(1, 2, 3)',
+                  icon: 'check',
+                  label: 'Raw custom icon',
+                }
+              : null
+          }
+        />
+      </Theme>,
+    );
+
+    const indicator = screen.getByRole('img', {name: 'Raw custom icon'});
+    expect(indicator).toContainElement(screen.getByTestId('raw-caller-check'));
+    expect(indicator.getAttribute('style')).toContain('rgb(1, 2, 3)');
   });
 
   it('passes through a raw CSS color to a custom dot', () => {

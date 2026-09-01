@@ -131,7 +131,7 @@ function resolveTableRowStatus(
     icon?: unknown;
   };
 
-  if (Object.prototype.hasOwnProperty.call(untypedValue, 'status')) {
+  if (untypedValue.status !== undefined) {
     if (!isTableRowSemanticStatus(untypedValue.status)) {
       if (process.env.NODE_ENV !== 'production') {
         warnOnce(
