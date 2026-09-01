@@ -28,10 +28,20 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {spacingVars} from '../theme/tokens.stylex';
 import {
   layoutPaddingOuterXVarStyles,
   layoutPaddingOuterYVarStyles,
+  layoutPaddingVarStyles,
 } from './padding.stylex';
+
+const layoutPadding = `var(--astryx-layout-padding, ${spacingVars['--spacing-4']})`;
+const layoutPaddingInline = `var(--astryx-layout-padding-inline, ${layoutPadding})`;
+const layoutPaddingBlock = `var(--astryx-layout-padding-block, ${layoutPadding})`;
+const layoutPaddingInlineStart = `var(--astryx-layout-padding-inline-start, ${layoutPaddingInline})`;
+const layoutPaddingInlineEnd = `var(--astryx-layout-padding-inline-end, ${layoutPaddingInline})`;
+const layoutPaddingBlockStart = `var(--astryx-layout-padding-block-start, ${layoutPaddingBlock})`;
+const layoutPaddingBlockEnd = `var(--astryx-layout-padding-block-end, ${layoutPaddingBlock})`;
 
 /**
  * Height behavior for the layout.
@@ -54,6 +64,14 @@ const styles = stylex.create({
     '--container-padding-inline-end': '0px',
     '--container-padding-block-start': '0px',
     '--container-padding-block-end': '0px',
+    '--layout-padding-outer-x': layoutPaddingInline,
+    '--layout-padding-inner-x': layoutPaddingInline,
+    '--layout-padding-outer-y': layoutPaddingBlock,
+    '--layout-padding-inner-y': layoutPaddingBlock,
+    '--layout-padding-inline-start': layoutPaddingInlineStart,
+    '--layout-padding-inline-end': layoutPaddingInlineEnd,
+    '--layout-padding-block-start': layoutPaddingBlockStart,
+    '--layout-padding-block-end': layoutPaddingBlockEnd,
   },
   fill: {
     // Add 2x container block padding to compensate for negative block margins
@@ -72,6 +90,10 @@ const styles = stylex.create({
   fullBleed: {
     '--layout-padding-outer-x': '0px',
     '--layout-padding-outer-y': '0px',
+    '--layout-padding-inline-start': '0px',
+    '--layout-padding-inline-end': '0px',
+    '--layout-padding-block-start': '0px',
+    '--layout-padding-block-end': '0px',
   },
 });
 
@@ -281,6 +303,7 @@ export function Layout({
             padding === 0 && styles.fullBleed,
             padding != null && layoutPaddingOuterXVarStyles[padding],
             padding != null && layoutPaddingOuterYVarStyles[padding],
+            padding != null && layoutPaddingVarStyles[padding],
             contentWidth != null && dynamicStyles.contentWidthVar(contentWidth),
           )}>
           <AreaProvider area="header">{header}</AreaProvider>

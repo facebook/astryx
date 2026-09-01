@@ -84,6 +84,10 @@ const CLEARED = [
   '--layout-padding-outer-y',
   '--layout-padding-inner-x',
   '--layout-padding-inner-y',
+  '--layout-padding-inline-start',
+  '--layout-padding-inline-end',
+  '--layout-padding-block-start',
+  '--layout-padding-block-end',
   '--_section-padding-propagated',
 ];
 

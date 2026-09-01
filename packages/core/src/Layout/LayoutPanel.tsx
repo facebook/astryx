@@ -33,36 +33,41 @@ import {
   containerPaddingBlockEndVarStyles,
 } from './padding.stylex';
 
+const layoutPaddingInlineStart = `var(--layout-padding-inline-start, var(--layout-padding-inner-x, ${spacingVars['--spacing-4']}))`;
+const layoutPaddingInlineEnd = `var(--layout-padding-inline-end, var(--layout-padding-inner-x, ${spacingVars['--spacing-4']}))`;
+const layoutPaddingBlockStart = `var(--layout-padding-block-start, var(--layout-padding-inner-y, ${spacingVars['--spacing-4']}))`;
+const layoutPaddingBlockEnd = `var(--layout-padding-block-end, var(--layout-padding-inner-y, ${spacingVars['--spacing-4']}))`;
+
 const styles = stylex.create({
   panel: {
     boxSizing: 'border-box',
     flexShrink: 0,
     overflow: 'clip',
     // Default: inner padding on all sides (will be overridden by position-specific styles)
-    paddingInlineStart: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
-    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
-    paddingBlockStart: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
-    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
-    '--container-padding-inline-start': `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-inline-end': `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-block-start': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
-    '--container-padding-block-end': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+    paddingInlineStart: layoutPaddingInlineStart,
+    paddingInlineEnd: layoutPaddingInlineEnd,
+    paddingBlockStart: layoutPaddingBlockStart,
+    paddingBlockEnd: layoutPaddingBlockEnd,
+    '--container-padding-inline-start': layoutPaddingInlineStart,
+    '--container-padding-inline-end': layoutPaddingInlineEnd,
+    '--container-padding-block-start': layoutPaddingBlockStart,
+    '--container-padding-block-end': layoutPaddingBlockEnd,
   },
   // Start panel: outer-x on left edge
   startPanel: {
-    paddingInlineStart: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    paddingInlineStart: layoutPaddingInlineStart,
   },
   // End panel: outer-x on right edge
   endPanel: {
-    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    paddingInlineEnd: layoutPaddingInlineEnd,
   },
   // When no header: outer-y on top
   noHeader: {
-    paddingBlockStart: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
+    paddingBlockStart: layoutPaddingBlockStart,
   },
   // When no footer: outer-y on bottom
   noFooter: {
-    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
+    paddingBlockEnd: layoutPaddingBlockEnd,
   },
   fullBleed: {
     paddingInlineStart: 0,
@@ -93,10 +98,10 @@ const styles = stylex.create({
   // Start panel: collapse end (right in LTR) to merge with content
   // End panel: collapse start (left in LTR) to merge with content
   collapseStart: {
-    marginInlineStart: `calc(-1 * var(--layout-padding-inner-x, ${spacingVars['--spacing-4']}))`,
+    marginInlineStart: `calc(-1 * ${layoutPaddingInlineStart})`,
   },
   collapseEnd: {
-    marginInlineEnd: `calc(-1 * var(--layout-padding-inner-x, ${spacingVars['--spacing-4']}))`,
+    marginInlineEnd: `calc(-1 * ${layoutPaddingInlineEnd})`,
   },
 });
 

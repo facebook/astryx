@@ -313,6 +313,16 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--spinner-stroke-width',
   '--spinner-color',
   '--spinner-track-color',
+  // Preserve the existing meaning of `components.layout.base.padding` as raw
+  // CSS on `.astryx-layout`; themes set these semantic layout defaults
+  // directly when they want Layout regions to inherit different spacing.
+  '--astryx-layout-padding',
+  '--astryx-layout-padding-inline',
+  '--astryx-layout-padding-inline-start',
+  '--astryx-layout-padding-inline-end',
+  '--astryx-layout-padding-block',
+  '--astryx-layout-padding-block-start',
+  '--astryx-layout-padding-block-end',
 ]);
 
 // ---------------------------------------------------------------------------

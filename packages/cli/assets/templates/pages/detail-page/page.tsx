@@ -52,7 +52,7 @@ import type {CSSProperties} from 'react';
 // meets the header divider. No edge-dock prop on TabList (#2622).
 const tabsRow: CSSProperties = {
   marginInline: -12,
-  marginBottom: -16,
+  marginBottom: 'calc(-1 * var(--container-padding-block-end))',
   marginTop: 12,
 };
 // Pull the list items' inner padding back so their content optically aligns
@@ -176,7 +176,7 @@ function PageHeader({
   isNarrow: boolean;
 }) {
   return (
-    <LayoutHeader hasDivider padding={4}>
+    <LayoutHeader hasDivider>
       <VStack gap={3}>
         <HStack gap={4} vAlign="start">
           <StackItem size="fill">
@@ -557,7 +557,7 @@ function PanelContent() {
 // Desktop: fixed-width side panel in the layout's `end` slot.
 function RightPanel() {
   return (
-    <LayoutPanel width={320} padding={4} role="complementary">
+    <LayoutPanel width={320} role="complementary">
       <PanelContent />
     </LayoutPanel>
   );
@@ -620,7 +620,7 @@ export default function DetailPage2Template() {
             />
           }
           content={
-            <LayoutContent padding={4}>
+            <LayoutContent>
               <PanelContent />
             </LayoutContent>
           }

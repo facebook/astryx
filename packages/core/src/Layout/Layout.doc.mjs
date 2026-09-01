@@ -41,12 +41,46 @@ export const docs = {
   displayName: 'Layout',
   group: 'Layout',
   category: 'Layout',
-  keywords: ["layout","container","content","flex","box","wrapper","page","regions"],
+  keywords: [
+    'layout',
+    'container',
+    'content',
+    'flex',
+    'box',
+    'wrapper',
+    'page',
+    'regions',
+  ],
   playground: {
     defaults: {
-      header: {__element: 'LayoutHeader', props: {}, children: {__element: 'Heading', props: {level: 3}, children: 'Page Title'}},
-      content: {__element: 'LayoutContent', props: {}, children: {__element: 'Text', props: {type: 'body', color: 'secondary'}, children: 'Main content area. This is the scrollable center section of the layout.'}},
-      footer: {__element: 'LayoutFooter', props: {}, children: {__element: 'Text', props: {type: 'supporting', color: 'secondary'}, children: 'Footer: status bar or actions'}},
+      header: {
+        __element: 'LayoutHeader',
+        props: {},
+        children: {
+          __element: 'Heading',
+          props: {level: 3},
+          children: 'Page Title',
+        },
+      },
+      content: {
+        __element: 'LayoutContent',
+        props: {},
+        children: {
+          __element: 'Text',
+          props: {type: 'body', color: 'secondary'},
+          children:
+            'Main content area. This is the scrollable center section of the layout.',
+        },
+      },
+      footer: {
+        __element: 'LayoutFooter',
+        props: {},
+        children: {
+          __element: 'Text',
+          props: {type: 'supporting', color: 'secondary'},
+          children: 'Footer: status bar or actions',
+        },
+      },
     },
   },
   theming: {
@@ -57,8 +91,47 @@ export const docs = {
       {className: 'astryx-layout-header'},
       {className: 'astryx-layout-panel'},
     ],
+    vars: [
+      {
+        name: '--astryx-layout-padding',
+        description:
+          'Default padding for LayoutHeader, LayoutContent, LayoutFooter, and LayoutPanel when their padding prop is omitted.',
+        default: 'var(--spacing-4)',
+      },
+      {
+        name: '--astryx-layout-padding-inline',
+        description: 'Default horizontal layout-region padding.',
+        default: 'var(--astryx-layout-padding)',
+      },
+      {
+        name: '--astryx-layout-padding-inline-start',
+        description: 'Default inline-start layout-region padding.',
+        default: 'var(--astryx-layout-padding-inline)',
+      },
+      {
+        name: '--astryx-layout-padding-inline-end',
+        description: 'Default inline-end layout-region padding.',
+        default: 'var(--astryx-layout-padding-inline)',
+      },
+      {
+        name: '--astryx-layout-padding-block',
+        description: 'Default vertical layout-region padding.',
+        default: 'var(--astryx-layout-padding)',
+      },
+      {
+        name: '--astryx-layout-padding-block-start',
+        description: 'Default block-start layout-region padding.',
+        default: 'var(--astryx-layout-padding-block)',
+      },
+      {
+        name: '--astryx-layout-padding-block-end',
+        description: 'Default block-end layout-region padding.',
+        default: 'var(--astryx-layout-padding-block)',
+      },
+    ],
   },
-  description: 'General five-slot layout primitive for arranging header, start, content, end, and footer regions.',
+  description:
+    'General five-slot layout primitive for arranging header, start, content, end, and footer regions.',
   props: [
     {
       name: 'content',
@@ -162,10 +235,26 @@ export const docs = {
     description:
       'Layout is a general five-slot primitive for arranging header, start, content, end, and footer regions within a page or bounded container. AppShell owns the page shell and app-wide navigation behavior; use HStack or VStack for simple directional stacking.',
     bestPractices: [
-      { guidance: true, description: 'Use Layout when content needs named header, start, content, end, or footer regions.' },
-      { guidance: true, description: 'Use HStack and VStack for simple directional stacking within a content area.' },
-      { guidance: false, description: 'Use Layout for simple stacking layouts; use HStack or VStack instead.' },
-      { guidance: false, description: 'Use Layout as the page shell or for app-wide navigation; use AppShell for that responsibility.' },
+      {
+        guidance: true,
+        description:
+          'Use Layout when content needs named header, start, content, end, or footer regions.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use HStack and VStack for simple directional stacking within a content area.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use Layout for simple stacking layouts; use HStack or VStack instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use Layout as the page shell or for app-wide navigation; use AppShell for that responsibility.',
+      },
     ],
     anatomy,
   },
@@ -177,10 +266,26 @@ export const docsZh = {
     description:
       'Layout is a general five-slot primitive for arranging header, start, content, end, and footer regions within a page or bounded container. AppShell owns the page shell and app-wide navigation behavior; use HStack or VStack for simple directional stacking.',
     bestPractices: [
-      { guidance: true, description: 'Use Layout when content needs named header, start, content, end, or footer regions.' },
-      { guidance: true, description: 'Use HStack and VStack for simple directional stacking within a content area.' },
-      { guidance: false, description: 'Use Layout for simple stacking layouts; use HStack or VStack instead.' },
-      { guidance: false, description: 'Use Layout as the page shell or for app-wide navigation; use AppShell for that responsibility.' },
+      {
+        guidance: true,
+        description:
+          'Use Layout when content needs named header, start, content, end, or footer regions.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use HStack and VStack for simple directional stacking within a content area.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use Layout for simple stacking layouts; use HStack or VStack instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use Layout as the page shell or for app-wide navigation; use AppShell for that responsibility.',
+      },
     ],
   },
 };
@@ -193,10 +298,26 @@ export const docsDense = {
     description:
       'Layout is a general five-slot primitive for arranging header, start, content, end, and footer regions within a page or bounded container. AppShell owns the page shell and app-wide navigation behavior; use HStack or VStack for simple directional stacking.',
     bestPractices: [
-      { guidance: true, description: 'Use Layout when content needs named header, start, content, end, or footer regions.' },
-      { guidance: true, description: 'Use HStack and VStack for simple directional stacking within a content area.' },
-      { guidance: false, description: 'Use Layout for simple stacking layouts; use HStack or VStack instead.' },
-      { guidance: false, description: 'Use Layout as the page shell or for app-wide navigation; use AppShell for that responsibility.' },
+      {
+        guidance: true,
+        description:
+          'Use Layout when content needs named header, start, content, end, or footer regions.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use HStack and VStack for simple directional stacking within a content area.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use Layout for simple stacking layouts; use HStack or VStack instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use Layout as the page shell or for app-wide navigation; use AppShell for that responsibility.',
+      },
     ],
     anatomy,
   },

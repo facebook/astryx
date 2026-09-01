@@ -927,6 +927,23 @@ describe('container padding mapping', () => {
     expect(css).not.toContain('--astryx-button-padding');
   });
 
+  it('preserves layout padding as a raw CSS property for compatibility', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        layout: {
+          base: {
+            padding: '20px',
+            '--astryx-layout-padding': '12px',
+          },
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('padding: 20px');
+    expect(css).toContain('--astryx-layout-padding: 12px');
+  });
+
   it('preserves non-padding properties alongside padding mapping', () => {
     const theme = defineTheme({
       name: 'test',

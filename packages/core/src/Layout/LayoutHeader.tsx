@@ -31,6 +31,11 @@ import {
   containerPaddingBlockEndVarStyles,
 } from './padding.stylex';
 
+const layoutPaddingInlineStart = `var(--layout-padding-inline-start, var(--layout-padding-outer-x, ${spacingVars['--spacing-4']}))`;
+const layoutPaddingInlineEnd = `var(--layout-padding-inline-end, var(--layout-padding-outer-x, ${spacingVars['--spacing-4']}))`;
+const layoutPaddingBlockStart = `var(--layout-padding-block-start, var(--layout-padding-outer-y, ${spacingVars['--spacing-4']}))`;
+const layoutPaddingBlockEnd = `var(--layout-padding-block-end, var(--layout-padding-inner-y, ${spacingVars['--spacing-4']}))`;
+
 const styles = stylex.create({
   // Outer shell: owns border/divider and sizing. No padding — that lives on inner.
   header: {
@@ -43,14 +48,14 @@ const styles = stylex.create({
     maxWidth: 'var(--layout-content-width, none)',
     marginInline: 'auto',
     // Default: outer padding on edges that touch container, inner on interior edges
-    paddingInlineStart: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
-    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
-    paddingBlockStart: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
-    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
-    '--container-padding-inline-start': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-inline-end': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-block-start': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
-    '--container-padding-block-end': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+    paddingInlineStart: layoutPaddingInlineStart,
+    paddingInlineEnd: layoutPaddingInlineEnd,
+    paddingBlockStart: layoutPaddingBlockStart,
+    paddingBlockEnd: layoutPaddingBlockEnd,
+    '--container-padding-inline-start': layoutPaddingInlineStart,
+    '--container-padding-inline-end': layoutPaddingInlineEnd,
+    '--container-padding-block-start': layoutPaddingBlockStart,
+    '--container-padding-block-end': layoutPaddingBlockEnd,
   },
   fullBleed: {
     paddingInlineStart: 0,

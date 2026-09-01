@@ -522,6 +522,25 @@ describe('derived var expansion', () => {
     expect(rule).toContain('--astryx-card-padding: 20px');
   });
 
+  it('preserves layout padding as raw CSS for compatibility', () => {
+    const theme = defineTheme({
+      name: 'test-layout-container',
+      components: {
+        layout: {
+          base: {
+            padding: '20px',
+            '--astryx-layout-padding': '12px',
+          },
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-layout'));
+    expect(rule).toBeDefined();
+    expect(rule).toContain('padding: 20px');
+    expect(rule).toContain('--astryx-layout-padding: 12px');
+  });
+
   it('handles variant-specific derived vars', () => {
     const theme = defineTheme({
       name: 'test-variant-derived',

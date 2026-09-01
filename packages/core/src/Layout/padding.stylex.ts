@@ -221,6 +221,80 @@ export const layoutPaddingOuterYVarStyles = stylex.create({
 });
 
 /**
+ * Layout directional padding CSS variable styles.
+ * Mirrors the legacy x/y variables so an explicit Layout padding prop continues
+ * to override theme-provided layout padding defaults on every edge.
+ */
+export const layoutPaddingVarStyles = stylex.create({
+  0: {
+    '--layout-padding-inline-start': spacingVars['--spacing-0'],
+    '--layout-padding-inline-end': spacingVars['--spacing-0'],
+    '--layout-padding-block-start': spacingVars['--spacing-0'],
+    '--layout-padding-block-end': spacingVars['--spacing-0'],
+  },
+  0.5: {
+    '--layout-padding-inline-start': spacingVars['--spacing-0-5'],
+    '--layout-padding-inline-end': spacingVars['--spacing-0-5'],
+    '--layout-padding-block-start': spacingVars['--spacing-0-5'],
+    '--layout-padding-block-end': spacingVars['--spacing-0-5'],
+  },
+  1: {
+    '--layout-padding-inline-start': spacingVars['--spacing-1'],
+    '--layout-padding-inline-end': spacingVars['--spacing-1'],
+    '--layout-padding-block-start': spacingVars['--spacing-1'],
+    '--layout-padding-block-end': spacingVars['--spacing-1'],
+  },
+  1.5: {
+    '--layout-padding-inline-start': spacingVars['--spacing-1-5'],
+    '--layout-padding-inline-end': spacingVars['--spacing-1-5'],
+    '--layout-padding-block-start': spacingVars['--spacing-1-5'],
+    '--layout-padding-block-end': spacingVars['--spacing-1-5'],
+  },
+  2: {
+    '--layout-padding-inline-start': spacingVars['--spacing-2'],
+    '--layout-padding-inline-end': spacingVars['--spacing-2'],
+    '--layout-padding-block-start': spacingVars['--spacing-2'],
+    '--layout-padding-block-end': spacingVars['--spacing-2'],
+  },
+  3: {
+    '--layout-padding-inline-start': spacingVars['--spacing-3'],
+    '--layout-padding-inline-end': spacingVars['--spacing-3'],
+    '--layout-padding-block-start': spacingVars['--spacing-3'],
+    '--layout-padding-block-end': spacingVars['--spacing-3'],
+  },
+  4: {
+    '--layout-padding-inline-start': spacingVars['--spacing-4'],
+    '--layout-padding-inline-end': spacingVars['--spacing-4'],
+    '--layout-padding-block-start': spacingVars['--spacing-4'],
+    '--layout-padding-block-end': spacingVars['--spacing-4'],
+  },
+  5: {
+    '--layout-padding-inline-start': spacingVars['--spacing-5'],
+    '--layout-padding-inline-end': spacingVars['--spacing-5'],
+    '--layout-padding-block-start': spacingVars['--spacing-5'],
+    '--layout-padding-block-end': spacingVars['--spacing-5'],
+  },
+  6: {
+    '--layout-padding-inline-start': spacingVars['--spacing-6'],
+    '--layout-padding-inline-end': spacingVars['--spacing-6'],
+    '--layout-padding-block-start': spacingVars['--spacing-6'],
+    '--layout-padding-block-end': spacingVars['--spacing-6'],
+  },
+  8: {
+    '--layout-padding-inline-start': spacingVars['--spacing-8'],
+    '--layout-padding-inline-end': spacingVars['--spacing-8'],
+    '--layout-padding-block-start': spacingVars['--spacing-8'],
+    '--layout-padding-block-end': spacingVars['--spacing-8'],
+  },
+  10: {
+    '--layout-padding-inline-start': spacingVars['--spacing-10'],
+    '--layout-padding-inline-end': spacingVars['--spacing-10'],
+    '--layout-padding-block-start': spacingVars['--spacing-10'],
+    '--layout-padding-block-end': spacingVars['--spacing-10'],
+  },
+});
+
+/**
  * Inline-only padding styles.
  * Use when a component needs to set inline (horizontal) padding independently
  * of block padding — e.g. the `paddingX` prop on Stack.
@@ -521,6 +595,10 @@ export const overlayPaddingReset = stylex.create({
     '--layout-padding-outer-y': 'initial',
     '--layout-padding-inner-x': 'initial',
     '--layout-padding-inner-y': 'initial',
+    '--layout-padding-inline-start': 'initial',
+    '--layout-padding-inline-end': 'initial',
+    '--layout-padding-block-start': 'initial',
+    '--layout-padding-block-end': 'initial',
     '--_section-padding-propagated': 'initial',
   },
 });

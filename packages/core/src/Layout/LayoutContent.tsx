@@ -31,6 +31,11 @@ import {
   containerPaddingBlockEndVarStyles,
 } from './padding.stylex';
 
+const layoutPaddingInlineStart = `var(--layout-padding-inline-start, var(--layout-padding-inner-x, ${spacingVars['--spacing-4']}))`;
+const layoutPaddingInlineEnd = `var(--layout-padding-inline-end, var(--layout-padding-inner-x, ${spacingVars['--spacing-4']}))`;
+const layoutPaddingBlockStart = `var(--layout-padding-block-start, var(--layout-padding-inner-y, ${spacingVars['--spacing-4']}))`;
+const layoutPaddingBlockEnd = `var(--layout-padding-block-end, var(--layout-padding-inner-y, ${spacingVars['--spacing-4']}))`;
+
 const styles = stylex.create({
   content: {
     boxSizing: 'border-box',
@@ -39,47 +44,47 @@ const styles = stylex.create({
     minHeight: 0,
     overflow: 'clip',
     // Default: inner padding on all sides (will be overridden by position-specific styles)
-    paddingInlineStart: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
-    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
+    paddingInlineStart: layoutPaddingInlineStart,
+    paddingInlineEnd: layoutPaddingInlineEnd,
     paddingBlockStart: {
-      default: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+      default: layoutPaddingBlockStart,
       // When header has no divider, collapse top padding for seamless visual flow
       [stylex.when.ancestor(
         ':has(> .astryx-layout-header:not([data-divider]))',
       )]: 0,
     },
     paddingBlockEnd: {
-      default: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+      default: layoutPaddingBlockEnd,
       // When footer has no divider, collapse bottom padding for seamless visual flow
       [stylex.when.ancestor(
         ':has(> .astryx-layout-footer:not([data-divider]))',
       )]: 0,
     },
     // Publish container padding vars for bleed children (Table, Divider, etc.)
-    '--container-padding-inline-start': `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-inline-end': `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-block-start': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
-    '--container-padding-block-end': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline-start': layoutPaddingInlineStart,
+    '--container-padding-inline-end': layoutPaddingInlineEnd,
+    '--container-padding-block-start': layoutPaddingBlockStart,
+    '--container-padding-block-end': layoutPaddingBlockEnd,
   },
   // When no start panel: outer-x on left edge
   noStart: {
-    paddingInlineStart: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-inline-start': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-inline-end': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    paddingInlineStart: layoutPaddingInlineStart,
+    '--container-padding-inline-start': layoutPaddingInlineStart,
+    '--container-padding-inline-end': layoutPaddingInlineStart,
   },
   // When no end panel: outer-x on right edge
   noEnd: {
-    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    paddingInlineEnd: layoutPaddingInlineEnd,
   },
   // When no header: outer-y on top
   noHeader: {
-    paddingBlockStart: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
-    '--container-padding-block-start': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
+    paddingBlockStart: layoutPaddingBlockStart,
+    '--container-padding-block-start': layoutPaddingBlockStart,
   },
   // When no footer: outer-y on bottom
   noFooter: {
-    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
-    '--container-padding-block-end': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
+    paddingBlockEnd: layoutPaddingBlockEnd,
+    '--container-padding-block-end': layoutPaddingBlockEnd,
   },
   scrollable: {
     overflow: 'auto',
