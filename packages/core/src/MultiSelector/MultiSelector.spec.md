@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 owners: [cixzhang]
-review_triggers: [theming]
+review_triggers: [public-api, behavior, theming, accessibility]
 verified_by:
   [
     packages/core/src/MultiSelector/MultiSelector.test.tsx,
@@ -24,9 +24,13 @@ verified_by:
 families: [family:overlay-dismissal]
 design_specs: []
 architecture:
-  [architecture:component-theming-surface, architecture:layer-runtime]
+  [
+    architecture:component-theming-surface,
+    architecture:layer-runtime,
+    architecture:public-component-api,
+  ]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-006/DEC-1]
 ---
 
 # MultiSelector component contract
@@ -35,15 +39,19 @@ system_specs: []
 
 MultiSelector renders a multi-selection control with an optional standalone Field
 shell and one shared panel content tree in either an anchored pointer popup or a
-touch-oriented BottomSheet.
-This draft records current consumer anatomy and theming ownership without changing
-runtime behavior, styling, targets, or public API.
+touch-oriented BottomSheet. It also supports a read-only state that preserves and
+submits the selected values without exposing that panel or an editing affordance.
+This draft records current consumer anatomy, theming ownership, and read-only
+behavior.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, and public API remain unchanged
+- `isReadOnly` is additive and defaults to `false`. It preserves selected values,
+  focus, and form participation while removing selection-surface and editing
+  affordances. `isDisabled` takes precedence when both are set.
+- Existing DOM, styling, targets, and public API remain unchanged when the prop is
+  omitted.
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: none
 
@@ -80,8 +88,12 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props and usage remain documented
-in `MultiSelector.doc.mjs`.
+This table names the additive concept introduced by `spec:AST-006`. Complete prop
+syntax and examples remain in `MultiSelector.doc.mjs`.
+
+| Concept         | Closed values or states | Meaning                                                   | Availability   | Default | Owner  | Stability | Invalid-value behavior |
+| --------------- | ----------------------- | --------------------------------------------------------- | -------------- | ------- | ------ | --------- | ---------------------- |
+| read-only state | `false`, `true`         | Preserves and submits values without selection affordance | Closed trigger | `false` | Caller | additive  | Boolean normalization  |
 
 ## Behavioral and layout contract
 
@@ -93,6 +105,7 @@ in `MultiSelector.doc.mjs`.
 | FR4 | When present, Field, shared clear actions, option checkbox indicators, public Option dividers, general icons, Touch sheet heading, and Touch sheet retain their Field, CheckboxInput, Divider, Icon, Text, and BottomSheet theming owners.                                    | Current composition and owners  | Verified current behavior; no target change        |
 | FR5 | Pointer popup and Touch sheet are separate surface anatomy rows, but both host the same `panelContent` tree; the Touch sheet additionally renders its Heading. Changing presentation does not create a second search, option, divider, section, or empty-state content model. | Current source and tests        | Verified current behavior; no normalization        |
 | FR6 | `multi-selector-clear-icon` remains a deprecated compatibility alias for `input-clear-icon`; it is not a current target and does not claim a separate anatomy part.                                                                                                           | Current public target metadata  | Verified current compatibility state               |
+| FR7 | While `isReadOnly` is true, selected values remain focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                              | `spec:AST-006`, docs, and tests | Accepted read-only behavior                        |
 
 ### Allowed variation
 
@@ -117,6 +130,7 @@ in `MultiSelector.doc.mjs`.
 | Search enabled with a query            | Search row owns `multi-selector-search`; its icons/actions keep their shared owners.                        | Results may be flat, grouped, or empty.                                  |
 | Option, select all, selected, disabled | Option row owns `multi-selector-option` and reflects its current size/state metadata.                       | Checkbox state and custom row content vary independently.                |
 | Attached or tooltip status             | Status icon replaces the Indicator icon.                                                                    | Tooltip status wraps the icon in a button without changing Icon owner.   |
+| Read-only                              | Values stay focusable and submittable; panel, clear, and disclosure affordances are absent.                 | Trigger display, status, and busy presentation remain available.         |
 
 ### Transformation and precedence order
 
@@ -128,8 +142,11 @@ in `MultiSelector.doc.mjs`.
 
 ## Accessibility contract
 
-This draft does not change or extend MultiSelector's existing field, combobox,
-listbox, checkbox, live-region, focus, or dismissal behavior.
+Existing field, combobox, listbox, checkbox, live-region, focus, and dismissal
+behavior remains unchanged when editable. A read-only trigger stays focusable,
+exposes `aria-readonly="true"`, remains collapsed, and does not claim or render an
+active selection surface. In search mode the trigger itself owns the read-only
+combobox role because no search input is available.
 
 ## Design relationships
 
@@ -223,6 +240,8 @@ empty-state content remains one shared tree.
 
 ## Family and system relationships
 
+- `architecture:public-component-api` and `spec:AST-006/DEC-1` own the additive
+  read-only API and its cross-input meaning.
 - `architecture:component-theming-surface` owns anatomy qualification, local
   target mapping, delegation, and exclusion of deprecated aliases.
 - `architecture:layer-runtime` owns the current Popover host and the distinction
@@ -235,13 +254,14 @@ empty-state content remains one shared tree.
 
 ## Verification map
 
-| Contract            | Verification                                                                                                                             | Representative states                                                            | Mutation or failure expectation                                                                                             | Audit section                 |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| FR1, FR2            | `MultiSelector.test.tsx` render, search, divider, grouping, status, select-all, and empty-state suites plus InputGroup source inspection | Standalone/InputGroup, search, divided, selected, empty, status                  | Removing a documented part or misreporting Field presence conflicts with existing structure, content assertions, or source. | `audit:MultiSelector/anatomy` |
-| FR3, FR6            | Component target suites, source inspection, and public target inventory                                                                  | All seven current targets and deprecated alias                                   | A current target is missed, invented, moved, or confused with the deprecated clear-icon alias.                              | `audit:MultiSelector/theming` |
-| FR4                 | Composed owner source/tests for Field, CheckboxInput, Divider, Icon, Text, and BottomSheet                                               | Field omission/presence, clear actions, checkbox, divider, icons, heading, sheet | A shared part gains the wrong local owner or its documented owner no longer renders it.                                     | `audit:MultiSelector/theming` |
-| FR5                 | `MultiSelector.test.tsx` presentation suites and `panelContent` source inspection                                                        | Explicit popover, explicit sheet, adaptive touch                                 | A presentation stops using its owner or receives a divergent panel-content implementation.                                  | `audit:MultiSelector/overlay` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                            | Canonical anatomy and current local targets                                      | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                  | `audit:MultiSelector/theming` |
+| Contract            | Verification                                                                                                                             | Representative states                                                            | Mutation or failure expectation                                                                                             | Audit section                       |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| FR1, FR2            | `MultiSelector.test.tsx` render, search, divider, grouping, status, select-all, and empty-state suites plus InputGroup source inspection | Standalone/InputGroup, search, divided, selected, empty, status                  | Removing a documented part or misreporting Field presence conflicts with existing structure, content assertions, or source. | `audit:MultiSelector/anatomy`       |
+| FR3, FR6            | Component target suites, source inspection, and public target inventory                                                                  | All seven current targets and deprecated alias                                   | A current target is missed, invented, moved, or confused with the deprecated clear-icon alias.                              | `audit:MultiSelector/theming`       |
+| FR4                 | Composed owner source/tests for Field, CheckboxInput, Divider, Icon, Text, and BottomSheet                                               | Field omission/presence, clear actions, checkbox, divider, icons, heading, sheet | A shared part gains the wrong local owner or its documented owner no longer renders it.                                     | `audit:MultiSelector/theming`       |
+| FR5                 | `MultiSelector.test.tsx` presentation suites and `panelContent` source inspection                                                        | Explicit popover, explicit sheet, adaptive touch                                 | A presentation stops using its owner or receives a divergent panel-content implementation.                                  | `audit:MultiSelector/overlay`       |
+| FR7                 | read-only interaction, form, ARIA, and theme-state tests                                                                                 | search/non-search, clearable, open→read-only, disabled precedence                | A value changes, popup or edit affordance remains, form value disappears, or read-only semantics are absent.                | `audit:MultiSelector/accessibility` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                            | Canonical anatomy and current local targets                                      | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                  | `audit:MultiSelector/theming`       |
 
 Existing component tests directly assert the Trigger, Indicator icon, Search row,
 Option row, Section heading, Empty state, and Pointer popup targets. Presentation

@@ -2434,6 +2434,130 @@ describe('Selector', () => {
       expect(trigger).toHaveAttribute('tabIndex', '-1');
     });
   });
+  describe('isReadOnly', () => {
+    it('stays focusable and exposes read-only combobox semantics without menu affordances', async () => {
+      const user = userEvent.setup();
+      const {container} = render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          hasClear
+          hasSearch
+          isDefaultOpen
+          isReadOnly
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+      expect(trigger).not.toBeDisabled();
+      expect(trigger).toHaveAttribute('aria-readonly', 'true');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(trigger).not.toHaveAttribute('aria-controls');
+      expect(trigger).not.toHaveAttribute('aria-haspopup');
+      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Clear Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(
+        container.querySelector('.astryx-selector-indicator-icon'),
+      ).toBeNull();
+      expect(container.querySelector('.astryx-selector')).toHaveAttribute(
+        'data-readonly',
+        'readonly',
+      );
+
+      await user.tab();
+      expect(trigger).toHaveFocus();
+    });
+
+    it('blocks pointer, keyboard, and typeahead changes', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const changeAction = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={onChange}
+          changeAction={changeAction}
+          isReadOnly
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      trigger.focus();
+      await user.keyboard('{Enter}{ArrowDown}c{Backspace}');
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+      expect(onChange).not.toHaveBeenCalled();
+      expect(changeAction).not.toHaveBeenCalled();
+    });
+
+    it('removes an open selection surface when it becomes read-only', async () => {
+      const user = userEvent.setup();
+      const {rerender} = render(
+        <Selector label="Fruit" options={OPTIONS} value="Apple" />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      expect(screen.getByRole('listbox', h)).toBeInTheDocument();
+
+      rerender(
+        <Selector label="Fruit" options={OPTIONS} value="Apple" isReadOnly />,
+      );
+
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+
+      rerender(<Selector label="Fruit" options={OPTIONS} value="Apple" />);
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+    });
+
+    it('submits its value while letting disabled take precedence', () => {
+      const {container, rerender} = render(
+        <form>
+          <Selector
+            label="Fruit"
+            htmlName="fruit"
+            options={OPTIONS}
+            value="Banana"
+            isReadOnly
+          />
+        </form>,
+      );
+      expect(new FormData(container.querySelector('form')!).get('fruit')).toBe(
+        'Banana',
+      );
+
+      rerender(
+        <form>
+          <Selector
+            label="Fruit"
+            htmlName="fruit"
+            options={OPTIONS}
+            value="Banana"
+            isReadOnly
+            isDisabled
+          />
+        </form>,
+      );
+      expect(screen.getByRole('combobox')).toBeDisabled();
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
   describe('form participation', () => {
     it('submits the selected value under htmlName', () => {
       const {container} = render(

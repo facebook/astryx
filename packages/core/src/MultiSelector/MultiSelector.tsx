@@ -221,6 +221,16 @@ const styles = stylex.create({
       ':active': 'none',
     },
   },
+  triggerReadOnly: {
+    cursor: 'default',
+  },
+  triggerGhostReadOnly: {
+    backgroundImage: 'none',
+    transform: {
+      default: 'none',
+      ':active': 'none',
+    },
+  },
 
   // Clear button
   statusButton: {
@@ -467,6 +477,16 @@ export interface MultiSelectorProps<
    * @default false
    */
   isDisabled?: boolean;
+
+  /**
+   * Whether the selector is read-only.
+   * The selected values stay visible, focusable, and included in form
+   * submission, but the selection surface and editing affordances are removed.
+   * Unlike `isDisabled`, a read-only selector is not dimmed and stays in the
+   * tab order. `isDisabled` takes precedence when both are set.
+   * @default false
+   */
+  isReadOnly?: boolean;
 
   /**
    * Explains why the selector is disabled. When set together with
@@ -738,6 +758,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  isReadOnly = false,
   disabledMessage,
   options,
   value,
@@ -973,15 +994,25 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     },
   });
   const {popover} = surface;
+  const hideSurface = surface.hide;
+  const isSurfaceOpen = surface.isOpen;
   const keepOpenProps = useKeepLayerOpenProps(popover.id, popover.isOpen);
 
-  // Open dropdown on mount when isDefaultOpen is true
+  // Open dropdown on mount when isDefaultOpen is true and interaction is allowed.
   useEffect(() => {
-    if (isDefaultOpen) {
+    if (isDefaultOpen && !isReadOnly) {
       surface.show();
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
+
+  // If permissions make an open selector read-only, remove the selection surface
+  // immediately and reset the presentation state before it can be restored.
+  useEffect(() => {
+    if (isReadOnly && isSurfaceOpen) {
+      hideSurface();
+    }
+  }, [isReadOnly, isSurfaceOpen, hideSurface]);
 
   // Announce the filtered result count from the query-change handler (matching
   // BaseTypeahead) rather than a reactive effect: computing the count for the
@@ -1183,7 +1214,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   } = useMultiCombobox({
     wasJustDismissed: surface.wasJustDismissed,
     selectableItems: sortedItems,
-    isDisabled,
+    isDisabled: isDisabled || isReadOnly,
     isOpen: surface.isOpen,
     hasSearch,
     onOpen: useCallback(() => {
@@ -1670,24 +1701,27 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     </div>
   );
 
-  const selectionSurface =
-    surface.activePresentation === 'bottom-sheet' ? (
-      <SelectorBottomSheet
-        isOpen={surface.isSheetOpen}
-        onOpenChange={surface.onSheetOpenChange}
-        finalFocusRef={triggerRef}
-        initialFocusRef={hasSearch ? searchRef : listboxRef}
-        label={label}>
-        {panelContent}
-      </SelectorBottomSheet>
-    ) : (
-      popover.render(panelContent, {
-        placement: 'below',
-        alignment: 'start',
-        offset: spacingVars['--spacing-1'],
-        xstyle: styles.popover,
-      })
-    );
+  let selectionSurface: ReactNode = null;
+  if (!isReadOnly) {
+    selectionSurface =
+      surface.activePresentation === 'bottom-sheet' ? (
+        <SelectorBottomSheet
+          isOpen={surface.isSheetOpen}
+          onOpenChange={surface.onSheetOpenChange}
+          finalFocusRef={triggerRef}
+          initialFocusRef={hasSearch ? searchRef : listboxRef}
+          label={label}>
+          {panelContent}
+        </SelectorBottomSheet>
+      ) : (
+        popover.render(panelContent, {
+          placement: 'below',
+          alignment: 'start',
+          offset: spacingVars['--spacing-1'],
+          xstyle: styles.popover,
+        })
+      );
+  }
 
   const multiSelectorContent = (
     <>
@@ -1707,6 +1741,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             size,
             status: status?.type ?? null,
             disabled: isDisabled ? 'disabled' : null,
+            readonly: isReadOnly ? 'readonly' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,
@@ -1718,7 +1753,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,
+            isReadOnly && styles.triggerReadOnly,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
+            variant === 'ghost' && isReadOnly && styles.triggerGhostReadOnly,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
             variant !== 'ghost' &&
               status &&
@@ -1742,20 +1779,25 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           ref={triggerRef}
           id={triggerId}
           type="button"
-          // In hasSearch mode the popup's search input is the combobox (it owns
-          // focus + aria-activedescendant, comboboxes-4), so the trigger is a
-          // plain button that opens the listbox — not a second combobox.
-          role={hasSearch ? undefined : 'combobox'}
+          // In editable hasSearch mode the popup's search input is the combobox
+          // (it owns focus + aria-activedescendant, comboboxes-4). Read-only has
+          // no popup input, so the focusable trigger exposes the combobox state.
+          role={hasSearch && !isReadOnly ? undefined : 'combobox'}
           aria-haspopup={
-            surface.activePresentation === 'bottom-sheet' ? 'dialog' : 'listbox'
+            isReadOnly
+              ? undefined
+              : surface.activePresentation === 'bottom-sheet'
+                ? 'dialog'
+                : 'listbox'
           }
-          aria-expanded={surface.isOpen}
-          aria-controls={listboxId}
+          aria-expanded={isReadOnly ? false : surface.isOpen}
+          aria-controls={isReadOnly ? undefined : listboxId}
           aria-activedescendant={
-            !hasSearch && surface.isOpen && highlightedIndex >= 0
+            !isReadOnly && !hasSearch && surface.isOpen && highlightedIndex >= 0
               ? getItemId(highlightedIndex)
               : undefined
           }
+          aria-readonly={isReadOnly || undefined}
           aria-describedby={ariaDescribedBy}
           aria-labelledby={ariaLabelledBy}
           aria-required={isEffectivelyRequired ? 'true' : undefined}
@@ -1772,7 +1814,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             surface.onTriggerFocus(event);
           }}
           tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-          {...stylex.props(styles.trigger)}>
+          {...stylex.props(
+            styles.trigger,
+            isReadOnly && styles.triggerReadOnly,
+          )}>
           <span {...stylex.props(styles.triggerContent)}>
             {renderTriggerContent()}
           </span>
@@ -1790,7 +1835,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             />
           ))}
         {isBusy && <Spinner size="sm" />}
-        {hasClear && value.length > 0 && !isDisabled && (
+        {hasClear && value.length > 0 && !isDisabled && !isReadOnly && (
           <InternalInputClearButton
             {...keepOpenProps}
             label={t('@astryx.multiSelector.clearAll', {label})}
@@ -1832,7 +1877,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               xstyle={styles.triggerIcon}
             />
           )
-        ) : (
+        ) : !isReadOnly ? (
           <Icon
             icon="chevronDown"
             size="sm"
@@ -1854,7 +1899,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               state: surface.isOpen ? 'expanded' : 'collapsed',
             })}
           />
-        )}
+        ) : null}
       </div>
 
       {selectionSurface}

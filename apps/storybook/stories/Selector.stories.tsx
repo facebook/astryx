@@ -80,6 +80,11 @@ const meta: Meta<typeof Selector> = {
       control: 'boolean',
       description: 'Whether the selector is disabled',
     },
+    isReadOnly: {
+      control: 'boolean',
+      description:
+        'Whether the selected value is visible and submittable without selection controls',
+    },
     disabledMessage: {
       control: 'text',
       description:
@@ -134,6 +139,18 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Select a fruit...',
+  },
+};
+
+export const ReadOnly: Story = {
+  args: {
+    label: 'Assigned owner',
+    options: ['Alice', 'Bob', 'Charlie'],
+    value: 'Alice',
+    onChange: () => {},
+    hasClear: true,
+    hasSearch: true,
+    isReadOnly: true,
   },
 };
 
