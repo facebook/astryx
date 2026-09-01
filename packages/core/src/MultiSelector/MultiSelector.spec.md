@@ -148,9 +148,11 @@ retains `role="combobox"`, and exposes `aria-readonly="true"` plus
 `aria-expanded="false"`. Its rendered content remains the combobox value. It does
 not expose `aria-controls`, `aria-activedescendant`, or an active selection
 surface. The implicit listbox popup describes the widget's selection capability;
-read-only state communicates that its values cannot currently change. Search and
-non-search modes use the same read-only combobox semantics because neither
-exposes a search control in this state.
+read-only state communicates that its values cannot currently change. Chromium's
+button-hosted combobox mapping omits the ARIA read-only property, so a localized
+accessible description also announces that state. Search and non-search modes use
+the same read-only combobox semantics because neither exposes a search control in
+this state.
 
 ## Design relationships
 

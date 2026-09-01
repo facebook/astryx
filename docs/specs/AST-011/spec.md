@@ -50,9 +50,11 @@ change the value.
   It MUST NOT expose `aria-controls` or `aria-activedescendant` when no selection
   surface exists. The combobox role's implicit listbox popup describes the
   control's selection capability; `aria-readonly` communicates that the value
-  cannot currently be changed. Search-enabled and non-search selectors use the
-  same read-only combobox semantics because neither exposes a search or selection
-  surface in this state.
+  cannot currently be changed. When a supported accessibility tree does not map
+  that ARIA property for the trigger's host element, a localized accessible
+  description MUST additionally announce the read-only state. Search-enabled and
+  non-search selectors use the same read-only combobox semantics because neither
+  exposes a search or selection surface in this state.
 - **FR5 — Disabled takes precedence.** When `isDisabled` and `isReadOnly` are both
   true, disabled focus, interaction, appearance, accessibility, and form-submission
   behavior win.
@@ -80,8 +82,10 @@ change the value.
 - Browser evidence: DOM inspection MUST expose `aria-readonly="true"` and no
   nonexistent controlled surface. Chromium accessibility inspection MUST expose a
   focusable, collapsed combobox with the correct name and rendered value; its
-  implicit popup remains `listbox`. Pointer and keyboard probes MUST confirm that
-  no selection surface opens and no value changes.
+  implicit popup remains `listbox`, and its accessible description MUST announce
+  the localized read-only state because Chromium does not map `aria-readonly` on
+  the button host. Pointer and keyboard probes MUST confirm that no selection
+  surface opens and no value changes.
 
 ## Current-state impact
 
