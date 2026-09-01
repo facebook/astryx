@@ -323,6 +323,42 @@ describe('trusted PR visual publisher', () => {
     expect(fs.existsSync(path.join(output, 'after', `${key}.png`))).toBe(true);
   });
 
+  it('publishes trusted evidence for a theme-only bundle above the component limit', () => {
+    writeBaseline({});
+    writeJSON(scope, {
+      hasStableVisual: true,
+      broadStableVisual: false,
+      stableComponents: [],
+      stableThemes: ['neutral'],
+    });
+    const shots = {};
+    const bytes = png(0, 255, 0);
+    for (let index = 0; index < 242; index += 1) {
+      const key = `core-theme-${index}--default__neutral-light`;
+      shots[key] = {
+        shot: {
+          ...SHOT,
+          storyId: `core-theme-${index}--default`,
+          component: `Theme${index}`,
+        },
+        bytes,
+      };
+    }
+    writeCapture(shots);
+
+    run();
+
+    const evidence = JSON.parse(
+      fs.readFileSync(path.join(output, 'evidence.json'), 'utf8'),
+    );
+    expect(evidence.verdict).toMatchObject({
+      status: 'changed',
+      counts: {total: 242, added: 242, failed: 0},
+    });
+    expect(evidence.deltas).toHaveLength(242);
+    expect(fs.readdirSync(path.join(output, 'after'))).toHaveLength(242);
+  });
+
   it('does not derive removals from a scoped PR capture', () => {
     const other = 'core-card--default__neutral-light';
     writeBaseline({

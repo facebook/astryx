@@ -91,6 +91,14 @@ describe('visual gate capture identity', () => {
     });
   });
 
+  it('rejects a max-shots flag without a value', () => {
+    expect(() =>
+      execFileSync(process.execPath, [SCRIPT, 'plan', '--max-shots'], {
+        encoding: 'utf8',
+      }),
+    ).toThrow(/--max-shots requires a value/);
+  });
+
   it('records missing identity as null', () => {
     expect(captureContext()).toMatchObject({
       sha: null,

@@ -36,11 +36,15 @@ import {
   validateReleasePlan,
 } from './lib/compare.mjs';
 import {
+  acceptedVisualThemes,
   accountBaseline,
+  baselineVisualStories,
   buildPlan,
   createReleasePlan,
+  exceedsPrVisualShotLimit,
   readStoryIndex,
   readThemeCatalog,
+  resolvePrVisualTotalShotLimit,
   storiesInPackages,
   summarizeBaselineAccounting,
   withBaselineCoverage,
@@ -87,7 +91,18 @@ const only = (flag('only') ?? '').split(',').filter(Boolean);
 const components = (flag('components') ?? '').split(',').filter(Boolean);
 /** For the `theme-matrix` tier: only these shipped themes changed. */
 const matrixThemes = (flag('themes') ?? '').split(',').filter(Boolean);
-const maxShots = flag('max-shots') ? Number(flag('max-shots')) : Infinity;
+const explicitMaxShots = has('max-shots') ? flag('max-shots') : null;
+if (has('max-shots') && explicitMaxShots === undefined) {
+  throw new Error('--max-shots requires a value.');
+}
+const maxShots = resolvePrVisualTotalShotLimit({
+  explicitMaxShots,
+  components,
+  matrixThemes,
+  tiers,
+  configuredLimit: config.prVisualShotLimit,
+  safetyLimit: config.visualPlanSafetyLimit,
+});
 const storyPackages = (flag('story-packages') ?? config.stableStoryPackages.join(','))
   .split(',')
   .filter(Boolean);
@@ -111,8 +126,10 @@ if (
 
 function readExactPlan(file) {
   const shots = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
-  if (!Array.isArray(shots) || shots.length > 5000) {
-    throw new Error('Exact visual plan must contain at most 5000 trusted shots.');
+  if (!Array.isArray(shots) || shots.length > config.visualPlanSafetyLimit) {
+    throw new Error(
+      `Exact visual plan must contain at most ${config.visualPlanSafetyLimit} trusted shots.`,
+    );
   }
   const keys = new Set();
   for (const shot of shots) {
@@ -176,9 +193,20 @@ async function plan() {
     REPO_ROOT,
   );
   const stories = storiesInPackages(indexedStories, storyPackages);
+  const {manifest: baselineManifest} = readBaseline(baselineDir);
+  const componentThemes = acceptedVisualThemes(
+    baselineManifest,
+    themeCatalog,
+    config.defaultTheme,
+  );
+  const themeStories = baselineVisualStories(stories, baselineManifest);
 
   let observations;
-  if (!has('no-scout') && (tiers.includes('theme-matrix') || tiers.includes('probe'))) {
+  if (
+    !has('no-scout') &&
+    (tiers.includes('probe') ||
+      (tiers.includes('theme-matrix') && matrixThemes.length === 0))
+  ) {
     const cachePath = flag('observations');
     if (cachePath && fs.existsSync(cachePath)) {
       observations = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
@@ -198,6 +226,19 @@ async function plan() {
     }
   }
 
+  const componentShotCount = tiers.includes('component')
+    ? buildPlan({
+        stories,
+        targets,
+        themeOverrides,
+        observations,
+        defaultTheme: config.defaultTheme,
+        tiers: ['component'],
+        components,
+        componentThemes,
+        probeTheme: config.probeTheme,
+      }).length
+    : 0;
   let shots = buildPlan({
     stories,
     targets,
@@ -206,13 +247,19 @@ async function plan() {
     defaultTheme: config.defaultTheme,
     tiers,
     components,
+    componentThemes,
     matrixThemes,
+    themeStories,
     probeTheme: config.probeTheme,
   });
   let baselineAccount = null;
   if (releaseMode) {
-    const {manifest} = readBaseline(baselineDir);
-    baselineAccount = accountBaseline(manifest, indexedStories, themeCatalog, REPO_ROOT);
+    baselineAccount = accountBaseline(
+      baselineManifest,
+      indexedStories,
+      themeCatalog,
+      REPO_ROOT,
+    );
     shots = withBaselineCoverage(shots, {
       stories,
       baselineManifest: baselineAccount.manifest,
@@ -226,7 +273,12 @@ async function plan() {
     ? shots.filter(shot => only.some(fragment => shot.storyId.includes(fragment)))
     : shots;
   if (!sample || sample >= filtered.length) {
-    return {shots: filtered, stories: indexedStories, baselineAccount};
+    return {
+      shots: filtered,
+      stories: indexedStories,
+      baselineAccount,
+      componentShotCount,
+    };
   }
   const step = filtered.length / sample;
   return {
@@ -236,10 +288,16 @@ async function plan() {
     ),
     stories: indexedStories,
     baselineAccount,
+    componentShotCount,
   };
 }
 
 async function runCapture(shots, releasePlan = null) {
+  if (shots.length > config.visualPlanSafetyLimit) {
+    throw new Error(
+      `Visual plan has ${shots.length} shots; safety limit is ${config.visualPlanSafetyLimit}.`,
+    );
+  }
   fs.rmSync(outDir, {recursive: true, force: true});
   fs.mkdirSync(outDir, {recursive: true});
   let last = 0;
@@ -304,7 +362,8 @@ function stageReportImages({reportDir, keys, currentDir, baselinePath}) {
 }
 
 async function check() {
-  const {shots, stories, baselineAccount} = await plan();
+  const {shots, stories, baselineAccount, componentShotCount = 0} =
+    await plan();
   const releasePlan = releaseMode ? createReleasePlan(shots) : null;
   const baselineAccounting = releaseMode
     ? summarizeBaselineAccounting(baselineAccount, shots)
@@ -318,15 +377,30 @@ async function check() {
     );
   }
 
-  // Over budget: say so in the verdict rather than capturing. The report and
-  // the PR comment both render this, so a skipped check is visible as a
-  // decision, never as a silent pass.
-  if (shots.length > maxShots) {
+  // Over budget: say so in the verdict rather than capturing. The focused
+  // ceiling applies only to component-selected shots; theme-only matrices are
+  // release evidence, not component review expansion. Broad unscoped plans use
+  // the same configured ceiling through maxShots.
+  const componentOverBudget = exceedsPrVisualShotLimit(
+    componentShotCount,
+    config.prVisualShotLimit,
+  );
+  const totalOverBudget = shots.length > maxShots;
+  if (componentOverBudget || totalOverBudget) {
+    const measuredShots = componentOverBudget
+      ? componentShotCount
+      : shots.length;
+    const budget = componentOverBudget
+      ? config.prVisualShotLimit
+      : maxShots;
+    const scope = componentOverBudget
+      ? `component-selected shots (${components.length} components touched)`
+      : 'shots';
     const verdict = {
       version: 1,
       status: 'skipped',
       generatedAt: new Date().toISOString(),
-      reason: `${shots.length} shots exceeds the ${maxShots}-shot budget${components.length ? ` (${components.length} components touched)` : ''} — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
+      reason: `${measuredShots} ${scope} exceeds the ${budget}-shot budget — too broad to review shot by shot here. The daily release gate covers this change against the full baseline.`,
       context: {
         ...captureIdentity(),
         headSha: process.env.ASTRYX_PR_HEAD_SHA ?? null,
