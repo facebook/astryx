@@ -71,6 +71,29 @@ describe('visual acceptance workflow concurrency', () => {
     expect(comment).not.toContain('const previewAvailable');
   });
 
+  it('requires published evidence before offering or recording acceptance', () => {
+    const publisher = workflow('pr-comment.yml');
+    const acceptance = workflow('visual-acceptance.yml');
+    const authorize = acceptance.slice(
+      acceptance.indexOf('  authorize:'),
+      acceptance.indexOf('  accept:'),
+    );
+
+    expect(publisher).toContain(
+      "visualPublished: process.env.VISUAL_PUBLISHED === 'true'",
+    );
+    expect(authorize).toContain('visualAcceptanceEvidencePath({');
+    expect(authorize).toContain('github.rest.repos.getContent({');
+    expect(authorize).toContain("ref: 'gh-pages'");
+    expect(authorize).toContain('trusted visual evidence is not published yet');
+    expect(authorize.indexOf("latestCI.status !== 'completed'")).toBeLessThan(
+      authorize.indexOf('github.rest.repos.getContent({'),
+    );
+    expect(authorize.indexOf('github.rest.repos.getContent({')).toBeLessThan(
+      authorize.indexOf('isVisualAcceptanceEndpointMaintainer(identity)'),
+    );
+  });
+
   it('keeps spec-only checks lightweight while removing stale links', () => {
     const value = workflow('pr-comment.yml');
     const reconcile = value.slice(

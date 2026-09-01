@@ -116,6 +116,26 @@ describe('buildPlan', () => {
     expect(plan.some(shot => shot.theme === 'y2k' && shot.component === 'Button')).toBe(true);
   });
 
+  it('limits touched components to representative and opted-in stories', () => {
+    const componentStories = [
+      ...stories,
+      story({id: 'core-button--separator', title: 'Core/Button', name: 'Separator', component: 'Button', tags: ['visual-baseline']}),
+      story({id: 'core-button--fixture', title: 'Core/Button', name: 'Fixture', component: 'Button'}),
+    ];
+    const plan = buildPlan({
+      stories: componentStories,
+      targets,
+      themeOverrides,
+      defaultTheme: 'neutral',
+      tiers: ['component'],
+      components: ['Button'],
+    });
+    expect(new Set(plan.map(shot => shot.storyId))).toEqual(
+      new Set(['core-button--default', 'core-button--separator']),
+    );
+    expect(plan).toHaveLength(6);
+  });
+
   it('records why a shot is in the plan, merging the reasons of a shot both tiers want', () => {
     const plan = buildPlan({stories, targets, themeOverrides, defaultTheme: 'neutral', tiers: ['surface', 'theme-matrix']});
     const shot = plan.find(candidate => candidate.key === 'core-button--default__neutral-light');

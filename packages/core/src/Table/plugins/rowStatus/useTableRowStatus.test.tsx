@@ -2,6 +2,8 @@
 
 import {describe, it, expect} from 'vitest';
 import {render, screen, within} from '@testing-library/react';
+import {Theme} from '../../../theme/Theme';
+import {defineTheme} from '../../../theme/defineTheme';
 import {Table} from '../../Table';
 import type {TableColumn} from '../../types';
 import {useTableRowStatus, type TableRowStatus} from './useTableRowStatus';
@@ -22,10 +24,10 @@ const columns: TableColumn<Row>[] = [{key: 'name', header: 'Name'}];
 
 function getStatus(item: Row): TableRowStatus | null {
   if (item.state === 'error') {
-    return {color: 'red', label: 'Error'};
+    return {color: 'error', label: 'Error'};
   }
   if (item.state === 'warning') {
-    return {color: 'orange', label: 'Warning'};
+    return {color: 'warning', label: 'Warning'};
   }
   return null;
 }
@@ -58,17 +60,42 @@ describe('useTableRowStatus', () => {
     expect(hiddenText.className).not.toBe('');
   });
 
-  it('renders a labeled dot for rows with a status', () => {
-    render(<Harness />);
-    expect(screen.getByRole('img', {name: 'Error'})).toBeInTheDocument();
-    expect(screen.getByRole('img', {name: 'Warning'})).toBeInTheDocument();
+  it('renders themed semantic icons by default', () => {
+    const theme = defineTheme({
+      name: 'table-row-status-semantic-icons',
+      icons: {
+        error: <svg data-testid="themed-error" />,
+        warning: <svg data-testid="themed-warning" />,
+      },
+    });
+
+    render(
+      <Theme theme={theme}>
+        <Harness />
+      </Theme>,
+    );
+
+    expect(screen.getByRole('img', {name: 'Error'})).toContainElement(
+      screen.getByTestId('themed-error'),
+    );
+    expect(screen.getByRole('img', {name: 'Warning'})).toContainElement(
+      screen.getByTestId('themed-warning'),
+    );
   });
 
-  it('renders a dot (not an icon) by default', () => {
-    render(<Harness />);
-    // Default (no icon) renders a plain colored dot: no svg in the indicator.
-    const dot = screen.getByRole('img', {name: 'Error'});
-    expect(dot.querySelector('svg')).toBeNull();
+  it('keeps a dot for palette colors without outcome semantics', () => {
+    render(
+      <Harness
+        statusFn={item =>
+          item.state === 'error' ? {color: 'red', label: 'Red'} : null
+        }
+      />,
+    );
+    const indicator = screen.getByRole('img', {name: 'Red'});
+    expect(indicator.querySelector('svg')).toBeNull();
+    expect(indicator.querySelector('span')?.getAttribute('style')).toContain(
+      '--color-icon-red',
+    );
   });
 
   it('renders no indicator for rows returning null', () => {
@@ -78,15 +105,6 @@ describe('useTableRowStatus', () => {
     const bob = rows[2];
     expect(within(bob).getByText('Bob')).toBeInTheDocument();
     expect(within(bob).queryByRole('img')).not.toBeInTheDocument();
-  });
-
-  it('maps a semantic color name to its icon color token', () => {
-    render(<Harness />);
-    const errorDot = screen.getByRole('img', {name: 'Error'});
-    // 'red' resolves to var(--color-icon-red); StyleX emits it on the inline
-    // style of the inner dot element.
-    const dot = errorDot.querySelector('span');
-    expect(dot?.getAttribute('style')).toContain('--color-icon-red');
   });
 
   it('passes through a raw CSS color as an escape hatch', () => {

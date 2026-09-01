@@ -72,8 +72,11 @@ Exit codes are the contract: `0` pass, `1` crashed, `2` changed.
 
 `pr-visual` compares only the stable published visual surface:
 
-- Core component change → every story of that component, light/dark, in every
-  shipped theme that styles it.
+- Core component change → the representative story in the default theme and
+  every shipped theme that styles the component, plus any story explicitly
+  tagged `visual-baseline` in the default theme; all are captured light/dark.
+  Behavioral and audit-only fixtures stay in their dedicated checks without
+  multiplying the pixel baseline.
 - Published theme change → that theme's relevant target/story matrix.
 - Shared stable theming/token infrastructure → the full plan, which declines
   visibly at the 240-shot review budget and defers to the daily gate.
@@ -181,7 +184,12 @@ instant lives in `lib/capture.mjs` and is recorded in every manifest. Changing
 it changes those shots, so it is a deliberate rebaseline, not a tweak.
 
 Theme and colour mode are switched over Storybook's own channel rather than
-by reloading, which is what keeps 514 shots inside a few minutes;
+by reloading. Two workers scout and capture independent story groups
+concurrently. Browser execution is canonicalized by story, and every story
+mounts in the default light theme before any fast-global update, so accepted
+exact plans and full release plans cannot seed mount-time state differently.
+The manifest still follows the authoritative plan order. After capture closes
+the browser, two CPU workers decode and compare the baseline PNGs.
 `--no-fast-globals` forces a reload per shot if a story's state ever turns out
 to survive the re-render.
 

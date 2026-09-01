@@ -1,4 +1,50 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Trigger area',
+    required: true,
+    description:
+      'Caller-provided region that accepts right-click, keyboard context-menu, and long-press input.',
+  },
+  {
+    name: 'Pointer menu surface',
+    required: false,
+    description:
+      'Cursor-positioned menu panel used by the pointer presentation.',
+  },
+  {
+    name: 'Pointer action row',
+    required: false,
+    description:
+      'DropdownMenu-owned action, selectable option, or submenu row in the pointer presentation.',
+  },
+  {
+    name: 'Touch sheet frame',
+    required: false,
+    description:
+      'BottomSheet panel, content area, handle, and optional scrim that host touch actions.',
+  },
+  {
+    name: 'Touch menu surface',
+    required: false,
+    description:
+      'ContextMenu-owned content panel rendered inside the touch sheet frame.',
+  },
+  {
+    name: 'Touch action list',
+    required: false,
+    description: 'Spacious List that groups data-driven touch actions.',
+  },
+  {
+    name: 'Touch action row',
+    required: false,
+    description:
+      'ListItem button used for a data-driven action or drill-in entry in the touch presentation.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -80,6 +126,7 @@ export const docs = {
     {name: 'ContextMenuItem'},
   ],
   usage: {
+    anatomy,
     description: 'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons.',
     bestPractices: [
       { guidance: true, description: 'Keep menu items concise and action-oriented; users expect quick access to contextual actions.' },
@@ -128,6 +175,7 @@ export const docsZh = {
 export const docsDense = {
   description: 'right-click context menu at cursor position',
   usage: {
+    anatomy,
     description: 'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions.',
     bestPractices: [
       { guidance: true, description: 'Keep items concise and action-oriented.' },

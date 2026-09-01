@@ -52,20 +52,37 @@ async function reconcileSpecOwnerGate({
   workspace = process.env.GITHUB_WORKSPACE,
   env = process.env,
 }) {
+  const {owner, repo} = context.repo;
+  const repository = `${owner}/${repo}`;
+  if (
+    context.eventName === 'pull_request_review' &&
+    context.payload.pull_request?.head?.repo?.full_name !== repository
+  ) {
+    core.info(
+      'Skipping fork pull request review; use an exact-head owner command to reconcile.',
+    );
+    return;
+  }
+
   const specOwners = env.SPEC_OWNERS.split(',').map(ownerName =>
     ownerName.toLowerCase(),
   );
   const designOwners = parseOwnerFile(
     fs.readFileSync(path.join(workspace, '.github/DESIGNOWNERS'), 'utf8'),
   );
-  const allOwners = new Set([...specOwners, ...designOwners]);
+  const engineeringOwners = parseOwnerFile(
+    fs.readFileSync(path.join(workspace, '.github/ENGOWNERS'), 'utf8'),
+  );
+  const allOwners = new Set([
+    ...specOwners,
+    ...engineeringOwners,
+    ...designOwners,
+  ]);
   if (!isAuthorizedEvent(context.eventName, context.payload, allOwners)) {
     core.info('Ignoring an event from someone outside the eligible owners.');
     return;
   }
 
-  const {owner, repo} = context.repo;
-  const repository = `${owner}/${repo}`;
   const pullNumber = Number(
     context.payload.pull_request?.number ??
       context.payload.issue?.number ??
@@ -141,6 +158,13 @@ async function reconcileSpecOwnerGate({
   async function isCurrentRun(headSha) {
     const newest = await newestRun(headSha);
     return newest === null || newest.runId <= runId;
+  }
+
+  async function currentPullForRun(headSha) {
+    const current = await getPullRequest();
+    if (current.head.sha !== headSha) return null;
+    if (!(await isCurrentRun(headSha))) return null;
+    return current;
   }
 
   async function setFinalStatus(headSha, state, description) {
@@ -401,11 +425,20 @@ async function reconcileSpecOwnerGate({
     complete: scope.complete,
     touchesDesignAssets: scope.touchesDesignAssets,
   });
-  const ownerApprovalRequired = requiredGroups.spec || requiredGroups.design;
+  const ownerApprovalRequired =
+    requiredGroups.spec || requiredGroups.design || requiredGroups.theme;
   if (requiredGroups.design && designOwners.length === 0) {
     throw new Error('No DESIGNOWNERS are configured.');
   }
+  if (
+    requiredGroups.theme &&
+    engineeringOwners.length === 0 &&
+    designOwners.length === 0
+  ) {
+    throw new Error('No ENGOWNERS or DESIGNOWNERS are configured.');
+  }
   const designApprovers = [...new Set([...specOwners, ...designOwners])];
+  const themeApprovers = [...new Set([...engineeringOwners, ...designOwners])];
   const readyAttestations = parseReadyAttestations(statuses, {
     repository,
     headSha: initialHead,
@@ -423,14 +456,25 @@ async function reconcileSpecOwnerGate({
   const designDecision = requiredGroups.design
     ? resolveOwnerDecision({...decisionInput, owners: designApprovers})
     : {approved: true, owner: null};
-  const approved = specDecision.approved && designDecision.approved;
-  const approvingOwners = [specDecision.owner, designDecision.owner]
+  const themeDecision = requiredGroups.theme
+    ? resolveOwnerDecision({...decisionInput, owners: themeApprovers})
+    : {approved: true, owner: null};
+  const approved =
+    specDecision.approved && designDecision.approved && themeDecision.approved;
+  const approvingOwners = [
+    specDecision.owner,
+    designDecision.owner,
+    themeDecision.owner,
+  ]
     .filter(Boolean)
     .filter((ownerName, index, owners) => owners.indexOf(ownerName) === index);
   const requiredOwnerDescription = [
     requiredGroups.spec ? `a spec owner (${specOwners.join(',')})` : null,
     requiredGroups.design
       ? `a design approver (${designApprovers.join(',')})`
+      : null,
+    requiredGroups.theme
+      ? `a theme approver (${themeApprovers.join(',')})`
       : null,
   ]
     .filter(Boolean)
@@ -479,16 +523,26 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
+  // Owner approval is the gate decision; auto-merge is an optional convenience.
+  // Publish the truthful terminal status first so an integration permission
+  // failure cannot leave an approved head stuck on "Reconciling".
+  if (!(await setFinalStatus(initialHead, 'success', successDescription))) {
+    return;
+  }
+  await removeLabel(env.REVIEW_LABEL);
+
   let enabledAutoMergeByThisRun = false;
   if (!pr.auto_merge) {
-    if (!(await isCurrentRun(initialHead))) return;
+    const beforeEnable = await currentPullForRun(initialHead);
+    if (beforeEnable === null || beforeEnable.auto_merge) return;
     await ensureLabel(
-      pr,
+      beforeEnable,
       env.AUTO_MERGE_LABEL,
       'bfdadc',
       'Auto-merge was enabled by the spec owner gate',
     );
-    if (!(await isCurrentRun(initialHead))) return;
+    const afterLabel = await currentPullForRun(initialHead);
+    if (afterLabel === null || afterLabel.auto_merge) return;
     try {
       await github.graphql(
         `mutation($id: ID!, $oid: GitObjectID!) {
@@ -505,6 +559,11 @@ async function reconcileSpecOwnerGate({
       enabledAutoMergeByThisRun = true;
       core.info(`Enabled squash auto-merge for spec-only PR #${pullNumber}.`);
     } catch (error) {
+      // Leave the conservative ownership marker intact. The failure may be an
+      // ambiguous response after a successful enable, or a newer run for the
+      // same or a newer head may already be using the global marker. A stale
+      // marker with auto-merge off is harmless: later reconciliation observes the real PR
+      // state and can retry or remove it without racing a newer owner.
       core.warning(`Could not enable auto-merge: ${error.message}`);
       return;
     }
@@ -523,10 +582,6 @@ async function reconcileSpecOwnerGate({
       return;
     }
   }
-
-  if (!(await isCurrentRun(initialHead))) return;
-  await removeLabel(env.REVIEW_LABEL);
-  await setFinalStatus(initialHead, 'success', successDescription);
 }
 
 module.exports = {isCommandComment, reconcileSpecOwnerGate};

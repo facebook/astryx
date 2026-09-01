@@ -36,6 +36,7 @@ const meta: Meta<typeof MultiSelector> = {
       options: ['count', 'labels', 'badges'],
     },
     isDisabled: {control: 'boolean'},
+    isReadOnly: {control: 'boolean'},
     disabledMessage: {control: 'text'},
     isOptional: {control: 'boolean'},
     isRequired: {control: 'boolean'},
@@ -63,6 +64,20 @@ export const Default: Story = {
   },
   args: {
     placeholder: 'Select columns...',
+  },
+};
+
+export const ReadOnly: Story = {
+  args: {
+    label: 'Assigned teams',
+    options: ['Design', 'Engineering', 'Marketing'],
+    value: ['Design', 'Engineering'],
+    onChange: () => {},
+    hasClear: true,
+    hasSearch: true,
+    htmlName: 'teams',
+    triggerDisplay: 'labels',
+    isReadOnly: true,
   },
 };
 

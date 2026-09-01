@@ -3,30 +3,43 @@
 'use strict';
 /* global console, module, process, require */
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const {isComponentSpecRecordPath} = require('./knowledge-paths.cjs');
+
 /**
  * Classifies changed paths without reading PR-controlled content.
  *
  * A spec-only PR may change only spec records. Templates, schemas, indexes,
- * architecture, audits, workflows, and code deliberately do not qualify.
+ * architecture, guidance, audits, workflows, and code deliberately do not
+ * qualify.
  */
 
 const SPEC_RECORD_PATTERNS = [
   /^docs\/specs\/[^/]+\/(?:spec|plan)\.md$/,
   /^docs\/families\/(?!README\.md$)[^/]+\.md$/,
   /^docs\/design\/(?!README\.md$)(?!assets\/)[^/]+\.md$/,
-  /^packages\/(?:core|lab)\/src\/[^/]+\/[^/]+\.spec\.md$/,
+  /^packages\/themes\/([^/]+)\/\1\.spec\.md$/,
 ];
 
 const CHANGESET_PATTERN = /^\.changeset\/(?!README\.md$)[^/]+\.md$/;
 
+const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
+const THEME_PACKAGE_CANDIDATE =
+  /^packages\/themes\/[^/]+\/(?:.*\/)?[^/]+\.spec\.md$/;
+
 const KNOWLEDGE_RECORD_PATTERNS = [
   ...SPEC_RECORD_PATTERNS,
+  THEME_DOC_CANDIDATE,
+  THEME_PACKAGE_CANDIDATE,
   /^docs\/architecture\/(?!README\.md$)[^/]+\.md$/,
   /^docs\/design\/assets\//,
 ];
 
 function isSpecRecordPath(filePath) {
-  return SPEC_RECORD_PATTERNS.some(pattern => pattern.test(filePath));
+  return (
+    isComponentSpecRecordPath(filePath) ||
+    SPEC_RECORD_PATTERNS.some(pattern => pattern.test(filePath))
+  );
 }
 
 function isPackageReleasePath(filePath) {
@@ -46,7 +59,10 @@ function isPackageReleasePath(filePath) {
 }
 
 function isKnowledgeRecordPath(filePath) {
-  return KNOWLEDGE_RECORD_PATTERNS.some(pattern => pattern.test(filePath));
+  return (
+    isSpecRecordPath(filePath) ||
+    KNOWLEDGE_RECORD_PATTERNS.some(pattern => pattern.test(filePath))
+  );
 }
 
 function normalizeChange(change) {
