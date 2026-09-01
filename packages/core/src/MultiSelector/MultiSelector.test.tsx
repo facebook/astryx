@@ -1937,7 +1937,7 @@ describe('MultiSelector', () => {
     }
 
     it.each(readOnlyCases)(
-      'uses a read-only text field with no popup semantics ($presentation, search=$hasSearch)',
+      'uses a read-only combobox with no rendered popup ($presentation, search=$hasSearch)',
       async ({presentation, hasSearch}) => {
         const user = userEvent.setup();
         const {container} = render(
@@ -1958,14 +1958,14 @@ describe('MultiSelector', () => {
           </form>,
         );
 
-        const trigger = screen.getByRole('textbox', {name: 'Fruit'});
-        expect(trigger.tagName).toBe('DIV');
+        const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+        expect(trigger.tagName).toBe('BUTTON');
         expect(trigger).toHaveTextContent('Apple, Banana');
         expect(trigger).toHaveAttribute('aria-readonly', 'true');
-        expect(trigger).not.toHaveAttribute('aria-expanded');
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
         expect(trigger).not.toHaveAttribute('aria-controls');
         expect(trigger).not.toHaveAttribute('aria-haspopup');
-        expect(screen.queryByRole('combobox', h)).not.toBeInTheDocument();
+        expect(screen.getAllByRole('combobox', h)).toHaveLength(1);
         expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
         expect(screen.queryByRole('dialog', h)).not.toBeInTheDocument();
         expect(
@@ -1999,7 +1999,7 @@ describe('MultiSelector', () => {
         />,
       );
 
-      const trigger = screen.getByRole('textbox', {name: 'Fruit'});
+      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
       expect(trigger).toHaveAttribute('aria-busy', 'true');
       expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
 
@@ -2022,7 +2022,7 @@ describe('MultiSelector', () => {
         />,
       );
 
-      const trigger = screen.getByRole('textbox');
+      const trigger = screen.getByRole('combobox');
       await user.click(trigger);
       trigger.focus();
       await user.keyboard('{Enter}{ArrowDown}b{Backspace}');
@@ -2060,7 +2060,7 @@ describe('MultiSelector', () => {
 
         rerender(selector(true));
 
-        const readOnlyTrigger = screen.getByRole('textbox', {name: 'Fruit'});
+        const readOnlyTrigger = screen.getByRole('combobox', {name: 'Fruit'});
         await waitFor(() => expect(readOnlyTrigger).toHaveFocus());
         expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
       },
@@ -2103,7 +2103,7 @@ describe('MultiSelector', () => {
 
         await waitFor(() => expect(dialog).toHaveAttribute('inert'));
         fireEvent.transitionEnd(panel!, {propertyName: 'transform'});
-        const readOnlyTrigger = screen.getByRole('textbox', {name: 'Fruit'});
+        const readOnlyTrigger = screen.getByRole('combobox', {name: 'Fruit'});
         await waitFor(() => expect(readOnlyTrigger).toHaveFocus());
         expect(screen.queryByRole('dialog', h)).not.toBeInTheDocument();
         expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();

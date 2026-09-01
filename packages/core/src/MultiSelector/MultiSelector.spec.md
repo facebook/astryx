@@ -143,12 +143,14 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
 ## Accessibility contract
 
 Existing field, combobox, listbox, checkbox, live-region, focus, and dismissal
-behavior remains unchanged when editable. A read-only value stays focusable and
-uses `role="textbox"` with `aria-readonly="true"`, so its rendered text is
-exposed without the implicit listbox popup carried by `combobox`. It does not
-expose `aria-expanded`, `aria-haspopup`, `aria-controls`, or an active selection
-surface. Search and non-search modes use the same read-only semantics because
-neither exposes a search control in this state.
+behavior remains unchanged when editable. A read-only value stays focusable,
+retains `role="combobox"`, and exposes `aria-readonly="true"` plus
+`aria-expanded="false"`. Its rendered content remains the combobox value. It does
+not expose `aria-controls`, `aria-activedescendant`, or an active selection
+surface. The implicit listbox popup describes the widget's selection capability;
+read-only state communicates that its values cannot currently change. Search and
+non-search modes use the same read-only combobox semantics because neither
+exposes a search control in this state.
 
 ## Design relationships
 

@@ -110,8 +110,7 @@ These requirements describe shipped behavior on current `main`.
   while Selector keeps row role, selection, disabled state, navigation, and
   theming state.
 - **AV3 — Selected value content.** `renderValue` may replace the closed value
-  display without changing the placeholder, editable combobox semantics, or
-  read-only text-field semantics.
+  display without changing its combobox identity, whether editable or read-only.
 
 ### Representative states
 
@@ -159,11 +158,13 @@ These requirements describe shipped behavior on current `main`.
   typeahead, search, Enter, Escape, and Tab behavior operate on the options a
   person can currently perceive.
 - **AR4 — Read-only semantics match availability.** A read-only value stays
-  focusable and uses `role="textbox"` with `aria-readonly="true"`, so its rendered
-  text is exposed without the implicit listbox popup carried by `combobox`. It
-  does not expose `aria-expanded`, `aria-haspopup`, `aria-controls`, or an active
-  selection surface. Search and non-search modes use the same read-only
-  semantics because neither exposes a search control in this state.
+  focusable, retains `role="combobox"`, and exposes `aria-readonly="true"` plus
+  `aria-expanded="false"`. Its rendered content remains the combobox value. It
+  does not expose `aria-controls`, `aria-activedescendant`, or an active selection
+  surface. The implicit listbox popup describes the widget's selection capability;
+  read-only state communicates that its value cannot currently change. Search and
+  non-search modes use the same read-only combobox semantics because neither
+  exposes a search control in this state.
 
 ## Design relationships
 

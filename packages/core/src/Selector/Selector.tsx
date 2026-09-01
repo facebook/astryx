@@ -1771,48 +1771,40 @@ export function Selector<T extends SelectorOptionType>(
         {inputGroup && (
           <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
         )}
-        {isEffectivelyReadOnly ? (
-          <div
-            {...triggerSharedProps}
-            ref={triggerRef as React.Ref<HTMLDivElement>}
-            role="textbox"
-            aria-label={ariaLabelledBy == null ? label : undefined}
-            aria-readonly="true"
-            aria-expanded={undefined}
-            aria-haspopup={undefined}
-            aria-controls={undefined}
-            aria-activedescendant={undefined}>
-            {valueContent}
-          </div>
-        ) : (
-          <button
-            {...triggerSharedProps}
-            ref={triggerRef as React.Ref<HTMLButtonElement>}
-            type="button"
-            // In hasSearch mode the popup's search input is the combobox (it
-            // owns focus + aria-activedescendant), so this remains a button.
-            role={hasSearch ? undefined : 'combobox'}
-            aria-haspopup={
-              surface.activePresentation === 'bottom-sheet'
+        <button
+          {...triggerSharedProps}
+          ref={triggerRef as React.Ref<HTMLButtonElement>}
+          type="button"
+          // The read-only trigger stays a combobox even when hasSearch is set:
+          // no search input is rendered in that state, and preserving the role
+          // keeps the control's programmatic identity stable. Editable search
+          // mode still moves combobox semantics to the popup input.
+          role={isEffectivelyReadOnly || !hasSearch ? 'combobox' : undefined}
+          aria-haspopup={
+            isEffectivelyReadOnly
+              ? undefined
+              : surface.activePresentation === 'bottom-sheet'
                 ? 'dialog'
                 : 'listbox'
-            }
-            aria-expanded={surface.isOpen}
-            aria-controls={listboxId}
-            aria-readonly={undefined}
-            aria-activedescendant={
-              !hasSearch && surface.isOpen && highlightedIndex >= 0
-                ? getItemId(highlightedIndex)
-                : undefined
-            }
-            // With a disabledMessage the trigger keeps focusability via
-            // aria-disabled so the reason is focus-discoverable; activation is
-            // still blocked by the isDisabled guards in useCombobox.
-            disabled={isDisabled && !showsDisabledMessage}
-            aria-disabled={showsDisabledMessage ? 'true' : undefined}>
-            {valueContent}
-          </button>
-        )}
+          }
+          aria-expanded={isEffectivelyReadOnly ? false : surface.isOpen}
+          aria-controls={isEffectivelyReadOnly ? undefined : listboxId}
+          aria-readonly={isEffectivelyReadOnly || undefined}
+          aria-activedescendant={
+            !isEffectivelyReadOnly &&
+            !hasSearch &&
+            surface.isOpen &&
+            highlightedIndex >= 0
+              ? getItemId(highlightedIndex)
+              : undefined
+          }
+          // With a disabledMessage the trigger keeps focusability via
+          // aria-disabled so the reason is focus-discoverable; activation is
+          // still blocked by the isDisabled guards in useCombobox.
+          disabled={isDisabled && !showsDisabledMessage}
+          aria-disabled={showsDisabledMessage ? 'true' : undefined}>
+          {valueContent}
+        </button>
         {htmlName != null && (
           <input
             type="hidden"
