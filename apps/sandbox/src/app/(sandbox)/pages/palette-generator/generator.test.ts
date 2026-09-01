@@ -2,8 +2,8 @@
 
 import {describe, expect, it} from 'vitest';
 
-import {hexToOklch} from '../apps/sandbox/src/app/(sandbox)/pages/color-studio/colorUtils';
-import {THEME_REFERENCES} from '../apps/sandbox/src/app/(sandbox)/pages/palette-generator/themeCorpus';
+import {hexToOklch} from '../color-studio/colorUtils';
+import {THEME_REFERENCES} from './themeCorpus';
 
 import {
   COMPACT_11_STOPS,
@@ -14,7 +14,7 @@ import {
   serializeGenerationResult,
   validateStops,
   type PaletteGenerationRequest,
-} from '../apps/sandbox/src/app/(sandbox)/pages/palette-generator/generator';
+} from './generator';
 
 function request(
   overrides: Partial<PaletteGenerationRequest> = {},

@@ -20,6 +20,9 @@ The deployed GitHub Pages versions of those sandbox pages are visual
 verification references. The lab does not fetch them at runtime because network
 state cannot be part of deterministic generation.
 
+Run the sandbox-owned generator tests with `pnpm --filter
+@astryxdesign/sandbox test`.
+
 ## Interpretation
 
 Existing-theme comparisons exclude the shared black and white endpoints from
