@@ -154,6 +154,10 @@ export const TEMPLATE_COMPONENTS: Record<
   table: lazy(
     () => import('../../../../packages/cli/assets/templates/pages/table/page'),
   ),
+  'table-comparison': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-comparison/page'),
+  ),
   'table-filter': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-filter/page'),
@@ -162,9 +166,17 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-grouped/page'),
   ),
+  'table-inbox': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-inbox/page'),
+  ),
   'table-page': lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/table-page/page'),
+  ),
+  'table-tree': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-tree/page'),
   ),
 };
 

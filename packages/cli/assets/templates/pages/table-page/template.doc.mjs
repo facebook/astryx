@@ -5,7 +5,8 @@ export const doc = {
   type: 'page',
   name: 'Searchable Table',
   displayName: 'Searchable Table',
-  description: 'Flat row collection with query search and an action toolbar above sortable rows, running full width with no detail pane. Sits between the bare table and the filtered one. Table, list, rows, records, grid, search, or admin index.',
+  description:
+    'Capped-width single-document table: billing metadata above a scope toggle and PowerSearch, sortable and filterable line items with per-row hover detail, and a derived totals block that warns when a filter leaves it partial. Invoice, bill, statement, receipt, line items, table, search, or totals.',
   isReady: true,
   category: 'Table - Basic',
 };

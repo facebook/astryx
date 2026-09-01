@@ -2,1217 +2,765 @@
 
 'use client';
 
-import React, {useState, useMemo} from 'react';
-import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
-import type {ResizableProps} from '@astryxdesign/core/Resizable';
+/**
+ * Four kinds of financial account on one page, each in a collapsible Card with
+ * a table of its own — because a credit card and a checking account do not
+ * share a column grid.
+ *
+ * This is the grouping shape for heterogeneous records. `useTableGroupedRows`
+ * is the right tool when every group is the same kind of thing and grouping is
+ * just a sort you can collapse: issues by status, orders by month, rows by
+ * owner. One table, one header, section rows in between. It is the wrong tool
+ * the moment the groups stop agreeing on what the columns mean. Utilization is
+ * a credit-card idea, next payout is a processor idea, and cost basis is an
+ * investment idea; forcing all three into one grid produces a table that is
+ * mostly em-dashes, with a header row that is true of no row beneath it.
+ *
+ * So each group owns a table. The Card supplies the boundary the shared header
+ * row used to supply, and the Collapsible trigger carries the group's name,
+ * count, and running total, so a collapsed group still answers the question
+ * most people came for.
+ *
+ * ## Extending this template
+ *
+ * **The test for splitting is column divergence, not group count.** Two groups
+ * with different columns belong in separate tables; twelve groups with
+ * identical columns belong in one table with the plugin. If you find yourself
+ * adding a column that only applies to some groups and writing a fallback dash
+ * for the rest, that is the signal to split. Conversely, if these four tables
+ * ever converge on the same columns, collapse them back — this layout costs a
+ * Card and a header per group, and that is only worth paying for real
+ * structural difference.
+ *
+ * **Each table is data-driven, and that is the payoff.** Because the groups are
+ * separate tables, every one of them can use `data` + `columns` with
+ * `renderCell`, which is the RSC-friendly path and the one that gets headers,
+ * widths, and plugins for free. The single-table version of this page has to
+ * drop to children mode to emit section rows, and loses all of that.
+ *
+ * **The trigger is a button, so it holds no buttons.** Group name, count, and
+ * total are text and icons only. Per-account actions live in the rows, and
+ * anything that acts on a whole group belongs in the page header rather than
+ * inside the trigger — nesting a control inside the trigger makes the click
+ * target ambiguous and is invalid HTML besides.
+ *
+ * **Open state is controlled, not `defaultIsOpen`.** The page owns a Set of
+ * open group ids, which is what lets Expand all / Collapse all work and what
+ * you would persist per user. Uncontrolled Collapsibles are fine for a static
+ * FAQ; they cannot participate in a page-level control.
+ *
+ * **Money is stored in cents.** Every amount is an integer and only the display
+ * step formats, so group totals and the header's net position stay exact. Net
+ * position deliberately subtracts card balances — it is a derived figure, never
+ * a stored one, so adding an account updates it with no other edit.
+ *
+ * **Sync state is the one piece of shared vocabulary.** All four record types
+ * carry the same `syncState`, rendered by the same StatusDot, because "is this
+ * connection healthy" is the one question that means the same thing across
+ * every group. Where groups genuinely agree, share the component.
+ */
+
+import {useMemo, useState} from 'react';
+
 import {
+  HStack,
   Layout,
   LayoutContent,
-  LayoutFooter,
   LayoutHeader,
-  LayoutPanel,
-  VStack,
-  HStack,
   StackItem,
+  VStack,
 } from '@astryxdesign/core/Layout';
-import {Text, Heading} from '@astryxdesign/core/Text';
-import {TextInput} from '@astryxdesign/core/TextInput';
-import {Button} from '@astryxdesign/core/Button';
+import {Heading, Text} from '@astryxdesign/core/Text';
 import {Badge} from '@astryxdesign/core/Badge';
-import {Avatar} from '@astryxdesign/core/Avatar';
-import {Selector} from '@astryxdesign/core/Selector';
-import {PowerSearch} from '@astryxdesign/core/PowerSearch';
-import type {
-  PowerSearchConfig,
-  PowerSearchFilter,
-} from '@astryxdesign/core/PowerSearch';
-import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
-import {Popover} from '@astryxdesign/core/Popover';
-import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
-import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
-import {Center} from '@astryxdesign/core/Center';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Collapsible} from '@astryxdesign/core/Collapsible';
 import {Icon} from '@astryxdesign/core/Icon';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 import {StatusDot} from '@astryxdesign/core/StatusDot';
-import {Divider} from '@astryxdesign/core/Divider';
-import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
-import {
-  Table,
-  TableBody,
-  TableRow,
-  TableCell,
-  proportional,
-  pixel,
-  resolveColumnWidths,
-} from '@astryxdesign/core/Table';
+import {Token} from '@astryxdesign/core/Token';
+import {Table, pixel, proportional} from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
 import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  PencilIcon,
-  DocumentDuplicateIcon,
-  ArrowRightIcon,
-  TagIcon,
-  UserIcon,
-  TrashIcon,
-  EllipsisHorizontalIcon,
+  ArrowPathIcon,
+  ArrowsRightLeftIcon,
+  BuildingLibraryIcon,
+  CreditCardIcon,
+  PlusIcon,
+  PresentationChartLineIcon,
 } from '@heroicons/react/24/outline';
-import {XMarkIcon} from '@heroicons/react/24/outline';
-import {ChartBarIcon} from '@heroicons/react/24/solid';
 
-// Plain inline styles using Astryx design-token CSS variables (declared at
-// :root by `@astryxdesign/core/astryx.css`). No StyleX compiler required.
-// The group-header background + cursor live on the colSpan TableCell (which
-// reliably forwards `style`) so they fill the full row width.
-const groupHeaderCell: React.CSSProperties = {
-  cursor: 'pointer',
-  backgroundColor: 'var(--color-background-muted)',
-  padding: 'var(--spacing-3) var(--spacing-4)',
+// ============= SHARED VOCABULARY =============
+
+/** The one attribute every account type genuinely shares. */
+type SyncState = 'connected' | 'syncing' | 'reconnect';
+
+const SYNC_VARIANT: Record<SyncState, 'success' | 'accent' | 'warning'> = {
+  connected: 'success',
+  syncing: 'accent',
+  reconnect: 'warning',
 };
 
-// Types
-type TaskStatus = 'in_progress' | 'todo' | 'backlog' | 'done';
-type TaskPriority = 'urgent' | 'high' | 'medium' | 'low' | 'none';
+const SYNC_LABEL: Record<SyncState, string> = {
+  connected: 'Connected',
+  syncing: 'Syncing',
+  reconnect: 'Action needed',
+};
 
-interface TaskRow extends Record<string, unknown> {
-  id: string;
-  taskId: string;
-  title: string;
-  subtitle: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  project: string;
-  tags: string[];
-  created: string;
-  createdISO: string;
-  updated: string;
-  updatedISO: string;
-  assignee: string;
+// Pinned locale keeps the rendered output identical in every environment.
+const currency = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+});
+
+function money(cents: number): string {
+  return currency.format(cents / 100);
 }
 
-const STATUS_DOT_VARIANT: Record<
-  TaskStatus,
-  'success' | 'accent' | 'neutral' | 'warning'
-> = {
-  in_progress: 'accent',
-  todo: 'warning',
-  backlog: 'neutral',
-  done: 'success',
-};
-
-const PRIORITY_COLOR: Record<
-  TaskPriority,
-  'primary' | 'secondary' | 'disabled'
-> = {
-  urgent: 'primary',
-  high: 'primary',
-  medium: 'secondary',
-  low: 'disabled',
-  none: 'disabled',
-};
-
-// Mock data matching a task tracker
-const allTasks: TaskRow[] = [
-  {
-    id: '1',
-    taskId: 'T235040469',
-    title: 'Update user interface',
-    subtitle: 'Update payment gateway integration',
-    status: 'in_progress',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Olivia Martin',
-  },
-  {
-    id: '2',
-    taskId: 'T235040470',
-    title: 'Use Projects to organize work for features or releases',
-    subtitle: '',
-    status: 'in_progress',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Jackson Lee',
-  },
-  {
-    id: '3',
-    taskId: 'T235040471',
-    title: 'Use Cycles to focus work over n-weeks',
-    subtitle: '',
-    status: 'in_progress',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Isabella Nguyen',
-  },
-  {
-    id: '4',
-    taskId: 'T235040472',
-    title: 'Testing code',
-    subtitle: 'Update payment gateway integration',
-    status: 'todo',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'William Kim',
-  },
-  {
-    id: '5',
-    taskId: 'T235040473',
-    title: 'Update backend code',
-    subtitle: 'Update payment gateway integration',
-    status: 'todo',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Sofia Davis',
-  },
-  {
-    id: '6',
-    taskId: 'T235040474',
-    title: 'Update front end code',
-    subtitle: 'Update payment gateway integration',
-    status: 'todo',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Mia Wilson',
-  },
-  {
-    id: '7',
-    taskId: 'T235040475',
-    title: 'Update payment gateway integration',
-    subtitle: '',
-    status: 'todo',
-    priority: 'high',
-    project: 'Payment gateway integration 2.0',
-    tags: ['Improvement', '3rd Party'],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Lucas Brown',
-  },
-  {
-    id: '8',
-    taskId: 'T235040476',
-    title: 'Update payment gateway backend code',
-    subtitle: '',
-    status: 'todo',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Ethan Jones',
-  },
-  {
-    id: '9',
-    taskId: 'T235040477',
-    title: 'Invite your teammates',
-    subtitle: '',
-    status: 'todo',
-    priority: 'low',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 1',
-    updatedISO: '2025-07-01',
-    assignee: 'Ava Taylor',
-  },
-  {
-    id: '10',
-    taskId: 'T235040478',
-    title: 'Next steps',
-    subtitle: '',
-    status: 'todo',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Noah Garcia',
-  },
-  {
-    id: '11',
-    taskId: 'T235040479',
-    title: 'Welcome to Linear',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Olivia Martin',
-  },
-  {
-    id: '12',
-    taskId: 'T235040480',
-    title: 'Connect GitHub or GitLab',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Jackson Lee',
-  },
-  {
-    id: '13',
-    taskId: 'T235040481',
-    title: 'Customize settings',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Isabella Nguyen',
-  },
-  {
-    id: '14',
-    taskId: 'T235040482',
-    title: 'Try 3 ways to navigate: Command menu, keyboard or mouse',
-    subtitle: '',
-    status: 'done',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'William Kim',
-  },
-  {
-    id: '15',
-    taskId: 'T235040483',
-    title: 'Connect to Slack',
-    subtitle: '',
-    status: 'done',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Sofia Davis',
-  },
-  {
-    id: '16',
-    taskId: 'T235040484',
-    title: 'Migrate database schema to v2',
-    subtitle: 'Payment gateway integration',
-    status: 'in_progress',
-    priority: 'high',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 4',
-    createdISO: '2025-07-04',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Lucas Brown',
-  },
-  {
-    id: '17',
-    taskId: 'T235040485',
-    title: 'Write integration tests for checkout flow',
-    subtitle: '',
-    status: 'in_progress',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 4',
-    createdISO: '2025-07-04',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Ethan Jones',
-  },
-  {
-    id: '18',
-    taskId: 'T235040486',
-    title: 'Set up CI/CD pipeline for staging',
-    subtitle: '',
-    status: 'in_progress',
-    priority: 'high',
-    project: '',
-    tags: [],
-    created: 'Jul 2',
-    createdISO: '2025-07-02',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Ava Taylor',
-  },
-  {
-    id: '19',
-    taskId: 'T235040487',
-    title: 'Add rate limiting to public API endpoints',
-    subtitle: '',
-    status: 'todo',
-    priority: 'urgent',
-    project: '',
-    tags: [],
-    created: 'Jul 5',
-    createdISO: '2025-07-05',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Noah Garcia',
-  },
-  {
-    id: '20',
-    taskId: 'T235040488',
-    title: 'Refactor auth middleware to support OAuth2',
-    subtitle: '',
-    status: 'todo',
-    priority: 'high',
-    project: '',
-    tags: [],
-    created: 'Jul 4',
-    createdISO: '2025-07-04',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Olivia Martin',
-  },
-  {
-    id: '21',
-    taskId: 'T235040489',
-    title: 'Design error pages for 404 and 500',
-    subtitle: '',
-    status: 'todo',
-    priority: 'low',
-    project: '',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 4',
-    updatedISO: '2025-07-04',
-    assignee: 'Mia Wilson',
-  },
-  {
-    id: '22',
-    taskId: 'T235040490',
-    title: 'Audit third-party dependencies for vulnerabilities',
-    subtitle: '',
-    status: 'todo',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jul 5',
-    createdISO: '2025-07-05',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'Jackson Lee',
-  },
-  {
-    id: '23',
-    taskId: 'T235040491',
-    title: 'Implement webhook retry logic with exponential backoff',
-    subtitle: 'Payment gateway integration',
-    status: 'todo',
-    priority: 'medium',
-    project: 'Payment gateway integration 2.0',
-    tags: [],
-    created: 'Jul 4',
-    createdISO: '2025-07-04',
-    updated: 'Jul 5',
-    updatedISO: '2025-07-05',
-    assignee: 'William Kim',
-  },
-  {
-    id: '24',
-    taskId: 'T235040492',
-    title: 'Add dark mode support to dashboard',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'low',
-    project: '',
-    tags: [],
-    created: 'Jul 2',
-    createdISO: '2025-07-02',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Sofia Davis',
-  },
-  {
-    id: '25',
-    taskId: 'T235040493',
-    title: 'Create onboarding flow for new team members',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'none',
-    project: '',
-    tags: [],
-    created: 'Jul 1',
-    createdISO: '2025-07-01',
-    updated: 'Jul 2',
-    updatedISO: '2025-07-02',
-    assignee: 'Isabella Nguyen',
-  },
-  {
-    id: '26',
-    taskId: 'T235040494',
-    title: 'Set up error tracking with Sentry',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jul 3',
-    createdISO: '2025-07-03',
-    updated: 'Jul 4',
-    updatedISO: '2025-07-04',
-    assignee: 'Ethan Jones',
-  },
-  {
-    id: '27',
-    taskId: 'T235040495',
-    title: 'Improve search performance with indexing',
-    subtitle: '',
-    status: 'backlog',
-    priority: 'low',
-    project: '',
-    tags: [],
-    created: 'Jul 2',
-    createdISO: '2025-07-02',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Ava Taylor',
-  },
-  {
-    id: '28',
-    taskId: 'T235040496',
-    title: 'Write API documentation for v2 endpoints',
-    subtitle: '',
-    status: 'done',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jun 28',
-    createdISO: '2025-06-28',
-    updated: 'Jul 3',
-    updatedISO: '2025-07-03',
-    assignee: 'Noah Garcia',
-  },
-  {
-    id: '29',
-    taskId: 'T235040497',
-    title: 'Set up staging environment',
-    subtitle: '',
-    status: 'done',
-    priority: 'high',
-    project: '',
-    tags: [],
-    created: 'Jun 25',
-    createdISO: '2025-06-25',
-    updated: 'Jul 1',
-    updatedISO: '2025-07-01',
-    assignee: 'Lucas Brown',
-  },
-  {
-    id: '30',
-    taskId: 'T235040498',
-    title: 'Fix flaky end-to-end tests in CI',
-    subtitle: '',
-    status: 'done',
-    priority: 'medium',
-    project: '',
-    tags: [],
-    created: 'Jun 30',
-    createdISO: '2025-06-30',
-    updated: 'Jul 2',
-    updatedISO: '2025-07-02',
-    assignee: 'Mia Wilson',
-  },
-];
-
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  in_progress: 'In Progress',
-  todo: 'Todo',
-  backlog: 'Backlog',
-  done: 'Done',
-};
-
-const GROUP_ORDER: TaskStatus[] = ['in_progress', 'todo', 'backlog', 'done'];
-
-type GroupByField = 'status' | 'priority' | 'project' | 'assignee' | 'none';
-
-const GROUP_BY_OPTIONS: {value: GroupByField; label: string}[] = [
-  {value: 'none', label: 'None'},
-  {value: 'status', label: 'Status'},
-  {value: 'priority', label: 'Priority'},
-  {value: 'project', label: 'Project'},
-  {value: 'assignee', label: 'Assignee'},
-];
-
-function groupTasks(
-  tasks: TaskRow[],
-  groupBy: GroupByField,
-): Map<string, TaskRow[]> {
-  if (groupBy === 'none') {
-    return new Map([['All', tasks]]);
-  }
-  const map = new Map<string, TaskRow[]>();
-  for (const task of tasks) {
-    const key = String(task[groupBy]) || '—';
-    let group = map.get(key);
-    if (!group) {
-      group = [];
-      map.set(key, group);
-    }
-    group.push(task);
-  }
-  return map;
+function sum<T>(rows: T[], pick: (row: T) => number): number {
+  return rows.reduce((total, row) => total + pick(row), 0);
 }
 
-function getGroupLabel(groupBy: GroupByField, key: string): string {
-  if (groupBy === 'status') {
-    return STATUS_LABEL[key as TaskStatus] ?? key;
-  }
-  if (groupBy === 'priority') {
-    const labels: Record<string, string> = {
-      urgent: 'Urgent',
-      high: 'High',
-      medium: 'Medium',
-      low: 'Low',
-      none: 'No priority',
-    };
-    return labels[key] ?? key;
-  }
-  return key;
-}
-
-const columns: TableColumn<TaskRow>[] = [
-  {
-    key: 'status',
-    header: '',
-    width: pixel(44),
-  },
-  {
-    key: 'title',
-    header: 'Issue',
-    width: proportional(1),
-  },
-  {
-    key: 'project',
-    header: 'Project',
-    width: pixel(180),
-  },
-  {
-    key: 'created',
-    header: 'Created',
-    width: pixel(72),
-  },
-  {
-    key: 'updated',
-    header: 'Updated',
-    width: pixel(72),
-  },
-  {
-    key: 'assignee',
-    header: 'Assignee',
-    width: pixel(52),
-  },
-  {
-    key: 'actions',
-    header: '',
-    width: pixel(56),
-  },
-];
-
-const powerSearchConfig: PowerSearchConfig = {
-  name: 'IssueSearch',
-  fields: [
-    {
-      key: 'status',
-      label: 'Status',
-      operators: [
-        {
-          key: 'is',
-          label: 'is',
-          value: {
-            type: 'enum',
-            values: [
-              {value: 'in_progress', label: 'In Progress'},
-              {value: 'todo', label: 'Todo'},
-              {value: 'backlog', label: 'Backlog'},
-              {value: 'done', label: 'Done'},
-            ],
-          },
-        },
-      ],
-    },
-    {
-      key: 'priority',
-      label: 'Priority',
-      operators: [
-        {
-          key: 'is',
-          label: 'is',
-          value: {
-            type: 'enum',
-            values: [
-              {value: 'urgent', label: 'Urgent'},
-              {value: 'high', label: 'High'},
-              {value: 'medium', label: 'Medium'},
-              {value: 'low', label: 'Low'},
-              {value: 'none', label: 'None'},
-            ],
-          },
-        },
-      ],
-    },
-    {
-      key: 'title',
-      label: 'Title',
-      operators: [
-        {key: 'contains', label: 'contains', value: {type: 'string'}},
-      ],
-    },
-    {
-      key: 'assignee',
-      label: 'Assignee',
-      operators: [
-        {key: 'contains', label: 'contains', value: {type: 'string'}},
-      ],
-    },
-    {
-      key: 'project',
-      label: 'Project',
-      operators: [
-        {key: 'contains', label: 'contains', value: {type: 'string'}},
-      ],
-    },
-  ],
-};
-
-const PRIORITY_LABEL: Record<TaskPriority, string> = {
-  urgent: 'Urgent',
-  high: 'High',
-  medium: 'Medium',
-  low: 'Low',
-  none: 'None',
-};
-
-function TaskDetailPanel({
-  task,
-  onClose,
-  resizable,
-}: {
-  task: TaskRow | null;
-  onClose: () => void;
-  resizable: ResizableProps;
-}) {
-  if (!task) {
-    return null;
-  }
+/** Right-aligned tabular figure — every numeric cell on the page uses this. */
+function Figure({children}: {children: string}) {
   return (
-    // Panel owns the separator (its full-height left border). The adjacent
-    // ResizeHandle is kept divider-less + isAlwaysVisible={false} so its
-    // always-on pill doesn't float above the panel as a stray stub.
-    <LayoutPanel
-      hasDivider
-      resizable={resizable}
-      padding={4}
-      role="complementary"
-      label="Task details">
-      <VStack gap={4}>
-        <HStack gap={2} vAlign="center">
-          <StackItem size="fill">
-            <Text type="supporting" color="secondary">
-              {task.taskId}
-            </Text>
-          </StackItem>
-          <Button
-            label="Close panel"
-            variant="ghost"
+    <Text display="block" justify="end" hasTabularNumbers>
+      {children}
+    </Text>
+  );
+}
+
+// StatusDot's label is for assistive tech only, so the visible wording is a
+// sibling Text rather than a second label on the dot.
+function SyncCell({state}: {state: SyncState}) {
+  return (
+    <HStack gap={2} vAlign="center">
+      <StatusDot variant={SYNC_VARIANT[state]} label={SYNC_LABEL[state]} />
+      <Text color="secondary">{SYNC_LABEL[state]}</Text>
+    </HStack>
+  );
+}
+
+/** Secondary right-aligned figure — used for the de-emphasised comparison
+ * column that sits beside each group's headline number. */
+function MutedFigure({children}: {children: string}) {
+  return (
+    <Text display="block" justify="end" hasTabularNumbers color="secondary">
+      {children}
+    </Text>
+  );
+}
+
+// ============= GROUP 1 — BANK ACCOUNTS =============
+
+interface BankAccount extends Record<string, unknown> {
+  id: string;
+  name: string;
+  institution: string;
+  mask: string;
+  kind: 'Checking' | 'Savings' | 'Money market';
+  availableCents: number;
+  lastSynced: string;
+  syncState: SyncState;
+}
+
+const BANK_ACCOUNTS: BankAccount[] = [
+  {
+    id: 'bank-1',
+    name: 'Operating',
+    institution: 'First Meridian Bank',
+    mask: '••4417',
+    kind: 'Checking',
+    availableCents: 84_215_600,
+    lastSynced: 'Today, 6:02 AM',
+    syncState: 'connected',
+  },
+  {
+    id: 'bank-2',
+    name: 'Payroll',
+    institution: 'First Meridian Bank',
+    mask: '••8830',
+    kind: 'Checking',
+    availableCents: 21_940_800,
+    lastSynced: 'Today, 6:02 AM',
+    syncState: 'connected',
+  },
+  {
+    id: 'bank-3',
+    name: 'Tax reserve',
+    institution: 'Harborline Credit Union',
+    mask: '••1265',
+    kind: 'Savings',
+    availableCents: 47_500_000,
+    lastSynced: 'Today, 5:48 AM',
+    syncState: 'connected',
+  },
+  {
+    id: 'bank-4',
+    name: 'Treasury sweep',
+    institution: 'Northgate Financial',
+    mask: '••7702',
+    kind: 'Money market',
+    availableCents: 132_800_000,
+    lastSynced: 'Mar 28, 9:14 PM',
+    syncState: 'reconnect',
+  },
+];
+
+const bankColumns: TableColumn<BankAccount>[] = [
+  {
+    key: 'name',
+    header: 'Account',
+    width: proportional(2),
+    renderCell: account => (
+      <VStack gap={0}>
+        <Text>{account.name}</Text>
+        <Text type="supporting">
+          {account.institution} · {account.mask}
+        </Text>
+      </VStack>
+    ),
+  },
+  {
+    key: 'kind',
+    header: 'Type',
+    width: pixel(140),
+    renderCell: account => <Text color="secondary">{account.kind}</Text>,
+  },
+  {
+    key: 'available',
+    header: 'Available',
+    width: pixel(150),
+    renderCell: account => <Figure>{money(account.availableCents)}</Figure>,
+  },
+  {
+    key: 'lastSynced',
+    header: 'Last synced',
+    width: pixel(160),
+    renderCell: account => <Text color="secondary">{account.lastSynced}</Text>,
+  },
+  {
+    key: 'syncState',
+    header: 'Status',
+    width: pixel(180),
+    renderCell: account => <SyncCell state={account.syncState} />,
+  },
+];
+
+// ============= GROUP 2 — CREDIT CARDS =============
+
+interface CreditCardAccount extends Record<string, unknown> {
+  id: string;
+  name: string;
+  issuer: string;
+  mask: string;
+  balanceCents: number;
+  limitCents: number;
+  statementDue: string;
+  syncState: SyncState;
+}
+
+const CREDIT_CARDS: CreditCardAccount[] = [
+  {
+    id: 'card-1',
+    name: 'Corporate — Engineering',
+    issuer: 'Meridian Business Card',
+    mask: '••2041',
+    balanceCents: 4_182_300,
+    limitCents: 15_000_000,
+    statementDue: 'Apr 12',
+    syncState: 'connected',
+  },
+  {
+    id: 'card-2',
+    name: 'Corporate — Travel',
+    issuer: 'Meridian Business Card',
+    mask: '••6688',
+    balanceCents: 9_640_500,
+    limitCents: 12_000_000,
+    statementDue: 'Apr 12',
+    syncState: 'connected',
+  },
+  {
+    id: 'card-3',
+    name: 'Vendor payments',
+    issuer: 'Northgate Commercial',
+    mask: '••3319',
+    balanceCents: 1_205_000,
+    limitCents: 25_000_000,
+    statementDue: 'Apr 20',
+    syncState: 'syncing',
+  },
+];
+
+/** Credit utilization reads inversely: a full bar is the bad outcome. */
+function utilizationVariant(pct: number): 'success' | 'warning' | 'error' {
+  if (pct >= 70) {
+    return 'error';
+  }
+  if (pct >= 30) {
+    return 'warning';
+  }
+  return 'success';
+}
+
+const creditCardColumns: TableColumn<CreditCardAccount>[] = [
+  {
+    key: 'name',
+    header: 'Card',
+    width: proportional(2),
+    renderCell: card => (
+      <VStack gap={0}>
+        <Text>{card.name}</Text>
+        <Text type="supporting">
+          {card.issuer} · {card.mask}
+        </Text>
+      </VStack>
+    ),
+  },
+  {
+    key: 'balance',
+    header: 'Balance',
+    width: pixel(140),
+    renderCell: card => <Figure>{money(card.balanceCents)}</Figure>,
+  },
+  {
+    key: 'limit',
+    header: 'Limit',
+    width: pixel(140),
+    renderCell: card => <MutedFigure>{money(card.limitCents)}</MutedFigure>,
+  },
+  {
+    key: 'utilization',
+    header: 'Utilization',
+    width: pixel(190),
+    renderCell: card => {
+      const pct = Math.round((card.balanceCents / card.limitCents) * 100);
+      return (
+        <ProgressBar
+          label={`${card.name} utilization`}
+          isLabelHidden
+          hasValueLabel
+          value={pct}
+          variant={utilizationVariant(pct)}
+        />
+      );
+    },
+  },
+  {
+    key: 'statementDue',
+    header: 'Statement due',
+    width: pixel(140),
+    renderCell: card => <Text color="secondary">{card.statementDue}</Text>,
+  },
+  {
+    key: 'syncState',
+    header: 'Status',
+    width: pixel(150),
+    renderCell: card => <SyncCell state={card.syncState} />,
+  },
+];
+
+// ============= GROUP 3 — PAYMENT PROCESSORS =============
+
+interface ProcessorAccount extends Record<string, unknown> {
+  id: string;
+  name: string;
+  merchantId: string;
+  pendingPayoutCents: number;
+  feesMtdCents: number;
+  nextPayout: string;
+  syncState: SyncState;
+}
+
+const PROCESSORS: ProcessorAccount[] = [
+  {
+    id: 'proc-1',
+    name: 'Stripe',
+    merchantId: 'acct_1Qf82LmR',
+    pendingPayoutCents: 18_442_900,
+    feesMtdCents: 612_400,
+    nextPayout: 'Apr 2',
+    syncState: 'connected',
+  },
+  {
+    id: 'proc-2',
+    name: 'PayPal Commerce',
+    merchantId: 'MRC-88214-XT',
+    pendingPayoutCents: 3_218_650,
+    feesMtdCents: 148_900,
+    nextPayout: 'Apr 3',
+    syncState: 'connected',
+  },
+  {
+    id: 'proc-3',
+    name: 'Adyen',
+    merchantId: 'AD-NORTHWIND-01',
+    pendingPayoutCents: 7_905_100,
+    feesMtdCents: 233_050,
+    nextPayout: 'Apr 5',
+    syncState: 'syncing',
+  },
+];
+
+const processorColumns: TableColumn<ProcessorAccount>[] = [
+  {
+    key: 'name',
+    header: 'Processor',
+    width: proportional(2),
+    renderCell: processor => (
+      <VStack gap={0}>
+        <Text>{processor.name}</Text>
+        <Text type="supporting">{processor.merchantId}</Text>
+      </VStack>
+    ),
+  },
+  {
+    key: 'pendingPayout',
+    header: 'Pending payout',
+    width: pixel(160),
+    renderCell: processor => (
+      <Figure>{money(processor.pendingPayoutCents)}</Figure>
+    ),
+  },
+  {
+    key: 'feesMtd',
+    header: 'Fees (MTD)',
+    width: pixel(150),
+    renderCell: processor => (
+      <MutedFigure>{money(processor.feesMtdCents)}</MutedFigure>
+    ),
+  },
+  {
+    key: 'nextPayout',
+    header: 'Next payout',
+    width: pixel(140),
+    renderCell: processor => (
+      <Text color="secondary">{processor.nextPayout}</Text>
+    ),
+  },
+  {
+    key: 'syncState',
+    header: 'Status',
+    width: pixel(150),
+    renderCell: processor => <SyncCell state={processor.syncState} />,
+  },
+];
+
+// ============= GROUP 4 — INVESTMENT ACCOUNTS =============
+
+interface InvestmentAccount extends Record<string, unknown> {
+  id: string;
+  name: string;
+  custodian: string;
+  marketValueCents: number;
+  costBasisCents: number;
+  dayChangeCents: number;
+  syncState: SyncState;
+}
+
+const INVESTMENTS: InvestmentAccount[] = [
+  {
+    id: 'inv-1',
+    name: 'Short-duration treasuries',
+    custodian: 'Northgate Asset Management',
+    marketValueCents: 245_180_000,
+    costBasisCents: 240_000_000,
+    dayChangeCents: 184_200,
+    syncState: 'connected',
+  },
+  {
+    id: 'inv-2',
+    name: 'Corporate bond ladder',
+    custodian: 'Northgate Asset Management',
+    marketValueCents: 98_420_000,
+    costBasisCents: 100_000_000,
+    dayChangeCents: -62_800,
+    syncState: 'connected',
+  },
+  {
+    id: 'inv-3',
+    name: 'Money market fund',
+    custodian: 'Harborline Capital',
+    marketValueCents: 61_050_000,
+    costBasisCents: 61_000_000,
+    dayChangeCents: 8_400,
+    syncState: 'connected',
+  },
+];
+
+const investmentColumns: TableColumn<InvestmentAccount>[] = [
+  {
+    key: 'name',
+    header: 'Account',
+    width: proportional(2),
+    renderCell: account => (
+      <VStack gap={0}>
+        <Text>{account.name}</Text>
+        <Text type="supporting">{account.custodian}</Text>
+      </VStack>
+    ),
+  },
+  {
+    key: 'marketValue',
+    header: 'Market value',
+    width: pixel(160),
+    renderCell: account => <Figure>{money(account.marketValueCents)}</Figure>,
+  },
+  {
+    key: 'costBasis',
+    header: 'Cost basis',
+    width: pixel(150),
+    renderCell: account => (
+      <MutedFigure>{money(account.costBasisCents)}</MutedFigure>
+    ),
+  },
+  {
+    key: 'dayChange',
+    header: 'Day change',
+    width: pixel(150),
+    renderCell: account => {
+      const isUp = account.dayChangeCents >= 0;
+      return (
+        <HStack hAlign="end">
+          <Token
             size="sm"
-            icon={<Icon icon={XMarkIcon} size="sm" />}
-            isIconOnly
-            onClick={onClose}
+            color={isUp ? 'green' : 'red'}
+            label={`${isUp ? '+' : '−'}${money(Math.abs(account.dayChangeCents))}`}
           />
         </HStack>
+      );
+    },
+  },
+  {
+    key: 'syncState',
+    header: 'Status',
+    width: pixel(150),
+    renderCell: account => <SyncCell state={account.syncState} />,
+  },
+];
 
-        <VStack gap={1}>
-          <Heading level={3}>{task.title}</Heading>
-          {task.subtitle && (
-            <Text type="body" color="secondary">
-              {task.subtitle}
+// ============= GROUP SHELL =============
+
+const GROUP_IDS = ['bank', 'cards', 'processors', 'investments'] as const;
+type GroupId = (typeof GROUP_IDS)[number];
+
+function AccountGroup({
+  icon,
+  title,
+  count,
+  summaryLabel,
+  summaryValue,
+  isOpen,
+  onOpenChange,
+  children,
+}: {
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  title: string;
+  count: number;
+  summaryLabel: string;
+  summaryValue: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card padding={0}>
+      <Collapsible
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        // Collapsible wraps trigger content in a shrink-to-fit span, so a flex
+        // spacer cannot push the summary to the right edge. Fixed widths on the
+        // title and label blocks line the four group totals up as a column
+        // instead, which is the part that matters when every group is closed.
+        trigger={
+          <HStack gap={4} vAlign="center">
+            <HStack gap={2} vAlign="center" width={240}>
+              <Icon icon={icon} size="sm" color="secondary" />
+              <Text weight="semibold">{title}</Text>
+              <Badge variant="neutral" label={String(count)} />
+            </HStack>
+            <HStack width={128}>
+              <Text type="supporting">{summaryLabel}</Text>
+            </HStack>
+            <Text weight="semibold" hasTabularNumbers>
+              {summaryValue}
             </Text>
-          )}
-        </VStack>
-
-        <MetadataList label={{position: 'start'}}>
-          <MetadataListItem label="Status">
-            <HStack gap={2} vAlign="center">
-              <StatusDot
-                variant={STATUS_DOT_VARIANT[task.status]}
-                label={STATUS_LABEL[task.status]}
-              />
-              <Text type="body">{STATUS_LABEL[task.status]}</Text>
-            </HStack>
-          </MetadataListItem>
-          <MetadataListItem label="Priority">
-            <HStack gap={2} vAlign="center">
-              <Icon
-                icon={ChartBarIcon}
-                size="sm"
-                color={PRIORITY_COLOR[task.priority]}
-              />
-              <Text type="body">{PRIORITY_LABEL[task.priority]}</Text>
-            </HStack>
-          </MetadataListItem>
-          <MetadataListItem label="Assignee">
-            <HStack gap={2} vAlign="center">
-              <Avatar name={task.assignee} size="sm" />
-              <Text type="body">{task.assignee}</Text>
-            </HStack>
-          </MetadataListItem>
-          <MetadataListItem label="Project">
-            {task.project || '\u2014'}
-          </MetadataListItem>
-          <MetadataListItem label="Created">{task.created}</MetadataListItem>
-          <MetadataListItem label="Updated">{task.updated}</MetadataListItem>
-        </MetadataList>
-
-        {task.tags.length > 0 && (
-          <>
-            <Divider />
-            <VStack gap={2}>
-              <Text type="label">Labels</Text>
-              <HStack gap={2}>
-                {task.tags.map(tag => (
-                  <Badge key={tag} variant="neutral" label={tag} />
-                ))}
-              </HStack>
-            </VStack>
-          </>
-        )}
-      </VStack>
-    </LayoutPanel>
+          </HStack>
+        }>
+        {children}
+      </Collapsible>
+    </Card>
   );
 }
 
-export default function DataTableTemplate() {
-  const [search, _setSearch] = useState('');
-  const [priorityFilter, _setPriorityFilter] = useState('all');
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<TaskRow | null>(null);
-  const [powerSearchFilters, setPowerSearchFilters] = useState<
-    ReadonlyArray<PowerSearchFilter>
-  >([]);
-  const [groupBy, setGroupBy] = useState<GroupByField>('status');
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    () => new Set(GROUP_ORDER as string[]),
+// ============= PAGE =============
+
+export default function ConnectedAccountsTemplate() {
+  const [openGroups, setOpenGroups] = useState<Set<GroupId>>(
+    () => new Set(GROUP_IDS),
   );
 
-  const filtered = useMemo(() => {
-    let data = allTasks;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      data = data.filter(
-        t =>
-          t.title.toLowerCase().includes(q) ||
-          t.taskId.toLowerCase().includes(q) ||
-          t.subtitle.toLowerCase().includes(q),
-      );
-    }
-    if (priorityFilter !== 'all') {
-      data = data.filter(t => t.priority === priorityFilter);
-    }
-    return data;
-  }, [search, priorityFilter]);
-
-  const grouped = useMemo(
-    () => groupTasks(filtered, groupBy),
-    [filtered, groupBy],
-  );
-
-  const groupKeys = useMemo(() => Array.from(grouped.keys()), [grouped]);
-
-  React.useEffect(() => {
-    setExpandedGroups(new Set(groupKeys));
-  }, [groupKeys]);
-
-  const toggleGroup = (key: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
+  const toggleGroup = (id: GroupId) => (open: boolean) => {
+    setOpenGroups(previous => {
+      const next = new Set(previous);
+      if (open) {
+        next.add(id);
       } else {
-        next.add(key);
+        next.delete(id);
       }
       return next;
     });
   };
 
-  const detailPanel = useResizable({
-    defaultSize: 360,
-    minSizePx: 280,
-    maxSizePx: 500,
-  });
+  const totals = useMemo(() => {
+    const banks = sum(BANK_ACCOUNTS, account => account.availableCents);
+    const cards = sum(CREDIT_CARDS, card => card.balanceCents);
+    const pending = sum(PROCESSORS, p => p.pendingPayoutCents);
+    const investments = sum(INVESTMENTS, i => i.marketValueCents);
+    return {
+      banks,
+      cards,
+      pending,
+      investments,
+      // Outstanding card balances are a liability, so they come off the top.
+      net: banks + pending + investments - cards,
+    };
+  }, []);
 
-  const COL_COUNT = columns.length;
-  const resolvedWidths = resolveColumnWidths(columns);
+  const needsAttention = [
+    ...BANK_ACCOUNTS,
+    ...CREDIT_CARDS,
+    ...PROCESSORS,
+    ...INVESTMENTS,
+  ].filter(account => account.syncState === 'reconnect').length;
+
+  const areAllOpen = openGroups.size === GROUP_IDS.length;
 
   return (
-    <>
-      <Layout
-        height="fill"
-        header={
-          <LayoutHeader hasDivider padding={4}>
-            <VStack gap={4}>
-              <HStack gap={3} vAlign="center">
-                <StackItem size="fill">
-                  <Heading level={1}>All Issues</Heading>
-                </StackItem>
-                <Button
-                  label="Create issue"
-                  variant="primary"
-                  size="lg"
-                  onClick={() => setDialogOpen(true)}
-                />
-              </HStack>
-              <HStack gap={2} vAlign="center">
-                <StackItem size="fill">
-                  <PowerSearch
-                    config={powerSearchConfig}
-                    filters={powerSearchFilters}
-                    onChange={newFilters => setPowerSearchFilters(newFilters)}
-                    placeholder="Filter issues..."
-                    resultCount={`${filtered.length} issue${filtered.length !== 1 ? 's' : ''}`}
-                  />
-                </StackItem>
-                <Popover
-                  placement="below"
-                  alignment="end"
-                  width={320}
-                  label="Grouping options"
-                  content={
-                    <VStack gap={4}>
-                      <RadioList
-                        label="Group by"
-                        value={groupBy}
-                        onChange={v => setGroupBy(v as GroupByField)}>
-                        {GROUP_BY_OPTIONS.map(opt => (
-                          <RadioListItem
-                            key={opt.value}
-                            value={opt.value}
-                            label={opt.label}
-                          />
-                        ))}
-                      </RadioList>
-                    </VStack>
-                  }>
-                  <Button label="View Options" variant="secondary" size="md" />
-                </Popover>
-              </HStack>
-            </VStack>
-          </LayoutHeader>
-        }
-        content={
-          <LayoutContent role="main" padding={0}>
-            <Table
-              columns={columns}
-              density="balanced"
-              dividers="rows"
-              textOverflow="truncate"
-              hasHover>
-              <colgroup>
-                {columns.map(col => (
-                  <col
-                    key={col.key}
-                    style={resolvedWidths.columns.get(col.key)?.style}
-                  />
-                ))}
-              </colgroup>
-              <TableBody>
-                {groupKeys.map(key => {
-                  const tasks = grouped.get(key);
-                  if (!tasks || tasks.length === 0) {
-                    return null;
-                  }
-                  const isExpanded = expandedGroups.has(key);
-
-                  return (
-                    <React.Fragment key={key}>
-                      {groupBy !== 'none' && (
-                        <TableRow
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => toggleGroup(key)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              toggleGroup(key);
-                            }
-                          }}>
-                          <TableCell
-                            colSpan={COL_COUNT}
-                            style={groupHeaderCell}>
-                            <HStack gap={2} vAlign="center">
-                              <Icon
-                                icon={
-                                  isExpanded
-                                    ? ChevronDownIcon
-                                    : ChevronRightIcon
-                                }
-                                size="sm"
-                                color="secondary"
-                              />
-                              <Text type="body" weight="bold">
-                                {getGroupLabel(groupBy, key)}
-                              </Text>
-                              <Badge
-                                variant="neutral"
-                                label={String(tasks.length)}
-                              />
-                            </HStack>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                      {(groupBy === 'none' || isExpanded) &&
-                        tasks.map(task => (
-                          <TableRow
-                            key={task.id}
-                            onClick={() => setSelectedTask(task)}>
-                            <TableCell>
-                              <Center axis="horizontal">
-                                <StatusDot
-                                  variant={STATUS_DOT_VARIANT[task.status]}
-                                  label={STATUS_LABEL[task.status]}
-                                />
-                              </Center>
-                            </TableCell>
-                            <TableCell>
-                              <HStack gap={3} vAlign="center">
-                                <Icon
-                                  icon={ChartBarIcon}
-                                  size="sm"
-                                  color={PRIORITY_COLOR[task.priority]}
-                                />
-                                <Text type="supporting" color="secondary">
-                                  {task.taskId}
-                                </Text>
-                                <Text type="body" maxLines={1}>
-                                  {task.title}
-                                </Text>
-                                {task.subtitle && (
-                                  <Text
-                                    type="body"
-                                    color="secondary"
-                                    maxLines={1}>
-                                    › {task.subtitle}
-                                  </Text>
-                                )}
-                              </HStack>
-                            </TableCell>
-                            <TableCell>
-                              {task.project ? (
-                                <Text type="body" maxLines={1}>
-                                  {task.project}
-                                </Text>
-                              ) : (
-                                <Text type="supporting" color="secondary">
-                                  —
-                                </Text>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Text type="supporting" color="secondary">
-                                {task.created}
-                              </Text>
-                            </TableCell>
-                            <TableCell>
-                              <Text type="supporting" color="secondary">
-                                {task.updated}
-                              </Text>
-                            </TableCell>
-                            <TableCell>
-                              <Avatar name={task.assignee} size="sm" />
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu
-                                button={{
-                                  label: 'Actions',
-                                  variant: 'ghost',
-                                  size: 'sm',
-                                  icon: (
-                                    <Icon
-                                      icon={EllipsisHorizontalIcon}
-                                      size="sm"
-                                    />
-                                  ),
-                                  isIconOnly: true,
-                                }}
-                                hasChevron={false}
-                                items={[
-                                  {
-                                    label: 'Edit issue',
-                                    icon: PencilIcon,
-                                    onClick: () => {},
-                                  },
-                                  {
-                                    label: 'Assign to...',
-                                    icon: UserIcon,
-                                    onClick: () => {},
-                                  },
-                                  {
-                                    label: 'Add label',
-                                    icon: TagIcon,
-                                    onClick: () => {},
-                                  },
-                                  {
-                                    label: 'Duplicate',
-                                    icon: DocumentDuplicateIcon,
-                                    onClick: () => {},
-                                  },
-                                  {
-                                    label: 'Move to project',
-                                    icon: ArrowRightIcon,
-                                    onClick: () => {},
-                                  },
-                                  {type: 'divider' as const},
-                                  {
-                                    label: 'Delete issue',
-                                    icon: TrashIcon,
-                                    onClick: () => {},
-                                  },
-                                ]}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </LayoutContent>
-        }
-        end={
-          selectedTask && (
-            <>
-              <ResizeHandle
-                resizable={detailPanel.props}
-                isReversed
-                isAlwaysVisible={false}
-              />
-              <TaskDetailPanel
-                task={selectedTask}
-                onClose={() => setSelectedTask(null)}
-                resizable={detailPanel.props}
-              />
-            </>
-          )
-        }
-      />
-      <Dialog isOpen={dialogOpen} onOpenChange={open => setDialogOpen(open)}>
-        <Layout
-          header={
-            <DialogHeader
-              title="Create Issue"
-              onOpenChange={open => setDialogOpen(open)}
-            />
-          }
-          content={
-            <LayoutContent padding={4}>
-              <VStack gap={4}>
-                <TextInput
-                  label="Title"
-                  placeholder="Issue title"
-                  value=""
-                  onChange={() => {}}
-                />
-                <Selector
-                  label="Status"
-                  value="todo"
-                  options={[
-                    {value: 'in_progress', label: 'In Progress'},
-                    {value: 'todo', label: 'Todo'},
-                    {value: 'backlog', label: 'Backlog'},
-                  ]}
-                  onChange={() => {}}
-                />
-                <Selector
-                  label="Priority"
-                  value="none"
-                  options={[
-                    {value: 'urgent', label: 'Urgent'},
-                    {value: 'high', label: 'High'},
-                    {value: 'medium', label: 'Medium'},
-                    {value: 'low', label: 'Low'},
-                    {value: 'none', label: 'No priority'},
-                  ]}
-                  onChange={() => {}}
-                />
-                <TextInput
-                  label="Project"
-                  placeholder="Project name"
-                  value=""
-                  onChange={() => {}}
-                />
+    <Layout
+      height="fill"
+      contentWidth={1200}
+      header={
+        <LayoutHeader hasDivider padding={4}>
+          <HStack gap={3} vAlign="center" wrap="wrap">
+            <StackItem size="fill">
+              <VStack gap={0.5}>
+                <Heading level={1}>Connected accounts</Heading>
+                <HStack gap={2} vAlign="center">
+                  <Text type="supporting">
+                    Net position {money(totals.net)} across 13 accounts
+                  </Text>
+                  {needsAttention > 0 && (
+                    <StatusDot
+                      variant="warning"
+                      label={`${needsAttention} account needs reconnecting`}
+                    />
+                  )}
+                </HStack>
               </VStack>
-            </LayoutContent>
-          }
-          footer={
-            <LayoutFooter hasDivider>
-              <HStack gap={2} hAlign="end">
-                <Button
-                  label="Cancel"
-                  variant="secondary"
-                  size="md"
-                  onClick={() => setDialogOpen(false)}
-                />
-                <Button
-                  label="Create"
-                  variant="primary"
-                  size="md"
-                  onClick={() => setDialogOpen(false)}
-                />
-              </HStack>
-            </LayoutFooter>
-          }
-        />
-      </Dialog>
-    </>
+            </StackItem>
+            <Button
+              label={areAllOpen ? 'Collapse all' : 'Expand all'}
+              variant="ghost"
+              onClick={() =>
+                setOpenGroups(areAllOpen ? new Set() : new Set(GROUP_IDS))
+              }
+            />
+            <Button
+              label="Sync now"
+              variant="secondary"
+              icon={<Icon icon={ArrowPathIcon} size="sm" />}
+            />
+            <Button
+              label="Connect account"
+              variant="primary"
+              icon={<Icon icon={PlusIcon} size="sm" />}
+            />
+          </HStack>
+        </LayoutHeader>
+      }
+      content={
+        <LayoutContent padding={4}>
+          <VStack gap={4}>
+            <AccountGroup
+              icon={BuildingLibraryIcon}
+              title="Bank accounts"
+              count={BANK_ACCOUNTS.length}
+              summaryLabel="Available"
+              summaryValue={money(totals.banks)}
+              isOpen={openGroups.has('bank')}
+              onOpenChange={toggleGroup('bank')}>
+              <Table<BankAccount>
+                data={BANK_ACCOUNTS}
+                columns={bankColumns}
+                idKey="id"
+                density="compact"
+                dividers="rows"
+                textOverflow="truncate"
+                hasHover
+              />
+            </AccountGroup>
+
+            <AccountGroup
+              icon={CreditCardIcon}
+              title="Credit cards"
+              count={CREDIT_CARDS.length}
+              summaryLabel="Outstanding"
+              summaryValue={money(totals.cards)}
+              isOpen={openGroups.has('cards')}
+              onOpenChange={toggleGroup('cards')}>
+              <Table<CreditCardAccount>
+                data={CREDIT_CARDS}
+                columns={creditCardColumns}
+                idKey="id"
+                density="compact"
+                dividers="rows"
+                textOverflow="truncate"
+                hasHover
+              />
+            </AccountGroup>
+
+            <AccountGroup
+              icon={ArrowsRightLeftIcon}
+              title="Payment processors"
+              count={PROCESSORS.length}
+              summaryLabel="Pending payout"
+              summaryValue={money(totals.pending)}
+              isOpen={openGroups.has('processors')}
+              onOpenChange={toggleGroup('processors')}>
+              <Table<ProcessorAccount>
+                data={PROCESSORS}
+                columns={processorColumns}
+                idKey="id"
+                density="compact"
+                dividers="rows"
+                textOverflow="truncate"
+                hasHover
+              />
+            </AccountGroup>
+
+            <AccountGroup
+              icon={PresentationChartLineIcon}
+              title="Investment accounts"
+              count={INVESTMENTS.length}
+              summaryLabel="Market value"
+              summaryValue={money(totals.investments)}
+              isOpen={openGroups.has('investments')}
+              onOpenChange={toggleGroup('investments')}>
+              <Table<InvestmentAccount>
+                data={INVESTMENTS}
+                columns={investmentColumns}
+                idKey="id"
+                density="compact"
+                dividers="rows"
+                textOverflow="truncate"
+                hasHover
+              />
+            </AccountGroup>
+          </VStack>
+        </LayoutContent>
+      }
+    />
   );
 }
