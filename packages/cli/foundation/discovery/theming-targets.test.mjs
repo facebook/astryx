@@ -74,6 +74,25 @@ describe('collectThemingTargets', () => {
     ).toBe(true);
   });
 
+  it('keeps the deprecated Popover alias enumerable but out of active ownership', async () => {
+    const allPopoverKeys = (await enumerated)
+      .filter(target => target.component === 'Popover')
+      .map(target => target.key);
+    const activePopoverKeys = (await activeEnumerated)
+      .filter(target => target.component === 'Popover')
+      .map(target => target.key);
+    const doc = await loadComponentDoc(
+      path.join(coreSrc, 'Popover', 'Popover.doc.mjs'),
+    );
+
+    expect(allPopoverKeys).toEqual(['popover', 'popover-surface']);
+    expect(activePopoverKeys).toEqual(['popover']);
+    expect(doc.theming.targets).toContainEqual({
+      className: 'astryx-popover-surface',
+      deprecatedFor: 'popover',
+    });
+  });
+
   it('carries the props and states a target reflects', async () => {
     const targets = await enumerated;
     expect(targets.find(t => t.key === 'switch-thumb')).toEqual({
@@ -89,13 +108,16 @@ describe('collectThemingTargets', () => {
     ['TableHeader', 'table-header'],
     ['TableBody', 'table-body'],
     ['TableFooter', 'table-footer'],
-  ])('keeps %s theming metadata available in its direct doc', async (name, key) => {
-    const doc = await loadComponentDoc(
-      path.join(coreSrc, 'Table', `${name}.doc.mjs`),
-    );
-    expect(doc.subComponentOf).toBe('Table');
-    expect(doc.theming.targets).toContainEqual({className: `astryx-${key}`});
-  });
+  ])(
+    'keeps %s theming metadata available in its direct doc',
+    async (name, key) => {
+      const doc = await loadComponentDoc(
+        path.join(coreSrc, 'Table', `${name}.doc.mjs`),
+      );
+      expect(doc.subComponentOf).toBe('Table');
+      expect(doc.theming.targets).toContainEqual({className: `astryx-${key}`});
+    },
+  );
 
   it.each(['table-header', 'table-body', 'table-footer'])(
     'enumerates %s once under its canonical Table owner',

@@ -21,7 +21,7 @@
 
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
-import * as path from 'node:path';
+import {Worker} from 'node:worker_threads';
 
 const RELEASE_LANE = 'stable-release';
 
@@ -63,20 +63,33 @@ export function validateReleasePlan(plan, currentManifest, failures = []) {
  * @property {boolean} sizeChanged
  */
 
-/**
- * Widen an image to the given canvas, transparent-padded from the top left, so
- * two shots of different heights can still be diffed pixel for pixel.
- * @param {{width: number, height: number, data: Buffer}} png
- * @param {number} width
- * @param {number} height
- * @param {typeof import('pngjs').PNG} PNG
- */
-function pad(png, width, height, PNG) {
-  if (png.width === width && png.height === height) return png;
-  const padded = new PNG({width, height});
-  padded.data.fill(0);
-  PNG.bitblt(png, padded, 0, 0, Math.min(png.width, width), Math.min(png.height, height), 0, 0);
-  return padded;
+export function partitionComparisonKeys(keys, concurrency) {
+  if (keys.length === 0) return [];
+  const workerCount = Math.max(1, Math.min(Math.floor(concurrency), keys.length));
+  const partitions = Array.from({length: workerCount}, () => []);
+  keys.forEach((key, index) => partitions[index % workerCount].push(key));
+  return partitions;
+}
+
+function comparePartition(workerData) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./compare-worker.mjs', import.meta.url), {
+      workerData,
+      execArgv: [],
+    });
+    let settled = false;
+    worker.once('message', value => {
+      settled = true;
+      resolve(value);
+    });
+    worker.once('error', error => {
+      settled = true;
+      reject(error);
+    });
+    worker.once('exit', code => {
+      if (!settled) reject(new Error(`Visual comparison worker exited ${code} without a result.`));
+    });
+  });
 }
 
 /**
@@ -88,6 +101,7 @@ function pad(png, width, height, PNG) {
  * @param {string} options.diffDir - where diff PNGs are written
  * @param {number} options.threshold - pixelmatch per-pixel colour threshold
  * @param {number} options.maxDiffPixels - pixels allowed to differ before a shot counts as changed
+ * @param {number} [options.concurrency] - bounded CPU workers for PNG decoding and pixel comparison
  * @returns {Promise<{changes: Change[], added: string[], removed: string[], unchanged: string[]}>}
  */
 export async function compareCaptures({
@@ -98,22 +112,16 @@ export async function compareCaptures({
   diffDir,
   threshold,
   maxDiffPixels,
+  concurrency = 2,
 }) {
-  const {PNG} = await import('pngjs');
-  const pixelmatch = (await import('pixelmatch')).default;
-
   const baselineKeys = new Set(Object.keys(baselineManifest.shots ?? {}));
   const currentKeys = Object.keys(currentManifest.shots ?? {});
-
-  /** @type {Change[]} */
-  const changes = [];
-  /** @type {string[]} */
+  const positions = new Map(currentKeys.map((key, index) => [key, index]));
   const added = [];
-  /** @type {string[]} */
   const unchanged = [];
+  const pixelKeys = [];
 
   fs.mkdirSync(diffDir, {recursive: true});
-
   for (const key of currentKeys) {
     if (!baselineKeys.has(key)) {
       added.push(key);
@@ -121,42 +129,34 @@ export async function compareCaptures({
     }
     const current = currentManifest.shots[key];
     const baseline = baselineManifest.shots[key];
-    // The bytes are the cheapest possible comparison and the common case.
-    if (current.sha256 === baseline.sha256) {
-      unchanged.push(key);
-      continue;
-    }
-
-    const baselinePng = PNG.sync.read(fs.readFileSync(path.join(baselineDir, `${key}.png`)));
-    const currentPng = PNG.sync.read(fs.readFileSync(path.join(currentDir, `${key}.png`)));
-    const width = Math.max(baselinePng.width, currentPng.width);
-    const height = Math.max(baselinePng.height, currentPng.height);
-    const sizeChanged = baselinePng.width !== currentPng.width || baselinePng.height !== currentPng.height;
-
-    const a = pad(baselinePng, width, height, PNG);
-    const b = pad(currentPng, width, height, PNG);
-    const diff = new PNG({width, height});
-    const diffPixels = pixelmatch(a.data, b.data, diff.data, width, height, {
-      threshold,
-      includeAA: false,
-      alpha: 0.2,
-      diffMask: false,
-    });
-
-    if (diffPixels <= maxDiffPixels && !sizeChanged) {
-      unchanged.push(key);
-      continue;
-    }
-    fs.writeFileSync(path.join(diffDir, `${key}.png`), PNG.sync.write(diff));
-    changes.push({
-      key,
-      diffPixels,
-      diffRatio: Number((diffPixels / (width * height)).toFixed(6)),
-      sizeChanged,
-    });
+    if (current.sha256 === baseline.sha256) unchanged.push(key);
+    else pixelKeys.push(key);
   }
 
-  changes.sort((a, b) => b.diffPixels - a.diffPixels);
+  const workerResults = (
+    await Promise.all(
+      partitionComparisonKeys(pixelKeys, concurrency).map(keys =>
+        comparePartition({
+          keys,
+          baselineDir,
+          currentDir,
+          diffDir,
+          threshold,
+          maxDiffPixels,
+        }),
+      ),
+    )
+  ).flat();
+  const changes = [];
+  for (const result of workerResults) {
+    if (result.unchanged) unchanged.push(result.key);
+    else changes.push(result.change);
+  }
+
+  unchanged.sort((a, b) => positions.get(a) - positions.get(b));
+  changes.sort(
+    (a, b) => b.diffPixels - a.diffPixels || positions.get(a.key) - positions.get(b.key),
+  );
   return {changes, added, removed: [], unchanged};
 }
 

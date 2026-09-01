@@ -13,9 +13,16 @@ const {
   parseAuthority,
   parseOwnerFile,
 } = require('../.github/scripts/knowledge-frontmatter.cjs');
+const {
+  classifyComponentKnowledgePath,
+  isComponentSpecRecordPath,
+  isIgnoredComponentKnowledgeSegment,
+} = require('../.github/scripts/knowledge-paths.cjs');
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = path.resolve(HERE, '..');
+const MODULE_ID_PATTERN =
+  /^module:([A-Z][A-Za-z0-9]*)\/([A-Za-z][A-Za-z0-9]*)$/;
 
 export function parseKnowledgeDocument(content, filePath = '<document>') {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
@@ -110,7 +117,11 @@ function matchingFiles(directory, predicate) {
     .map(entry => path.join(directory, entry.name));
 }
 
-function matchingFilesRecursively(directory, predicate) {
+function matchingFilesRecursively(
+  directory,
+  predicate,
+  {skipDirectory = () => false} = {},
+) {
   if (!fs.existsSync(directory)) return [];
   const matches = [];
   const pending = [directory];
@@ -118,8 +129,14 @@ function matchingFilesRecursively(directory, predicate) {
     const current = pending.pop();
     for (const entry of fs.readdirSync(current, {withFileTypes: true})) {
       const candidate = path.join(current, entry.name);
-      if (entry.isDirectory()) pending.push(candidate);
-      else if (entry.isFile() && predicate(entry.name)) matches.push(candidate);
+      if (entry.isDirectory()) {
+        if (skipDirectory(entry.name, candidate)) {
+          continue;
+        }
+        pending.push(candidate);
+      } else if (entry.isFile() && predicate(entry.name, candidate)) {
+        matches.push(candidate);
+      }
     }
   }
   return matches;
@@ -189,16 +206,283 @@ export function discoverKnowledgeRecords(root = DEFAULT_ROOT) {
   records.push(...discoverThemeRecordCandidates(root).records);
 
   for (const packageName of ['core', 'lab']) {
-    for (const componentDirectory of immediateDirectories(
-      path.join(root, `packages/${packageName}/src`),
-    )) {
-      records.push(
-        ...matchingFiles(componentDirectory, name => name.endsWith('.spec.md')),
+    const sourceRoot = path.join(root, `packages/${packageName}/src`);
+    records.push(
+      ...matchingFilesRecursively(
+        sourceRoot,
+        (_name, candidate) =>
+          isComponentSpecRecordPath(
+            path.relative(root, candidate).split(path.sep).join('/'),
+          ),
+        {skipDirectory: isIgnoredComponentKnowledgeSegment},
+      ),
+    );
+  }
+
+  return records.sort();
+}
+
+function componentRecordLocation(root, absolutePath) {
+  const filePath = path.relative(root, absolutePath).split(path.sep).join('/');
+  const classified = classifyComponentKnowledgePath(filePath);
+  if (!classified) return null;
+  return {
+    ...classified,
+    componentRootPath: path.join(
+      root,
+      'packages',
+      classified.packageName,
+      'src',
+      classified.componentRoot,
+    ),
+  };
+}
+
+function isFullConsumerDocEntry(entry) {
+  return (
+    entry != null &&
+    typeof entry === 'object' &&
+    (typeof entry.description === 'string' ||
+      Array.isArray(entry.props) ||
+      Array.isArray(entry.params) ||
+      Array.isArray(entry.returns) ||
+      entry.usage != null)
+  );
+}
+
+function componentRootDefinesPublicComponent(componentRootPath, publicName) {
+  for (const docPath of matchingFilesRecursively(
+    componentRootPath,
+    name => name.endsWith('.doc.mjs'),
+    {skipDirectory: isIgnoredComponentKnowledgeSegment},
+  )) {
+    let mod;
+    try {
+      mod = require(docPath);
+    } catch {
+      continue;
+    }
+    const doc = mod.docs ?? mod.default;
+    if (!doc) continue;
+    if (doc.name?.replace(/^XDS/, '') === publicName) return true;
+    if (
+      (doc.components ?? []).some(
+        entry =>
+          entry?.name?.replace(/^XDS/, '') === publicName &&
+          isFullConsumerDocEntry(entry),
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function activeRecord(record, activeAuthorities) {
+  return activeAuthorities.includes(
+    record.document.frontmatter.get('authority'),
+  );
+}
+
+/**
+ * Validate the explicit two-way ownership graph between component and module
+ * records. This is structural metadata, not broad coverage enforcement: a
+ * component with `modules: []` is valid, and private helpers need no record.
+ */
+export function validateComponentModuleRelationships(
+  root,
+  records,
+  activeAuthorities = ['draft', 'current'],
+) {
+  const problems = [];
+  const recordsById = new Map();
+
+  for (const record of records) {
+    const id = record.document.frontmatter.get('id');
+    if (typeof id !== 'string') continue;
+    const matches = recordsById.get(id) ?? [];
+    matches.push(record);
+    recordsById.set(id, matches);
+  }
+
+  for (const record of records) {
+    const {frontmatter} = record.document;
+    const kind = frontmatter.get('kind');
+    if (kind !== 'component' && kind !== 'module') continue;
+
+    const location = componentRecordLocation(root, record.absolutePath);
+    if (!location) {
+      problems.push(
+        `${record.filePath}: ${kind} records must live under packages/{core,lab}/src/<component-root>/.`,
+      );
+      continue;
+    }
+
+    const publicName = location.publicName;
+    if (kind === 'component') {
+      if (location.kind !== 'component') {
+        problems.push(
+          `${record.filePath}: component records must be direct children of their component root; nested records use kind: module.`,
+        );
+      }
+      const expectedId = `component:${publicName}`;
+      if (frontmatter.get('id') !== expectedId) {
+        problems.push(
+          `${record.filePath}: component record id must be ${expectedId} to match its filename.`,
+        );
+      }
+      if (
+        publicName !== location.componentRoot &&
+        !componentRootDefinesPublicComponent(
+          location.componentRootPath,
+          publicName,
+        )
+      ) {
+        problems.push(
+          `${record.filePath}: flat component record ${expectedId} must match component root ${JSON.stringify(location.componentRoot)} or an exact public component entry in that root's consumer docs.`,
+        );
+      }
+      continue;
+    }
+
+    if (location.kind !== 'module') {
+      problems.push(
+        `${record.filePath}: module records must be nested beneath their component root; direct children are reserved for component records.`,
+      );
+    }
+    const id = frontmatter.get('id');
+    const idMatch = typeof id === 'string' ? MODULE_ID_PATTERN.exec(id) : null;
+    if (!idMatch) continue;
+    const expectedParent = `component:${idMatch[1]}`;
+    if (frontmatter.get('parent_component') !== expectedParent) {
+      problems.push(
+        `${record.filePath}: parent_component must be ${expectedParent} to match module id ${id}.`,
+      );
+    }
+    if (publicName !== idMatch[2]) {
+      problems.push(
+        `${record.filePath}: module filename must be ${idMatch[2]}.spec.md to match id ${id}.`,
       );
     }
   }
 
-  return records.sort();
+  for (const record of records) {
+    if (!activeRecord(record, activeAuthorities)) continue;
+    const {frontmatter} = record.document;
+    const kind = frontmatter.get('kind');
+    const id = frontmatter.get('id');
+    const location = componentRecordLocation(root, record.absolutePath);
+    if (!location || typeof id !== 'string') continue;
+
+    if (kind === 'component') {
+      const modules = frontmatter.get('modules');
+      if (!Array.isArray(modules)) continue;
+      const seen = new Set();
+      for (const moduleId of modules) {
+        if (seen.has(moduleId)) {
+          problems.push(
+            `${record.filePath}: modules contains duplicate reference ${moduleId}.`,
+          );
+          continue;
+        }
+        seen.add(moduleId);
+
+        const targets = recordsById.get(moduleId) ?? [];
+        if (targets.length === 0) {
+          problems.push(
+            `${record.filePath}: modules reference ${moduleId} does not resolve to an active module record.`,
+          );
+          continue;
+        }
+        if (targets.length > 1) continue;
+        const target = targets[0];
+        if (target.document.frontmatter.get('kind') !== 'module') {
+          problems.push(
+            `${record.filePath}: modules reference ${moduleId} must resolve to a module record, not ${target.document.frontmatter.get('kind')}.`,
+          );
+          continue;
+        }
+        if (!activeRecord(target, activeAuthorities)) {
+          problems.push(
+            `${record.filePath}: modules reference ${moduleId} must resolve to an active module record.`,
+          );
+          continue;
+        }
+        if (target.document.frontmatter.get('parent_component') !== id) {
+          problems.push(
+            `${record.filePath}: modules reference ${moduleId}, but that module declares parent_component ${JSON.stringify(target.document.frontmatter.get('parent_component'))}.`,
+          );
+        }
+        const targetLocation = componentRecordLocation(
+          root,
+          target.absolutePath,
+        );
+        if (
+          targetLocation &&
+          path.resolve(targetLocation.componentRootPath) !==
+            path.resolve(location.componentRootPath)
+        ) {
+          problems.push(
+            `${record.filePath}: module ${moduleId} must live in the same component root as its parent record (${target.filePath}).`,
+          );
+        }
+      }
+      continue;
+    }
+
+    if (kind !== 'module') continue;
+    const parentId = frontmatter.get('parent_component');
+    if (typeof parentId !== 'string') continue;
+    const parents = recordsById.get(parentId) ?? [];
+    if (parents.length === 0) {
+      problems.push(
+        `${record.filePath}: parent_component ${parentId} does not resolve to an active component record.`,
+      );
+      continue;
+    }
+    if (parents.length > 1) continue;
+    const parent = parents[0];
+    if (parent.document.frontmatter.get('kind') !== 'component') {
+      problems.push(
+        `${record.filePath}: parent_component ${parentId} must resolve to a component record, not ${parent.document.frontmatter.get('kind')}.`,
+      );
+      continue;
+    }
+    if (!activeRecord(parent, activeAuthorities)) {
+      problems.push(
+        `${record.filePath}: parent_component ${parentId} must resolve to an active component record.`,
+      );
+      continue;
+    }
+
+    const parentLocation = componentRecordLocation(root, parent.absolutePath);
+    if (
+      parentLocation &&
+      path.resolve(parentLocation.componentRootPath) !==
+        path.resolve(location.componentRootPath)
+    ) {
+      problems.push(
+        `${record.filePath}: parent_component ${parentId} must be declared in the same component root (${parent.filePath}).`,
+      );
+    }
+
+    const backlinks = Array.isArray(parent.document.frontmatter.get('modules'))
+      ? parent.document.frontmatter
+          .get('modules')
+          .filter(moduleId => moduleId === id).length
+      : 0;
+    if (backlinks === 0) {
+      problems.push(
+        `${record.filePath}: module ${id} is orphaned; ${parent.filePath} must list it in modules.`,
+      );
+    } else if (backlinks > 1) {
+      problems.push(
+        `${record.filePath}: module ${id} is listed more than once by ${parent.filePath}.`,
+      );
+    }
+  }
+
+  return problems;
 }
 
 export function parseAnatomyThemingBlock(
@@ -538,6 +822,71 @@ function loadComponentContract(root, specPath, componentName) {
   }
   return {
     problem: `${path.relative(root, specPath)}: no component doc for ${componentName}.`,
+  };
+}
+
+function loadModuleContract(root, specPath, moduleName) {
+  const location = componentRecordLocation(root, specPath);
+  if (!location) {
+    return {
+      problem: `${path.relative(root, specPath)}: module record is outside a component root.`,
+    };
+  }
+
+  const candidates = [];
+  for (const docPath of matchingFilesRecursively(
+    location.componentRootPath,
+    name => name.endsWith('.doc.mjs'),
+    {skipDirectory: isIgnoredComponentKnowledgeSegment},
+  )) {
+    let mod;
+    try {
+      mod = require(docPath);
+    } catch (error) {
+      return {
+        problem: `${path.relative(root, docPath)}: could not load component doc (${error.message}).`,
+      };
+    }
+    const doc = mod.docs ?? mod.default;
+    if (!doc) continue;
+    if (doc.name?.replace(/^XDS/, '') === moduleName) {
+      candidates.push({docPath, doc});
+    }
+    for (const entry of doc.components ?? []) {
+      if (
+        entry?.name?.replace(/^XDS/, '') === moduleName &&
+        isFullConsumerDocEntry(entry)
+      ) {
+        candidates.push({docPath, doc: entry});
+      }
+    }
+  }
+
+  if (candidates.length === 0) {
+    return {
+      problem: `${path.relative(root, specPath)}: no exact consumer doc entry for module ${moduleName}.`,
+    };
+  }
+  if (candidates.length > 1) {
+    return {
+      problem: `${path.relative(root, specPath)}: module ${moduleName} has multiple consumer doc entries (${candidates.map(candidate => path.relative(root, candidate.docPath)).join(', ')}).`,
+    };
+  }
+
+  const [{docPath, doc}] = candidates;
+  if (!Array.isArray(doc.usage?.anatomy)) {
+    return {
+      problem: `${path.relative(root, docPath)}: ${moduleName} has no canonical English usage.anatomy; module records never inherit parent aggregate anatomy.`,
+    };
+  }
+  const targets = (doc.theming?.targets ?? [])
+    .filter(target => target.deprecatedFor == null)
+    .map(target => target.className.replace(/^astryx-/, ''));
+  return {
+    contract: {
+      anatomy: doc.usage.anatomy.map(part => part.name),
+      targets,
+    },
   };
 }
 
@@ -926,17 +1275,21 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
         `${filePath}: active ${kind} records must use latest schema_version ${latestKindVersion} for that kind.`,
       );
     }
-    if (document.frontmatter.get('kind') === 'component') {
+    if (kind === 'component' || kind === 'module') {
       const parsed = parseAnatomyThemingBlock(content, filePath);
       problems.push(...parsed.problems);
       if (parsed.mapping != null) {
         if (isActiveRecord) {
           delegations.push(...collectDelegations(parsed.mapping, filePath));
         }
-        const componentName = String(document.frontmatter.get('id') ?? '')
-          .replace(/^component:/, '')
-          .replace(/\/.*$/, '');
-        const loaded = loadComponentContract(root, absolutePath, componentName);
+        const recordName = String(document.frontmatter.get('id') ?? '')
+          .replace(/^(?:component|module):/, '')
+          .split('/')
+          .at(-1);
+        const loaded =
+          kind === 'module'
+            ? loadModuleContract(root, absolutePath, recordName)
+            : loadComponentContract(root, absolutePath, recordName);
         if (loaded.problem) {
           problems.push(loaded.problem);
         } else {
@@ -963,8 +1316,16 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
         });
       }
     }
-    records.push({filePath, document});
+    records.push({filePath, absolutePath, document});
   }
+
+  problems.push(
+    ...validateComponentModuleRelationships(
+      root,
+      records,
+      schema.activeAuthorities,
+    ),
+  );
 
   if (delegations.length > 0) {
     const activeFamilies = new Map();

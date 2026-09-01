@@ -80,8 +80,25 @@ Use callback scope only when the verb could refer to more than one part. Use an
 `html` prefix only for a native attribute that passes through unchanged, such as
 `htmlName`. Keep the clearer semantic name when the component owns the concept.
 
-String values use `camelCase`. A prop should control one independent concept.
-Do not combine unrelated states into one convenience mode.
+String values use `camelCase`. A public input has one stable semantic
+responsibility across its full value domain and every accepted input shape. Its
+name and type disclose the caller-owned meaning.
+
+One semantic input may derive several visual details when they form one cohesive,
+named outcome. For example, a semantic `status` or `variant` may own both tone and
+a signifier. This is not an overloaded input.
+
+Reject a property when its value or input shape changes which axis it controls, or
+when consumers need implementation knowledge to predict which axes it controls.
+If two axes are independently caller-owned, represent them with separate inputs
+and prevent conflicting combinations. If the system owns their coordination,
+expose the semantic concept and derive the details instead of naming the input
+after one mechanism such as `color`.
+
+Parallel inputs must not create hidden conditional precedence. An override is
+valid only when its name, type, and behavior across every combination form an
+explicit coherent contract, with invalid or conflicting states prevented under
+[FR15](../specs/AST-002/spec.md#requirements).
 
 ## Callbacks and Actions
 
@@ -247,11 +264,17 @@ For a claimed API addition or semantic change, review has two stages:
    readable semantic before → after or does not update or add the canonical
    owning record. Component-local semantics update the component spec;
    family-, architecture-, or system-owned semantics update that owner instead.
-   Also reject a public choice the component can derive or a parallel
-   public/package-internal operation for the same semantic action. Within one
-   module, keep one canonical operation name; the package-internal form may accept
-   wider semantic options than the public contract. Another operation requires a
-   genuinely distinct caller-owned intent and contract.
+   Also reject a public choice the component can derive, a public input whose
+   controlled axis changes by value or input shape, hidden conditional precedence
+   between parallel inputs, or a parallel public/package-internal operation for
+   the same semantic action. A cohesive semantic status or variant may derive
+   several visual details; it is rejected only when its public meaning is unstable
+   or undisclosed. Within one module, keep one canonical operation name; the
+   package-internal form may accept wider semantic options than the public
+   contract. Another operation requires a genuinely distinct caller-owned intent
+   and contract. These current AST-002 rules apply even when the canonical owner
+   is draft or missing; only rejection because that owner lacks `current`
+   authority remains deferred under staged coverage.
 2. **Owner judgment.** For a surviving `novel-human` change, present the semantic
    delta to the linked owner. The gate does not choose the API. The owner accepts,
    rejects, or refines the meaning and the ruling is recorded in the canonical
@@ -260,7 +283,10 @@ For a claimed API addition or semantic change, review has two stages:
 ### Staged contract coverage
 
 Semantic contract coverage is still incomplete, so the review path must not turn
-missing `current` authority on the canonical owner into a dead end:
+missing `current` authority on the canonical owner into a dead end. This staged
+exception applies only to authority coverage; it does not defer rejection under
+current cross-component rules, including the overloaded-input and hidden-
+precedence rule above:
 
 1. The contributor or maintainer puts the one-sentence semantic delta in the pull
    request, identifies the canonical owner by scope, and updates or adds that
@@ -311,6 +337,13 @@ Before requesting review:
   different outcomes, why the caller knows the difference, and why the component
   cannot derive it. This is the admission rule in
   [AST-002](../specs/AST-002/spec.md#dec-1--public-props-require-a-non-derivable-caller-distinction).
+- **Keep each input's responsibility stable.** Walk the full value domain, every
+  accepted input shape, and every combination with parallel inputs. The name and
+  type must disclose one caller-owned meaning. A semantic status or variant may
+  derive a cohesive set of visual details; reject values or shapes that switch
+  the controlled axis, and reject hidden conditional precedence. Represent
+  independently caller-owned axes separately and prevent invalid or conflicting
+  combinations under FR15.
 - **Update the semantic owner.** Update or add the canonical owning record.
   Component-local concepts belong in the component spec; shared family,
   architecture, or system concepts belong in that owner. Record inputs, options,
@@ -347,6 +380,10 @@ out of architecture records.
   reviewers must infer meaning from implementation or syntax.
 - One module gives the same semantic action separate public and package-internal
   operation names because an internal caller needs wider options.
+- A public input controls one axis for some values or shapes and additional axes
+  for others, so consumers must know implementation branches to predict output.
+- Parallel inputs create a conditional override without an explicit contract for
+  every combination or prevention of conflicting states.
 - A prop exposes a value the component can derive from state, content, layout,
   context, or the platform.
 - A high-level component accumulates tuning props or duplicates a child's state.

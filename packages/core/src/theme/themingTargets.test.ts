@@ -33,7 +33,7 @@
 
 import {describe, it, expect} from 'vitest';
 import {readdirSync, readFileSync} from 'node:fs';
-import {join, relative} from 'node:path';
+import {basename, join, relative} from 'node:path';
 import ts from 'typescript';
 import {stableClassName} from '../naming';
 
@@ -377,17 +377,42 @@ function docFilesDocumenting(
   return matches;
 }
 
+/**
+ * Every directory under `srcDir`, at any depth, relative to `srcDir`.
+ *
+ * Not just the top level: a component's sources are not always its own direct
+ * children — Table's plugins render from `Table/plugins/<name>/`. Scanning only
+ * the top level exempted every one of those from this guard, which is the same
+ * silent-exemption shape #3741 was filed about.
+ *
+ * Takes `srcDir` rather than closing over a module constant so it serves both
+ * packages, which is what the Lab enrollment above needs.
+ */
+function sourceDirs(srcDir: string): string[] {
+  const out: string[] = [];
+  const walk = (rel: string): void => {
+    for (const entry of readdirSync(join(srcDir, rel), {
+      withFileTypes: true,
+    })) {
+      if (entry.isDirectory()) {
+        const child = rel === '' ? entry.name : join(rel, entry.name);
+        out.push(child);
+        walk(child);
+      }
+    }
+  };
+  walk('');
+  return out;
+}
+
 function discoverComponents(
   srcDir: string,
   packageName: ComponentInfo['packageName'],
   requiredDirs: ReadonlySet<string> = new Set(),
 ): ComponentInfo[] {
   const results: ComponentInfo[] = [];
-  const dirs = readdirSync(srcDir, {withFileTypes: true})
-    .filter(d => d.isDirectory())
-    .map(d => d.name);
 
-  for (const dir of dirs) {
+  for (const dir of sourceDirs(srcDir)) {
     const dirPath = join(srcDir, dir);
     const dirEntries = readdirSync(dirPath);
 
@@ -418,9 +443,16 @@ function discoverComponents(
     // Both paths match the on-disk listing rather than existsSync: on
     // case-insensitive filesystems existsSync would match a differently-cased
     // doc file that CI never checks. (Same guard as derivedVarRegistry.test.ts.)
-    const docFiles = dirEntries.includes(`${dir}.doc.mjs`)
-      ? [join(dirPath, `${dir}.doc.mjs`)]
+    // `basename`, not `dir`: a nested source dir is a path
+    // (`Table/plugins/foo`), and its own doc file is named for the last
+    // segment.
+    const ownDoc = `${basename(dir)}.doc.mjs`;
+    const docFiles = dirEntries.includes(ownDoc)
+      ? [join(dirPath, ownDoc)]
       : docFilesDocumenting(srcDir, new Set(sites.map(s => s.className)));
+    if (docFiles.length === 0) {
+      continue;
+    }
 
     const docBlocks: ComponentInfo['docBlocks'] = [];
     for (const docFile of docFiles) {
