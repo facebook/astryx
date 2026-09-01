@@ -2440,42 +2440,102 @@ describe('Selector', () => {
     });
   });
   describe('isReadOnly', () => {
-    it('stays focusable and exposes read-only combobox semantics without menu affordances', async () => {
-      const user = userEvent.setup();
-      const {container} = render(
-        <Selector
-          label="Fruit"
-          options={OPTIONS}
-          value="Banana"
-          onChange={() => {}}
-          hasClear
-          hasSearch
-          isDefaultOpen
-          isReadOnly
-        />,
-      );
+    const readOnlyCases = [
+      {presentation: 'popover', hasSearch: false},
+      {presentation: 'popover', hasSearch: true},
+      {presentation: 'bottom-sheet', hasSearch: false},
+      {presentation: 'bottom-sheet', hasSearch: true},
+      {presentation: 'adaptive', hasSearch: false},
+      {presentation: 'adaptive', hasSearch: true},
+    ] as const;
 
-      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
-      expect(trigger).not.toBeDisabled();
-      expect(trigger).toHaveAttribute('aria-readonly', 'true');
-      expect(trigger).toHaveAttribute('aria-expanded', 'false');
-      expect(trigger).not.toHaveAttribute('aria-controls');
-      expect(trigger).not.toHaveAttribute('aria-haspopup');
-      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', {name: 'Clear Fruit'}),
-      ).not.toBeInTheDocument();
-      expect(
-        container.querySelector('.astryx-selector-indicator-icon'),
-      ).toBeNull();
-      expect(container.querySelector('.astryx-selector')).toHaveAttribute(
-        'data-readonly',
-        'readonly',
-      );
+    const sheetTransitionCases = [
+      {presentation: 'bottom-sheet', hasSearch: false},
+      {presentation: 'bottom-sheet', hasSearch: true},
+      {presentation: 'adaptive', hasSearch: false},
+      {presentation: 'adaptive', hasSearch: true},
+    ] as const;
 
-      await user.tab();
-      expect(trigger).toHaveFocus();
-    });
+    const disabledPrecedenceCases = (
+      ['popover', 'bottom-sheet', 'adaptive'] as const
+    ).flatMap(presentation =>
+      [false, true].flatMap(hasSearch =>
+        [false, true].map(hasDisabledMessage => ({
+          presentation,
+          hasSearch,
+          hasDisabledMessage,
+        })),
+      ),
+    );
+
+    function stubCompactTouch(presentation: 'bottom-sheet' | 'adaptive') {
+      if (presentation !== 'adaptive') {
+        return;
+      }
+      vi.mocked(matchMedia).mockImplementation(
+        (query: string) =>
+          ({
+            matches: query === '(max-width: 768px) and (pointer: coarse)',
+            media: query,
+            onchange: null,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+          }) as MediaQueryList,
+      );
+    }
+
+    it.each(readOnlyCases)(
+      'uses a read-only text field with no popup semantics ($presentation, search=$hasSearch)',
+      async ({presentation, hasSearch}) => {
+        const user = userEvent.setup();
+        const {container} = render(
+          <form>
+            <Selector
+              label="Fruit"
+              htmlName="fruit"
+              options={OPTIONS}
+              value="Banana"
+              onChange={() => {}}
+              hasClear
+              hasSearch={hasSearch}
+              presentation={presentation}
+              isDefaultOpen
+              isReadOnly
+            />
+          </form>,
+        );
+
+        const trigger = screen.getByRole('textbox', {name: 'Fruit'});
+        expect(trigger.tagName).toBe('DIV');
+        expect(trigger).toHaveTextContent('Banana');
+        expect(trigger).toHaveAttribute('aria-readonly', 'true');
+        expect(trigger).not.toHaveAttribute('aria-expanded');
+        expect(trigger).not.toHaveAttribute('aria-controls');
+        expect(trigger).not.toHaveAttribute('aria-haspopup');
+        expect(screen.queryByRole('combobox', h)).not.toBeInTheDocument();
+        expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', h)).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole('button', {name: 'Clear Fruit'}),
+        ).not.toBeInTheDocument();
+        expect(
+          container.querySelector('.astryx-selector-indicator-icon'),
+        ).toBeNull();
+        expect(container.querySelector('.astryx-selector')).toHaveAttribute(
+          'data-readonly',
+          'readonly',
+        );
+        expect(
+          new FormData(container.querySelector('form')!).get('fruit'),
+        ).toBe('Banana');
+
+        await user.tab();
+        expect(trigger).toHaveFocus();
+      },
+    );
 
     it('keeps loading feedback while blocking the selection surface', async () => {
       const user = userEvent.setup();
@@ -2489,13 +2549,11 @@ describe('Selector', () => {
         />,
       );
 
-      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
-      expect(trigger).not.toBeDisabled();
+      const trigger = screen.getByRole('textbox', {name: 'Fruit'});
       expect(trigger).toHaveAttribute('aria-busy', 'true');
       expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
 
       await user.click(trigger);
-      expect(trigger).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
     });
 
@@ -2514,75 +2572,163 @@ describe('Selector', () => {
         />,
       );
 
-      const trigger = screen.getByRole('combobox');
+      const trigger = screen.getByRole('textbox');
       await user.click(trigger);
       trigger.focus();
       await user.keyboard('{Enter}{ArrowDown}c{Backspace}');
 
-      expect(trigger).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
       expect(onChange).not.toHaveBeenCalled();
       expect(changeAction).not.toHaveBeenCalled();
     });
 
-    it('removes an open selection surface when it becomes read-only', async () => {
-      const user = userEvent.setup();
-      const {rerender} = render(
-        <Selector label="Fruit" options={OPTIONS} value="Apple" />,
-      );
-      await user.click(screen.getByRole('combobox'));
-      expect(screen.getByRole('listbox', h)).toBeInTheDocument();
-
-      rerender(
-        <Selector label="Fruit" options={OPTIONS} value="Apple" isReadOnly />,
-      );
-
-      expect(screen.getByRole('combobox')).toHaveAttribute(
-        'aria-expanded',
-        'false',
-      );
-      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
-
-      rerender(<Selector label="Fruit" options={OPTIONS} value="Apple" />);
-      expect(screen.getByRole('combobox')).toHaveAttribute(
-        'aria-expanded',
-        'false',
-      );
-    });
-
-    it('submits its value while letting disabled take precedence', () => {
-      const {container, rerender} = render(
-        <form>
+    it.each([false, true])(
+      'restores popover focus when an open selector becomes read-only (search=%s)',
+      async hasSearch => {
+        const user = userEvent.setup();
+        const selector = (isReadOnly: boolean) => (
           <Selector
             label="Fruit"
-            htmlName="fruit"
             options={OPTIONS}
-            value="Banana"
-            isReadOnly
+            value="Apple"
+            hasSearch={hasSearch}
+            isReadOnly={isReadOnly}
           />
-        </form>,
-      );
-      expect(new FormData(container.querySelector('form')!).get('fruit')).toBe(
-        'Banana',
-      );
+        );
+        const {rerender} = render(selector(false));
+        const editableTrigger = screen.getByRole(
+          hasSearch ? 'button' : 'combobox',
+          {name: 'Fruit'},
+        );
+        await user.click(editableTrigger);
+        if (hasSearch) {
+          await waitFor(() =>
+            expect(screen.getByRole('combobox', h)).toHaveFocus(),
+          );
+        }
 
-      rerender(
-        <form>
+        rerender(selector(true));
+
+        const readOnlyTrigger = screen.getByRole('textbox', {name: 'Fruit'});
+        await waitFor(() => expect(readOnlyTrigger).toHaveFocus());
+        expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+      },
+    );
+
+    it.each(sheetTransitionCases)(
+      'finishes $presentation close and restores focus when read-only changes (search=$hasSearch)',
+      async ({presentation, hasSearch}) => {
+        stubCompactTouch(presentation);
+        const user = userEvent.setup();
+        const selector = (isReadOnly: boolean) => (
           <Selector
             label="Fruit"
-            htmlName="fruit"
             options={OPTIONS}
-            value="Banana"
-            isReadOnly
-            isDisabled
+            value="Apple"
+            hasSearch={hasSearch}
+            presentation={presentation}
+            isReadOnly={isReadOnly}
           />
-        </form>,
-      );
-      expect(screen.getByRole('combobox')).toBeDisabled();
-      expect([
-        ...new FormData(container.querySelector('form')!).keys(),
-      ]).toEqual([]);
-    });
+        );
+        const {rerender} = render(selector(false));
+        const editableTrigger = screen.getByRole(
+          hasSearch ? 'button' : 'combobox',
+          {name: 'Fruit'},
+        );
+        await user.click(editableTrigger);
+        const dialog = await screen.findByRole('dialog', {name: 'Fruit'});
+        const panel = dialog.querySelector<HTMLElement>('.astryx-bottom-sheet');
+        expect(panel).not.toBeNull();
+        await waitFor(() =>
+          expect(
+            hasSearch
+              ? screen.getByRole('combobox', h)
+              : screen.getByRole('listbox'),
+          ).toHaveFocus(),
+        );
+
+        rerender(selector(true));
+
+        await waitFor(() => expect(dialog).toHaveAttribute('inert'));
+        fireEvent.transitionEnd(panel!, {propertyName: 'transform'});
+        const readOnlyTrigger = screen.getByRole('textbox', {name: 'Fruit'});
+        await waitFor(() => expect(readOnlyTrigger).toHaveFocus());
+        expect(screen.queryByRole('dialog', h)).not.toBeInTheDocument();
+        expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
+      },
+    );
+
+    it.each(disabledPrecedenceCases)(
+      'matches disabled-only semantics for $presentation (search=$hasSearch, reason=$hasDisabledMessage)',
+      async ({presentation, hasSearch, hasDisabledMessage}) => {
+        if (presentation === 'adaptive') {
+          stubCompactTouch(presentation);
+        }
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        const selector = (isReadOnly: boolean) => (
+          <form>
+            <Selector
+              label="Fruit"
+              htmlName="fruit"
+              options={OPTIONS}
+              value="Banana"
+              onChange={onChange}
+              hasClear
+              hasSearch={hasSearch}
+              presentation={presentation}
+              isDisabled
+              isReadOnly={isReadOnly}
+              disabledMessage={
+                hasDisabledMessage ? 'Locked by policy' : undefined
+              }
+            />
+          </form>
+        );
+        const {container, rerender} = render(selector(false));
+        const getTrigger = () =>
+          screen.getByRole(hasSearch ? 'button' : 'combobox', {name: 'Fruit'});
+        const snapshot = () => {
+          const trigger = getTrigger();
+          const root = container.querySelector('.astryx-selector');
+          return {
+            tagName: trigger.tagName,
+            role: trigger.getAttribute('role'),
+            hasPopup: trigger.getAttribute('aria-haspopup'),
+            expanded: trigger.getAttribute('aria-expanded'),
+            controls: trigger.getAttribute('aria-controls'),
+            readOnly: trigger.getAttribute('aria-readonly'),
+            disabled: trigger.matches(':disabled'),
+            ariaDisabled: trigger.getAttribute('aria-disabled'),
+            tabIndex: trigger.tabIndex,
+            rootClassName: root?.className,
+            rootDisabled: root?.getAttribute('data-disabled'),
+            rootReadOnly: root?.getAttribute('data-readonly'),
+            hasIndicator:
+              root?.querySelector('.astryx-selector-indicator-icon') != null,
+            listboxes: screen.queryAllByRole('listbox', h).length,
+            dialogs: screen.queryAllByRole('dialog', h).length,
+            formEntries: [
+              ...new FormData(container.querySelector('form')!).entries(),
+            ],
+          };
+        };
+        const disabledOnly = snapshot();
+
+        rerender(selector(true));
+
+        expect(snapshot()).toEqual(disabledOnly);
+        expect(disabledOnly.rootDisabled).toBe('disabled');
+        expect(disabledOnly.rootReadOnly).toBeNull();
+        expect(disabledOnly.readOnly).toBeNull();
+        expect(disabledOnly.formEntries).toEqual([]);
+        const trigger = getTrigger();
+        await user.click(trigger);
+        trigger.focus();
+        await user.keyboard('{Enter}{ArrowDown}c{Backspace}');
+        expect(onChange).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('form participation', () => {

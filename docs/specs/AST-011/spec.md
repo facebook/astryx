@@ -44,11 +44,12 @@ change the value.
   indicator MUST NOT render while read-only. Status and busy presentation remain
   independent because they describe the preserved value rather than an available
   edit.
-- **FR4 — Accessibility matches behavior.** The focusable trigger MUST expose the
-  selected-value control as read-only through `aria-readonly="true"`, remain
-  collapsed, and MUST NOT claim an active controlled selection surface. A
-  search-enabled selector still exposes the closed trigger as the read-only
-  combobox because no search control is available.
+- **FR4 — Accessibility matches behavior.** The focusable read-only value MUST
+  use text-field semantics that expose its rendered text and read-only state. It
+  MUST NOT use `combobox` semantics or expose `aria-expanded`, `aria-haspopup`,
+  `aria-controls`, or another relationship to a selection surface that does not
+  exist. Search-enabled and non-search selectors use the same read-only semantics
+  because neither exposes a search or selection surface in this state.
 - **FR5 — Disabled takes precedence.** When `isDisabled` and `isReadOnly` are both
   true, disabled focus, interaction, appearance, accessibility, and form-submission
   behavior win.
@@ -63,10 +64,13 @@ change the value.
 
 - Supported feature/engine floor: every browser and assistive-technology
   combination supported by Astryx Core.
-- Unsupported behavior: none; unsupported native `readonly` on a button does not
-  permit omitting the ARIA state or interaction guards.
-- Browser evidence: real Chromium verifies focus order, accessibility state,
-  absent popup/clear/disclosure affordances, and unchanged full-opacity paint.
+- Platform constraint: `combobox` has an implicit `aria-haspopup="listbox"`.
+  Chromium preserves that accessibility-tree popup even when the DOM omits
+  `aria-haspopup` or sets it to `false`, so a combobox cannot truthfully represent
+  a read-only value with no popup.
+- Browser evidence: a focusable `role="textbox"` element with
+  `aria-readonly="true"` exposes both the rendered text as its value and the
+  read-only state in Chromium, without popup semantics.
 
 ## Current-state impact
 
@@ -89,7 +93,7 @@ change the value.
 | -------- | --------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
 | FR1, FR5 | Focus, callback, and form-participation tests       | read-only; disabled; both; single and multiple values        | A read-only value changes, leaves the tab order, fails to submit, dims, or overrides disabled behavior |
 | FR2, FR3 | Pointer/keyboard/typeahead and DOM affordance tests | popover, bottom sheet, adaptive, search, clear, default-open | A read-only trigger opens or renders a surface, clears a value, or displays a disclosure indicator     |
-| FR4      | DOM and real-browser accessibility inspection       | search and non-search triggers; standalone and InputGroup    | The trigger lacks read-only state, claims expansion/control, or exposes no read-only combobox          |
+| FR4      | DOM and real-browser accessibility inspection       | search and non-search triggers; standalone and InputGroup    | The value lacks text-field/read-only state or claims expansion, popup, or control semantics            |
 | IR1, IR2 | Theme-state and rendered-style tests                | input and ghost variants                                     | The root omits `data-readonly`, gains disabled opacity, or keeps interactive hover/pressed cues        |
 
 ## Decision log
@@ -101,8 +105,16 @@ change the value.
 
 Selector and MultiSelector accept `isReadOnly` when the caller owns a value that
 must remain visible and submitted but cannot be changed. Read-only controls stay
-focusable and expose their state to assistive technology, while selection and
-editing affordances are absent.
+focusable and expose their rendered content as the value of a read-only text
+field, while selection and editing affordances are absent. Editable controls keep
+their existing button/combobox semantics.
+
+The read-only element uses `role="textbox"` rather than `combobox`: ARIA gives
+`combobox` an implicit listbox popup, which would advertise a surface that does
+not exist. A native input was rejected because it cannot preserve Selector's
+custom `renderValue` content or MultiSelector's badge display. A focusable ARIA
+textbox preserves those renderings while Chromium exposes both their text value
+and read-only state.
 
 Rejected: mapping this state to `isDisabled`, because disabled values are dimmed,
 removed from the tab order by default, and excluded from form submission.

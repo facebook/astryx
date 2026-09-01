@@ -12,7 +12,7 @@ const anatomy = [
     name: 'Trigger',
     required: true,
     description:
-      'Painted control that displays the current selection or placeholder and opens the selection surface.',
+      'Painted control that displays the current selection or placeholder and opens the selection surface when editable.',
   },
   {
     name: 'Icon-rendered start icon',
@@ -254,7 +254,7 @@ export const docs = {
       name: 'isReadOnly',
       type: 'boolean',
       description:
-        'Makes the selector read-only: the selected value stays visible, focusable, and included in form submission, but the selection surface, clear action, and disclosure indicator are removed. Unlike isDisabled, the control is not dimmed. isDisabled takes precedence when both are set.',
+        'Makes the selector read-only: the selected value stays visible, focusable, and included in form submission, and is exposed to assistive technology as a read-only text field. The selection surface, clear action, and disclosure indicator are removed. Unlike isDisabled, the control is not dimmed. isDisabled takes precedence when both are set.',
       default: 'false',
     },
     {

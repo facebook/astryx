@@ -75,6 +75,7 @@ export const ReadOnly: Story = {
     onChange: () => {},
     hasClear: true,
     hasSearch: true,
+    htmlName: 'teams',
     triggerDisplay: 'labels',
     isReadOnly: true,
   },

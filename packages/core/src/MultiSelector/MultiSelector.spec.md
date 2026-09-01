@@ -143,10 +143,12 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
 ## Accessibility contract
 
 Existing field, combobox, listbox, checkbox, live-region, focus, and dismissal
-behavior remains unchanged when editable. A read-only trigger stays focusable,
-exposes `aria-readonly="true"`, remains collapsed, and does not claim or render an
-active selection surface. In search mode the trigger itself owns the read-only
-combobox role because no search input is available.
+behavior remains unchanged when editable. A read-only value stays focusable and
+uses `role="textbox"` with `aria-readonly="true"`, so its rendered text is
+exposed without the implicit listbox popup carried by `combobox`. It does not
+expose `aria-expanded`, `aria-haspopup`, `aria-controls`, or an active selection
+surface. Search and non-search modes use the same read-only semantics because
+neither exposes a search control in this state.
 
 ## Design relationships
 

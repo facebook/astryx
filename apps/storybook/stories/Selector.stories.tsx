@@ -150,6 +150,7 @@ export const ReadOnly: Story = {
     onChange: () => {},
     hasClear: true,
     hasSearch: true,
+    htmlName: 'owner',
     isReadOnly: true,
   },
 };

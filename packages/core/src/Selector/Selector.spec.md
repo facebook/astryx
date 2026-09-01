@@ -110,7 +110,8 @@ These requirements describe shipped behavior on current `main`.
   while Selector keeps row role, selection, disabled state, navigation, and
   theming state.
 - **AV3 — Selected value content.** `renderValue` may replace the closed value
-  display without changing the placeholder or trigger's selection role.
+  display without changing the placeholder, editable combobox semantics, or
+  read-only text-field semantics.
 
 ### Representative states
 
@@ -157,10 +158,12 @@ These requirements describe shipped behavior on current `main`.
 - **AR3 — Keyboard selection matches the visible set.** Arrow, Home/End,
   typeahead, search, Enter, Escape, and Tab behavior operate on the options a
   person can currently perceive.
-- **AR4 — Read-only semantics match availability.** A read-only trigger stays
-  focusable, exposes `aria-readonly="true"`, remains collapsed, and does not claim
-  or render an active selection surface. In search mode the trigger itself owns
-  the read-only combobox role because no search input is available.
+- **AR4 — Read-only semantics match availability.** A read-only value stays
+  focusable and uses `role="textbox"` with `aria-readonly="true"`, so its rendered
+  text is exposed without the implicit listbox popup carried by `combobox`. It
+  does not expose `aria-expanded`, `aria-haspopup`, `aria-controls`, or an active
+  selection surface. Search and non-search modes use the same read-only
+  semantics because neither exposes a search control in this state.
 
 ## Design relationships
 
