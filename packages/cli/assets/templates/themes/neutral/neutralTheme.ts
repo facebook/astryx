@@ -486,6 +486,28 @@ export const neutralTheme = defineTheme({
       'variant:error': {backgroundColor: statusFill.error},
     },
 
+    // Give the Neutral segmented control a roomier inset without changing its
+    // outside height. The selected item stays flat against the tinted track.
+    'segmented-control': {
+      base: {
+        padding: 'var(--spacing-1)',
+      },
+    },
+    'segmented-control-item': {
+      'size:sm': {
+        height: 'calc(var(--size-element-sm) - 8px)',
+      },
+      'size:md': {
+        height: 'calc(var(--size-element-md) - 8px)',
+      },
+      'size:lg': {
+        height: 'calc(var(--size-element-lg) - 8px)',
+      },
+      selected: {
+        boxShadow: 'none',
+      },
+    },
+
     banner: {
       base: {
         '--color-neutral': 'var(--astryx-theme-neutral-color-on-tint-neutral)',
