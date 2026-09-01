@@ -45,7 +45,6 @@ import {BottomSheet, BottomSheetSwitcher} from '../BottomSheet';
 import {Button} from '../Button';
 import {
   Field,
-  InputClearButton,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
@@ -53,18 +52,20 @@ import {
 } from '../Field';
 import {Heading} from '../Heading';
 import {Icon, renderIconSlot} from '../Icon';
+import {IconButton} from '../IconButton';
 import {List, ListItem} from '../List';
 import {RadioList, RadioListItem} from '../RadioList';
 import {Text} from '../Text';
 import {TextInput} from '../TextInput';
 import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useTooltip} from '../Tooltip';
-import {useTranslator} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 import {
   colorVars,
-  radiusVars,
   sizeVars,
   spacingVars,
   typeScaleVars,
@@ -73,6 +74,7 @@ import {
 import {isImeKeyEvent, isRenderable, mergeProps} from '../utils';
 import {rtlStyles} from '../utils/rtlStyles';
 import {themeProps} from '../utils/themeProps';
+import {formatFilterValue} from './formatFilterValue';
 import {PowerSearchTouchValueEditor} from './PowerSearchTouchValueEditor';
 import {PowerSearchToken} from './PowerSearchToken';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
@@ -112,12 +114,6 @@ const sizeStyles = stylex.create({
   },
 });
 
-const triggerVisualSizeStyles = stylex.create({
-  sm: {height: `calc(${sizeVars['--size-element-sm']} - 8px)`},
-  md: {height: `calc(${sizeVars['--size-element-md']} - 8px)`},
-  lg: {height: `calc(${sizeVars['--size-element-lg']} - 8px)`},
-});
-
 const styles = stylex.create({
   // Mirrors Tokenizer's wrapper so the tap target is visually the same field
   // the desktop variant renders, down to the concentric token inset.
@@ -147,65 +143,37 @@ const styles = stylex.create({
   startIconWithTokens: {
     marginInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
   },
-  contentInput: {
+  // The only tab stop in the touch field. It stays visually borderless while
+  // the wrapper delegates taps from tokens and empty space to it.
+  trigger: {
     appearance: 'none',
-    flex: '1 1 80px',
-    minWidth: '60px',
+    flex: '1 1 40px',
+    minWidth: '40px',
     minHeight: spacingVars['--spacing-11'],
+    display: 'flex',
+    alignItems: 'center',
     paddingBlock: 0,
     paddingInline: spacingVars['--spacing-1'],
     margin: 0,
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
-    color: colorVars['--color-text-primary'],
+    color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-family-body'],
-    fontSize: {
-      default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
-    },
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-    outline: 'none',
-    cursor: {
-      default: 'text',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
-    },
-    '::placeholder': {
-      color: colorVars['--color-text-secondary'],
-    },
-  },
-  // The button keeps a 44px touch target while the visible treatment matches
-  // the surrounding capsules in type size and height.
-  trigger: {
-    appearance: 'none',
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    minHeight: spacingVars['--spacing-11'],
-    paddingBlock: 0,
-    paddingInline: 0,
-    margin: 0,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    color: colorVars['--color-text-accent'],
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
     textAlign: 'start',
     whiteSpace: 'nowrap',
-    cursor: {default: 'pointer', ':disabled': 'not-allowed'},
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
   },
-  triggerVisual: {
-    display: 'inline-flex',
+  rowActions: {
+    display: 'flex',
     alignItems: 'center',
-    paddingInline: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-inner'],
-    backgroundColor: colorVars['--color-accent-muted'],
-    whiteSpace: 'nowrap',
-  },
-  triggerReadOnly: {
-    cursor: 'default',
+    gap: spacingVars['--spacing-1'],
   },
   endSection: {
     display: 'flex',
@@ -301,7 +269,7 @@ const styles = stylex.create({
 // Draft state
 // =============================================================================
 
-type SheetStep = 'fields' | 'value';
+type SheetStep = 'manage' | 'fields' | 'value';
 
 interface FilterDraft {
   readonly mode: 'create' | 'edit';
@@ -400,16 +368,13 @@ const DEFAULT_MAX_SEARCH_RESULTS = 10;
 // =============================================================================
 
 /**
- * Private coarse-pointer surface for PowerSearch. Active filters stay in the
- * field as tokens, followed by an “Add filters…” button. A bottom sheet builds
- * or edits one filter at a time.
+ * Private coarse-pointer surface for PowerSearch. The outer field keeps active
+ * filters as display-only capsules and acts as one sheet trigger. The first sheet
+ * centralizes content search plus add, edit, clear, and per-filter removal.
  *
- * Tapping Add filters opens a pinned-tall sheet listing the available fields.
- * Choosing one opens its value editor; fields with multiple operators show the
- * operators as radio options in that same sheet. Tapping a token reopens that
- * filter's editor, where the divider-free footer can save or remove it. When
- * contentSearchFieldKey names a string field, the outer field also keeps a
- * direct search input whose keyboard Search/Enter action adds that filter.
+ * Each selected-filter row opens its value editor, while a separate remove
+ * button leaves the management sheet open. Add filter drills into the field
+ * picker and then the existing value editor. Save always returns to management.
  */
 export function PowerSearchTouchSurface({
   config: configProp,
@@ -447,14 +412,15 @@ export function PowerSearchTouchSurface({
   const size = useSize(sizeProp, 'md');
   const config = useInternalConfig(configProp);
   const t = useTranslator();
+  const locale = useLocale();
 
   const label = labelFromProps ?? t('@astryx.powersearch.label');
   const placeholder =
     placeholderFromProps ?? t('@astryx.powersearch.placeholder');
   const saveButtonLabel =
     saveButtonLabelFromProps ?? t('@astryx.powersearch.mobile.save');
-  const addFilterLabel = t('@astryx.powersearch.mobile.addFilter');
   const addFilterTitle = t('@astryx.powersearch.mobile.addFilterTitle');
+  const manageFiltersTitle = t('@astryx.powersearch.mobile.manageFiltersTitle');
   const announce = useAnnounce();
 
   const contentSearchFieldKey = config.config.contentSearchFieldKey;
@@ -469,11 +435,10 @@ export function PowerSearchTouchSurface({
   const hasContentSearch = contentSearchOperator?.value.type === 'string';
 
   const triggerId = useId();
-  const contentInputId = useId();
-  const labelId = useId();
   const statusMessageId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const contentInputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const managerAddButtonRef = useRef<HTMLButtonElement>(null);
   const shouldRestoreTriggerAfterCloseRef = useRef(false);
 
   const [step, setStep] = useState<SheetStep | null>(null);
@@ -486,15 +451,17 @@ export function PowerSearchTouchSurface({
 
   const isInteractive = !isDisabled && !isReadOnly;
 
-  const focusPrimaryControl = useCallback(
-    (preventScroll = false) => {
-      const target = hasContentSearch
-        ? contentInputRef.current
-        : triggerRef.current;
-      target?.focus(preventScroll ? {preventScroll: true} : undefined);
-    },
-    [hasContentSearch],
-  );
+  const focusPrimaryControl = useCallback((preventScroll = false) => {
+    triggerRef.current?.focus(
+      preventScroll ? {preventScroll: true} : undefined,
+    );
+  }, []);
+
+  const focusManagerAdd = useCallback(() => {
+    requestAnimationFrame(() =>
+      managerAddButtonRef.current?.focus({preventScroll: true}),
+    );
+  }, []);
 
   const submitContentSearch = useCallback((): boolean => {
     const value = contentQuery.trim();
@@ -600,6 +567,20 @@ export function PowerSearchTouchSurface({
     setStep(null);
   }, []);
 
+  const openManager = useCallback(() => {
+    if (isDisabled) {
+      return;
+    }
+    shouldRestoreTriggerAfterCloseRef.current = true;
+    setStep('manage');
+  }, [isDisabled]);
+
+  const clickableWrapper = useClickableContainer({
+    containerRef: wrapperRef,
+    onClick: openManager,
+    disabled: isDisabled,
+  });
+
   const openFieldList = useCallback(() => {
     if (!isInteractive) {
       return;
@@ -611,33 +592,29 @@ export function PowerSearchTouchSurface({
   const commitSavedFilter = useCallback(
     (next: FilterDraft, filter: PowerSearchFilter) => {
       if (!isInteractive) {
-        closeSheet();
+        setStep('manage');
         return;
       }
       if (next.mode === 'edit') {
         const filterIndex = resolveDraftFilterIndex(filters, next);
         if (filterIndex == null) {
-          closeSheet();
+          setStep('manage');
           return;
         }
         const currentFilter = filters[filterIndex];
         if (currentFilter == null || currentFilter.isReadOnly) {
-          closeSheet();
+          setStep('manage');
           return;
         }
-        // Controlled parents may reorder after any edit, which remounts the
-        // index-keyed opener before the sheet can restore focus. Always provide
-        // the stable Add button as the post-close fallback.
-        shouldRestoreTriggerAfterCloseRef.current = true;
         const updated = [...filters];
         updated[filterIndex] = filter;
         onChange(updated, 'edit', filterIndex);
       } else {
         onChange([...filters, filter], 'add', filters.length);
       }
-      closeSheet();
+      setStep('manage');
     },
-    [closeSheet, filters, isInteractive, onChange],
+    [filters, isInteractive, onChange],
   );
 
   const commitFilter = useCallback(
@@ -655,7 +632,7 @@ export function PowerSearchTouchSurface({
   );
 
   // Choosing a field opens its editor. Empty-value operators still stage their
-  // sentinel value so every filter is confirmed through the same Apply action.
+  // sentinel value so every filter is confirmed through the same Save action.
   const handleFieldSelect = useCallback(
     (field: PowerSearchField) => {
       const operators = field.operators.filter(isSupportedOperator);
@@ -677,7 +654,7 @@ export function PowerSearchTouchSurface({
     [config],
   );
 
-  const handleTokenClick = useCallback(
+  const handleFilterEdit = useCallback(
     (index: number) => {
       if (!isInteractive) {
         return;
@@ -701,7 +678,7 @@ export function PowerSearchTouchSurface({
   );
 
   const handleRemoveFilter = useCallback(
-    (index: number, restoreFocus = true) => {
+    (index: number) => {
       const filter = filters[index];
       if (!isInteractive || filter == null || filter.isReadOnly) {
         return;
@@ -711,11 +688,9 @@ export function PowerSearchTouchSurface({
         'remove',
         index,
       );
-      if (restoreFocus) {
-        requestAnimationFrame(() => focusPrimaryControl(true));
-      }
+      focusManagerAdd();
     },
-    [filters, focusPrimaryControl, isInteractive, onChange],
+    [filters, focusManagerAdd, isInteractive, onChange],
   );
 
   const handleClearAll = useCallback(() => {
@@ -726,8 +701,8 @@ export function PowerSearchTouchSurface({
       return;
     }
     onChange(kept, 'remove', kept.length);
-    requestAnimationFrame(() => focusPrimaryControl(true));
-  }, [filters, focusPrimaryControl, onChange]);
+    focusManagerAdd();
+  }, [filters, focusManagerAdd, onChange]);
 
   const handleOperatorSelect = useCallback(
     (operator: PowerSearchOperator) => {
@@ -771,13 +746,12 @@ export function PowerSearchTouchSurface({
     }
     const filterIndex = resolveDraftFilterIndex(filters, draft);
     if (filterIndex == null || filters[filterIndex]?.isReadOnly) {
-      closeSheet();
+      setStep('manage');
       return;
     }
-    shouldRestoreTriggerAfterCloseRef.current = true;
-    handleRemoveFilter(filterIndex, false);
-    closeSheet();
-  }, [closeSheet, draft, filters, handleRemoveFilter]);
+    handleRemoveFilter(filterIndex);
+    setStep('manage');
+  }, [draft, filters, handleRemoveFilter]);
 
   const handleActiveSheetChange = useCallback((active: string | null) => {
     // The switcher only reports null, and only for a dismissal the active
@@ -825,10 +799,7 @@ export function PowerSearchTouchSurface({
       focusPrimaryControl();
     },
     blurTypeahead() {
-      const target = hasContentSearch
-        ? contentInputRef.current
-        : triggerRef.current;
-      target?.blur();
+      triggerRef.current?.blur();
     },
   }));
 
@@ -863,6 +834,10 @@ export function PowerSearchTouchSurface({
     focusTrigger: 'always',
     isEnabled: showsDisabledMessage,
   });
+  const mergedWrapperRef = useMergedRefs(
+    wrapperRef,
+    disabledMessageTooltip.ref,
+  );
 
   const triggerDescribedBy =
     [
@@ -874,15 +849,39 @@ export function PowerSearchTouchSurface({
 
   // ---------------------------------------------------------------- render --
 
+  const filterRows = filters.flatMap((filter, index) => {
+    const field = config.getField(filter.field);
+    const operator = config.getOperator(filter.field, filter.operator);
+    if (!field || !operator) {
+      return [];
+    }
+    const operatorLabel = resolveOperatorLabel(operator, t);
+    const label = [field.label, operatorLabel].filter(Boolean).join(' ');
+    const value = formatFilterValue(
+      config,
+      operator.value,
+      filter.value,
+      maxTokenLength,
+      t,
+      locale,
+    );
+    const accessibleLabel = [label, value].filter(Boolean).join(' ');
+    return [
+      {
+        accessibleLabel,
+        filter,
+        index,
+        key: `${index}-${filter.field}-${filter.operator}`,
+      },
+    ];
+  });
+
   const tokens = filters.map((filter, index) => {
     const field = config.getField(filter.field);
     const operator = config.getOperator(filter.field, filter.operator);
     if (!field || !operator) {
       return null;
     }
-    const canInteract = isInteractive && !filter.isReadOnly;
-    const onClick = canInteract ? () => handleTokenClick(index) : undefined;
-    const onRemove = canInteract ? () => handleRemoveFilter(index) : undefined;
     const TokenOverride = componentOverrides?.[operator.value.type]?.Token;
     const key = `${index}-${filter.field}-${filter.operator}`;
 
@@ -896,8 +895,8 @@ export function PowerSearchTouchSurface({
           operator={operator}
           maxLength={maxTokenLength}
           size={size}
-          onClick={onClick}
-          onRemove={onRemove}
+          onClick={undefined}
+          onRemove={undefined}
           isDisabled={isDisabled}
         />
       );
@@ -911,15 +910,15 @@ export function PowerSearchTouchSurface({
         operator={operator}
         maxLength={maxTokenLength}
         size={size}
-        onClick={onClick}
-        onRemove={onRemove}
+        onClick={undefined}
+        onRemove={undefined}
         isDisabled={isDisabled}
       />
     );
   });
 
   const hasRemovableFilter = filters.some(filter => !filter.isReadOnly);
-  const isClearShown = hasClear && hasRemovableFilter && isInteractive;
+  const isClearAllShown = hasClear && hasRemovableFilter && isInteractive;
 
   const EditorOverride =
     draftOperator != null
@@ -947,13 +946,7 @@ export function PowerSearchTouchSurface({
         ref={ref}
         label={label}
         isLabelHidden={isLabelHidden}
-        // The tap target is one control among the tokens rather than the only
-        // control in the field, so the label names the GROUP (a `<label>` can
-        // only name a single control, and pointing it at the button would
-        // override the button's own visible text as its accessible name).
         inputID={triggerId}
-        labelID={labelId}
-        isGroupLabel
         isDisabled={isDisabled}
         status={
           status
@@ -969,9 +962,9 @@ export function PowerSearchTouchSurface({
         className={className}
         style={style}>
         <div
-          ref={disabledMessageTooltip.ref}
-          role="group"
-          aria-labelledby={labelId}
+          ref={mergedWrapperRef}
+          onClick={clickableWrapper.onClick}
+          onMouseUp={clickableWrapper.onMouseUp}
           onFocus={handleFocusWithin}
           onBlur={handleBlurWithin}
           data-testid={testId}
@@ -1004,55 +997,22 @@ export function PowerSearchTouchSurface({
               </span>
             )}
             {tokens}
-            {hasContentSearch && (
-              <input
-                ref={contentInputRef}
-                id={contentInputId}
-                type="search"
-                inputMode="search"
-                enterKeyHint="search"
-                autoComplete="off"
-                autoFocus={hasAutoFocus}
-                value={contentQuery}
-                onChange={event => setContentQuery(event.target.value)}
-                onKeyDown={handleContentSearchKeyDown}
-                placeholder={placeholder}
-                disabled={isDisabled && !showsDisabledMessage}
-                readOnly={isReadOnly || showsDisabledMessage}
-                aria-disabled={isDisabled || isReadOnly ? true : undefined}
-                aria-labelledby={labelId}
-                aria-describedby={triggerDescribedBy}
-                {...stylex.props(styles.contentInput)}
-              />
-            )}
             <button
               type="button"
               id={triggerId}
               ref={triggerRef}
-              autoFocus={hasAutoFocus && !hasContentSearch}
-              onClick={openFieldList}
-              // A disabled button is unreachable, so the reason for it is too.
-              // Keep it focusable and block the action instead, the way the
-              // desktop field does.
+              autoFocus={hasAutoFocus}
+              onClick={openManager}
               disabled={isDisabled && !showsDisabledMessage}
-              aria-disabled={isDisabled || isReadOnly ? true : undefined}
+              aria-disabled={isDisabled ? true : undefined}
               aria-haspopup="dialog"
               aria-expanded={step != null}
               aria-describedby={triggerDescribedBy}
-              {...stylex.props(
-                styles.trigger,
-                isReadOnly && styles.triggerReadOnly,
-              )}>
-              <span
-                {...stylex.props(
-                  styles.triggerVisual,
-                  triggerVisualSizeStyles[size],
-                )}>
-                {addFilterLabel}
-              </span>
+              {...stylex.props(styles.trigger)}>
+              {filters.length === 0 ? placeholder : null}
             </button>
           </div>
-          {(endContent || isRenderable(resultCountText) || isClearShown) && (
+          {(endContent || isRenderable(resultCountText)) && (
             <div {...stylex.props(styles.endSection)}>
               {isRenderable(resultCountText) && (
                 <span {...stylex.props(styles.resultCount)}>
@@ -1060,12 +1020,6 @@ export function PowerSearchTouchSurface({
                 </span>
               )}
               {endContent}
-              {isClearShown && (
-                <InputClearButton
-                  label={t('@astryx.tokenizer.clearAll')}
-                  onClick={handleClearAll}
-                />
-              )}
             </div>
           )}
         </div>
@@ -1077,19 +1031,142 @@ export function PowerSearchTouchSurface({
         activeSheet={step}
         onActiveSheetChange={handleActiveSheetChange}
         onTransitionEnd={handleSheetTransitionEnd}>
-        <BottomSheet sheetId="fields" label={addFilterTitle} height="tall">
+        <BottomSheet sheetId="manage" label={manageFiltersTitle} height="tall">
           <div {...stylex.props(styles.sheet)}>
             <div {...stylex.props(styles.header)}>
               <div {...stylex.props(styles.headerRow)}>
                 <div {...stylex.props(styles.headerText)}>
-                  <Heading level={3}>{addFilterTitle}</Heading>
+                  <Heading level={3}>{manageFiltersTitle}</Heading>
                 </div>
                 <Button
-                  label={t('@astryx.powersearch.editor.cancel')}
+                  label={t('@astryx.powersearch.mobile.done')}
                   variant="ghost"
                   size="sm"
                   onClick={closeSheet}
                 />
+              </div>
+              {hasContentSearch && isInteractive && (
+                <TextInput
+                  label={label}
+                  isLabelHidden
+                  placeholder={placeholder}
+                  value={contentQuery}
+                  onChange={setContentQuery}
+                  onKeyDown={handleContentSearchKeyDown}
+                  startIcon={<Icon icon="search" size="sm" color="secondary" />}
+                  hasClear
+                  width="100%"
+                />
+              )}
+            </div>
+            <div {...stylex.props(styles.body)}>
+              {filterRows.length === 0 ? (
+                <div {...stylex.props(styles.empty)}>
+                  <Text type="supporting" color="secondary">
+                    {t('@astryx.powersearch.mobile.noSelectedFilters')}
+                  </Text>
+                </div>
+              ) : (
+                <List
+                  hasDividers
+                  density="spacious"
+                  header={t('@astryx.powersearch.mobile.selectedFilters')}
+                  xstyle={styles.flushList}>
+                  {filterRows.map(row => {
+                    const canEdit = isInteractive && !row.filter.isReadOnly;
+                    const removeLabel = t(
+                      '@astryx.powersearch.mobile.removeSelectedFilter',
+                      {filter: row.accessibleLabel},
+                    );
+                    return (
+                      <ListItem
+                        key={row.key}
+                        label={row.accessibleLabel}
+                        onClick={
+                          canEdit
+                            ? () => handleFilterEdit(row.index)
+                            : undefined
+                        }
+                        endContent={
+                          canEdit ? (
+                            <span {...stylex.props(styles.rowActions)}>
+                              <Icon
+                                icon="chevronRight"
+                                size="sm"
+                                color="secondary"
+                                xstyle={rtlStyles.mirror}
+                              />
+                              <IconButton
+                                label={removeLabel}
+                                tooltip={removeLabel}
+                                icon={
+                                  <Icon
+                                    icon="close"
+                                    size="sm"
+                                    color="inherit"
+                                  />
+                                }
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveFilter(row.index)}
+                              />
+                            </span>
+                          ) : undefined
+                        }
+                      />
+                    );
+                  })}
+                </List>
+              )}
+            </div>
+            {isInteractive && (
+              <div {...stylex.props(styles.footer)}>
+                {isClearAllShown && (
+                  <Button
+                    label={t('@astryx.tokenizer.clearAll')}
+                    variant="ghost"
+                    onClick={handleClearAll}
+                  />
+                )}
+                <div
+                  {...stylex.props(
+                    styles.footerActions,
+                    !isClearAllShown && styles.footerSoleAction,
+                  )}>
+                  <Button
+                    ref={managerAddButtonRef}
+                    label={addFilterTitle}
+                    variant="primary"
+                    onClick={openFieldList}
+                    width={isClearAllShown ? undefined : '100%'}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </BottomSheet>
+
+        <BottomSheet sheetId="fields" label={addFilterTitle} height="tall">
+          <div {...stylex.props(styles.sheet)}>
+            <div {...stylex.props(styles.header)}>
+              <div {...stylex.props(styles.headerRow)}>
+                <Button
+                  label={t('@astryx.powersearch.mobile.back')}
+                  icon={
+                    <Icon
+                      icon="chevronLeft"
+                      size="sm"
+                      xstyle={rtlStyles.mirror}
+                    />
+                  }
+                  isIconOnly
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setStep('manage')}
+                />
+                <div {...stylex.props(styles.headerText)}>
+                  <Heading level={3}>{addFilterTitle}</Heading>
+                </div>
               </div>
               {isFieldSearchShown && (
                 <TextInput
@@ -1142,7 +1219,7 @@ export function PowerSearchTouchSurface({
           <div {...stylex.props(styles.sheet)}>
             <div {...stylex.props(styles.header)}>
               <div {...stylex.props(styles.headerRow)}>
-                {draft?.mode === 'create' && (
+                {draft != null && (
                   <Button
                     label={t('@astryx.powersearch.mobile.back')}
                     icon={
@@ -1155,7 +1232,9 @@ export function PowerSearchTouchSurface({
                     isIconOnly
                     variant="ghost"
                     size="sm"
-                    onClick={() => setStep('fields')}
+                    onClick={() =>
+                      setStep(draft.mode === 'edit' ? 'manage' : 'fields')
+                    }
                   />
                 )}
                 <div {...stylex.props(styles.headerText)}>
@@ -1163,14 +1242,6 @@ export function PowerSearchTouchSurface({
                     {editorTitle}
                   </Heading>
                 </div>
-                {draft?.mode === 'edit' && (
-                  <Button
-                    label={t('@astryx.powersearch.editor.cancel')}
-                    variant="ghost"
-                    size="sm"
-                    onClick={closeSheet}
-                  />
-                )}
               </div>
             </div>
             {draft != null && draftField != null && draftOperator != null ? (
@@ -1190,13 +1261,15 @@ export function PowerSearchTouchSurface({
                         if (draft.mode === 'edit') {
                           handleDelete();
                         } else {
-                          closeSheet();
+                          setStep('manage');
                         }
                         return;
                       }
                       commitSavedFilter(draft, saved);
                     }}
-                    onCancel={closeSheet}
+                    onCancel={() =>
+                      setStep(draft.mode === 'edit' ? 'manage' : 'fields')
+                    }
                     saveButtonLabel={saveButtonLabel}
                     isReadOnly={isReadOnly}
                     timezoneID={timezoneID}
@@ -1244,24 +1317,17 @@ export function PowerSearchTouchSurface({
                   </div>
                   {isEditorFooterShown && (
                     <div {...stylex.props(styles.footer)}>
-                      {draft.mode === 'edit' && (
-                        <Button
-                          label={t('@astryx.powersearch.mobile.removeFilter')}
-                          variant="ghost"
-                          onClick={handleDelete}
-                        />
-                      )}
                       <div
                         {...stylex.props(
                           styles.footerActions,
-                          draft.mode !== 'edit' && styles.footerSoleAction,
+                          styles.footerSoleAction,
                         )}>
                         <Button
                           label={saveButtonLabel}
                           variant="primary"
                           isDisabled={isSaveDisabled}
                           onClick={handleSave}
-                          width={draft.mode === 'edit' ? undefined : '100%'}
+                          width="100%"
                         />
                       </div>
                     </div>

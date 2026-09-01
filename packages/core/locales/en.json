@@ -859,29 +859,37 @@
     "defaultMessage": "Search…",
     "description": "Grey placeholder text inside the empty PowerSearch input. Imperative verb; trailing `…` is one character."
   },
-  "@astryx.powersearch.mobile.addFilter": {
-    "defaultMessage": "Add filters…",
-    "description": "Label on the in-field button that opens PowerSearch's touch filter-builder sheet. Imperative verb; trailing `…` is one character."
-  },
   "@astryx.powersearch.mobile.addFilterTitle": {
     "defaultMessage": "Add filter",
-    "description": "Title of the first PowerSearch touch sheet where the user chooses which filter to add. Singular noun because the flow adds one condition at a time."
+    "description": "Button label and title of the PowerSearch touch sheet where the user chooses which filter to add. Singular noun because the flow adds one condition at a time."
+  },
+  "@astryx.powersearch.mobile.manageFiltersTitle": {
+    "defaultMessage": "Filters",
+    "description": "Title of the first PowerSearch touch sheet, where users review, add, edit, or remove active filters."
+  },
+  "@astryx.powersearch.mobile.selectedFilters": {
+    "defaultMessage": "Selected filters",
+    "description": "Heading above the active-filter list in PowerSearch's touch management sheet."
+  },
+  "@astryx.powersearch.mobile.noSelectedFilters": {
+    "defaultMessage": "No filters selected",
+    "description": "Empty-state message in PowerSearch's touch management sheet when there are no active filters."
+  },
+  "@astryx.powersearch.mobile.removeSelectedFilter": {
+    "defaultMessage": "Remove {filter}",
+    "description": "Accessible label and tooltip for a filter row's remove button in PowerSearch's touch management sheet. {filter} names the full filter."
+  },
+  "@astryx.powersearch.mobile.done": {
+    "defaultMessage": "Done",
+    "description": "Button in the PowerSearch touch management sheet header that closes the sheet after filter management."
   },
   "@astryx.powersearch.mobile.filterTitle": {
     "defaultMessage": "{field} {operator}",
     "description": "Title of a simple PowerSearch touch value sheet. {field} is the filter field label and {operator} is its only operator label; translators may reorder them."
   },
-  "@astryx.powersearch.mobile.removeFilter": {
-    "defaultMessage": "Remove this filter",
-    "description": "Destructive button in the PowerSearch touch edit sheet that removes the filter currently being edited."
-  },
   "@astryx.powersearch.mobile.save": {
     "defaultMessage": "Save",
-    "description": "Primary footer button in the PowerSearch touch editor. It confirms the staged field, operator, and value, then closes the sheet."
-  },
-  "@astryx.powersearch.mobile.editFilter": {
-    "defaultMessage": "Edit filter",
-    "description": "Title of PowerSearch's touch editor sheet when reopening a filter the user already added, as opposed to building a new one. Imperative verb."
+    "description": "Primary footer button in the PowerSearch touch editor. It confirms the staged field, operator, and value, then returns to the filter-management sheet."
   },
   "@astryx.powersearch.mobile.back": {
     "defaultMessage": "Back",
