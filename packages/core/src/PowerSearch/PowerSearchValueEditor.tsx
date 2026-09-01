@@ -19,6 +19,7 @@ import React, {
   type FormEvent,
   type KeyboardEvent,
 } from 'react';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import type {
   OperatorValue,
   FilterValue,
@@ -56,7 +57,14 @@ export interface PowerSearchValueEditorProps {
   /** Max suggestions in string and entity value typeaheads. */
   maxMenuItems?: number;
   isDisabled?: boolean;
+  /** Optional internal style applied to the rendered input control. */
+  controlXStyle?: StyleXStyles;
   timezoneID?: string;
+}
+
+interface EditorControlProps {
+  isDisabled?: boolean;
+  controlXStyle?: StyleXStyles;
 }
 
 // =============================================================================
@@ -105,13 +113,15 @@ function StringEditor({
   onChange,
   onEnter: _onEnter,
   maxMenuItems,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'string'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
   maxMenuItems?: number;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   const currentValue = filterValue?.type === 'string' ? filterValue.value : '';
 
@@ -138,6 +148,8 @@ function StringEditor({
         placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
         debounceMs={150}
         maxMenuItems={maxMenuItems}
+        isDisabled={isDisabled}
+        xstyle={controlXStyle}
       />
     );
   }
@@ -151,6 +163,8 @@ function StringEditor({
       onChange={(value: string) => {
         onChange({type: 'string', value});
       }}
+      isDisabled={isDisabled}
+      xstyle={controlXStyle}
     />
   );
 }
@@ -160,12 +174,14 @@ function StringListEditor({
   filterValue,
   onChange,
   maxMenuItems,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'string_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
   maxMenuItems?: number;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   const currentValue: SearchableItem[] = useMemo(() => {
     if (filterValue?.type !== 'string_list') {
@@ -206,6 +222,8 @@ function StringListEditor({
       debounceMs={operatorValue.searchSource ? 150 : 0}
       hasCreate={hasCreate}
       maxMenuItems={maxMenuItems}
+      isDisabled={isDisabled}
+      xstyle={controlXStyle}
     />
   );
 }
@@ -278,12 +296,14 @@ function IntegerEditor({
   filterValue,
   onChange,
   onEnter,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'integer'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   const currentValue =
     filterValue?.type === 'integer' ? filterValue.value : undefined;
@@ -311,6 +331,8 @@ function IntegerEditor({
       units={operatorValue.units}
       isIntegerOnly
       placeholder={t('@astryx.powersearch.valueEditor.enterNumberPlaceholder')}
+      isDisabled={isDisabled}
+      xstyle={controlXStyle}
     />
   );
 }
@@ -320,12 +342,14 @@ function FloatEditor({
   filterValue,
   onChange,
   onEnter,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'float'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   const currentValue =
     filterValue?.type === 'float' ? filterValue.value : undefined;
@@ -352,6 +376,8 @@ function FloatEditor({
       max={operatorValue.maxValue}
       units={operatorValue.units}
       placeholder={t('@astryx.powersearch.valueEditor.enterNumberPlaceholder')}
+      isDisabled={isDisabled}
+      xstyle={controlXStyle}
     />
   );
 }
@@ -360,11 +386,13 @@ function TimeEditor({
   operatorValue,
   filterValue,
   onChange,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'time'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   const currentValue =
     filterValue?.type === 'time'
@@ -383,6 +411,8 @@ function TimeEditor({
       }}
       min={operatorValue.minValue as ISOTimeString | undefined}
       max={operatorValue.maxValue as ISOTimeString | undefined}
+      isDisabled={isDisabled}
+      xstyle={controlXStyle}
     />
   );
 }
@@ -390,11 +420,13 @@ function TimeEditor({
 function DateAbsoluteEditor({
   filterValue,
   onChange,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'date_absolute'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   // Convert unixSeconds to ISO date string for the date input
   const currentValue = useMemo(() => {
@@ -416,6 +448,8 @@ function DateAbsoluteEditor({
           onChange({type: 'date_absolute', unixSeconds});
         }
       }}
+      isDisabled={isDisabled}
+      xstyle={controlXStyle}
     />
   );
 }
@@ -424,11 +458,13 @@ function DateRelativeEditor({
   operatorValue,
   filterValue,
   onChange,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'date_relative'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   const currentValue =
     filterValue?.type === 'date_relative' ? filterValue.value : undefined;
@@ -474,6 +510,8 @@ function DateRelativeEditor({
       onChange={value => {
         onChange({type: 'date_relative', value}, true);
       }}
+      isDisabled={isDisabled}
+      xstyle={controlXStyle}
     />
   );
 }
@@ -481,11 +519,13 @@ function DateRelativeEditor({
 function DateRangeEditor({
   filterValue,
   onChange,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'date_range'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   const currentValue = useMemo<DateRange | null>(() => {
     if (filterValue?.type !== 'date_range') {
@@ -537,6 +577,8 @@ function DateRangeEditor({
         value={currentValue}
         onChange={handleChange}
         hasClear={false}
+        isDisabled={isDisabled}
+        xstyle={controlXStyle}
       />
     </div>
   );
@@ -546,11 +588,13 @@ function EnumEditor({
   operatorValue,
   filterValue,
   onChange,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'enum'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   const currentValue =
     filterValue?.type === 'enum' ? filterValue.value : undefined;
@@ -573,6 +617,8 @@ function EnumEditor({
       onChange={value => {
         onChange({type: 'enum', value}, true);
       }}
+      isDisabled={isDisabled}
+      xstyle={controlXStyle}
     />
   );
 }
@@ -581,11 +627,13 @@ function EnumListEditor({
   operatorValue,
   filterValue,
   onChange,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'enum_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   const items = useMemo(
     () => enumItemsToSearchableItems(operatorValue.values),
@@ -619,6 +667,8 @@ function EnumListEditor({
       placeholder={t('@astryx.powersearch.valueEditor.selectValuesPlaceholder')}
       hasEntriesOnFocus
       debounceMs={0}
+      isDisabled={isDisabled}
+      xstyle={controlXStyle}
     />
   );
 }
@@ -628,12 +678,14 @@ function EntityListEditor({
   filterValue,
   onChange,
   maxMenuItems,
+  isDisabled,
+  controlXStyle,
 }: {
   operatorValue: OperatorValue & {type: 'entity_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
   maxMenuItems?: number;
-}) {
+} & EditorControlProps) {
   const t = useTranslator();
   const source = useMemo<SearchSource<SearchableItem>>(() => {
     if (operatorValue.searchSource) {
@@ -681,6 +733,8 @@ function EntityListEditor({
       placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
       debounceMs={operatorValue.searchSource ? 150 : 0}
       maxMenuItems={maxMenuItems}
+      isDisabled={isDisabled}
+      xstyle={controlXStyle}
     />
   );
 }
@@ -726,7 +780,9 @@ export function PowerSearchValueEditor({
   onEnter,
   maxMenuItems,
   isDisabled,
+  controlXStyle,
 }: PowerSearchValueEditorProps) {
+  const controlProps: EditorControlProps = {isDisabled, controlXStyle};
   switch (operatorValue.type) {
     case 'empty':
       return null;
@@ -739,6 +795,7 @@ export function PowerSearchValueEditor({
           onChange={onChange}
           onEnter={onEnter}
           maxMenuItems={maxMenuItems}
+          {...controlProps}
         />
       );
 
@@ -749,6 +806,7 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           maxMenuItems={maxMenuItems}
+          {...controlProps}
         />
       );
 
@@ -759,6 +817,7 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           onEnter={onEnter}
+          {...controlProps}
         />
       );
 
@@ -769,6 +828,7 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           onEnter={onEnter}
+          {...controlProps}
         />
       );
 
@@ -778,6 +838,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          {...controlProps}
         />
       );
 
@@ -787,6 +848,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          {...controlProps}
         />
       );
 
@@ -796,6 +858,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          {...controlProps}
         />
       );
 
@@ -805,6 +868,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          {...controlProps}
         />
       );
 
@@ -814,6 +878,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          {...controlProps}
         />
       );
 
@@ -823,6 +888,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          {...controlProps}
         />
       );
 
@@ -833,6 +899,7 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           maxMenuItems={maxMenuItems}
+          {...controlProps}
         />
       );
 
