@@ -234,6 +234,8 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   ref?: React.Ref<HTMLDivElement>;
   /** Imperative handle ref for focus/blur control. */
   handleRef?: React.Ref<TokenizerHandle>;
+  /** Internal style for the interactive token/input wrapper. @internal */
+  __inputWrapperXStyle?: stylex.StyleXStyles;
 }
 
 // =============================================================================
@@ -480,6 +482,7 @@ export function Tokenizer<T extends SearchableItem>({
   'data-testid': testId,
   ref,
   handleRef,
+  __inputWrapperXStyle,
 }: TokenizerProps<T>) {
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
@@ -843,6 +846,7 @@ export function Tokenizer<T extends SearchableItem>({
           status && inputStatusBorderStyles[status.type],
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
+          __inputWrapperXStyle,
         ),
       )}>
       {startIcon && (
