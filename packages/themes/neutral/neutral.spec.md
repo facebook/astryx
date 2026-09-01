@@ -17,14 +17,17 @@ references:
     architecture:theme-tokens,
     architecture:theme-compilation,
     architecture:component-theming-surface,
+    spec:AST-006,
   ]
 ---
 
 # Neutral theme specification
 
 This draft is a theme-record example and a factual inventory. It does not decide
-local-token, palette-generation, compiler, or artifact APIs; separate system
-specifications own those proposals.
+cross-theme local-token, palette-generation, compiler, or artifact APIs;
+current `spec:AST-006` owns the accepted local-token contract. This record keeps
+Neutral's package adoption separate: no value, mapping, rendered evidence, or
+implementation is approved while this record remains draft.
 
 ## Intent and audience
 
@@ -48,11 +51,42 @@ vocabulary remains owned by `architecture:theme-tokens`.
 
 ## Theme-local role definitions
 
-Current source has no accepted first-class theme-local-role API. Candidate
-Neutral-only repeated meanings from unlanded work include filled accent, success,
-warning, and error status colors and content/interaction colors used on tinted
-surfaces. Their names, authoring API, namespace, inheritance, and validation are
-not decided here; a separate draft system spec must be accepted first.
+Neutral owns this local role for future implementation:
+
+| Approved exact name                               | Approved Neutral-only meaning                                                     | Proposed value           |
+| ------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------ |
+| `--astryx-theme-neutral-color-status-fill-accent` | Filled accent status in contexts whose actual semantic role is accent status fill | `['#0074e2', '#6d9cfe']` |
+
+AST-006 is current and accepted, but its implementation is not shipped. Once that
+implementation exists, Neutral would author and consume the exact name without an
+alias:
+
+```ts
+localTokens: {
+  '--astryx-theme-neutral-color-status-fill-accent': ['#0074e2', '#6d9cfe'],
+},
+components: {
+  badge: {
+    'variant:info': {
+      backgroundColor:
+        'var(--astryx-theme-neutral-color-status-fill-accent)',
+    },
+  },
+},
+```
+
+The `localTokens` key, component `var(...)` reference, `DefinedTheme` map, and
+emitted custom property use the same complete name. The proposed value prefers
+the approved `[light, dark]` `TokenValue` tuple, which normalizes exactly as the
+same tuple does under existing `tokens`. Opt-in uses Neutral's existing
+`name: 'neutral'` byte-for-byte; it is already a valid stable lower-kebab
+identifier, so no name normalization occurs.
+
+Once shipped, the exact name and filled-accent-status meaning are a public
+Neutral-family compatibility contract. The role is not portable to other themes
+and is not intended for Core component source. Its length is acceptable because
+it accurately names the context in which it may be applied; output alone does
+not authorize a broader meaning.
 
 ## Tonal palette definitions
 
@@ -64,18 +98,30 @@ separate draft system spec.
 
 ## Component and state mappings
 
-Current source is the implementation baseline. Candidate mappings under review
-share filled status color across Badge, compact status indicators, Stepper, Table
-row status, and ProgressBar, and preserve legibility of Banner content on tinted
-surfaces. This record does not change which component states exist or authorize
-unlanded mappings.
+Current source remains the implementation baseline. The exact
+`var(--astryx-theme-neutral-color-status-fill-accent)` reference may be adopted
+only where an existing Neutral component state genuinely means filled accent
+status. Badge `variant:info` is the first proposed mapping. Every added mapping is
+a theme-spec compatibility review: it must demonstrate the same semantic context
+and provide rendered evidence for its actual light/dark and relevant interaction
+states. Shared color alone is not enough. This record does not add component
+states or authorize implementation before that evidence is complete.
 
 ## Compatibility and migration
 
 This knowledge-only record changes no package output. Existing Neutral authoring,
 portable token overrides, runtime behavior, and package exports remain unchanged.
-Any future API adoption is optional and requires its own accepted system spec,
-implementation evidence, compatibility plan, and release note.
+Neutral stays unenrolled until it explicitly supplies `localTokens`; merely
+emitting or referencing the same prefix today does not activate validation or
+create the public contract.
+
+Implementation requires AST-006 implementation to ship first, followed by
+complete rendered evidence for the proposed value and mappings. When Neutral
+then ships the definition, its exact name and approved semantic meaning become a
+public compatibility contract of the Neutral family. A local-token name,
+enrolled theme name, or semantic meaning change must preserve descendants and
+consumers through an explicit reviewed migration or alias. Compiled CSS does not
+broaden the role beyond the contexts approved here.
 
 ## Accessibility and contrast evidence
 
@@ -84,11 +130,16 @@ so this draft does not select or restate a methodology. The future record is an
 unresolved dependency and therefore is not listed in frontmatter.
 
 Current Neutral-specific receipts include the Badge contrast check and pairings
-documented beside Neutral source. Candidate mappings still need receipts for the
-actual light/dark and interaction states they affect. This record will own those
-pairings, exceptions, measurements, and known gaps after the shared methodology
-is current; it will not copy the methodology or shared measurement-tool
-implementation.
+documented beside Neutral source. The candidate accent fill uses `#0074e2` in
+light mode and `#6d9cfe` in dark mode, but those values are not an accessibility
+claim by themselves. Adoption requires the actual Badge informational foreground
+and background pairing to meet its threshold in rendered light and dark states;
+every later mapping needs receipts for its foreground, graphical-object,
+interaction, and disabled states. No palette tone is accessible by itself, and
+color cannot replace another signal required by the component contract. This
+record will own those pairings, exceptions, measurements, and known gaps after
+the shared methodology is current; it will not copy the methodology or shared
+measurement-tool implementation.
 
 ## Build and artifact contract
 
@@ -98,32 +149,59 @@ palette or local-token artifacts.
 
 ## Verification map
 
-| Theme contract            | Evidence                                   | Representative states                      | Failure signal                                                  |
-| ------------------------- | ------------------------------------------ | ------------------------------------------ | --------------------------------------------------------------- |
-| Current value inventory   | Neutral source and theme tests             | light/dark token families                  | Source and record disagree about a theme-owned meaning.         |
-| Component mappings        | Theme tests and rendered evidence          | status and interaction states              | A mapped state loses its intended distinction.                  |
-| Contrast                  | Badge check plus rendered component matrix | light/dark and interactive states          | A required pairing falls below its threshold.                   |
-| Existing package contract | Theme build, package, and resolution tests | runtime, CSS, declarations, public exports | This record implies an artifact that the package does not ship. |
+| Theme contract            | Evidence                                            | Representative states                                          | Failure signal                                                                                                 |
+| ------------------------- | --------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Current value inventory   | Neutral source and theme tests                      | light/dark token families                                      | Source and record disagree about a theme-owned meaning.                                                        |
+| Local role contract       | Planned AST-006 implementation and Neutral fixtures | exact declaration/use/output name; public meaning; rename      | The shipped name or meaning changes without reviewed compatibility handling, or leaks into portable/Core APIs. |
+| Component mappings        | Theme-spec review and rendered evidence             | Badge info; each future mapping; light/dark; interaction state | A mapping does not genuinely mean filled accent status or lands without contextual evidence.                   |
+| Contrast                  | Badge check plus rendered component matrix          | light/dark and interactive states                              | A required pairing falls below its threshold.                                                                  |
+| Existing package contract | Theme build, package, and resolution tests          | runtime, CSS, declarations, public exports                     | This record implies an artifact that the package does not ship.                                                |
 
 ## Decision log
 
-No theme decision is accepted while this record has `authority: draft`.
+The decision below records settled cross-theme ownership input from `cixzhang`.
+The final Neutral value, mappings, and rendered-evidence ratification belong to
+`rubyycheung`. This record remains `authority: draft`, `approved_by: null`, and
+`approved_at: null` until OQ1 passes and Ruby gives exact-head approval.
+
+### DEC-1 — Own one exact Neutral filled-accent-status role
+
+**Reference:** `theme:neutral/DEC-1`
+**System-boundary decider:** `cixzhang`, `2026-08-31`
+**Final Neutral adoption decider:** `rubyycheung`, after OQ1 passes and exact-head review
+
+Neutral owns theme-local definitions in this colocated theme spec. It may adopt
+`--astryx-theme-neutral-color-status-fill-accent` for filled accent status using
+its exact stable `name: 'neutral'`. The exact name and semantic meaning become a
+public Neutral-family compatibility contract when shipped, despite not being
+portable across themes or intended for Core component source. The long name is
+acceptable because it precisely states the role.
+
+The token may be applied only where the mapped context genuinely means filled
+accent status. Each added mapping is a theme-spec compatibility review and needs
+rendered evidence for its actual light/dark and relevant interaction states.
+Neither the proposed value nor any mapping is authorized until OQ1 passes and
+`rubyycheung` ratifies the exact record head.
+
+Rejected: treating the role as global, treating it as disposable private output,
+or applying it merely because two contexts currently share a color.
 
 ## Open questions
 
-- Which candidate Neutral values and component mappings should become current
-  after their cross-theme enabling APIs, if any, are settled separately?
-- What current design record should own the cross-theme contrast methodology
-  before Neutral can rely on it through `references`?
-- Which rendered pairings and interaction states still need theme-specific
-  measured receipts?
+- **OQ1 — Is rendered light/dark evidence complete for the proposed tuple and
+  Badge mapping, and for every later mapping's relevant interaction states?**
+  (`checkable`) Neutral promotion and implementation remain blocked until the
+  actual pairings meet the applicable current contrast methodology, each mapped
+  context is visibly verified, and `rubyycheung` ratifies that exact record head.
 
 ## Content boundary
 
-This record owns Neutral's intent, factual value inventory, selected mappings,
-required pairings/states, theme-specific exceptions, measured receipts, known
-gaps, compatibility, and package facts. A future current design record owns the
-cross-theme contrast methodology; shared measurement implementation belongs to
+This record owns Neutral's intent, factual value inventory, approved local-token
+name and meaning, proposed value, selected mappings, required pairings/states,
+theme-specific exceptions, measured receipts, known gaps, compatibility, and
+package facts. A future current design record owns the cross-theme contrast
+methodology; shared measurement implementation belongs to
 architecture/tooling. This record does not define cross-theme local-token or
-palette APIs. Component/family records own observable behavior, and consumer
-docs own supported syntax and examples.
+palette APIs. `spec:AST-006` owns the cross-theme local-token API, namespace,
+validation, lineage, and compiler invariants. Component/family records own
+observable behavior, and consumer docs own supported syntax and examples.
