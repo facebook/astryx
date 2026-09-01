@@ -84,6 +84,66 @@ describe('themeBuild() — receipt', () => {
     }
   });
 
+  it('emits local tokens and preserves enrollment metadata in the built module', async () => {
+    const themeFile = path.join(tmpDir, 'local-theme.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'local-theme',
+        localTokens: {
+          '--astryx-theme-local-theme-color-status-fill-accent': ['#0077b6', '#48cae4'],
+        },
+        components: {
+          badge: {
+            'variant:info': {
+              backgroundColor: 'var(--astryx-theme-local-theme-color-status-fill-accent)',
+            },
+          },
+        },
+      };\n`,
+    );
+
+    const result = await themeBuild('local-theme.mjs', {}, {cwd: tmpDir});
+    const css = fs.readFileSync(path.join(tmpDir, 'local-theme.css'), 'utf8');
+    const built = fs.readFileSync(path.join(tmpDir, 'local-theme.js'), 'utf8');
+
+    expect(result?.data.tokenCount).toBe(1);
+    expect(css).toContain(
+      '--astryx-theme-local-theme-color-status-fill-accent: light-dark(#0077b6, #48cae4);',
+    );
+    expect(built).toContain('localTokens: {');
+    expect(built).toContain('__localTokenOwners: {');
+    expect(built).toContain('__localTokenLineage: ["local-theme"]');
+  });
+
+  it('rejects undeclared local-token references before writing outputs', async () => {
+    const themeFile = path.join(tmpDir, 'invalid-local-theme.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'invalid-local-theme',
+        localTokens: {},
+        components: {
+          badge: {
+            base: {
+              color: 'var(--astryx-theme-invalid-local-theme-color-missing)',
+            },
+          },
+        },
+      };\n`,
+    );
+
+    await expect(
+      themeBuild('invalid-local-theme.mjs', {}, {cwd: tmpDir}),
+    ).rejects.toThrow(/has no declaration/);
+    expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.css'))).toBe(
+      false,
+    );
+    expect(fs.existsSync(path.join(tmpDir, 'invalid-local-theme.js'))).toBe(
+      false,
+    );
+  });
+
   it('is silent by default (noopLogger) — no console output for a scripted caller', async () => {
     const themeFile = path.join(tmpDir, 'quiet.mjs');
     fs.writeFileSync(
@@ -454,6 +514,55 @@ describe('themeBuild() — extends', () => {
 
     expect(css).toContain('.astryx-switch {');
     expect(css).toContain('--radius-element: 6px;');
+  });
+
+  it('preserves local-token enrollment when extending a built theme module', async () => {
+    fs.writeFileSync(
+      path.join(extDir, 'local-base.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';
+      export const localBaseTheme = defineTheme({
+        name: 'local-base',
+        localTokens: {
+          '--astryx-theme-local-base-color-status-fill': ['#123456', '#abcdef'],
+        },
+        components: {
+          badge: {
+            base: {
+              backgroundColor: 'var(--astryx-theme-local-base-color-status-fill)',
+            },
+          },
+        },
+      });\n`,
+    );
+    await themeBuild('local-base.mjs', {}, {cwd: extDir});
+
+    fs.writeFileSync(
+      path.join(extDir, 'local-child.mjs'),
+      `import {defineTheme} from '@astryxdesign/core/theme';
+      import {localBaseTheme} from './local-base.js';
+      export const localChildTheme = defineTheme({
+        name: 'local-child',
+        extends: localBaseTheme,
+        localTokens: {
+          '--astryx-theme-local-base-color-status-fill': '#654321',
+          '--astryx-theme-local-child-color-surface-raised': '#fedcba',
+        },
+      });\n`,
+    );
+
+    await themeBuild('local-child.mjs', {}, {cwd: extDir});
+    const css = fs.readFileSync(path.join(extDir, 'local-child.css'), 'utf8');
+    const built = fs.readFileSync(path.join(extDir, 'local-child.js'), 'utf8');
+
+    expect(css).toContain(
+      '--astryx-theme-local-base-color-status-fill: #654321;',
+    );
+    expect(css).toContain(
+      '--astryx-theme-local-child-color-surface-raised: #fedcba;',
+    );
+    expect(built).toContain(
+      '__localTokenLineage: ["local-base","local-child"]',
+    );
   });
 
   it('resolves extends on a plain object theme file (no defineTheme call)', async () => {

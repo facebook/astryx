@@ -79,6 +79,120 @@ describe('defineTheme', () => {
     warn.mockRestore();
   });
 
+  it('keeps explicitly enrolled local tokens separate and emits their exact names', () => {
+    const theme = defineTheme({
+      name: 'ocean-theme',
+      localTokens: {
+        '--astryx-theme-ocean-theme-color-status-fill-accent': [
+          '#0077b6',
+          '#48cae4',
+        ],
+      },
+      components: {
+        badge: {
+          'variant:info': {
+            backgroundColor:
+              'var(--astryx-theme-ocean-theme-color-status-fill-accent)',
+          },
+        },
+      },
+    });
+
+    expect(theme.tokens).not.toHaveProperty(
+      '--astryx-theme-ocean-theme-color-status-fill-accent',
+    );
+    expect(theme.localTokens).toEqual({
+      '--astryx-theme-ocean-theme-color-status-fill-accent':
+        'light-dark(#0077b6, #48cae4)',
+    });
+    expect(theme.__localTokenOwners).toEqual({
+      '--astryx-theme-ocean-theme-color-status-fill-accent': 'ocean-theme',
+    });
+    expect(theme.__localTokenLineage).toEqual(['ocean-theme']);
+    expect(generateThemeTestCSS(theme)).toContain(
+      '--astryx-theme-ocean-theme-color-status-fill-accent: light-dark(#0077b6, #48cae4);',
+    );
+  });
+
+  it('does not reinterpret legacy reserved-prefix references without enrollment', () => {
+    const theme = defineTheme({
+      name: 'legacy',
+      tokens: {
+        // @ts-expect-error legacy permissive token input remains unchanged
+        '--astryx-theme-legacy-color-old': '#123456',
+      },
+      components: {
+        badge: {
+          base: {color: 'var(--astryx-theme-missing-color-old)'},
+        },
+      },
+    });
+
+    expect(theme.tokens['--astryx-theme-legacy-color-old']).toBe('#123456');
+    expect(theme).not.toHaveProperty('localTokens');
+    expect(theme).not.toHaveProperty('__localTokenOwners');
+    expect(theme).not.toHaveProperty('__localTokenLineage');
+  });
+
+  it.each([
+    ['Uppercase', '--astryx-theme-Uppercase-color-accent'],
+    ['wrong-space', '--astryx-theme-other-color-accent'],
+    ['wrong-space', '--astryx-theme-wrong-space-Color-accent'],
+  ])('rejects malformed local token enrollment for %s', (name, token) => {
+    expect(() =>
+      defineTheme({
+        name,
+        localTokens: {[token]: '#123456'},
+      }),
+    ).toThrow(/localTokens|local token/);
+  });
+
+  it('rejects undeclared local references in nested and media component rules', () => {
+    expect(() =>
+      defineTheme({
+        name: 'ocean',
+        localTokens: {},
+        components: {
+          button: {
+            base: {
+              ':hover': {
+                color: 'var(--astryx-theme-ocean-color-missing)',
+              },
+            },
+          },
+        },
+      }),
+    ).toThrow(/has no declaration/);
+
+    expect(() =>
+      defineTheme({
+        name: 'ocean',
+        localTokens: {},
+        onDark: {
+          components: {
+            badge: {
+              base: {
+                color: 'var(--astryx-theme-ocean-color-missing)',
+              },
+            },
+          },
+        },
+      }),
+    ).toThrow(/has no declaration/);
+  });
+
+  it('rejects cycles between local tokens', () => {
+    expect(() =>
+      defineTheme({
+        name: 'cycle',
+        localTokens: {
+          '--astryx-theme-cycle-color-a': 'var(--astryx-theme-cycle-color-b)',
+          '--astryx-theme-cycle-color-b': 'var(--astryx-theme-cycle-color-a)',
+        },
+      }),
+    ).toThrow(/cycle detected/);
+  });
+
   it('includes icons in the theme', () => {
     const icons = {close: 'X'} as Partial<IconRegistry>;
     const theme = defineTheme({name: 'icons', icons});
@@ -1023,6 +1137,83 @@ describe('container padding mapping', () => {
 });
 
 describe('defineTheme extends', () => {
+  it('inherits enrollment, allows exact replacement, and owns new child names', () => {
+    const base = defineTheme({
+      name: 'base-theme',
+      localTokens: {
+        '--astryx-theme-base-theme-color-status-fill': '#123456',
+      },
+    });
+    const child = defineTheme({
+      name: 'child-theme',
+      extends: base,
+      localTokens: {
+        '--astryx-theme-base-theme-color-status-fill': '#654321',
+        '--astryx-theme-child-theme-color-surface-raised': '#abcdef',
+      },
+    });
+
+    expect(child.localTokens).toEqual({
+      '--astryx-theme-base-theme-color-status-fill': '#654321',
+      '--astryx-theme-child-theme-color-surface-raised': '#abcdef',
+    });
+    expect(child.__localTokenOwners).toEqual({
+      '--astryx-theme-base-theme-color-status-fill': 'base-theme',
+      '--astryx-theme-child-theme-color-surface-raised': 'child-theme',
+    });
+    expect(child.__localTokenLineage).toEqual(['base-theme', 'child-theme']);
+  });
+
+  it('inherits enrollment when the child declares no local tokens', () => {
+    const base = defineTheme({name: 'base-theme', localTokens: {}});
+    const child = defineTheme({name: 'child-theme', extends: base});
+
+    expect(child.localTokens).toEqual({});
+    expect(child.__localTokenLineage).toEqual(['base-theme', 'child-theme']);
+  });
+
+  it('preserves legacy descendant names when they only inherit enrollment', () => {
+    const base = defineTheme({
+      name: 'base-theme',
+      localTokens: {
+        '--astryx-theme-base-theme-color-status-fill': '#123456',
+      },
+    });
+    const legacyChild = defineTheme({name: 'Legacy.Theme', extends: base});
+    const grandchild = defineTheme({name: 'grandchild', extends: legacyChild});
+
+    expect(legacyChild.localTokens).toEqual(base.localTokens);
+    expect(legacyChild.__localTokenLineage).toEqual([
+      'base-theme',
+      'Legacy.Theme',
+    ]);
+    expect(grandchild.localTokens).toEqual(base.localTokens);
+    expect(grandchild.__localTokenLineage).toEqual([
+      'base-theme',
+      'Legacy.Theme',
+      'grandchild',
+    ]);
+  });
+
+  it('rejects a new declaration in another theme namespace', () => {
+    const base = defineTheme({
+      name: 'base-theme',
+      localTokens: {
+        '--astryx-theme-base-theme-color-status-fill': '#123456',
+      },
+    });
+
+    expect(() =>
+      defineTheme({
+        name: 'child-theme',
+        extends: base,
+        localTokens: {
+          '--astryx-theme-base-theme-color-new-role': '#abcdef',
+        },
+      }),
+    ).toThrow(/exact namespace/);
+  });
+
   it('inherits tokens from base theme', () => {
     const base = defineTheme({
       name: 'base',
