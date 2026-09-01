@@ -11,14 +11,44 @@
 
 import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ComplexSelector, type ComplexSelectorHandle} from './ComplexSelector';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 const originalMatches = HTMLElement.prototype.matches;
 
 // Mock the Popover API, which jsdom does not implement.
 beforeEach(() => {
+  __resetInteractionModalityForTest();
+  HTMLDialogElement.prototype.showModal = vi.fn(function (
+    this: HTMLDialogElement,
+  ) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  });
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     this.setAttribute('popover-open', '');
     const event = new Event('toggle');
@@ -111,6 +141,94 @@ function FruitComplexSelector({
 }
 
 describe('ComplexSelector', () => {
+  it('uses a bottom sheet and keeps the custom close contract', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        presentation="bottom-sheet"
+        onOpenChange={onOpenChange}>
+        {(_value, _onChange, close) => (
+          <button type="button" onClick={close}>
+            Apply
+          </button>
+        )}
+      </ComplexSelector>,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Fruit blend'});
+    await user.click(trigger);
+
+    const dialog = await screen.findByRole('dialog', {name: 'Fruit blend'});
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    expect(
+      dialog.querySelector('.astryx-complex-selector-popup'),
+    ).not.toBeNull();
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', {name: 'Apply'})).toHaveFocus(),
+    );
+    await user.click(within(dialog).getByRole('button', {name: 'Apply'}));
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('uses a bottom sheet for adaptive presentation on compact touch', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        presentation="adaptive">
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+    expect(
+      await screen.findByRole('dialog', {name: 'Fruit blend'}),
+    ).toBeInTheDocument();
+    expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  it('caps the anchored surface to the available viewport', async () => {
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector label="Fruit blend" value="Apple">
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+    const dialog = screen.getByRole('dialog', {hidden: true});
+    const layer = dialog.closest('[popover]');
+    expect(layer?.className).toContain(
+      'ComplexSelector__styles.popoverViewport',
+    );
+    expect(layer?.className).toContain(
+      'ComplexSelector__styles.popoverAligned',
+    );
+    expect(dialog.className).toContain(
+      'ComplexSelector__styles.surfaceViewportFit',
+    );
+  });
+
   it('defaults to md and reflects explicit trigger sizes', () => {
     const {container, rerender} = render(
       <ComplexSelector label="Fruit blend" value="Apple">

@@ -53,6 +53,14 @@ const meta: Meta<typeof ComplexSelector> = {
       },
     },
   },
+  argTypes: {
+    presentation: {
+      control: 'radio',
+      options: ['adaptive', 'popover', 'bottom-sheet'],
+      description:
+        'Selection surface. Adaptive uses a BottomSheet on compact primary-touch devices and a viewport-safe popover otherwise.',
+    },
+  },
 };
 
 export default meta;
@@ -825,6 +833,56 @@ export const ControlledToolbarTrigger: Story = {
       description: {
         story:
           'A compact toolbar composition using the ghost trigger, a leading icon, end-aligned content, and an external control that opens the selector imperatively through its handleRef. The selector still owns its own visibility, focus restoration, and light dismiss.',
+      },
+    },
+  },
+};
+
+export const BottomSheetPresentation: Story = {
+  name: 'Bottom sheet presentation',
+  render: () => {
+    const [value, setValue] = useState<DestinationValue>({
+      id: 'teams-design-systems-accessibility',
+      label: 'Accessibility',
+      path: '/Teams/Design systems/Accessibility',
+    });
+    const selectorRef = useRef<ComplexSelectorHandle>(null);
+
+    useEffect(() => {
+      selectorRef.current?.open();
+    }, []);
+
+    return (
+      <div style={{padding: 16, width: '100%'}}>
+        <ComplexSelector<DestinationValue>
+          label="Project destination"
+          value={value}
+          onChange={setValue}
+          triggerLabel={formatDestinationValue(value)}
+          presentation="bottom-sheet"
+          handleRef={selectorRef}
+          contentXstyle={styles.treeContent}>
+          {(selectedValue, onChange, close) => (
+            <TreeSearchContent
+              label="destinations"
+              value={selectedValue}
+              tree={destinationTree}
+              searchPlaceholder="Search folders or teams"
+              onChange={onChange}
+              close={close}
+            />
+          )}
+        </ComplexSelector>
+      </div>
+    );
+  },
+  parameters: {
+    layout: 'fullscreen',
+    viewport: {defaultViewport: 'mobile1'},
+    docs: {
+      description: {
+        story:
+          'The same rich tree-and-search selector in the explicit mobile BottomSheet presentation. Adaptive presentation selects this surface on compact primary-touch devices.',
       },
     },
   },

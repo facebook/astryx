@@ -4,7 +4,7 @@
 
 /**
  * @file ComplexSelector.tsx
- * @input Uses React, StyleX, Field, Icon slots, Layer positioning, and usePopover
+ * @input Uses React, StyleX, Field, Icon slots, and adaptive selector presentation
  * @output Exports a rich-selector shell with exact token-sized input and ghost triggers, plus an imperative open/close handle
  * @position Core implementation; consumed by index.ts
  *
@@ -34,7 +34,7 @@ import {Spinner} from '../Spinner';
 import {useTranslator} from '../i18n';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
-import {usePopover} from '../Popover/usePopover';
+import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {
   colorVars,
@@ -53,6 +53,19 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
+import {SelectorBottomSheet} from '../Selector/SelectorBottomSheet';
+import {useSelectorPresentation} from '../Selector/useSelectorPresentation';
+import {stableClassName} from '../naming';
+
+const COMPLEX_SELECTOR_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const COMPLEX_SELECTOR_MAX_INLINE_SIZE = `calc(100vi - max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
+const COMPLEX_SELECTOR_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${COMPLEX_SELECTOR_VIEWPORT_GUTTER} - ${COMPLEX_SELECTOR_VIEWPORT_GUTTER})`;
+const COMPLEX_SELECTOR_MAX_BLOCK_SIZE = `min(480px, calc(100dvb - max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))))`;
+const COMPLEX_SELECTOR_MAX_BLOCK_SIZE_FALLBACK = `min(480px, calc(100vh - ${COMPLEX_SELECTOR_VIEWPORT_GUTTER} - ${COMPLEX_SELECTOR_VIEWPORT_GUTTER}))`;
+const COMPLEX_SELECTOR_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
+const COMPLEX_SELECTOR_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${COMPLEX_SELECTOR_VIEWPORT_GUTTER})`;
+const COMPLEX_SELECTOR_INLINE_EDGE_GUTTER = `max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))`;
 
 const styles = stylex.create({
   triggerContainer: {
@@ -159,14 +172,92 @@ const styles = stylex.create({
   triggerIconOpen: {
     transform: 'rotate(180deg)',
   },
-  popover: {
-    minWidth: 'anchor-size(width)',
+  popoverViewport: {
+    boxSizing: 'border-box',
+    maxBlockSize: stylex.firstThatWorks(
+      COMPLEX_SELECTOR_MAX_BLOCK_SIZE,
+      COMPLEX_SELECTOR_MAX_BLOCK_SIZE_FALLBACK,
+    ),
+  },
+  popoverViewportAligned: {
+    maxInlineSize: stylex.firstThatWorks(
+      COMPLEX_SELECTOR_POSITION_AREA_MAX_INLINE_SIZE,
+      COMPLEX_SELECTOR_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
+  popoverViewportStart: {
+    marginInlineEnd: COMPLEX_SELECTOR_INLINE_EDGE_GUTTER,
+  },
+  popoverViewportEnd: {
+    marginInlineStart: COMPLEX_SELECTOR_INLINE_EDGE_GUTTER,
+  },
+  popoverViewportBlockStart: {
+    marginBlockEnd: `max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+  },
+  popoverViewportBlockEnd: {
+    marginBlockStart: `max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
+  },
+  popoverViewportCentered: {
+    marginInlineStart: COMPLEX_SELECTOR_INLINE_EDGE_GUTTER,
+    marginInlineEnd: COMPLEX_SELECTOR_INLINE_EDGE_GUTTER,
+    maxInlineSize: stylex.firstThatWorks(
+      COMPLEX_SELECTOR_MAX_INLINE_SIZE,
+      COMPLEX_SELECTOR_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
+  popoverViewportBlockCentered: {
+    marginBlockStart: `max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
+    marginBlockEnd: `max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+    maxInlineSize: stylex.firstThatWorks(
+      COMPLEX_SELECTOR_MAX_INLINE_SIZE,
+      COMPLEX_SELECTOR_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
+  popoverAligned: {
+    minWidth: stylex.firstThatWorks(
+      `min(anchor-size(width), ${COMPLEX_SELECTOR_POSITION_AREA_MAX_INLINE_SIZE})`,
+      `min(anchor-size(width), ${COMPLEX_SELECTOR_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK})`,
+      'anchor-size(width)',
+    ),
+  },
+  popoverCentered: {
+    minWidth: stylex.firstThatWorks(
+      `min(anchor-size(width), ${COMPLEX_SELECTOR_MAX_INLINE_SIZE})`,
+      `min(anchor-size(width), ${COMPLEX_SELECTOR_MAX_INLINE_SIZE_FALLBACK})`,
+      'anchor-size(width)',
+    ),
+  },
+  surfaceViewportFit: {
+    boxSizing: 'border-box',
+    maxInlineSize: stylex.firstThatWorks(
+      COMPLEX_SELECTOR_MAX_INLINE_SIZE,
+      COMPLEX_SELECTOR_MAX_INLINE_SIZE_FALLBACK,
+    ),
+    maxBlockSize: stylex.firstThatWorks(
+      COMPLEX_SELECTOR_MAX_BLOCK_SIZE,
+      COMPLEX_SELECTOR_MAX_BLOCK_SIZE_FALLBACK,
+    ),
   },
   content: {
     boxSizing: 'border-box',
-    maxHeight: 'min(480px, calc(100vh - 32px))',
+    maxInlineSize: stylex.firstThatWorks(
+      COMPLEX_SELECTOR_MAX_INLINE_SIZE,
+      COMPLEX_SELECTOR_MAX_INLINE_SIZE_FALLBACK,
+    ),
+    maxHeight: stylex.firstThatWorks(
+      COMPLEX_SELECTOR_MAX_BLOCK_SIZE,
+      COMPLEX_SELECTOR_MAX_BLOCK_SIZE_FALLBACK,
+    ),
     overflow: 'auto',
+    overscrollBehavior: 'contain',
     padding: spacingVars['--spacing-3'],
+  },
+  sheetContent: {
+    width: '100%',
+    maxInlineSize: '100%',
+    maxHeight: 'none',
+    overflow: 'visible',
+    padding: 0,
   },
   sm: {
     height: sizeVars['--size-element-sm'],
@@ -185,6 +276,8 @@ const styles = stylex.create({
 export type ComplexSelectorVariant = 'input' | 'ghost';
 
 export type ComplexSelectorSize = 'sm' | 'md' | 'lg';
+
+export type ComplexSelectorPresentation = AdaptivePresentation;
 
 export interface ComplexSelectorRenderState {
   /** Whether the selector surface is open. */
@@ -276,6 +369,14 @@ export interface ComplexSelectorProps<Value> extends Omit<
   /** Popup alignment along the placement axis. */
   alignment?: LayerAlignment;
   /**
+   * How the custom selector content is presented.
+   * - 'popover': anchored to the trigger
+   * - 'bottom-sheet': modal sheet suited to compact touch screens
+   * - 'adaptive': bottom sheet on compact coarse-pointer screens, otherwise popover
+   * @default 'popover'
+   */
+  presentation?: ComplexSelectorPresentation;
+  /**
    * Imperative handle for programmatic open/close control. Exposes open,
    * close, toggle, and the isOpen query. Use this instead of mirroring open
    * state in the parent — the selector owns its visibility.
@@ -344,6 +445,7 @@ export function ComplexSelector<Value>({
   width,
   placement = 'below',
   alignment = 'start',
+  presentation = 'popover',
   handleRef,
   onOpenChange,
   contentXstyle,
@@ -376,70 +478,82 @@ export function ComplexSelector<Value>({
       .join(' ') || undefined;
 
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
+  const isOpenRef = useRef(false);
 
   const handlePopoverShow = useCallback(() => {
+    isOpenRef.current = true;
     onOpenChange?.(true);
   }, [onOpenChange]);
 
-  const handlePopoverHide = useCallback(() => {
-    // Focus is restored first so a consumer that moves focus elsewhere from
-    // the callback wins, instead of being overwritten a line later.
-    triggerRef.current?.focus();
+  const handleSurfaceHide = useCallback(() => {
+    isOpenRef.current = false;
     onOpenChange?.(false);
   }, [onOpenChange]);
 
-  const popover = usePopover({
-    dialogLabel: label,
-    hasCloseButton: false,
-    hasAutoFocus: true,
-    surfaceTarget: 'complex-selector-popup',
+  const surface = useSelectorPresentation({
+    presentation,
     onShow: handlePopoverShow,
-    onHide: handlePopoverHide,
+    onHide: handleSurfaceHide,
+    triggerRef,
+    popoverOptions: {
+      dialogLabel: label,
+      hasCloseButton: false,
+      hasAutoFocus: true,
+      surfaceTarget: 'complex-selector-popup',
+      xstyle: styles.surfaceViewportFit,
+    },
   });
+  const {popover} = surface;
 
-  const isOpen = popover.isOpen;
+  const isOpen = surface.isOpen;
+
+  const show = useCallback(() => {
+    if (isDisabled || isOpenRef.current) {
+      return;
+    }
+    surface.show();
+  }, [isDisabled, surface]);
+
+  const close = useCallback(() => {
+    surface.hide();
+  }, [surface]);
 
   const handleTriggerClick = useCallback(() => {
     if (isDisabled) {
       return;
     }
-    if (popover.isOpen) {
-      popover.hide();
+    if (surface.isOpen) {
+      surface.hide();
     } else {
-      popover.show();
+      show();
     }
-  }, [isDisabled, popover]);
-
-  const close = useCallback(() => {
-    popover.hide();
-  }, [popover]);
+  }, [isDisabled, show, surface]);
 
   useImperativeHandle(
     handleRef,
     () => ({
       open: () => {
-        if (!isDisabled) {
-          popover.show();
-        }
+        show();
       },
-      close: () => popover.hide(),
+      close: () => surface.hide(),
       toggle: () => {
         if (isDisabled) {
           return;
         }
-        if (popover.isOpen) {
-          popover.hide();
+        if (surface.isOpen) {
+          surface.hide();
         } else {
-          popover.show();
+          show();
         }
       },
-      isOpen: () => popover.isOpen,
+      isOpen: () => isOpenRef.current,
     }),
-    [isDisabled, popover],
+    [isDisabled, show, surface],
   );
 
   const commitValue = useCallback(
@@ -463,7 +577,14 @@ export function ComplexSelector<Value>({
   });
 
   const content = (
-    <div id={contentId} {...stylex.props(styles.content, contentXstyle)}>
+    <div
+      ref={contentRef}
+      id={contentId}
+      {...stylex.props(
+        styles.content,
+        contentXstyle,
+        surface.activePresentation === 'bottom-sheet' && styles.sheetContent,
+      )}>
       {children(optimisticValue, commitValue, close, {
         isOpen,
         isBusy,
@@ -495,6 +616,8 @@ export function ComplexSelector<Value>({
             // matched a mouse click on the trigger and drew the outline for
             // pointer users too. `focusWithin` here is `:has(:focus-visible)`.
             focusOutlineStyles.focusWithin,
+            surface.isTriggerFocusRingSuppressed &&
+              selectorPresentationStyles.pointerRestoredFocus,
             variant === 'ghost' && styles.triggerGhost,
             variant === 'ghost' && interactionOverlayStyles.backgroundImage,
             isDisabled && inputWrapperStyles.disabled,
@@ -523,9 +646,10 @@ export function ComplexSelector<Value>({
           onKeyDown={event => {
             if (event.key === 'ArrowDown' && !isOpen && !isDisabled) {
               event.preventDefault();
-              popover.show();
+              show();
             }
           }}
+          onFocus={surface.onTriggerFocus}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
@@ -549,12 +673,45 @@ export function ComplexSelector<Value>({
         />
       </div>
 
-      {popover.render(content, {
-        placement,
-        alignment,
-        offset: spacingVars['--spacing-1'],
-        xstyle: [styles.popover, layerAnimations[placement]],
-      })}
+      {surface.activePresentation === 'bottom-sheet' ? (
+        <SelectorBottomSheet
+          isOpen={surface.isSheetOpen}
+          onOpenChange={surface.onSheetOpenChange}
+          finalFocusRef={triggerRef}
+          initialFocusContainerRef={contentRef}
+          label={label}
+          layout="rich"
+          className={stableClassName('complex-selector-popup')}>
+          {content}
+        </SelectorBottomSheet>
+      ) : (
+        popover.render(content, {
+          placement,
+          alignment,
+          offset: spacingVars['--spacing-1'],
+          xstyle: [
+            styles.popoverViewport,
+            alignment === 'center'
+              ? placement === 'start' || placement === 'end'
+                ? styles.popoverViewportBlockCentered
+                : styles.popoverViewportCentered
+              : [
+                  styles.popoverViewportAligned,
+                  placement === 'start' || placement === 'end'
+                    ? alignment === 'start'
+                      ? styles.popoverViewportBlockStart
+                      : styles.popoverViewportBlockEnd
+                    : alignment === 'start'
+                      ? styles.popoverViewportStart
+                      : styles.popoverViewportEnd,
+                ],
+            alignment === 'center'
+              ? styles.popoverCentered
+              : styles.popoverAligned,
+            layerAnimations[placement],
+          ],
+        })
+      )}
     </>
   );
 

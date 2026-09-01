@@ -42,10 +42,10 @@ const anatomy = [
       'Trailing chevron that rotates to reflect whether the popup is open.',
   },
   {
-    name: 'Popup',
+    name: 'Selection surface',
     required: true,
     description:
-      'Mounted dialog surface that is painted and shown while open and hidden while closed.',
+      'Viewport-safe anchored dialog or mobile BottomSheet that hosts the custom selector content.',
   },
 ];
 
@@ -60,6 +60,8 @@ export const docs = {
     'selector',
     'picker',
     'popover',
+    'bottom sheet',
+    'responsive',
     'dialog',
     'custom',
     'rich',
@@ -84,7 +86,7 @@ export const docs = {
       name: 'ComplexSelector',
       displayName: 'Complex Selector',
       description:
-        'An input or toolbar trigger and dialog-popover shell for custom selector content.',
+        'An input or toolbar trigger with a viewport-safe popover or adaptive mobile BottomSheet for custom selector content.',
       props: [
         {
           name: 'label',
@@ -178,6 +180,13 @@ export const docs = {
           default: "'start'",
         },
         {
+          name: 'presentation',
+          type: "'adaptive' | 'popover' | 'bottom-sheet'",
+          description:
+            'Surface used for the custom content. adaptive uses a BottomSheet on compact coarse-pointer screens and an anchored popover otherwise. Explicit values force one presentation.',
+          default: "'popover'",
+        },
+        {
           name: 'handleRef',
           type: 'React.Ref<ComplexSelectorHandle>',
           description:
@@ -200,7 +209,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'Use ComplexSelector when a selection needs richer custom content than a Selector option row. It is intentionally one component: ComplexSelector owns the field, trigger, popover, focus restore, and changeAction flow, while the content render prop owns the selector-specific accessible structure.',
+      'Use ComplexSelector when a selection needs richer custom content than a Selector option row. It owns the field, trigger, responsive presentation, focus restore, and changeAction flow, while the content render prop owns the selector-specific accessible structure. The default popover stays inside viewport and safe-area gutters; presentation="adaptive" uses a BottomSheet on compact primary-touch devices.',
     bestPractices: [
       {
         guidance: true,
@@ -226,6 +235,11 @@ export const docs = {
         guidance: true,
         description:
           'Call close() from custom content when a selection should dismiss the popup. Keep it open for multi-step content or freeform entry flows.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use presentation="adaptive" when the same rich selector should become a modal BottomSheet on compact primary-touch devices. Force bottom-sheet only when that modal mobile contract is always intended.',
       },
       {
         guidance: true,
@@ -257,11 +271,11 @@ export const docsDense = {
   group: 'Selector',
   category: 'Form Controls',
   description:
-    'Input/ghost trigger + dialog-popover shell for rich custom selectors. Content gets value/onChange/close/state; content owns semantics. Use focus hooks and evaluate custom content against WCAG 2.2.',
+    'Input/ghost trigger plus viewport-safe popover or adaptive mobile BottomSheet for rich custom selectors. Content gets value/onChange/close/state and owns semantics.',
   usage: {
     anatomy,
     description:
-      'Use when a selection needs richer custom content than a Selector row. One component: it owns field, trigger, popover, focus restore, and changeAction; the render prop owns the selector-specific accessible structure.',
+      'Use when a selection needs richer custom content than a Selector row. It owns field, trigger, responsive presentation, focus restore, and changeAction; the render prop owns the selector-specific accessible structure.',
     bestPractices: [
       {
         guidance: true,
@@ -287,6 +301,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Call close() from custom content when a selection should dismiss the popup. Keep it open for multi-step or freeform flows.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use presentation="adaptive" for a BottomSheet on compact primary-touch devices and an anchored popover elsewhere.',
       },
       {
         guidance: true,
@@ -321,6 +340,8 @@ export const docsDense = {
     startIcon: 'Leading trigger icon.',
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
+    presentation:
+      'popover (default), bottom-sheet, or compact-touch adaptive surface.',
     handleRef: 'Imperative open/close/toggle handle.',
     onOpenChange: 'Notified on every open and close, whatever caused it.',
     accessibility:

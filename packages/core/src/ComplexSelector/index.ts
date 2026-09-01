@@ -11,6 +11,7 @@
 export {
   ComplexSelector,
   type ComplexSelectorHandle,
+  type ComplexSelectorPresentation,
   type ComplexSelectorProps,
   type ComplexSelectorRenderState,
   type ComplexSelectorSize,

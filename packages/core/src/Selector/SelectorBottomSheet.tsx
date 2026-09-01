@@ -4,8 +4,8 @@
 
 /**
  * @file SelectorBottomSheet.tsx
- * @input Uses BottomSheet, Section, and Heading
- * @output Shared mobile listbox sheet for Selector and MultiSelector
+ * @input Uses BottomSheet, Section, Heading, and shared focusable discovery
+ * @output Shared mobile sheet for Selector, MultiSelector, and ComplexSelector
  * @position Internal presentation primitive for selection controls
  */
 
@@ -13,6 +13,7 @@ import {lazy, Suspense, useEffect, type ReactNode, type RefObject} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Heading} from '../Heading';
 import {Section} from '../Section';
+import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {spacingVars} from '../theme/tokens.stylex';
 
 const LazyBottomSheet = lazy(async () =>
@@ -29,45 +30,78 @@ const styles = stylex.create({
     marginBlockEnd: spacingVars['--spacing-2'],
     marginInline: spacingVars['--spacing-3'],
   },
+  richHeading: {
+    marginBlockEnd: spacingVars['--spacing-3'],
+    marginInline: 0,
+  },
 });
 
 interface SelectorBottomSheetProps {
   children: ReactNode;
+  className?: string;
   finalFocusRef: RefObject<HTMLElement | null>;
-  initialFocusRef: RefObject<HTMLElement | null>;
+  initialFocusContainerRef?: RefObject<HTMLElement | null>;
+  initialFocusRef?: RefObject<HTMLElement | null>;
   isOpen: boolean;
   label: string;
+  layout?: 'listbox' | 'rich';
   onOpenChange: (isOpen: boolean) => void;
 }
 
 function SelectorBottomSheetInitialFocus({
   isOpen,
+  containerRef,
   targetRef,
 }: {
   isOpen: boolean;
-  targetRef: RefObject<HTMLElement | null>;
+  containerRef?: RefObject<HTMLElement | null>;
+  targetRef?: RefObject<HTMLElement | null>;
 }) {
   useEffect(() => {
     if (!isOpen) {
       return;
     }
     const frame = requestAnimationFrame(() => {
-      targetRef.current?.focus({preventScroll: true});
+      const container = containerRef?.current;
+      const focusTarget =
+        targetRef?.current ??
+        container?.querySelector<HTMLElement>('[data-autofocus]') ??
+        container?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      focusTarget?.focus({preventScroll: true});
     });
     return () => cancelAnimationFrame(frame);
-  }, [isOpen, targetRef]);
+  }, [containerRef, isOpen, targetRef]);
 
   return null;
 }
 
 export function SelectorBottomSheet({
   children,
+  className,
   finalFocusRef,
+  initialFocusContainerRef,
   initialFocusRef,
   isOpen,
   label,
+  layout = 'listbox',
   onOpenChange,
 }: SelectorBottomSheetProps) {
+  const content = (
+    <div {...stylex.props(styles.content)}>
+      <Heading
+        level={3}
+        xstyle={[styles.heading, layout === 'rich' && styles.richHeading]}>
+        {label}
+      </Heading>
+      {children}
+      <SelectorBottomSheetInitialFocus
+        isOpen={isOpen}
+        containerRef={initialFocusContainerRef}
+        targetRef={initialFocusRef}
+      />
+    </div>
+  );
+
   return (
     <Suspense fallback={null}>
       <LazyBottomSheet
@@ -76,19 +110,15 @@ export function SelectorBottomSheet({
         finalFocusRef={finalFocusRef}
         label={label}
         height="hug"
-        purpose="info">
-        <Section paddingBlockStart={4} paddingBlockEnd={0} paddingInline={1}>
-          <div {...stylex.props(styles.content)}>
-            <Heading level={3} xstyle={styles.heading}>
-              {label}
-            </Heading>
-            {children}
-            <SelectorBottomSheetInitialFocus
-              isOpen={isOpen}
-              targetRef={initialFocusRef}
-            />
-          </div>
-        </Section>
+        purpose="info"
+        className={className}>
+        {layout === 'rich' ? (
+          <Section padding={4}>{content}</Section>
+        ) : (
+          <Section paddingBlockStart={4} paddingBlockEnd={0} paddingInline={1}>
+            {content}
+          </Section>
+        )}
       </LazyBottomSheet>
     </Suspense>
   );

@@ -30,8 +30,9 @@ import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 
 interface UseSelectorPresentationOptions {
   presentation: AdaptivePresentation;
+  onShow?: () => void;
   onHide: () => void;
-  popoverOptions: Omit<UsePopoverOptions, 'onHide'>;
+  popoverOptions: Omit<UsePopoverOptions, 'onShow' | 'onHide'>;
   triggerRef: RefObject<HTMLElement | null>;
 }
 
@@ -50,6 +51,7 @@ interface SelectorPresentationController {
 
 export function useSelectorPresentation({
   presentation,
+  onShow,
   onHide,
   popoverOptions,
   triggerRef,
@@ -59,6 +61,7 @@ export function useSelectorPresentation({
     useRef<ResolvedAdaptivePresentation>(resolvedPresentation);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const isSheetOpenRef = useRef(false);
+  const onShowRef = useRef(onShow);
   const onHideRef = useRef(onHide);
   const {
     isFocusRingSuppressed,
@@ -66,7 +69,12 @@ export function useSelectorPresentation({
     prepareFocusReturn,
     resetFocusReturn,
   } = useFocusReturnVisibility();
+  onShowRef.current = onShow;
   onHideRef.current = onHide;
+
+  const handlePopoverShow = useCallback(() => {
+    onShowRef.current?.();
+  }, []);
 
   const handlePopoverHide = useCallback(() => {
     prepareFocusReturn();
@@ -75,6 +83,7 @@ export function useSelectorPresentation({
   }, [prepareFocusReturn, triggerRef]);
   const popover = usePopoverInternal({
     ...popoverOptions,
+    onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
   const {
@@ -87,8 +96,12 @@ export function useSelectorPresentation({
     resetFocusReturn();
     activePresentationRef.current = resolvedPresentation;
     if (resolvedPresentation === 'bottom-sheet') {
+      if (isSheetOpenRef.current) {
+        return;
+      }
       isSheetOpenRef.current = true;
       setIsSheetOpen(true);
+      onShowRef.current?.();
     } else {
       showPopover();
     }
