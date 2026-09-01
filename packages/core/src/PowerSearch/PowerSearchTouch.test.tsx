@@ -194,6 +194,9 @@ describe('PowerSearchTouchSurface', () => {
       'aria-haspopup',
       'dialog',
     );
+    expect(
+      screen.getByRole('button', {name: 'Filter issues'}),
+    ).toHaveTextContent('Filters…');
     expect(screen.queryByRole('button', {name: 'Add filters…'})).toBeNull();
   });
 
@@ -208,7 +211,7 @@ describe('PowerSearchTouchSurface', () => {
 
   it('restores focus to the field after Done closes management', () => {
     setup();
-    const trigger = screen.getByRole('button', {name: 'Search'});
+    const trigger = screen.getByRole('button', {name: 'Manage filters'});
     trigger.focus();
     fireEvent.click(trigger);
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Done'}));
@@ -273,7 +276,7 @@ describe('PowerSearchTouchSurface', () => {
     const handle = createRef<PowerSearchHandle>();
     setup({config: contentSearchConfig, handleRef: handle});
     handle.current?.focusTypeahead();
-    expect(screen.getByRole('button', {name: 'Search'})).toHaveFocus();
+    expect(screen.getByRole('button', {name: 'Manage filters'})).toHaveFocus();
   });
 
   it('shows selected filters as editable rows with separate remove actions', () => {
@@ -316,6 +319,9 @@ describe('PowerSearchTouchSurface', () => {
     openAddFlow();
     tapRow(/^Status/);
     tapRow('Closed');
+    expect(
+      within(sheet()).getByRole('button', {name: 'Closed, selected'}),
+    ).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     expect(onChange).toHaveBeenCalledWith(
@@ -337,10 +343,11 @@ describe('PowerSearchTouchSurface', () => {
     tapRow(/^Status/);
     tapRow('Closed');
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.transitionEnd(document.querySelector('dialog')!);
     expect(isSheetOpen()).toBe(true);
     expect(
-      within(sheet()).getByRole('heading', {name: 'Filters'}),
-    ).toBeTruthy();
+      within(sheet()).getByRole('button', {name: 'Add filter'}),
+    ).toHaveFocus();
   });
 
   it('confirms an empty-value operator through Save', () => {
@@ -423,6 +430,15 @@ describe('PowerSearchTouchSurface', () => {
     expect(within(sheet()).queryByRole('radiogroup')).toBeNull();
   });
 
+  it('restores focus to the chosen field when backing out of creation', () => {
+    setup();
+    openAddFlow();
+    tapRow(/^Author/);
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Back'}));
+    fireEvent.transitionEnd(document.querySelector('dialog')!);
+    expect(within(sheet()).getByRole('button', {name: 'Author'})).toHaveFocus();
+  });
+
   it('stages a multi-select and commits it from the footer', () => {
     const {onChange} = setup();
     openAddFlow();
@@ -452,6 +468,24 @@ describe('PowerSearchTouchSurface', () => {
     expect(
       apply.getAttribute('aria-disabled') ?? apply.hasAttribute('disabled'),
     ).toBeTruthy();
+  });
+
+  it('disables an open editor when the component becomes disabled', () => {
+    const {rerender} = setup();
+    openAddFlow();
+    tapRow(/^Status/);
+    rerender(
+      <PowerSearchTouchSurface
+        config={config}
+        filters={[]}
+        onChange={vi.fn()}
+        isDisabled
+      />,
+    );
+    expect(
+      within(sheet()).getByRole('radio', {name: 'Status is'}),
+    ).toBeDisabled();
+    expect(within(sheet()).getByRole('button', {name: 'Save'})).toBeDisabled();
   });
 
   it('edits a filter only after Save', () => {
@@ -491,10 +525,11 @@ describe('PowerSearchTouchSurface', () => {
     const {onChange} = setup({filters: [openFilter]});
     openEditFlow('Status is Open');
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Back'}));
+    fireEvent.transitionEnd(document.querySelector('dialog')!);
     expect(isSheetOpen()).toBe(true);
     expect(
-      within(sheet()).getByRole('heading', {name: 'Filters'}),
-    ).toBeTruthy();
+      within(sheet()).getByRole('button', {name: 'Status is Open'}),
+    ).toHaveFocus();
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -536,6 +571,44 @@ describe('PowerSearchTouchSurface', () => {
     );
   });
 
+  it('edits the original filter when an identical clone takes its old slot', () => {
+    const duplicate: PowerSearchFilter = {...openFilter};
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <PowerSearchTouchSurface
+        config={config}
+        filters={[openFilter, duplicate]}
+        onChange={onChange}
+      />,
+    );
+    openSheet();
+    const rows = within(sheet()).getAllByRole('button', {
+      name: 'Status is Open',
+    });
+    fireEvent.click(rows[0]);
+    rerender(
+      <PowerSearchTouchSurface
+        config={config}
+        filters={[{...duplicate}, openFilter]}
+        onChange={onChange}
+      />,
+    );
+    tapRow('Closed');
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        duplicate,
+        {
+          field: 'status',
+          operator: 'is',
+          value: {type: 'enum', value: 'closed'},
+        },
+      ],
+      'edit',
+      1,
+    );
+  });
+
   it('returns to management when a controlled parent reorders after an edit', () => {
     const authorFilter: PowerSearchFilter = {
       field: 'author',
@@ -559,9 +632,10 @@ describe('PowerSearchTouchSurface', () => {
     openEditFlow('Status is Open');
     tapRow('Closed');
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
+    fireEvent.transitionEnd(document.querySelector('dialog')!);
     expect(
       within(sheet()).getByRole('button', {name: 'Status is Closed'}),
-    ).toBeTruthy();
+    ).toHaveFocus();
   });
 
   it('does not edit a different filter when the controlled target disappears', () => {
@@ -723,10 +797,16 @@ describe('PowerSearchTouchSurface', () => {
     );
   });
 
-  it('moves focus to Add filter after removing a management row', () => {
+  it('moves focus to the next row after removing a selected filter', () => {
+    const authorFilter: PowerSearchFilter = {
+      field: 'author',
+      operator: 'is',
+      value: {type: 'string', value: 'Ada'},
+    };
     function Harness() {
       const [filters, setFilters] = useState<ReadonlyArray<PowerSearchFilter>>([
         openFilter,
+        authorFilter,
       ]);
       return (
         <PowerSearchTouchSurface
@@ -744,7 +824,7 @@ describe('PowerSearchTouchSurface', () => {
     remove.focus();
     fireEvent.click(remove);
     expect(
-      within(sheet()).getByRole('button', {name: 'Add filter'}),
+      within(sheet()).getByRole('button', {name: 'Author is Ada'}),
     ).toHaveFocus();
   });
 
@@ -775,17 +855,17 @@ describe('PowerSearchTouchSurface', () => {
     const pinned: PowerSearchFilter = {...openFilter, isReadOnly: true};
     const {onChange} = setup({
       filters: [
-        pinned,
         {
           field: 'author',
           operator: 'is',
           value: {type: 'string', value: 'ada'},
         },
+        pinned,
       ],
     });
     openSheet();
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Clear all'}));
-    expect(onChange).toHaveBeenCalledWith([pinned], 'remove', 1);
+    expect(onChange).toHaveBeenCalledWith([pinned], 'remove', 0);
   });
 
   it('keeps Clear all inside management and respects hasClear', () => {
@@ -836,14 +916,14 @@ describe('PowerSearchTouchSurface', () => {
 
   it('auto-focuses the sheet trigger when requested', () => {
     setup({hasAutoFocus: true});
-    expect(screen.getByRole('button', {name: 'Search'})).toHaveFocus();
+    expect(screen.getByRole('button', {name: 'Manage filters'})).toHaveFocus();
   });
 
   it('fires focus callbacks when focus crosses the field boundary', () => {
     const onFocus = vi.fn();
     const onBlur = vi.fn();
     setup({filters: [openFilter], onFocus, onBlur});
-    const trigger = screen.getByRole('button', {name: 'Search'});
+    const trigger = screen.getByRole('button', {name: 'Manage filters'});
 
     fireEvent.focus(trigger, {relatedTarget: null});
     expect(onFocus).toHaveBeenCalledTimes(1);

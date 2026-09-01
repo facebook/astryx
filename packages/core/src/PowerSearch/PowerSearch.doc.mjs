@@ -41,7 +41,8 @@ export const docs = {
     {
       name: 'label',
       type: 'string',
-      description: 'Accessible label for the search input.',
+      description:
+        'Accessible label for PowerSearch. On touch it names the field-wide filter-management trigger and the content-search field inside the sheet.',
       default: "'Search'",
     },
     {
@@ -53,7 +54,8 @@ export const docs = {
     {
       name: 'placeholder',
       type: 'string',
-      description: 'Placeholder text shown when no filters are selected.',
+      description:
+        'Placeholder shown when no filters are selected. On touch it also becomes the content-search placeholder inside filter management when contentSearchFieldKey is configured.',
       default: "'Search...'",
     },
     {
@@ -65,7 +67,8 @@ export const docs = {
     {
       name: 'hasClear',
       type: 'boolean',
-      description: 'Show a clear-all button for removing all filters.',
+      description:
+        'Show a clear-all action for removing all editable filters. On touch the action lives in the filter-management sheet.',
       default: 'true',
     },
     {
@@ -147,7 +150,7 @@ export const docs = {
       name: 'handleRef',
       type: 'Ref<PowerSearchHandle>',
       description:
-        'Imperative handle with focusTypeahead() and blurTypeahead() methods.',
+        'Imperative handle with focusTypeahead() and blurTypeahead() methods. On touch these target the field-wide management trigger.',
     },
     {
       name: 'endContent',

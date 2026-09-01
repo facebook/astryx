@@ -175,6 +175,13 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
   },
+  touchAction: {
+    minHeight: spacingVars['--spacing-11'],
+  },
+  touchIconAction: {
+    minWidth: spacingVars['--spacing-11'],
+    minHeight: spacingVars['--spacing-11'],
+  },
   endSection: {
     display: 'flex',
     alignItems: 'center',
@@ -271,6 +278,16 @@ const styles = stylex.create({
 
 type SheetStep = 'manage' | 'fields' | 'value';
 
+type PendingSheetFocus =
+  | {readonly type: 'manager-add'}
+  | {
+      readonly type: 'manager-filter';
+      readonly sourceFilter: PowerSearchFilter;
+      readonly sourceSignature: string;
+      readonly preferredIndex: number;
+    }
+  | {readonly type: 'field'; readonly fieldKey: string};
+
 interface FilterDraft {
   readonly mode: 'create' | 'edit';
   /** Index in `filters` when edit mode opened. */
@@ -306,6 +323,28 @@ function filterSignature(filter: PowerSearchFilter): string {
   });
 }
 
+function resolveFilterIdentityIndex(
+  filters: ReadonlyArray<PowerSearchFilter>,
+  sourceFilter: PowerSearchFilter,
+  sourceSignature: string,
+  preferredIndex: number,
+): number | null {
+  const identityIndex = filters.indexOf(sourceFilter);
+  if (identityIndex >= 0) {
+    return identityIndex;
+  }
+  if (
+    filters[preferredIndex] != null &&
+    filterSignature(filters[preferredIndex]) === sourceSignature
+  ) {
+    return preferredIndex;
+  }
+  const matchingIndices = filters.flatMap((filter, index) =>
+    filterSignature(filter) === sourceSignature ? [index] : [],
+  );
+  return matchingIndices.length === 1 ? matchingIndices[0] : null;
+}
+
 function resolveDraftFilterIndex(
   filters: ReadonlyArray<PowerSearchFilter>,
   draft: FilterDraft,
@@ -318,20 +357,12 @@ function resolveDraftFilterIndex(
   ) {
     return null;
   }
-  if (
-    filters[draft.filterIndex] != null &&
-    filterSignature(filters[draft.filterIndex]) === draft.sourceSignature
-  ) {
-    return draft.filterIndex;
-  }
-  const movedIdentityIndex = filters.indexOf(draft.sourceFilter);
-  if (movedIdentityIndex >= 0) {
-    return movedIdentityIndex;
-  }
-  const matchingIndices = filters.flatMap((filter, index) =>
-    filterSignature(filter) === draft.sourceSignature ? [index] : [],
+  return resolveFilterIdentityIndex(
+    filters,
+    draft.sourceFilter,
+    draft.sourceSignature,
+    draft.filterIndex,
   );
-  return matchingIndices.length === 1 ? matchingIndices[0] : null;
 }
 
 /** Operators the touch editor can render. */
@@ -414,8 +445,13 @@ export function PowerSearchTouchSurface({
   const t = useTranslator();
   const locale = useLocale();
 
-  const label = labelFromProps ?? t('@astryx.powersearch.label');
-  const placeholder =
+  const searchLabel = labelFromProps ?? t('@astryx.powersearch.label');
+  const triggerLabel =
+    labelFromProps ?? t('@astryx.powersearch.mobile.manageFiltersTrigger');
+  const fieldPlaceholder =
+    placeholderFromProps ??
+    t('@astryx.powersearch.mobile.manageFiltersPlaceholder');
+  const contentSearchPlaceholder =
     placeholderFromProps ?? t('@astryx.powersearch.placeholder');
   const saveButtonLabel =
     saveButtonLabelFromProps ?? t('@astryx.powersearch.mobile.save');
@@ -439,6 +475,11 @@ export function PowerSearchTouchSurface({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const managerAddButtonRef = useRef<HTMLButtonElement>(null);
+  const managerRowsRef = useRef(new Map<number, HTMLLIElement>());
+  const fieldRowsRef = useRef(new Map<string, HTMLLIElement>());
+  const latestFiltersRef = useRef(filters);
+  const pendingSheetFocusRef = useRef<PendingSheetFocus | null>(null);
+  const pendingMutationFocusRef = useRef(false);
   const shouldRestoreTriggerAfterCloseRef = useRef(false);
 
   const [step, setStep] = useState<SheetStep | null>(null);
@@ -457,10 +498,51 @@ export function PowerSearchTouchSurface({
     );
   }, []);
 
-  const focusManagerAdd = useCallback(() => {
-    requestAnimationFrame(() =>
-      managerAddButtonRef.current?.focus({preventScroll: true}),
-    );
+  const focusPendingSheetTarget = useCallback(() => {
+    const target = pendingSheetFocusRef.current;
+    if (target == null) {
+      return;
+    }
+    pendingSheetFocusRef.current = null;
+    requestAnimationFrame(() => {
+      if (target.type === 'manager-add') {
+        managerAddButtonRef.current?.focus({preventScroll: true});
+        return;
+      }
+      if (target.type === 'field') {
+        fieldRowsRef.current
+          .get(target.fieldKey)
+          ?.querySelector<HTMLButtonElement>('button')
+          ?.focus({preventScroll: true});
+        return;
+      }
+      const index = resolveFilterIdentityIndex(
+        latestFiltersRef.current,
+        target.sourceFilter,
+        target.sourceSignature,
+        target.preferredIndex,
+      );
+      const rowButton =
+        index == null
+          ? null
+          : managerRowsRef.current
+              .get(index)
+              ?.querySelector<HTMLButtonElement>('button');
+      (rowButton ?? managerAddButtonRef.current)?.focus({preventScroll: true});
+    });
+  }, []);
+
+  useEffect(() => {
+    latestFiltersRef.current = filters;
+    if (step === 'manage' && pendingMutationFocusRef.current) {
+      pendingMutationFocusRef.current = false;
+      focusPendingSheetTarget();
+    }
+  }, [filters, focusPendingSheetTarget, step]);
+
+  const queueManagerAddFocus = useCallback((afterMutation = false) => {
+    pendingSheetFocusRef.current = {type: 'manager-add'};
+    pendingMutationFocusRef.current = afterMutation;
   }, []);
 
   const submitContentSearch = useCallback((): boolean => {
@@ -592,24 +674,34 @@ export function PowerSearchTouchSurface({
   const commitSavedFilter = useCallback(
     (next: FilterDraft, filter: PowerSearchFilter) => {
       if (!isInteractive) {
+        pendingSheetFocusRef.current = {type: 'manager-add'};
         setStep('manage');
         return;
       }
       if (next.mode === 'edit') {
         const filterIndex = resolveDraftFilterIndex(filters, next);
         if (filterIndex == null) {
+          pendingSheetFocusRef.current = {type: 'manager-add'};
           setStep('manage');
           return;
         }
         const currentFilter = filters[filterIndex];
         if (currentFilter == null || currentFilter.isReadOnly) {
+          pendingSheetFocusRef.current = {type: 'manager-add'};
           setStep('manage');
           return;
         }
+        pendingSheetFocusRef.current = {
+          type: 'manager-filter',
+          sourceFilter: filter,
+          sourceSignature: filterSignature(filter),
+          preferredIndex: filterIndex,
+        };
         const updated = [...filters];
         updated[filterIndex] = filter;
         onChange(updated, 'edit', filterIndex);
       } else {
+        pendingSheetFocusRef.current = {type: 'manager-add'};
         onChange([...filters, filter], 'add', filters.length);
       }
       setStep('manage');
@@ -683,26 +775,42 @@ export function PowerSearchTouchSurface({
       if (!isInteractive || filter == null || filter.isReadOnly) {
         return;
       }
-      onChange(
-        filters.filter((_, i) => i !== index),
-        'remove',
-        index,
+      const nextFilters = filters.filter((_, i) => i !== index);
+      const editableIndices = nextFilters.flatMap(
+        (candidate, candidateIndex) =>
+          candidate.isReadOnly ? [] : [candidateIndex],
       );
-      focusManagerAdd();
+      const nextIndex =
+        editableIndices.find(candidateIndex => candidateIndex >= index) ??
+        editableIndices.at(-1);
+      if (nextIndex == null) {
+        pendingSheetFocusRef.current = {type: 'manager-add'};
+      } else {
+        const nextFilter = nextFilters[nextIndex];
+        pendingSheetFocusRef.current = {
+          type: 'manager-filter',
+          sourceFilter: nextFilter,
+          sourceSignature: filterSignature(nextFilter),
+          preferredIndex: nextIndex,
+        };
+      }
+      pendingMutationFocusRef.current = step === 'manage';
+      onChange(nextFilters, 'remove', index);
     },
-    [filters, focusManagerAdd, isInteractive, onChange],
+    [filters, isInteractive, onChange, step],
   );
 
   const handleClearAll = useCallback(() => {
     // Read-only filters are the consumer's, not the user's, so a clear-all
     // leaves them in place — matching the desktop token, which has no remove.
     const kept = filters.filter(filter => filter.isReadOnly);
-    if (kept.length === filters.length) {
+    const firstRemovedIndex = filters.findIndex(filter => !filter.isReadOnly);
+    if (firstRemovedIndex < 0) {
       return;
     }
-    onChange(kept, 'remove', kept.length);
-    focusManagerAdd();
-  }, [filters, focusManagerAdd, onChange]);
+    queueManagerAddFocus(true);
+    onChange(kept, 'remove', firstRemovedIndex);
+  }, [filters, onChange, queueManagerAddFocus]);
 
   const handleOperatorSelect = useCallback(
     (operator: PowerSearchOperator) => {
@@ -740,12 +848,37 @@ export function PowerSearchTouchSurface({
     commitFilter(draft, draft.value);
   }, [draft, commitFilter]);
 
+  const returnFromValue = useCallback(() => {
+    if (draft == null) {
+      return;
+    }
+    if (
+      draft.mode === 'edit' &&
+      draft.sourceFilter != null &&
+      draft.sourceSignature != null &&
+      draft.filterIndex != null
+    ) {
+      pendingSheetFocusRef.current = {
+        type: 'manager-filter',
+        sourceFilter: draft.sourceFilter,
+        sourceSignature: draft.sourceSignature,
+        preferredIndex:
+          resolveDraftFilterIndex(filters, draft) ?? draft.filterIndex,
+      };
+      setStep('manage');
+      return;
+    }
+    pendingSheetFocusRef.current = {type: 'field', fieldKey: draft.field};
+    setStep('fields');
+  }, [draft, filters]);
+
   const handleDelete = useCallback(() => {
     if (draft?.mode !== 'edit') {
       return;
     }
     const filterIndex = resolveDraftFilterIndex(filters, draft);
     if (filterIndex == null || filters[filterIndex]?.isReadOnly) {
+      pendingSheetFocusRef.current = {type: 'manager-add'};
       setStep('manage');
       return;
     }
@@ -762,12 +895,16 @@ export function PowerSearchTouchSurface({
   }, []);
 
   const handleSheetTransitionEnd = useCallback(() => {
-    if (step != null || !shouldRestoreTriggerAfterCloseRef.current) {
+    if (step != null) {
+      focusPendingSheetTarget();
+      return;
+    }
+    if (!shouldRestoreTriggerAfterCloseRef.current) {
       return;
     }
     shouldRestoreTriggerAfterCloseRef.current = false;
     requestAnimationFrame(() => focusPrimaryControl(true));
-  }, [focusPrimaryControl, step]);
+  }, [focusPendingSheetTarget, focusPrimaryControl, step]);
 
   const handleFocusWithin = useCallback(
     (event: React.FocusEvent<HTMLDivElement>) => {
@@ -861,9 +998,10 @@ export function PowerSearchTouchSurface({
       config,
       operator.value,
       filter.value,
-      maxTokenLength,
+      Number.MAX_SAFE_INTEGER,
       t,
       locale,
+      timezoneID,
     );
     const accessibleLabel = [label, value].filter(Boolean).join(' ');
     return [
@@ -937,14 +1075,16 @@ export function PowerSearchTouchSurface({
           })
         : draftField.label;
 
-  const isSaveDisabled = draft?.operator == null || draft.value == null;
+  const isEditorDisabled = isDisabled || isReadOnly;
+  const isSaveDisabled =
+    isEditorDisabled || draft?.operator == null || draft.value == null;
   const isEditorFooterShown = !isReadOnly;
 
   return (
     <>
       <Field
         ref={ref}
-        label={label}
+        label={triggerLabel}
         isLabelHidden={isLabelHidden}
         inputID={triggerId}
         isDisabled={isDisabled}
@@ -1009,7 +1149,7 @@ export function PowerSearchTouchSurface({
               aria-expanded={step != null}
               aria-describedby={triggerDescribedBy}
               {...stylex.props(styles.trigger)}>
-              {filters.length === 0 ? placeholder : null}
+              {filters.length === 0 ? fieldPlaceholder : null}
             </button>
           </div>
           {(endContent || isRenderable(resultCountText)) && (
@@ -1042,14 +1182,15 @@ export function PowerSearchTouchSurface({
                   label={t('@astryx.powersearch.mobile.done')}
                   variant="ghost"
                   size="sm"
+                  xstyle={styles.touchAction}
                   onClick={closeSheet}
                 />
               </div>
               {hasContentSearch && isInteractive && (
                 <TextInput
-                  label={label}
+                  label={searchLabel}
                   isLabelHidden
-                  placeholder={placeholder}
+                  placeholder={contentSearchPlaceholder}
                   value={contentQuery}
                   onChange={setContentQuery}
                   onKeyDown={handleContentSearchKeyDown}
@@ -1081,6 +1222,13 @@ export function PowerSearchTouchSurface({
                     return (
                       <ListItem
                         key={row.key}
+                        ref={node => {
+                          if (node == null) {
+                            managerRowsRef.current.delete(row.index);
+                          } else {
+                            managerRowsRef.current.set(row.index, node);
+                          }
+                        }}
                         label={row.accessibleLabel}
                         onClick={
                           canEdit
@@ -1108,6 +1256,7 @@ export function PowerSearchTouchSurface({
                                 }
                                 variant="ghost"
                                 size="sm"
+                                xstyle={styles.touchIconAction}
                                 onClick={() => handleRemoveFilter(row.index)}
                               />
                             </span>
@@ -1125,6 +1274,7 @@ export function PowerSearchTouchSurface({
                   <Button
                     label={t('@astryx.tokenizer.clearAll')}
                     variant="ghost"
+                    xstyle={styles.touchAction}
                     onClick={handleClearAll}
                   />
                 )}
@@ -1137,6 +1287,7 @@ export function PowerSearchTouchSurface({
                     ref={managerAddButtonRef}
                     label={addFilterTitle}
                     variant="primary"
+                    xstyle={styles.touchAction}
                     onClick={openFieldList}
                     width={isClearAllShown ? undefined : '100%'}
                   />
@@ -1162,7 +1313,11 @@ export function PowerSearchTouchSurface({
                   isIconOnly
                   variant="ghost"
                   size="sm"
-                  onClick={() => setStep('manage')}
+                  xstyle={styles.touchIconAction}
+                  onClick={() => {
+                    pendingSheetFocusRef.current = {type: 'manager-add'};
+                    setStep('manage');
+                  }}
                 />
                 <div {...stylex.props(styles.headerText)}>
                   <Heading level={3}>{addFilterTitle}</Heading>
@@ -1200,6 +1355,13 @@ export function PowerSearchTouchSurface({
                     {groupFields.map(field => (
                       <FieldRow
                         key={field.key}
+                        itemRef={node => {
+                          if (node == null) {
+                            fieldRowsRef.current.delete(field.key);
+                          } else {
+                            fieldRowsRef.current.set(field.key, node);
+                          }
+                        }}
                         field={field}
                         onSelect={handleFieldSelect}
                       />
@@ -1232,9 +1394,8 @@ export function PowerSearchTouchSurface({
                     isIconOnly
                     variant="ghost"
                     size="sm"
-                    onClick={() =>
-                      setStep(draft.mode === 'edit' ? 'manage' : 'fields')
-                    }
+                    xstyle={styles.touchIconAction}
+                    onClick={returnFromValue}
                   />
                 )}
                 <div {...stylex.props(styles.headerText)}>
@@ -1261,17 +1422,16 @@ export function PowerSearchTouchSurface({
                         if (draft.mode === 'edit') {
                           handleDelete();
                         } else {
+                          pendingSheetFocusRef.current = {type: 'manager-add'};
                           setStep('manage');
                         }
                         return;
                       }
                       commitSavedFilter(draft, saved);
                     }}
-                    onCancel={() =>
-                      setStep(draft.mode === 'edit' ? 'manage' : 'fields')
-                    }
+                    onCancel={returnFromValue}
                     saveButtonLabel={saveButtonLabel}
-                    isReadOnly={isReadOnly}
+                    isReadOnly={isEditorDisabled}
                     timezoneID={timezoneID}
                   />
                 </div>
@@ -1291,7 +1451,7 @@ export function PowerSearchTouchSurface({
                             handleOperatorSelect(operator);
                           }
                         }}
-                        isDisabled={isReadOnly}>
+                        isDisabled={isEditorDisabled}>
                         {draftOperators.map(operator => (
                           <RadioListItem
                             key={operator.key}
@@ -1310,7 +1470,7 @@ export function PowerSearchTouchSurface({
                       operatorValue={draftOperator.value}
                       filterValue={draft.value}
                       onChange={handleDraftValueChange}
-                      isDisabled={isReadOnly}
+                      isDisabled={isEditorDisabled}
                       maxMenuItems={maxOperatorMenuItems}
                       timezoneID={timezoneID}
                     />
@@ -1326,6 +1486,7 @@ export function PowerSearchTouchSurface({
                           label={saveButtonLabel}
                           variant="primary"
                           isDisabled={isSaveDisabled}
+                          xstyle={styles.touchAction}
                           onClick={handleSave}
                           width="100%"
                         />
@@ -1350,13 +1511,16 @@ PowerSearchTouchSurface.displayName = 'PowerSearchTouchSurface';
 
 function FieldRow({
   field,
+  itemRef,
   onSelect,
 }: {
   field: PowerSearchField;
+  itemRef?: React.Ref<HTMLLIElement>;
   onSelect: (field: PowerSearchField) => void;
 }): ReactNode {
   return (
     <ListItem
+      ref={itemRef}
       label={field.label}
       startContent={field.icon}
       endContent={

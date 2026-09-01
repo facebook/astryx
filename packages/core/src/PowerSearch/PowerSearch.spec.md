@@ -125,10 +125,13 @@ until its implementation and verification complete.
   display-only and expose no edit or remove controls. The management sheet owns
   string-valued content search, Add filter, Clear all, and a selected-filter list;
   each selected row has a separate remove action and opens its update sheet when
-  pressed. Save returns to management. FR1–FR9 apply whenever the popover surface is
-  active; they do not impose popover geometry on the bottom sheet. Configurations
-  with nested filters or configured token overflow retain the pointer/typeahead
-  surface and therefore remain under this contract.
+  pressed. Every sheet action MUST expose at least a 44×44 CSS px touch target.
+  Back and Save MUST return focus to the field or selected-filter control that
+  launched the preceding step; removing a row MUST prefer the adjacent row before
+  falling back to Add filter. Save returns to management. FR1–FR9 apply whenever
+  the popover surface is active; they do not impose popover geometry on the bottom
+  sheet. Configurations with nested filters or configured token overflow retain the
+  pointer/typeahead surface and therefore remain under this contract.
 
 ### Representative states
 
@@ -183,6 +186,11 @@ until its implementation and verification complete.
   combobox, listbox, option, menu, or editor semantics and accessible names.
 - **AR3 — Visible content.** Viewport clamping MUST keep all editor controls
   horizontally reachable without requiring page-level horizontal scrolling.
+
+- **AR4 — Adaptive focus continuity.** Touch-sheet Back and Save actions MUST restore
+  focus to the control that launched the preceding step. Removing a selected-filter
+  row MUST move focus to the nearest remaining editable row, or Add filter when no
+  such row remains.
 
 ## Design relationships
 
