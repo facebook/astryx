@@ -125,6 +125,12 @@ export const docs = {
           slotElements: [{__element: 'Text', props: {type: 'body'}, children: 'Header'}],
         },
         {
+          name: 'onKeyDown',
+          type: '(e: KeyboardEvent) => void',
+          description:
+            "Runs before TreeList's own arrow-key navigation and expand/collapse handling. Call event.preventDefault() to cancel the built-in behavior for that key; focus and the roving tab stop are left untouched. A handler that doesn't call preventDefault() still lets the built-in keyboard model run afterward.",
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -203,6 +209,12 @@ export const docsZh = {
           type: 'ReactNode',
           description:
             '标题内容，通过 aria-labelledby 与树关联。',
+        },
+        {
+          name: 'onKeyDown',
+          type: '(e: KeyboardEvent) => void',
+          description:
+            '在 TreeList 自身的方向键导航和展开/折叠处理之前运行。调用 event.preventDefault() 可取消该按键的内置行为，焦点和 roving tab stop 保持不变。若处理函数未调用 preventDefault()，内置的键盘模型仍会随后运行。',
         },
         {
           name: 'xstyle',

@@ -1025,6 +1025,31 @@ describe('TreeList', () => {
     expect(tabbable[0]).toBe(screen.getByText('Banana').closest('li'));
   });
 
+  it('lets a consumer prevent built-in TreeList keyboard navigation (#5584)', () => {
+    render(
+      <TreeList
+        items={flatItems}
+        onKeyDown={event => event.preventDefault()}
+      />,
+    );
+    const treeitems = screen.getAllByRole('treeitem');
+    treeitems[0].focus();
+    fireEvent.keyDown(treeitems[0], {key: 'ArrowDown'});
+
+    expect(treeitems[0]).toHaveFocus();
+    expect(treeitems[0]).toHaveAttribute('tabindex', '0');
+    expect(treeitems[1]).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('still runs built-in navigation when the consumer handler does not cancel', () => {
+    render(<TreeList items={flatItems} onKeyDown={() => {}} />);
+    const treeitems = screen.getAllByRole('treeitem');
+    treeitems[0].focus();
+    fireEvent.keyDown(treeitems[0], {key: 'ArrowDown'});
+
+    expect(treeitems[1]).toHaveFocus();
+  });
+
   // ===========================================================================
   // APG keyboard navigation
   // ===========================================================================

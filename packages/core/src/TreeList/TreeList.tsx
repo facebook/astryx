@@ -71,6 +71,16 @@ export interface TreeListProps extends BaseProps<HTMLDivElement> {
   header?: ReactNode;
 
   /**
+   * Callback fired on keydown, before TreeList's own arrow-key navigation
+   * and expand/collapse handling run. Call `event.preventDefault()` to
+   * cancel the built-in behavior for that key entirely — focus and the
+   * roving tab stop are left untouched. A handler that doesn't call
+   * `preventDefault()` still lets the APG tree keyboard model run
+   * afterward.
+   */
+  onKeyDown?: BaseProps<HTMLDivElement>['onKeyDown'];
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -190,6 +200,7 @@ export function TreeList({
   'data-testid': testId,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledby,
+  onKeyDown: consumerOnKeyDown,
   ref,
   ...restProps
 }: TreeListProps) {
@@ -259,6 +270,26 @@ export function TreeList({
     onActivate: activateItem,
     hasRovingTabIndex: true,
   });
+
+  // Run the consumer's handler first so `event.preventDefault()` reliably
+  // cancels the built-in arrow-key/expand-collapse behavior. Attached
+  // directly to the `<ul>` rather than left on the outer `<div>` (where
+  // `restProps` lands): the native keydown event starts at the focused
+  // treeitem and bubbles outward, so a handler left on the ancestor `<div>`
+  // would always run after `handleKeyDown` already moved focus. The event's
+  // `currentTarget` type differs from the declared `HTMLDivElement` here,
+  // but every property a consumer handler actually reads off it (key,
+  // preventDefault, etc.) is identical.
+  const handleTreeKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLUListElement>) => {
+      consumerOnKeyDown?.(e as unknown as React.KeyboardEvent<HTMLDivElement>);
+      if (e.defaultPrevented) {
+        return;
+      }
+      handleKeyDown(e);
+    },
+    [consumerOnKeyDown, handleKeyDown],
+  );
 
   const hasExpandableItems = items.some(
     item => item.children != null && item.children.length > 0,
@@ -351,7 +382,7 @@ export function TreeList({
         role="tree"
         aria-label={header != null ? undefined : ariaLabel}
         aria-labelledby={header != null ? headerId : ariaLabelledby}
-        onKeyDown={handleKeyDown}
+        onKeyDown={handleTreeKeyDown}
         onFocus={handleFocus}
         {...stylex.props(styles.list)}>
         {renderItems(items, 0, [])}
