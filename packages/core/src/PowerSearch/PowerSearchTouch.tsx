@@ -123,7 +123,7 @@ const styles = stylex.create({
   // the desktop variant renders, down to the concentric token inset.
   wrapper: {
     position: 'relative',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     gap: spacingVars['--spacing-1'],
     cursor: {
       default: 'pointer',
@@ -134,6 +134,14 @@ const styles = stylex.create({
   wrapperWithTokens: {
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
     paddingInline: `calc(${spacingVars['--spacing-1']} - 1px)`,
+  },
+  contentSection: {
+    minWidth: 0,
+    flexGrow: 1,
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    columnGap: spacingVars['--spacing-1'],
     rowGap: `calc(${spacingVars['--spacing-1']} - 1px)`,
   },
   startIconWithTokens: {
@@ -177,7 +185,6 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
-    marginInlineStart: 'auto',
     paddingInlineEnd: spacingVars['--spacing-1'],
   },
   resultCount: {
@@ -897,41 +904,43 @@ export function PowerSearchTouchSurface({
               status && inputStatusFocusWithinStyles[status.type],
             ),
           )}>
-          {startIcon && (
-            <span
+          <div {...stylex.props(styles.contentSection)}>
+            {startIcon && (
+              <span
+                {...stylex.props(
+                  filters.length > 0 && styles.startIconWithTokens,
+                )}>
+                {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+              </span>
+            )}
+            {tokens}
+            <button
+              type="button"
+              id={triggerId}
+              ref={triggerRef}
+              autoFocus={hasAutoFocus}
+              onClick={openFieldList}
+              // A disabled button is unreachable, so the reason for it is too.
+              // Keep it focusable and block the action instead, the way the
+              // desktop field does.
+              disabled={isDisabled && !showsDisabledMessage}
+              aria-disabled={isDisabled || isReadOnly ? true : undefined}
+              aria-haspopup="dialog"
+              aria-expanded={step != null}
+              aria-describedby={triggerDescribedBy}
               {...stylex.props(
-                filters.length > 0 && styles.startIconWithTokens,
+                styles.trigger,
+                isReadOnly && styles.triggerReadOnly,
               )}>
-              {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
-            </span>
-          )}
-          {tokens}
-          <button
-            type="button"
-            id={triggerId}
-            ref={triggerRef}
-            autoFocus={hasAutoFocus}
-            onClick={openFieldList}
-            // A disabled button is unreachable, so the reason for it is too.
-            // Keep it focusable and block the action instead, the way the
-            // desktop field does.
-            disabled={isDisabled && !showsDisabledMessage}
-            aria-disabled={isDisabled || isReadOnly ? true : undefined}
-            aria-haspopup="dialog"
-            aria-expanded={step != null}
-            aria-describedby={triggerDescribedBy}
-            {...stylex.props(
-              styles.trigger,
-              isReadOnly && styles.triggerReadOnly,
-            )}>
-            <span
-              {...stylex.props(
-                styles.triggerVisual,
-                triggerVisualSizeStyles[size],
-              )}>
-              {addFilterLabel}
-            </span>
-          </button>
+              <span
+                {...stylex.props(
+                  styles.triggerVisual,
+                  triggerVisualSizeStyles[size],
+                )}>
+                {addFilterLabel}
+              </span>
+            </button>
+          </div>
           {(endContent || isRenderable(resultCountText) || isClearShown) && (
             <div {...stylex.props(styles.endSection)}>
               {isRenderable(resultCountText) && (
