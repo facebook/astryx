@@ -111,6 +111,12 @@ const config: PowerSearchConfig = {
   ],
 };
 
+const contentSearchConfig: PowerSearchConfig = {
+  ...config,
+  name: 'ContentSearch',
+  contentSearchFieldKey: 'author',
+};
+
 const openFilter: PowerSearchFilter = {
   field: 'status',
   operator: 'is',
@@ -180,6 +186,61 @@ describe('PowerSearchTouchSurface', () => {
     expect(screen.getByRole('button', {name: 'Add filters…'})).toBeTruthy();
   });
 
+  it('renders content search alongside Add filters', () => {
+    setup({config: contentSearchConfig, placeholder: 'Search content…'});
+    expect(screen.getByRole('searchbox', {name: 'Search'})).toHaveAttribute(
+      'placeholder',
+      'Search content…',
+    );
+    expect(screen.getByRole('button', {name: 'Add filters…'})).toBeTruthy();
+  });
+
+  it('adds trimmed content search after existing filters and clears the query', () => {
+    const {onChange} = setup({
+      config: contentSearchConfig,
+      filters: [openFilter],
+    });
+    const input = screen.getByRole('searchbox', {name: 'Search'});
+    fireEvent.change(input, {target: {value: '  release notes  '}});
+    expect(fireEvent.keyDown(input, {key: 'Enter'})).toBe(false);
+
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        openFilter,
+        {
+          field: 'author',
+          operator: 'is',
+          value: {type: 'string', value: 'release notes'},
+        },
+      ],
+      'add',
+      1,
+    );
+    expect(input).toHaveValue('');
+    expect(isSheetOpen()).toBe(false);
+  });
+
+  it('does not submit blank or composing content search', () => {
+    const {onChange} = setup({config: contentSearchConfig});
+    const input = screen.getByRole('searchbox', {name: 'Search'});
+    fireEvent.change(input, {target: {value: '   '}});
+    expect(fireEvent.keyDown(input, {key: 'Enter'})).toBe(true);
+    fireEvent.change(input, {target: {value: '검색'}});
+    expect(fireEvent.keyDown(input, {key: 'Enter', isComposing: true})).toBe(
+      true,
+    );
+    expect(fireEvent.keyDown(input, {key: 'Enter', keyCode: 229})).toBe(true);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(input).toHaveValue('검색');
+  });
+
+  it('focuses content search through the existing imperative handle', () => {
+    const handle = createRef<PowerSearchHandle>();
+    setup({config: contentSearchConfig, handleRef: handle});
+    handle.current?.focusTypeahead();
+    expect(screen.getByRole('searchbox', {name: 'Search'})).toHaveFocus();
+  });
+
   it('keeps “Add filters…” after the existing capsules', () => {
     setup({filters: [openFilter]});
     const value = screen.getByText('Open');
@@ -210,13 +271,13 @@ describe('PowerSearchTouchSurface', () => {
     expect(statusRow.textContent).toBe('Status');
   });
 
-  it('stages an enum selection until Apply is pressed', () => {
+  it('stages an enum selection until Save is pressed', () => {
     const {onChange} = setup();
     openSheet();
     tapRow(/^Status/);
     tapRow('Closed');
     expect(onChange).not.toHaveBeenCalled();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -235,11 +296,11 @@ describe('PowerSearchTouchSurface', () => {
     openSheet();
     tapRow(/^Status/);
     tapRow('Closed');
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     expect(isSheetOpen()).toBe(false);
   });
 
-  it('confirms an empty-value operator through Apply', () => {
+  it('confirms an empty-value operator through Save', () => {
     const {onChange} = setup();
     openSheet();
     tapRow(/^Unassigned/);
@@ -247,7 +308,7 @@ describe('PowerSearchTouchSurface', () => {
     expect(
       within(sheet()).getByRole('heading', {name: 'Unassigned is true'}),
     ).toBeTruthy();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     expect(onChange).toHaveBeenCalledWith(
       [{field: 'unassigned', operator: 'isTrue', value: {type: 'empty'}}],
       'add',
@@ -272,7 +333,7 @@ describe('PowerSearchTouchSurface', () => {
     );
     tapRow('Open');
     expect(onChange).not.toHaveBeenCalled();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -286,7 +347,7 @@ describe('PowerSearchTouchSurface', () => {
     );
   });
 
-  it('stages a non-default empty operator until Apply', () => {
+  it('stages a non-default empty operator until Save', () => {
     const {onChange} = setup();
     openSheet();
     tapRow(/^Status/);
@@ -294,7 +355,7 @@ describe('PowerSearchTouchSurface', () => {
       within(sheet()).getByRole('radio', {name: 'Status is empty'}),
     );
     expect(onChange).not.toHaveBeenCalled();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     expect(onChange).toHaveBeenCalledWith(
       [{field: 'status', operator: 'isEmpty', value: {type: 'empty'}}],
       'add',
@@ -320,7 +381,7 @@ describe('PowerSearchTouchSurface', () => {
     fireEvent.click(within(sheet()).getByRole('checkbox', {name: 'Bug'}));
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.click(within(sheet()).getByRole('checkbox', {name: 'Urgent'}));
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -334,23 +395,23 @@ describe('PowerSearchTouchSurface', () => {
     );
   });
 
-  it('keeps Apply disabled until a value is chosen', () => {
+  it('keeps Save disabled until a value is chosen', () => {
     setup();
     openSheet();
     tapRow(/^Author/);
-    const apply = within(sheet()).getByRole('button', {name: 'Apply'});
+    const apply = within(sheet()).getByRole('button', {name: 'Save'});
     expect(
       apply.getAttribute('aria-disabled') ?? apply.hasAttribute('disabled'),
     ).toBeTruthy();
   });
 
-  it('edits a filter only after Apply', () => {
+  it('edits a filter only after Save', () => {
     const {onChange} = setup({filters: [openFilter]});
     fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
     expect(within(sheet()).getByRole('heading', {name: 'Status'})).toBeTruthy();
     tapRow('Closed');
     expect(onChange).not.toHaveBeenCalled();
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -408,7 +469,7 @@ describe('PowerSearchTouchSurface', () => {
       />,
     );
     tapRow('Closed');
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         authorFilter,
@@ -445,7 +506,7 @@ describe('PowerSearchTouchSurface', () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
     tapRow('Closed');
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     fireEvent.transitionEnd(document.querySelector('dialog')!);
     expect(screen.getByRole('button', {name: 'Add filters…'})).toHaveFocus();
   });
@@ -473,7 +534,7 @@ describe('PowerSearchTouchSurface', () => {
       />,
     );
     tapRow('Closed');
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Save'}));
     expect(onChange).not.toHaveBeenCalled();
     expect(isSheetOpen()).toBe(false);
   });

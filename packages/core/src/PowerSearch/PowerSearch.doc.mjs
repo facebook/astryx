@@ -134,8 +134,9 @@ export const docs = {
     {
       name: 'popoverSaveButtonLabel',
       type: 'string',
-      description: 'Label for the save button in the edit popover.',
-      default: "'Apply'",
+      description:
+        "Label for the confirmation button. Defaults to 'Apply' in the pointer popover and 'Save' in the touch sheet.",
+      default: "'Apply' (popover) / 'Save' (touch)",
     },
     {
       name: 'timezoneID',
@@ -253,7 +254,7 @@ export const docs = {
   },
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, a capsule-sized “Add filters…” button opens a bottom-sheet flow. The field picker shows field names without operator subheadings. Simple editor titles combine field and operator on one line; fields with multiple operators show visually unlabelled radio options prefixed by the field name in the value sheet; built-in selections are staged until Apply; and existing token remove buttons still delete directly. Configurations that rely on free-text content search, nested filters, or configured token-overflow behavior retain the typeahead surface so those capabilities are not lost. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, a capsule-sized “Add filters…” button opens a bottom-sheet flow. Configurations with a string-valued contentSearchFieldKey keep a direct inline search input; the keyboard Search or Enter action adds that content filter without opening a menu. The field picker shows field names without operator subheadings. Simple editor titles combine field and operator on one line; fields with multiple operators show visually unlabelled radio options prefixed by the field name in the value sheet; built-in selections are staged until Save in a divider-free footer; and existing token remove buttons still delete directly. Nested filters and configured token-overflow behavior retain the typeahead surface so those capabilities are not lost. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
@@ -412,8 +413,9 @@ export const docsZh = {
     {
       name: 'popoverSaveButtonLabel',
       type: 'string',
-      description: '编辑弹出窗口中保存按钮的标签。',
-      default: "'Apply'",
+      description:
+        "确认按钮的标签。指针弹出框默认为 'Apply'，触控底部面板默认为 'Save'。",
+      default: "'Apply' (popover) / 'Save' (touch)",
     },
     {
       name: 'timezoneID',
@@ -451,7 +453,7 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, a capsule-sized “Add filters…” button opens a bottom-sheet flow. The field picker shows field names without operator subheadings. Simple editor titles combine field and operator on one line; fields with multiple operators show visually unlabelled radio options prefixed by the field name in the value sheet; built-in selections are staged until Apply; and existing token remove buttons still delete directly. Configurations that rely on free-text content search, nested filters, or configured token-overflow behavior retain the typeahead surface so those capabilities are not lost. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, a capsule-sized “Add filters…” button opens a bottom-sheet flow. Configurations with a string-valued contentSearchFieldKey keep a direct inline search input; the keyboard Search or Enter action adds that content filter without opening a menu. The field picker shows field names without operator subheadings. Simple editor titles combine field and operator on one line; fields with multiple operators show visually unlabelled radio options prefixed by the field name in the value sheet; built-in selections are staged until Save in a divider-free footer; and existing token remove buttons still delete directly. Nested filters and configured token-overflow behavior retain the typeahead surface so those capabilities are not lost. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
@@ -480,10 +482,10 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Structured filter bar where each token represents filter (field+operator+value). On supported coarse-pointer configurations it uses a capsule-sized Add filters button and an Apply-confirmed bottom-sheet editor; the field picker shows names only, simple titles combine field+operator, and complex radio options are prefixed by the field name. Content search, nested filters, and configured token overflow retain the typeahead surface.',
+    'Structured filter bar where each token represents filter (field+operator+value). On supported coarse-pointer configurations it uses a capsule-sized Add filters button, a direct inline input for string-valued content search, and a Save-confirmed bottom-sheet editor with no footer divider; the field picker shows names only, simple titles combine field+operator, and complex radio options are prefixed by the field name. Nested filters and configured token overflow retain the typeahead surface.',
   usage: {
     description:
-      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, a capsule-sized “Add filters…” button opens a bottom-sheet flow. The field picker shows field names without operator subheadings. Simple editor titles combine field and operator on one line; fields with multiple operators show visually unlabelled radio options prefixed by the field name in the value sheet; built-in selections are staged until Apply; and existing token remove buttons still delete directly. Configurations that rely on free-text content search, nested filters, or configured token-overflow behavior retain the typeahead surface so those capabilities are not lost. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
+      'PowerSearch is a structured filter bar where each token represents a field, operator, and value. On coarse pointers, a capsule-sized “Add filters…” button opens a bottom-sheet flow. Configurations with a string-valued contentSearchFieldKey keep a direct inline search input; the keyboard Search or Enter action adds that content filter without opening a menu. The field picker shows field names without operator subheadings. Simple editor titles combine field and operator on one line; fields with multiple operators show visually unlabelled radio options prefixed by the field name in the value sheet; built-in selections are staged until Save in a divider-free footer; and existing token remove buttons still delete directly. Nested filters and configured token-overflow behavior retain the typeahead surface so those capabilities are not lost. Use PowerSearch for complex multi-dimensional filtering when users need to combine multiple search criteria. For simple single-field search, use a text input instead.',
     bestPractices: [
       {
         guidance: true,
@@ -530,7 +532,8 @@ export const docsDense = {
     maxSearchResults:
       'Max ranked results for a non-empty query; excludes value editors.',
     menuWidth: 'Main field/search menu width in pixels.',
-    popoverSaveButtonLabel: 'Label for save button in edit popover.',
+    popoverSaveButtonLabel:
+      'Confirmation button label. Defaults to Apply in the pointer popover and Save in the touch sheet.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',
     handleRef:
       'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',

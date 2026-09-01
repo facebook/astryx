@@ -5,16 +5,17 @@
 /**
  * @file PowerSearchTouch.tsx
  * @input PowerSearchConfig, filters, onChange — the PowerSearch props, unchanged
- * @output Private coarse-pointer surface: in-field filter actions plus a
- *   bottom-sheet filter builder
+ * @output Private coarse-pointer surface: inline content search, in-field filter
+ *   actions, and a bottom-sheet filter builder
  * @position Internal PowerSearch surface selected by PowerSearch on coarse pointers
  *
  * PowerSearch's desktop shape is a typeahead that drops a popover under the
  * field, and an edit popover that lays field / operator / value out in a row.
  * Neither survives a phone: the popover fights the on-screen keyboard, and the
  * row has nowhere to go at 390px. This variant keeps the same props, the same
- * filter model, and the same tokens, and moves the building into a bottom sheet
- * that drills down field -> (operator) -> value.
+ * filter model, and the same tokens. A configured content-search field remains
+ * a direct input in the outer field, while structured filter building moves into
+ * a bottom sheet that drills down field -> (operator) -> value.
  *
  * The sheets are pinned tall on purpose. The field list resizes as it is
  * searched and the editor's content changes with the operator, so a sheet that
@@ -62,7 +63,6 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {useTooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
 import {
-  borderVars,
   colorVars,
   radiusVars,
   sizeVars,
@@ -70,7 +70,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {isRenderable, mergeProps} from '../utils';
+import {isImeKeyEvent, isRenderable, mergeProps} from '../utils';
 import {rtlStyles} from '../utils/rtlStyles';
 import {themeProps} from '../utils/themeProps';
 import {PowerSearchTouchValueEditor} from './PowerSearchTouchValueEditor';
@@ -146,6 +146,33 @@ const styles = stylex.create({
   },
   startIconWithTokens: {
     marginInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
+  },
+  contentInput: {
+    appearance: 'none',
+    flex: '1 1 80px',
+    minWidth: '60px',
+    minHeight: spacingVars['--spacing-11'],
+    paddingBlock: 0,
+    paddingInline: spacingVars['--spacing-1'],
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: colorVars['--color-text-primary'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: {
+      default: typeScaleVars['--text-body-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+    },
+    lineHeight: typeScaleVars['--text-body-leading'],
+    outline: 'none',
+    cursor: {
+      default: 'text',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+    '::placeholder': {
+      color: colorVars['--color-text-secondary'],
+    },
   },
   // The button keeps a 44px touch target while the visible treatment matches
   // the surrounding capsules in type size and height.
@@ -247,9 +274,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
-    borderBlockStartWidth: borderVars['--border-width'],
-    borderBlockStartStyle: 'solid',
-    borderBlockStartColor: colorVars['--color-border'],
     backgroundColor: colorVars['--color-background-surface'],
   },
   footerActions: {
@@ -380,10 +404,12 @@ const DEFAULT_MAX_SEARCH_RESULTS = 10;
  * field as tokens, followed by an “Add filters…” button. A bottom sheet builds
  * or edits one filter at a time.
  *
- * Tapping the field opens a pinned-tall sheet listing the available fields.
+ * Tapping Add filters opens a pinned-tall sheet listing the available fields.
  * Choosing one opens its value editor; fields with multiple operators show the
  * operators as radio options in that same sheet. Tapping a token reopens that
- * filter's editor, where the footer can remove it.
+ * filter's editor, where the divider-free footer can save or remove it. When
+ * contentSearchFieldKey names a string field, the outer field also keeps a
+ * direct search input whose keyboard Search/Enter action adds that filter.
  */
 export function PowerSearchTouchSurface({
   config: configProp,
@@ -391,6 +417,7 @@ export function PowerSearchTouchSurface({
   onChange,
   label: labelFromProps,
   isLabelHidden = true,
+  placeholder: placeholderFromProps,
   hasAutoFocus = false,
   hasClear = true,
   isReadOnly = false,
@@ -422,15 +449,31 @@ export function PowerSearchTouchSurface({
   const t = useTranslator();
 
   const label = labelFromProps ?? t('@astryx.powersearch.label');
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.powersearch.placeholder');
   const saveButtonLabel =
-    saveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
+    saveButtonLabelFromProps ?? t('@astryx.powersearch.mobile.save');
   const addFilterLabel = t('@astryx.powersearch.mobile.addFilter');
   const addFilterTitle = t('@astryx.powersearch.mobile.addFilterTitle');
+  const announce = useAnnounce();
+
+  const contentSearchFieldKey = config.config.contentSearchFieldKey;
+  const contentSearchField =
+    contentSearchFieldKey == null
+      ? undefined
+      : config.getField(contentSearchFieldKey);
+  const contentSearchOperator =
+    contentSearchFieldKey == null
+      ? undefined
+      : config.getDefaultOperator(contentSearchFieldKey);
+  const hasContentSearch = contentSearchOperator?.value.type === 'string';
 
   const triggerId = useId();
+  const contentInputId = useId();
   const labelId = useId();
   const statusMessageId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentInputRef = useRef<HTMLInputElement>(null);
   const shouldRestoreTriggerAfterCloseRef = useRef(false);
 
   const [step, setStep] = useState<SheetStep | null>(null);
@@ -439,8 +482,61 @@ export function PowerSearchTouchSurface({
   // draft with the step would blank that sheet mid-transition.
   const [draft, setDraft] = useState<FilterDraft | null>(null);
   const [fieldQuery, setFieldQuery] = useState('');
+  const [contentQuery, setContentQuery] = useState('');
 
   const isInteractive = !isDisabled && !isReadOnly;
+
+  const focusPrimaryControl = useCallback(
+    (preventScroll = false) => {
+      const target = hasContentSearch
+        ? contentInputRef.current
+        : triggerRef.current;
+      target?.focus(preventScroll ? {preventScroll: true} : undefined);
+    },
+    [hasContentSearch],
+  );
+
+  const submitContentSearch = useCallback((): boolean => {
+    const value = contentQuery.trim();
+    if (
+      !isInteractive ||
+      value === '' ||
+      contentSearchField == null ||
+      contentSearchOperator == null
+    ) {
+      return false;
+    }
+    const nextFilter: PowerSearchFilter = {
+      field: contentSearchField.key,
+      operator: contentSearchOperator.key,
+      value: {type: 'string', value},
+    };
+    onChange([...filters, nextFilter], 'add', filters.length);
+    setContentQuery('');
+    announce(t('@astryx.tokenizer.tokenAdded', {label: value}));
+    return true;
+  }, [
+    announce,
+    contentQuery,
+    contentSearchField,
+    contentSearchOperator,
+    filters,
+    isInteractive,
+    onChange,
+    t,
+  ]);
+
+  const handleContentSearchKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (isImeKeyEvent(event.nativeEvent)) {
+        return;
+      }
+      if (event.key === 'Enter' && submitContentSearch()) {
+        event.preventDefault();
+      }
+    },
+    [submitContentSearch],
+  );
 
   // ---------------------------------------------------------------- fields --
 
@@ -616,12 +712,10 @@ export function PowerSearchTouchSurface({
         index,
       );
       if (restoreFocus) {
-        requestAnimationFrame(() =>
-          triggerRef.current?.focus({preventScroll: true}),
-        );
+        requestAnimationFrame(() => focusPrimaryControl(true));
       }
     },
-    [filters, isInteractive, onChange],
+    [filters, focusPrimaryControl, isInteractive, onChange],
   );
 
   const handleClearAll = useCallback(() => {
@@ -632,10 +726,8 @@ export function PowerSearchTouchSurface({
       return;
     }
     onChange(kept, 'remove', kept.length);
-    requestAnimationFrame(() =>
-      triggerRef.current?.focus({preventScroll: true}),
-    );
-  }, [filters, onChange]);
+    requestAnimationFrame(() => focusPrimaryControl(true));
+  }, [filters, focusPrimaryControl, onChange]);
 
   const handleOperatorSelect = useCallback(
     (operator: PowerSearchOperator) => {
@@ -666,7 +758,7 @@ export function PowerSearchTouchSurface({
     setDraft(current => (current == null ? current : {...current, value}));
   }, []);
 
-  const handleApply = useCallback(() => {
+  const handleSave = useCallback(() => {
     if (draft?.value == null) {
       return;
     }
@@ -700,10 +792,8 @@ export function PowerSearchTouchSurface({
       return;
     }
     shouldRestoreTriggerAfterCloseRef.current = false;
-    requestAnimationFrame(() =>
-      triggerRef.current?.focus({preventScroll: true}),
-    );
-  }, [step]);
+    requestAnimationFrame(() => focusPrimaryControl(true));
+  }, [focusPrimaryControl, step]);
 
   const handleFocusWithin = useCallback(
     (event: React.FocusEvent<HTMLDivElement>) => {
@@ -731,13 +821,14 @@ export function PowerSearchTouchSurface({
   // ------------------------------------------------------------- imperative --
 
   useImperativeHandle(handleRef, () => ({
-    // There is no typeahead input to focus on this variant; the tap target is
-    // the control the label names, so the handle moves focus there.
     focusTypeahead() {
-      triggerRef.current?.focus();
+      focusPrimaryControl();
     },
     blurTypeahead() {
-      triggerRef.current?.blur();
+      const target = hasContentSearch
+        ? contentInputRef.current
+        : triggerRef.current;
+      target?.blur();
     },
   }));
 
@@ -753,7 +844,6 @@ export function PowerSearchTouchSurface({
     return resultCount;
   }, [resultCount, t]);
 
-  const announce = useAnnounce();
   const hasMountedRef = useRef(false);
   useEffect(() => {
     if (!hasMountedRef.current) {
@@ -848,7 +938,7 @@ export function PowerSearchTouchSurface({
           })
         : draftField.label;
 
-  const isApplyDisabled = draft?.operator == null || draft.value == null;
+  const isSaveDisabled = draft?.operator == null || draft.value == null;
   const isEditorFooterShown = !isReadOnly;
 
   return (
@@ -914,11 +1004,32 @@ export function PowerSearchTouchSurface({
               </span>
             )}
             {tokens}
+            {hasContentSearch && (
+              <input
+                ref={contentInputRef}
+                id={contentInputId}
+                type="search"
+                inputMode="search"
+                enterKeyHint="search"
+                autoComplete="off"
+                autoFocus={hasAutoFocus}
+                value={contentQuery}
+                onChange={event => setContentQuery(event.target.value)}
+                onKeyDown={handleContentSearchKeyDown}
+                placeholder={placeholder}
+                disabled={isDisabled && !showsDisabledMessage}
+                readOnly={isReadOnly || showsDisabledMessage}
+                aria-disabled={isDisabled || isReadOnly ? true : undefined}
+                aria-labelledby={labelId}
+                aria-describedby={triggerDescribedBy}
+                {...stylex.props(styles.contentInput)}
+              />
+            )}
             <button
               type="button"
               id={triggerId}
               ref={triggerRef}
-              autoFocus={hasAutoFocus}
+              autoFocus={hasAutoFocus && !hasContentSearch}
               onClick={openFieldList}
               // A disabled button is unreachable, so the reason for it is too.
               // Keep it focusable and block the action instead, the way the
@@ -1148,8 +1259,8 @@ export function PowerSearchTouchSurface({
                         <Button
                           label={saveButtonLabel}
                           variant="primary"
-                          isDisabled={isApplyDisabled}
-                          onClick={handleApply}
+                          isDisabled={isSaveDisabled}
+                          onClick={handleSave}
                           width={draft.mode === 'edit' ? undefined : '100%'}
                         />
                       </div>
