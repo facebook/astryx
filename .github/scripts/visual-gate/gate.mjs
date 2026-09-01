@@ -250,6 +250,7 @@ async function runCapture(shots, releasePlan = null) {
     viewport: config.viewport,
     settleMs: config.settleMs,
     fastGlobals: !has('no-fast-globals'),
+    bootstrapGlobals: {astryxTheme: config.defaultTheme, colorMode: 'light'},
     concurrency: config.captureConcurrency,
     onProgress: ({done, total}) => {
       if (done === total || done - last >= 50) {

@@ -24,11 +24,12 @@
  * re-render, not a reload: the plan is walked grouped by story, and the theme
  * and color mode are switched over Storybook's own channel while the page
  * stays put (~130ms per shot against ~1s for a reload). Independent story
- * groups run on a small fixed worker pool; one story never crosses workers, so
- * its seeded random state and fast-global sequence remain deterministic.
- * `--no-fast-globals` forces a reload per shot for the case where a story's own
- * state would survive the re-render and make the shot depend on the one before
- * it.
+ * groups run on a small fixed worker pool. Their browser execution is
+ * canonicalized by story and starts in the default light theme before any fast
+ * global update, so an accepted exact plan and the full release plan cannot
+ * seed mount-time state differently. `--no-fast-globals` forces a reload per
+ * shot for the case where a story's own state would survive the re-render and
+ * make the shot depend on the one before it.
  */
 
 import * as fs from 'node:fs';
@@ -153,7 +154,7 @@ export const CAPTURE_CONTEXT_SECURITY = {serviceWorkers: 'block'};
  * @param {number} concurrency
  * @returns {import('./plan.mjs').Shot[][]}
  */
-export function partitionCapturePlan(plan, concurrency) {
+export function partitionCapturePlan(plan, concurrency, bootstrapGlobals = null) {
   if (plan.length === 0) return [];
   const workerCount = Math.max(1, Math.min(Math.floor(concurrency), plan.length));
   const groups = [];
@@ -168,6 +169,24 @@ export function partitionCapturePlan(plan, concurrency) {
     group.push(shot);
   }
 
+  // An accepted PR plan follows baseline insertion order, while the canonical
+  // release plan is key-sorted. Fast globals preserve mounted story state, so
+  // execution order must come from the shots themselves rather than whichever
+  // caller supplied them. The manifest is still written in authoritative plan
+  // order; this ordering is only for browser work.
+  if (bootstrapGlobals) {
+    const isBootstrap = shot =>
+      shot.theme === bootstrapGlobals.astryxTheme &&
+      shot.mode === bootstrapGlobals.colorMode;
+    groups.sort((a, b) => a[0].storyId.localeCompare(b[0].storyId));
+    for (const group of groups) {
+      group.sort((a, b) => {
+        const bootstrap = Number(isBootstrap(b)) - Number(isBootstrap(a));
+        return bootstrap || a.key.localeCompare(b.key);
+      });
+    }
+  }
+
   const partitions = Array.from({length: workerCount}, () => []);
   const loads = Array(workerCount).fill(0);
   for (const group of groups) {
@@ -179,6 +198,18 @@ export function partitionCapturePlan(plan, concurrency) {
     loads[worker] += group.length;
   }
   return partitions.filter(partition => partition.length > 0);
+}
+
+export function storyLoadGlobals(shot, fastGlobals, bootstrapGlobals) {
+  const requested = {astryxTheme: shot.theme, colorMode: shot.mode};
+  const initial = fastGlobals ? bootstrapGlobals : requested;
+  return {
+    initial,
+    requested,
+    needsUpdate:
+      initial.astryxTheme !== requested.astryxTheme ||
+      initial.colorMode !== requested.colorMode,
+  };
 }
 
 export function serveDirectory(dir) {
@@ -447,6 +478,7 @@ async function capturePartition({
   viewport,
   settleMs,
   fastGlobals,
+  bootstrapGlobals,
   onShot,
 }) {
   const context = await browser.newContext({
@@ -472,16 +504,32 @@ async function capturePartition({
   try {
     for (const shot of plan) {
       try {
-        const globals = {astryxTheme: shot.theme, colorMode: shot.mode};
+        const {initial, requested: globals, needsUpdate} = storyLoadGlobals(
+          shot,
+          fastGlobals,
+          bootstrapGlobals,
+        );
         const needsLoad = !fastGlobals || currentStory !== shot.storyId;
         if (needsLoad) {
-          const globalsParam = `astryxTheme:${shot.theme};colorMode:${shot.mode}`;
+          const globalsParam = `astryxTheme:${initial.astryxTheme};colorMode:${initial.colorMode}`;
           await page.goto(
             `${origin}/iframe.html?id=${encodeURIComponent(shot.storyId)}&viewMode=story&globals=${globalsParam}`,
             {waitUntil: 'load', timeout: 30000},
           );
           await page.waitForSelector('#storybook-root > *', {timeout: 30000});
           currentStory = shot.storyId;
+          if (needsUpdate) {
+            // Let mount-time state settle in one canonical environment before a
+            // fast global update. Otherwise a default-open layer remembers the
+            // first theme in the caller's plan and every later shot inherits it.
+            await page.addStyleTag({content: FREEZE_CSS});
+            await settle(page, settleMs);
+            await verifyApplied(page, {
+              theme: initial.astryxTheme,
+              mode: initial.colorMode,
+            });
+            await applyGlobals(page, globals);
+          }
         } else {
           await applyGlobals(page, globals);
         }
@@ -535,6 +583,7 @@ async function capturePartition({
  * @param {{width: number, height: number}} options.viewport
  * @param {number} options.settleMs
  * @param {boolean} options.fastGlobals
+ * @param {{astryxTheme: string, colorMode: string}} options.bootstrapGlobals
  * @param {number} [options.concurrency]
  * @param {(progress: {done: number, total: number, key: string}) => void} [options.onProgress]
  * @returns {Promise<{manifest: object, failures: Array<{key: string, error: string}>}>}
@@ -546,6 +595,7 @@ export async function capture({
   viewport,
   settleMs,
   fastGlobals,
+  bootstrapGlobals,
   concurrency = 1,
   onProgress,
 }) {
@@ -561,7 +611,7 @@ export async function capture({
     const browserVersion = browser.version();
     let done = 0;
     const results = await Promise.all(
-      partitionCapturePlan(plan, concurrency).map(partition =>
+      partitionCapturePlan(plan, concurrency, bootstrapGlobals).map(partition =>
         capturePartition({
           plan: partition,
           browser,
@@ -570,6 +620,7 @@ export async function capture({
           viewport,
           settleMs,
           fastGlobals,
+          bootstrapGlobals,
           onShot: key => onProgress?.({done: ++done, total: plan.length, key}),
         }),
       ),

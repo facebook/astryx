@@ -14,6 +14,7 @@ import {
   partitionCapturePlan,
   partitionScoutStories,
   serveDirectory,
+  storyLoadGlobals,
 } from './capture.mjs';
 
 const roots = [];
@@ -53,6 +54,56 @@ describe('capture plan partitioning', () => {
       }
     });
     expect(new Set(partitions.flat().map(shot => shot.key)).size).toBe(3378);
+  });
+
+  it('canonicalizes story and global order without changing the shot set', () => {
+    const bootstrap = {astryxTheme: 'neutral', colorMode: 'light'};
+    const shot = (storyId, theme, mode) => ({
+      key: `${storyId}__${theme}-${mode}`,
+      storyId,
+      theme,
+      mode,
+    });
+    const accepted = [
+      shot('radio', 'neutral', 'light'),
+      shot('radio', 'neutral', 'dark'),
+      shot('default', 'neutral', 'light'),
+      shot('default', 'neutral', 'dark'),
+      shot('default', 'butter', 'light'),
+      shot('default', 'butter', 'dark'),
+    ];
+    const release = [
+      shot('default', 'butter', 'dark'),
+      shot('default', 'butter', 'light'),
+      shot('default', 'neutral', 'dark'),
+      shot('default', 'neutral', 'light'),
+      shot('radio', 'neutral', 'dark'),
+      shot('radio', 'neutral', 'light'),
+    ];
+
+    const sequence = plan =>
+      partitionCapturePlan(plan, 2, bootstrap).map(partition =>
+        partition.map(candidate => candidate.key),
+      );
+    expect(sequence(accepted)).toEqual(sequence(release));
+    expect(new Set(partitionCapturePlan(release, 2, bootstrap).flat())).toEqual(
+      new Set(release),
+    );
+  });
+
+  it('mounts fast-global stories in the canonical environment first', () => {
+    const bootstrap = {astryxTheme: 'neutral', colorMode: 'light'};
+    const shot = {theme: 'butter', mode: 'dark'};
+    expect(storyLoadGlobals(shot, true, bootstrap)).toEqual({
+      initial: bootstrap,
+      requested: {astryxTheme: 'butter', colorMode: 'dark'},
+      needsUpdate: true,
+    });
+    expect(storyLoadGlobals(shot, false, bootstrap)).toEqual({
+      initial: {astryxTheme: 'butter', colorMode: 'dark'},
+      requested: {astryxTheme: 'butter', colorMode: 'dark'},
+      needsUpdate: false,
+    });
   });
 
   it('uses one worker for empty or single-worker plans and never splits interleaved stories', () => {

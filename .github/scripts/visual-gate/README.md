@@ -185,11 +185,13 @@ it changes those shots, so it is a deliberate rebaseline, not a tweak.
 
 Theme and colour mode are switched over Storybook's own channel rather than
 by reloading. Two workers scout and capture independent story groups
-concurrently, but all shots for one story stay together so seeded random state
-and fast-global ordering remain deterministic. After capture closes the browser,
-two CPU workers decode and compare the baseline PNGs. `--no-fast-globals`
-forces a reload per shot if a story's state ever turns out to survive the
-re-render.
+concurrently. Browser execution is canonicalized by story, and every story
+mounts in the default light theme before any fast-global update, so accepted
+exact plans and full release plans cannot seed mount-time state differently.
+The manifest still follows the authoritative plan order. After capture closes
+the browser, two CPU workers decode and compare the baseline PNGs.
+`--no-fast-globals` forces a reload per shot if a story's state ever turns out
+to survive the re-render.
 
 ## Where the images live
 
