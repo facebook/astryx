@@ -8,7 +8,7 @@ import {
   proportional,
   pixel,
 } from '@astryxdesign/core/Table';
-import type {TableColumn, TableRowStatus} from '@astryxdesign/core/Table';
+import type {TableColumn, TableRowStatusValue} from '@astryxdesign/core/Table';
 
 interface Job extends Record<string, unknown> {
   id: string;
@@ -31,16 +31,16 @@ const columns: TableColumn<Job>[] = [
   {key: 'state', header: 'State', width: pixel(120)},
 ];
 
-function jobStatus(job: Job): TableRowStatus | null {
+function jobStatus(job: Job): TableRowStatusValue | null {
   switch (job.state) {
     case 'failed':
-      return {color: 'error', label: 'Failed'};
+      return {status: 'error', label: 'Failed'};
     case 'running':
-      return {color: 'warning', label: 'Running'};
+      return {color: 'warning', icon: 'clock', label: 'Running'};
     case 'queued':
       return {color: 'gray', label: 'Queued'};
     case 'succeeded':
-      return {color: 'success', label: 'Succeeded'};
+      return {status: 'success', label: 'Succeeded'};
   }
 }
 

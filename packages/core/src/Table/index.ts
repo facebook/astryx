@@ -111,6 +111,8 @@ export type {
 export type {
   UseTableRowStatusConfig,
   TableRowStatus,
+  TableSemanticRowStatus,
+  TableRowStatusValue,
 } from './plugins/rowStatus';
 export type {
   TableTreeRowMeta,

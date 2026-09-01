@@ -4,4 +4,6 @@ export {useTableRowStatus} from './useTableRowStatus';
 export type {
   UseTableRowStatusConfig,
   TableRowStatus,
+  TableSemanticRowStatus,
+  TableRowStatusValue,
 } from './useTableRowStatus';
