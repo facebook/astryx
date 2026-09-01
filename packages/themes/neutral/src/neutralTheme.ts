@@ -526,6 +526,28 @@ export const neutralTheme = defineTheme({
       'variant:accent': {backgroundColor: 'light-dark(#0074e2, #6d9cfe)'},
     },
 
+    // Give the Neutral segmented control a roomier inset without changing its
+    // outside height. The selected item stays flat against the tinted track.
+    'segmented-control': {
+      base: {
+        padding: 'var(--spacing-1)',
+      },
+    },
+    'segmented-control-item': {
+      'size:sm': {
+        height: 'calc(var(--size-element-sm) - 8px)',
+      },
+      'size:md': {
+        height: 'calc(var(--size-element-md) - 8px)',
+      },
+      'size:lg': {
+        height: 'calc(var(--size-element-lg) - 8px)',
+      },
+      selected: {
+        boxShadow: 'none',
+      },
+    },
+
     // =========================================================================
     // Banner — sits on a hue-tinted surface with colored text/icon:
     //   Light: pastel T90 bg (pulled from --color-{X}-muted / --color-background-blue)
