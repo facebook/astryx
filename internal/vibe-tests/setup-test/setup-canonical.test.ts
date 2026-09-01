@@ -13,6 +13,8 @@ import {copyFixture} from '../src/fixture-suite.mjs';
 import {assertPublicArtifactSafe} from '../src/public-artifact.mjs';
 // @ts-expect-error -- setup-integrity.mjs intentionally has no declaration output.
 import {analyzeSetupIntegrity} from './setup-integrity.mjs';
+// @ts-expect-error -- setup-workspace.mjs intentionally has no declaration output.
+import {manifestDifferences, treeManifest} from './setup-workspace.mjs';
 import {
   passesAcceptance,
   scoreArm,
@@ -792,6 +794,74 @@ describeCanonical('canonical intended changes', () => {
       expect(fs.existsSync(path.join(root, reference))).toBe(true);
     }
   }, 120_000);
+
+  /**
+   * The measurer must not build in the sandbox it measures.
+   *
+   * That sandbox is the attested artifact: the runner digested its bytes, the
+   * integrity checker reads them, and a re-measurement has to be able to read
+   * them again. A build in place regenerates the app-owned theme over the
+   * executor's copy, writes `dist/`, appends to the CLI's invocation log, and
+   * caches into `node_modules`, after which the tree no longer hashes to the
+   * digest that attested it.
+   *
+   * This runs the real measurer, with a real build, against a real fixture arm,
+   * and compares a full byte-and-mtime manifest of the sandbox taken before and
+   * after — every entry, tracked and ignored alike, since the debris is ignored
+   * by construction.
+   */
+  it('measures a real arm without changing one byte of its sandbox', () => {
+    const {root, arm} = preparePair('tailwind-v4-control');
+    applyButtonAddition(arm);
+    const provenance = provenanceFor(arm, 'tailwind-v4-control', 's1');
+    const digestBefore = analyzeSetupIntegrity(arm).diffSha256;
+    const before = treeManifest(arm);
+
+    const result = measure(
+      arm,
+      'tailwind-v4-control',
+      path.join(root, 'immutability-arm.json'),
+      provenance,
+    );
+    expect(
+      result.build.ok,
+      `${result.build.stdout}\n${result.build.stderr}`,
+    ).toBe(true);
+    // The build really produced what the measurement read.
+    expect(result.layerOrder.length).toBeGreaterThan(0);
+
+    expect(manifestDifferences(before, treeManifest(arm))).toEqual([]);
+    // The digest that attested this tree still describes it, so the cell can be
+    // re-measured or recovered from these same bytes.
+    expect(analyzeSetupIntegrity(arm).diffSha256).toBe(digestBefore);
+    // Nothing was left behind for the next measurement to trip over.
+    expect(fs.existsSync(path.join(arm, 'dist'))).toBe(false);
+  }, 180_000);
+
+  it('leaves the sandbox untouched when the build fails', () => {
+    const {root, arm} = preparePair('tailwind-v4-control');
+    applyButtonAddition(arm);
+    // Break the build after the sandbox is attested, the way a real failing
+    // executor change would.
+    edit(
+      path.join(arm, 'src', 'App.tsx'),
+      source => `${source}\nconst broken: number = 'not a number';\n`,
+    );
+    const provenance = provenanceFor(arm, 'tailwind-v4-control', 's1');
+    const digestBefore = analyzeSetupIntegrity(arm).diffSha256;
+    const before = treeManifest(arm);
+
+    const result = measure(
+      arm,
+      'tailwind-v4-control',
+      path.join(root, 'immutability-failed.json'),
+      provenance,
+    );
+    expect(result.build.ok).toBe(false);
+
+    expect(manifestDifferences(before, treeManifest(arm))).toEqual([]);
+    expect(analyzeSetupIntegrity(arm).diffSha256).toBe(digestBefore);
+  }, 180_000);
 
   it('builds, measures, and accepts a correct s1 button insertion', () => {
     const {
