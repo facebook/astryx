@@ -13,10 +13,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../fs/path-safety.mjs';
-import {
-  parseIntegration,
-  unknownIntegrationKeys,
-} from '../../authoring/integration/parse.mjs';
+import {parseIntegration} from '../../authoring/integration/parse.mjs';
+// The key census is internal to the schema module on purpose: it is derived
+// from the schema so it cannot drift, and it is not public API.
+import {unknownIntegrationKeys} from '../../authoring/integration/schema.mjs';
 import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
 
 /**

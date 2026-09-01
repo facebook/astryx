@@ -597,9 +597,11 @@ from `@astryxdesign/cli/authoring` for editor autocomplete and type-checking.
 
 Every command loads the consumer's `astryx.config`, resolves each listed
 integration's manifest from `node_modules`, and discovers its contributions.
-Everything is validated against one strict schema at the load boundary, so the
-CLI presents core and integration contributions through a single, uniform
-surface.
+Everything is parsed at the load boundary, so the CLI presents core and
+integration contributions through a single, uniform surface. A field of the
+wrong type fails there; a field this CLI does not know is ignored with a
+warning naming it, so a manifest written against a newer CLI still contributes
+everything this one understands.
 
 Discovery is resilient: a broken or misconfigured integration is skipped with a
 one-line warning on stderr instead of crashing the CLI, and it never corrupts a

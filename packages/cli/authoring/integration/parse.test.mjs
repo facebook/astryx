@@ -8,7 +8,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {parseIntegration, unknownIntegrationKeys} from './parse.mjs';
+import {parseIntegration} from './parse.mjs';
+import {integrationSchema, unknownIntegrationKeys} from './schema.mjs';
 
 /** Run parseIntegration and return the thrown message (asserting it throws). */
 function reason(value, label = 'integration') {
@@ -47,6 +48,16 @@ describe('parseIntegration (load boundary)', () => {
     // Not a manifest at all — nothing to report, and the parser owns the error.
     expect(unknownIntegrationKeys(null)).toEqual([]);
     expect(unknownIntegrationKeys([1, 2])).toEqual([]);
+  });
+
+  it('reports no known key as unknown, whatever the schema grows', () => {
+    // The census is read off the schema, so this holds for keys that do not
+    // exist yet. A hand-maintained list would pass today and start warning
+    // falsely about a supported field the day someone forgot to update it.
+    const everyKnownKey = Object.fromEntries(
+      Object.keys(integrationSchema.shape).map(key => [key, './x']),
+    );
+    expect(unknownIntegrationKeys(everyKnownKey)).toEqual([]);
   });
 
   it('still rejects a known key of the wrong type', () => {
