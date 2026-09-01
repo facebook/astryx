@@ -68,6 +68,12 @@ const anatomy = [
       'TableCell containing one value or caller-provided content in a standard body or footer row.',
   },
   {
+    name: 'Row status indicator',
+    required: false,
+    description:
+      'Labeled icon or dot rendered by the row-status plugin for one row.',
+  },
+  {
     name: 'Default empty state',
     required: false,
     description:
