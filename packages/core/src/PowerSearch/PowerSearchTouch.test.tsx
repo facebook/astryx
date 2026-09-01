@@ -202,12 +202,12 @@ describe('PowerSearchTouchSurface', () => {
     expect(within(sheet()).getByRole('list', {name: 'Metadata'})).toBeTruthy();
   });
 
-  it('shows the default operator under each field name', () => {
+  it('shows only field names in the field picker', () => {
     setup();
     openSheet();
-    expect(
-      within(sheet()).getByRole('button', {name: /Author\s*is/}),
-    ).toBeTruthy();
+    const statusRow = within(sheet()).getByRole('button', {name: 'Status'});
+    expect(statusRow).toBeTruthy();
+    expect(statusRow.textContent).toBe('Status');
   });
 
   it('stages an enum selection until Apply is pressed', () => {
@@ -264,7 +264,12 @@ describe('PowerSearchTouchSurface', () => {
     expect(
       within(sheet()).getByRole('radiogroup', {name: 'Operator'}),
     ).toBeTruthy();
-    fireEvent.click(within(sheet()).getByRole('radio', {name: 'is not'}));
+    expect(
+      within(sheet()).getByRole('radio', {name: 'Status is'}),
+    ).toBeTruthy();
+    fireEvent.click(
+      within(sheet()).getByRole('radio', {name: 'Status is not'}),
+    );
     tapRow('Open');
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
@@ -285,7 +290,9 @@ describe('PowerSearchTouchSurface', () => {
     const {onChange} = setup();
     openSheet();
     tapRow(/^Status/);
-    fireEvent.click(within(sheet()).getByRole('radio', {name: 'is empty'}));
+    fireEvent.click(
+      within(sheet()).getByRole('radio', {name: 'Status is empty'}),
+    );
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
     expect(onChange).toHaveBeenCalledWith(
