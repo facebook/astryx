@@ -51,15 +51,22 @@ vocabulary remains owned by `architecture:theme-tokens`.
 
 ## Theme-local role definitions
 
-Neutral owns this local role for future implementation:
+Neutral's candidate implementation owns the approved accent role and proposes
+the related roles below for exact-head review:
 
-| Approved exact name                               | Approved Neutral-only meaning                                                     | Proposed value           |
-| ------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------ |
-| `--astryx-theme-neutral-color-status-fill-accent` | Filled accent status in contexts whose actual semantic role is accent status fill | `['#0074e2', '#6d9cfe']` |
+| Exact name                                             | Neutral-only meaning                                | Proposed value               | Status   |
+| ------------------------------------------------------ | --------------------------------------------------- | ---------------------------- | -------- |
+| `--astryx-theme-neutral-color-status-fill-accent`      | Filled accent status                                | `['#0074e2', '#6d9cfe']`     | Approved |
+| `--astryx-theme-neutral-color-status-fill-success`     | Filled success status                               | `['#198100', '#64af4c']`     | Proposed |
+| `--astryx-theme-neutral-color-status-fill-warning`     | Filled warning status                               | `'#ffce2f'`                  | Proposed |
+| `--astryx-theme-neutral-color-status-fill-error`       | Filled error status                                 | `['#c9303a', '#ff705d']`     | Proposed |
+| `--astryx-theme-neutral-color-on-tint-neutral`         | Neutral content placed on a semantic tinted surface | `['#0a0a0a4D', '#fafafa4D']` | Proposed |
+| `--astryx-theme-neutral-color-on-tint-overlay-hover`   | Hover overlay placed on a semantic tinted surface   | `['#0a0a0a1A', '#fafafa1A']` | Proposed |
+| `--astryx-theme-neutral-color-on-tint-overlay-pressed` | Pressed overlay placed on a semantic tinted surface | `['#0a0a0a33', '#fafafa33']` | Proposed |
 
-AST-006 is current and accepted, but its implementation is not shipped. Once that
-implementation exists, Neutral would author and consume the exact name without an
-alias:
+AST-006 is current and accepted, and its implementation is proposed separately
+in the parent local-token PR. This stacked candidate authors and consumes exact
+names without aliases:
 
 ```ts
 localTokens: {
@@ -98,14 +105,15 @@ separate draft system spec.
 
 ## Component and state mappings
 
-Current source remains the implementation baseline. The exact
-`var(--astryx-theme-neutral-color-status-fill-accent)` reference may be adopted
-only where an existing Neutral component state genuinely means filled accent
-status. Badge `variant:info` is the first proposed mapping. Every added mapping is
-a theme-spec compatibility review: it must demonstrate the same semantic context
-and provide rendered evidence for its actual light/dark and relevant interaction
-states. Shared color alone is not enough. This record does not add component
-states or authorize implementation before that evidence is complete.
+The candidate maps the shared status-fill roles across Badge, StatusDot,
+AvatarStatusDot, Stepper indicators, and ProgressBar wherever the existing state
+already has the same semantic meaning. Banner uses the proposed tint-content and
+interaction roles. Every mapping remains subject to exact-head theme review and
+rendered light/dark evidence; shared color alone is not enough.
+
+This work does not add component states. It intentionally excludes
+`table-row-status`, which has no approved theming target, and SegmentedControl
+geometry/shadow changes, which are reviewed independently.
 
 ## Compatibility and migration
 
@@ -115,13 +123,13 @@ Neutral stays unenrolled until it explicitly supplies `localTokens`; merely
 emitting or referencing the same prefix today does not activate validation or
 create the public contract.
 
-Implementation requires AST-006 implementation to ship first, followed by
-complete rendered evidence for the proposed value and mappings. When Neutral
-then ships the definition, its exact name and approved semantic meaning become a
-public compatibility contract of the Neutral family. A local-token name,
-enrolled theme name, or semantic meaning change must preserve descendants and
-consumers through an explicit reviewed migration or alias. Compiled CSS does not
-broaden the role beyond the contexts approved here.
+Implementation requires the parent AST-006 implementation to ship first,
+followed by complete rendered evidence and exact-head approval for every
+proposed value and mapping. When Neutral ships a definition, its exact name and
+approved semantic meaning become a public compatibility contract of the Neutral
+family. A local-token name, enrolled theme name, or semantic meaning change must
+preserve descendants and consumers through an explicit reviewed migration or
+alias. Compiled CSS does not broaden a role beyond its approved contexts.
 
 ## Accessibility and contrast evidence
 
@@ -193,6 +201,10 @@ or applying it merely because two contexts currently share a color.
   (`checkable`) Neutral promotion and implementation remain blocked until the
   actual pairings meet the applicable current contrast methodology, each mapped
   context is visibly verified, and `rubyycheung` ratifies that exact record head.
+- **OQ2 — Do the proposed success, warning, error, and tint roles have stable
+  meanings across every listed component mapping?** (`checkable`) The additional
+  names remain proposals until reviewers confirm each mapping represents the
+  same semantic role rather than merely sharing a current color value.
 
 ## Content boundary
 

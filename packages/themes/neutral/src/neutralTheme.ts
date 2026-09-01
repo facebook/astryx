@@ -30,7 +30,11 @@
  * Only overrides tokens that differ from the defaults.
  */
 
-import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
+import {
+  defineTheme,
+  defineSyntaxTheme,
+  type TokenValue,
+} from '@astryxdesign/core/theme';
 import {neutralIconRegistry} from './icons';
 
 /**
@@ -59,8 +63,32 @@ const neutralSyntax = defineSyntaxTheme({
   },
 });
 
+const neutralLocalTokens: Record<string, TokenValue> = {
+  '--astryx-theme-neutral-color-status-fill-accent': ['#0074e2', '#6d9cfe'],
+  '--astryx-theme-neutral-color-status-fill-success': ['#198100', '#64af4c'],
+  '--astryx-theme-neutral-color-status-fill-warning': '#ffce2f',
+  '--astryx-theme-neutral-color-status-fill-error': ['#c9303a', '#ff705d'],
+  '--astryx-theme-neutral-color-on-tint-neutral': ['#0a0a0a4D', '#fafafa4D'],
+  '--astryx-theme-neutral-color-on-tint-overlay-hover': [
+    '#0a0a0a1A',
+    '#fafafa1A',
+  ],
+  '--astryx-theme-neutral-color-on-tint-overlay-pressed': [
+    '#0a0a0a33',
+    '#fafafa33',
+  ],
+};
+
+const statusFill = {
+  accent: 'var(--astryx-theme-neutral-color-status-fill-accent)',
+  success: 'var(--astryx-theme-neutral-color-status-fill-success)',
+  warning: 'var(--astryx-theme-neutral-color-status-fill-warning)',
+  error: 'var(--astryx-theme-neutral-color-status-fill-error)',
+} as const;
+
 export const neutralTheme = defineTheme({
   name: 'neutral',
+  localTokens: neutralLocalTokens,
 
   // Typography: Figtree across body, heading, and display sizes (display
   // size tokens inherit from heading.family). Monospace stays as the
@@ -410,8 +438,8 @@ export const neutralTheme = defineTheme({
       'variant:info': {
         // Light: T50 #0074e2 (palette saturated stop)
         // Dark : T60 stop from dark-mode tonal palette of source #0074e2
-        backgroundColor: 'light-dark(#0074e2, #6d9cfe)',
-        color: 'light-dark(#ffffff, #171717)',
+        backgroundColor: statusFill.accent,
+        color: 'var(--color-on-accent)',
       },
       'variant:neutral': {
         // Mirrors the gray categorical badge — same neutral chip treatment
@@ -424,15 +452,15 @@ export const neutralTheme = defineTheme({
       'variant:success': {
         // Light: T45 #198100 (palette saturated stop)
         // Dark : T60 stop from dark-mode tonal palette of source #198100
-        backgroundColor: 'light-dark(#198100, #64af4c)',
-        color: 'light-dark(#ffffff, #171717)',
+        backgroundColor: statusFill.success,
+        color: 'var(--color-on-success)',
       },
       'variant:warning': {
         // Yellow stays at the same hex in both modes — chroma reduction
         // is barely visible at T85, and dark text on yellow doesn't
         // suffer from the §4 vibration concern.
-        backgroundColor: '#ffce2f',
-        color: '#171717',
+        backgroundColor: statusFill.warning,
+        color: 'var(--color-on-warning)',
       },
       'variant:error': {
         // Light: T58 #c9303a. The T55 stop #e33f4a pairs with white at only
@@ -442,8 +470,8 @@ export const neutralTheme = defineTheme({
         // Dark : T60 stop from dark-mode tonal palette of Tailwind red-600
         //        source #dc2626 (kept on H=27 alarm-red rather than coral).
         //        Dark text on it is 6.60:1 and unchanged.
-        backgroundColor: 'light-dark(#c9303a, #ff705d)',
-        color: 'light-dark(#ffffff, #171717)',
+        backgroundColor: statusFill.error,
+        color: 'var(--color-on-error)',
       },
 
       // Categorical — bg + text reference the per-hue tokens, so behavior
@@ -520,10 +548,15 @@ export const neutralTheme = defineTheme({
     // not among the "too dark" cases.
     // =========================================================================
     statusdot: {
-      'variant:success': {backgroundColor: 'light-dark(#198100, #64af4c)'},
-      'variant:warning': {backgroundColor: '#ffce2f'},
-      'variant:error': {backgroundColor: 'light-dark(#c9303a, #ff705d)'},
-      'variant:accent': {backgroundColor: 'light-dark(#0074e2, #6d9cfe)'},
+      'variant:success': {backgroundColor: statusFill.success},
+      'variant:warning': {backgroundColor: statusFill.warning},
+      'variant:error': {backgroundColor: statusFill.error},
+      'variant:accent': {backgroundColor: statusFill.accent},
+    },
+
+    'avatar-status-dot': {
+      'variant:success': {backgroundColor: statusFill.success},
+      'variant:error': {backgroundColor: statusFill.error},
     },
 
     // =========================================================================
@@ -544,6 +577,13 @@ export const neutralTheme = defineTheme({
     // Status overrides reference --color-text-{hue} so text/icon colors
     // stay in sync with the palette anchors automatically.
     banner: {
+      base: {
+        '--color-neutral': 'var(--astryx-theme-neutral-color-on-tint-neutral)',
+        '--color-overlay-hover':
+          'var(--astryx-theme-neutral-color-on-tint-overlay-hover)',
+        '--color-overlay-pressed':
+          'var(--astryx-theme-neutral-color-on-tint-overlay-pressed)',
+      },
       'status:info': {
         '--color-accent-muted': 'var(--color-background-blue)',
         '--color-text-primary': 'var(--color-text-blue)',
@@ -564,10 +604,18 @@ export const neutralTheme = defineTheme({
         '--color-warning': 'var(--color-text-yellow)',
       },
       'status:error': {
+        '--color-error-muted': 'var(--color-background-red)',
         '--color-text-primary': 'var(--color-text-red)',
         '--color-text-secondary': 'var(--color-text-red)',
         '--color-error': 'var(--color-text-red)',
       },
+    },
+
+    'step-indicator': {
+      'status:accent': {'--color-accent': statusFill.accent},
+      'status:success': {'--color-success': statusFill.success},
+      'status:warning': {'--color-warning': statusFill.warning},
+      'status:error': {'--color-error': statusFill.error},
     },
 
     // =========================================================================
@@ -607,19 +655,19 @@ export const neutralTheme = defineTheme({
       // values; documented per role with palette provenance.
       'variant:accent': {
         // Blue T50 saturated stop (= variant:info badge bg)
-        '--color-accent': '#0074e2',
+        '--color-accent': statusFill.accent,
       },
       'variant:success': {
         // Green T45 saturated stop (= variant:success badge bg)
-        '--color-success': '#198100',
+        '--color-success': statusFill.success,
       },
       'variant:warning': {
         // Yellow T85 saturated stop (= variant:warning badge bg)
-        '--color-warning': '#ffce2f',
+        '--color-warning': statusFill.warning,
       },
       'variant:error': {
         // Red T58 saturated stop (= variant:error badge bg)
-        '--color-error': '#c9303a',
+        '--color-error': statusFill.error,
       },
     },
 
