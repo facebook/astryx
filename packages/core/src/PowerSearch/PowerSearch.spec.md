@@ -120,11 +120,15 @@ until its implementation and verification complete.
   refs, elements, or an equivalent package-internal value. Its observable geometry,
   lifetime, and precedence must satisfy FR3–FR9.
 - **AV5 — Adaptive coarse-pointer surface.** Supported coarse-pointer
-  configurations may replace the main typeahead and filter-editor popover with a
-  direct content-search input plus a bottom-sheet filter editor. FR1–FR9 apply
-  whenever the popover surface is active; they do not impose popover geometry on
-  the bottom sheet. Configurations with nested filters or configured token overflow
-  retain the pointer/typeahead surface and therefore remain under this contract.
+  configurations may replace the main typeahead and filter-editor popover with one
+  field-wide trigger and a filter-management bottom sheet. Capsules in the field are
+  display-only and expose no edit or remove controls. The management sheet owns
+  string-valued content search, Add filter, Clear all, and a selected-filter list;
+  each selected row has a separate remove action and opens its update sheet when
+  pressed. Save returns to management. FR1–FR9 apply whenever the popover surface is
+  active; they do not impose popover geometry on the bottom sheet. Configurations
+  with nested filters or configured token overflow retain the pointer/typeahead
+  surface and therefore remain under this contract.
 
 ### Representative states
 
@@ -186,12 +190,15 @@ until its implementation and verification complete.
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------ | -------------- | ----------------------- |
 | Search field and tokens | Continue presenting the structured query and its current interaction states.                                      | Current source and public docs | Prominent      | FR8                     |
 | Main field/search menu  | Retain its exact `menuWidth` surface and current selection behavior; it does not inherit the editor's 720 px cap. | Current source and public docs | Prominent      | Ownership boundary, FR9 |
+| Touch field             | Act as one field-wide launcher; render capsules without per-capsule edit or remove controls.                      | `component:PowerSearch/AV5`    | Prominent      | AV5                     |
+| Touch management sheet  | Own content search, selected rows, row removal, Clear all, Add filter, and edit navigation.                       | `component:PowerSearch/AV5`    | Prominent      | AV5                     |
 | Filter-editor popover   | Stay within the readable 400–720 px range before viewport clamping.                                               | `component:PowerSearch/DEC-1`  | Prominent      | FR1–FR3, FR7            |
 | Width-capped editor     | Prefer the outer edge nearest the stable opening control, independent of activation modality.                     | `component:PowerSearch/DEC-2`  | Prominent      | FR4–FR8                 |
 | Keyboard-opened editor  | Use the same control-geometry rule and preserve current focus behavior.                                           | Accessibility contract         | Prominent      | FR5, FR8, AR1           |
 
-This proposal changes editor geometry only. It does not introduce a new visual
-state, theme target, or public configuration concept.
+The pointer proposal changes editor geometry only. The adaptive touch variation
+changes interaction placement without introducing a public configuration concept or
+new theme target.
 
 ## Family and system relationships
 

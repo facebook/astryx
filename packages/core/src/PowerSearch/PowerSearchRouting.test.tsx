@@ -67,7 +67,8 @@ describe('PowerSearch pointer routing', () => {
     setCoarsePointer(true);
     render(<PowerSearch config={config} filters={[]} onChange={() => {}} />);
 
-    expect(screen.getByRole('button', {name: 'Add filters…'})).toBeTruthy();
+    expect(screen.getByRole('button', {name: 'Search'})).toBeTruthy();
+    expect(screen.queryByRole('button', {name: 'Add filters…'})).toBeNull();
     expect(screen.queryByRole('combobox')).toBeNull();
   });
 
@@ -89,8 +90,10 @@ describe('PowerSearch pointer routing', () => {
       />,
     );
 
-    expect(screen.getByRole('searchbox', {name: 'Search'})).toBeTruthy();
-    expect(screen.getByRole('button', {name: 'Add filters…'})).toBeTruthy();
+    const trigger = screen.getByRole('button', {name: 'Search'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(screen.queryByRole('searchbox')).toBeNull();
+    expect(screen.queryByRole('button', {name: 'Add filters…'})).toBeNull();
     expect(screen.queryByRole('combobox')).toBeNull();
   });
 
