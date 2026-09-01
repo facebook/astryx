@@ -8,6 +8,7 @@ import {SandboxNav} from './SandboxNav';
 
 const FULLSCREEN_PATHS = [
   '/pages/color-studio',
+  '/pages/palette-generator',
   '/pages/mobile-type',
   '/pages/tap-targets',
 ];
