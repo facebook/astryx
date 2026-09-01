@@ -2513,6 +2513,10 @@ describe('Selector', () => {
         expect(trigger).toHaveTextContent('Banana');
         expect(trigger).toHaveAttribute('aria-readonly', 'true');
         expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        const readOnlyDescription = screen.getByText('Read only');
+        expect(trigger.getAttribute('aria-describedby')).toContain(
+          readOnlyDescription.id,
+        );
         expect(trigger).not.toHaveAttribute('aria-controls');
         expect(trigger).not.toHaveAttribute('aria-haspopup');
         expect(screen.getAllByRole('combobox', h)).toHaveLength(1);
@@ -2536,6 +2540,22 @@ describe('Selector', () => {
         expect(trigger).toHaveFocus();
       },
     );
+
+    it('localizes the accessible read-only description', () => {
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{fr: {'@astryx.input.readOnly': 'Lecture seule'}}}>
+          <Selector label="Fruit" options={OPTIONS} value="Banana" isReadOnly />
+        </InternationalizationProvider>,
+      );
+
+      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+      const description = screen.getByText('Lecture seule');
+      expect(trigger.getAttribute('aria-describedby')).toContain(
+        description.id,
+      );
+    });
 
     it('keeps loading feedback while blocking the selection surface', async () => {
       const user = userEvent.setup();

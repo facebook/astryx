@@ -818,6 +818,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputLabelId = useId();
+  const readOnlyDescriptionId = useId();
   const searchId = useId();
   const triggerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -869,6 +870,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         ? statusTooltip.describedBy
         : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      isEffectivelyReadOnly ? readOnlyDescriptionId : null,
     ],
     inputGroup,
   );
@@ -1799,6 +1801,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         {inputGroup && (
           <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
+        )}
+        {isEffectivelyReadOnly && (
+          <VisuallyHidden id={readOnlyDescriptionId}>
+            {t('@astryx.input.readOnly')}
+          </VisuallyHidden>
         )}
         <button
           {...triggerSharedProps}

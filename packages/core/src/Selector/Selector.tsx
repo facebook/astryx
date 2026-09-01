@@ -885,6 +885,7 @@ export function Selector<T extends SelectorOptionType>(
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputLabelId = useId();
+  const readOnlyDescriptionId = useId();
   const searchId = useId();
   // Measure from the same outer control that usePopover anchors to; using the
   // shorter inner button makes every size's selected row land too low.
@@ -946,6 +947,7 @@ export function Selector<T extends SelectorOptionType>(
         ? statusTooltip.describedBy
         : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      isEffectivelyReadOnly ? readOnlyDescriptionId : null,
     ],
     inputGroup,
   );
@@ -1770,6 +1772,11 @@ export function Selector<T extends SelectorOptionType>(
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         {inputGroup && (
           <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
+        )}
+        {isEffectivelyReadOnly && (
+          <VisuallyHidden id={readOnlyDescriptionId}>
+            {t('@astryx.input.readOnly')}
+          </VisuallyHidden>
         )}
         <button
           {...triggerSharedProps}

@@ -1963,6 +1963,10 @@ describe('MultiSelector', () => {
         expect(trigger).toHaveTextContent('Apple, Banana');
         expect(trigger).toHaveAttribute('aria-readonly', 'true');
         expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        const readOnlyDescription = screen.getByText('Read only');
+        expect(trigger.getAttribute('aria-describedby')).toContain(
+          readOnlyDescription.id,
+        );
         expect(trigger).not.toHaveAttribute('aria-controls');
         expect(trigger).not.toHaveAttribute('aria-haspopup');
         expect(screen.getAllByRole('combobox', h)).toHaveLength(1);

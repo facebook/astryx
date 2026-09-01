@@ -1083,6 +1083,10 @@
     "defaultMessage": "Clear all {label}",
     "description": "Screen-reader-only label on the X that clears every selected value from a MultiSelector. Example: `Clear all Countries`. `{label}` is typically already plural in English."
   },
+  "@astryx.input.readOnly": {
+    "defaultMessage": "Read only",
+    "description": "Screen-reader-only description appended to a read-only form control when the platform does not expose aria-readonly for that control's host element. Short state label, not an instruction."
+  },
   "@astryx.input.statusButton.error": {
     "defaultMessage": "Error details",
     "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is error. Activating or focusing the button reveals the error message in a tooltip. Keep it short — it labels an icon-only button."
