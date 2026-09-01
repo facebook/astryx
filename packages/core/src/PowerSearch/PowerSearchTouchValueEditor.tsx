@@ -11,10 +11,10 @@
  * The desktop value editor renders `enum` and `enum_list` as Selectors, which
  * open a dropdown layer. Inside a bottom sheet that stacks a second overlay on
  * a surface the user is already inside, so those two types are re-rendered here
- * as the sheet's own list: a single-select list that commits on tap (matching
- * Selector's mobile pattern) and a CheckboxList applied from the footer
- * (matching MultiSelector's). Every other type is a real input rather than a
- * menu, so it falls through to the shared PowerSearchValueEditor unchanged.
+ * as the sheet's own list: a staged single-select list and a CheckboxList,
+ * both confirmed from the footer. Every other type is a real input rather than
+ * a menu, so it falls through to the shared PowerSearchValueEditor while still
+ * requiring Apply.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
@@ -49,8 +49,6 @@ export interface PowerSearchTouchValueEditorProps {
   filterValue: FilterValue | undefined;
   /** Stage a value without leaving the sheet. */
   onChange: (value: FilterValue) => void;
-  /** Stage a value and commit the filter immediately (single-tap choices). */
-  onCommit: (value: FilterValue) => void;
   isDisabled?: boolean;
   maxMenuItems?: number;
   timezoneID?: string;
@@ -64,7 +62,6 @@ export function PowerSearchTouchValueEditor({
   operatorValue,
   filterValue,
   onChange,
-  onCommit,
   isDisabled,
   maxMenuItems,
   timezoneID,
@@ -72,17 +69,12 @@ export function PowerSearchTouchValueEditor({
   const t = useTranslator();
 
   const handleFallbackChange = useCallback(
-    (value: FilterValue, shouldSave?: boolean) => {
-      // The shared editor asks to close for choices that are complete the
-      // moment they are made (a relative-date preset, a typeahead pick).
-      // Honour that here exactly as the desktop popover does.
-      if (shouldSave) {
-        onCommit(value);
-      } else {
-        onChange(value);
-      }
+    (value: FilterValue) => {
+      // Even editors that are complete on selection stay staged here. The
+      // touch sheet always asks for explicit confirmation through Apply.
+      onChange(value);
     },
-    [onChange, onCommit],
+    [onChange],
   );
 
   const enumSelection = useMemo(
@@ -119,7 +111,7 @@ export function PowerSearchTouchValueEditor({
                   <Icon icon="check" size="sm" color="accent" />
                 ) : undefined
               }
-              onClick={() => onCommit({type: 'enum', value: item.value})}
+              onClick={() => onChange({type: 'enum', value: item.value})}
             />
           );
         })}

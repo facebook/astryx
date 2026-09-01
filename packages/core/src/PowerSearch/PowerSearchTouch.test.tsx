@@ -192,6 +192,9 @@ describe('PowerSearchTouchSurface', () => {
   it('lists the fields, grouped, when the tap target is pressed', () => {
     setup();
     openSheet();
+    expect(
+      within(sheet()).getByRole('heading', {name: 'Add filter'}),
+    ).toBeTruthy();
     const rows = within(sheet()).getAllByRole('button');
     const labels = rows.map(r => r.textContent);
     expect(labels.some(l => l?.includes('Status'))).toBe(true);
@@ -207,11 +210,13 @@ describe('PowerSearchTouchSurface', () => {
     ).toBeTruthy();
   });
 
-  it('adds an enum filter on a single tap of the value', () => {
+  it('stages an enum selection until Apply is pressed', () => {
     const {onChange} = setup();
     openSheet();
     tapRow(/^Status/);
     tapRow('Closed');
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -230,13 +235,19 @@ describe('PowerSearchTouchSurface', () => {
     openSheet();
     tapRow(/^Status/);
     tapRow('Closed');
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
     expect(isSheetOpen()).toBe(false);
   });
 
-  it('commits an empty-value operator without a value step', () => {
+  it('confirms an empty-value operator through Apply', () => {
     const {onChange} = setup();
     openSheet();
     tapRow(/^Unassigned/);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(
+      within(sheet()).getByRole('heading', {name: 'Unassigned is true'}),
+    ).toBeTruthy();
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
     expect(onChange).toHaveBeenCalledWith(
       [{field: 'unassigned', operator: 'isTrue', value: {type: 'empty'}}],
       'add',
@@ -245,13 +256,18 @@ describe('PowerSearchTouchSurface', () => {
     expect(isSheetOpen()).toBe(false);
   });
 
-  it('drills into a second operator and uses it for the filter', () => {
+  it('shows complex operators as radios in the value sheet', () => {
     const {onChange} = setup();
     openSheet();
     tapRow(/^Status/);
-    tapRow(/^Operator/);
-    tapRow('is not');
+    expect(within(sheet()).getByRole('heading', {name: 'Status'})).toBeTruthy();
+    expect(
+      within(sheet()).getByRole('radiogroup', {name: 'Operator'}),
+    ).toBeTruthy();
+    fireEvent.click(within(sheet()).getByRole('radio', {name: 'is not'}));
     tapRow('Open');
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -265,12 +281,13 @@ describe('PowerSearchTouchSurface', () => {
     );
   });
 
-  it('commits a non-default empty operator without opening a blank value editor', () => {
+  it('stages a non-default empty operator until Apply', () => {
     const {onChange} = setup();
     openSheet();
     tapRow(/^Status/);
-    tapRow(/^Operator/);
-    tapRow('is empty');
+    fireEvent.click(within(sheet()).getByRole('radio', {name: 'is empty'}));
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
     expect(onChange).toHaveBeenCalledWith(
       [{field: 'status', operator: 'isEmpty', value: {type: 'empty'}}],
       'add',
@@ -279,13 +296,14 @@ describe('PowerSearchTouchSurface', () => {
     expect(isSheetOpen()).toBe(false);
   });
 
-  it('offers no operator row when the field defines one operator', () => {
+  it('puts a simple field and its operator on one title line', () => {
     setup();
     openSheet();
     tapRow(/^Author/);
-    expect(
-      within(sheet()).queryByRole('button', {name: /^Operator/}),
-    ).toBeNull();
+    const heading = within(sheet()).getByRole('heading', {name: 'Author is'});
+    expect(heading).toBeTruthy();
+    expect(getComputedStyle(heading).whiteSpace).toBe('nowrap');
+    expect(within(sheet()).queryByRole('radiogroup')).toBeNull();
   });
 
   it('stages a multi-select and commits it from the footer', () => {
@@ -319,11 +337,13 @@ describe('PowerSearchTouchSurface', () => {
     ).toBeTruthy();
   });
 
-  it('opens a token in edit mode and replaces the filter in place', () => {
+  it('edits a filter only after Apply', () => {
     const {onChange} = setup({filters: [openFilter]});
     fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
-    expect(within(sheet()).getByText('Edit filter')).toBeTruthy();
+    expect(within(sheet()).getByRole('heading', {name: 'Status'})).toBeTruthy();
     tapRow('Closed');
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         {
@@ -335,6 +355,19 @@ describe('PowerSearchTouchSurface', () => {
       'edit',
       0,
     );
+  });
+
+  it('shows a simple edit title as field and operator on one line', () => {
+    const authorFilter: PowerSearchFilter = {
+      field: 'author',
+      operator: 'is',
+      value: {type: 'string', value: 'Ada'},
+    };
+    setup({filters: [authorFilter]});
+    fireEvent.click(screen.getByRole('button', {name: 'Author: is'}));
+    const heading = within(sheet()).getByRole('heading', {name: 'Author is'});
+    expect(heading).toBeTruthy();
+    expect(getComputedStyle(heading).whiteSpace).toBe('nowrap');
   });
 
   it('offers a visible cancel action while editing', () => {
@@ -368,6 +401,7 @@ describe('PowerSearchTouchSurface', () => {
       />,
     );
     tapRow('Closed');
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
     expect(onChange).toHaveBeenCalledWith(
       [
         authorFilter,
@@ -404,6 +438,7 @@ describe('PowerSearchTouchSurface', () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
     tapRow('Closed');
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
     fireEvent.transitionEnd(document.querySelector('dialog')!);
     expect(screen.getByRole('button', {name: 'Add filters…'})).toHaveFocus();
   });
@@ -431,6 +466,7 @@ describe('PowerSearchTouchSurface', () => {
       />,
     );
     tapRow('Closed');
+    fireEvent.click(within(sheet()).getByRole('button', {name: 'Apply'}));
     expect(onChange).not.toHaveBeenCalled();
     expect(isSheetOpen()).toBe(false);
   });
@@ -512,7 +548,9 @@ describe('PowerSearchTouchSurface', () => {
   it('deletes the edited filter from the sheet footer', () => {
     const {onChange} = setup({filters: [openFilter]});
     fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Delete'}));
+    fireEvent.click(
+      within(sheet()).getByRole('button', {name: 'Remove this filter'}),
+    );
     expect(onChange).toHaveBeenCalledWith([], 'remove', 0);
   });
 
@@ -592,7 +630,9 @@ describe('PowerSearchTouchSurface', () => {
     }
     render(<Harness />);
     fireEvent.click(screen.getByRole('button', {name: 'Status: is'}));
-    fireEvent.click(within(sheet()).getByRole('button', {name: 'Delete'}));
+    fireEvent.click(
+      within(sheet()).getByRole('button', {name: 'Remove this filter'}),
+    );
     fireEvent.transitionEnd(document.querySelector('dialog')!);
     expect(screen.getByRole('button', {name: 'Add filters…'})).toHaveFocus();
   });

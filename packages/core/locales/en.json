@@ -861,7 +861,19 @@
   },
   "@astryx.powersearch.mobile.addFilter": {
     "defaultMessage": "Add filters…",
-    "description": "Label on the in-field button that opens PowerSearch's touch filter-builder sheet, and the title of that sheet. Imperative verb; trailing `…` is one character."
+    "description": "Label on the in-field button that opens PowerSearch's touch filter-builder sheet. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.powersearch.mobile.addFilterTitle": {
+    "defaultMessage": "Add filter",
+    "description": "Title of the first PowerSearch touch sheet where the user chooses which filter to add. Singular noun because the flow adds one condition at a time."
+  },
+  "@astryx.powersearch.mobile.filterTitle": {
+    "defaultMessage": "{field} {operator}",
+    "description": "Title of a simple PowerSearch touch value sheet. {field} is the filter field label and {operator} is its only operator label; translators may reorder them."
+  },
+  "@astryx.powersearch.mobile.removeFilter": {
+    "defaultMessage": "Remove this filter",
+    "description": "Destructive button in the PowerSearch touch edit sheet that removes the filter currently being edited."
   },
   "@astryx.powersearch.mobile.editFilter": {
     "defaultMessage": "Edit filter",
