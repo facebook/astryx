@@ -284,9 +284,20 @@ const styles = stylex.create({
   },
   rootFill: {
     height: '100dvh',
+    // Without a clip boundary, a descendant that escapes normal flow (an
+    // absolutely-positioned child extending past the box, a negative-margin
+    // trick) paints outside the fixed height and the page scrolls past what
+    // "fill the viewport" promises (#5815).
+    overflow: 'clip',
   },
   rootAuto: {
     minHeight: '100dvh',
+    // `overflow` other than visible also opens a block formatting context,
+    // which stops a child's margin-top from collapsing through the root and
+    // escaping the intended boundary (#5775). `minHeight` (not `height`)
+    // means this never clips legitimately taller content — the box still
+    // grows to fit it, same as before.
+    overflow: 'clip',
   },
   skipLink: {
     // Visually hidden by default, visible on focus (keyboard navigation)

@@ -555,6 +555,27 @@ describe('AppShell', () => {
     expect(screen.getByText('Nav')).toBeInTheDocument();
   });
 
+  it('clips overflow on the root so a descendant cannot escape the height boundary (#5775, #5815)', () => {
+    // Both height modes need overflow other than visible on the root:
+    // - fill: a fixed height with no clip lets an absolutely-positioned
+    //   descendant paint past it (#5815).
+    // - auto: a bare minHeight with no clip lets a child's margin-top
+    //   collapse straight through the root (#5775).
+    const {rerender} = render(
+      <AppShell height="fill" data-testid="shell">
+        <div>Content</div>
+      </AppShell>,
+    );
+    expect(getComputedStyle(screen.getByTestId('shell')).overflow).toBe('clip');
+
+    rerender(
+      <AppShell height="auto" data-testid="shell">
+        <div>Content</div>
+      </AppShell>,
+    );
+    expect(getComputedStyle(screen.getByTestId('shell')).overflow).toBe('clip');
+  });
+
   // ===========================================================================
   // Sticky navigation in auto mode
   // ===========================================================================
