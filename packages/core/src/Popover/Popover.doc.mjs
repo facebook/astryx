@@ -212,7 +212,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Assume input complexity alone determines the presentation; evaluate the task’s focus, space, and interaction requirements.',
+          "Assume input complexity alone determines the presentation; evaluate the task's focus, space, and interaction requirements.",
       },
       {
         guidance: false,
@@ -415,7 +415,7 @@ export const docsZh = {
       {
         guidance: false,
         description:
-          'Assume input complexity alone determines the presentation; evaluate the task’s focus, space, and interaction requirements.',
+          "Assume input complexity alone determines the presentation; evaluate the task's focus, space, and interaction requirements.",
       },
       {
         guidance: false,
@@ -482,7 +482,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Assume input complexity alone determines the presentation; evaluate the task’s focus, space, and interaction requirements.',
+          "Assume input complexity alone determines the presentation; evaluate the task's focus, space, and interaction requirements.",
       },
       {
         guidance: false,

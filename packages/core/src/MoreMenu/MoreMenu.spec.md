@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:MoreMenu
@@ -19,6 +19,7 @@ verified_by:
     packages/core/src/List/List.test.tsx,
     scripts/check-knowledge.mjs,
   ]
+modules: []
 families: [family:overlay-dismissal]
 design_specs: []
 architecture:

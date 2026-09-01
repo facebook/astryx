@@ -33,7 +33,10 @@ requests:
 
 Astryx keeps different facts in different places:
 
-- Component contracts describe behavior one component promises.
+- Component contracts describe aggregate behavior one component promises.
+- Module contracts describe an independently contractible public hook, plugin,
+  utility, or subsystem owned by one component. Private implementation helpers do
+  not require records.
 - Family contracts describe behavior sibling components share.
 - Design specs record human-owned visual and interaction decisions, including the
   cross-theme accessibility and contrast methodology used to judge token/color
@@ -45,12 +48,12 @@ Astryx keeps different facts in different places:
 - Consumer docs explain props, examples, and usage.
 - Audit records hold current evidence and findings.
 
-The reviewer starts with the changed code and the nearest current component
-contract. They follow only the links needed for the question:
+The reviewer starts with the changed code and the nearest current component or
+module contract. They follow only the links needed for the question:
 
 ```text
 changed code or theme source
-  → nearest current component or theme contract
+  → nearest current component, module, or theme contract
   → relevant family or design requirement
   → architecture or system decision only when referenced
   → mapped tests and audit evidence
@@ -84,8 +87,10 @@ Every record is either:
   compiler behavior stay in architecture/system records; human contrast
   methodology stays in design; shared measurement implementation stays in
   architecture/tooling; theme-specific mappings, states, exceptions, receipts,
-  and gaps stay in the package-local theme record; observable component behavior
-  stays in component/family records; consumer syntax stays in consumer docs.
+  and gaps stay in the package-local theme record; aggregate observable component
+  behavior stays in component/family records; independently contractible public
+  component-module behavior stays in module records; consumer syntax stays in
+  consumer docs.
 - **INV3 — Existing decisions are reusable.** A reviewer cites an applicable
   decision and proceeds without asking the human again.
 - **INV4 — New judgment is explicit.** A reviewer asks a human when no current
@@ -99,7 +104,7 @@ Every record is either:
   creates a later schema definition for that kind and migrates every active record
   of that kind in the same pull request.
 - **INV7 — Only pure spec changes use lightweight CI.** Every changed file must
-  be a component, family, design, theme, or system spec. A change to code,
+  be a component, module, family, design, theme, or system spec. A change to code,
   architecture, guidance, templates, schemas, audits, or any unknown path runs
   normal CI.
 - **INV8 — Private operations stay private.** Public records never name or link
@@ -110,9 +115,10 @@ Every record is either:
 ### When current records disagree
 
 1. A draft is context only and cannot conflict with current policy.
-2. Identify the canonical owner from the fact's scope: component behavior,
-   family behavior, design representation, one theme's semantics/mappings,
-   cross-theme architecture, consumer usage, or audit evidence.
+2. Identify the canonical owner from the fact's scope: aggregate component
+   behavior, independent public module behavior, family behavior, design
+   representation, one theme's semantics/mappings, cross-theme architecture,
+   consumer usage, or audit evidence.
 3. If two current records make different claims, review stops. Do not choose by
    recency, path proximity, or specificity; record a `novel-human` gap.
 4. Resolve the gap by changing the canonical owner and removing the copied claim.
@@ -125,8 +131,8 @@ Every record is either:
 
 A document does not stay current by convention alone.
 
-Before any component, family, design, theme, or architecture record becomes `current`,
-the repository must support this flow:
+Before any component, module, family, design, theme, or architecture record becomes
+`current`, the repository must support this flow:
 
 1. The record names the code surface that can affect it and the checks that
    verify it.
@@ -135,7 +141,7 @@ the repository must support this flow:
    - `preserves`: the change still satisfies the current contract;
    - `settled`: an existing human decision applies and is cited;
    - `novel-human`: the contract needs a new human decision;
-   - `out-of-scope`: another component, family, system, or product owns it.
+   - `out-of-scope`: another component, module, family, system, or product owns it.
 4. `preserves` and `settled` proceed without asking the human again.
 5. `novel-human` remains blocked until the owning record contains the new
    decision and receives approval.
@@ -171,7 +177,7 @@ canonical decision.
 Record the durable outcome, not the review transcript. A ruling belongs in a
 canonical record when at least one is true:
 
-- it changes or clarifies an owning component, family, or system boundary;
+- it changes or clarifies an owning component, module, family, or system boundary;
 - it establishes a requirement or prohibition future work must preserve; or
 - it rejects an alternative that is consequential and likely to recur.
 
@@ -200,13 +206,22 @@ Examples:
 A draft record cannot clear a review gap. Only a verified `current` contract or
 an applicable decision can produce `preserves` or `settled`.
 
-The bootstrap does not mark any component or family record current until this
-flow passes the historical review benchmark and is enforced on pull requests.
+The bootstrap does not mark any component, module, or family record current until
+this flow passes the historical review benchmark and is enforced on pull requests.
 
 ## Owning code
 
 - `AGENTS.md` points reviewers to the narrowest relevant record.
 - `docs/templates/knowledge/` contains authoring forms.
+- Component records are direct `<PublicName>.spec.md` children of a Core or Lab
+  component root. The public name normally matches the root; a parent/member
+  exception requires an exact top-level or full inline consumer-doc entry in
+  that root. Public semantic module records are nested at least one directory
+  beneath the same root as `<PublicName>.spec.md`; the parent component's
+  `modules` list and the module's `parent_component` field must agree. Hidden,
+  fixture, test, generated, build-output, coverage, dependency, and
+  `*.generated.spec.md` paths are ignored consistently by discovery and PR
+  routing.
 - `packages/themes/<theme>/<theme>.spec.md` contains that package theme's
   canonical record; `docs/themes/README.md` is guidance and an index only.
 - `docs/schemas/knowledge/` defines required structure.

@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:Tokenizer
@@ -17,6 +17,7 @@ verified_by:
     packages/core/src/Layer/useLayer.test.tsx,
     scripts/check-knowledge.mjs,
   ]
+modules: []
 families: [family:overlay-dismissal]
 design_specs: []
 architecture:

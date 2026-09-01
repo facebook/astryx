@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:DropdownMenu
@@ -21,6 +21,7 @@ verified_by:
     packages/core/src/Icon/Icon.test.tsx,
     scripts/check-knowledge.mjs,
   ]
+modules: []
 families: [family:overlay-dismissal]
 design_specs: []
 architecture:

@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:TextArea
@@ -16,6 +16,7 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
+modules: []
 families: []
 design_specs: []
 architecture: [architecture:component-theming-surface]
