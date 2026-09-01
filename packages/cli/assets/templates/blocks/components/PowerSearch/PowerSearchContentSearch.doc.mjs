@@ -7,7 +7,7 @@ export const doc = {
   name: 'PowerSearch — Content Search',
   displayName: 'PowerSearch — Content Search',
   description:
-    'Power search with contentSearchFieldKey so free-text input maps to a title field automatically.',
+    'Power search with contentSearchFieldKey so free-text input maps to a title field automatically. On coarse pointers, the inline search remains available beside Add filters and submits from the keyboard Search/Enter action.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['PowerSearch'],

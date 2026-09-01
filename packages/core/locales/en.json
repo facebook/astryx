@@ -875,6 +875,10 @@
     "defaultMessage": "Remove this filter",
     "description": "Destructive button in the PowerSearch touch edit sheet that removes the filter currently being edited."
   },
+  "@astryx.powersearch.mobile.save": {
+    "defaultMessage": "Save",
+    "description": "Primary footer button in the PowerSearch touch editor. It confirms the staged field, operator, and value, then closes the sheet."
+  },
   "@astryx.powersearch.mobile.editFilter": {
     "defaultMessage": "Edit filter",
     "description": "Title of PowerSearch's touch editor sheet when reopening a filter the user already added, as opposed to building a new one. Imperative verb."

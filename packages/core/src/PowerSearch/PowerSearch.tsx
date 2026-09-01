@@ -432,7 +432,10 @@ export interface PowerSearchProps extends Omit<
    * an empty query shows up to 1,000 fields. @default 10
    */
   maxSearchResults?: number;
-  /** Label for the save button in edit popover. @default 'Apply' */
+  /**
+   * Label for the confirmation button. Defaults to 'Apply' in the pointer
+   * popover and 'Save' in the touch sheet.
+   */
   popoverSaveButtonLabel?: string;
   /** Timezone ID for date formatting. */
   timezoneID?: string;
@@ -558,11 +561,22 @@ type PopoverState =
  */
 function canUseTouchSurface(props: PowerSearchProps): boolean {
   const {config, tokenOverflowBehavior} = props;
-  if (
-    config.contentSearchFieldKey != null ||
-    (tokenOverflowBehavior != null && tokenOverflowBehavior !== 'none')
-  ) {
+  if (tokenOverflowBehavior != null && tokenOverflowBehavior !== 'none') {
     return false;
+  }
+  if (config.contentSearchFieldKey != null) {
+    const contentField = config.fields.find(
+      field => field.key === config.contentSearchFieldKey,
+    );
+    const contentOperator =
+      contentField?.defaultOperator != null
+        ? contentField.operators.find(
+            operator => operator.key === contentField.defaultOperator,
+          )
+        : contentField?.operators[0];
+    if (contentOperator?.value.type !== 'string') {
+      return false;
+    }
   }
   return !config.fields.some(field =>
     field.operators.some(operator => operator.value.type === 'nested'),

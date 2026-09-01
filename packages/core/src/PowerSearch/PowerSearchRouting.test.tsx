@@ -18,6 +18,14 @@ const config: PowerSearchConfig = {
   name: 'RoutingTest',
   fields: [
     {
+      key: 'title',
+      label: 'Title',
+      defaultOperator: 'contains',
+      operators: [
+        {key: 'contains', label: 'contains', value: {type: 'string'}},
+      ],
+    },
+    {
       key: 'status',
       label: 'Status',
       operators: [
@@ -71,7 +79,22 @@ describe('PowerSearch pointer routing', () => {
     expect(screen.queryByRole('button', {name: 'Add filters…'})).toBeNull();
   });
 
-  it('keeps the typeahead surface for content-search configurations', () => {
+  it('renders hybrid content search on a coarse pointer', () => {
+    setCoarsePointer(true);
+    render(
+      <PowerSearch
+        config={{...config, contentSearchFieldKey: 'title'}}
+        filters={[]}
+        onChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole('searchbox', {name: 'Search'})).toBeTruthy();
+    expect(screen.getByRole('button', {name: 'Add filters…'})).toBeTruthy();
+    expect(screen.queryByRole('combobox')).toBeNull();
+  });
+
+  it('keeps the typeahead surface for unsupported content-search values', () => {
     setCoarsePointer(true);
     render(
       <PowerSearch
@@ -82,6 +105,7 @@ describe('PowerSearch pointer routing', () => {
     );
 
     expect(screen.getByRole('combobox', {name: 'Search'})).toBeTruthy();
+    expect(screen.queryByRole('searchbox')).toBeNull();
   });
 
   it('keeps the typeahead surface when nested filters need the desktop editor', () => {

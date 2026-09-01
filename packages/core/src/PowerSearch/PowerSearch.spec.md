@@ -13,6 +13,8 @@ review_triggers: [public-api, behavior, layout, accessibility]
 verified_by:
   [
     packages/core/src/PowerSearch/PowerSearch.test.tsx,
+    packages/core/src/PowerSearch/PowerSearchRouting.test.tsx,
+    packages/core/src/PowerSearch/PowerSearchTouch.test.tsx,
     packages/core/src/PowerSearch/PowerSearchEditPopover.test.tsx,
     packages/core/src/Tokenizer/Tokenizer.test.tsx,
     packages/core/src/Typeahead/Typeahead.test.tsx,
@@ -37,11 +39,12 @@ system_specs: []
 ## Intent
 
 PowerSearch provides structured filtering through field, operator, and value
-selection. Its editor popover keeps the active editing task readable on both narrow
-and wide search bars. When the editor can follow the PowerSearch width, it stays
-aligned to that outer surface. When the 720 CSS px readability cap makes the editor
-narrower, it stays near the stable control that opened it instead of stretching
-across the page or depending on input modality.
+selection. When its pointer/typeahead surface is active, the editor popover keeps
+the active editing task readable on both narrow and wide search bars. When the
+editor can follow the PowerSearch width, it stays aligned to that outer surface.
+When the 720 CSS px readability cap makes the editor narrower, it stays near the
+stable control that opened it instead of stretching across the page or depending
+on input modality.
 
 ## Compatibility and migration
 
@@ -116,6 +119,12 @@ until its implementation and verification complete.
 - **AV4 — Internal representation.** The shared opening-control descriptor may use
   refs, elements, or an equivalent package-internal value. Its observable geometry,
   lifetime, and precedence must satisfy FR3–FR9.
+- **AV5 — Adaptive coarse-pointer surface.** Supported coarse-pointer
+  configurations may replace the main typeahead and filter-editor popover with a
+  direct content-search input plus a bottom-sheet filter editor. FR1–FR9 apply
+  whenever the popover surface is active; they do not impose popover geometry on
+  the bottom sheet. Configurations with nested filters or configured token overflow
+  retain the pointer/typeahead surface and therefore remain under this contract.
 
 ### Representative states
 
