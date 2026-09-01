@@ -3,6 +3,7 @@
 /* global Buffer */
 
 import {createRequire} from 'node:module';
+import fs from 'node:fs';
 import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 
@@ -252,6 +253,133 @@ describe('spec owner workflow reconciliation', () => {
     ).toBe(true);
     expect(latestGateStatus(harness.state).state).toBe('success');
     expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('publishes owner approval and keeps conservative ownership when enablement is rejected', async () => {
+    const harness = createHarness({
+      onEnableAutoMerge: () => {
+        const error = new Error('Resource not accessible by integration');
+        error.status = 403;
+        throw error;
+      },
+    });
+
+    await run(harness, context({runId: 100n}));
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('Approved by @cixzhang'),
+    });
+    const terminalStatus = harness.state.calls.indexOf(
+      'status:spec-owner-approval:success',
+    );
+    const warning = harness.state.calls.findIndex(call =>
+      call.includes('Could not enable auto-merge'),
+    );
+    expect(terminalStatus).toBeGreaterThan(-1);
+    expect(warning).toBeGreaterThan(terminalStatus);
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+    expect(harness.state.labels.has('spec-auto-merge')).toBe(true);
+    expect(harness.state.calls).not.toContain('remove-label:spec-auto-merge');
+    expect(harness.state.calls).not.toContain('disable-auto-merge');
+    expect(harness.state.pr.auto_merge).toBe(null);
+  });
+
+  it('preserves the marker when an ambiguous enable error follows a successful mutation', async () => {
+    const harness = createHarness({
+      onEnableAutoMerge: state => {
+        state.pr.auto_merge = {merge_method: 'squash'};
+        state.calls.push('auto-merge-applied-before-error');
+        const error = new Error('The response was lost after the mutation.');
+        error.status = 502;
+        throw error;
+      },
+    });
+
+    await run(harness, context({runId: 100n}));
+
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    expect(harness.state.pr.auto_merge).toEqual({merge_method: 'squash'});
+    expect(harness.state.labels.has('spec-auto-merge')).toBe(true);
+    expect(harness.state.calls).not.toContain('remove-label:spec-auto-merge');
+    expect(harness.state.calls).not.toContain('disable-auto-merge');
+  });
+
+  it('does not let an old failure erase newer same-head auto-merge ownership', async () => {
+    const harness = createHarness({
+      onEnableAutoMerge: state => {
+        // The old run added the marker, then a newer run for the same exact
+        // head enabled auto-merge before the old request returned an error.
+        state.statuses.unshift(
+          trustedStatus({runId: 101n, sha: head, state: 'success'}),
+        );
+        state.pr.auto_merge = {merge_method: 'squash'};
+        state.labels.add('spec-auto-merge');
+        state.pr.labels = [{name: 'spec-auto-merge'}];
+        state.calls.push('newer-run-enabled-auto-merge');
+        const error = new Error('The old enable request was rejected.');
+        error.status = 422;
+        throw error;
+      },
+    });
+
+    await run(harness, context({runId: 100n}));
+
+    expect(
+      harness.state.statuses.some(
+        status =>
+          status.sha === head &&
+          status.context === 'spec-owner-approval' &&
+          status.state === 'success' &&
+          status.target_url === canonicalRunUrl(repository, '100', '1'),
+      ),
+    ).toBe(true);
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      target_url: canonicalRunUrl(repository, '101', '1'),
+    });
+    expect(harness.state.pr.head.sha).toBe(head);
+    expect(harness.state.pr.auto_merge).toEqual({merge_method: 'squash'});
+    expect(harness.state.labels.has('spec-auto-merge')).toBe(true);
+    const oldMarker = harness.state.calls.indexOf('add-label:spec-auto-merge');
+    const newerOwner = harness.state.calls.indexOf(
+      'newer-run-enabled-auto-merge',
+    );
+    expect(oldMarker).toBeGreaterThan(-1);
+    expect(newerOwner).toBeGreaterThan(oldMarker);
+    expect(harness.state.calls).not.toContain('remove-label:spec-auto-merge');
+    expect(harness.state.calls).not.toContain('disable-auto-merge');
+  });
+
+  it('keeps terminal approval before a non-destructive enable failure path', () => {
+    const source = fs.readFileSync(
+      path.join(workspace, '.github/scripts/spec-owner-reconcile.cjs'),
+      'utf8',
+    );
+    const specOnlyPath = source.slice(
+      source.indexOf('// Owner approval is the gate decision'),
+    );
+    const terminalStatus = specOnlyPath.indexOf(
+      "setFinalStatus(initialHead, 'success', successDescription)",
+    );
+    const enable = specOnlyPath.indexOf('enablePullRequestAutoMerge');
+    const catchStart = specOnlyPath.indexOf('} catch (error) {', enable);
+    const catchEnd = specOnlyPath.indexOf(
+      '\n    }\n  }\n\n  if (enabledAutoMergeByThisRun)',
+      catchStart,
+    );
+    const catchBlock = specOnlyPath.slice(catchStart, catchEnd);
+
+    expect(terminalStatus).toBeGreaterThan(-1);
+    expect(enable).toBeGreaterThan(terminalStatus);
+    expect(catchStart).toBeGreaterThan(enable);
+    expect(catchEnd).toBeGreaterThan(catchStart);
+    expect(catchBlock).toContain(
+      'Leave the conservative ownership marker intact.',
+    );
+    expect(catchBlock).not.toContain('removeLabel');
+    expect(catchBlock).not.toContain('disableAutoMerge');
+    expect(catchBlock).not.toContain('cleanupFailedAutoMergeEnable');
   });
 
   it('does not attest ready_for_review by a non-owner author', async () => {

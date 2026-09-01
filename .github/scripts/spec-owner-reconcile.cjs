@@ -160,6 +160,13 @@ async function reconcileSpecOwnerGate({
     return newest === null || newest.runId <= runId;
   }
 
+  async function currentPullForRun(headSha) {
+    const current = await getPullRequest();
+    if (current.head.sha !== headSha) return null;
+    if (!(await isCurrentRun(headSha))) return null;
+    return current;
+  }
+
   async function setFinalStatus(headSha, state, description) {
     if (!(await isCurrentRun(headSha))) return false;
     await createStatus({
@@ -431,9 +438,7 @@ async function reconcileSpecOwnerGate({
     throw new Error('No ENGOWNERS or DESIGNOWNERS are configured.');
   }
   const designApprovers = [...new Set([...specOwners, ...designOwners])];
-  const themeApprovers = [
-    ...new Set([...engineeringOwners, ...designOwners]),
-  ];
+  const themeApprovers = [...new Set([...engineeringOwners, ...designOwners])];
   const readyAttestations = parseReadyAttestations(statuses, {
     repository,
     headSha: initialHead,
@@ -455,9 +460,7 @@ async function reconcileSpecOwnerGate({
     ? resolveOwnerDecision({...decisionInput, owners: themeApprovers})
     : {approved: true, owner: null};
   const approved =
-    specDecision.approved &&
-    designDecision.approved &&
-    themeDecision.approved;
+    specDecision.approved && designDecision.approved && themeDecision.approved;
   const approvingOwners = [
     specDecision.owner,
     designDecision.owner,
@@ -520,16 +523,26 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
+  // Owner approval is the gate decision; auto-merge is an optional convenience.
+  // Publish the truthful terminal status first so an integration permission
+  // failure cannot leave an approved head stuck on "Reconciling".
+  if (!(await setFinalStatus(initialHead, 'success', successDescription))) {
+    return;
+  }
+  await removeLabel(env.REVIEW_LABEL);
+
   let enabledAutoMergeByThisRun = false;
   if (!pr.auto_merge) {
-    if (!(await isCurrentRun(initialHead))) return;
+    const beforeEnable = await currentPullForRun(initialHead);
+    if (beforeEnable === null || beforeEnable.auto_merge) return;
     await ensureLabel(
-      pr,
+      beforeEnable,
       env.AUTO_MERGE_LABEL,
       'bfdadc',
       'Auto-merge was enabled by the spec owner gate',
     );
-    if (!(await isCurrentRun(initialHead))) return;
+    const afterLabel = await currentPullForRun(initialHead);
+    if (afterLabel === null || afterLabel.auto_merge) return;
     try {
       await github.graphql(
         `mutation($id: ID!, $oid: GitObjectID!) {
@@ -546,6 +559,11 @@ async function reconcileSpecOwnerGate({
       enabledAutoMergeByThisRun = true;
       core.info(`Enabled squash auto-merge for spec-only PR #${pullNumber}.`);
     } catch (error) {
+      // Leave the conservative ownership marker intact. The failure may be an
+      // ambiguous response after a successful enable, or a newer run for the
+      // same or a newer head may already be using the global marker. A stale
+      // marker with auto-merge off is harmless: later reconciliation observes the real PR
+      // state and can retry or remove it without racing a newer owner.
       core.warning(`Could not enable auto-merge: ${error.message}`);
       return;
     }
@@ -564,10 +582,6 @@ async function reconcileSpecOwnerGate({
       return;
     }
   }
-
-  if (!(await isCurrentRun(initialHead))) return;
-  await removeLabel(env.REVIEW_LABEL);
-  await setFinalStatus(initialHead, 'success', successDescription);
 }
 
 module.exports = {isCommandComment, reconcileSpecOwnerGate};
