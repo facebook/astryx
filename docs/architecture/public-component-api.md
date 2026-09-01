@@ -24,7 +24,7 @@ verified_by:
     packages/core/src/docPropLiterals.test.ts,
     packages/core/src/docPropReferences.test.ts,
   ]
-deciding_specs: [spec:AST-002/DEC-1]
+deciding_specs: [spec:AST-002/DEC-1, spec:AST-005/DEC-1]
 ---
 
 # Public component API
@@ -118,6 +118,9 @@ public promises until promotion.
   evidence required by the release process.
 - Changes to a family-owned API update the family contract rather than copying
   its rule into this record or every component.
+- A component that accepts or derives a navigation destination follows
+  `family:navigation-destinations`. Adding a new sink or destination-bearing
+  component updates that family rather than creating a component-local URL rule.
 
 ## Owning code
 
@@ -131,6 +134,8 @@ public promises until promotion.
 
 - `spec:AST-002/DEC-1` — a new public prop requires caller-owned information the
   component cannot derive.
+- `spec:AST-005/DEC-1` — every Astryx-owned navigation exit follows one
+  destination-safety decision.
 
 Transition Action sequencing and pending behavior belong to their component or
 family contract. This record links that owner once it is current; it does not

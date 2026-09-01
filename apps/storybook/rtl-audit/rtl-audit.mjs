@@ -8,21 +8,27 @@
  *   (relationship-based, no golden screenshots). Two layers:
  *     (A) AUTO-DISCOVERY — runs over EVERY `core-*` and `lab-*` story with zero
  *         curated selectors, so a NEW component that ships without RTL handling
- *         is caught automatically. Two auto passes:
- *           - D1 (icon-mirror): directional glyphs must flip/swap under RTL.
+ *         is caught automatically. Three auto passes:
+ *           - D1 (icon-mirror): directional SVG icons must flip/swap under RTL.
  *           - D5 (positional-mirror): an absolutely/fixed-positioned element
  *             with a LOGICAL anchor (insetInlineStart/End) + an UNFLIPPED
  *             PHYSICAL transform (translate/translateX) lands on the WRONG SIDE
  *             in RTL. Lint can't see this — each prop is individually fine; the
  *             bug is their interaction at layout time. We assert each candidate's
  *             RTL center mirrors its LTR center about the offsetParent center.
+ *           - D6 (directional-decoration): single-glyph, aria-hidden decorations
+ *             in repeated-item or between-sibling contexts mirror exactly once.
  *     (B) CURATED PRECISION — targets.json entries add D2 (order-flip),
  *         D3 (behavior-flip), D4 (overlay-side): the geometry/behavior dims that
  *         genuinely need hand-written selectors.
- * @input --storybook-dir <path> --output <file> [--targets <path>] [--filter <csv>]
- *   [--auto-only] [--curated-only]
- * @output JSON scorecard: auto-discovery D1 verdicts across all audited stories
- *   + curated D2/D3/D4 results. Mirrors the pr-a11y accessibility-audit harness.
+ *     (C) APPLICABILITY: every component is measured, explicitly verified N/A,
+ *         or reported as a coverage gap. An all-N/A result is never called clean.
+ * @input --storybook-dir <path> --output <file> [--targets <path>]
+ *   [--verified-not-applicable <path>] [--filter <csv>] [--auto-only]
+ *   [--curated-only]
+ * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4 results,
+ *   and a component coverage rollup. Mirrors the pr-a11y accessibility-audit
+ *   harness.
  * @position internal test harness; run by the soft-gated `pr-rtl` CI job and
  *   locally via `pnpm -F @astryxdesign/storybook rtl-audit`.
  *
@@ -40,6 +46,12 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {discoverComponents} from '../../../packages/cli/foundation/discovery/component-discovery.mjs';
+import {
+  buildComponentCoverage,
+  collectDirectionalDecorations,
+  evaluateDirectionalDecorations,
+} from './rtl-audit-coverage.mjs';
 
 const args = process.argv.slice(2);
 const getArg = name => {
@@ -48,9 +60,13 @@ const getArg = name => {
 };
 const hasFlag = name => args.includes(`--${name}`);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = path.resolve(HERE, '../../..');
 const DIST = getArg('storybook-dir') || 'apps/storybook/dist';
 const OUT = getArg('output') || 'rtl-audit-report.json';
 const TARGETS_PATH = getArg('targets') || path.join(HERE, 'targets.json');
+const VERIFIED_NA_PATH =
+  getArg('verified-not-applicable') ||
+  path.join(HERE, 'verified-not-applicable.json');
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
@@ -351,6 +367,38 @@ const DETECTOR = /* js */ `
 
 async function detectDirectionalIcons(page) {
   return page.evaluate(DETECTOR).catch(() => []);
+}
+
+async function detectDirectionalDecorations(page) {
+  return page.evaluate(collectDirectionalDecorations).catch(() => []);
+}
+
+// Auto-discovery D6 runs every story because contextual separators often live
+// outside a component's default story. The LTR-first short-circuit avoids the
+// RTL navigation for the common case with no candidate.
+async function autoDirectionalDecorations(page, port, storyId, component) {
+  const card = {component, storyId, dim: 'D6-decoration', verdict: 'N-A', notes: [], decorations: 0, results: []};
+  await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
+  await settle(page);
+  const revealedL = await revealInteractionGated(page);
+  const ltr = await detectDirectionalDecorations(page);
+  if (ltr.length === 0) {
+    if (revealedL) card.notes.push('opened an interaction-gated surface before scanning');
+    card.notes.push('no contextual directional decorations');
+    return card;
+  }
+
+  await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
+  await settle(page);
+  const revealedR = await revealInteractionGated(page);
+  const rtl = await detectDirectionalDecorations(page);
+  const evaluated = evaluateDirectionalDecorations(ltr, rtl);
+  card.verdict = evaluated.verdict;
+  card.notes.push(...evaluated.notes);
+  card.results = evaluated.results;
+  card.decorations = Math.max(ltr.length, rtl.length);
+  if (revealedL || revealedR) card.notes.unshift('opened an interaction-gated surface before scanning');
+  return card;
 }
 
 // ===========================================================================
@@ -676,10 +724,16 @@ async function scoreCurated(page, port, t) {
 
 // ---------------------------------------------------------------------------
 function componentFromId(id) {
-  // core-tabletree--default -> TableTree (best-effort display name)
-  // lab-listinput--tag-options -> listinput
+  // core-tabletree--default -> core/tabletree (best-effort display name)
+  // lab-listinput--tag-options -> lab/listinput
+  const packageName = id.startsWith('lab-') ? 'lab' : 'core';
   const seg = id.replace(AUDITED_STORY_PREFIX, '').split('--')[0];
-  return seg;
+  return `${packageName}/${seg}`;
+}
+
+function matchesFilter(component) {
+  const name = component.split('/').at(-1)?.toLowerCase() ?? component;
+  return !FILTER.length || FILTER.includes(name);
 }
 
 // Run `fn` over `items` with `pages.length` workers, each pinned to its own
@@ -717,16 +771,42 @@ async function mapPool(items, pages, fn) {
     process.exit(2);
   }
 
+  const storyIds = Object.keys(entries).filter(
+    id =>
+      entries[id].type === 'story' &&
+      AUDITED_STORY_PREFIX.test(id) &&
+      !/--docs$/.test(id),
+  );
+  const sourceComponents = [];
+  for (const packageName of ['core', 'lab']) {
+    try {
+      const grouped = discoverComponents(path.join(PROJECT_ROOT, 'packages', packageName));
+      sourceComponents.push(
+        ...Object.values(grouped)
+          .flat()
+          .map(component => `${packageName}/${component}`),
+      );
+    } catch (error) {
+      console.error(`WARN: cannot discover ${packageName} component roster: ${String(error).slice(0, 120)}`);
+    }
+  }
+  const unmatchedFilters = FILTER.filter(
+    filter =>
+      !sourceComponents.some(
+        component => component.split('/').at(-1)?.toLowerCase() === filter,
+      ),
+  ).map(filter => `unknown/${filter}`);
+  const auditedComponents = Array.from(
+    new Map(
+      [...sourceComponents, ...storyIds.map(componentFromId), ...unmatchedFilters].map(component => [component.toLowerCase(), component]),
+    ).values(),
+  ).filter(matchesFilter);
+
   // ---- (A) auto-discovery over every audited-package story ----
   const autoResults = []; // D1 icon-mirror
   const pmResults = []; // D5 positional-mirror
+  const decorationResults = []; // D6 contextual directional decoration
   if (!CURATED_ONLY) {
-    const storyIds = Object.keys(entries).filter(
-      id =>
-        entries[id].type === 'story' &&
-        AUDITED_STORY_PREFIX.test(id) &&
-        !/--docs$/.test(id),
-    );
     // D1 runs one representative story per component (extra stories add little
     // D1 signal). D5 (positional-mirror) runs over EVERY core story — a
     // positioned bug can be story-specific (only a `withStatus` variant mounts
@@ -737,7 +817,7 @@ async function mapPool(items, pages, fn) {
       if (!perComponent.has(comp)) perComponent.set(comp, id);
     }
     const d1Targets = [...perComponent]
-      .filter(([comp]) => !FILTER.length || FILTER.includes(comp.toLowerCase()))
+      .filter(([comp]) => matchesFilter(comp))
       .map(([comp, id]) => ({comp, id}));
     autoResults.push(
       ...(await mapPool(d1Targets, pages, async ({comp, id}, workerPage) => {
@@ -756,7 +836,7 @@ async function mapPool(items, pages, fn) {
     // D5 positional-mirror over every audited story.
     const pmTargets = storyIds
       .map(id => ({id, comp: componentFromId(id)}))
-      .filter(({comp}) => !FILTER.length || FILTER.includes(comp.toLowerCase()));
+      .filter(({comp}) => matchesFilter(comp));
     pmResults.push(
       ...(await mapPool(pmTargets, pages, async ({id, comp}, workerPage) => {
         try {
@@ -771,6 +851,22 @@ async function mapPool(items, pages, fn) {
         }
       })),
     );
+    // D6 scans every story. A directional decoration can exist only in a
+    // custom/variant story even when the default story is neutral.
+    decorationResults.push(
+      ...(await mapPool(pmTargets, pages, async ({id, comp}, workerPage) => {
+        try {
+          const card = await autoDirectionalDecorations(workerPage, port, id, comp);
+          if (card.verdict !== 'N-A') {
+            console.error(`DEC  ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} glyphs=${card.decorations}`);
+          }
+          return card;
+        } catch (e) {
+          console.error(`DEC  ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
+          return {component: comp, storyId: id, dim: 'D6-decoration', verdict: 'ERROR', notes: [String(e).slice(0, 160)], decorations: 0, results: []};
+        }
+      })),
+    );
   }
 
   // ---- (B) curated precision dims ----
@@ -782,23 +878,47 @@ async function mapPool(items, pages, fn) {
     let targets = [];
     try { targets = JSON.parse(fs.readFileSync(TARGETS_PATH, 'utf8')); } catch {}
     for (const t of targets) {
-      if (FILTER.length && !FILTER.includes(t.component.toLowerCase())) continue;
+      const component = componentFromId(t.storyId);
+      if (!matchesFilter(component)) continue;
       if (!entries[t.storyId]) {
-        curatedResults.push({component: t.component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']});
+        curatedResults.push({component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']});
         continue;
       }
       // skip if the entry only had D1 (now covered by auto-discovery)
       const dims = (t.dims || []).filter(d => d !== 'D1');
       if (dims.length === 0) continue;
       try {
-        const card = await scoreCurated(page, port, {...t, dims});
+        const card = await scoreCurated(page, port, {...t, component, dims});
         curatedResults.push(card);
-        console.error(`CUR  ${card.rollup.padEnd(10)} ${t.component.padEnd(20)} ${JSON.stringify(card.dims)}`);
+        console.error(`CUR  ${card.rollup.padEnd(10)} ${component.padEnd(20)} ${JSON.stringify(card.dims)}`);
       } catch (e) {
-        curatedResults.push({component: t.component, storyId: t.storyId, rollup: 'ERROR', dims: {}, notes: [String(e).slice(0, 200)]});
+        curatedResults.push({component, storyId: t.storyId, rollup: 'ERROR', dims: {}, notes: [String(e).slice(0, 200)]});
       }
     }
   }
+
+  let verifiedNa = [];
+  let verifiedNaError = null;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(VERIFIED_NA_PATH, 'utf8'));
+    if (!Array.isArray(parsed)) throw new Error('verified-not-applicable registry must be a JSON array');
+    verifiedNa = parsed;
+  } catch (error) {
+    verifiedNaError = String(error).slice(0, 200);
+  }
+
+  const coverage = buildComponentCoverage({
+    components: auditedComponents,
+    autoResults,
+    positionalResults: pmResults,
+    decorationResults,
+    curatedResults,
+    verifiedNa,
+    // Partial modes intentionally omit dimensions, so they report but do not
+    // enforce applicability gaps.
+    enforced: !AUTO_ONLY && !CURATED_ONLY,
+  });
+  if (verifiedNaError) coverage.registryError = verifiedNaError;
 
   await Promise.all(pages.map(p => p.close().catch(() => {})));
   await browser.close();
@@ -809,6 +929,7 @@ async function mapPool(items, pages, fn) {
   // complete, so any directional icon that fails to mirror is a real regression.
   const surprises = autoFails;
   const pmFails = pmResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
+  const decorationFails = decorationResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
   const report = {
     generatedAt: new Date().toISOString(),
     dist: DIST,
@@ -831,17 +952,30 @@ async function mapPool(items, pages, fn) {
       // fails carry per-element cls + LTR/RTL relCenterX + delta (actionable).
       results: pmResults,
     },
+    directionalDecorations: {
+      total: decorationResults.length,
+      applicable: decorationResults.filter(r => r.verdict !== 'N-A').length,
+      pass: decorationResults.filter(r => r.verdict === 'pass').length,
+      fail: decorationFails.length,
+      na: decorationResults.filter(r => r.verdict === 'N-A').length,
+      results: decorationResults,
+    },
     curated: {results: curatedResults},
+    coverage,
   };
   fs.writeFileSync(OUT, JSON.stringify(report, null, 2));
   console.error(`\nWROTE ${OUT}`);
   console.error(`AUTO: ${report.autoDiscovery.pass} pass / ${report.autoDiscovery.fail} fail (${surprises.length} surprise) / ${report.autoDiscovery.na} N-A`);
   console.error(`PM  : ${report.positionalMirror.pass} pass / ${report.positionalMirror.fail} fail / ${report.positionalMirror.na} N-A (tol ${PM_TOL}px)`);
+  console.error(`DEC : ${report.directionalDecorations.pass} pass / ${report.directionalDecorations.fail} fail / ${report.directionalDecorations.na} N-A`);
+  console.error(`COV : ${coverage.measured} measured / ${coverage.verifiedNa} verified N-A / ${coverage.gaps} gap / ${coverage.staleVerifiedNa} stale`);
   // Non-zero exit only signals CI (which is soft/continue-on-error). Surface a
   // signal but never let it hard-block during the stability window.
   const anySignal =
     autoFails.length > 0 ||
     pmFails.length > 0 ||
+    decorationFails.length > 0 ||
+    (coverage.enforced && (coverage.gaps > 0 || coverage.staleVerifiedNa > 0 || coverage.registryError != null)) ||
     curatedResults.some(r => r.rollup === 'not-RTL' || r.rollup === 'ERROR' || r.rollup === 'MISSING-STORY');
   process.exit(anySignal ? 1 : 0);
 })();

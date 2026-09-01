@@ -8,7 +8,7 @@ import React from 'react';
  * @file AppShell.tsx
  * @input Uses React, Layout, LayoutHeader, LayoutPanel, LayoutContent, StyleX
  * @output Exports AppShell component and AppShellProps type
- * @position Application-level layout shell — the top-level wrapper for any app.
+ * @position Page shell for an application — the top-level wrapper for any app.
  *   Composes Layout internally to provide header, sideNav, and main content areas.
  *   Use for any app that needs a top nav, side navigation, and scrollable content.
  *
@@ -430,7 +430,7 @@ const styles = stylex.create({
 // =============================================================================
 
 /**
- * Application-level layout shell. Provides the structural frame for an app:
+ * Page shell for an application. Provides the structural frame for an app:
  * top navigation, side navigation, and main content area.
  *
  * Slot-based API with `topNav`, `sideNav`, `banner`, and `children`.

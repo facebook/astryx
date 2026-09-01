@@ -54,9 +54,13 @@ function targetKey(className) {
  * not take out theme validation or the listing.
  *
  * @param {string} coreSrc - absolute path to `<core>/src`
+ * @param {{includeDeprecated?: boolean}} [options] - preserve the CLI's full listing by default; ownership checks can request active targets only
  * @returns {Promise<ThemingTarget[]>}
  */
-export async function collectThemingTargets(coreSrc) {
+export async function collectThemingTargets(
+  coreSrc,
+  {includeDeprecated = true} = {},
+) {
   if (!coreSrc || !fs.existsSync(coreSrc)) return [];
 
   /** @type {Array<ThemingTarget & {parent: string|null}>} */
@@ -87,6 +91,7 @@ export async function collectThemingTargets(coreSrc) {
           : path.basename(path.dirname(full));
 
       for (const target of doc?.theming?.targets || []) {
+        if (!includeDeprecated && target?.deprecatedFor != null) continue;
         const className = target?.className;
         if (typeof className !== 'string') continue;
         const key = targetKey(className);

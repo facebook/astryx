@@ -22,16 +22,44 @@ new decisions and record final rulings.
 3. Current architecture and accepted system decisions own cross-component rules.
    Start with the [public component API architecture](../architecture/public-component-api.md),
    the [knowledge contract](../architecture/knowledge-contracts.md), and
-   [AST-002: public component prop admission](../specs/AST-002/spec.md).
+   [AST-002: public API admission and operation shape](../specs/AST-002/spec.md).
 
 The `owners` field names who can settle a missing decision. Component source and
-its public `index.ts` own the shipped API. The component's `.doc.mjs` explains
-that API to consumers.
+its public `index.ts` own the shipped API. The component's `.doc.mjs` owns exact
+consumer syntax and reference material. The component spec owns local semantic
+API meaning and guarantees, including public hooks or utilities it explicitly
+co-owns.
 
 The wiki gives broader background: [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)
 and [API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration).
 Do not copy detailed decisions from those pages into a proposal. Link the current
 owner instead.
+
+## Separate semantic contract from syntax reference
+
+Every public-facing API addition or semantic change updates its canonical owning
+component, family, architecture, or system record. Update the component spec only
+when it owns the changed component-local semantics or explicitly co-owns the
+public hook or utility. The owning record describes what callers mean, observe,
+and may rely on; `.doc.mjs` remains the authority for signatures, prop/reference
+tables, and consumer usage. Do not turn the semantic contract into a second
+syntax catalog.
+
+A component spec inherits every applicable rule from its current family
+contracts. Record only component-local concepts, additions, and explicit
+exceptions. Link an exception to its approving decision instead of copying or
+rewriting the family rule.
+
+A component spec may co-own a colocated public hook or utility when that ownership
+is explicit. Its local semantic contract covers:
+
+- inputs and options, including meaning, defaults, invalid values, and unsupported
+  combinations;
+- outputs and operations, including observable results and guarantees; and
+- side effects, identity, lifetime, resource ownership, and cleanup where relevant.
+
+Link a different canonical owner for any public surface the component spec does
+not own.
 
 ## Name one concept at a time
 
@@ -52,8 +80,25 @@ Use callback scope only when the verb could refer to more than one part. Use an
 `html` prefix only for a native attribute that passes through unchanged, such as
 `htmlName`. Keep the clearer semantic name when the component owns the concept.
 
-String values use `camelCase`. A prop should control one independent concept.
-Do not combine unrelated states into one convenience mode.
+String values use `camelCase`. A public input has one stable semantic
+responsibility across its full value domain and every accepted input shape. Its
+name and type disclose the caller-owned meaning.
+
+One semantic input may derive several visual details when they form one cohesive,
+named outcome. For example, a semantic `status` or `variant` may own both tone and
+a signifier. This is not an overloaded input.
+
+Reject a property when its value or input shape changes which axis it controls, or
+when consumers need implementation knowledge to predict which axes it controls.
+If two axes are independently caller-owned, represent them with separate inputs
+and prevent conflicting combinations. If the system owns their coordination,
+expose the semantic concept and derive the details instead of naming the input
+after one mechanism such as `color`.
+
+Parallel inputs must not create hidden conditional precedence. An override is
+valid only when its name, type, and behavior across every combination form an
+explicit coherent contract, with invalid or conflicting states prevented under
+[FR15](../specs/AST-002/spec.md#requirements).
 
 ## Callbacks and Actions
 
@@ -201,19 +246,118 @@ High-level compositions have a higher bar for new props than utility components.
 Before adding a prop, check whether a child, slot, theme target, styling escape
 hatch, parent layout, or existing context already owns the distinction.
 
+## API proposal gate
+
+Classify the change before asking for a new API decision. Use the current contract
+review results from the [knowledge contract](../architecture/knowledge-contracts.md#change-coupling):
+`preserves`, `settled`, `novel-human`, or `out-of-scope`.
+
+A defect fix that restores a current contract or standard is `preserves`. Supply
+focused regression evidence for the broken state and representative unchanged
+states. Do not invent a semantic delta or new API decision. Change consumer docs
+only when usage or a documented promise changes, or when the existing docs would
+otherwise become false.
+
+For a claimed API addition or semantic change, review has two stages:
+
+1. **Mechanical pre-review.** Reject the change now when the pull request lacks a
+   readable semantic before → after or does not update or add the canonical
+   owning record. Component-local semantics update the component spec;
+   family-, architecture-, or system-owned semantics update that owner instead.
+   Also reject a public choice the component can derive, a public input whose
+   controlled axis changes by value or input shape, hidden conditional precedence
+   between parallel inputs, or a parallel public/package-internal operation for
+   the same semantic action. A cohesive semantic status or variant may derive
+   several visual details; it is rejected only when its public meaning is unstable
+   or undisclosed. Within one module, keep one canonical operation name; the
+   package-internal form may accept wider semantic options than the public
+   contract. Another operation requires a genuinely distinct caller-owned intent
+   and contract. These current AST-002 rules apply even when the canonical owner
+   is draft or missing; only rejection because that owner lacks `current`
+   authority remains deferred under staged coverage.
+2. **Owner judgment.** For a surviving `novel-human` change, present the semantic
+   delta to the linked owner. The gate does not choose the API. The owner accepts,
+   rejects, or refines the meaning and the ruling is recorded in the canonical
+   spec.
+
+### Staged contract coverage
+
+Semantic contract coverage is still incomplete, so the review path must not turn
+missing `current` authority on the canonical owner into a dead end. This staged
+exception applies only to authority coverage; it does not defer rejection under
+current cross-component rules, including the overloaded-input and hidden-
+precedence rule above:
+
+1. The contributor or maintainer puts the one-sentence semantic delta in the pull
+   request, identifies the canonical owner by scope, and updates or adds that
+   record. Component-local semantics use the component spec; shared family,
+   architecture, or system semantics use that owner. A draft record is valid
+   context and must identify its intended owner.
+2. Review applies only current component, family, architecture, and system rules.
+   A draft cannot clear the gate or be cited as settled policy; it routes the
+   remaining `novel-human` delta to the owner.
+3. The owner decides in the pull request. Exact-head owner approval settles that
+   pull request only. The accepted contract and evidence remain in the canonical
+   owning record; rejected direction is removed unless it protects a durable
+   boundary.
+4. Promote an owning record to `current` only after its local requirements,
+   verification, relationships, approval, and every applicable acceptance
+   prerequisite in current architecture are complete. For component specs, this
+   includes the historical benchmark and pull-request enforcement required by the
+   current knowledge contract. Only then may later reviews reuse it as `settled`
+   policy.
+
+A follow-up gate may mechanically reject missing `current` authority on a
+canonical owning record only after a current policy change explicitly activates
+enforcement for a named scope, that scope has current contract coverage, and the
+historical benchmark has passed. Until then, missing current authority routes to
+the staged owner path; it does not reject the API by itself.
+
+Mechanical enforcement of this gate is follow-up work; this guide defines the
+review contract, not gate implementation.
+
 ## API proposal checklist
+
+Every public-facing API pull request has this minimum readable summary:
+
+- **Owner:** link the canonical owning record and state its authority. Use the
+  component spec only for component-local semantics; use the family, architecture,
+  or system record when it owns the changed semantics. If the owner is draft or
+  missing before this pull request, name the intended owner.
+- **Semantic before → after:** state the caller-visible meaning and guarantee in
+  one sentence.
+- **Classification:** name `preserves`, `settled`, `novel-human`, or
+  `out-of-scope`.
+- **Representative syntax:** include it only when public syntax changes; the
+  component `.doc.mjs` remains the complete syntax/reference authority.
 
 Before requesting review:
 
-- **Find the owner.** Link the nearest current component, family, architecture,
-  or system record when it is known. If it is not clear, explain the intended
-  behavior normally; the reviewer routes the decision.
 - **Prove caller ownership.** Show two otherwise identical cases that need
   different outcomes, why the caller knows the difference, and why the component
   cannot derive it. This is the admission rule in
   [AST-002](../specs/AST-002/spec.md#dec-1--public-props-require-a-non-derivable-caller-distinction).
-- **Show the consumer API.** Include the default, configured or controlled,
-  composed, edge, and migration cases that apply.
+- **Keep each input's responsibility stable.** Walk the full value domain, every
+  accepted input shape, and every combination with parallel inputs. The name and
+  type must disclose one caller-owned meaning. A semantic status or variant may
+  derive a cohesive set of visual details; reject values or shapes that switch
+  the controlled axis, and reject hidden conditional precedence. Represent
+  independently caller-owned axes separately and prevent invalid or conflicting
+  combinations under FR15.
+- **Update the semantic owner.** Update or add the canonical owning record.
+  Component-local concepts belong in the component spec; shared family,
+  architecture, or system concepts belong in that owner. Record inputs, options,
+  defaults, invalid values and unsupported combinations, outputs, operations,
+  guarantees, and relevant lifetime or resource obligations without copying
+  inherited rules.
+- **Prevent broken states.** Make statically knowable invalid combinations
+  unrepresentable when practical. Otherwise document validation or warnings, or
+  a safe fallback; do not silently render a broken state or block legitimate
+  composition.
+- **Check operation uniqueness.** Within one module, use the same canonical name
+  for public and package-internal forms of one semantic action. The internal form
+  may accept wider options; another operation requires distinct caller-owned
+  intent.
 - **Check the shared grammar.** Cover names, optionality, callback/Action order,
   cancellation, ref target, DOM pass-through, and whether each string axis is
   open or closed.
@@ -222,10 +366,6 @@ Before requesting review:
 - **Ship API evidence together.** When consumer usage or a documented promise
   changes, update consumer docs, public exports, focused runtime and type tests,
   and representative integration coverage in the same pull request.
-
-A bug fix that restores an existing current contract or standard is not a new
-API proposal. Add regression evidence. Change consumer docs only when usage or a
-documented promise changes, or when existing docs would otherwise become false.
 
 If two or three viable shapes remain after applying current conventions, use the
 [API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)
@@ -236,6 +376,14 @@ out of architecture records.
 
 ## Common review smells
 
+- A public API change has no semantic delta in its canonical owning record, so
+  reviewers must infer meaning from implementation or syntax.
+- One module gives the same semantic action separate public and package-internal
+  operation names because an internal caller needs wider options.
+- A public input controls one axis for some values or shapes and additional axes
+  for others, so consumers must know implementation branches to predict output.
+- Parallel inputs create a conditional override without an explicit contract for
+  every combination or prevention of conflicting states.
 - A prop exposes a value the component can derive from state, content, layout,
   context, or the platform.
 - A high-level component accumulates tuning props or duplicates a child's state.

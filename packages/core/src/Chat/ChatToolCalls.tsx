@@ -4,7 +4,7 @@
 
 /**
  * @file ChatToolCalls.tsx
- * @input Uses React, StyleX, theme tokens
+ * @input Uses React, StyleX, semantic icon registry, theme tokens
  * @output Exports ChatToolCalls component
  * @position Chat component — displays tool/function call invocations
  *
@@ -224,17 +224,6 @@ const styles = stylex.create({
     height: '16px',
     borderRadius: radiusVars['--radius-full'],
   },
-  statusIconCircle: {
-    position: 'absolute',
-    inset: 0,
-    borderRadius: 'inherit',
-    backgroundColor: 'currentColor',
-    opacity: 0.15,
-  },
-  statusIconInner: {
-    position: 'relative',
-    display: 'inline-flex',
-  },
   callName: {
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
@@ -351,8 +340,8 @@ const styles = stylex.create({
 const STATUS_ICON_NAMES: Record<ChatToolCallStatus, IconName | null> = {
   pending: 'clock',
   running: null,
-  complete: 'check',
-  error: 'close',
+  complete: 'success',
+  error: 'error',
 };
 
 const STATUS_STYLES: Record<
@@ -446,16 +435,11 @@ function CallRow({call}: {call: ChatToolCallItem}) {
         ) : status === 'pending' ? (
           <Spinner size="sm" shade="subtle" aria-hidden="true" />
         ) : (
-          <>
-            <span {...stylex.props(styles.statusIconCircle)} />
-            <span {...stylex.props(styles.statusIconInner)}>
-              <Icon
-                icon={STATUS_ICON_NAMES[status] ?? 'check'}
-                size="xsm"
-                color="inherit"
-              />
-            </span>
-          </>
+          <Icon
+            icon={STATUS_ICON_NAMES[status] ?? 'success'}
+            size="xsm"
+            color="inherit"
+          />
         )}
         <VisuallyHidden>{statusAnnouncement}</VisuallyHidden>
       </span>
@@ -644,16 +628,11 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
               ) : latestStatus === 'pending' ? (
                 <Spinner size="sm" shade="subtle" aria-hidden="true" />
               ) : (
-                <>
-                  <span {...stylex.props(styles.statusIconCircle)} />
-                  <span {...stylex.props(styles.statusIconInner)}>
-                    <Icon
-                      icon={STATUS_ICON_NAMES[latestStatus] ?? 'check'}
-                      size="xsm"
-                      color="inherit"
-                    />
-                  </span>
-                </>
+                <Icon
+                  icon={STATUS_ICON_NAMES[latestStatus] ?? 'success'}
+                  size="xsm"
+                  color="inherit"
+                />
               )}
               <VisuallyHidden>{latestStatusAnnouncement}</VisuallyHidden>
             </span>
