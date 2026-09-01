@@ -863,6 +863,14 @@
     "defaultMessage": "Add filter",
     "description": "Button label and title of the PowerSearch touch sheet where the user chooses which filter to add. Singular noun because the flow adds one condition at a time."
   },
+  "@astryx.powersearch.mobile.manageFiltersTrigger": {
+    "defaultMessage": "Manage filters",
+    "description": "Accessible name for the field-wide PowerSearch touch trigger. Activating it opens the filter-management sheet rather than accepting text directly."
+  },
+  "@astryx.powersearch.mobile.manageFiltersPlaceholder": {
+    "defaultMessage": "Filters…",
+    "description": "Visible text in an empty touch PowerSearch field. Activating the field opens filter management; the trailing ellipsis signals that another surface will open."
+  },
   "@astryx.powersearch.mobile.manageFiltersTitle": {
     "defaultMessage": "Filters",
     "description": "Title of the first PowerSearch touch sheet, where users review, add, edit, or remove active filters."
@@ -886,6 +894,10 @@
   "@astryx.powersearch.mobile.filterTitle": {
     "defaultMessage": "{field} {operator}",
     "description": "Title of a simple PowerSearch touch value sheet. {field} is the filter field label and {operator} is its only operator label; translators may reorder them."
+  },
+  "@astryx.powersearch.mobile.selectedValue": {
+    "defaultMessage": "{value}, selected",
+    "description": "Accessible name for the currently selected single-choice value in PowerSearch's touch editor. {value} is the visible option label."
   },
   "@astryx.powersearch.mobile.save": {
     "defaultMessage": "Save",

@@ -14,7 +14,7 @@
  * as the sheet's own list: a staged single-select list and a CheckboxList,
  * both confirmed from the footer. Every other type is a real input rather than
  * a menu, so it falls through to the shared PowerSearchValueEditor while still
- * requiring Apply.
+ * requiring Save.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
@@ -27,6 +27,7 @@ import {Icon} from '../Icon';
 import {List, ListItem} from '../List';
 import {spacingVars} from '../theme/tokens.stylex';
 import {useTranslator} from '../i18n';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
 import type {InternalConfig} from './useInternalConfig';
 import type {FilterValue, OperatorValue} from './types';
@@ -102,7 +103,20 @@ export function PowerSearchTouchValueEditor({
           return (
             <ListItem
               key={item.value}
-              label={item.label}
+              label={
+                isSelected ? (
+                  <>
+                    <span aria-hidden="true">{item.label}</span>
+                    <VisuallyHidden>
+                      {t('@astryx.powersearch.mobile.selectedValue', {
+                        value: item.label,
+                      })}
+                    </VisuallyHidden>
+                  </>
+                ) : (
+                  item.label
+                )
+              }
               startContent={item.icon}
               isSelected={isSelected}
               isDisabled={isDisabled}

@@ -1021,6 +1021,7 @@ function PointerPowerSearch({
           onCancel={handlePopoverCancel}
           saveButtonLabel={popoverSaveButtonLabel}
           isReadOnly={isReadOnly}
+          timezoneID={timezoneID}
         />
       );
     }
@@ -1049,6 +1050,7 @@ function PointerPowerSearch({
     popoverSaveButtonLabel,
     maxOperatorMenuItems,
     isReadOnly,
+    timezoneID,
   ]);
 
   // Plain-text form of the result count, shared by the visible label and the

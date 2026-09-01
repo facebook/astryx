@@ -22,7 +22,11 @@ import {
 import userEvent from '@testing-library/user-event';
 import {PowerSearch} from './PowerSearch';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
-import type {PowerSearchConfig, PowerSearchFilter} from './types';
+import type {
+  PowerSearchConfig,
+  PowerSearchEditorProps,
+  PowerSearchFilter,
+} from './types';
 import {TestIcon} from '../__tests__/TestIcon';
 
 // =============================================================================
@@ -163,6 +167,33 @@ describe('PowerSearch', () => {
     });
 
     expect(screen.getByRole('combobox')).toHaveFocus();
+  });
+
+  it('forwards timezoneID to a custom pointer editor', () => {
+    const seenProps = vi.fn();
+    function CustomEditor(props: PowerSearchEditorProps) {
+      seenProps(props);
+      return <div>Custom editor</div>;
+    }
+    render(
+      <PowerSearch
+        config={config}
+        filters={[
+          {
+            field: 'title',
+            operator: 'contains',
+            value: {type: 'string', value: 'roadmap'},
+          },
+        ]}
+        onChange={() => {}}
+        timezoneID="America/Los_Angeles"
+        components={{string: {Editor: CustomEditor}}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Title: contains'}));
+    expect(seenProps).toHaveBeenCalledWith(
+      expect.objectContaining({timezoneID: 'America/Los_Angeles'}),
+    );
   });
 
   describe('token value truncation (#4759)', () => {
