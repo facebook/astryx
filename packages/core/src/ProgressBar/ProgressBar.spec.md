@@ -61,8 +61,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   progress for every determinate presentation the component provides.
 - Internal resolution of that visual treatment when the caller supplies ordinary
   progress state.
-- The current progress-bar container, track, fill, and mark parts represented by
-  the `progress-bar`, `progress-bar-track`, `progress-bar-fill`, and
+- The current progress-bar container, track, fill, range-end marker, and mark
+  parts represented by the `progress-bar`, `progress-bar-track`,
+  `progress-bar-fill`, `progress-bar-range-end-marker`, and
   `progress-bar-mark` targets.
 
 **Does not own / non-goals**
@@ -109,9 +110,10 @@ draft:
 - Determinate progress renders a semantic-color fill over a muted track.
 - `hasValueLabel` optionally renders formatted value text in the component.
 - Callers may compose other visible text outside the component.
-- `Progress bar`, `Track`, `Fill`, and `Mark` carry `progress-bar`,
-  `progress-bar-track`, `progress-bar-fill`, and `progress-bar-mark`
-  respectively. `Label` and `Value text` have no separate public target.
+- `Progress bar`, `Track`, `Fill`, `Range end marker`, and `Mark` carry
+  `progress-bar`, `progress-bar-track`, `progress-bar-fill`,
+  `progress-bar-range-end-marker`, and `progress-bar-mark` respectively.
+  `Label` and `Value text` have no separate public target.
 - Variant state is reflected on the progress-bar, fill, and mark targets;
   placement is also reflected on marks.
 - Current unit tests cover value semantics, labels, variants, determinate and
@@ -166,6 +168,7 @@ draft:
 | Progress bar                         | Arranges the current label row and progress track.      | Current source and public docs        | Supporting     | FR6                |
 | Label and value text                 | Name the operation and optionally supplement its value. | Current source and public docs        | Supporting     | FR2, AR2, FR6      |
 | Determinate fill and remaining track | Provide a sufficient standalone distinction.            | Unsettled standalone visual treatment | Prominent      | FR1, AR1           |
+| Range end marker                     | Marks the total range for self-contained progress.      | Current source and public docs        | Supporting     | FR1, FR6           |
 | Mark                                 | Presents an optional labeled target on the track.       | Current source and public docs        | Supporting     | FR6                |
 
 The component implements design requirements without copying their rationale.
@@ -191,6 +194,7 @@ invent its form.
   },
   "Track": {"target": "progress-bar-track"},
   "Fill": {"target": "progress-bar-fill"},
+  "Range end marker": {"target": "progress-bar-range-end-marker"},
   "Mark": {"target": "progress-bar-mark"}
 }
 ```
@@ -224,7 +228,7 @@ not select a standalone visual treatment or resolve OQ1.
 | FR2, FR3, AR3       | Public type and consumer-doc review                                             | No value text, built-in value text, external composed text  | A caller signal is credited with correctness the component cannot verify  | Future ProgressBar API tests           |
 | AR2                 | `ProgressBar.test.tsx`                                                          | Determinate, indeterminate, hidden label, custom value text | Accessible name or value semantics disappear when visuals change          | Future ProgressBar accessibility audit |
 | FR6                 | `ProgressBar.test.tsx` and `themingTargets.test.ts`                             | Current and deprecated target classes                       | Source, metadata, or compatibility target placement drifts                | `audit:ProgressBar/theming`            |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                   | Canonical anatomy and four current targets                  | Missing, extra, prefixed, stale, alias-backed, or unclaimed mappings fail | `audit:ProgressBar/theming`            |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                   | Canonical anatomy and five current targets                  | Missing, extra, prefixed, stale, alias-backed, or unclaimed mappings fail | `audit:ProgressBar/theming`            |
 | Theming             | Theme-target metadata checks plus browser evidence                              | Shipped themes, light and dark modes                        | A theme override bypasses the standalone distinction                      | Future ProgressBar theming audit       |
 
 ## Decision log

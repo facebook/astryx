@@ -7,7 +7,7 @@ export const doc = {
   name: 'ProgressBar — Indeterminate',
   displayName: 'ProgressBar — Indeterminate',
   description:
-    'Indeterminate progress bar for operations with unknown duration.',
+    'Use indeterminate progress for an active operation whose completed amount cannot be calculated.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['ProgressBar', 'Center'],

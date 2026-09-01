@@ -23,6 +23,127 @@ describe('ProgressBar', () => {
     expect(progressbar).toHaveAttribute('aria-valuemax', '100');
   });
 
+  it('uses the self-contained presentation by default', () => {
+    const {container} = render(<ProgressBar value={50} label="Progress" />);
+    expect(container.querySelector('.astryx-progress-bar')).toHaveAttribute(
+      'data-presentation',
+      'self-contained',
+    );
+    expect(
+      container.querySelector('.astryx-progress-bar-range-end-marker'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the range-end marker as a circle matching the track height', () => {
+    const {container} = render(<ProgressBar value={50} label="Progress" />);
+    const track = container.querySelector<HTMLElement>(
+      '.astryx-progress-bar-track',
+    )!;
+    const marker = container.querySelector<HTMLElement>(
+      '.astryx-progress-bar-range-end-marker',
+    )!;
+    let css = '';
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        for (const rule of Array.from(sheet.cssRules)) {
+          css += rule.cssText + '\n';
+        }
+      } catch {
+        // ignore cross-origin sheets
+      }
+    }
+    css += Array.from(document.querySelectorAll('style'))
+      .map(style => style.textContent || '')
+      .join('\n');
+    const rulesFor = (element: HTMLElement) =>
+      Array.from(element.classList)
+        .filter(className => /^x[a-z0-9]+$/.test(className))
+        .flatMap(
+          className =>
+            css.match(new RegExp(`\\.${className}\\b[^{]*\\{[^}]*\\}`, 'g')) ??
+            [],
+        )
+        .join('\n');
+    const trackRules = rulesFor(track);
+    const markerRules = rulesFor(marker);
+
+    expect(trackRules).toMatch(/height:\s*8px/);
+    expect(markerRules).toMatch(/width:\s*8px/);
+    expect(markerRules).toMatch(/height:\s*8px/);
+    expect(markerRules).toMatch(/aspect-ratio:\s*1/);
+    expect(markerRules).toMatch(/border-radius:\s*50%/);
+  });
+
+  it('uses the paired presentation when it renders a visible value', () => {
+    const {container} = render(
+      <ProgressBar value={50} label="Progress" hasValueLabel />,
+    );
+    expect(container.querySelector('.astryx-progress-bar')).toHaveAttribute(
+      'data-presentation',
+      'paired-with-value',
+    );
+    expect(
+      container.querySelector('.astryx-progress-bar-range-end-marker'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('supports a paired presentation for visible value text rendered nearby', () => {
+    const {container} = render(
+      <ProgressBar
+        value={50}
+        label="Progress"
+        presentation="paired-with-value"
+      />,
+    );
+    expect(container.querySelector('.astryx-progress-bar')).toHaveAttribute(
+      'data-presentation',
+      'paired-with-value',
+    );
+    expect(
+      container.querySelector('.astryx-progress-bar-range-end-marker'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('allows a visible value to retain the self-contained presentation', () => {
+    const {container} = render(
+      <ProgressBar
+        value={50}
+        label="Progress"
+        hasValueLabel
+        presentation="self-contained"
+      />,
+    );
+    expect(container.querySelector('.astryx-progress-bar')).toHaveAttribute(
+      'data-presentation',
+      'self-contained',
+    );
+    expect(
+      container.querySelector('.astryx-progress-bar-range-end-marker'),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps indeterminate visuals self-contained and preserves disabled presentation', () => {
+    const {container, rerender} = render(
+      <ProgressBar isIndeterminate label="Loading" />,
+    );
+    expect(container.querySelector('.astryx-progress-bar')).toHaveAttribute(
+      'data-presentation',
+      'self-contained',
+    );
+    expect(
+      container.querySelector('.astryx-progress-bar-range-end-marker'),
+    ).not.toBeInTheDocument();
+
+    rerender(<ProgressBar value={50} label="Canceled" isDisabled />);
+    expect(container.querySelector('.astryx-progress-bar')).toHaveAttribute(
+      'data-presentation',
+      'self-contained',
+    );
+    expect(
+      container.querySelector('.astryx-progress-bar-range-end-marker'),
+    ).toBeInTheDocument();
+  });
+
   it('uses role="progressbar" (not "meter") for determinate progress', () => {
     // A determinate ProgressBar conveys task completion, so it must be a
     // progressbar (announced on update), not a meter (a static gauge).
@@ -858,6 +979,9 @@ describe('ProgressBar theme target names', () => {
     expect(container.querySelector('.astryx-progress-bar-fill')).toHaveClass(
       'astryx-progressbar-fill',
     );
+    expect(
+      container.querySelector('.astryx-progress-bar-range-end-marker'),
+    ).toBeInTheDocument();
     expect(container.querySelector('.astryx-progress-bar-mark')).toHaveClass(
       'astryx-progressbar-mark',
     );

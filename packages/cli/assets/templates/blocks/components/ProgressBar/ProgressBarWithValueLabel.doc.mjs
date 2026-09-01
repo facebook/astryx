@@ -7,7 +7,7 @@ export const doc = {
   name: 'ProgressBar — With Value Label',
   displayName: 'ProgressBar — With Value Label',
   description:
-    'Progress bar with its current percentage displayed.',
+    'A paired-with-value progress bar with its equivalent current percentage displayed.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['ProgressBar', 'Center'],

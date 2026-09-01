@@ -32,6 +32,12 @@ const anatomy = [
       'Painted segment showing completed progress or indeterminate movement.',
   },
   {
+    name: 'Range end marker',
+    required: false,
+    description:
+      'Visual marker identifying the end of the full range in the self-contained presentation.',
+  },
+  {
     name: 'Mark',
     required: false,
     description: 'Labeled target tick positioned on a determinate track.',
@@ -98,9 +104,17 @@ export const docs = {
       default: "'accent'",
     },
     {
+      name: 'presentation',
+      type: "'self-contained' | 'paired-with-value'",
+      description:
+        '`self-contained` includes a range-end marker. `paired-with-value` requires an equivalent visible value. When omitted, `hasValueLabel` selects `paired-with-value`; otherwise `self-contained` is used. Nearby external text must be declared explicitly.',
+      default: 'derived from `hasValueLabel`',
+    },
+    {
       name: 'isIndeterminate',
       type: 'boolean',
-      description: 'Animated loading indicator for unknown progress.',
+      description:
+        'Animated loading indicator for unknown progress. Uses the self-contained treatment; no range-end marker is rendered.',
       default: 'false',
     },
     {
@@ -125,9 +139,16 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-progress-bar', visualProps: ['variant']},
+      {
+        className: 'astryx-progress-bar',
+        visualProps: ['variant', 'presentation'],
+      },
       {className: 'astryx-progress-bar-fill', visualProps: ['variant']},
       {className: 'astryx-progress-bar-track'},
+      {
+        className: 'astryx-progress-bar-range-end-marker',
+        visualProps: ['variant', 'presentation'],
+      },
       {
         className: 'astryx-progress-bar-mark',
         visualProps: ['variant', 'placement'],
@@ -136,7 +157,7 @@ export const docs = {
       // them keep working. Drop in the next major.
       {
         className: 'astryx-progressbar',
-        visualProps: ['variant'],
+        visualProps: ['variant', 'presentation'],
         deprecatedFor: 'progress-bar',
       },
       {
@@ -180,7 +201,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      "A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting.",
+      'A horizontal bar showing task completion. Self-contained carries the full visual range itself; paired-with-value is for bars paired with an equivalent visible value. A built-in value label selects paired-with-value automatically. Use indeterminate progress only when the amount completed cannot be calculated.',
     bestPractices: [
       {
         guidance: true,
@@ -196,6 +217,26 @@ export const docs = {
         guidance: true,
         description:
           "Always provide a label, even if hidden; screen readers need it to announce what's loading.",
+      },
+      {
+        guidance: true,
+        description:
+          'Use self-contained when the graphic is the only visible progress cue; its range-end marker identifies the total range.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use paired-with-value only when a visible value such as “65%” or “3 of 5” provides equivalent information. `hasValueLabel` is the built-in pairing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Expect self-contained warning progress to use a darker warning color than badges or paired-with-value progress. The darker marker preserves 3:1 fill-to-track contrast; use paired-with-value with a visible value when the brighter semantic yellow is preferred.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use paired-with-value only because it looks quieter. A hidden label or ARIA value is not an equivalent visible cue.',
       },
       {
         guidance: false,
@@ -263,6 +304,13 @@ export const docsZh = {
       default: "'accent'",
     },
     {
+      name: 'presentation',
+      type: "'self-contained' | 'paired-with-value'",
+      description:
+        '`self-contained` 使用范围终点标记。`paired-with-value` 需要等效的可见数值。未指定时，`hasValueLabel` 会选择 `paired-with-value`；否则使用 `self-contained`。附近的外部文本必须显式声明。',
+      default: '根据 `hasValueLabel` 决定',
+    },
+    {
       name: 'isIndeterminate',
       type: 'boolean',
       description: '用于未知进度的动画加载指示器。',
@@ -290,9 +338,16 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-progress-bar', visualProps: ['variant']},
+      {
+        className: 'astryx-progress-bar',
+        visualProps: ['variant', 'presentation'],
+      },
       {className: 'astryx-progress-bar-fill', visualProps: ['variant']},
       {className: 'astryx-progress-bar-track'},
+      {
+        className: 'astryx-progress-bar-range-end-marker',
+        visualProps: ['variant', 'presentation'],
+      },
       {
         className: 'astryx-progress-bar-mark',
         visualProps: ['variant', 'placement'],
@@ -301,7 +356,7 @@ export const docsZh = {
       // them keep working. Drop in the next major.
       {
         className: 'astryx-progressbar',
-        visualProps: ['variant'],
+        visualProps: ['variant', 'presentation'],
         deprecatedFor: 'progress-bar',
       },
       {
@@ -345,7 +400,7 @@ export const docsZh = {
   usage: {
     anatomy,
     description:
-      "A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting.",
+      'A horizontal bar showing task completion. Self-contained carries the full visual range itself; paired-with-value is for bars paired with an equivalent visible value. A built-in value label selects paired-with-value automatically. Use indeterminate progress only when the amount completed cannot be calculated.',
     bestPractices: [
       {
         guidance: true,
@@ -361,6 +416,26 @@ export const docsZh = {
         guidance: true,
         description:
           "Always provide a label, even if hidden; screen readers need it to announce what's loading.",
+      },
+      {
+        guidance: true,
+        description:
+          'Use self-contained when the graphic is the only visible progress cue; its range-end marker identifies the total range.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use paired-with-value only when a visible value such as “65%” or “3 of 5” provides equivalent information. `hasValueLabel` is the built-in pairing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Expect self-contained warning progress to use a darker warning color than badges or paired-with-value progress. The darker marker preserves 3:1 fill-to-track contrast; use paired-with-value with a visible value when the brighter semantic yellow is preferred.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use paired-with-value only because it looks quieter. A hidden label or ARIA value is not an equivalent visible cue.',
       },
       {
         guidance: false,
@@ -388,7 +463,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      "A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting.",
+      'A horizontal bar showing task completion. Self-contained carries the full visual range itself; paired-with-value is for bars paired with an equivalent visible value. A built-in value label selects paired-with-value automatically. Use indeterminate progress only when the amount completed cannot be calculated.',
     bestPractices: [
       {
         guidance: true,
@@ -404,6 +479,26 @@ export const docsDense = {
         guidance: true,
         description:
           "Always provide a label, even if hidden; screen readers need it to announce what's loading.",
+      },
+      {
+        guidance: true,
+        description:
+          'Use self-contained when the graphic is the only visible progress cue; its range-end marker identifies the total range.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use paired-with-value only when a visible value such as “65%” or “3 of 5” provides equivalent information. `hasValueLabel` is the built-in pairing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Expect self-contained warning progress to use a darker warning color than badges or paired-with-value progress. The darker marker preserves 3:1 fill-to-track contrast; use paired-with-value with a visible value when the brighter semantic yellow is preferred.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use paired-with-value only because it looks quieter. A hidden label or ARIA value is not an equivalent visible cue.',
       },
       {
         guidance: false,
@@ -431,7 +526,10 @@ export const docsDense = {
     formatValueLabel:
       'Custom value label formatter; defaults to percentage string.',
     variant: 'Semantic color variant.',
-    isIndeterminate: 'Animated loading indicator for unknown progress.',
+    presentation:
+      'self-contained includes the range-end marker; paired-with-value requires an equivalent visible value. When omitted, hasValueLabel selects paired-with-value and other determinate bars use self-contained.',
+    isIndeterminate:
+      'Animated loading indicator for unknown progress. Uses the self-contained treatment and omits the range-end marker.',
     marks:
       'Fixed target marks ({value, label?}) drawn on the track in the 0..max scale; stay visible past the fill. Marks inside the fill take the variant on-color; marks on the bare track take the primary text color (secondary when disabled). A label reveals a tooltip on hover/focus. Ignored when indeterminate.',
     isDisabled: 'Visually disabled: grays out fill and text.',

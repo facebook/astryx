@@ -7,7 +7,7 @@ export const doc = {
   name: 'ProgressBar — Custom Format',
   displayName: 'ProgressBar — Custom Format',
   description:
-    'Progress bar with a custom value label showing disk usage in GB.',
+    'A paired-with-value progress bar whose visible value is formatted as disk usage in GB.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['ProgressBar', 'Center', 'VStack', 'Text'],

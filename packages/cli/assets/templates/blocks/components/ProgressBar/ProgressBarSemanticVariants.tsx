@@ -7,7 +7,7 @@ import {VStack} from '@astryxdesign/core/Layout';
 
 export default function ProgressBarSemanticVariants() {
   return (
-    <VStack gap={4} width="100%" style={{maxWidth: 300}}>
+    <VStack gap={4} style={{width: 300}}>
       <ProgressBar value={60} label="Accent" variant="accent" hasValueLabel />
       <ProgressBar
         value={80}

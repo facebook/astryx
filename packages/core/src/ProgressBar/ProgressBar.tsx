@@ -5,7 +5,7 @@
 /**
  * @file ProgressBar.tsx
  * @input Uses React, useId, stylex, color/spacing/radius/transition tokens
- * @output Exports ProgressBar component, ProgressBarProps, ProgressBarVariant types
+ * @output Exports ProgressBar component, ProgressBarProps, ProgressBarVariant, ProgressBarPresentation types
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -49,6 +49,16 @@ const LazyProgressBarMarkTooltip = lazy(
  * Extensible via module augmentation of ProgressBarVariantMap.
  */
 export type ProgressBarVariant = keyof ProgressBarVariantMap;
+
+/**
+ * How the ProgressBar is presented alongside visible value information.
+ *
+ * `self-contained` renders a range-end marker so the total range remains
+ * perceivable without nearby value text. `paired-with-value` removes that
+ * marker and is appropriate when an equivalent visible value is provided by
+ * this component or immediately nearby.
+ */
+export type ProgressBarPresentation = 'self-contained' | 'paired-with-value';
 
 /**
  * A fixed target mark drawn on the progress track.
@@ -112,6 +122,17 @@ export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
    * @default 'accent'
    */
   variant?: ProgressBarVariant;
+  /**
+   * Controls how the graphic is presented alongside visible value information.
+   *
+   * `self-contained` includes a range-end marker. Use `paired-with-value` only
+   * when an equivalent visible value (for example, "65%" or "3 of 5") appears
+   * in this component or immediately nearby. When omitted, ProgressBar uses
+   * `paired-with-value` when `hasValueLabel` is true and `self-contained`
+   * otherwise. Indeterminate bars always use `self-contained` because their
+   * moving fill is the meaningful state indicator.
+   */
+  presentation?: ProgressBarPresentation;
   /**
    * When true, renders an animated indeterminate progress indicator.
    * Use when the progress amount is unknown (e.g. loading, processing).
@@ -262,8 +283,9 @@ const styles = stylex.create({
   },
   // A mark is a vertical tick centered on the track, a child of the
   // `role="progressbar"` element (unchanged DOM). The track no longer clips, so
-  // its height — 8px by default — may exceed the bar and overhang; the centering
-  // translate keeps any overhang symmetric. Positioned horizontally via
+  // its height — 8px by default — stays inset within the track. A theme may
+  // increase it beyond the track height; the centering translate keeps any
+  // resulting overhang symmetric. Positioned horizontally via
   // `insetInlineStart`; the translate mirrors under RTL.
   //
   // The dimensions read private vars rather than being plain declarations: a
@@ -287,6 +309,17 @@ const styles = stylex.create({
       default: 'translate(-50%, -50%)',
       ':is([dir="rtl"] *)': 'translate(50%, -50%)',
     },
+  },
+  rangeEndMarker: {
+    position: 'absolute',
+    insetInlineEnd: 0,
+    top: '50%',
+    width: '8px',
+    height: '8px',
+    aspectRatio: 1,
+    borderRadius: '50%',
+    transform: 'translateY(-50%)',
+    pointerEvents: 'none',
   },
 });
 
@@ -392,6 +425,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * @example
  * ```
  * <ProgressBar value={75} label="Upload progress" />
+ * <ProgressBar value={75} label="Upload progress" hasValueLabel />
  * <ProgressBar isIndeterminate label="Loading..." />
  * <ProgressBar value={3.2} max={5} label="Disk usage" hasValueLabel
  *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
@@ -424,6 +458,7 @@ export function ProgressBar({
   hasValueLabel = false,
   formatValueLabel = defaultFormatValueLabel,
   variant = 'accent',
+  presentation,
   isIndeterminate = false,
   isDisabled = false,
   marks,
@@ -448,6 +483,10 @@ export function ProgressBar({
   const showValueLabel = hasValueLabel && !isIndeterminate;
 
   const fillVariant = isDisabled ? 'disabled' : variant;
+  const resolvedPresentation = isIndeterminate
+    ? 'self-contained'
+    : (presentation ??
+      (hasValueLabel ? 'paired-with-value' : 'self-contained'));
 
   // Marks make no sense without a determinate value, so they are only drawn
   // in determinate mode. Non-finite mark values are dropped; the rest are
@@ -481,7 +520,7 @@ export function ProgressBar({
       {...mergeProps(
         themeProps(
           'progress-bar',
-          {variant},
+          {variant, presentation: resolvedPresentation},
           // `progressbar` ran the compound name together; themes styling it
           // keep working until the next major.
           {legacyNames: ['progressbar']},
@@ -560,6 +599,18 @@ export function ProgressBar({
               stylex.props(styles.fill, variantStyles[fillVariant]),
             )}
             style={{width: `${percentage}%`}}
+          />
+        )}
+        {!isIndeterminate && resolvedPresentation === 'self-contained' && (
+          <span
+            aria-hidden="true"
+            {...mergeProps(
+              themeProps('progress-bar-range-end-marker', {
+                variant: fillVariant,
+                presentation: resolvedPresentation,
+              }),
+              stylex.props(styles.rangeEndMarker, variantStyles[fillVariant]),
+            )}
           />
         )}
         {/* Target marks — children of the progressbar element (unchanged),

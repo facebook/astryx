@@ -25,6 +25,12 @@ const meta: Meta<typeof ProgressBar> = {
       options: ['accent', 'success', 'warning', 'error', 'neutral'],
       description: 'Semantic color variant',
     },
+    presentation: {
+      control: 'select',
+      options: ['self-contained', 'paired-with-value'],
+      description:
+        'Self-contained includes a range-end marker; paired-with-value requires an equivalent visible value',
+    },
     isLabelHidden: {
       control: 'boolean',
       description: 'Visually hide the label',
