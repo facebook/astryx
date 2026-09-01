@@ -1167,7 +1167,12 @@ describe('Selector', () => {
       render(
         <Selector label="Fruit" options={[]} onChange={() => {}} isLoading />,
       );
-      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+      expect(trigger).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
       // useAnnounce writes on the next animation frame, so an immediate read
       // would pass whether or not anything was announced.
@@ -2470,6 +2475,28 @@ describe('Selector', () => {
 
       await user.tab();
       expect(trigger).toHaveFocus();
+    });
+
+    it('keeps loading feedback while blocking the selection surface', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          isLoading
+          isReadOnly
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+      expect(trigger).not.toBeDisabled();
+      expect(trigger).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
     });
 
     it('blocks pointer, keyboard, and typeahead changes', async () => {

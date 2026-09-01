@@ -1140,7 +1140,9 @@ describe('MultiSelector', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+    const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
     // useAnnounce writes on the next animation frame, so an immediate read
     // would pass whether or not anything was announced.
@@ -1395,7 +1397,7 @@ describe('MultiSelector', () => {
     expect(group).toHaveAttribute('aria-label', 'Citrus');
   });
 
-  it('shows loading state with aria-busy', () => {
+  it('shows loading state with a spinner and aria-busy', () => {
     render(
       <MultiSelector
         label="Fruit"
@@ -1406,6 +1408,7 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
   });
 
   it('renders with custom selectAllLabel', async () => {
@@ -1921,6 +1924,29 @@ describe('MultiSelector', () => {
 
       await user.tab();
       expect(trigger).toHaveFocus();
+    });
+
+    it('keeps loading feedback while blocking the selection surface', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple']}
+          onChange={() => {}}
+          isLoading
+          isReadOnly
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox', {name: 'Fruit'});
+      expect(trigger).not.toBeDisabled();
+      expect(trigger).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
     });
 
     it('blocks pointer, keyboard, and typeahead changes', async () => {

@@ -30,7 +30,7 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: [spec:AST-006/DEC-1]
+system_specs: [spec:AST-011/DEC-1]
 ---
 
 # MultiSelector component contract
@@ -88,7 +88,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-This table names the additive concept introduced by `spec:AST-006`. Complete prop
+This table names the additive concept introduced by `spec:AST-011`. Complete prop
 syntax and examples remain in `MultiSelector.doc.mjs`.
 
 | Concept         | Closed values or states | Meaning                                                   | Availability   | Default | Owner  | Stability | Invalid-value behavior |
@@ -105,7 +105,7 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
 | FR4 | When present, Field, shared clear actions, option checkbox indicators, public Option dividers, general icons, Touch sheet heading, and Touch sheet retain their Field, CheckboxInput, Divider, Icon, Text, and BottomSheet theming owners.                                    | Current composition and owners  | Verified current behavior; no target change        |
 | FR5 | Pointer popup and Touch sheet are separate surface anatomy rows, but both host the same `panelContent` tree; the Touch sheet additionally renders its Heading. Changing presentation does not create a second search, option, divider, section, or empty-state content model. | Current source and tests        | Verified current behavior; no normalization        |
 | FR6 | `multi-selector-clear-icon` remains a deprecated compatibility alias for `input-clear-icon`; it is not a current target and does not claim a separate anatomy part.                                                                                                           | Current public target metadata  | Verified current compatibility state               |
-| FR7 | While `isReadOnly` is true, selected values remain focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                              | `spec:AST-006`, docs, and tests | Accepted read-only behavior                        |
+| FR7 | While `isReadOnly` is true, selected values remain focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                              | `spec:AST-011`, docs, and tests | Accepted read-only behavior                        |
 
 ### Allowed variation
 
@@ -240,7 +240,7 @@ empty-state content remains one shared tree.
 
 ## Family and system relationships
 
-- `architecture:public-component-api` and `spec:AST-006/DEC-1` own the additive
+- `architecture:public-component-api` and `spec:AST-011/DEC-1` own the additive
   read-only API and its cross-input meaning.
 - `architecture:component-theming-surface` owns anatomy qualification, local
   target mapping, delegation, and exclusion of deprecated aliases.

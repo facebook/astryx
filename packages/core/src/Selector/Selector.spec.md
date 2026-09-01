@@ -26,7 +26,7 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: [spec:AST-004/DEC-1, spec:AST-006/DEC-1]
+system_specs: [spec:AST-004/DEC-1, spec:AST-011/DEC-1]
 ---
 
 # Selector component contract
@@ -257,7 +257,7 @@ in `spec:AST-004` as current runtime behavior.
 - `spec:AST-004/DEC-1` owns the accepted future indicator-space change. Its
   `accepted` phase is direction for implementation, not evidence that the runtime
   has changed.
-- `spec:AST-006/DEC-1` owns the additive read-only state: caller-owned policy can
+- `spec:AST-011/DEC-1` owns the additive read-only state: caller-owned policy can
   preserve a focusable, submittable value without exposing selection controls.
 - `family:input-fields` remains a draft. It may inform future reconciliation, but
   this current component contract neither backlinks to it in frontmatter nor

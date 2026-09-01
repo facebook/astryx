@@ -2,7 +2,7 @@
 schema_version: 1
 template_version: 1
 kind: system-spec
-id: spec:AST-006
+id: spec:AST-011
 authority: current
 archive_reason: null
 superseded_by: null
@@ -96,7 +96,7 @@ change the value.
 
 ### DEC-1 — Selection inputs use the established read-only contract
 
-**Reference:** `spec:AST-006/DEC-1`
+**Reference:** `spec:AST-011/DEC-1`
 **Decider:** `cixzhang`, `2026-08-31`
 
 Selector and MultiSelector accept `isReadOnly` when the caller owns a value that
