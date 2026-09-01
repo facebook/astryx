@@ -291,6 +291,23 @@ describe('ToastViewport placement', () => {
     expect(getComputedStyle(viewport).width).not.toBe('100%');
   });
 
+  // The viewport is positioned by spanning the inline axis and aligning within
+  // itself, which only works if the box actually spans. `popover` makes that
+  // conditional: the UA stylesheet gives every popover `width: fit-content`,
+  // and a shrink-wrapped box cannot honour both inset edges — it resolves
+  // against the start edge, and an end-aligned toast lands on the LEFT
+  // (measured in Chromium at 1200px: a 438px box at x=0, toast at x=19).
+  //
+  // jsdom resolves no UA popover styles and no cascade, so it cannot reproduce
+  // that. What it CAN hold is the reset itself: the declaration is what stops
+  // the UA rule applying, so its absence is the regression. The rendered
+  // behaviour is covered by the placement matrix in the PR.
+  it('resets the UA popover width so the viewport can span the inline axis', () => {
+    const {viewport} = renderPlacement();
+
+    expect(getComputedStyle(viewport).width).toBe('auto');
+  });
+
   it('maps explicit top and bottom placements to their configured edge', () => {
     const top = renderPlacement({position: 'topEnd'});
     expect(getComputedStyle(top.viewport).top).toBe('0px');
