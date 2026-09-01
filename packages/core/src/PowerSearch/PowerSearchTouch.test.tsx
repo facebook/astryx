@@ -488,6 +488,26 @@ describe('PowerSearchTouchSurface', () => {
     expect(within(sheet()).getByRole('button', {name: 'Save'})).toBeDisabled();
   });
 
+  it('disables an open field picker when the component becomes read-only', () => {
+    const {rerender} = setup();
+    openAddFlow();
+    rerender(
+      <PowerSearchTouchSurface
+        config={config}
+        filters={[]}
+        onChange={vi.fn()}
+        isReadOnly
+      />,
+    );
+    const status = within(sheet()).getByRole('button', {name: 'Status'});
+    expect(status).toBeDisabled();
+    fireEvent.click(status);
+    expect(
+      within(sheet()).getByRole('heading', {name: 'Add filter'}),
+    ).toBeTruthy();
+    expect(within(sheet()).queryByRole('radiogroup')).toBeNull();
+  });
+
   it('edits a filter only after Save', () => {
     const {onChange} = setup({filters: [openFilter]});
     openEditFlow('Status is Open');
@@ -823,6 +843,55 @@ describe('PowerSearchTouchSurface', () => {
     });
     remove.focus();
     fireEvent.click(remove);
+    expect(
+      within(sheet()).getByRole('button', {name: 'Author is Ada'}),
+    ).toHaveFocus();
+  });
+
+  it('prefers the nearest editable row across read-only neighbors', () => {
+    const before: PowerSearchFilter = {
+      field: 'author',
+      operator: 'is',
+      value: {type: 'string', value: 'Ada'},
+    };
+    const readOnlyLabel: PowerSearchFilter = {
+      field: 'labels',
+      operator: 'isAnyOf',
+      value: {type: 'enum_list', value: ['bug']},
+      isReadOnly: true,
+    };
+    const readOnlyEmpty: PowerSearchFilter = {
+      field: 'unassigned',
+      operator: 'isTrue',
+      value: {type: 'empty'},
+      isReadOnly: true,
+    };
+    const after: PowerSearchFilter = {
+      field: 'author',
+      operator: 'is',
+      value: {type: 'string', value: 'Grace'},
+    };
+    function Harness() {
+      const [filters, setFilters] = useState<ReadonlyArray<PowerSearchFilter>>([
+        before,
+        openFilter,
+        readOnlyLabel,
+        readOnlyEmpty,
+        after,
+      ]);
+      return (
+        <PowerSearchTouchSurface
+          config={config}
+          filters={filters}
+          onChange={next => setFilters(next)}
+        />
+      );
+    }
+    render(<Harness />);
+    openSheet();
+    fireEvent.click(
+      within(sheet()).getByRole('button', {name: 'Remove Status is Open'}),
+    );
     expect(
       within(sheet()).getByRole('button', {name: 'Author is Ada'}),
     ).toHaveFocus();
