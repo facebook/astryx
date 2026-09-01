@@ -38,5 +38,13 @@
   {
     "component": "unknown/ChartTooltip",
     "reason": "ChartTooltip uses explicitly physical left/right/top viewport placement and clamping. It has no logical start/end placement, direction-dependent control order, horizontal scrolling action, or coarse form hit target; tooltip rows inherit bidi layout without component-specific directional logic."
+  },
+  {
+    "component": "core/Tokenizer",
+    "reason": "The input, token flow, popup anchoring, and keyboard behavior use direction-neutral or logical-axis primitives; no directional icon, decoration, positioned side, order, scroll, or drag behavior is present."
+  },
+  {
+    "component": "core/Typeahead",
+    "reason": "The input, selected token, popup anchoring, and keyboard behavior use direction-neutral or logical-axis primitives; no directional icon, decoration, positioned side, order, scroll, or drag behavior is present."
   }
 ]
