@@ -7,13 +7,16 @@ import {
   proportional,
   pixel,
 } from '@astryxdesign/core/Table';
-import type {TableColumn, TableRowStatusValue} from '@astryxdesign/core/Table';
+import type {
+  TableColumn,
+  UseTableRowStatusConfig,
+} from '@astryxdesign/core/Table';
 
 interface Job extends Record<string, unknown> {
   id: string;
   name: string;
   owner: string;
-  state: 'failed' | 'running' | 'queued' | 'succeeded';
+  state: 'failed' | 'running' | 'queued' | 'succeeded' | 'needsAttention';
 }
 
 const jobs: Job[] = [
@@ -22,6 +25,12 @@ const jobs: Job[] = [
   {id: 'j3', name: 'unit-tests', owner: 'Zoe', state: 'succeeded'},
   {id: 'j4', name: 'docsite-deploy', owner: 'Max', state: 'queued'},
   {id: 'j5', name: 'smoke-test', owner: 'Mia', state: 'succeeded'},
+  {
+    id: 'j6',
+    name: 'snapshot-review',
+    owner: 'Noah',
+    state: 'needsAttention',
+  },
 ];
 
 const columns: TableColumn<Job>[] = [
@@ -30,7 +39,7 @@ const columns: TableColumn<Job>[] = [
   {key: 'state', header: 'State', width: pixel(120)},
 ];
 
-function jobStatus(job: Job): TableRowStatusValue | null {
+const jobStatus: UseTableRowStatusConfig<Job>['getStatus'] = job => {
   switch (job.state) {
     case 'failed':
       return {status: 'error', label: 'Failed'};
@@ -40,8 +49,10 @@ function jobStatus(job: Job): TableRowStatusValue | null {
       return {color: 'gray', label: 'Queued'};
     case 'succeeded':
       return {status: 'success', label: 'Succeeded'};
+    case 'needsAttention':
+      return {status: 'warning', label: 'Needs attention'};
   }
-}
+};
 
 const meta: Meta = {
   title: 'Core/TableRowStatus',

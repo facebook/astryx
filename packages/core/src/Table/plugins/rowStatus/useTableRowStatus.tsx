@@ -23,6 +23,7 @@ import {Tooltip} from '../../../Tooltip';
 import {useTranslator} from '../../../i18n';
 import {warnOnce} from '../../../utils/devWarning';
 import {VisuallyHidden} from '../../../VisuallyHidden';
+import type {TableRowStatus, TableSemanticRowStatus} from '../../index';
 import type {TableColumn, TablePlugin} from '../../types';
 
 /**
@@ -41,7 +42,7 @@ export type TableRowStatusColor =
   | 'blue'
   | 'gray';
 
-type TableRowSemanticStatus = 'success' | 'warning' | 'error';
+type TableRowSemanticStatus = TableSemanticRowStatus['status'];
 
 const NAMED_COLORS: Record<TableRowStatusColor, string> = {
   accent: 'var(--color-icon-accent)',
@@ -56,36 +57,19 @@ const NAMED_COLORS: Record<TableRowStatusColor, string> = {
   gray: 'var(--color-icon-gray)',
 };
 
-/**
- * Stable custom row-status marker contract. `color` controls paint only; omit
- * `icon` for the 8px dot or provide a caller-selected glyph.
- *
- * This remains an interface so existing consumer extensions stay compatible.
- */
-export interface TableRowStatus {
-  /** Named design-system color or raw CSS color for the custom marker. */
-  color: TableRowStatusColor | (string & {});
-  /** Optional caller-selected glyph. Omit it to render the stable 8px dot. */
-  icon?: IconName;
-  /** Accessible name announced by assistive technology and shown in a tooltip. */
-  label: string;
-}
-
-/** Semantic row outcome resolved through the active theme's registry and tokens. */
-export interface TableSemanticRowStatus {
-  status: TableRowSemanticStatus;
-  color?: never;
-  icon?: never;
-  /** Accessible name announced by assistive technology and shown in a tooltip. */
-  label: string;
-}
-
-/**
- * Additive row-status value accepted by {@link useTableRowStatus}. Semantic and
- * custom-marker inputs are mutually exclusive.
- */
-export type TableRowStatusValue =
-  TableSemanticRowStatus | (TableRowStatus & {status?: never});
+/** Preserve the released Icon color mapping for named custom-marker colors. */
+const ICON_COLOR_BY_NAMED_COLOR: Record<TableRowStatusColor, IconColor> = {
+  accent: 'accent',
+  success: 'success',
+  error: 'error',
+  warning: 'warning',
+  red: 'red',
+  orange: 'warning',
+  green: 'green',
+  yellow: 'warning',
+  blue: 'blue',
+  gray: 'gray',
+};
 
 /** Configuration for {@link useTableRowStatus}. */
 export interface UseTableRowStatusConfig<T extends Record<string, unknown>> {
@@ -99,8 +83,15 @@ export interface UseTableRowStatusConfig<T extends Record<string, unknown>> {
    *   row.hasError ? {status: 'error', label: 'Error'} : null
    * ```
    */
-  getStatus: (item: T) => TableRowStatusValue | null;
+  getStatus: (
+    item: T,
+  ) => (TableRowStatus & {status?: never}) | TableSemanticRowStatus | null;
 }
+
+type TableRowStatusResult = Exclude<
+  ReturnType<UseTableRowStatusConfig<Record<string, unknown>>['getStatus']>,
+  null
+>;
 
 // The status column holds a small centered dot or icon. A fixed narrow width
 // keeps every row's indicator aligned in one gutter.
@@ -119,11 +110,11 @@ function isTableRowSemanticStatus(
 
 type ResolvedTableRowStatus =
   | {variant: 'dot'; color: string}
-  | {variant: 'icon'; icon: TableRowSemanticStatus; iconColor: IconColor}
+  | {variant: 'icon'; icon: IconName; iconColor: IconColor}
   | {variant: 'icon'; icon: IconName; customColor: string};
 
 function resolveTableRowStatus(
-  value: TableRowStatusValue,
+  value: TableRowStatusResult,
 ): ResolvedTableRowStatus | null {
   const untypedValue = value as {
     status?: unknown;
@@ -131,18 +122,7 @@ function resolveTableRowStatus(
     icon?: unknown;
   };
 
-  if (untypedValue.status !== undefined) {
-    if (!isTableRowSemanticStatus(untypedValue.status)) {
-      if (process.env.NODE_ENV !== 'production') {
-        warnOnce(
-          'useTableRowStatus:unsupported-status',
-          'useTableRowStatus',
-          'Received an unsupported status. No row status indicator was rendered.',
-        );
-      }
-      return null;
-    }
-
+  if (isTableRowSemanticStatus(untypedValue.status)) {
     if (
       process.env.NODE_ENV !== 'production' &&
       (Object.prototype.hasOwnProperty.call(untypedValue, 'color') ||
@@ -163,22 +143,24 @@ function resolveTableRowStatus(
   }
 
   if (typeof untypedValue.color !== 'string') {
-    if (process.env.NODE_ENV !== 'production') {
-      warnOnce(
-        'useTableRowStatus:missing-color',
-        'useTableRowStatus',
-        'A custom row status requires color. No row status indicator was rendered.',
-      );
-    }
     return null;
   }
 
   if (typeof untypedValue.icon === 'string') {
-    return {
-      variant: 'icon',
-      icon: untypedValue.icon as IconName,
-      customColor: resolveColor(untypedValue.color),
-    };
+    const namedIconColor = (
+      ICON_COLOR_BY_NAMED_COLOR as Record<string, IconColor | undefined>
+    )[untypedValue.color];
+    return namedIconColor == null
+      ? {
+          variant: 'icon',
+          icon: untypedValue.icon as IconName,
+          customColor: untypedValue.color,
+        }
+      : {
+          variant: 'icon',
+          icon: untypedValue.icon as IconName,
+          iconColor: namedIconColor,
+        };
   }
 
   return {variant: 'dot', color: resolveColor(untypedValue.color)};
@@ -222,66 +204,66 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
   const t = useTranslator();
   const {getStatus} = config;
 
-  return useMemo(
-    (): TablePlugin<T> => ({
+  return useMemo((): TablePlugin<T> => {
+    const statusColumn: TableColumn<T> = {
+      key: '__rowStatus',
+      // The gutter stays visually blank, but the th needs a discernible
+      // name for assistive technology (axe: empty-table-header).
+      header: (
+        <VisuallyHidden>
+          {t('@astryx.table.rowStatus.columnHeader')}
+        </VisuallyHidden>
+      ),
+      width: STATUS_COLUMN_WIDTH,
+      resizable: false,
+      renderCell: (item: T) => {
+        const status = getStatus(item);
+        if (!status) {
+          return null;
+        }
+
+        const resolvedStatus = resolveTableRowStatus(status);
+        if (!resolvedStatus) {
+          return null;
+        }
+
+        const signifier =
+          resolvedStatus.variant === 'dot' ? (
+            <span {...stylex.props(styles.dot(resolvedStatus.color))} />
+          ) : (
+            <Icon
+              icon={resolvedStatus.icon}
+              size="xsm"
+              color={
+                'iconColor' in resolvedStatus
+                  ? resolvedStatus.iconColor
+                  : 'inherit'
+              }
+            />
+          );
+
+        return (
+          <Tooltip content={status.label}>
+            <span
+              {...stylex.props(
+                styles.wrap,
+                resolvedStatus.variant === 'icon' &&
+                  'customColor' in resolvedStatus &&
+                  styles.customIcon(resolvedStatus.customColor),
+              )}
+              role="img"
+              aria-label={status.label}>
+              {signifier}
+            </span>
+          </Tooltip>
+        );
+      },
+    };
+
+    return {
       transformColumns(columns) {
-        const statusColumn: TableColumn<T> = {
-          key: '__rowStatus',
-          // The gutter stays visually blank, but the th needs a discernible
-          // name for assistive technology (axe: empty-table-header).
-          header: (
-            <VisuallyHidden>
-              {t('@astryx.table.rowStatus.columnHeader')}
-            </VisuallyHidden>
-          ),
-          width: STATUS_COLUMN_WIDTH,
-          resizable: false,
-          renderCell: (item: T) => {
-            const status = getStatus(item);
-            if (!status) {
-              return null;
-            }
-
-            const resolvedStatus = resolveTableRowStatus(status);
-            if (!resolvedStatus) {
-              return null;
-            }
-
-            const signifier =
-              resolvedStatus.variant === 'dot' ? (
-                <span {...stylex.props(styles.dot(resolvedStatus.color))} />
-              ) : (
-                <Icon
-                  icon={resolvedStatus.icon}
-                  size="xsm"
-                  color={
-                    'iconColor' in resolvedStatus
-                      ? resolvedStatus.iconColor
-                      : 'inherit'
-                  }
-                />
-              );
-
-            return (
-              <Tooltip content={status.label}>
-                <span
-                  {...stylex.props(
-                    styles.wrap,
-                    resolvedStatus.variant === 'icon' &&
-                      'customColor' in resolvedStatus &&
-                      styles.customIcon(resolvedStatus.customColor),
-                  )}
-                  role="img"
-                  aria-label={status.label}>
-                  {signifier}
-                </span>
-              </Tooltip>
-            );
-          },
-        };
         return [statusColumn, ...columns];
       },
-    }),
-    [getStatus, t],
-  );
+    };
+  }, [getStatus, t]);
 }

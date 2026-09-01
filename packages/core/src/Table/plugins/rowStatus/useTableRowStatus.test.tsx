@@ -1,24 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  expectTypeOf,
-  it,
-  vi,
-} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {render, renderHook, screen, within} from '@testing-library/react';
 import {Theme} from '../../../theme/Theme';
 import {defineTheme} from '../../../theme/defineTheme';
 import {__resetDevWarnings} from '../../../utils/devWarning';
 import {Table} from '../../Table';
-import type {TableColumn} from '../../types';
+import type {TableColumn, TablePlugin} from '../../types';
+import {useTableRowExpansion} from '../rowExpansion';
+import {useTableSelection} from '../selection';
 import {
   useTableRowStatus,
-  type TableRowStatus,
-  type TableRowStatusValue,
   type UseTableRowStatusConfig,
 } from './useTableRowStatus';
 
@@ -28,6 +20,11 @@ interface Row extends Record<string, unknown> {
   state: 'error' | 'warning' | 'ok' | 'done';
 }
 
+type TableRowStatusResult = Exclude<
+  ReturnType<UseTableRowStatusConfig<Row>['getStatus']>,
+  null
+>;
+
 const data: Row[] = [
   {id: 'a', name: 'Alice', state: 'error'},
   {id: 'b', name: 'Bob', state: 'ok'},
@@ -36,7 +33,7 @@ const data: Row[] = [
 
 const columns: TableColumn<Row>[] = [{key: 'name', header: 'Name'}];
 
-function getStatus(item: Row): TableRowStatusValue | null {
+function getStatus(item: Row): TableRowStatusResult | null {
   if (item.state === 'error') {
     return {status: 'error', label: 'Error'};
   }
@@ -51,7 +48,7 @@ function Harness({
   statusFn = getStatus,
 }: {
   rows?: Row[];
-  statusFn?: (item: Row) => TableRowStatusValue | null;
+  statusFn?: (item: Row) => TableRowStatusResult | null;
 }) {
   const rowStatus = useTableRowStatus<Row>({getStatus: statusFn});
   return (
@@ -68,72 +65,6 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe('TableRowStatusValue type', () => {
-  it('accepts each exclusive public branch', () => {
-    expectTypeOf<{
-      status: 'success';
-      label: string;
-    }>().toMatchTypeOf<TableRowStatusValue>();
-    expectTypeOf<{
-      color: 'red';
-      label: string;
-    }>().toMatchTypeOf<TableRowStatusValue>();
-    expectTypeOf<{
-      color: 'red';
-      label: string;
-      status: undefined;
-    }>().toMatchTypeOf<TableRowStatusValue>();
-    expectTypeOf<{
-      color: 'rgb(1, 2, 3)';
-      icon: 'check';
-      label: string;
-    }>().toMatchTypeOf<TableRowStatusValue>();
-  });
-
-  it('rejects mixed, incomplete, and unknown statuses', () => {
-    expectTypeOf<{
-      status: 'success';
-      color: 'green';
-      label: string;
-    }>().not.toMatchTypeOf<TableRowStatusValue>();
-    expectTypeOf<{
-      status: 'error';
-      icon: 'error';
-      label: string;
-    }>().not.toMatchTypeOf<TableRowStatusValue>();
-    expectTypeOf<{
-      status: 'info';
-      label: string;
-    }>().not.toMatchTypeOf<TableRowStatusValue>();
-    expectTypeOf<{label: string}>().not.toMatchTypeOf<TableRowStatusValue>();
-    expectTypeOf<{
-      status: 'success';
-    }>().not.toMatchTypeOf<TableRowStatusValue>();
-    expectTypeOf<{color: 'red'}>().not.toMatchTypeOf<TableRowStatusValue>();
-  });
-
-  it('preserves interface extension and legacy getStatus compatibility', () => {
-    interface ExtendedCustomStatus extends TableRowStatus {
-      source: 'consumer';
-    }
-
-    const legacyGetStatus = (_item: Row): TableRowStatus | null => ({
-      color: 'red',
-      label: 'Legacy',
-    });
-
-    expectTypeOf<ExtendedCustomStatus>().toMatchTypeOf<TableRowStatusValue>();
-    expectTypeOf(legacyGetStatus).toMatchTypeOf<
-      UseTableRowStatusConfig<Row>['getStatus']
-    >();
-  });
-
-  it('keeps resolved anatomy internal', () => {
-    expectTypeOf<TableRowStatusValue>().not.toHaveProperty('variant');
-    expectTypeOf<TableRowStatusValue>().not.toHaveProperty('presentation');
-  });
-});
-
 describe('useTableRowStatus', () => {
   it('preserves the fixed leading status-column semantics', () => {
     render(<Harness />);
@@ -146,6 +77,17 @@ describe('useTableRowStatus', () => {
     const hiddenText = within(header).getByText('Row status');
     expect(hiddenText.tagName).toBe('SPAN');
     expect(hiddenText.className).not.toBe('');
+  });
+
+  it('preserves plugin identity for a stable getStatus callback', () => {
+    const {result, rerender} = renderHook(() =>
+      useTableRowStatus<Row>({getStatus}),
+    );
+    const initialPlugin = result.current;
+
+    rerender();
+
+    expect(result.current).toBe(initialPlugin);
   });
 
   it('resolves every semantic status through the active theme glyph and tone', () => {
@@ -232,12 +174,12 @@ describe('useTableRowStatus', () => {
     );
   });
 
-  it('uses an explicit custom icon only on the custom-marker branch', () => {
+  it('preserves the released paint for a named custom icon', () => {
     const theme = defineTheme({
       name: 'table-row-status-custom-icon',
       icons: {
-        check: <svg data-testid="caller-check" />,
-        error: <svg data-testid="semantic-error" />,
+        clock: <svg data-testid="caller-clock" />,
+        warning: <svg data-testid="semantic-warning" />,
       },
     });
 
@@ -245,21 +187,21 @@ describe('useTableRowStatus', () => {
       <Theme theme={theme}>
         <Harness
           statusFn={item =>
-            item.state === 'error'
-              ? {color: 'error', icon: 'check', label: 'Custom check'}
+            item.state === 'warning'
+              ? {color: 'warning', icon: 'clock', label: 'Custom clock'}
               : null
           }
         />
       </Theme>,
     );
 
-    const indicator = screen.getByRole('img', {name: 'Custom check'});
-    const glyph = screen.getByTestId('caller-check');
+    const indicator = screen.getByRole('img', {name: 'Custom clock'});
+    const glyph = screen.getByTestId('caller-clock');
 
     expect(indicator).toContainElement(glyph);
-    expect(screen.queryByTestId('semantic-error')).not.toBeInTheDocument();
-    expect(indicator.getAttribute('style')).toContain('--color-icon-red');
-    expect(glyph.parentElement).toHaveAttribute('data-color', 'inherit');
+    expect(screen.queryByTestId('semantic-warning')).not.toBeInTheDocument();
+    expect(indicator.getAttribute('style')).not.toContain('--color-icon');
+    expect(glyph.parentElement).toHaveAttribute('data-color', 'warning');
   });
 
   it('applies a raw CSS color to an explicit custom icon', () => {
@@ -285,8 +227,10 @@ describe('useTableRowStatus', () => {
     );
 
     const indicator = screen.getByRole('img', {name: 'Raw custom icon'});
-    expect(indicator).toContainElement(screen.getByTestId('raw-caller-check'));
+    const glyph = screen.getByTestId('raw-caller-check');
+    expect(indicator).toContainElement(glyph);
     expect(indicator.getAttribute('style')).toContain('rgb(1, 2, 3)');
+    expect(glyph.parentElement).toHaveAttribute('data-color', 'inherit');
   });
 
   it('passes through a raw CSS color to a custom dot', () => {
@@ -328,6 +272,118 @@ describe('useTableRowStatus', () => {
     expect(screen.getByText('Alice')).toBeInTheDocument();
   });
 
+  describe.each([
+    [
+      'row status before expansion',
+      false,
+      ['__expansion', '__rowStatus', '__xds_selection', 'name'],
+    ],
+    [
+      'expansion before row status',
+      true,
+      ['__rowStatus', '__expansion', '__xds_selection', 'name'],
+    ],
+  ] as const)(
+    'with selection and expansion plugins: %s',
+    (_label, expansionFirst, expectedColumnKeys) => {
+      function CompositionHarness() {
+        const selection = useTableSelection<Row>({
+          getIsItemSelected: () => false,
+          onSelectItem: () => {},
+          onSelectAll: () => {},
+          getIsAllSelected: () => false,
+          getRowLabel: item => item.name,
+        });
+        const expansion = useTableRowExpansion<Row>({
+          expandedKeys: new Set(),
+          onToggle: () => {},
+          getRowKey: item => item.id,
+          renderExpanded: item => item.name,
+        });
+        const rowStatus = useTableRowStatus<Row>({getStatus});
+        const plugins = expansionFirst
+          ? {selection, expansion, rowStatus}
+          : {selection, rowStatus, expansion};
+
+        return (
+          <Table data={data} columns={columns} idKey="id" plugins={plugins} />
+        );
+      }
+
+      it('keeps each generated column and row control valid', () => {
+        render(<CompositionHarness />);
+
+        expect(
+          screen
+            .getAllByRole('columnheader')
+            .map(header => header.getAttribute('data-column-key')),
+        ).toEqual(expectedColumnKeys);
+        expect(screen.getAllByRole('checkbox')).toHaveLength(4);
+        expect(
+          screen.getAllByRole('button', {name: 'Expand row'}),
+        ).toHaveLength(3);
+        expect(
+          screen.getAllByRole('img', {name: /Error|Warning/}),
+        ).toHaveLength(2);
+      });
+    },
+  );
+
+  describe.each([
+    [
+      'row status before custom plugin',
+      false,
+      ['__custom', '__rowStatus', 'name'],
+    ],
+    [
+      'custom plugin before row status',
+      true,
+      ['__rowStatus', '__custom', 'name'],
+    ],
+  ] as const)(
+    'with a caller-defined plugin: %s',
+    (_label, customFirst, expectedColumnKeys) => {
+      const customPlugin: TablePlugin<Row> = {
+        transformColumns(inputColumns) {
+          return [
+            {
+              key: '__custom',
+              header: 'Custom',
+              renderCell: item => item.id,
+            },
+            ...inputColumns,
+          ];
+        },
+      };
+
+      function CustomPluginHarness() {
+        const rowStatus = useTableRowStatus<Row>({getStatus});
+        const plugins = customFirst
+          ? {customPlugin, rowStatus}
+          : {rowStatus, customPlugin};
+        return (
+          <Table data={data} columns={columns} idKey="id" plugins={plugins} />
+        );
+      }
+
+      it('follows the parent pipeline without dropping or duplicating columns', () => {
+        render(<CustomPluginHarness />);
+
+        expect(
+          screen
+            .getAllByRole('columnheader')
+            .map(header => header.getAttribute('data-column-key')),
+        ).toEqual(expectedColumnKeys);
+        expect(
+          screen.getAllByRole('img', {name: /Error|Warning/}),
+        ).toHaveLength(2);
+        expect(screen.getByText('a')).toBeInTheDocument();
+        expect(screen.getByText('b')).toBeInTheDocument();
+        expect(screen.getByText('c')).toBeInTheDocument();
+      });
+    },
+  );
+
   it('renders the status header with empty data and no indicators', () => {
     render(<Harness rows={[]} />);
     const header = screen.getByRole('columnheader', {name: 'Row status'});
@@ -336,29 +392,48 @@ describe('useTableRowStatus', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
-  it('lets status win an untyped custom-marker conflict and warns once in development', () => {
+  it('lets status win every untyped custom-marker conflict and warns once in development', () => {
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const theme = defineTheme({
       name: 'table-row-status-conflict',
       icons: {
         error: <svg data-testid="conflict-semantic-error" />,
+        warning: <svg data-testid="conflict-semantic-warning" />,
+        success: <svg data-testid="conflict-semantic-success" />,
         check: <svg data-testid="ignored-custom-check" />,
       },
     });
-    const mixedStatus = {
-      status: 'error',
-      color: 'blue',
-      icon: 'check',
-      label: 'Conflict',
-    } as unknown as TableRowStatusValue;
 
     render(
       <Theme theme={theme}>
-        <Harness statusFn={() => mixedStatus} />
+        <Harness
+          statusFn={item =>
+            (item.id === 'a'
+              ? {
+                  status: 'error',
+                  color: 'blue',
+                  label: 'Status plus color',
+                }
+              : item.id === 'b'
+                ? {
+                    status: 'warning',
+                    icon: 'check',
+                    label: 'Status plus icon',
+                  }
+                : {
+                    status: 'success',
+                    color: 'red',
+                    icon: 'check',
+                    label: 'Status plus color and icon',
+                  }) as unknown as TableRowStatusResult
+          }
+        />
       </Theme>,
     );
 
-    expect(screen.getAllByTestId('conflict-semantic-error')).toHaveLength(3);
+    expect(screen.getByTestId('conflict-semantic-error')).toBeInTheDocument();
+    expect(screen.getByTestId('conflict-semantic-warning')).toBeInTheDocument();
+    expect(screen.getByTestId('conflict-semantic-success')).toBeInTheDocument();
     expect(
       screen.queryByTestId('ignored-custom-check'),
     ).not.toBeInTheDocument();
@@ -385,7 +460,7 @@ describe('useTableRowStatus', () => {
       color: 'red',
       icon: 'check',
       label: 'Conflict',
-    } as unknown as TableRowStatusValue;
+    } as unknown as TableRowStatusResult;
 
     render(
       <Theme theme={theme}>
@@ -407,18 +482,18 @@ describe('useTableRowStatus', () => {
     expect(conflictWarnings).toHaveLength(0);
   });
 
-  it('ignores custom fields when an untyped status value is unsupported', () => {
+  it('uses the custom branch when an untyped status is unsupported', () => {
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const theme = defineTheme({
       name: 'table-row-status-unsupported',
-      icons: {check: <svg data-testid="unsupported-ignored-check" />},
+      icons: {check: <svg data-testid="unsupported-custom-check" />},
     });
     const unsupportedStatus = {
       status: 'info',
       color: 'red',
       icon: 'check',
-      label: 'Unsupported',
-    } as unknown as TableRowStatusValue;
+      label: 'Unsupported semantic, valid custom marker',
+    } as unknown as TableRowStatusResult;
 
     render(
       <Theme theme={theme}>
@@ -426,17 +501,19 @@ describe('useTableRowStatus', () => {
       </Theme>,
     );
 
-    expect(
-      screen.queryByRole('img', {name: 'Unsupported'}),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTestId('unsupported-ignored-check'),
-    ).not.toBeInTheDocument();
-    const unsupportedWarnings = warning.mock.calls.filter(
+    const indicator = screen.getAllByRole('img', {
+      name: 'Unsupported semantic, valid custom marker',
+    })[0];
+    const unsupportedGlyph = screen.getAllByTestId(
+      'unsupported-custom-check',
+    )[0];
+    expect(indicator).toContainElement(unsupportedGlyph);
+    expect(unsupportedGlyph.parentElement).toHaveAttribute('data-color', 'red');
+    const conflictWarnings = warning.mock.calls.filter(
       ([message]) =>
         message ===
-        'useTableRowStatus: Received an unsupported status. No row status indicator was rendered.',
+        'useTableRowStatus: status cannot be combined with color or icon. The semantic status takes precedence and the custom marker fields are ignored.',
     );
-    expect(unsupportedWarnings).toHaveLength(1);
+    expect(conflictWarnings).toHaveLength(0);
   });
 });
