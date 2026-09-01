@@ -8,8 +8,8 @@ that a palette is accessible.
 
 - **Neutral — PR #5628** is an exact snapshot of `neutralPalettes` from commit
   `b19fc7a740ee43fa52db5555ccd0ac63bd0305d4` in
-  `pr5628NeutralPalettes.ts`. Keeping the snapshot local makes the comparison
-  reproducible while #5668 remains unmerged.
+  `neutralThemePaletteReference.ts`. Keeping the snapshot local makes the
+  comparison reproducible while #5668 remains unmerged.
 - **Neutral — legacy preview** uses the seeds and HCT-based light/dark behavior
   from `apps/sandbox/src/app/(fullscreen)/pages/neutral-palette/page.tsx`.
 - **Stone**, **Gothic**, **Y2K**, and **Butter** use the exported palette objects

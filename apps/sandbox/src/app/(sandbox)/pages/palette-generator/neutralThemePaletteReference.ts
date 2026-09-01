@@ -5,7 +5,7 @@
  * b19fc7a740ee43fa52db5555ccd0ac63bd0305d4. This temporary fixture can be
  * replaced by the package export after the #5668 palette-contract stack lands.
  */
-export const PR_5628_NEUTRAL_PALETTES = {
+export const NEUTRAL_THEME_PALETTE_REFERENCE = {
   neutral: {
     light: {
       0: '#000000',

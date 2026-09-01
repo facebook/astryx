@@ -7,7 +7,7 @@ import {y2kPalettes} from '@astryxdesign/theme-y2k';
 
 import {hexToHct, hctToHex} from '../color-studio/colorUtils';
 import {FULL_21_STOPS, type PaletteMode} from './generator';
-import {PR_5628_NEUTRAL_PALETTES} from './pr5628NeutralPalettes';
+import {NEUTRAL_THEME_PALETTE_REFERENCE} from './neutralThemePaletteReference';
 
 export interface ThemeReferenceFamily {
   id: string;
@@ -105,12 +105,12 @@ function storedFamily(
   };
 }
 
-function pr5628Family(
-  id: keyof typeof PR_5628_NEUTRAL_PALETTES,
+function neutralReferenceFamily(
+  id: keyof typeof NEUTRAL_THEME_PALETTE_REFERENCE,
   name: string,
   kind: 'chromatic' | 'neutral' = 'chromatic',
 ): ThemeReferenceFamily {
-  const palette = PR_5628_NEUTRAL_PALETTES[id];
+  const palette = NEUTRAL_THEME_PALETTE_REFERENCE[id];
   return {
     id,
     name,
@@ -121,17 +121,17 @@ function pr5628Family(
   };
 }
 
-const pr5628Families = [
-  pr5628Family('neutral', 'Neutral', 'neutral'),
-  pr5628Family('red', 'Red'),
-  pr5628Family('orange', 'Orange'),
-  pr5628Family('yellow', 'Yellow'),
-  pr5628Family('green', 'Green'),
-  pr5628Family('teal', 'Teal'),
-  pr5628Family('cyan', 'Cyan'),
-  pr5628Family('blue', 'Blue'),
-  pr5628Family('purple', 'Purple'),
-  pr5628Family('pink', 'Pink'),
+const neutralReferenceFamilies = [
+  neutralReferenceFamily('neutral', 'Neutral', 'neutral'),
+  neutralReferenceFamily('red', 'Red'),
+  neutralReferenceFamily('orange', 'Orange'),
+  neutralReferenceFamily('yellow', 'Yellow'),
+  neutralReferenceFamily('green', 'Green'),
+  neutralReferenceFamily('teal', 'Teal'),
+  neutralReferenceFamily('cyan', 'Cyan'),
+  neutralReferenceFamily('blue', 'Blue'),
+  neutralReferenceFamily('purple', 'Purple'),
+  neutralReferenceFamily('pink', 'Pink'),
 ];
 
 const neutralFamilies = [
@@ -268,7 +268,7 @@ export const THEME_REFERENCES: ThemeReference[] = [
     referenceKind: 'stored',
     suggestedVibrancy: {oklch: 66, hct: 49, compare: 61},
     modes: ['light', 'dark'],
-    families: pr5628Families,
+    families: neutralReferenceFamilies,
   },
   {
     id: 'neutral-legacy',
