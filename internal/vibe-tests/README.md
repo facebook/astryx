@@ -153,6 +153,8 @@ internal/vibe-tests/
 ├── setup-test/          # Setup evaluation over the canonical fixture matrix
 │   ├── PLAN.md               # controls, pilot stages, measures, decision rule
 │   ├── matrix.json           # fixtures × controls × prompts × bundles × reps
+│   ├── conditions.json       # controls plus the opt-in established-app strategies
+│   ├── guidance/             # one document per patch, including both strategies
 │   ├── run-setup.mjs         # sandbox + task + provenance preparation only
 │   ├── setup-interactions.mjs # marker-driven dialog and nested-overlay opener
 │   ├── setup-measure.mjs     # build + exact style, geometry, and overlay probes

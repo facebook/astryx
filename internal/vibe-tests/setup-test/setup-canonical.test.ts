@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {execFileSync} from 'node:child_process';
+import {execFileSync, spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -32,6 +32,21 @@ const EVIDENCE_DIR = process.env.ASTRYX_SETUP_EVIDENCE_DIR
 const RUN_CANONICAL = process.env.ASTRYX_CANONICAL_SETUP_BROWSER === '1';
 const temporaryDirectories: string[] = [];
 const dependencyRoots = new Map<string, string>();
+
+/**
+ * The single run directory `run-setup.mjs` writes beside its config files.
+ *
+ * Named rather than indexed: the output directory also holds
+ * `setup-config-<id>.json` and `setup-matrix-<id>.json`, and the run directory
+ * is the one entry without a dot in it.
+ */
+function runDirectory(root: string): string {
+  const entry = fs.readdirSync(root).find(name => !name.includes('.'));
+  if (!entry) {
+    throw new Error(`no prepared run directory under ${root}`);
+  }
+  return entry;
+}
 
 function run(command: string, args: string[], cwd: string) {
   return execFileSync(command, args, {
@@ -151,6 +166,168 @@ function installAstryxCss(arm: string) {
         "@import '@astryxdesign/theme-neutral/theme.css';",
       ].join('\n'),
     ),
+  );
+}
+
+/**
+ * Canonical `host-aligned` strategy install.
+ *
+ * The established host stays authoritative: the app owns a theme that extends
+ * neutral and restates the host's own fonts and semantic colors, instead of
+ * importing the stock theme stylesheet. The theme is compiled by a
+ * deterministic build step, and the theme attribute is present before first
+ * paint rather than written by an effect.
+ */
+function installHostAlignedStrategy(arm: string) {
+  fs.writeFileSync(
+    path.join(arm, 'src', 'hostTheme.ts'),
+    `// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {defineTheme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
+
+// Restates the host's own vocabulary. Values are the host's, not the design
+// system's: every pair is [light, dark] so both modes resolve to host values.
+export const hostAlignedTheme = defineTheme({
+  name: 'hostaligned',
+  extends: neutralTheme,
+  tokens: {
+    '--font-family-body': 'ui-sans-serif, system-ui, sans-serif',
+    '--font-family-heading': 'ui-sans-serif, system-ui, sans-serif',
+    '--font-family-code': 'ui-monospace, monospace',
+  },
+});
+`,
+  );
+
+  // Deterministic build step: same input, same emitted CSS, every run.
+  run(
+    process.execPath,
+    [
+      path.join(REPO_ROOT, 'packages/cli/clients/cli/bin/astryx.mjs'),
+      'theme',
+      'build',
+      path.join('src', 'hostTheme.ts'),
+    ],
+    arm,
+  );
+
+  edit(path.join(arm, 'src', 'index.css'), source =>
+    source.replace(
+      "@import 'tailwindcss';",
+      [
+        '@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;',
+        '',
+        "@import 'tailwindcss';",
+        "@import '@astryxdesign/core/reset.css';",
+        "@import '@astryxdesign/core/astryx.css';",
+        // The app's own generated theme — never the stock theme.css, and never
+        // tailwind-theme.css, which would take over the host's vocabulary.
+        "@import './hostaligned.css';",
+      ].join('\n'),
+    ),
+  );
+
+  // Establish the theme attribute before first paint.
+  edit(path.join(arm, 'index.html'), source =>
+    source.replace(
+      '<html lang="en"',
+      '<html lang="en" data-astryx-theme="hostaligned"',
+    ),
+  );
+
+  // The provider follows the host's own mode control rather than replacing it,
+  // so it mounts where that state lives.
+  edit(path.join(arm, 'src', 'App.tsx'), source =>
+    source
+      .replace(
+        "import {createPortal} from 'react-dom';",
+        [
+          "import {createPortal} from 'react-dom';",
+          "import {Theme} from '@astryxdesign/core/theme';",
+          "import {hostalignedTheme} from './hostaligned.js';",
+        ].join('\n'),
+      )
+      .replace(
+        "  return (\n    <div className={dark ? 'dark' : ''}>",
+        "  return (\n    <Theme theme={hostalignedTheme} mode={dark ? 'dark' : 'light'}>\n    <div className={dark ? 'dark' : ''}>",
+      )
+      .replace(/\n {2}\);\n\}\n?$/, '\n    </Theme>\n  );\n}\n'),
+  );
+}
+
+/**
+ * Canonical `guest-contained` strategy install.
+ *
+ * The host keeps global preflight and tokens: no reset import, and the
+ * provider wraps only the guest subtree. The root attribute sync is contained
+ * with the only mechanism available today — see the portal tradeoff below.
+ */
+function installGuestContainedStrategy(arm: string) {
+  edit(path.join(arm, 'src', 'index.css'), source =>
+    source.replace(
+      "@import 'tailwindcss';",
+      [
+        '@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;',
+        '',
+        "@import 'tailwindcss';",
+        // No reset.css: the host already owns preflight and element defaults.
+        "@import '@astryxdesign/core/astryx.css';",
+        "@import '@astryxdesign/theme-neutral/theme.css';",
+      ].join('\n'),
+    ),
+  );
+
+  fs.writeFileSync(
+    path.join(arm, 'src', 'GuestRegion.tsx'),
+    `// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {useEffect, type ReactNode} from 'react';
+import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
+
+/**
+ * WORKAROUND, not a supported configuration.
+ *
+ * A provider with no provider above it is a root provider, and a root provider
+ * syncs \`data-astryx-theme\` onto the document element so that @scope'd theme
+ * CSS reaches portaled content. There is no public prop to opt out of that
+ * sync, so containment requires removing the attribute and keeping it removed.
+ *
+ * TRADEOFF, measured by the strategy pilot: with the attribute removed, content
+ * inside this subtree stays themed, and design-system content portaled to
+ * document.body falls outside every scope root and loses its theme tokens.
+ * \`data-theme\` is left alone because the host relies on it for color-scheme.
+ */
+function useContainedThemeScope() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const strip = () => root.removeAttribute('data-astryx-theme');
+    strip();
+    const observer = new MutationObserver(strip);
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ['data-astryx-theme'],
+    });
+    return () => observer.disconnect();
+  }, []);
+}
+
+export function GuestRegion({
+  children,
+  mode,
+}: {
+  children: ReactNode;
+  mode: 'light' | 'dark';
+}) {
+  useContainedThemeScope();
+  return (
+    <Theme theme={neutralTheme} mode={mode}>
+      {children}
+    </Theme>
+  );
+}
+`,
   );
 }
 
@@ -747,12 +924,12 @@ describeCanonical('canonical intended changes', () => {
     );
     const configFile = fs
       .readdirSync(root)
-      .find(file => file.startsWith('setup-config-'));
+      .find((file: string) => file.startsWith('setup-config-'));
     if (!configFile) {
       throw new Error('missing generated setup config');
     }
     const config = JSON.parse(
-      fs.readFileSync(path.join(root, configFile), 'utf8'),
+      fs.readFileSync(path.join(root, String(configFile)), 'utf8'),
     );
     expect(() =>
       assertPublicArtifactSafe(config, {
@@ -794,6 +971,152 @@ describeCanonical('canonical intended changes', () => {
       expect(fs.existsSync(path.join(root, reference))).toBe(true);
     }
   }, 120_000);
+
+  /**
+   * Guidance has to reach the sandbox, not just exist in the repository.
+   *
+   * The strategy pilot's two `host-aligned` integrity failures were scored
+   * against a rule that no sandbox they ran in contained: the rule was written
+   * into the guidance after those runs, and the tests that covered it read the
+   * guidance file rather than anything an executor was handed. Both halves
+   * passed while the executors were being judged on an instruction that had
+   * never been delivered.
+   *
+   * So this asserts the delivery. It prepares real cells and requires every
+   * section heading of a strategy's guidance document to be present in the
+   * `AGENTS.md` the executor will actually open, and requires the other
+   * strategy's document not to be — a sandbox that quietly received both would
+   * be handed contradictory instructions.
+   */
+  it('delivers every section of a strategy document into its own sandbox', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'setup-canonical-guidance-delivery-'),
+    );
+    temporaryDirectories.push(root);
+    run(
+      process.execPath,
+      [RUN_SETUP, '--stage', 'strategy-iteration', '--out', root],
+      REPO_ROOT,
+    );
+
+    const headings = (file: string) =>
+      fs
+        .readFileSync(path.join(HERE, 'guidance', file), 'utf8')
+        .split('\n')
+        .filter(line => line.startsWith('### '))
+        .map(line => line.trim());
+
+    const hostAligned = headings('host-aligned.md');
+    const guestContained = headings('guest-contained.md');
+    expect(hostAligned.length).toBeGreaterThan(3);
+    expect(guestContained.length).toBeGreaterThan(2);
+
+    const runRoot = path.join(root, runDirectory(root));
+    const cells = fs
+      .readdirSync(runRoot)
+      .filter(entry => entry.startsWith('strategy-iteration__'));
+    expect(cells).toHaveLength(4);
+
+    for (const cell of cells) {
+      const agents = fs.readFileSync(
+        path.join(runRoot, cell, 'app', 'AGENTS.md'),
+        'utf8',
+      );
+      const isHostAligned = cell.includes('__host-aligned-r2__');
+      const delivered = isHostAligned ? hostAligned : guestContained;
+      const withheld = isHostAligned ? guestContained : hostAligned;
+
+      for (const heading of delivered) {
+        expect(agents, `${cell} is missing "${heading}"`).toContain(heading);
+      }
+      for (const heading of withheld.filter(
+        entry => !delivered.includes(entry),
+      )) {
+        expect(agents, `${cell} wrongly carries "${heading}"`).not.toContain(
+          heading,
+        );
+      }
+    }
+  }, 300_000);
+
+  /**
+   * The specific rules each rerun exists to test, in the sandbox.
+   *
+   * Named individually rather than left to the heading sweep above, because
+   * these are the sentences the failures turned on and a reworded heading
+   * should not be able to carry them away silently. A guidance file passing a
+   * grep is not evidence that a rule reached an executor, so these read the
+   * `AGENTS.md` a prepared cell actually carries.
+   */
+  it('hands each strategy the rules its own rerun turns on', () => {
+    const prepared = (stage: string) => {
+      const root = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'setup-canonical-rerun-rules-'),
+      );
+      temporaryDirectories.push(root);
+      run(
+        process.execPath,
+        [RUN_SETUP, '--stage', stage, '--out', root],
+        REPO_ROOT,
+      );
+      return path.join(root, runDirectory(root));
+    };
+    const runRoots = [
+      prepared('strategy-iteration'),
+      prepared('strategy-iteration-2'),
+    ];
+    const agentsFor = (condition: string) => {
+      for (const runRoot of runRoots) {
+        const cell = fs
+          .readdirSync(runRoot)
+          .find(entry => entry.includes(`__${condition}__`));
+        if (cell) {
+          return fs.readFileSync(
+            path.join(runRoot, cell, 'app', 'AGENTS.md'),
+            'utf8',
+          );
+        }
+      }
+      throw new Error(`no prepared cell for ${condition}`);
+    };
+
+    // host-aligned-r2: the tracking rule, stated before the reasoning and
+    // still stated in full further down. It was never delivered before.
+    const hostR2 = agentsFor('host-aligned-r2');
+    expect(hostR2).toContain('Never add it to `.gitignore`');
+    expect(hostR2).toContain(
+      'Do **not** add the generated output to `.gitignore`',
+    );
+    expect(hostR2.indexOf('Never add it to `.gitignore`')).toBeLessThan(
+      hostR2.indexOf('### Own the theme; do not import the stock one'),
+    );
+
+    // guest-contained-r3: the pnpm approval mechanism, which is what the r2
+    // cell died on before anything could be measured.
+    const guest = agentsFor('guest-contained-r3');
+    expect(guest).toContain('ERR_PNPM_IGNORED_BUILDS');
+    expect(guest).toContain('pnpm approve-builds');
+    expect(guest.replace(/\s+/g, ' ')).toContain(
+      'pnpm 11 reads `allowBuilds` from `pnpm-workspace.yaml` only',
+    );
+
+    // host-aligned-r3: the boundary rule, stated up front this time, with the
+    // procedure the r2 executor needed and did not have.
+    const host = agentsFor('host-aligned-r3');
+    const upFront = host.indexOf('the moved subtree must');
+    expect(upFront).toBeGreaterThan(-1);
+    expect(upFront).toBeLessThan(
+      host.indexOf('### Own the theme; do not import the stock one'),
+    );
+    expect(host).toContain('### Host UI placed inside a design-system overlay');
+    // Matched against reflowed text so a line wrap is not a test failure.
+    expect(host.replace(/\s+/g, ' ')).toContain(
+      '**carry the boundary with the markup**',
+    );
+    expect(host).toContain('do not assume it is the same hook');
+    // Discovery, not the answer: the fixture's own selector is never handed over.
+    expect(host).not.toContain('data-guest-design-system');
+  }, 300_000);
 
   /**
    * The measurer must not build in the sandbox it measures.
@@ -1305,4 +1628,552 @@ describeCanonical('canonical intended changes', () => {
     ).toBe(true);
     expect(passesAcceptance(score)).toBe(false);
   }, 180_000);
+
+  /**
+   * The same insertion, in the container the task actually points at.
+   *
+   * `s5` mandates exactly one visible `astryx-dialog-trigger`, and this
+   * fixture's guest subtree is the region it declares for guest design-system
+   * content, so that is where a trigger belongs. Two independent reps put it
+   * there and both grew the boundary from 296px to 409px in both schemes. The
+   * contract allows exactly that: the boundary's height and the two geometry
+   * fields height moves. It takes no text exemption — the trigger is
+   * task-owned, so the boundary's protected text never sees it — and nothing
+   * else about the boundary, or any other probe, may move.
+   *
+   * This case inserts its own trigger from the same 296px baseline, so its
+   * growth is its own; what it shares with the reps is the three fields that
+   * move and the two schemes they move in.
+   */
+  function insertGuestBoundaryDialogTrigger(arm: string) {
+    edit(path.join(arm, 'src', 'App.tsx'), source => {
+      const next = source
+        .replace(
+          `            data-vibe-probe="dialog-trigger"
+            data-vibe-result="astryx-dialog-trigger"`,
+          `            data-vibe-probe="dialog-trigger"`,
+        )
+        .replace(
+          '        </aside>',
+          `          <button
+            className="mt-4 w-full rounded-md border border-border bg-panel px-3 py-2 text-sm font-medium"
+            data-vibe-result="astryx-dialog-trigger"
+            onClick={() => setDialogOpen(true)}
+            type="button">
+            Open service actions
+          </button>
+        </aside>`,
+        );
+      if (next === source) {
+        throw new Error('guest-boundary trigger insertion did not apply');
+      }
+      return next;
+    });
+  }
+
+  let guestBoundaryMeasurement: {
+    baseline: Measurement;
+    result: Measurement;
+  } | null = null;
+
+  function measureGuestBoundaryInsertion() {
+    if (guestBoundaryMeasurement) {
+      return guestBoundaryMeasurement;
+    }
+    const {
+      root,
+      baseline: baselineApp,
+      arm,
+    } = preparePair('enterprise-scoped-synthetic');
+    applyEnterpriseComposition(arm);
+    insertGuestBoundaryDialogTrigger(arm);
+    const baseline = measure(
+      baselineApp,
+      'enterprise-scoped-synthetic',
+      path.join(root, 's5-guest-baseline.json'),
+    );
+    const provenance = provenanceFor(arm, 'enterprise-scoped-synthetic', 's5');
+    const result = measure(
+      arm,
+      'enterprise-scoped-synthetic',
+      path.join(root, 's5-guest-arm.json'),
+      provenance,
+    );
+    expect(
+      result.build.ok,
+      `${result.build.stdout}\n${result.build.stderr}`,
+    ).toBe(true);
+    guestBoundaryMeasurement = {baseline, result};
+    return guestBoundaryMeasurement;
+  }
+
+  it('accepts the guest-boundary growth the mandated trigger causes', () => {
+    const {baseline, result} = measureGuestBoundaryInsertion();
+    const score = scoreArm(baseline, result);
+
+    expect(score.regressionDetails, JSON.stringify(score, null, 2)).toEqual([]);
+    expect(score.taskFailures).toEqual([]);
+    expect(verdict(score)).toBe('clean');
+    expect(passesAcceptance(score)).toBe(true);
+
+    // The growth the allowance covers really happened, in both modes, or this
+    // case is proving nothing.
+    for (const scheme of ['light', 'dark'] as const) {
+      const before = baseline.schemes[scheme].probes['guest-boundary'];
+      const after = result.schemes[scheme].probes['guest-boundary'];
+      if ('missing' in before || 'missing' in after) {
+        throw new Error('missing guest-boundary probe');
+      }
+      expect(after.geometry.height).toBeGreaterThan(before.geometry.height);
+      expect(after.geometry.bottom).toBeGreaterThan(before.geometry.bottom);
+      // and nothing the allowance does not name moved
+      expect(after.geometry.y).toBe(before.geometry.y);
+      expect(after.geometry.top).toBe(before.geometry.top);
+      expect(after.geometry.x).toBe(before.geometry.x);
+      expect(after.geometry.left).toBe(before.geometry.left);
+      expect(after.geometry.width).toBe(before.geometry.width);
+      // The inserted trigger is task-owned, so the boundary's protected text is
+      // untouched and needs no exemption.
+      expect(after.text).toBe(before.text);
+      // `height` is the one computed style the allowance names, and it is the
+      // only one that may differ.
+      expect(after.style.height).not.toBe(before.style.height);
+      const {height: _afterHeight, ...afterStyle} = after.style;
+      const {height: _beforeHeight, ...beforeStyle} = before.style;
+      expect(afterStyle).toEqual(beforeStyle);
+    }
+  }, 180_000);
+
+  /**
+   * Mutation proofs over the accepted measurement above. Each one changes one
+   * measured field of the real run and re-scores it: the allowance must be
+   * narrow enough that every one of them fails.
+   */
+  it.each([
+    {
+      name: 'a computed style on the boundary',
+      probe: 'guest-boundary',
+      style: {color: 'rgb(1, 2, 3)'},
+    },
+    {
+      name: 'a typography change on the boundary',
+      probe: 'guest-boundary',
+      style: {fontFamily: 'Inter'},
+    },
+    {
+      name: "the boundary's own width, which the allowance does not name",
+      probe: 'guest-boundary',
+      geometry: {width: 1_000},
+    },
+    {
+      name: 'the boundary moving down the page',
+      probe: 'guest-boundary',
+      geometry: {top: 999, y: 999},
+    },
+    {
+      name: "another probe's height, which the allowance must not reach",
+      probe: 'settings-control',
+      geometry: {height: 99},
+    },
+  ])(
+    'still reports $name as host damage',
+    ({probe, style, geometry}) => {
+      const {baseline, result} = measureGuestBoundaryInsertion();
+      const mutated = JSON.parse(JSON.stringify(result)) as Measurement;
+      for (const scheme of ['light', 'dark'] as const) {
+        const reading = mutated.schemes[scheme].probes[probe] as {
+          style: Record<string, string>;
+          geometry: Record<string, number>;
+        };
+        Object.assign(reading.style, style ?? {});
+        Object.assign(reading.geometry, geometry ?? {});
+      }
+
+      const score = scoreArm(baseline, mutated);
+
+      expect(score.regressions).toBeGreaterThan(0);
+      expect(passesAcceptance(score)).toBe(false);
+    },
+    180_000,
+  );
+
+  it.each([
+    {name: 'gained', mutate: (text: string) => `${text} Open service actions`},
+    {
+      name: 'lost',
+      mutate: (text: string) => text.replace('Guest subtree ', ''),
+    },
+  ])(
+    'still reports host copy the boundary $name',
+    ({mutate}) => {
+      const {baseline, result} = measureGuestBoundaryInsertion();
+      const mutated = JSON.parse(JSON.stringify(result)) as Measurement;
+      for (const scheme of ['light', 'dark'] as const) {
+        const reading = mutated.schemes[scheme].probes['guest-boundary'] as {
+          text: string;
+        };
+        reading.text = mutate(reading.text);
+      }
+
+      const score = scoreArm(baseline, mutated);
+
+      expect(
+        score.regressionDetails.some(
+          regression =>
+            regression.probe === 'guest-boundary' &&
+            regression.property === 'text',
+        ),
+      ).toBe(true);
+      expect(passesAcceptance(score)).toBe(false);
+    },
+    180_000,
+  );
+});
+
+describeCanonical('canonical established-app strategies', () => {
+  const FIXTURE = 'shadcn-tailwind-v4-established';
+
+  beforeAll(() => {
+    ensurePackageBuilds();
+    // The preceding canonical block's afterAll removes every shared temporary
+    // directory, including the cached dependency roots, while the module-level
+    // cache still points at them. Drop the cache so this block installs its own
+    // rather than hard-linking from a directory that no longer exists.
+    dependencyRoots.clear();
+  }, 180_000);
+
+  afterAll(() => {
+    for (const directory of temporaryDirectories) {
+      fs.rmSync(directory, {recursive: true, force: true});
+    }
+  });
+
+  function addAstryxButton(arm: string, wrap: 'none' | 'guest-region') {
+    const button = `<Button
+                data-vibe-result="astryx-button"
+                label="Deploy"
+                size="md"
+                variant="secondary"
+              />`;
+    edit(path.join(arm, 'src', 'App.tsx'), source =>
+      source
+        .replace(
+          "import {useState} from 'react';",
+          [
+            "import {useState} from 'react';",
+            "import {Button as AstryxButton} from '@astryxdesign/core/Button';",
+            ...(wrap === 'guest-region'
+              ? ["import {GuestRegion} from './GuestRegion';"]
+              : []),
+          ].join('\n'),
+        )
+        .replace(
+          `              <Button
+                data-vibe-probe="primary-action"
+                onClick={() => setDialogOpen(true)}>
+                New request
+              </Button>`,
+          wrap === 'guest-region'
+            ? `              <Button
+                data-vibe-probe="primary-action"
+                onClick={() => setDialogOpen(true)}>
+                New request
+              </Button>
+              <GuestRegion mode={dark ? 'dark' : 'light'}>
+                <AstryxButton
+                  data-vibe-result="astryx-button"
+                  label="Deploy"
+                  size="md"
+                  variant="secondary"
+                />
+              </GuestRegion>`
+            : `              <Button
+                data-vibe-probe="primary-action"
+                onClick={() => setDialogOpen(true)}>
+                New request
+              </Button>
+              <AstryxButton
+                data-vibe-result="astryx-button"
+                label="Deploy"
+                size="md"
+                variant="secondary"
+              />`,
+        ),
+    );
+    return button;
+  }
+
+  it('records the host-aligned bare-element gap without weakening acceptance', () => {
+    const {root, baseline: baselineApp, arm} = preparePair(FIXTURE);
+    installHostAlignedStrategy(arm);
+    addAstryxButton(arm, 'none');
+
+    const baseline = measure(
+      baselineApp,
+      FIXTURE,
+      path.join(root, 'host-aligned-baseline.json'),
+    );
+    const provenance = provenanceFor(arm, FIXTURE, 's1');
+    const result = measure(
+      arm,
+      FIXTURE,
+      path.join(root, 'host-aligned-arm.json'),
+      provenance,
+    );
+
+    expect(
+      result.build.ok,
+      `${result.build.stdout}\n${result.build.stderr}`,
+    ).toBe(true);
+    const score = scoreArm(baseline, result);
+
+    // PRODUCT GAP, recorded rather than accommodated.
+    //
+    // A built theme always emits bare-element prose rules (h1-h6, p, small,
+    // code/pre: family, size, weight, line height, color) into @layer reset,
+    // @scope'd on the theme-name attribute. There is no supported way to build
+    // a theme without them. host-aligned also requires that attribute at
+    // document scope before first paint, so the design system's typographic
+    // scale necessarily reaches the established host's bare elements.
+    //
+    // On a host whose bare elements differ from that scale, the result is real
+    // host damage that no supported configuration avoids. The evaluator is
+    // deliberately NOT relaxed for it: the strategy fails acceptance here, and
+    // that failure is the finding.
+    expect(passesAcceptance(score)).toBe(false);
+    expect(score.regressionDetails.length).toBeGreaterThan(0);
+
+    // If the gap ever closes, this test must be revisited rather than silently
+    // keep passing: a clean host-aligned run should promote this to acceptance.
+    expect(verdict(score)).not.toBe('clean');
+
+    // The damage must still be attributable and bounded — the strategy does not
+    // break the build or lose the task marker.
+    expect(score.taskSuccess).toBe(true);
+
+    // The measured host damage above is the ONLY thing standing between this
+    // strategy and acceptance. The integrity checker used to add a second,
+    // spurious reason: `astryx theme build` emits
+    // `html[data-theme="light"] { color-scheme: light; }` paired with its dark
+    // twin, and a lexical scan read the light arm as disabling dark mode.
+    // That pattern now reads paired, mode-scoped arms semantically, so a
+    // built theme is clean here and the strategy's remaining failure is a real
+    // product gap rather than an evaluator artifact.
+    expect(score.integrityFailures).toEqual([]);
+
+    for (const scheme of ['light', 'dark'] as const) {
+      expect(
+        result.schemes[scheme].taskResults?.['astryx-button'],
+      ).toMatchObject({count: 1, visible: true});
+    }
+
+    // Host damage is still detected at full strength.
+    assertStyleMutationFails(baseline, result, 'primary-action');
+  }, 180_000);
+
+  it('builds an app-owned theme deterministically and imports no stock theme', () => {
+    const {root, arm} = preparePair(FIXTURE);
+    installHostAlignedStrategy(arm);
+
+    const generated = path.join(arm, 'src', 'hostaligned.css');
+    const first = fs.readFileSync(generated, 'utf8');
+    run(
+      process.execPath,
+      [
+        path.join(REPO_ROOT, 'packages/cli/clients/cli/bin/astryx.mjs'),
+        'theme',
+        'build',
+        path.join('src', 'hostTheme.ts'),
+      ],
+      arm,
+    );
+    // Same input, byte-identical output: the build step is deterministic.
+    expect(fs.readFileSync(generated, 'utf8')).toBe(first);
+
+    const css = fs.readFileSync(path.join(arm, 'src', 'index.css'), 'utf8');
+    expect(css).not.toContain('@astryxdesign/theme-neutral/theme.css');
+    expect(css).not.toContain('tailwind-theme.css');
+    expect(css).toContain("@import 'tailwindcss';");
+    // The theme attribute is in the served markup, not written by an effect.
+    expect(fs.readFileSync(path.join(arm, 'index.html'), 'utf8')).toContain(
+      'data-astryx-theme="hostaligned"',
+    );
+    // Generated CSS carries no absolute path from this machine.
+    expect(first).not.toContain(root);
+    assertPublicArtifactSafe(
+      {generated: first.split('\n').slice(0, 8).join('\n')},
+      {label: 'generated host-aligned theme header'},
+    );
+  }, 180_000);
+
+  it('accepts a canonical guest-contained s1 insertion with no host damage', () => {
+    const {root, baseline: baselineApp, arm} = preparePair(FIXTURE);
+    installGuestContainedStrategy(arm);
+    addAstryxButton(arm, 'guest-region');
+
+    const baseline = measure(
+      baselineApp,
+      FIXTURE,
+      path.join(root, 'guest-contained-baseline.json'),
+    );
+    const provenance = provenanceFor(arm, FIXTURE, 's1');
+    const result = measure(
+      arm,
+      FIXTURE,
+      path.join(root, 'guest-contained-arm.json'),
+      provenance,
+    );
+
+    expect(
+      result.build.ok,
+      `${result.build.stdout}\n${result.build.stderr}`,
+    ).toBe(true);
+    const score = scoreArm(baseline, result);
+    expect(score.regressionDetails, JSON.stringify(score, null, 2)).toEqual([]);
+    expect(verdict(score)).toBe('clean');
+    expect(passesAcceptance(score)).toBe(true);
+
+    const css = fs.readFileSync(path.join(arm, 'src', 'index.css'), 'utf8');
+    // The host keeps preflight: the reset is never imported.
+    expect(css).not.toContain('@astryxdesign/core/reset.css');
+    expect(css).not.toContain('tailwind-theme.css');
+
+    assertStyleMutationFails(baseline, result, 'primary-action');
+  }, 180_000);
+
+  it('documents the guest-contained portal tradeoff instead of hiding it', () => {
+    const {arm} = preparePair(FIXTURE);
+    installGuestContainedStrategy(arm);
+    const region = fs.readFileSync(
+      path.join(arm, 'src', 'GuestRegion.tsx'),
+      'utf8',
+    );
+
+    // There is no supported prop for this; the only mechanism today is
+    // removing the attribute and observing for its return.
+    expect(region).toContain("removeAttribute('data-astryx-theme')");
+    expect(region).toContain('MutationObserver');
+    // data-theme drives color-scheme for the host and must survive.
+    expect(region).not.toContain("removeAttribute('data-theme')");
+    // The workaround is labelled honestly and the tradeoff is written down.
+    expect(region).toContain('WORKAROUND, not a supported configuration');
+    expect(region).toMatch(/portal/i);
+
+    // The tradeoff is real and mechanical, not a matter of opinion: theme CSS
+    // is emitted as @scope'd on the theme-name attribute, so removing it from
+    // the document element puts body-portaled content outside every scope root.
+    const themeCss = fs.readFileSync(
+      path.join(REPO_ROOT, 'packages/themes/neutral/dist/theme.css'),
+      'utf8',
+    );
+    expect(themeCss).toContain('@scope ([data-astryx-theme=');
+  }, 180_000);
+});
+
+/**
+ * The executor's real install path — the one the canonical suite was missing.
+ *
+ * `@astryxdesign/core` ships a `postinstall`, and pnpm 11 refuses to install a
+ * dependency with an install script until that dependency is approved. A cell
+ * died on it: the executor put the approval in `package.json`, pnpm never read
+ * it there, and the install aborted with `ERR_PNPM_IGNORED_BUILDS` before
+ * anything about the host could be measured.
+ *
+ * Nothing in this suite caught it because the harness installs its own fixture
+ * dependencies with `--ignore-scripts`, which sidesteps approval entirely. So
+ * these run a real `pnpm install` the way an executor does — scripts enabled,
+ * no flags — and pin what the guidance now claims:
+ *
+ *  - `allowBuilds` in `pnpm-workspace.yaml` installs cleanly and the approved
+ *    app then actually builds;
+ *  - the identical key in `package.json` does not, and fails the same way the
+ *    measured cell did.
+ *
+ * Skipped with the rest of the canonical work unless the browser/canonical flag
+ * is set, because it reaches the network.
+ */
+describeCanonical('canonical pnpm build approval', () => {
+  const FIXTURE = 'enterprise-scoped-synthetic';
+  const PACKAGE = '@astryxdesign/core';
+
+  function freshApp(label: string) {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), `setup-canonical-pnpm-${label}-`),
+    );
+    temporaryDirectories.push(root);
+    const app = path.join(root, 'app');
+    copyFixture(FIXTURE, app);
+    // The dependency set the strategy adds; the fixture itself has no Astryx.
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(app, 'package.json'), 'utf8'),
+    );
+    manifest.dependencies = {
+      ...manifest.dependencies,
+      [PACKAGE]: '0.5.2',
+      '@astryxdesign/theme-neutral': '0.5.2',
+    };
+    fs.writeFileSync(
+      path.join(app, 'package.json'),
+      `${JSON.stringify(manifest, null, 2)}\n`,
+    );
+    fs.rmSync(path.join(app, 'pnpm-lock.yaml'), {force: true});
+    return app;
+  }
+
+  // spawnSync rather than execFileSync's throwing form: a failing install is
+  // the assertion in half these cases, not an error.
+  const install = (app: string) =>
+    spawnSync('pnpm', ['install'], {
+      cwd: app,
+      encoding: 'utf8',
+      env: {...process.env, CI: 'true'},
+    });
+
+  it('installs and builds when allowBuilds is in pnpm-workspace.yaml', () => {
+    const app = freshApp('workspace');
+    fs.writeFileSync(
+      path.join(app, 'pnpm-workspace.yaml'),
+      `allowBuilds:\n  '${PACKAGE}': true\n`,
+    );
+
+    const result = install(app);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(`${result.stdout}${result.stderr}`).not.toContain(
+      'ERR_PNPM_IGNORED_BUILDS',
+    );
+    // The approval is what lets the package's own postinstall run, and the
+    // approved app is what an executor then has to be able to build.
+    expect(
+      fs.existsSync(path.join(app, 'node_modules', PACKAGE, 'package.json')),
+    ).toBe(true);
+    const built = spawnSync('pnpm', ['build'], {
+      cwd: app,
+      encoding: 'utf8',
+      env: {...process.env, CI: 'true'},
+    });
+    expect(built.status, `${built.stdout}\n${built.stderr}`).toBe(0);
+    expect(fs.existsSync(path.join(app, 'dist', 'index.html'))).toBe(true);
+  }, 900_000);
+
+  it('fails exactly as the measured cell did when the key is in package.json', () => {
+    // The mutation, and the executor's actual mistake: same key, same value,
+    // the file pnpm 11 does not read it from.
+    const app = freshApp('manifest');
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(app, 'package.json'), 'utf8'),
+    );
+    manifest.pnpm = {allowBuilds: {[PACKAGE]: true}};
+    fs.writeFileSync(
+      path.join(app, 'package.json'),
+      `${JSON.stringify(manifest, null, 2)}\n`,
+    );
+
+    const result = install(app);
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'ERR_PNPM_IGNORED_BUILDS',
+    );
+  }, 600_000);
 });

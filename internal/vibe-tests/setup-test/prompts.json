@@ -352,6 +352,12 @@
             "probe": "host-shell",
             "fields": ["height", "geometry.height", "geometry.bottom"],
             "textInsertionOnly": true
+          },
+          {
+            "$comment": "The mandated trigger belongs in the guest subtree, which is where this fixture says guest design-system content goes, so the boundary grows by exactly that control and the growth carries into the two geometry fields height moves. The trigger is task-owned, so the boundary's protected text does not change and no text exemption is given. Its position, width, every computed style, and every other probe stay strict.",
+            "fixture": "enterprise-scoped-synthetic",
+            "probe": "guest-boundary",
+            "fields": ["height", "geometry.height", "geometry.bottom"]
           }
         ],
         "replacedHostProbes": [],

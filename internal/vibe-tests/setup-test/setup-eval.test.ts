@@ -1031,6 +1031,219 @@ describe('intended-change allowances for a mandated insertion', () => {
 });
 
 /**
+ * The same allowance, for the container the insertion actually lands in.
+ *
+ * `s5` mandates exactly one visible `astryx-dialog-trigger`, and this fixture's
+ * guest subtree is where guest design-system content goes, so that is where the
+ * trigger belongs. Two independent reps put it there and both grew the boundary
+ * from 296px to 409px, moving its height and the two geometry fields height
+ * moves, in both schemes. That is the insertion's own geometry, not host
+ * damage.
+ *
+ * The trigger is task-owned, so the boundary's protected text already excludes
+ * it and this allowance names no text exemption at all. Everything else about
+ * the boundary — its width, its position, its every computed style — and every
+ * other probe stays exact.
+ */
+describe('intended-change allowance for the guest boundary', () => {
+  const GUEST_ALLOWANCE: TaskContract = {
+    ...TASK,
+    allowedHostChanges: [
+      {
+        fixture: 'enterprise-scoped-synthetic',
+        probe: 'guest-boundary',
+        fields: ['height', 'geometry.height', 'geometry.bottom'],
+      },
+    ],
+  };
+
+  // The boundary as measured: a right-hand column that grows downward only.
+  const GUEST_GEOMETRY = {
+    x: 812,
+    y: 120,
+    top: 120,
+    right: 1112,
+    bottom: 416,
+    left: 812,
+    width: 300,
+    height: 296,
+  };
+  const GUEST_TEXT =
+    'Guest subtree Integration preview This subtree intentionally redefines accent, border, panel, foreground, subtle, and error.';
+
+  const guestScheme = (
+    overrides: {
+      style?: Record<string, string>;
+      geometry?: Record<string, number>;
+      text?: string;
+    } = {},
+  ) =>
+    scheme({
+      probes: {
+        'guest-boundary': {
+          style: {
+            ...STYLE,
+            height: '296px',
+            width: '300px',
+            ...(overrides.style ?? {}),
+          },
+          geometry: {...GUEST_GEOMETRY, ...(overrides.geometry ?? {})},
+          contrast: 12,
+          text: overrides.text ?? GUEST_TEXT,
+        },
+        'host-shell': probe(STYLE, 12, 'Portfolio console'),
+      },
+    });
+
+  const scored = (
+    overrides: Parameters<typeof guestScheme>[0],
+    contract: TaskContract = GUEST_ALLOWANCE,
+  ) =>
+    scoreArm(
+      measurement({
+        label: 'baseline',
+        task: false,
+        light: guestScheme(),
+        dark: guestScheme(),
+      }),
+      measurement({
+        fixture: 'enterprise-scoped-synthetic',
+        contract,
+        light: guestScheme(overrides),
+        dark: guestScheme(overrides),
+      }),
+    );
+
+  // 296 -> 409, both schemes: the reps' own measured growth.
+  const INSERTION = {
+    style: {height: '409px'},
+    geometry: {height: 409, bottom: 529},
+  };
+
+  it('accepts the growth the mandated insertion causes', () => {
+    const score = scored(INSERTION);
+    expect(score.regressionDetails).toEqual([]);
+    expect(verdict(score)).toBe('clean');
+    expect(passesAcceptance(score)).toBe(true);
+  });
+
+  it('reports that same growth with no allowance in the contract', () => {
+    const score = scored(INSERTION, TASK);
+    expect(
+      score.regressionDetails
+        .map(regression => regression.property)
+        .sort()
+        .filter((value, index, all) => all.indexOf(value) === index),
+    ).toEqual(['geometry.bottom', 'geometry.height', 'height']);
+    expect(passesAcceptance(score)).toBe(false);
+  });
+
+  it.each([
+    {
+      name: 'the boundary getting wider',
+      overrides: {style: {width: '420px'}, geometry: {width: 420, right: 1232}},
+      property: 'width',
+    },
+    {
+      name: 'a colour change on the boundary',
+      overrides: {style: {color: 'rgb(1, 2, 3)'}},
+      property: 'color',
+    },
+    {
+      name: 'a typography change on the boundary',
+      overrides: {style: {fontFamily: 'Inter'}},
+      property: 'fontFamily',
+    },
+    {
+      name: 'the boundary moving down the page',
+      overrides: {geometry: {top: 180, y: 180}},
+      property: 'geometry.top',
+    },
+    {
+      name: 'host copy the boundary lost',
+      overrides: {text: 'Integration preview'},
+      property: 'text',
+    },
+    {
+      name: 'host copy the boundary gained',
+      overrides: {text: `${GUEST_TEXT} Open service actions`},
+      property: 'text',
+    },
+  ])('still reports $name', ({overrides, property}) => {
+    const score = scored({
+      style: {...INSERTION.style, ...(overrides.style ?? {})},
+      geometry: {...INSERTION.geometry, ...(overrides.geometry ?? {})},
+      ...(overrides.text === undefined ? {} : {text: overrides.text}),
+    });
+    expect(
+      score.regressionDetails.filter(
+        regression =>
+          regression.probe === 'guest-boundary' &&
+          regression.property === property,
+      ),
+    ).not.toEqual([]);
+    expect(verdict(score)).not.toBe('clean');
+    expect(passesAcceptance(score)).toBe(false);
+  });
+
+  it('does not leak the allowance to another probe', () => {
+    const score = scoreArm(
+      measurement({
+        label: 'baseline',
+        task: false,
+        light: guestScheme(),
+        dark: guestScheme(),
+      }),
+      measurement({
+        fixture: 'enterprise-scoped-synthetic',
+        contract: GUEST_ALLOWANCE,
+        light: scheme({
+          probes: {
+            'guest-boundary': {
+              style: {...STYLE, height: '409px', width: '300px'},
+              geometry: {...GUEST_GEOMETRY, height: 409, bottom: 529},
+              contrast: 12,
+              text: GUEST_TEXT,
+            },
+            'host-shell': probe(
+              {...STYLE, height: '99px'},
+              12,
+              'Portfolio console',
+            ),
+          },
+        }),
+        dark: guestScheme(INSERTION),
+      }),
+    );
+    expect(
+      score.regressionDetails.some(
+        regression =>
+          regression.probe === 'host-shell' && regression.property === 'height',
+      ),
+    ).toBe(true);
+    expect(passesAcceptance(score)).toBe(false);
+  });
+
+  it('does not apply the allowance in another fixture', () => {
+    const score = scoreArm(
+      measurement({
+        label: 'baseline',
+        task: false,
+        light: guestScheme(),
+        dark: guestScheme(),
+      }),
+      measurement({
+        fixture: 'tailwind-v4-control',
+        contract: GUEST_ALLOWANCE,
+        light: guestScheme(INSERTION),
+        dark: guestScheme(INSERTION),
+      }),
+    );
+    expect(score.regressions).toBeGreaterThan(0);
+  });
+});
+
+/**
  * The report distinction. `verdict` answers "is this acceptable"; it is not a
  * description of what went wrong, and the operator report read it as one.
  */
