@@ -42,7 +42,7 @@ catalog:
   '@stylexjs/babel-plugin': ^0.19.0
   '@stylexjs/postcss-plugin': ^0.19.0
   prettier: ^3.9.3
-  esbuild: ^0.28.1
+  esbuild: ^0.28.2
 
 # Moved from package.json's "pnpm" field: pnpm 11 no longer reads
 # pnpm.overrides / pnpm.onlyBuiltDependencies from package.json.
