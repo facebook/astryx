@@ -1742,7 +1742,11 @@ function PointerDateTimeField({
               value={nativeTimeValue}
               onChange={handleNativeTimeChange}
               placeholder={timePlaceholder}
-              label={resolvedTimeLabel}
+              inputLabel={resolvedTimeLabel}
+              openPickerLabel={t('@astryx.dateTimeInput.openTimePicker', {
+                label: resolvedTimeLabel,
+              })}
+              iconThemeProps={themeProps('date-time-input-clock-icon')}
               min={timeMin}
               max={timeMax}
               hourFormat={hourFormat}

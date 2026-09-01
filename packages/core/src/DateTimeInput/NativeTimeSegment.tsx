@@ -5,8 +5,8 @@
 /**
  * @file NativeTimeSegment.tsx
  * @input Uses React, native picker segment styles, and shared time utilities
- * @output Exports NativeTimeSegment — the OS-picker time half of DateTimeInput
- * @position Internal DateTimeInput surface selected by `nativePicker`
+ * @output Exports NativeTimeSegment — the shared OS-picker time control
+ * @position Internal native control used by DateTimeInput and TimeInput
  *
  * Hands time picking to the platform through `<input type="time">`. The input
  * is deliberately uncontrolled and observed through native event listeners,
@@ -15,9 +15,12 @@
  * React's synthetic change event.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/DateTimeInput/DateTimeInput.tsx (surface selection)
- * - /packages/core/src/DateTimeInput/NativePickerSegments.test.tsx (native surface tests)
- * - /packages/core/src/DateTimeInput/DateTimeInput.doc.mjs (prop docs)
+ * - /packages/core/src/DateTimeInput/DateTimeInput.tsx (DateTimeInput integration)
+ * - /packages/core/src/TimeInput/TimeInput.tsx (TimeInput integration)
+ * - /packages/core/src/DateTimeInput/NativePickerSegments.test.tsx (DateTimeInput tests)
+ * - /packages/core/src/TimeInput/NativeTimeInput.test.tsx (TimeInput tests)
+ * - /packages/core/src/DateTimeInput/DateTimeInput.doc.mjs (DateTimeInput prop docs)
+ * - /packages/core/src/TimeInput/TimeInput.doc.mjs (TimeInput prop docs)
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -28,6 +31,7 @@ import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {Icon} from '../Icon';
 import {useTranslator} from '../i18n';
+import type {ThemeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {
   focusOutlineStyles,
@@ -36,10 +40,8 @@ import {
   formatISOTime,
   isTimeInRange,
   parseISOTime,
-  themeProps,
   type ISOTimeString,
 } from '../utils';
-import type {DateTimeInputHourFormat} from './DateTimeInput';
 import {nativePickerSegmentStyles as styles} from './nativePickerSegmentStyles';
 
 const FRACTIONAL_SECONDS = /\.\d+$/;
@@ -64,10 +66,14 @@ export type NativeTimeSegmentProps = {
   value?: ISOTimeString;
   onChange: (value: ISOTimeString | undefined) => void;
   placeholder: string;
-  label: string;
+  inputLabel?: string;
+  openPickerLabel: string;
+  ariaLabelledBy?: string;
+  iconThemeProps?: ThemeProps;
+  hasAutoFocus?: boolean;
   min?: ISOTimeString;
   max?: ISOTimeString;
-  hourFormat: DateTimeInputHourFormat;
+  hourFormat: '12h' | '24h';
   isEffectivelyDisabled: boolean;
   hasDisabledMessage: boolean;
   isEffectivelyRequired: boolean;
@@ -76,14 +82,18 @@ export type NativeTimeSegmentProps = {
   ariaDescribedBy?: string;
 };
 
-/** The native time half rendered inside DateTimeInput's time wrapper. */
+/** The shared native time control rendered inside Astryx field chrome. */
 export function NativeTimeSegment({
   id,
   inputRef,
   value,
   onChange,
   placeholder,
-  label,
+  inputLabel,
+  openPickerLabel,
+  ariaLabelledBy,
+  iconThemeProps,
+  hasAutoFocus = false,
   min,
   max,
   hourFormat,
@@ -256,19 +266,14 @@ export function NativeTimeSegment({
         type="button"
         onClick={openPicker}
         disabled={isEffectivelyDisabled}
-        aria-label={t('@astryx.dateTimeInput.openTimePicker', {label})}
+        aria-label={openPickerLabel}
         tabIndex={-1}
         {...stylex.props(
           focusOutlineStyles.focusVisible,
           styles.iconButton,
           isEffectivelyDisabled && styles.iconButtonDisabled,
         )}>
-        <Icon
-          icon="clock"
-          size="sm"
-          color="secondary"
-          {...themeProps('date-time-input-clock-icon')}
-        />
+        <Icon icon="clock" size="sm" color="secondary" {...iconThemeProps} />
       </button>
       <span {...stylex.props(styles.slot)}>
         <input
@@ -286,8 +291,11 @@ export function NativeTimeSegment({
           disabled={isEffectivelyDisabled && !hasDisabledMessage}
           aria-disabled={hasDisabledMessage ? 'true' : undefined}
           readOnly={hasDisabledMessage || undefined}
-          aria-label={label}
+          aria-label={ariaLabelledBy ? undefined : inputLabel}
+          aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
+          autoFocus={hasAutoFocus}
+          data-autofocus={hasAutoFocus || undefined}
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={
             statusType === 'error' || !isInputValid ? 'true' : undefined
