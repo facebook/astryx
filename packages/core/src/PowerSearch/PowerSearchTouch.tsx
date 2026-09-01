@@ -177,6 +177,7 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
+    marginInlineStart: 'auto',
     paddingInlineEnd: spacingVars['--spacing-1'],
   },
   resultCount: {
@@ -1003,7 +1004,6 @@ export function PowerSearchTouchSurface({
                       <FieldRow
                         key={field.key}
                         field={field}
-                        operatorLabel={fieldOperatorHint(config, field, t)}
                         onSelect={handleFieldSelect}
                       />
                     ))}
@@ -1088,6 +1088,7 @@ export function PowerSearchTouchSurface({
                     {draftOperators.length > 1 && (
                       <RadioList
                         label={t('@astryx.powersearch.editor.operator')}
+                        isLabelHidden
                         value={draft.operator ?? ''}
                         onChange={operatorKey => {
                           const operator = draftOperators.find(
@@ -1101,7 +1102,10 @@ export function PowerSearchTouchSurface({
                         {draftOperators.map(operator => (
                           <RadioListItem
                             key={operator.key}
-                            label={resolveOperatorLabel(operator, t)}
+                            label={t('@astryx.powersearch.mobile.filterTitle', {
+                              field: draftField.label,
+                              operator: resolveOperatorLabel(operator, t),
+                            })}
                             value={operator.key}
                           />
                         ))}
@@ -1160,17 +1164,14 @@ PowerSearchTouchSurface.displayName = 'PowerSearchTouchSurface';
 
 function FieldRow({
   field,
-  operatorLabel,
   onSelect,
 }: {
   field: PowerSearchField;
-  operatorLabel: string | undefined;
   onSelect: (field: PowerSearchField) => void;
 }): ReactNode {
   return (
     <ListItem
       label={field.label}
-      description={field.description ?? operatorLabel}
       startContent={field.icon}
       endContent={
         <Icon
@@ -1183,24 +1184,4 @@ function FieldRow({
       onClick={() => onSelect(field)}
     />
   );
-}
-
-/**
- * The default operator's label, shown under a field name so the row says what
- * choosing it will produce ("Status" / "is") rather than just naming a column.
- */
-function fieldOperatorHint(
-  config: ReturnType<typeof useInternalConfig>,
-  field: PowerSearchField,
-  t: ReturnType<typeof useTranslator>,
-): string | undefined {
-  const preferred = config.getDefaultOperator(field.key);
-  const operator =
-    preferred && isSupportedOperator(preferred)
-      ? preferred
-      : field.operators.find(isSupportedOperator);
-  if (operator == null) {
-    return undefined;
-  }
-  return resolveOperatorLabel(operator, t) || undefined;
 }
