@@ -12,12 +12,22 @@ import {
   blockExternalNetwork,
   isSameOrigin,
   partitionCapturePlan,
+  partitionScoutStories,
   serveDirectory,
 } from './capture.mjs';
 
 const roots = [];
 afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, {recursive: true, force: true});
+});
+
+describe('scout partitioning', () => {
+  it('balances the current 388-story scout across two workers', () => {
+    const stories = Array.from({length: 388}, (_, index) => `story-${index}`);
+    const partitions = partitionScoutStories(stories, 2);
+    expect(partitions.map(partition => partition.length)).toEqual([194, 194]);
+    expect(new Set(partitions.flat()).size).toBe(388);
+  });
 });
 
 describe('capture plan partitioning', () => {

@@ -349,6 +349,50 @@ async function settle(page, settleMs) {
   }
 }
 
+export function partitionScoutStories(storyIds, concurrency) {
+  if (storyIds.length === 0) return [];
+  const workerCount = Math.max(1, Math.min(Math.floor(concurrency), storyIds.length));
+  const partitions = Array.from({length: workerCount}, () => []);
+  storyIds.forEach((storyId, index) => partitions[index % workerCount].push(storyId));
+  return partitions;
+}
+
+async function scoutPartition({storyIds, browser, origin, theme, viewport, onStory}) {
+  const context = await browser.newContext({
+    viewport,
+    deviceScaleFactor: 1,
+    timezoneId: TIMEZONE_ID,
+    ...CAPTURE_CONTEXT_SECURITY,
+  });
+  await context.clock.setFixedTime(FROZEN_NOW);
+  await context.addInitScript(BACKGROUND_NETWORK_GUARD);
+  await context.addInitScript(SEEDED_RANDOM);
+  await blockExternalNetwork(context, origin);
+  const page = await context.newPage();
+  const observations = {};
+
+  try {
+    for (const storyId of storyIds) {
+      try {
+        await page.goto(
+          `${origin}/iframe.html?id=${encodeURIComponent(storyId)}&viewMode=story&globals=astryxTheme:${theme};colorMode:light`,
+          {waitUntil: 'load', timeout: 30000},
+        );
+        await page.waitForSelector('#storybook-root > *', {timeout: 20000});
+        observations[storyId] = await observeTargets(page);
+      } catch {
+        // A story that will not render is the capture's problem to report, not
+        // the scout's; it simply contributes no observations.
+        observations[storyId] = {};
+      }
+      onStory();
+    }
+  } finally {
+    await context.close();
+  }
+  return observations;
+}
+
 /**
  * Load stories without photographing them, and report what each one rendered.
  *
@@ -363,48 +407,36 @@ async function settle(page, settleMs) {
  * @param {string} options.storybookDir
  * @param {string} options.theme - any theme; observed targets do not depend on it
  * @param {{width: number, height: number}} options.viewport
+ * @param {number} [options.concurrency]
  * @param {(progress: {done: number, total: number}) => void} [options.onProgress]
  * @returns {Promise<Record<string, Record<string, string[]>>>} story id → observed targets
  */
-export async function scout({storyIds, storybookDir, theme, viewport, onProgress}) {
+export async function scout({storyIds, storybookDir, theme, viewport, concurrency = 1, onProgress}) {
   const {chromium} = await import('playwright');
   const server = await serveDirectory(storybookDir);
   const origin = `http://127.0.0.1:${server.port}`;
-  const browser = await chromium.launch();
-  const context = await browser.newContext({
-    viewport,
-    deviceScaleFactor: 1,
-    timezoneId: TIMEZONE_ID,
-    ...CAPTURE_CONTEXT_SECURITY,
-  });
-  await context.clock.setFixedTime(FROZEN_NOW);
-  await context.addInitScript(BACKGROUND_NETWORK_GUARD);
-  await context.addInitScript(SEEDED_RANDOM);
-  await blockExternalNetwork(context, origin);
-  const page = await context.newPage();
-
-  /** @type {Record<string, Record<string, string[]>>} */
-  const observations = {};
-  let done = 0;
-  for (const storyId of storyIds) {
-    try {
-      await page.goto(
-        `${origin}/iframe.html?id=${encodeURIComponent(storyId)}&viewMode=story&globals=astryxTheme:${theme};colorMode:light`,
-        {waitUntil: 'load', timeout: 30000},
-      );
-      await page.waitForSelector('#storybook-root > *', {timeout: 20000});
-      observations[storyId] = await observeTargets(page);
-    } catch {
-      // A story that will not render is the capture's problem to report, not
-      // the scout's; it simply contributes no observations.
-      observations[storyId] = {};
-    }
-    onProgress?.({done: ++done, total: storyIds.length});
+  let browser;
+  try {
+    browser = await chromium.launch();
+    let done = 0;
+    const results = await Promise.all(
+      partitionScoutStories(storyIds, concurrency).map(partition =>
+        scoutPartition({
+          storyIds: partition,
+          browser,
+          origin,
+          theme,
+          viewport,
+          onStory: () => onProgress?.({done: ++done, total: storyIds.length}),
+        }),
+      ),
+    );
+    const observed = Object.assign({}, ...results);
+    return Object.fromEntries(storyIds.map(storyId => [storyId, observed[storyId] ?? {}]));
+  } finally {
+    await browser?.close().catch(() => {});
+    await server.close();
   }
-
-  await browser.close();
-  await server.close();
-  return observations;
 }
 
 async function capturePartition({
