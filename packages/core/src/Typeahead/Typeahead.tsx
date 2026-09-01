@@ -169,6 +169,8 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
   onChangeQuery?: (query: string) => void;
   /** Callback when dropdown opens/closes. */
   onOpenChange?: (isOpen: boolean) => void;
+  /** Internal style for the interactive input wrapper. @internal */
+  __inputWrapperXStyle?: stylex.StyleXStyles;
 }
 
 // =============================================================================
@@ -364,6 +366,7 @@ export function Typeahead<T extends SearchableItem>({
   debounceMs,
   onChangeQuery,
   onOpenChange,
+  __inputWrapperXStyle,
   width,
   xstyle,
   className,
@@ -553,6 +556,7 @@ export function Typeahead<T extends SearchableItem>({
             isDisabled && inputWrapperStyles.disabled,
             inputGroup && groupStyles.inGroup,
             inputGroup && xstyle,
+            __inputWrapperXStyle,
           ),
           inputGroup ? className : undefined,
           inputGroup ? style : undefined,
