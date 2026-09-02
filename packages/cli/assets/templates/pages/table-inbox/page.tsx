@@ -1972,15 +1972,28 @@ export default function SupportInboxTemplate() {
    * phone that loads straight into somebody's first message has skipped the
    * screen the user came for.
    */
-  const openId =
-    chosenId === undefined
-      ? isSingleSurface
-        ? null
-        : (visible[0]?.id ?? null)
-      : chosenId;
+  const defaultOpenId = isSingleSurface ? null : (visible[0]?.id ?? null);
 
-  const openConversation =
-    CONVERSATIONS.find(item => item.id === openId) ?? null;
+  /**
+   * A chosen thread only counts while it is still in the queue on screen.
+   *
+   * Switching category filters the list but says nothing about the pane, so a
+   * thread opened from Escalations would sit there while Resolved is in front
+   * of you — and the pane's own archive and delete would act on it. Falling
+   * back to the default re-derives the pane from the category, so the two
+   * cannot disagree about which queue you are in.
+   *
+   * An explicit close still wins: `null` means the user shut the pane, and
+   * changing category is no reason to reopen it.
+   */
+  const openId =
+    chosenId === null
+      ? null
+      : chosenId !== undefined && visible.some(item => item.id === chosenId)
+        ? chosenId
+        : defaultOpenId;
+
+  const openConversation = visible.find(item => item.id === openId) ?? null;
 
   const isPaneFullWidth = isSingleSurface && openId != null;
 
@@ -2252,7 +2265,13 @@ export default function SupportInboxTemplate() {
     ? {rowStatus, rows, gutter: ALIGN_STATUS_GUTTER}
     : {selection, rowStatus, rows, gutter: ALIGN_STATUS_GUTTER};
 
-  const selectedCount = selectedKeys.size;
+  // Counted against the visible queue rather than the raw set, for the same
+  // reason the pane re-derives: ticks made in Escalations must not still be
+  // armed once Resolved is the list on screen. The set itself is left alone,
+  // so switching back finds the selection where it was.
+  const selectedCount = visible.filter(item =>
+    selectedKeys.has(item.id),
+  ).length;
   const hasSelection = selectedCount > 0 && !isStacked;
   const unreadCount = CONVERSATIONS.filter(item => item.isUnread).length;
 
