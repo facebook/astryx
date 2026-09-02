@@ -25,6 +25,7 @@ import type {
   TreeListItemData,
   TreeListDensity,
   TreeListVariant,
+  TreeListExpandIconState,
 } from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTreeFocus} from '../hooks/useTreeFocus';
@@ -33,7 +34,11 @@ import {useTreeFocus} from '../hooks/useTreeFocus';
 // Types
 // =============================================================================
 
-export {type TreeListDensity, type TreeListVariant} from './TreeListTypes';
+export {
+  type TreeListDensity,
+  type TreeListVariant,
+  type TreeListExpandIconState,
+} from './TreeListTypes';
 
 export interface TreeListProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -69,6 +74,37 @@ export interface TreeListProps extends BaseProps<HTMLDivElement> {
    * Semantically associated via aria-labelledby.
    */
   header?: ReactNode;
+
+  /**
+   * Custom expand/collapse indicator icon, replacing the default rotating
+   * chevron. Called per item with its current state so collapsed and expanded
+   * icons can differ (e.g. closed/open folder). Also called for leaf items
+   * (`hasChildren: false`) so a file tree can render a file icon in the
+   * indicator slot; return null to keep leaves icon-free.
+   *
+   * The default chevron's rotation animation is not applied to custom icons —
+   * a state-aware icon swap replaces it. Returning null for an expandable item
+   * falls back to the default chevron. The toggle keeps its accessibility
+   * wiring (aria-expanded, aria-label, roving tabindex) regardless of the
+   * icon rendered inside it.
+   *
+   * The indicator column is `1rem` — the same box as `<Icon size="sm">` and
+   * the default chevron — so size custom icons `sm` and they fill the column
+   * at any root font size; a larger icon overflows it.
+   *
+   * @example
+   * ```
+   * <TreeList
+   *   items={items}
+   *   renderExpandIcon={({isExpanded, hasChildren}) =>
+   *     hasChildren
+   *       ? <Icon icon={isExpanded ? FolderOpenIcon : FolderIcon} size="sm" />
+   *       : <Icon icon={DocumentIcon} size="sm" />
+   *   }
+   * />
+   * ```
+   */
+  renderExpandIcon?: (state: TreeListExpandIconState) => ReactNode;
 
   /**
    * Test ID for testing frameworks.
@@ -184,6 +220,7 @@ export function TreeList({
   density = 'balanced',
   variant = 'lineGuides',
   header,
+  renderExpandIcon,
   xstyle,
   className,
   style,
@@ -319,6 +356,7 @@ export function TreeList({
           ancestorsIsLast={ancestorsIsLast}
           isExpanded={isExpanded}
           onToggle={handleToggle}
+          renderExpandIcon={renderExpandIcon}
           density={density}
           variant={variant}
           renderedChildren={renderedChildren}

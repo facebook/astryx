@@ -27,16 +27,30 @@ import {
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {Icon} from '../Icon';
-import {mergeProps} from '../utils';
+import {mergeProps, isRenderable} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
-import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
+import type {
+  TreeListDensity,
+  TreeListVariant,
+  TreeListExpandIconState,
+} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
 // =============================================================================
+
+// The indicator column — toggle button, non-interactive chevron box, and the
+// leaf slot filled by `renderExpandIcon` — is sized on Icon's rem scale, not
+// on a spacing token: `1rem` is exactly the `<Icon size="sm">` box, so a
+// custom glyph at `size="sm"` and the default chevron (also `sm`) fill the
+// column at every root font size. The spacing tokens are px, so a
+// token-sized column drifts off a rem-sized glyph as soon as the browser's
+// font size changes (a 20px root makes `sm` 20px inside a 16px column). The
+// same length reserves a leaf's column (see `reservesChevronColumn`).
+const INDICATOR_SIZE = '1rem';
 
 const styles = stylex.create({
   wrapper: {
@@ -169,14 +183,22 @@ const styles = stylex.create({
     alignItems: 'center',
     marginInlineStart: 'auto',
   },
-  chevronContainer: {
+  // One box for every indicator slot (see INDICATOR_SIZE). `fontSize` sizes
+  // 1em-based glyphs — registry SVGs, a raw `<svg width="1em">` — to the
+  // column; `<Icon>` brings its own rem box and matches it at `size="sm"`.
+  indicatorColumn: {
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: spacingVars['--spacing-4'],
-    height: spacingVars['--spacing-4'],
-    fontSize: spacingVars['--spacing-4'],
+    width: INDICATOR_SIZE,
+    height: INDICATOR_SIZE,
+    fontSize: INDICATOR_SIZE,
+    color: colorVars['--color-icon-secondary'],
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
+  },
+  chevronContainer: {
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -184,38 +206,18 @@ const styles = stylex.create({
     border: 'none',
     background: 'none',
     padding: 0,
-    color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronButton: {
     all: 'unset',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: spacingVars['--spacing-4'],
-    height: spacingVars['--spacing-4'],
-    fontSize: spacingVars['--spacing-4'],
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronSvg: {
     display: 'flex',
-    // The chevron column is sized in spacing tokens by the button/container
-    // around it (--spacing-4 = 16px), not on Icon's rem scale, so the glyph's
-    // box is pinned to that same token. Icon's `sm` (1rem) only coincides with
-    // 16px at a 16px root font-size; drifting off the token would knock the
-    // glyph out of its 16px column.
-    width: spacingVars['--spacing-4'],
-    height: spacingVars['--spacing-4'],
-    fontSize: spacingVars['--spacing-4'],
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -308,6 +310,12 @@ export interface TreeListItemInternalProps {
   ancestorsIsLast: ReadonlyArray<boolean>;
   isExpanded: boolean;
   onToggle?: (id: string) => void;
+  /**
+   * Custom expand/collapse indicator (see TreeListProps.renderExpandIcon).
+   * Non-renderable returns fall back to the default chevron for parents and
+   * to no indicator (with the leaf alignment offset) for leaves.
+   */
+  renderExpandIcon?: (state: TreeListExpandIconState) => ReactNode;
   density: TreeListDensity;
   /**
    * Guide-line visual treatment. `noGuides` suppresses the connector lines;
@@ -351,6 +359,7 @@ export function TreeListItem({
   ancestorsIsLast,
   isExpanded,
   onToggle,
+  renderExpandIcon,
   density,
   variant,
   renderedChildren,
@@ -395,20 +404,30 @@ export function TreeListItem({
     return undefined;
   }, [onClick, hasChildren, onToggle, id, isDisabled]);
 
+  const customIcon =
+    renderExpandIcon != null
+      ? renderExpandIcon({isExpanded, hasChildren, isDisabled})
+      : null;
+  const hasCustomIcon = isRenderable(customIcon);
+
   // Per-level indent distance. The per-level step is the public, themeable
   // `--tree-list-indent` lever (default `--spacing-4`, set on the tree-list
   // root). A leaf adds a fixed chevron-column offset (chevron width + gap) so
   // its label lines up past an expandable ancestor/sibling's caret — but ONLY
   // when the tree actually contains an expandable item somewhere. In a fully
   // flat tree there is no caret to align under, so the offset is pointless and
-  // every row sits flush, like a parent at that level. That offset is tied to
-  // the chevron's own dimensions, not the indent step, so it does not scale
-  // with the lever. Published as the private `--_tree-indent` and consumed by
+  // every row sits flush, like a parent at that level. A leaf that renders its
+  // own indicator (renderExpandIcon supplied a leaf icon) occupies the column
+  // itself, so it takes no offset either. That offset is tied to the column's
+  // own box (INDICATOR_SIZE), not the indent step, so it does not scale with
+  // the lever.
+  // Published as the private `--_tree-indent` and consumed by
   // `contentWrapper`'s stylesheet `margin-inline-start` (kept out of the inline
   // style so the theme layer can override it — see #4308).
-  const reservesChevronColumn = !hasChildren && hasExpandableItems;
+  const reservesChevronColumn =
+    !hasChildren && !hasCustomIcon && hasExpandableItems;
   const indentDistance = reservesChevronColumn
-    ? `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`
+    ? `calc(${nestedLevel} * var(--tree-list-indent) + ${INDICATOR_SIZE} + ${spacingVars['--spacing-2']})`
     : `calc(${nestedLevel} * var(--tree-list-indent))`;
   const indentStyle: IndentStyle = {'--_tree-indent': indentDistance};
 
@@ -447,8 +466,8 @@ export function TreeListItem({
   const chevronIcon = (
     <Icon
       icon="chevronRight"
-      // Nearest size to the 16px chevron column; `chevronSvg` re-pins the exact
-      // box because the column is spacing-token-sized, not rem-sized.
+      // The `sm` box is exactly INDICATOR_SIZE, so the glyph fills the column
+      // at any root font size — the same contract a custom icon gets.
       size="sm"
       // The button/container owns the chevron color (--color-icon-secondary);
       // inheriting keeps that as the single source.
@@ -460,7 +479,13 @@ export function TreeListItem({
     />
   );
 
-  const chevron = hasChildren ? (
+  // A custom icon is the column's direct child, rendered as handed over: no
+  // rotation (an open-folder icon must not also turn 90°) and no RTL mirror —
+  // the consumer swaps per state instead. Sizing is the consumer's side of the
+  // contract: `<Icon size="sm">` fills the column (see INDICATOR_SIZE).
+  const indicatorIcon = hasCustomIcon ? customIcon : chevronIcon;
+
+  const indicator = hasChildren ? (
     handleToggle != null ? (
       // Real toggle button whenever expand/collapse is supported, so the row
       // can be expanded from the keyboard even when the item has no onClick/href
@@ -488,9 +513,9 @@ export function TreeListItem({
           themeProps('tree-list-chevron', {
             state: isExpanded ? 'expanded' : 'collapsed',
           }),
-          stylex.props(styles.chevronButton),
+          stylex.props(styles.indicatorColumn, styles.chevronButton),
         )}>
-        {chevronIcon}
+        {indicatorIcon}
       </button>
     ) : (
       // Non-interactive chevron only when toggling is not wired up at all
@@ -499,16 +524,21 @@ export function TreeListItem({
           themeProps('tree-list-chevron', {
             state: isExpanded ? 'expanded' : 'collapsed',
           }),
-          stylex.props(styles.chevronContainer),
+          stylex.props(styles.indicatorColumn, styles.chevronContainer),
         )}>
-        {chevronIcon}
+        {indicatorIcon}
       </span>
     )
+  ) : hasCustomIcon ? (
+    // Leaf indicator slot (e.g. a file icon in a folder tree): the same box as
+    // the toggle so leaves align, but never a toggle — leaves have nothing to
+    // expand.
+    <span {...stylex.props(styles.indicatorColumn)}>{customIcon}</span>
   ) : null;
 
   const innerContent = (
     <>
-      {chevron}
+      {indicator}
       {startContent != null && (
         <span {...stylex.props(styles.startContent)}>{startContent}</span>
       )}
