@@ -1,5 +1,16 @@
 [
   {
+    "component": "AppShell",
+    "storyId": "core-appshell--top-nav-with-side-nav",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": ".astryx-app-shell-sidenav",
+      "overlayRoot": ".astryx-app-shell"
+    }
+  },
+  {
     "component": "ButtonGroup",
     "storyId": "core-buttongroup--horizontal",
     "dims": [
