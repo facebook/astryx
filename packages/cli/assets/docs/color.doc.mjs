@@ -13,7 +13,7 @@ export const docs = {
   sections: [
     {
       title: 'Overview',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -27,7 +27,7 @@ export const docs = {
     },
     {
       title: 'Surface Colors',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -42,7 +42,7 @@ export const docs = {
     },
     {
       title: 'Usage',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'code',
@@ -66,7 +66,7 @@ const styles = stylex.create({
     },
     {
       title: 'Best Practices',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'list',
