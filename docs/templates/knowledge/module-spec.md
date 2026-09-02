@@ -1,6 +1,6 @@
 ---
 schema_version: 3
-template_version: 1
+template_version: 2
 kind: module
 id: module:<ParentComponent>/<PublicName>
 authority: draft
@@ -16,6 +16,15 @@ references: [architecture:<surface>, design:<surface>, spec:AST-000/DEC-0]
 ---
 
 # <PublicName> module contract
+
+<!--
+Follow architecture:knowledge-contracts/DEC-3. Create this record only for an
+independently owned public semantic module; otherwise amend its parent. Keep
+ordinary records near 100–150 lines as guidance, never a gate. Delete unused
+optional placeholders and comments. Link parent/shared rules and evidence. Keep one
+coherent behavior matrix together and remove review or implementation narration
+instead of splitting it.
+-->
 
 ## Intent
 

@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-template_version: 1
+template_version: 2
 kind: architecture
 id: architecture:<surface>
 authority: draft
@@ -15,6 +15,12 @@ deciding_specs: [spec:AST-000/DEC-0]
 ---
 
 # <Surface> architecture
+
+<!--
+Follow architecture:knowledge-contracts/DEC-3. Keep one durable system boundary:
+model, owners, invariants, decisions, and evidence links. Omit review history,
+implementation narration, repeated lower-level rules, and copied audit evidence.
+-->
 
 ## Purpose
 

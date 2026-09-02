@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-template_version: 1
+template_version: 2
 kind: design
 id: design:<surface>
 authority: draft
@@ -18,6 +18,12 @@ deciding_specs: [spec:AST-000/DEC-0]
 ---
 
 # <Surface> design specification
+
+<!--
+Follow architecture:knowledge-contracts/DEC-3. Keep one human-owned design
+boundary and its normative representations. Link component contracts and visual
+evidence; omit review history, implementation narration, and copied audit results.
+-->
 
 ## User intent
 

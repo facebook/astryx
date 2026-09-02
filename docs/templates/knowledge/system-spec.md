@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-template_version: 1
+template_version: 2
 kind: system-spec
 id: spec:AST-000
 authority: draft
@@ -17,6 +17,13 @@ affects_consumer_docs: [<doc-id>]
 ---
 
 # <Change> system spec
+
+<!--
+Follow architecture:knowledge-contracts/DEC-3. Keep one consequential system
+boundary: intent, normative requirements, compatibility, decisions, relationships,
+and evidence links. Extra length must serve one coherent behavior matrix, not a
+review dossier or implementation plan.
+-->
 
 ## Intent
 

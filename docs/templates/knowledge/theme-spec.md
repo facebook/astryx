@@ -1,6 +1,6 @@
 ---
 schema_version: 2
-template_version: 1
+template_version: 2
 kind: theme
 id: theme:<package-theme-name>
 authority: draft
@@ -14,6 +14,13 @@ references: [architecture:<surface>, design:<contrast-methodology>]
 ---
 
 # <Theme name> theme specification
+
+<!--
+Follow architecture:knowledge-contracts/DEC-3. Keep one theme-owned contract:
+intent, mappings, exceptions, compatibility, decisions, and evidence links. Link
+shared methodology and tooling instead of copying them; omit review narration and
+raw audit evidence.
+-->
 
 ## Intent and audience
 

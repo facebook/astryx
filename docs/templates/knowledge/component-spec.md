@@ -1,6 +1,6 @@
 ---
 schema_version: 3
-template_version: 4
+template_version: 5
 kind: component
 id: component:<Name>
 authority: draft
@@ -20,6 +20,15 @@ system_specs: [spec:AST-000/DEC-0]
 ---
 
 # <Name> component contract
+
+<!--
+Follow architecture:knowledge-contracts/DEC-3. Create this record only for an
+independently owned component surface; otherwise amend the nearest owner. Keep
+ordinary records near 100–150 lines as guidance, never a gate. Delete unused
+optional placeholders and comments. Link shared rules and evidence. Keep one
+coherent behavior matrix together and remove review or implementation narration
+instead of splitting it.
+-->
 
 ## Intent
 

@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-template_version: 1
+template_version: 2
 kind: family
 id: family:<family-name>
 authority: draft
@@ -18,6 +18,12 @@ deciding_specs: [spec:AST-000/DEC-0]
 ---
 
 # <Family name> contract
+
+<!--
+Follow architecture:knowledge-contracts/DEC-3. Keep only rules shared by this
+family and one representative matrix. Members link here instead of copying the
+rules; omit component-local detail, review history, and exhaustive evidence prose.
+-->
 
 ## Intent
 

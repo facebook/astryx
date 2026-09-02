@@ -61,6 +61,28 @@ Every knowledge record declares `authority: draft | current | archived`.
 - `archived` documents declare `archive_reason` (`superseded`, `withdrawn`, or
   `historical`) and link `superseded_by` when a replacement exists.
 
+## Record lifecycle and concision
+
+A durable record is the smallest coherent decision boundary, not a review dossier.
+Create one only for an independent semantic surface with one owner, review triggers,
+and evidence; otherwise amend the nearest owner.
+
+- Keep intent, ownership, normative contract, decisions, compatibility,
+  relationships, and links to evidence. Leave review history, implementation
+  narration, exhaustive test matrices, and copied audit evidence in their transient
+  owners.
+- Treat roughly 100–150 lines as guidance for an ordinary component or module
+  record, not a gate. A longer record should contain one coherent behavior matrix
+  that would become harder to reason about if split.
+- Move repeated shared rules to their family, design, architecture, or system owner.
+  Replace lower copies with links. When a change modifies a current contract,
+  update its owner in the same pull request; a `preserves` result requires no spec
+  edit. When a concept is removed or superseded, archive its record and migrate
+  inbound references there too.
+- Drafts are review context. Age is a reason to review them, never an automatic
+  deletion rule. Indexes route to canonical records and never restate their
+  contracts.
+
 ## Templates and schemas
 
 Templates create documents; schemas keep existing documents structurally

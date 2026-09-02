@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-30
+approved_at: 2026-09-01
 owners: [cixzhang]
 applies_to: [AGENTS.md, docs/, packages/core/src/, packages/lab/src/]
 verified_by:
@@ -111,6 +111,30 @@ Every record is either:
   private release or automation systems.
 - **INV9 — Current records have no implicit precedence.** A newer, narrower, or
   more local current record does not silently override another current record.
+- **INV10 — Admission follows a decision boundary.** Create a record only for an
+  independent semantic surface with one owner, review triggers, and evidence.
+  Otherwise amend the nearest current owner; a pull request, component, or
+  investigation is not a record boundary by itself.
+- **INV11 — Durable authoring is concise and normative.** New records and
+  materially amended boundaries keep intent, ownership, normative contract,
+  decisions, compatibility, relationships, and evidence links. They exclude review
+  history, implementation narration, exhaustive test matrices, repeated shared
+  rules, and copied audit evidence. Roughly 100–150 lines is useful guidance for an
+  ordinary component or module record, never a validation gate. Extra length must
+  serve one coherent behavior matrix that would lose meaning if split, not
+  review-dossier prose. Existing current records remain authoritative until their
+  boundary is amended; concision is a review signal, not retroactive invalidation.
+- **INV12 — Consolidation moves shared facts upward.** When a rule repeats, move it
+  to the canonical family, design, architecture, or system owner and replace lower
+  copies with links in the same pull request.
+- **INV13 — Freshness and retirement are graph changes.** A change that modifies a
+  current contract updates its canonical record in the same pull request; a
+  `preserves` result requires no spec edit. Removing or superseding a concept
+  archives its record and migrates every inbound reference in that same pull
+  request.
+- **INV14 — Drafts and indexes are non-authoritative aids.** Drafts are review
+  context; age prompts review but never automatic deletion. Indexes route to
+  canonical records and never duplicate contract text.
 
 ### When current records disagree
 
@@ -266,6 +290,24 @@ Rejected: requiring the owner to open a second pull request for every ruling,
 because it separates the answer from the change and adds unnecessary review
 work.
 
+### DEC-3 — Records follow one durable decision boundary through their lifecycle
+
+**Reference:** `architecture:knowledge-contracts/DEC-3`
+**Decider:** `cixzhang`, `2026-09-01`
+
+Admit a record only when one independent semantic surface can name its owner,
+triggers, and evidence. During exploration, drafts and open questions may carry
+review context. Once settled, fold the durable answer into the canonical current
+owner, archive or supersede transient material, and migrate inbound references.
+Repeated shared rules move upward; lower records and indexes link instead of copy.
+A change that modifies the durable contract updates its canonical current owner in
+the same pull request; a change classified `preserves` requires no spec edit.
+
+Rejected: record-per-pull-request or record-per-artifact filing, deleting drafts by
+age, duplicating contract text in indexes, and splitting one coherent behavior
+matrix merely to satisfy a line target. Those choices trade navigation and review
+clarity for dossier churn.
+
 ## Verification
 
 | Invariant                         | Evidence                                       | Failure signal                                                                                                                                      |
@@ -274,3 +316,4 @@ work.
 | INV5, INV7                        | `.github/scripts/change-scope.test.mjs`        | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                    |
 | Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs` | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record |
 | INV3, INV4                        | Blinded historical review benchmark            | Reviewer re-asks a settled decision or invents a new one                                                                                            |
+| INV10–INV14                       | Owner review                                   | A new or amended record has no independent owner/triggers/evidence, copies another owner, carries dossier prose, or leaves stale references         |
