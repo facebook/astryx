@@ -104,13 +104,13 @@ type PowerSearchTouchProps = PowerSearchProps;
 
 const sizeStyles = stylex.create({
   sm: {
-    minHeight: `max(${sizeVars['--size-element-sm']}, ${spacingVars['--spacing-11']})`,
+    minHeight: sizeVars['--size-element-sm'],
   },
   md: {
-    minHeight: `max(${sizeVars['--size-element-md']}, ${spacingVars['--spacing-11']})`,
+    minHeight: sizeVars['--size-element-md'],
   },
   lg: {
-    minHeight: `max(${sizeVars['--size-element-lg']}, ${spacingVars['--spacing-11']})`,
+    minHeight: sizeVars['--size-element-lg'],
   },
 });
 
@@ -149,7 +149,7 @@ const styles = stylex.create({
     appearance: 'none',
     flex: '1 1 40px',
     minWidth: '40px',
-    minHeight: spacingVars['--spacing-11'],
+    alignSelf: 'stretch',
     display: 'flex',
     alignItems: 'center',
     paddingBlock: 0,
@@ -169,20 +169,6 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     outline: 'none',
-  },
-  rowActions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-  },
-  searchRow: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
-    alignItems: 'end',
-    gap: spacingVars['--spacing-1'],
-  },
-  touchInput: {
-    minHeight: spacingVars['--spacing-11'],
   },
   touchAction: {
     minHeight: spacingVars['--spacing-11'],
@@ -413,8 +399,8 @@ const DEFAULT_MAX_SEARCH_RESULTS = 10;
  * centralizes content search plus add, edit, clear, and per-filter removal.
  *
  * Each selected-filter row opens its value editor, while a separate remove
- * button leaves the management sheet open. Add filter drills into the field
- * picker and then the existing value editor. Save always returns to management.
+ * button leaves the management sheet open. Add filter follows the selected list,
+ * while Clear all and Done stay in the footer. Save returns to management.
  */
 export function PowerSearchTouchSurface({
   config: configProp,
@@ -484,7 +470,6 @@ export function PowerSearchTouchSurface({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const managerAddButtonRef = useRef<HTMLButtonElement>(null);
-  const contentSearchInputRef = useRef<HTMLInputElement>(null);
   const managerRowsRef = useRef(new Map<number, HTMLLIElement>());
   const fieldRowsRef = useRef(new Map<string, HTMLLIElement>());
   const latestFiltersRef = useRef(filters);
@@ -1209,53 +1194,19 @@ export function PowerSearchTouchSurface({
                 <div {...stylex.props(styles.headerText)}>
                   <Heading level={3}>{manageFiltersTitle}</Heading>
                 </div>
-                <Button
-                  label={t('@astryx.powersearch.mobile.done')}
-                  variant="ghost"
-                  size="sm"
-                  xstyle={styles.touchAction}
-                  onClick={closeSheet}
-                />
               </div>
               {hasContentSearch && isInteractive && (
-                <div {...stylex.props(styles.searchRow)}>
-                  <TextInput
-                    ref={contentSearchInputRef}
-                    label={searchLabel}
-                    isLabelHidden
-                    placeholder={contentSearchPlaceholder}
-                    value={contentQuery}
-                    onChange={setContentQuery}
-                    onKeyDown={handleContentSearchKeyDown}
-                    startIcon={
-                      <Icon icon="search" size="sm" color="secondary" />
-                    }
-                    width="100%"
-                    xstyle={styles.touchInput}
-                  />
-                  {contentQuery !== '' && (
-                    <IconButton
-                      label={t('@astryx.textInput.clearLabel', {
-                        label: searchLabel,
-                      })}
-                      tooltip={t('@astryx.textInput.clearLabel', {
-                        label: searchLabel,
-                      })}
-                      icon={<Icon icon="close" size="sm" color="inherit" />}
-                      variant="ghost"
-                      size="sm"
-                      xstyle={styles.touchIconAction}
-                      onClick={() => {
-                        setContentQuery('');
-                        requestAnimationFrame(() =>
-                          contentSearchInputRef.current?.focus({
-                            preventScroll: true,
-                          }),
-                        );
-                      }}
-                    />
-                  )}
-                </div>
+                <TextInput
+                  label={searchLabel}
+                  isLabelHidden
+                  placeholder={contentSearchPlaceholder}
+                  value={contentQuery}
+                  onChange={setContentQuery}
+                  onKeyDown={handleContentSearchKeyDown}
+                  startIcon={<Icon icon="search" size="sm" color="secondary" />}
+                  hasClear
+                  width="100%"
+                />
               )}
             </div>
             <div {...stylex.props(styles.body)}>
@@ -1295,29 +1246,17 @@ export function PowerSearchTouchSurface({
                         }
                         endContent={
                           canEdit ? (
-                            <span {...stylex.props(styles.rowActions)}>
-                              <Icon
-                                icon="chevronRight"
-                                size="sm"
-                                color="secondary"
-                                xstyle={rtlStyles.mirror}
-                              />
-                              <IconButton
-                                label={removeLabel}
-                                tooltip={removeLabel}
-                                icon={
-                                  <Icon
-                                    icon="close"
-                                    size="sm"
-                                    color="inherit"
-                                  />
-                                }
-                                variant="ghost"
-                                size="sm"
-                                xstyle={styles.touchIconAction}
-                                onClick={() => handleRemoveFilter(row.index)}
-                              />
-                            </span>
+                            <IconButton
+                              label={removeLabel}
+                              tooltip={removeLabel}
+                              icon={
+                                <Icon icon="close" size="sm" color="inherit" />
+                              }
+                              variant="ghost"
+                              size="sm"
+                              xstyle={styles.touchIconAction}
+                              onClick={() => handleRemoveFilter(row.index)}
+                            />
                           ) : undefined
                         }
                       />
@@ -1325,33 +1264,40 @@ export function PowerSearchTouchSurface({
                   })}
                 </List>
               )}
+              {isInteractive && (
+                <Button
+                  ref={managerAddButtonRef}
+                  label={addFilterTitle}
+                  variant="secondary"
+                  xstyle={styles.touchAction}
+                  onClick={openFieldList}
+                  width="100%"
+                />
+              )}
             </div>
-            {isInteractive && (
-              <div {...stylex.props(styles.footer)}>
-                {isClearAllShown && (
-                  <Button
-                    label={t('@astryx.tokenizer.clearAll')}
-                    variant="ghost"
-                    xstyle={styles.touchAction}
-                    onClick={handleClearAll}
-                  />
-                )}
-                <div
-                  {...stylex.props(
-                    styles.footerActions,
-                    !isClearAllShown && styles.footerSoleAction,
-                  )}>
-                  <Button
-                    ref={managerAddButtonRef}
-                    label={addFilterTitle}
-                    variant="primary"
-                    xstyle={styles.touchAction}
-                    onClick={openFieldList}
-                    width={isClearAllShown ? undefined : '100%'}
-                  />
-                </div>
+            <div {...stylex.props(styles.footer)}>
+              {isClearAllShown && (
+                <Button
+                  label={t('@astryx.tokenizer.clearAll')}
+                  variant="ghost"
+                  xstyle={styles.touchAction}
+                  onClick={handleClearAll}
+                />
+              )}
+              <div
+                {...stylex.props(
+                  styles.footerActions,
+                  !isClearAllShown && styles.footerSoleAction,
+                )}>
+                <Button
+                  label={t('@astryx.powersearch.mobile.done')}
+                  variant="primary"
+                  xstyle={styles.touchAction}
+                  onClick={closeSheet}
+                  width={isClearAllShown ? undefined : '100%'}
+                />
               </div>
-            )}
+            </div>
           </div>
         </BottomSheet>
 
@@ -1393,7 +1339,6 @@ export function PowerSearchTouchSurface({
                   startIcon={<Icon icon="search" size="sm" color="secondary" />}
                   isDisabled={!isInteractive}
                   width="100%"
-                  xstyle={styles.touchInput}
                 />
               )}
             </div>
