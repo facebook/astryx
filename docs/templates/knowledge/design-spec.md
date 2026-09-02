@@ -20,14 +20,15 @@ deciding_specs: [spec:AST-000/DEC-0]
 # <Surface> design specification
 
 <!--
-Follow architecture:knowledge-contracts/DEC-3. Keep one human-owned design
-boundary and its normative representations. Link component contracts and visual
-evidence; omit review history, implementation narration, and copied audit results.
+When creating or materially amending this record, follow
+`.claude/skills/writing-knowledge-records.md` and
+`architecture:knowledge-contracts/DEC-3`. Keep one human-owned visual and
+interaction boundary.
 -->
 
 ## User intent
 
-<!-- Who is affected, in which state, and what they should understand or do. -->
+<!-- Start with who is affected, in which state, and the outcome they should understand or achieve. Then add the six-row At a glance table defined by the writing skill, with direct answers and canonical IDs. Details remain canonical below. -->
 
 ## Design principles
 

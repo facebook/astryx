@@ -64,13 +64,39 @@ Every knowledge record declares `authority: draft | current | archived`.
 ## Record lifecycle and concision
 
 A durable record is the smallest coherent decision boundary, not a review dossier.
-Create one only for an independent semantic surface with one owner, review triggers,
-and evidence; otherwise amend the nearest owner.
+Before creating or materially amending one, follow
+[Writing knowledge records](../.claude/skills/writing-knowledge-records.md) and
+`architecture:knowledge-contracts/DEC-3`. Create a record only for an independent
+semantic surface with one owner, review triggers, and evidence; otherwise amend
+the nearest owner. Write for a first read: lead with user impact and the defining
+constraint, use plain direct sentences, and keep one stable term per concept. In
+the existing opening intent or purpose section, add an **At a glance** table with
+six concise rows. Each row gives a direct answer and canonical ID for user impact,
+public concepts and explicit default status, critical state/interaction behavior,
+compatibility/allowed variation, canonical owners, and open decisions plus
+required/completed evidence. A reader should answer those questions from the
+opening and at most one linked section.
 
-- Keep intent, ownership, normative contract, decisions, compatibility,
-  relationships, and links to evidence. Leave review history, implementation
-  narration, exhaustive test matrices, and copied audit evidence in their transient
-  owners.
+- Before drafting, enumerate every schema-required frontmatter key. Preserve the
+  body headings the checker/schema requires; other template headings are prompts
+  and should be deleted when they have no authoritative content. Missing required
+  metadata blocks publication; do not guess. Empty arrays require verified absence
+  of a completed or linked value.
+- `verified_by` lists only completed evidence already present. Put required future
+  checks in Verification; requiring axe, Chromium, or assistive-technology evidence
+  does not prove those checks ran.
+- Keep each owned concept's normative rule, allowed variation, and caveats in one
+  canonical section. Other sections refer to its FR, AR, DR, or DEC id instead of
+  restating it.
+- Put state, variant, viewport, and input branches in a table or list. A draft is
+  complete when every authoritative input has a canonical statement and every
+  source-stated branch is explicit. Preserve source modality, cardinality, and
+  branch predicates; omit unsupported claims, and use `unresolved` only for a
+  source-stated open question.
+- Source files and evidence remain authoritative for inspectable syntax,
+  implementation shape, current measurements, and exhaustive test inventories.
+  Link them here. The record remains authoritative for intent, ownership,
+  normative constraints, decisions, compatibility, and relationships.
 - Treat roughly 100–150 lines as guidance for an ordinary component or module
   record, not a gate. A longer record should contain one coherent behavior matrix
   that would become harder to reason about if split.

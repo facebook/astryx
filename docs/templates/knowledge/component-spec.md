@@ -22,17 +22,15 @@ system_specs: [spec:AST-000/DEC-0]
 # <Name> component contract
 
 <!--
-Follow architecture:knowledge-contracts/DEC-3. Create this record only for an
-independently owned component surface; otherwise amend the nearest owner. Keep
-ordinary records near 100–150 lines as guidance, never a gate. Delete unused
-optional placeholders and comments. Link shared rules and evidence. Keep one
-coherent behavior matrix together and remove review or implementation narration
-instead of splitting it.
+When creating or materially amending this record, follow
+`.claude/skills/writing-knowledge-records.md` and
+`architecture:knowledge-contracts/DEC-3`. Keep one independently owned semantic
+boundary. Roughly 100–150 lines is guidance, not a gate.
 -->
 
 ## Intent
 
-<!-- Why this component exists and the system-level job it owns. Consumer usage belongs in <Name>.doc.mjs. -->
+<!-- Start with who is affected, in which state, and the component's defining guarantee. Then add the six-row At a glance table defined by the writing skill, with direct answers and canonical IDs. Details remain canonical below; consumer usage belongs in <Name>.doc.mjs. -->
 
 ## Compatibility and migration
 

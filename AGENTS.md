@@ -17,6 +17,10 @@ Meta-only context.
   applicable design spec under `docs/design/`, and current architecture under
   `docs/architecture/`.
 - Consequential shared-system changes: use a record under `docs/specs/`.
+- Before creating or materially editing a knowledge record, read
+  `.claude/skills/writing-knowledge-records.md`; it owns required-metadata
+  preflight, the scratch source-ledger, closed-world fidelity, first-read routing,
+  and compression.
 
 ## Authority
 
