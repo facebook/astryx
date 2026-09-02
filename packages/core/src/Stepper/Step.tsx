@@ -5,7 +5,8 @@
 /**
  * @file Step.tsx
  * @input Uses React, stylex, theme tokens (including the motion duration token
- *   the connector fill animates on), StepperContext
+ *   the connector fill animates on), StepperContext, and per-step theme selector
+ *   state
  * @output Exports Step component and StepProps
  * @position Individual step item; used inside Stepper
  *
@@ -1247,11 +1248,33 @@ export function Step({
         ? styles.labelInProgress
         : undefined;
 
+  // Both text parts carry {progress, status}, the phase vocabulary of
+  // `step-indicator` above. The label additionally owns Stepper's disabled
+  // paint, so it alone carries disabled below.
+  const labelThemeProps = themeProps('step-label', {
+    progress,
+    status: status ?? undefined,
+    // The label owns Stepper's disabled paint (`styles.labelDisabled` above),
+    // so it owns the selector too. The description does not change under
+    // disabled and deliberately keeps the smaller {progress, status} surface.
+    disabled: isDisabled ? 'disabled' : null,
+  });
+  const descriptionThemeProps = themeProps('step-description', {
+    progress,
+    status: status ?? undefined,
+  });
+
   // Indicator + Label row
   const iconLabelNode = (
     <div {...stylex.props(styles.iconLabelRow)}>
       {indicatorNode}
-      <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+      <span
+        {...mergeProps(
+          labelThemeProps,
+          stylex.props(styles.label, labelColorStyle),
+        )}>
+        {label}
+      </span>
       {statusTextNode}
       {isOptional && (
         <>
@@ -1272,7 +1295,13 @@ export function Step({
           ? styles.descriptionRowWithIndicator
           : styles.descriptionRow,
       )}>
-      <span {...stylex.props(styles.description)}>{description}</span>
+      <span
+        {...mergeProps(
+          descriptionThemeProps,
+          stylex.props(styles.description),
+        )}>
+        {description}
+      </span>
     </div>
   ) : null;
 
@@ -1354,7 +1383,13 @@ export function Step({
         {...stylex.props(
           isVertical ? styles.otLabelRowStart : styles.otLabelRowCenter,
         )}>
-        <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+        <span
+          {...mergeProps(
+            labelThemeProps,
+            stylex.props(styles.label, labelColorStyle),
+          )}>
+          {label}
+        </span>
         {statusTextNode}
         {isOptional && (
           <>
@@ -1369,7 +1404,13 @@ export function Step({
     );
 
     const otDescriptionNode = isRenderable(description) ? (
-      <span {...stylex.props(styles.description)}>{description}</span>
+      <span
+        {...mergeProps(
+          descriptionThemeProps,
+          stylex.props(styles.description),
+        )}>
+        {description}
+      </span>
     ) : null;
 
     const otContentNode = !isRenderable(children) ? null : isVertical ? (

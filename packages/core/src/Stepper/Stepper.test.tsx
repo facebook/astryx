@@ -1224,3 +1224,116 @@ describe('Stepper', () => {
     });
   });
 });
+
+describe('step-label and step-description theme targets', () => {
+  // A step's two text parts each declare their own typography, so a theme
+  // cannot reach them by styling the step and letting the cascade do the rest
+  // — an inherited value never beats a value the element declares itself.
+  // These targets are the seam; the assertions below pin what a theme selects
+  // and, in the last case, why the cheaper route does not work.
+
+  const withText = (props = {}) => (
+    <Stepper activeStep={1}>
+      <Step step={0} label="Account" description="Your email" {...props} />
+      <Step step={1} label="Payment" description="Card details" />
+      <Step step={2} label="Review" description="Check and submit" />
+    </Stepper>
+  );
+
+  it('puts the target on the element that paints the text', () => {
+    const {container} = render(withText());
+    const label = container.querySelector('.astryx-step-label') as HTMLElement;
+    const description = container.querySelector(
+      '.astryx-step-description',
+    ) as HTMLElement;
+    // The text is the element's own content, not a descendant's: the target
+    // sits where the paint is rather than on a wrapper around it.
+    expect(label.textContent).toBe('Account');
+    expect(description.textContent).toBe('Your email');
+  });
+
+  it('reflects progress and status, the vocabulary step-indicator uses', () => {
+    // Same shape as the sibling target in this file, so a theme states a
+    // step's phase identically wherever it reaches in. Without it a theme
+    // could not say "the label of a completed step": the compiler emits a
+    // compound selector on one element, never a descendant of `.astryx-step`.
+    const {container} = render(
+      <Stepper activeStep={1}>
+        <Step step={0} label="Done" description="d" />
+        <Step step={1} label="Now" description="d" />
+        <Step step={2} label="Later" description="d" status="error" />
+      </Stepper>,
+    );
+    const labels = [
+      ...container.querySelectorAll<HTMLElement>('.astryx-step-label'),
+    ];
+    expect(labels.map(el => el.dataset.progress)).toEqual([
+      'completed',
+      'in-progress',
+      'not-started',
+    ]);
+    expect(labels[2].dataset.status).toBe('error');
+
+    const descriptions = [
+      ...container.querySelectorAll<HTMLElement>('.astryx-step-description'),
+    ];
+    expect(descriptions.map(el => el.dataset.progress)).toEqual([
+      'completed',
+      'in-progress',
+      'not-started',
+    ]);
+    expect(descriptions[2].dataset.status).toBe('error');
+  });
+
+  it('reflects disabled on the label target and emits its theme selector', () => {
+    // The label owns disabled paint (`styles.labelDisabled`); the description
+    // does not. The selector follows that ownership instead of being copied to
+    // every text target for vocabulary symmetry.
+    const {container} = render(
+      <Stepper activeStep={0}>
+        <Step
+          step={0}
+          label="Unavailable"
+          description="Try again later"
+          isDisabled
+        />
+      </Stepper>,
+    );
+    const label = container.querySelector('.astryx-step-label');
+    const description = container.querySelector('.astryx-step-description');
+    expect(label).toHaveAttribute('data-disabled', 'disabled');
+    expect(label).toHaveClass('disabled');
+    expect(description).not.toHaveAttribute('data-disabled');
+    expect(description).not.toHaveClass('disabled');
+
+    // A DOM attribute alone would not prove the public defineTheme path accepts
+    // and emits the state. Hold both halves of the contract.
+    const theme = defineTheme({
+      name: 'step-label-disabled-state-test',
+      components: {
+        'step-label': {
+          'disabled:disabled': {opacity: '0.4'},
+        },
+      },
+    });
+    const {component: css} = generateThemeCSS(theme);
+    expect(css).toContain('.astryx-step-label.disabled');
+    expect(css).toContain('opacity: 0.4');
+  });
+
+  it('carries them on the on-track layout too', () => {
+    // The indicator-on-the-connector layout renders its own label and
+    // description nodes; a target that only covered the default layout would
+    // leave a theme reaching for structural selectors in exactly one mode.
+    const {container} = render(
+      <Stepper activeStep={0} indicatorPosition="on-track">
+        <Step step={0} label="Account" description="Your email" />
+        <Step step={1} label="Payment" description="Card details" />
+      </Stepper>,
+    );
+    expect(container.querySelectorAll('.astryx-step-label')).toHaveLength(2);
+    expect(container.querySelectorAll('.astryx-step-description')).toHaveLength(
+      2,
+    );
+  });
+});
