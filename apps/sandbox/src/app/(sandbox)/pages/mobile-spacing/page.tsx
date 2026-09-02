@@ -105,7 +105,7 @@ const VIEWPORTS: Record<
   desktop: {label: 'Desktop', width: 1440, height: 900},
 };
 
-const VIEW_OPTIONS: ReadonlyArray<{label: string; value: ViewMode}> = [
+const VIEW_OPTIONS: Array<{label: string; value: ViewMode}> = [
   {value: 'preview', label: 'Product preview'},
   {value: 'tokens', label: 'Token values'},
 ];
