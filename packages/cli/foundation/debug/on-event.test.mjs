@@ -25,6 +25,7 @@ import {
   setGlobalOptions,
   setOutcome,
   setEventHandler,
+  noteConfigGateSkipped,
   recordEnvelope,
   recordHelp,
   resetRecorder,
@@ -319,6 +320,152 @@ describe('a broken handler cannot break the CLI', () => {
       recordHelp();
     }).not.toThrow();
   });
+
+  it('cannot change the exit code by calling process.exit', () => {
+    // Inside an exit listener, `process.exit(7)` replaces the code the command
+    // returned. A logging handler turning a green CI run red is exactly what
+    // "recording must never be the reason a command fails" has to rule out.
+    const exits = [];
+    const realExit = process.exit;
+    // If the guard is gone this records the attempt instead of killing the
+    // test worker, so the failure is a readable assertion rather than a crash.
+    process.exit = /** @type {any} */ (code => exits.push(code));
+    try {
+      setEventHandler(() => {
+        process.exit(7);
+      });
+      begin({argv: []});
+      setCommand('docs');
+      finish({exitCode: 0});
+    } finally {
+      process.exit = realExit;
+    }
+    expect(exits).toEqual([]);
+  });
+
+  it('cannot change the exit code by assigning process.exitCode', () => {
+    const before = process.exitCode;
+    setEventHandler(() => {
+      process.exitCode = 42;
+    });
+    begin({argv: []});
+    finish({exitCode: 0});
+    expect(process.exitCode).toBe(before);
+  });
+
+  it('sends what it prints to stderr, because stdout belongs to the command', () => {
+    // Under --json, stdout is exactly one envelope. A handler appending to it
+    // breaks whatever is parsing that stream.
+    const out = [];
+    const err = [];
+    const realOut = process.stdout.write;
+    const realErr = process.stderr.write;
+    process.stdout.write = /** @type {any} */ (c => (out.push(String(c)), true));
+    process.stderr.write = /** @type {any} */ (c => (err.push(String(c)), true));
+    try {
+      setEventHandler(() => {
+        process.stdout.write('handler diagnostics\n');
+      });
+      begin({argv: []});
+      finish({exitCode: 0});
+    } finally {
+      process.stdout.write = realOut;
+      process.stderr.write = realErr;
+    }
+    expect(out.join('')).not.toContain('handler diagnostics');
+    expect(err.join('')).toContain('handler diagnostics');
+  });
+
+  it('puts the real writers back after the handler returns', () => {
+    const before = {out: process.stdout.write, err: process.stderr.write};
+    setEventHandler(() => {
+      process.stdout.write('x');
+    });
+    begin({argv: []});
+    finish({exitCode: 0});
+    expect(process.stdout.write).toBe(before.out);
+    expect(process.stderr.write).toBe(before.err);
+  });
+});
+
+describe('the config gate, when it guesses wrong', () => {
+  // The bin reads astryx.config as text and only loads it when the word
+  // `debug` is in the file, so a project that has not opted in never pays to
+  // evaluate its own config. A handler set by spreading an object in from
+  // another module defeats that test — and the runs it costs (`--version`,
+  // `--help`, a parse error) are exactly the ones nobody notices are missing.
+
+  /** Capture stderr for one call. */
+  function withStderr(fn) {
+    const lines = [];
+    const real = process.stderr.write;
+    process.stderr.write = /** @type {any} */ (c => (lines.push(String(c)), true));
+    try {
+      fn();
+    } finally {
+      process.stderr.write = real;
+    }
+    return lines.join('');
+  }
+
+  it('says so when a handler turns up after the gate declined', () => {
+    const said = withStderr(() => {
+      begin({argv: []});
+      noteConfigGateSkipped();
+      setEventHandler(() => {});
+    });
+    expect(said).toMatch(/astryx\.config sets `debug`/);
+  });
+
+  it('stays quiet when the gate was right', () => {
+    // The overwhelmingly common case: a config with no `debug` key at all.
+    // Warning here would be pure noise for every project in the world.
+    const said = withStderr(() => {
+      begin({argv: []});
+      noteConfigGateSkipped();
+    });
+    expect(said).toBe('');
+  });
+
+  it.each([undefined, null, 'not a function'])(
+    'stays quiet when what arrives is %s rather than a handler',
+    value => {
+      const said = withStderr(() => {
+        begin({argv: []});
+        noteConfigGateSkipped();
+        setEventHandler(/** @type {any} */ (value));
+      });
+      expect(said).toBe('');
+    },
+  );
+
+  it('stays quiet when the gate let the config through', () => {
+    const said = withStderr(() => {
+      begin({argv: []});
+      setEventHandler(() => {});
+    });
+    expect(said).toBe('');
+  });
+
+  it('says it once, not once per lifecycle call', () => {
+    const said = withStderr(() => {
+      begin({argv: []});
+      noteConfigGateSkipped();
+      setEventHandler(() => {});
+      setEventHandler(() => {});
+    });
+    expect(said.match(/astryx\.config sets/g)).toHaveLength(1);
+  });
+
+  it('stays quiet under --json, where stderr is still not the place', () => {
+    const said = withStderr(() => {
+      begin({argv: ['--json']});
+      setGlobalOptions({json: true});
+      noteConfigGateSkipped();
+      setEventHandler(() => {});
+    });
+    expect(said).toBe('');
+  });
 });
 
 
@@ -469,7 +616,11 @@ describe('signals — the runs that never reach `exit`', () => {
    * @returns {{status: number | null, signal: string | null, event: any, raw: string}}
    */
   function signalledRun({owner = false, handlerFirst = false} = {}) {
-    const install = `d.setEventHandler(e => process.stdout.write('EVENT ' + JSON.stringify(e) + '\\n'));`;
+    // The handler reports on STDERR: stdout is the command's, and a handler's
+    // writes there are diverted to stderr on purpose (see "a broken handler
+    // cannot break the CLI"). A real handler writes to a file for the same
+    // reason.
+    const install = `d.setEventHandler(e => process.stderr.write('EVENT ' + JSON.stringify(e) + '\\n'));`;
     const source = `
       const d = await import(${JSON.stringify(path.join(debugDir, 'index.mjs'))});
       ${handlerFirst ? install : ''}
@@ -485,14 +636,14 @@ describe('signals — the runs that never reach `exit`', () => {
       encoding: 'utf8',
       timeout: 30_000,
     });
-    const line = (res.stdout || '')
+    const line = (res.stderr || '')
       .split('\n')
       .find(l => l.startsWith('EVENT '));
     return {
       status: res.status,
       signal: res.signal,
       event: line ? JSON.parse(line.slice(6)) : null,
-      raw: res.stdout || '',
+      raw: `${res.stdout || ''}${res.stderr || ''}`,
     };
   }
 

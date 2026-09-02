@@ -8,7 +8,15 @@ import {
   REDACTED,
 } from './redact.mjs';
 
-const ctx = {home: '/Users/ada', cwd: '/Users/ada/projects/app'};
+/**
+ * Fixture credentials are ASSEMBLED, never written whole. A file of literal
+ * credential-shaped strings is a file every secret scanner in the world stops
+ * on, and this one is in a public repository.
+ * @param {string[]} parts
+ */
+const cred = parts => parts.join('');
+
+const ctx = {home: '/Users/ada', cwd: '/Users/ada/projects/app', user: 'ada'};
 const scrub = createRedactor({enabled: true, ...ctx});
 
 describe('isSensitiveKey', () => {
@@ -62,6 +70,48 @@ describe('path scrubbing', () => {
       'read (/…/build/out.css)',
     );
   });
+
+  it('removes the username left in the middle of a collapsed path', () => {
+    // `/mnt/corp/ada/notes.txt` keeps its last two segments, and one of them
+    // is the name. Rewriting relative to home only catches paths that start
+    // at home.
+    expect(String(scrub('/mnt/corp/ada/notes.txt'))).toBe(
+      `/…/${REDACTED}/notes.txt`,
+    );
+  });
+
+  it('removes the username wherever else it appears', () => {
+    expect(String(scrub('owner ada pushed'))).toBe(`owner ${REDACTED} pushed`);
+  });
+
+  it('does not take ordinary words containing the username with it', () => {
+    expect(String(scrub('adapter loaded, badam ready'))).toBe(
+      'adapter loaded, badam ready',
+    );
+  });
+
+  it.each(['ad', 'root', 'build', 'test', 'node', ''])(
+    'skips the username %s — too short, or an ordinary word',
+    user => {
+      // Mangling every occurrence of "build" in a help screen to hide a name
+      // the home path already shows is a bad trade.
+      const s = createRedactor({enabled: true, ...ctx, user});
+      expect(String(s(`running ${user || 'x'} now`))).toContain(user || 'x');
+    },
+  );
+
+  it('rewrites a Windows path', () => {
+    // The posix rule cannot see one: no leading slash, backslash separators.
+    expect(String(scrub('at fn (C:\\Users\\ada\\proj\\src\\x.ts:3:1)'))).toBe(
+      'at fn (C:\\…\\src\\x.ts:3:1)',
+    );
+  });
+
+  it('rewrites a UNC path', () => {
+    expect(String(scrub('copy \\\\server\\share\\team\\dist\\out.css'))).toBe(
+      'copy \\\\…\\dist\\out.css',
+    );
+  });
 });
 
 describe('credential scrubbing', () => {
@@ -70,8 +120,25 @@ describe('credential scrubbing', () => {
     ['xoxb-1234567890-abcdefghij', 'Slack token'],
     ['AKIAIOSFODNN7EXAMPLE', 'AWS key id'],
     ['sk-abcdefghijklmnopqrstuvwxyz012345', 'OpenAI key'],
+    [cred(['glp', 'at-', 'AbCdEfGhIjKlMnOpQrSt']), 'GitLab token'],
+    [cred(['sk-', 'ant-', 'api03-', 'AbCdEfGh_IjKlMnOpQrStUv']), 'Anthropic key'],
+    [cred(['sk', '_live_', '4eC39HqLyjWDarjtT1zdp7dc']), 'Stripe key'],
+    [cred(['AIza', 'SyD-1234567890abcdefghijklmnopqrstuvw']), 'Google API key'],
+    [cred(['npm', '_', 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789']), 'npm token'],
+    [cred(['hf', '_', 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789']), 'HuggingFace token'],
+    [cred(['AC', '0123456789abcdef0123456789abcdef']), 'Twilio sid'],
   ])('removes a %s', value => {
     expect(String(scrub(`--key ${value}`))).not.toContain(value);
+  });
+
+  it('removes a PEM private key however it was wrapped', () => {
+    const pem = [
+      `-----BEGIN RSA ${cred(['PRIV', 'ATE KEY'])}-----`,
+      'MIIEow',
+      'IBAAKC',
+      `-----END RSA ${cred(['PRIV', 'ATE KEY'])}-----`,
+    ].join('\n');
+    expect(String(scrub(pem))).toBe(REDACTED);
   });
 
   it('removes a bearer token', () => {
@@ -185,6 +252,68 @@ describe('credential scrubbing', () => {
   });
 });
 
+describe('a bare secret, with nothing to identify it by', () => {
+  // The documented hole in the first version: a secret passed as a plain
+  // argument has no key, no flag and no recognizable prefix, so it landed in
+  // `args`, the error message and the captured stderr at once. Randomness is
+  // the only signal left, and the gates around the measurement are what stop
+  // it eating the record.
+
+  it.each([
+    ['a random alphanumeric token', 'aB3xK9mQ7pL2vN8rT5wY6zC4dF1gH0jS'],
+    ['a longer one', 'Xk7Pq2Lm9Rt4Ws8Nb3Vc6Zy1Ha5Jd0Ge7Fu4Io2M'],
+    ['a base64url secret', 'dBjftJeZ4CVPmB92K27uhbUJU1p1r-wW1gFWFOEjXkQ'],
+    ['one at the length floor', 'M4nP8qR2tV6xZ9bD3fH7jL5s'],
+    ['a generated password', 'k2Qz9zx3w7ep1r5t8yu4io6pa0sdF2ghj9kl3zxc7vbn5m1qwe'],
+  ])('redacts %s passed as a bare argument', (_label, secret) => {
+    expect(String(scrub(`docs ${secret}`))).toBe(`docs ${REDACTED}`);
+  });
+
+  it('redacts one quoted inside an error message', () => {
+    const secret = 'aB3xK9mQ7pL2vN8rT5wY6zC4dF1gH0jS';
+    expect(String(scrub(`Unknown topic "${secret}"`))).not.toContain(secret);
+  });
+
+  it.each([
+    ['a component name', 'RichTextEditorAutoLinkPlugin'],
+    ['a hook name', 'useTableGroupedRowsWithSelection'],
+    ['a commit sha', 'a3e3d179dcb1f4e5a2b8c7d6e9f0a1b2c3d4e5f6'],
+    ['a uuid', '550e8400-e29b-41d4-a716-446655440000'],
+    ['a prerelease version', '1.10.0-canary.20260902.1'],
+    ['a timestamp', '2026-09-02T07:25:14.000Z'],
+    ['a branch name', 'fix-debug-redaction-followups-2'],
+    ['a StyleX class', 'x1n2onr6x1ja2u2zx78zum5x1q0g3np'],
+    ['a file name', 'DateRangeInput.stories.tsx'],
+    ['a package tarball', 'astryxdesign-core-0.5.2.tgz'],
+    ['a relative path', 'packages/cli/foundation/debug/recorder.mjs'],
+  ])('leaves %s alone', (_label, value) => {
+    // Every one of these is longer than the floor and looks random to a naive
+    // entropy rule. A record that redacts commit shas and component names is
+    // useless for the thing it exists for.
+    expect(String(scrub(value))).toBe(value);
+  });
+
+  it('leaves a whole line of ordinary output alone', () => {
+    const line = 'Compile one or more defineTheme files to CSS and JS';
+    expect(String(scrub(line))).toBe(line);
+  });
+
+  it('catches a letters-only passphrase and a lowercase token too', () => {
+    // Both are shapes a character-class gate would have thrown away.
+    expect(String(scrub('QwErTyUiOpAsDfGhJkLzXcVbNm'))).toBe(REDACTED);
+    expect(String(scrub('k3m9x2qb7ft4wz8vn5hd1jr6ps0y'))).toBe(REDACTED);
+  });
+
+  it('reports the margin the ordinary strings survive on', () => {
+    // The threshold is the whole rule, so the number that matters is how much
+    // room the closest ordinary string has. If a change eats into this, the
+    // table above starts failing — this is here to say by how much.
+    const closest = 'RichTextEditorAutoLinkPlugin';
+    expect(String(scrub(closest))).toBe(closest);
+    expect(String(scrub(`${closest}1`))).toBe(`${closest}1`);
+  });
+});
+
 describe('argv, where the flag and its value are separate elements', () => {
   it('drops the element after a sensitive flag', () => {
     // `--flag value` is the ordinary CLI spelling. Redacting it in `options`
@@ -281,6 +410,9 @@ describe('cost on hostile input', () => {
     ['a word run then a colon keyword', `${'y'.repeat(500_000)} token:abc`],
     ['colons', ':'.repeat(500_000)],
     ['quoted pairs', '"k":"xxxxxxxxxxxxxxxxxxxx" '.repeat(19_000)],
+    ['random-looking tokens', 'aB3xK9mQ7pL2vN8rT5wY6zC4dF1gH0jS '.repeat(15_000)],
+    ['hex runs', 'a3e3d179dcb1f4e5a2b8c7d6e9f0a1b2c3d4e5f6 '.repeat(12_000)],
+    ['one long base64 run', 'QWxhZGRpbjpvcGVuIHNlc2FtZQ'.repeat(19_000)],
     ['a keyword between two word runs', `${'x'.repeat(250_000)}token=${'y'.repeat(250_000)}`],
     ['a word run then an equals sign', `${'x'.repeat(500_000)}=`],
     ['repeated assignments', 'token=abc '.repeat(50_000)],

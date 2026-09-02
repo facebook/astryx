@@ -48,7 +48,7 @@ export const doc = {
       name: 'debug',
       type: '(event: DebugEvent) => void',
       description:
-        'Record every astryx command run in this project and hand each one to this function. Setting it is the whole opt-in; leaving it out records nothing. It runs synchronously at process exit, so a returned promise is never awaited — use it for synchronous work only. Write the key literally in the config file: so that a project which has not opted in never pays to evaluate its config, the CLI only loads the config before parsing when the file itself contains the word "debug", which a handler spread in from another module would not.',
+        'Record every astryx command run in this project and hand each one to this function. Setting it is the whole opt-in; leaving it out records nothing. It runs synchronously at process exit, so a returned promise is never awaited — use it for synchronous work only, and note that anything it prints goes to stderr because stdout belongs to the command. Write the key literally in the config file: so that a project which has not opted in never pays to evaluate its config, the CLI only loads the config before parsing when the file itself contains the word "debug". A handler spread in from another module still works for commands that read the config anyway, and the CLI says so on stderr when it notices.',
       example: "event => appendFileSync('runs.ndjson', JSON.stringify(event) + '\\n')",
     },
     {

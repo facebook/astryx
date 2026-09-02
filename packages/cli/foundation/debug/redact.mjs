@@ -95,7 +95,9 @@ const SENSITIVE_FLAG_RE = /^--?([\w-]{1,64})$/;
  * The key half is BOUNDED. An unbounded `[\w-]*` before a keyword makes an
  * unanchored scan quadratic, and this runs over captured output that can be
  * tens of kilobytes — 500KB of word characters followed by `token=` took over
- * seven minutes.
+ * seven minutes. 128 is past any real flag or environment variable name, and
+ * a bound is what keeps the scan linear; the cost of a longer one is only the
+ * work done per candidate.
  *
  * The value half takes an optional matching quote, so `--token="s"` and the
  * JSON spelling `"token":"s"` lose their value like the bare form. Without it
@@ -104,12 +106,14 @@ const SENSITIVE_FLAG_RE = /^--?([\w-]{1,64})$/;
  * arrives in.
  */
 const ASSIGNMENT_RE =
-  /(--?[\w-]{1,64}|"[\w.-]{1,64}"|[\w.]{1,64})(\s*[=:]\s*)("[^"]*"|'[^']*'|[^\s'"`,}\]]*)/g;
+  /(--?[\w-]{1,128}|"[\w.-]{1,128}"|[\w.]{1,128})(\s*[=:]\s*)("[^"]*"|'[^']*'|[^\s'"`,}\]]*)/g;
 
 /** Well-known credential formats worth catching wherever they appear. */
 const CREDENTIAL_PATTERNS = [
   // GitHub personal access / OAuth / app tokens.
   /\bgh[pousr]_[A-Za-z0-9]{16,}\b/g,
+  // GitLab personal access tokens.
+  /\bglpat-[A-Za-z0-9_-]{16,}/g,
   // Slack tokens.
   /\bxox[abposr]-[A-Za-z0-9-]{10,}\b/g,
   // AWS access key ids.
@@ -118,9 +122,93 @@ const CREDENTIAL_PATTERNS = [
   /\bBearer\s+[A-Za-z0-9._~+/-]{16,}=*/gi,
   // JSON Web Tokens.
   /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
-  // OpenAI-style keys.
+  // Anthropic / OpenAI-style keys. The dashed form first: the plain `sk-`
+  // rule stops at the first `-` and would leave the rest of the key standing.
+  /\bsk-(?:ant|proj|live|test)-[A-Za-z0-9_-]{16,}/g,
   /\bsk-[A-Za-z0-9]{20,}\b/g,
+  // Stripe secret / restricted keys.
+  /\b[sr]k_(?:live|test)_[A-Za-z0-9]{10,}\b/g,
+  // Google API keys.
+  /\bAIza[A-Za-z0-9_-]{35}\b/g,
+  // npm automation tokens.
+  /\bnpm_[A-Za-z0-9]{30,}\b/g,
+  // Hugging Face.
+  /\bhf_[A-Za-z0-9]{30,}\b/g,
+  // SendGrid.
+  /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}/g,
+  // Twilio account / api sids.
+  /\b(?:AC|SK)[0-9a-f]{32}\b/g,
+  // A PEM private key, however it was line-wrapped.
+  /-----BEGIN[A-Z ]*PRIVATE KEY-----[\s\S]*?-----END[A-Z ]*PRIVATE KEY-----/g,
 ];
+
+/**
+ * Shortest string worth measuring for randomness, and the alphabet a candidate
+ * may be built from.
+ *
+ * `/` is deliberately absent even though base64 uses it: paths are the biggest
+ * source of long high-entropy-looking runs, and stopping a candidate at a
+ * slash keeps every path segment far below the length floor. A `.` disqualifies
+ * a candidate for the same reason — dates, versions and filenames all carry
+ * one, and the formats that legitimately contain dots (JWT, SendGrid) have
+ * their own rule above.
+ */
+const ENTROPY_MIN_CHARS = 24;
+const HIGH_ENTROPY_CANDIDATE_RE = new RegExp(
+  `[A-Za-z0-9+=_-]{${ENTROPY_MIN_CHARS},512}`,
+  'g',
+);
+
+/**
+ * Shannon entropy in bits per character.
+ * @param {string} value
+ * @returns {number}
+ */
+function entropyBits(value) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const ch of value) counts.set(ch, (counts.get(ch) ?? 0) + 1);
+  let bits = 0;
+  for (const n of counts.values()) {
+    const p = n / value.length;
+    bits -= p * Math.log2(p);
+  }
+  return bits;
+}
+
+/**
+ * Is this standalone word a credential nobody gave us a name for?
+ *
+ * The documented hole in the first version of this module: a secret passed as
+ * a bare argument — `astryx docs <token>` — has no key to match, no flag in
+ * front of it, and no recognizable prefix, so every rule above misses it and
+ * it lands in `args`, the error message and the captured stderr at once.
+ * Randomness is the only signal left.
+ *
+ * The threshold scales with length because Shannon entropy is bounded by
+ * log2(length) for a short sample: a 24-character random token cannot score
+ * above 4.58 however random it is. Capping the reference at 32 stops the bar
+ * rising past what a real token reaches.
+ *
+ * That single measurement is the whole rule, deliberately. Character-class
+ * gates are the obvious way to protect commit shas and CamelCase identifiers,
+ * and every one that was tried here turned out to be either dead — the
+ * threshold already excluded the thing it was aimed at, by 0.2 bits or more —
+ * or actively harmful: "must contain a digit" throws away a letters-only
+ * passphrase, and "three of four character classes" throws away a
+ * lowercase-alphanumeric token, both of which are exactly what this is for.
+ * What keeps ordinary strings safe is the margin, so the margin is what the
+ * tests pin: a table of shas, uuids, component names, branch names, class
+ * names and versions that must survive verbatim.
+ *
+ * @param {string} word
+ * @returns {boolean}
+ */
+function looksLikeSecret(word) {
+  // The length floor lives in HIGH_ENTROPY_CANDIDATE_RE, which is what
+  // produces every word this ever sees.
+  return entropyBits(word) >= 0.9 * Math.log2(Math.min(word.length, 32));
+}
 
 /** Credentials embedded in a URL's userinfo component. */
 const URL_USERINFO_RE = /(\b[a-z][a-z0-9+.-]*:\/\/)[^/\s:@]+(?::[^/\s@]*)?@/gi;
@@ -173,7 +261,7 @@ export function redactArgv(argv, redact) {
  * revealing where on the machine it lives.
  *
  * @param {string} value
- * @param {{home: string, cwd: string}} ctx
+ * @param {{home: string, cwd: string, user: RegExp | null}} ctx
  * @returns {string}
  */
 function scrubPaths(value, ctx) {
@@ -204,13 +292,33 @@ function scrubPaths(value, ctx) {
     },
   );
 
+  // The same rule for a Windows path. The posix rule cannot see one — no
+  // leading `/`, backslash separators — so on Windows every absolute path in
+  // a stack trace or an error message survived whole.
+  out = out.replace(
+    /(^|[\s"'`([{<=,;])([A-Za-z]:\\|\\\\)([^\s"'`)\]}>]{2,})/g,
+    (match, lead, root, rest) => {
+      const parts = String(rest).split('\\').filter(Boolean);
+      if (parts.length <= 2) return match;
+      return `${lead}${root}…\\${parts.slice(-2).join('\\')}`;
+    },
+  );
+
+  // Whatever is left, the username can still be sitting in the middle of it:
+  // `/mnt/corp/alice/notes.txt` collapses to `/…/alice/notes.txt`, which keeps
+  // exactly the segment worth losing. Home-relative rewriting only catches the
+  // paths that start at home.
+  if (ctx.user) {
+    out = out.replace(ctx.user, REDACTED);
+  }
+
   return out;
 }
 
 /**
  * Apply every content rule to a single string.
  * @param {string} value
- * @param {{home: string, cwd: string}} ctx
+ * @param {{home: string, cwd: string, user: RegExp | null}} ctx
  * @returns {string}
  */
 function scrubString(value, ctx) {
@@ -224,8 +332,8 @@ function scrubString(value, ctx) {
 
   // `--token=abc` / `GITHUB_TOKEN=abc` / `"token": "abc"` survive the patterns
   // above when the value is an unrecognized format, so drop the right-hand
-  // side by key name. The separator test is the cheap way out: most strings
-  // have neither and skip the scan entirely.
+  // side by key name. The separator test is the cheap way out: a string with
+  // neither skips the scan entirely.
   if (out.includes('=') || out.includes(':')) {
     out = out.replace(ASSIGNMENT_RE, (whole, key, sep, value) => {
       const name = String(key).replace(/^--?/, '').replace(/^"|"$/g, '');
@@ -237,7 +345,20 @@ function scrubString(value, ctx) {
     });
   }
 
-  return scrubPaths(out, ctx);
+  out = scrubPaths(out, ctx);
+
+  // Last, because everything above gives a secret a name, a prefix or a
+  // position to be recognized by, and this is what is left when it has none:
+  // a bare argument that is simply too random to be anything else. Running it
+  // after path scrubbing matters — an absolute path is already collapsed to
+  // `/…/two/segments` by then, so it cannot look like one long random run.
+  if (out.length >= ENTROPY_MIN_CHARS) {
+    out = out.replace(HIGH_ENTROPY_CANDIDATE_RE, word =>
+      looksLikeSecret(word) ? REDACTED : word,
+    );
+  }
+
+  return out;
 }
 
 /**
@@ -265,6 +386,7 @@ function clamp(value, max) {
  *   rules while still applying the depth and length limits.
  * @param {string} [options.home] - overridable for tests.
  * @param {string} [options.cwd] - overridable for tests.
+ * @param {string} [options.user] - overridable for tests.
  * @param {number} [options.maxLength] - Per-value character cap.
  * @returns {Redactor}
  */
@@ -272,12 +394,14 @@ export function createRedactor({
   enabled = true,
   home,
   cwd,
+  user,
   maxLength = MAX_VALUE_CHARS,
 } = {}) {
-  /** @type {{home: string, cwd: string}} */
+  /** @type {{home: string, cwd: string, user: RegExp | null}} */
   const ctx = {
     home: home ?? safeHomedir(),
     cwd: cwd ?? safeCwd(),
+    user: usernamePattern(user ?? safeUsername()),
   };
 
   /**
@@ -340,3 +464,50 @@ function safeCwd() {
     return '';
   }
 }
+
+/** @returns {string} */
+function safeUsername() {
+  try {
+    return os.userInfo().username || '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * A whole-word matcher for the machine's username, or null when there is
+ * nothing safe to match.
+ *
+ * Short names are skipped: a two-character username matches inside half the
+ * words in a help screen, and mangling ordinary output to hide something
+ * already visible in the home path is a bad trade. Names that ARE ordinary
+ * words are skipped for the same reason.
+ *
+ * @param {string} name
+ * @returns {RegExp | null}
+ */
+function usernamePattern(name) {
+  const value = String(name ?? '');
+  if (value.length < 3 || COMMON_WORD_USERNAMES.has(value.toLowerCase())) {
+    return null;
+  }
+  const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![A-Za-z0-9_-])${escaped}(?![A-Za-z0-9_-])`, 'gi');
+}
+
+/**
+ * Usernames that are also ordinary words. Replacing these would corrupt help
+ * text and error messages far more than it protects.
+ */
+const COMMON_WORD_USERNAMES = new Set([
+  'admin',
+  'build',
+  'core',
+  'dev',
+  'docs',
+  'node',
+  'root',
+  'test',
+  'user',
+  'www',
+]);

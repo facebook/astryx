@@ -66,6 +66,7 @@ let _handler = null;
 let _finished = false;
 let _listenerInstalled = false;
 let _signalsArmed = false;
+let _configGateSkipped = false;
 let _startedAt = 0;
 /** @type {string | undefined} */
 let _cliVersion;
@@ -177,8 +178,49 @@ export function currentEvent() {
 export function setEventHandler(handler) {
   guard(() => {
     _handler = typeof handler === 'function' ? handler : null;
-    if (_event && _handler) armSignalHandlers();
+    if (!_event || !_handler) return;
+    armSignalHandlers();
+    // A handler arriving after the pre-parse gate declined to load the config
+    // proves the gate was wrong about this project: the config DOES set
+    // `debug`, it just does not spell it in the file. See noteConfigGateSkipped.
+    if (_configGateSkipped) reportConfigGateMiss();
   });
+}
+
+/**
+ * The pre-parse gate read the config file and decided not to load it.
+ *
+ * Recorded rather than acted on, because at that moment being wrong and being
+ * right look identical — the overwhelming majority of projects simply have no
+ * `debug` key, and warning them would be pure noise. It only becomes evidence
+ * of a miss if a handler turns up later anyway.
+ */
+export function noteConfigGateSkipped() {
+  _configGateSkipped = true;
+}
+
+/**
+ * Say, once, that some runs of this project will go unrecorded.
+ *
+ * The commands that load the config for their own reasons still get their
+ * handler and still report. The ones that never touch it — `--version`,
+ * `--help`, a parse error, an unknown command — are exactly the runs the gate
+ * costs you, and they are exactly the ones you cannot notice are missing.
+ */
+function reportConfigGateMiss() {
+  _configGateSkipped = false;
+  if (_event?.output.jsonMode) return;
+  try {
+    const write = _originalWrites?.err ?? process.stderr.write;
+    write.call(
+      process.stderr,
+      'astryx: your astryx.config sets `debug`, but the file does not contain ' +
+        'the word, so commands that do not otherwise read the config are not ' +
+        'recorded. Name the key literally in the config file.\n',
+    );
+  } catch {
+    /* the warning is a courtesy; never let it matter */
+  }
 }
 
 /**
@@ -527,14 +569,77 @@ export function finish({exitCode} = {}) {
 
     // A COPY. Handing over the live object would let third-party code mutate
     // the record mid-flight; its errors are swallowed for the same reason.
-    try {
-      _handler(structuredClone(sealed));
-      delivered = true;
-    } catch {
-      /* a broken handler must not fail the command */
-    }
+    delivered = callHandler(_handler, structuredClone(sealed));
   });
   return delivered;
+}
+
+/**
+ * Hand the event over with the two doors a handler could otherwise reach
+ * through nailed shut.
+ *
+ * Throwing and mutating were already contained. These two were not, because
+ * they happen through the process rather than through us:
+ *
+ * - `process.exit(7)` inside an exit listener REPLACES the code the command
+ *   returned. A logging handler turning a green CI run red is the worst kind
+ *   of bug to track down, and "recording must never be the reason a command
+ *   fails" has to mean this too. Same for assigning `process.exitCode`, which
+ *   Node still honours this late.
+ * - Writing to stdout appends to the command's own output. Under `--json`
+ *   that appends to the envelope and breaks whatever is parsing it. stdout
+ *   belongs to the command, so a handler's writes are sent to stderr — where
+ *   its own diagnostics belonged anyway, and where they are still visible
+ *   rather than silently dropped.
+ *
+ * Neither is silent: an attempt to exit is reported once, on stderr.
+ *
+ * @param {import('../../authoring/debug/type').DebugEventHandler} handler
+ * @param {import('./event.mjs').DebugEvent} event
+ * @returns {boolean} whether the handler ran to completion.
+ */
+function callHandler(handler, event) {
+  const realExit = process.exit;
+  const realStdoutWrite = process.stdout.write;
+  const realStderrWrite = process.stderr.write;
+  const exitCodeBefore = process.exitCode;
+  let exitAttempt = /** @type {number | string | null | undefined} */ (undefined);
+  let ran = false;
+
+  try {
+    process.exit = /** @type {any} */ (
+      (/** @type {any} */ code) => {
+        exitAttempt = code;
+      }
+    );
+    process.stdout.write = /** @type {any} */ (
+      function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
+        return realStderrWrite.call(process.stderr, chunk, ...rest);
+      }
+    );
+    handler(event);
+    ran = true;
+  } catch {
+    /* a broken handler must not fail the command */
+  } finally {
+    process.exit = realExit;
+    process.stdout.write = realStdoutWrite;
+    process.exitCode = exitCodeBefore;
+  }
+
+  if (exitAttempt !== undefined) {
+    try {
+      realStderrWrite.call(
+        process.stderr,
+        `astryx: the debug handler called process.exit(${String(exitAttempt)}); ` +
+          `ignored so it cannot change what the command returned.\n`,
+      );
+    } catch {
+      /* nothing left to report through */
+    }
+  }
+
+  return ran;
 }
 
 /** Reset all recorder state. Tests call this between cases. */
@@ -557,5 +662,6 @@ export function resetRecorder() {
   _event = null;
   _handler = null;
   _finished = false;
+  _configGateSkipped = false;
   _startedAt = 0;
 }

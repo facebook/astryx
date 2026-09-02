@@ -33,6 +33,7 @@ export {
   setGlobalOptions,
   setProject,
   setEventHandler,
+  noteConfigGateSkipped,
   setOutcome,
   recordEnvelope,
   recordHelp,
