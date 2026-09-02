@@ -152,6 +152,37 @@ describe('credential scrubbing', () => {
       expect(String(scrub(`${flag}=ordinaryvalue`))).toContain('ordinaryvalue');
     },
   );
+
+  it.each([
+    ['a quoted flag value', '--token="shhSECRETVALUE"'],
+    ['a single-quoted value', "--secret='shhSECRETVALUE'"],
+    ['a JSON string pair', '{"token":"shhSECRETVALUE"}'],
+    ['a spaced JSON pair', '{ "apiKey": "shhSECRETVALUE" }'],
+    ['a yaml pair', 'password: shhSECRETVALUE'],
+  ])('drops %s', (_label, input) => {
+    // The value half has to take the quotes with it. Stopping AT the opening
+    // quote leaves the secret standing with quotes around it — which is the
+    // shape a config blob or a quoted argument arrives in.
+    expect(String(scrub(input))).not.toContain('shhSECRETVALUE');
+  });
+
+  it('keeps the quoting so the surrounding shape still parses', () => {
+    const out = String(scrub('{"token":"shhSECRETVALUE","name":"astryx"}'));
+    expect(() => JSON.parse(out)).not.toThrow();
+    expect(JSON.parse(out).name).toBe('astryx');
+    expect(JSON.parse(out).token).toBe(REDACTED);
+  });
+
+  it.each([
+    ['a URL', 'GET https://api.github.com/repos/facebook/astryx/pulls/4812'],
+    ['a websocket URL', 'ws://localhost:5173/hmr/client'],
+    ['a proxy URL', 'http://127.0.0.1:8931/a/b/c'],
+    ['a time', 'elapsed 12:30 done'],
+    ['a ratio', 'aspect: 16/9'],
+    ['an ordinary JSON pair', '{"name":"astryx"}'],
+  ])('leaves %s untouched — `:` is a separator, not an invitation', (_l, input) => {
+    expect(String(scrub(input))).toBe(input);
+  });
 });
 
 describe('argv, where the flag and its value are separate elements', () => {
@@ -247,6 +278,9 @@ describe('cost on hostile input', () => {
   it.each([
     ['plain word characters', 'x'.repeat(500_000)],
     ['a word run then a keyword', `${'y'.repeat(500_000)} token=abc`],
+    ['a word run then a colon keyword', `${'y'.repeat(500_000)} token:abc`],
+    ['colons', ':'.repeat(500_000)],
+    ['quoted pairs', '"k":"xxxxxxxxxxxxxxxxxxxx" '.repeat(19_000)],
     ['a keyword between two word runs', `${'x'.repeat(250_000)}token=${'y'.repeat(250_000)}`],
     ['a word run then an equals sign', `${'x'.repeat(500_000)}=`],
     ['repeated assignments', 'token=abc '.repeat(50_000)],

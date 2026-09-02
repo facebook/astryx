@@ -96,8 +96,15 @@ const SENSITIVE_FLAG_RE = /^--?([\w-]{1,64})$/;
  * unanchored scan quadratic, and this runs over captured output that can be
  * tens of kilobytes — 500KB of word characters followed by `token=` took over
  * seven minutes.
+ *
+ * The value half takes an optional matching quote, so `--token="s"` and the
+ * JSON spelling `"token":"s"` lose their value like the bare form. Without it
+ * the value stops AT the opening quote and the secret survives with quotes
+ * around it, which is the shape a config blob or a quoted shell argument
+ * arrives in.
  */
-const ASSIGNMENT_RE = /(--?[\w-]{1,64}|[\w.]{1,64})=([^\s'"`]*)/g;
+const ASSIGNMENT_RE =
+  /(--?[\w-]{1,64}|"[\w.-]{1,64}"|[\w.]{1,64})(\s*[=:]\s*)("[^"]*"|'[^']*'|[^\s'"`,}\]]*)/g;
 
 /** Well-known credential formats worth catching wherever they appear. */
 const CREDENTIAL_PATTERNS = [
@@ -215,16 +222,19 @@ function scrubString(value, ctx) {
   out = out.replace(URL_USERINFO_RE, (_m, scheme) => `${scheme}${REDACTED}@`);
   out = out.replace(EMAIL_RE, REDACTED);
 
-  // `--token=abc` / `GITHUB_TOKEN=abc` survive the patterns above when the
-  // value is an unrecognized format, so drop the right-hand side by key name.
-  // The `=` test is the cheap way out: most strings have none and skip the
-  // scan entirely.
-  if (out.includes('=')) {
-    out = out.replace(ASSIGNMENT_RE, (whole, key) =>
-      isSensitiveKey(String(key).replace(/^--?/, ''))
-        ? `${key}=${REDACTED}`
-        : whole,
-    );
+  // `--token=abc` / `GITHUB_TOKEN=abc` / `"token": "abc"` survive the patterns
+  // above when the value is an unrecognized format, so drop the right-hand
+  // side by key name. The separator test is the cheap way out: most strings
+  // have neither and skip the scan entirely.
+  if (out.includes('=') || out.includes(':')) {
+    out = out.replace(ASSIGNMENT_RE, (whole, key, sep, value) => {
+      const name = String(key).replace(/^--?/, '').replace(/^"|"$/g, '');
+      if (!isSensitiveKey(name)) return whole;
+      // Keep the value's quoting so the surrounding shape — a JSON blob, a
+      // quoted shell argument — still parses as what it was.
+      const q = /^["']/.test(value) ? value[0] : '';
+      return `${key}${sep}${q}${REDACTED}${q}`;
+    });
   }
 
   return scrubPaths(out, ctx);
