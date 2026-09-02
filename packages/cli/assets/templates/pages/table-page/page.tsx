@@ -457,7 +457,9 @@ function Figure({
  *
  * `tabIndex` and `aria-describedby` are set on the row in the same effect,
  * because the node is already in hand and neither can be expressed through a
- * column definition. That also makes the detail reachable without a pointer.
+ * column definition. That also makes the detail reachable without a pointer —
+ * but only alongside `focusTrigger: 'always'`, because the row is not focusable
+ * yet at the moment the hook attaches to it.
  */
 function DescriptionCell({item}: {item: InvoiceRow}) {
   const anchorRef = useRef<HTMLElement>(null);
@@ -465,6 +467,12 @@ function DescriptionCell({item}: {item: InvoiceRow}) {
     placement: 'below',
     alignment: 'start',
     label: `${item.description} details`,
+    // The row is a plain `<tr>` made focusable in the effect below, and `auto`
+    // decides whether to bind focus listeners at attach time — when the row is
+    // still a non-focusable element. It would bind nothing, leaving the card
+    // reachable by pointer and touch but not by keyboard: tabbing to a row
+    // would draw a focus ring and open nothing. Leave nothing to detection.
+    focusTrigger: 'always',
   });
 
   const attach = hoverCard.ref;
@@ -494,7 +502,12 @@ function DescriptionCell({item}: {item: InvoiceRow}) {
         // No padding here — useHoverCard's content wrapper already applies
         // spacing-3 on all four sides. Adding it again doubles it to 24px.
         <VStack gap={3} width={280}>
-          <Heading level={2}>{item.description}</Heading>
+          {/* h3 sizing, h2 in the outline. The page's only other heading is
+              the invoice h1, so a plain level-3 would jump h1 → h3 and read
+              as a missing section to anyone navigating by heading. */}
+          <Heading level={3} accessibilityLevel={2}>
+            {item.description}
+          </Heading>
           <MetadataList label={{position: 'start'}}>
             <MetadataListItem label="Category">
               {CATEGORY_LABEL[item.category]}
