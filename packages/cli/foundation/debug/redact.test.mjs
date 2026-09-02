@@ -257,6 +257,27 @@ describe('credential scrubbing', () => {
     );
   });
 
+  it('still redacts a real field named key, however it is nested', () => {
+    // This is the path a value actually reaches the recorder by — `options`,
+    // `args`, `globalOptions` are objects, and the key comes with them. The
+    // narrowing only affects a `key=` found inside a STRING.
+    expect(scrub({key: 'shhSECRETVALUE'})).toEqual({key: REDACTED});
+    expect(scrub({a: {key: 'shhSECRETVALUE'}})).toEqual({a: {key: REDACTED}});
+    expect(scrub([{pwd: 'shhSECRETVALUE'}])).toEqual([{pwd: REDACTED}]);
+  });
+
+  it('catches a bare key= in text anyway when the value looks like a secret', () => {
+    // What the narrowing gives up is a LOW-entropy secret under a bare `key=`
+    // label in captured output. A real one is caught by the rules that do not
+    // need a name: randomness, or a recognizable format.
+    expect(String(scrub("key: 'aB3xK9mQ7pL2vN8rT5wY6zC4dF1gH0jS'"))).toBe(
+      `key: '${REDACTED}'`,
+    );
+    expect(String(scrub('key=sk-abcdefghijklmnopqrstuvwxyz012345'))).toBe(
+      `key=${REDACTED}`,
+    );
+  });
+
   it.each(['--keyboard', '--path', '--sortkey', '--pattern', '--signal'])(
     'leaves %s alone — a whole-word rule must not eat ordinary flags',
     flag => {
