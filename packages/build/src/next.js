@@ -14,6 +14,70 @@
  *   });
  */
 
+const fs = require('fs');
+const path = require('path');
+
+const ASTRYX_MODULE = /[\\/]node_modules[\\/]@astryxdesign[\\/]/;
+
+/**
+ * Locate an installed package's directory by walking `node_modules` up from
+ * the app, the way Node resolves a bare specifier. Returns null when the
+ * package is not installed.
+ */
+function findPackageDir(name, from) {
+  let dir = path.resolve(from);
+  for (;;) {
+    const candidate = path.join(dir, 'node_modules', name);
+    if (fs.existsSync(path.join(candidate, 'package.json'))) {
+      return candidate;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return null;
+    }
+    dir = parent;
+  }
+}
+
+/**
+ * Map each installed astryx package to the `source` targets in its export map,
+ * so an app's imports reach raw TS the way an in-repo build does. Subpaths get
+ * an entry each — `@astryxdesign/core/AlertDialog` is as much a documented
+ * entry point as the package root. Packages that are absent, and export keys
+ * that ship no `source` condition, are skipped and keep normal resolution.
+ */
+function sourceEntryAliases(packages, context) {
+  const from = (context && context.dir) || process.cwd();
+  const aliases = {};
+  for (const name of packages) {
+    // Not `require.resolve(`${name}/package.json`)`: packages that define
+    // `exports` without a `./package.json` key — astryx's own among them —
+    // make that request throw ERR_PACKAGE_PATH_NOT_EXPORTED.
+    const packageDir = findPackageDir(name, from);
+    if (packageDir == null) {
+      continue;
+    }
+    let exports;
+    try {
+      exports = require(path.join(packageDir, 'package.json')).exports;
+    } catch {
+      continue;
+    }
+    if (exports == null || typeof exports !== 'object') {
+      continue;
+    }
+    for (const [key, value] of Object.entries(exports)) {
+      const entry = value && typeof value === 'object' ? value.source : null;
+      if (typeof entry !== 'string' || key.includes('*')) {
+        continue;
+      }
+      const request = key === '.' ? name : `${name}/${key.slice(2)}`;
+      aliases[`${request}$`] = path.resolve(packageDir, entry);
+    }
+  }
+  return aliases;
+}
+
 /**
  * Wraps a Next.js config to enable Astryx source builds.
  * - Adds transpilePackages for @astryxdesign/* packages
@@ -46,11 +110,27 @@ function withAstryx(nextConfig = {}) {
       config.module = config.module || {};
       config.module.rules = config.module.rules || [];
       config.module.rules.unshift({
-        test: /[\\/]node_modules[\\/]@astryxdesign[\\/]/,
+        test: ASTRYX_MODULE,
         resolve: {
           conditionNames: ['source', '...'],
         },
       });
+
+      // The rule above only covers astryx-to-astryx imports: `Rule.test`
+      // matches the module being processed and `Rule.resolve` governs the
+      // requests that module makes, so an app's own `@astryxdesign/*` imports —
+      // issued from its sources, outside node_modules — never match it. Those
+      // resolve through `default` to dist, whose runtime class names are
+      // disjoint from the CSS the PostCSS pass compiles out of source, and the
+      // app renders unstyled without erroring. Rules cannot key on the request
+      // string, so point the packages at their `source` entry directly; the
+      // global conditions stay as Next's defaults for React and for
+      // third-party `source` shippers such as `lexical`.
+      config.resolve = config.resolve || {};
+      config.resolve.alias = {
+        ...sourceEntryAliases(astryxPackages, context),
+        ...(config.resolve.alias || {}),
+      };
 
       // Preserve the symlinked node_modules path so Next.js's
       // transpilePackages matcher recognizes @astryxdesign/* packages under
