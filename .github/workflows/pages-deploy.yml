@@ -59,8 +59,11 @@ jobs:
   deploy:
     needs: source
     if: needs.source.outputs.workflow == 'true'
-    runs-on: ubuntu-slim
-    timeout-minutes: 20
+    # The published branch is several GiB and contains hundreds of thousands of
+    # files. ubuntu-slim has a 15-minute hard job limit, which can interrupt the
+    # archive created by upload-pages-artifact before it reaches the upload step.
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: read
       pages: write

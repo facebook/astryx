@@ -370,6 +370,10 @@ describe('visual acceptance workflow concurrency', () => {
     expect(prComment).toContain('uses: ./.github/workflows/deploy-preview.yml');
     expect(pages).toContain("- 'PR Comment'");
     expect(pages).toContain('workflow_dispatch:');
+    const deployJob = pages.slice(pages.indexOf('  deploy:'));
+    expect(deployJob).toContain('runs-on: ubuntu-latest');
+    expect(deployJob).toContain('timeout-minutes: 60');
+    expect(deployJob).not.toContain('runs-on: ubuntu-slim');
     expect(pages).toContain('group: github-pages-deployment');
     expect(pages).toContain('cancel-in-progress: false');
     expect(pages).toContain('pages: write');
