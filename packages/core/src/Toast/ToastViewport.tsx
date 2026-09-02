@@ -63,6 +63,16 @@ const styles = stylex.create({
     // layer (above dialogs), but we don't want its default styles.
     // UA stylesheet applies background-color: Canvas, margin: auto, etc.
     inset: 'unset',
+    // `width` is part of that reset: the UA gives every popover
+    // `width: fit-content`, and this element is positioned by spanning the
+    // inline axis (`viewportInlineSpan` sets both inset-inline edges to 0) and
+    // then aligning within itself. A shrink-wrapped box cannot span, so both
+    // edges cannot be honoured — the box resolves against the start edge at
+    // its content width, and `align-items: flex-end` then aligns the toast to
+    // the right of a box that is itself sitting on the left. Measured in
+    // Chromium at 1200px wide: 438px box at x=0, end-positioned toast landing
+    // at x=19.
+    width: 'auto',
     margin: 0,
     border: 'none',
     background: 'none',

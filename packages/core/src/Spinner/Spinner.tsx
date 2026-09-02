@@ -265,13 +265,22 @@ const styles = stylex.create({
   ring: {
     backfaceVisibility: 'hidden',
     display: 'block',
+    // The frame is the box, read from the same composed var the span is sized
+    // from — not from the size constant, which a theme cannot reach, and not
+    // from a percentage, which needs the grid area to be a definite size in
+    // both axes (an unresolved percentage height on an SVG falls back to the
+    // replaced-element default of 150px and drops the ring below the box).
+    // One expression, one source of truth, resolves in any layout.
+    width: `var(${BOX_SIZE})`,
+    height: `var(${BOX_SIZE})`,
     willChange: 'transform',
-    // The svg keeps the size its `viewBox` describes, so one user unit is one
-    // CSS pixel and the lengths below mean what they say. A themed diameter
-    // therefore draws a ring wider than the svg's own box — which is fine, and
-    // stays centered, because the box it is centered in is the span, sized
-    // from the same two vars. Clipping it to the default frame is the one
-    // thing that would break that, hence `visible`.
+    // The svg is sized in CSS (100% of the span) rather than from the size
+    // constant, so one user unit is one CSS pixel AND the frame follows a
+    // themed diameter: the span's box is `diameter + 2 x stroke`, both public
+    // vars, so ring and frame move together. Sizing it from the constant
+    // instead left the svg larger than the box the moment a theme changed the
+    // diameter — an overflowing grid item aligns to start rather than centre,
+    // which put the ring 1.5-3.3px off across the four sizes.
     overflow: 'visible',
     // Slow the rotation dramatically under reduced-motion rather than freezing
     // it (a frozen spinner reads as broken), matching ProgressBar's approach.
@@ -286,6 +295,11 @@ const styles = stylex.create({
   },
   circle: {
     fill: 'none',
+    // The ring is centred on the box (cx/cy 50%), so the arc's start offset
+    // pivots there too — as a CSS transform, since the SVG `transform`
+    // attribute would need that centre as a number in user units.
+    transformBox: 'fill-box',
+    transformOrigin: 'center',
     strokeLinecap: 'round',
     // The geometry the ring is actually drawn at. `r` and `stroke-width` are
     // CSS properties on an SVG shape, and a CSS declaration outranks the
@@ -310,6 +324,7 @@ const styles = stylex.create({
   // lengths keeps the default byte-identical to what it drew before.
   arc: {
     stroke: 'var(--spinner-color)',
+    transform: 'rotate(-90deg)',
     strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${ARC_DASH}) calc(var(${RESOLVED_DIAMETER}) * ${ARC_GAP})`,
   },
   track: {stroke: 'var(--spinner-track-color)'},
@@ -465,7 +480,6 @@ export function Spinner({
 }: SpinnerProps) {
   const {border, diameter} = SIZES[size];
   const frameSize = diameter + border * 2;
-  const center = frameSize / 2;
   const circumference = Math.PI * diameter;
   const arcLength = circumference * ARC_FRACTION;
   const hasLabel = label != null;
@@ -521,12 +535,11 @@ export function Spinner({
         ref={syncRotationPhase}
         width={frameSize}
         height={frameSize}
-        viewBox={`0 0 ${frameSize} ${frameSize}`}
         aria-hidden="true"
         {...stylex.props(styles.ring)}>
         <circle
-          cx={center}
-          cy={center}
+          cx="50%"
+          cy="50%"
           r={diameter / 2}
           strokeWidth={border}
           {...stylex.props(
@@ -536,15 +549,14 @@ export function Spinner({
           )}
         />
         <circle
-          cx={center}
-          cy={center}
+          cx="50%"
+          cy="50%"
           r={diameter / 2}
           strokeWidth={border}
           // The size's own dash, for the render with no stylesheet. The rule
           // above composes the same lengths from the resolved diameter, so a
           // themed ring keeps this fraction of arc rather than this length.
           strokeDasharray={`${arcLength} ${circumference - arcLength}`}
-          transform={`rotate(-90 ${center} ${center})`}
           {...stylex.props(styles.circle, styles.arc)}
         />
       </svg>
